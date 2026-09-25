@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
-- zuletzt aktualisiert: `2026-09-24`
+- zuletzt aktualisiert: `2026-09-25`
 
 ## 1. Zweck und Abgrenzung
 
@@ -50,9 +50,9 @@ Bedingungen vergleichen konkrete Ergebnisse beziehungsweise Ausgaben von Objekte
 
 Ein Zustandswechsel wie „Trendrichtung wechselt zu Aufwärts“ ist kein eigenes fachliches Objekt, sondern eine Bedingung auf dem Zustand beziehungsweise Ergebnis eines fachlichen Objekts. Zur Auswertung eines Zustandswechsels müssen vorheriger und aktueller Zustand über Auswertungszyklen hinweg verfügbar sein.
 
-### req-fach-016 -- Einstiegssignal und Order getrennt
+### req-fach-016 -- Strategieentscheidung und Order getrennt
 
-Die Einstiegslogik erzeugt ein Einstiegssignal. Das Einstiegssignal eröffnet nicht unmittelbar eine Position, sondern kann zur Erzeugung beziehungsweise Konfiguration einer konkreten Order verwendet werden.
+Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ablauf nach Auswertung der erforderlichen Bedingungen eine Order auslösen soll, beauftragt er den `OrderBuilder`. Ein zusätzliches fachliches Objekt `Signal` wird dafür derzeit nicht benötigt.
 
 Erstellung, Bestimmung und Prüfung einer konkreten Order richten sich nach dem fachlichen Ordermodell. Freigegebene Orders werden anschließend zur weiteren Verwaltung an den `OrderManager` übergeben.
 
@@ -60,7 +60,7 @@ Eine aktive beziehungsweise beim Broker angenommene Order bedeutet noch nicht, d
 
 ### req-fach-017 -- Informationsquellen des Orderablaufs
 
-Die für Handelbarkeitsprüfung und Orderbestimmung benötigten Informationen stammen aus unterschiedlichen fachlichen Quellen und sind nicht pauschal Eigenschaften des Orderablaufs. Dazu gehören insbesondere Einstiegssignal beziehungsweise Einstiegsdefinition, Strategie beziehungsweise Strategieanwendung, Marktdaten, Konto, Risiko- und Orderregeln, Instrument sowie Broker- beziehungsweise Marginbedingungen.
+Die für Handelbarkeitsprüfung und Orderbestimmung benötigten Informationen stammen aus unterschiedlichen fachlichen Quellen und sind nicht pauschal Eigenschaften des Orderablaufs. Dazu gehören insbesondere die im Strategieablauf bestimmte Order-Konfiguration, Strategie beziehungsweise Strategieanwendung, Marktdaten, Konto, Risiko- und Orderregeln, Instrument sowie Broker- beziehungsweise Marginbedingungen.
 
 Der Orderablauf muss diese Informationen verwenden beziehungsweise zusammenführen können. Die genaue Zuordnung und das fachliche Modell des Orderobjekts werden gesondert festgelegt.
 
@@ -165,7 +165,7 @@ Für `CloseOrder` gelten die allgemeinen Mechanismen von `Order` für direkte We
 
 Orderobjekte sind strategieunabhängige fachliche Objekte. Sie können von unterschiedlichen fachlichen Komponenten erzeugt und verwendet werden.
 
-Eine Strategie erzeugt selbst keine konkrete Order, sondern ein `Signal`. Für die Ausführung eines Signals im eigenen Handelssystem erzeugt der `OrderBuilder` daraus die konkrete Order. Andere fachliche Komponenten, insbesondere eine spätere Positionsverwaltung, können unabhängig davon ebenfalls Orders erzeugen und an den `OrderManager` übergeben.
+Eine Strategie erzeugt selbst keine konkrete Order. Wenn der Strategieablauf nach Auswertung seiner Bedingungen eine Order auslösen soll, beauftragt er den `OrderBuilder` mit der Erzeugung der konkreten Order. Dafür wird derzeit kein zusätzliches fachliches Objekt `Signal` vorausgesetzt. Andere fachliche Komponenten, insbesondere eine spätere Positionsverwaltung, können unabhängig davon ebenfalls Orders erzeugen und an den `OrderManager` übergeben.
 
 ### req-fach-034 -- Allgemeines fachliches Objekt Regel
 
@@ -248,8 +248,49 @@ Die Reihenfolge der enthaltenen Regeln ist Bestandteil des RegelSets. Die Regeln
 Wie ungültige Reihenfolgen, nicht erfüllte Abhängigkeiten oder vergleichbare Konfigurationsfehler erkannt und behandelt werden, ist derzeit nicht festgelegt. Dies kann später im Zusammenhang mit der Validierung, dem Testen oder Debuggen von Strategien konkretisiert werden.
 
 
+### req-fach-046 -- Fachliches Objekt Strategie
+
+`Strategie` ist ein fachliches Objekt. Sie beschreibt die im Strategiedesigner erstellte Handelsstrategie.
+
+Eine Strategie besitzt mindestens:
+
+- `Strategie-ID` -- eindeutige, von der Bezeichnung unabhängige Identifikation,
+- `Bezeichnung` -- vom Nutzer änderbare fachliche Benennung,
+- `Beschreibung` -- freie Beschreibung beziehungsweise Anmerkung,
+- `Auslöser` -- fachliche Festlegung, bei welchem Ereignis die Strategie ausgewertet werden soll,
+- `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
+- strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten.
+
+Eine eigene Versionsangabe der Strategie wird für den ersten Prototyp derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten fachlichen Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten fachlichen Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
+
+Eine gesonderte Sammlung von Strategieparametern wird derzeit nicht vorausgesetzt. Eigenschaften verwendeter Objekte können mit einem festen Wert, durch eine Berechnung beziehungsweise eine Regel oder erst bei der Anwendung der Strategie zur Laufzeit belegt werden. Eigene Parameter der Strategie können ergänzt werden, wenn dafür ein konkreter fachlicher Bedarf entsteht.
+
+### req-fach-047 -- Ablauf einer Strategie
+
+Der `Ablauf` ist Bestandteil einer Strategie und derzeit kein eigenständiges fachliches Objekt. Er bildet fachlich das ab, was der Nutzer im Designer als Strategie anordnet und verbindet.
+
+Die Ablaufverbindung ist sequenziell und legt fest, welches Element als Nächstes ausgeführt wird. Eine Bedingung kann den Ablauf anhand ihres Ergebnisses verzweigen. Der `wahr`-Pfad führt zu einem nachfolgenden Element; ein `falsch`-Pfad kann zu einem anderen Element führen oder ohne Fortsetzung enden.
+
+Ein eigener Start- oder Endknoten wird nicht vorausgesetzt. Nach Eintritt des Auslösers beginnt die Auswertung beim ersten Ablaufelement. Ein Ablaufpfad endet, wenn kein weiteres Element folgt.
+
+### req-fach-048 -- Berechnung im Strategieablauf
+
+Eine `Berechnung` ist ein Ablaufelement und derzeit kein eigenständiges fachliches Objekt.
+
+Sie wertet einen fachlichen Ausdruck aus und liefert ein Ergebnis. Als Eingaben können insbesondere konstante Werte, Eigenschaften und Ergebnisse fachlicher Objekte sowie Ergebnisse von Regeln und anderen Berechnungen verwendet werden.
+
+Eine Berechnung muss nicht als `Regel` definiert werden. Die technische Auswertung von Berechnungen, Regeln und Bedingungen darf gemeinsame Mechanismen verwenden; ihre unterschiedliche fachliche Bedeutung bleibt erhalten.
+
+### req-fach-049 -- Beauftragung des OrderBuilders im Strategieablauf
+
+`OrderBuilder beauftragen` ist die derzeit festgelegte konkrete Aktion im Strategieablauf. Sie wird nur erreicht, wenn eine vorherige Bedingung auf den entsprechenden Ablaufpfad verzweigt. Ist die Bedingung nicht erfüllt und besitzt der andere Pfad keine Fortsetzung, endet dieser Ablaufpfad.
+
+Ein allgemeiner fachlicher Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
+
+
 ## 3. Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. Bestehende fachliche Festlegungen und IDs wurden übernommen. |
+| 2026-09-25 | `Strategie` als fachliches Objekt sowie Ablauf, Berechnung und Beauftragung des `OrderBuilder` konkretisiert; separates `Signal`-Objekt aus dem aktuellen Modell entfernt. |

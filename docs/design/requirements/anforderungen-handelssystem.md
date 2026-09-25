@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an Anwendung und Ausführung von Strategien auf konkreten Handelskonten
-- zuletzt aktualisiert: `2026-09-24`
+- zuletzt aktualisiert: `2026-09-25`
 
 ## 1. Zweck und Abgrenzung
 
@@ -59,17 +59,17 @@ Die konkreten Nachrichtenarten, ihre endgültige Benennung sowie die genaue Stru
 
 ## 3. Ordererzeugung und Orderverwaltung zur Laufzeit
 
-### req-grund-007 -- OrderBuilder zwischen Signal und OrderManager
+### req-grund-007 -- OrderBuilder zwischen Strategieauswertung und OrderManager
 
-Das fachliche Ergebnis einer Strategie ist ein `Signal`. Ein Signal führt nicht zwingend zur Erzeugung einer Order und muss unabhängig vom Ordermodell des Handelssystems weiterverarbeitet werden können. Insbesondere muss eine alternative Verarbeitung oder Weitergabe des Signals, beispielsweise an ein anderes Handelssystem beziehungsweise eine andere Handelsplattform, möglich bleiben.
+Wenn der Ablauf einer Strategie nach Auswertung der erforderlichen Bedingungen eine Order auslösen soll, beauftragt er den `OrderBuilder`. Ein zusätzliches fachliches Objekt `Signal` wird dafür derzeit nicht vorausgesetzt.
 
-Für die Ausführung eines Signals im eigenen Handelssystem gibt es einen `OrderBuilder` als Schnittstelle beziehungsweise Komponente des Handelssystems. Der `OrderBuilder` ist kein zusätzliches fachliches Trading-Objekt.
+Der `OrderBuilder` ist eine Schnittstelle beziehungsweise Komponente des Handelssystems und kein zusätzliches fachliches Trading-Objekt.
 
-Der `OrderBuilder` erhält das Signal, die zugehörige Order-Konfiguration aus der Strategiedefinition und das konkrete `Konto`, auf dem die Strategie angewendet wird. Daraus erzeugt er eine konkrete Order des konfigurierten Ordertyps und übergibt ihr die vorgesehenen direkten Eigenschaftswerte und Regeln. Dazu gehört auch eine in der Strategie konfigurierte Bedingung oder Regel für die fortbestehende Gültigkeit einer aktiven Order.
+Der `OrderBuilder` erhält die im Strategieablauf bestimmte Order-Konfiguration und das konkrete `Konto`, auf dem die Strategie angewendet wird. Daraus erzeugt er eine konkrete Order des konfigurierten Ordertyps und übergibt ihr die vorgesehenen direkten Eigenschaftswerte und Regeln. Dazu gehört auch eine in der Strategie konfigurierte Bedingung oder Regel für die fortbestehende Gültigkeit einer aktiven Order.
 
 Die fachliche Bestimmung noch zu bestimmender Order-Eigenschaften sowie die fachliche Prüfung der Order bleiben Aufgabe der Order und der von ihr verwendeten Regeln. Der `OrderBuilder` übernimmt diese Aufgaben nicht.
 
-Nur eine erfolgreich freigegebene konkrete Order wird an den `OrderManager` übergeben. Der `OrderManager` benötigt dafür keine Kenntnis der verursachenden Strategie oder des Signals.
+Nur eine erfolgreich freigegebene konkrete Order wird an den `OrderManager` übergeben. Der `OrderManager` benötigt dafür keine Kenntnis der verursachenden Strategie.
 
 ### req-fach-022 -- OrderManager
 
@@ -122,3 +122,4 @@ Eine Order kann damit einen endgültigen Zustand erreichen, ohne jemals eine Pos
 |---|---|
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. OrderManager-, Kontoanbindungs-, Überwachungs- und Kommunikationsanforderungen wurden übernommen. |
 | 2026-09-24 | `OrderBuilder` zwischen Signal und OrderManager ergänzt; Übergabe und Stornierung auf das fachliche Nachrichtensystem korrigiert; Auslösung von Orderprüfungen auf periodische Prüfung oder auslösende Nachricht präzisiert. |
+| 2026-09-25 | Separates `Signal`-Objekt aus dem aktuellen Ablaufmodell entfernt; `OrderBuilder` wird bei entsprechendem Ergebnis der Strategieauswertung direkt aus dem Strategieablauf beauftragt. |
