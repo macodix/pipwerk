@@ -204,7 +204,7 @@ festgelegt.
 
 ### req-core-001 -- Ansatzunabhängige fachliche Objekte
 
-Der Strategiedesigner stellt fachliche Objekte für die Gestaltung von Strategien bereit. Ihre Auswahl und Darstellung richten sich nach der fachlichen Bedeutung im Strategieablauf. Dazu gehören die bereits beschriebenen Objekte wie `Signal`, `Regel` und konfigurierbare Ordertypen; weitere fachliche Objekte können hinzukommen.
+Der Strategiedesigner stellt fachliche Objekte für die Gestaltung von Strategien bereit. Ihre Auswahl und Darstellung richten sich nach der fachlichen Bedeutung im Strategieablauf. Dazu gehören die bereits beschriebenen Objekte wie `Strategie`, `Regel` und konfigurierbare Ordertypen; weitere fachliche Objekte können hinzukommen.
 
 Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständigen Objekttypen allein aufgrund ihrer Bezeichnung. Der Designer zeigt die jeweils tatsächlich verwendeten fachlichen Objekte und Tätigkeiten. Welche zusätzlichen Ordertypen, etwa eine `ExitOrder`, benötigt und wie sie definiert werden, ist im Fachmodell festzulegen.
 
@@ -357,3 +357,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-09-24 | Bestehendes Gesamtdokument in `fachmodell.md`, `anforderungen-strategiedesigner.md` und `anforderungen-handelssystem.md` getrennt; bestehende Anforderungen inhaltlich erhalten und nach Zuständigkeit zugeordnet. |
 
 | 2026-09-25 | Übergreifende Festlegung zur technischen Aufteilung in `anforderungen-gesamtsystem.md` verlagert; bisherige Offenhaltung der technischen Aufteilung entfernt. |
+| 2026-09-25 | Veralteten Verweis auf `Signal` als fachliches Objekt entfernt und `Strategie` als fachliches Objekt berücksichtigt. |
