@@ -88,6 +88,8 @@ Folge: Datenbank und ORM bleiben austauschbare Infrastruktur.
 10. Automatische Formatter dürfen keine fachlichen oder sicherheitsrelevanten Änderungen verdecken.
 11. Frameworks werden nicht verwendet, um bereits definierte Fachobjekte unnötig durch frameworkeigene Modelle zu ersetzen.
 12. Neue Abhängigkeiten benötigen einen dokumentierten Zweck und eine Prüfung auf Lizenz, Wartungszustand, Sicherheitsrisiko und Kopplungswirkung.
+13. Python-Code folgt PEP 8, soweit keine begründete und dokumentierte Pipwerk-Regel abweicht. Typannotationen richten sich nach dem aktuellen Python-Typisierungssystem; PEP 484 bildet dafür eine grundlegende Referenz. Python-Paket- und Abhängigkeitsversionen verwenden PEP-440-konforme Versionsangaben.
+14. PEP-Regeln ergänzen die Pipwerk-Regeln. PEPs werden nicht als allgemeines IT-Sicherheitsregelwerk behandelt.
 
 ## 5. Testregeln
 
@@ -110,6 +112,22 @@ Ein Pull Request ist technisch nicht abnahmefähig, solange für den betroffenen
 
 ## 6. Sicherheitsregeln
 
+### 6.1 Sicherheitsreferenzen
+
+Für Pipwerk werden folgende Regelwerke als verbindliche Referenzen für die Ableitung und Prüfung konkreter Sicherheitsanforderungen verwendet:
+
+- **BSI IT-Grundschutz** als übergeordnete Referenz für Informationssicherheit. Für die Softwareentwicklung sind insbesondere `CON.8 Software-Entwicklung`, `APP.7 Entwicklung von Individualsoftware`, `OPS.1.1.3 Patch- und Änderungsmanagement` und `OPS.1.1.6 Software-Tests und -Freigaben` zu berücksichtigen. Weitere Bausteine werden einbezogen, sobald Architektur oder Betrieb ihren Anwendungsbereich berühren.
+- **OWASP Application Security Verification Standard (ASVS)** als überprüfbare technische Sicherheitsreferenz für Webanwendungen.
+- **OWASP API Security Top 10** als ergänzende Referenz für die besonderen Risiken der HTTP-Web-APIs.
+- **Python Enhancement Proposals (PEPs)** für Python-spezifische Entwicklungsstandards. Sie ersetzen kein Informationssicherheitsregelwerk.
+
+Die Anwendung dieser Referenzen bedeutet nicht, dass Pipwerk pauschal eine BSI-, OWASP- oder sonstige Zertifizierung oder vollständige Konformität beansprucht. Für jedes Arbeitspaket werden die tatsächlich einschlägigen Anforderungen bestimmt und in prüfbare Pipwerk-Anforderungen beziehungsweise Abnahmekriterien überführt.
+
+Wird von einer einschlägigen Sicherheitsanforderung abgewichen, wird die Abweichung mit Grund, Risiko und gegebenenfalls Ersatzmaßnahme dokumentiert. Sicherheitsanforderungen werden so konkret formuliert, dass ihre Umsetzung überprüft werden kann.
+
+### 6.2 Grundregeln
+
+
 1. Geheimnisse, API-Schlüssel, Broker-Zugangsdaten und Tokens werden niemals im Repository, in Testdaten oder in normalen Logs gespeichert.
 2. Externe Eingaben werden an der Systemgrenze validiert. Dies gilt besonders für Strategieimporte, Nachrichten, HTTP-Anfragen, Konfiguration und Brokerdaten.
 3. Handelsrelevante Werte werden nicht allein durch implizite Typkonvertierung akzeptiert. Zulässige Wertebereiche und fachliche Invarianten werden zusätzlich geprüft.
@@ -122,6 +140,21 @@ Ein Pull Request ist technisch nicht abnahmefähig, solange für den betroffenen
 10. Datenbankmigrationen und andere destruktive Operationen benötigen Sicherungs-, Rücksetz- oder Wiederherstellungsverfahren entsprechend dem tatsächlichen Schadensrisiko.
 11. Sicherheitsrelevante Regeln werden durch automatisierte Tests abgesichert, soweit sie technisch prüfbar sind.
 12. Sicherheitsmechanismen dürfen nicht ausschließlich von React, React Flow, TanStack Query oder anderen Browserbibliotheken abhängen.
+
+### 6.3 Mindestanforderungen aus den Referenzwerken
+
+Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie auf die jeweilige Komponente anwendbar sind:
+
+1. Sicherheitsanforderungen werden bereits bei Anforderung und Entwurf berücksichtigt und nicht erst nach der Implementierung geprüft.
+2. Sichere Voreinstellungen und das Prinzip geringstmöglicher Rechte werden angewendet.
+3. Entwicklungs-, Test- und Produktivumgebungen sowie ihre Zugangsdaten werden getrennt.
+4. Sicherheitsrelevante Ereignisse werden nachvollziehbar protokolliert; Geheimnisse und unnötige personenbezogene oder schützenswerte Daten werden dabei vermieden.
+5. Eingaben, Authentisierung, Autorisierung, Sitzungen, Fehlerbehandlung, Kryptografie, Dateizugriffe, Netzwerkzugriffe und externe APIs werden entsprechend ihrem Risiko geprüft.
+6. Änderungen an Abhängigkeiten und Plattformen unterliegen Patch-, Änderungs- und Sicherheitsprüfung.
+7. Nichtfunktionale Sicherheitstests, Regressionstests und bei entsprechendem Risiko Penetrationstests werden vorgesehen.
+8. Für Webanwendungen werden einschlägige ASVS-Anforderungen in konkrete Tests oder überprüfbare Abnahmekriterien überführt.
+9. Für APIs werden insbesondere Autorisierung auf Objekt- und Funktionsebene, Authentisierung, Ressourcenbegrenzung, Sicherheitskonfiguration, Inventarisierung und der sichere Umgang mit fremden APIs geprüft.
+10. Welche BSI- und OWASP-Anforderungen für eine konkrete Pipwerk-Komponente gelten, wird spätestens vor deren produktiver Freigabe dokumentiert.
 
 ## 7. Werkzeugbezogene Test- und Sicherheitsanforderungen
 
@@ -163,3 +196,9 @@ Technische Aussagen dieses Dokuments wurden am 2026-09-25 gegen die jeweilige of
 - Ruff: https://docs.astral.sh/ruff/
 - mypy: https://mypy.readthedocs.io/
 - TypeScript: https://www.typescriptlang.org/docs/
+- PEP 8: https://peps.python.org/pep-0008/
+- PEP 440: https://peps.python.org/pep-0440/
+- PEP 484: https://peps.python.org/pep-0484/
+- BSI IT-Grundschutz, insbesondere CON.8 Software-Entwicklung sowie die zugehörigen Bausteine des aktuellen IT-Grundschutz-Kompendiums: https://www.bsi.bund.de/grundschutz
+- OWASP Application Security Verification Standard (ASVS): https://owasp.org/www-project-application-security-verification-standard/
+- OWASP API Security Top 10: https://owasp.org/www-project-api-security/
