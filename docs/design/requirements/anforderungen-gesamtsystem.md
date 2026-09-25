@@ -1,0 +1,91 @@
+# Anforderungen an das Gesamtsystem
+
+## Dokumentstatus
+
+- status: `draft`
+- zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
+- zuletzt aktualisiert: `2026-09-25`
+
+## 1. Systemaufteilung
+
+### req-system-001 -- Hauptkomponenten
+
+Das Gesamtsystem besteht derzeit aus folgenden fachlich getrennten Hauptkomponenten:
+
+- `Strategiedesigner` -- erstellt und bearbeitet ausführbare Strategiedefinitionen.
+- `Strategietester` -- führt Strategiedefinitionen zu Testzwecken, insbesondere gegen historische oder aufgezeichnete Marktdaten, aus und stellt die Testergebnisse bereit.
+- `Handelssystem` -- wendet Strategiedefinitionen zur Laufzeit auf konkrete Handelskonten an und führt den daraus entstehenden Handelsablauf aus.
+- `Nachrichtensystem` -- ermöglicht den Nachrichtenaustausch zwischen eigenständig arbeitenden Komponenten.
+
+Die weitere fachliche Ausgestaltung der einzelnen Komponenten erfolgt in den jeweils zuständigen Anforderungsdokumenten.
+
+### req-system-002 -- Eigenständig lauffähige Hauptkomponenten
+
+Die Hauptkomponenten werden als eigenständig lauffähige Komponenten konzipiert. Keine Hauptkomponente darf voraussetzen, dass eine andere Hauptkomponente im selben Prozess oder auf demselben Rechner ausgeführt wird.
+
+Die Komponenten müssen dadurch insbesondere in getrennten Prozessen und auf unterschiedlichen Rechnern beziehungsweise Systemumgebungen betrieben werden können.
+
+### req-system-003 -- Unabhängige Bereitstellung
+
+Die Hauptkomponenten müssen unabhängig voneinander bereitgestellt und eingesetzt werden können, soweit die jeweilige fachliche Aufgabe keine andere Komponente benötigt. Dadurch müssen insbesondere getrennte Umgebungen für Strategieentwicklung, Strategietest und produktiven Handel möglich sein.
+
+### req-system-004 -- Gemeinsame Strategiedefinition
+
+`Strategiedesigner`, `Strategietester` und `Handelssystem` müssen dieselbe fachliche Strategiedefinition verwenden können. Eine Strategiedefinition darf für Test oder produktive Ausführung nicht in ein anderes fachliches Strategiemodell übertragen werden müssen.
+
+### req-system-005 -- Kommunikation zwischen Komponenten
+
+Die Zusammenarbeit eigenständig laufender Komponenten erfolgt über klar definierte Schnittstellen. Für den Nachrichtenaustausch zwischen Komponenten wird das gemeinsame `Nachrichtensystem` verwendet.
+
+Die konkrete technische Umsetzung der Schnittstellen und des Nachrichtentransports wird durch diese Anforderung nicht festgelegt.
+
+### req-system-006 -- Technische Eigenständigkeit
+
+Jede Hauptkomponente muss einschließlich ihrer benötigten Laufzeitbestandteile eigenständig installierbar und startbar sein. Gemeinsam verwendete Bibliotheken werden mit der jeweiligen Komponente in einer festgelegten Version bereitgestellt. Eine Hauptkomponente darf für ihre eigene Ausführung keinen zentral laufenden gemeinsamen Fachkern voraussetzen.
+
+### req-system-007 -- Gemeinsamer fachlicher Python-Kern
+
+Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe versionierte Python-Bibliothek für fachliche Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
+
+Das `Nachrichtensystem` wird ebenfalls in Python implementiert. Seine eigenständige Ausführbarkeit und die sprachunabhängige Definition seiner Schnittstellen bleiben davon unberührt.
+
+### req-system-008 -- Benutzeroberflächen
+
+`Strategiedesigner`, `Strategietester` und `Handelssystem` erhalten jeweils eine eigene Browseroberfläche auf Basis von TypeScript, React und CSS. Die Oberflächen verwenden gemeinsame Gestaltungsregeln und, soweit fachlich passend, gemeinsam entwickelte und versionierte UI-Komponenten. Jede Hauptkomponente liefert die von ihr benötigten UI-Bestandteile selbst mit und bleibt unabhängig installierbar und startbar.
+
+Eine eigene Benutzeroberfläche des `Nachrichtensystems` ist derzeit nicht festgelegt.
+
+### req-system-009 -- Web-APIs der Hauptkomponenten
+
+Jede Hauptkomponente stellt die für eine externe Nutzung vorgesehenen Funktionen über eine dokumentierte HTTP-Web-API bereit. Dadurch müssen insbesondere andere Programme, Automatisierungswerkzeuge und alternative Benutzeroberflächen diese Funktionen ohne Bedienung der mitgelieferten Oberfläche verwenden können.
+
+Die Web-API muss von internen, nicht als stabiler Vertrag vorgesehenen GUI-Implementierungsdetails getrennt werden. Für eingehende Ereignisse können ausdrücklich definierte Webhook-Endpunkte bereitgestellt werden.
+
+### req-system-010 -- Austauschbarkeit über definierte Verträge
+
+Eine Hauptkomponente muss durch eine andere Implementierung ersetzt werden können, sofern diese die vereinbarten Schnittstellen und das vereinbarte fachliche Verhalten erfüllt. Die Austauschbarkeit stützt sich mindestens auf:
+
+- die versionierte Web-API,
+- das gemeinsame Format der Strategiedefinition,
+- die festgelegten Nachrichtenformate,
+- die gemeinsam verwendeten fachlichen Datenformate.
+
+Die konkrete Programmiersprache einer Ersatzimplementierung ist nicht Bestandteil dieser Verträge.
+
+### req-system-011 -- Schutz externer Schnittstellen
+
+Die Erreichbarkeit und Berechtigungen der Web-APIs müssen konfigurierbar sein. Schreibende, ausführende oder den Handel betreffende Funktionen dürfen nicht ohne geeignete Authentifizierung und Autorisierung extern zugänglich sein. Webhooks müssen ihren Absender beziehungsweise ihre Berechtigung prüfen und wiederholte Übermittlung eindeutig behandelbar machen.
+
+## 2. Abgrenzung
+
+Die Festlegung eigenständig lauffähiger Hauptkomponenten bestimmt die Systemstruktur, aber nicht, auf wie viele Rechner die Komponenten in einer konkreten Installation verteilt werden. Mehrere Hauptkomponenten dürfen auf demselben Rechner betrieben werden.
+
+Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktionen mehrerer Hauptkomponenten zugänglich macht. Die fachlichen Verantwortlichkeiten und die eigenständige Ausführbarkeit der Komponenten bleiben davon unberührt.
+
+## 3. Änderungsnachweis
+
+| Datum | Änderung |
+| --- | --- |
+| 2026-09-25 | Erstanlage; Hauptkomponenten und eigenständige Ausführbarkeit sowie gemeinsame Strategiedefinition und komponentenübergreifende Kommunikation festgelegt. |
+| 2026-09-25 | Python für Fachkern und Backends, TypeScript/React/CSS für die Oberflächen von Designer, Tester und Handelssystem sowie eigenständige Bereitstellung gemeinsamer Bibliotheken festgelegt. |
+| 2026-09-25 | Dokumentierte Web-APIs, Webhooks, Austauschbarkeit über versionierte Verträge und Schutz externer Schnittstellen ergänzt. |
