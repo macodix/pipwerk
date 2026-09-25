@@ -17,7 +17,7 @@ Die Teststrategien sind Anwendungsfälle für den Designer. Beispielwerte und En
 
 ## Projekt- und Komponentennamen
 
-Das Gesamtsystem und das gemeinsame GitHub-Repository heißen **Pipwerk** beziehungsweise `pipwerk`.
+Das Gesamtsystem und das gemeinsame öffentliche GitHub-Repository heißen **Pipwerk** beziehungsweise `pipwerk`. Das Repository liegt unter `https://github.com/macodix/pipwerk` und verwendet die GNU General Public License v3.0.
 
 | Hauptkomponente | Produktname | Technischer Name |
 |---|---|---|
@@ -97,6 +97,16 @@ Die Verzeichnisstruktur des Entwicklungsrepositorys muss nicht mit der späteren
 
 Jede Hauptkomponente enthält ihre eigenen Verzeichnisse für Backend, Oberfläche soweit vorhanden, Tests, Dokumentation, Beispielkonfigurationen und komponentenspezifische Werkzeuge. Jede Hauptkomponente bleibt eigenständig baubar, installierbar und startbar.
 
+Die Dokumentation im Repository wird nach Zweck und Zielgruppe getrennt:
+
+| Verzeichnis | Inhalt |
+|---|---|
+| `docs/design/` | Anforderungen, Fachmodell, Strategiebeschreibungen, Planungen, Entscheidungen und GUI-Entwürfe |
+| `docs/technical/` | technische Dokumentation für Entwicklung, Schnittstellen, Installation, Betrieb und Sicherheit |
+| `docs/user/` | Anwenderdokumentation der vier Hauptkomponenten |
+
+Dateipräfixe zur Kennzeichnung dieser Dokumentarten sind nicht erforderlich. Der Dokumentstatus wird innerhalb der jeweiligen Datei geführt.
+
 Für die spätere Systeminstallation gelten grundsätzlich folgende Zuordnungen:
 
 | Pfad | Inhalt |
@@ -104,13 +114,15 @@ Für die spätere Systeminstallation gelten grundsätzlich folgende Zuordnungen:
 | `/usr/bin/` | Startprogramme und Kommandozeilenbefehle |
 | `/usr/lib/pipwerk/` | Programmcode und mitgelieferte Bibliotheken |
 | `/usr/share/pipwerk/` | statische Oberflächendateien, Vorlagen und unveränderliche Daten |
+| `/usr/share/doc/pipwerk/` | gemeinsame Projekt-, Architektur-, technische und Anwenderdokumentation |
+| `/usr/share/man/` | Handbuchseiten für Kommandozeilenprogramme |
 | `/etc/pipwerk/<komponente>/` | systemweite Konfiguration der jeweiligen Komponente |
 | `/var/lib/pipwerk/<komponente>/` | persistente Anwendungsdaten der jeweiligen Komponente |
 | `/var/log/pipwerk/<komponente>/` | Protokolldateien, soweit diese nicht ausschließlich über das Systemjournal geführt werden |
 | `/run/pipwerk/<komponente>/` | flüchtige Laufzeitdaten |
 | `/var/cache/pipwerk/<komponente>/` | wiederherstellbare Cache-Daten |
 
-Keine Komponente schreibt während des Betriebs nach `/usr`. Abweichende Strukturen für Benutzerinstallationen oder Container werden gesondert dokumentiert.
+Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und zur Laufzeit benötigte unveränderliche Dateien bleiben getrennt. Abweichende Strukturen für Benutzerinstallationen oder Container werden gesondert dokumentiert.
 
 ## 2. Rollen
 
@@ -180,3 +192,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-25 | Grobe Orientierung der späteren Dateisystemstruktur am Unix FHS ergänzt; Repository-Zeitpunkt präzisiert und Installations- und Startverfahren in die Prototypentwicklung verlagert. |
 | 2026-09-25 | Datenformat für Ablage und Weitergabe von Strategien ausdrücklich als viertes eigenes Klärungsthema festgehalten. |
 | 2026-09-25 | Pipwerk als Name für Gesamtsystem und Repository sowie Pipwerk Studio, Pipwerk Backtest, Pipwerk Trader und Pipwerk Relay als Komponentennamen festgelegt; Repository- und FHS-orientierte Installationsstruktur konkretisiert. |
+| 2026-09-25 | Öffentliches Repository `macodix/pipwerk` mit GPL-3.0 angelegt; Dokumentation in Entwurfs-, technische und Anwenderdokumentation gegliedert und FHS-Pfad für installierte Dokumentation ergänzt. |
