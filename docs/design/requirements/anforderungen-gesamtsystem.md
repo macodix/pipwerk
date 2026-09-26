@@ -163,6 +163,17 @@ Marketing-Sprache und vermeidbarer Fachjargon werden nicht verwendet. Fachbegrif
 Verständlichkeit und Vollständigkeit haben Vorrang vor möglichst kurzer Formulierung. Kürzungen dürfen keine Informationen entfernen, die zum Verständnis des beschriebenen Sachverhalts erforderlich sind.
 
 
+### req-system-022 -- Zentrale Bereitstellung maschinenlesbarer Verträge
+
+Maschinenlesbare, von Pipwerk verwendete Verträge werden im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere formale Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedefinitionen und Datenformate.
+
+Der vollständige Bestand dieser Verträge wird gemeinsam bereitgestellt. Eine Bereitstellung darf nicht davon abhängen, welche Hauptkomponente einen Vertrag derzeit verwendet. Dadurch muss eine Komponente bei einer späteren Nutzung eines bereits vorhandenen Vertrags nicht auf die Installation oder Dateien einer anderen Hauptkomponente zugreifen.
+
+Bei einer systemweiten Installation unter Unix-artigen Betriebssystemen werden diese architekturunabhängigen Dateien unter `/usr/share/pipwerk/contracts` bereitgestellt. Abweichende Installationsformen müssen ebenfalls sicherstellen, dass die Verträge unabhängig von der Installation einer bestimmten Hauptkomponente verfügbar sind.
+
+Die maschinenlesbaren Verträge ersetzen nicht ihre für Menschen bestimmte technische Dokumentation. Die Bedeutung, Verwendung und Inhalte der Verträge werden vollständig unter `docs/technical` beschrieben.
+
+
 ## 2. Abgrenzung
 
 Die Festlegung eigenständig lauffähiger Hauptkomponenten bestimmt die Systemstruktur, aber nicht, auf wie viele Rechner die Komponenten in einer konkreten Installation verteilt werden. Mehrere Hauptkomponenten dürfen auf demselben Rechner betrieben werden.
@@ -179,3 +190,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-09-26 | Konfigurierbare Datenspeicherung, unabhängige und gemeinsame Speicherzuordnung sowie SQLAlchemy als gemeinsame Speicherschnittstelle festgelegt. |
 | 2026-09-26 | Zweistufige Konfiguration aus INI-Startkonfiguration und gespeicherter Betriebskonfiguration, Suchpfade und Zusammenhang zwischen eigenem Speicher und eigenständiger Startbarkeit festgelegt. |
 | 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
+| 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung maschinenlesbarer Verträge sowie deren menschenlesbare Dokumentation festgelegt. |
