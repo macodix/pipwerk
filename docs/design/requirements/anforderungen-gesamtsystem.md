@@ -138,6 +138,31 @@ Sie besitzt dafür eine eigene Startkonfiguration und muss den Parameter `-c <PA
 
 
 
+### req-system-019 -- Dokumentation als Bestandteil jeder Änderung
+
+Bei jeder Änderung an Pipwerk muss geprüft werden, ob bestehende Dokumentation von der Änderung betroffen ist. Betroffene Dokumentation muss im selben Arbeitspaket aktualisiert werden. Dies gilt auch für Änderungen und Erkenntnisse, die erst während der Implementierung entstehen.
+
+Eine Änderung gilt nicht als vollständig, solange die betroffene Dokumentation den aktuellen gültigen Zustand nicht vollständig und widerspruchsfrei beschreibt. Ein Änderungsnachweis oder eine Änderungshistorie ersetzt die Dokumentation des aktuellen Zustands nicht.
+
+### req-system-020 -- Zuständigkeit der Dokumentationsbereiche
+
+Die Softwaredesign-Dokumentation unter `docs/design` beschreibt insbesondere Anforderungen, Fachmodelle, Strategiemodelle und Konzepte. Änderungen an diesen Inhalten müssen dort unmittelbar dokumentiert werden.
+
+Die technische Dokumentation unter `docs/technical` beschreibt die technische Umsetzung vollständig. Dazu gehören insbesondere Komponentenmodelle, Objektmodelle, Datenmodelle, Schnittstellen sowie die für Installation und Betrieb erforderlichen Informationen. Die Modelle müssen so vollständig und widerspruchsfrei beschrieben sein, dass daraus konsistente Diagramme erstellt werden können. Diagramme dürfen in einem getrennten Arbeitsschritt erstellt oder aktualisiert werden, sofern die zugrunde liegende Dokumentation bereits vollständig und konsistent ist.
+
+Die Anwenderdokumentation unter `docs/user` beschreibt alle Kenntnisse und Arbeitsschritte, die ein Anwender für die Konfiguration und Nutzung der Anwendung benötigt. Sie richtet sich auch an technisch nicht versierte Anwender. Konfigurationen, die über die Benutzeroberfläche vorgenommen werden können, und die Bedienung der Benutzeroberfläche müssen vollständig beschrieben werden. Soweit für das Verständnis erforderlich, gehören Schritt-für-Schritt-Anleitungen und Abbildungen dazu. Die Anwenderdokumentation muss so vollständig sein, dass sie als Grundlage für eine Veröffentlichung als HTML oder PDF und für die spätere Erstellung von Anleitungsvideos verwendet werden kann.
+
+### req-system-021 -- Verständlichkeit der Dokumentation
+
+Die Dokumentation muss für Menschen gut lesbar und aus sich heraus verständlich sein. Sie darf für ihr Verständnis kein Wissen aus Chatverläufen, Issues, Pull Requests oder der Entstehungsgeschichte einer Festlegung voraussetzen.
+
+Dokumentation wird grundsätzlich in vollständigen, grammatikalisch korrekten Sätzen geschrieben. Aufzählungen werden nur verwendet, wenn der dargestellte Inhalt seiner Art nach eine Aufzählung erfordert. Normaler erklärender Text darf nicht allein zur Verkürzung oder Gliederung in Stichpunkte zerlegt werden.
+
+Marketing-Sprache und vermeidbarer Fachjargon werden nicht verwendet. Fachbegriffe werden nur verwendet, wenn sie für eine eindeutige Beschreibung erforderlich sind. Jeder in der Dokumentation erforderliche Fachbegriff muss in einem Glossar so definiert werden, dass die Definition auch ohne spezielles Vorwissen verständlich ist.
+
+Verständlichkeit und Vollständigkeit haben Vorrang vor möglichst kurzer Formulierung. Kürzungen dürfen keine Informationen entfernen, die zum Verständnis des beschriebenen Sachverhalts erforderlich sind.
+
+
 ## 2. Abgrenzung
 
 Die Festlegung eigenständig lauffähiger Hauptkomponenten bestimmt die Systemstruktur, aber nicht, auf wie viele Rechner die Komponenten in einer konkreten Installation verteilt werden. Mehrere Hauptkomponenten dürfen auf demselben Rechner betrieben werden.
@@ -153,3 +178,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-09-25 | Dokumentierte Web-APIs, Webhooks, Austauschbarkeit über versionierte Verträge und Schutz externer Schnittstellen ergänzt. |
 | 2026-09-26 | Konfigurierbare Datenspeicherung, unabhängige und gemeinsame Speicherzuordnung sowie SQLAlchemy als gemeinsame Speicherschnittstelle festgelegt. |
 | 2026-09-26 | Zweistufige Konfiguration aus INI-Startkonfiguration und gespeicherter Betriebskonfiguration, Suchpfade und Zusammenhang zwischen eigenem Speicher und eigenständiger Startbarkeit festgelegt. |
+| 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
