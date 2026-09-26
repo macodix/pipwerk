@@ -119,7 +119,14 @@ Eine eigenständig startbare Komponente muss ihre INI-Startkonfiguration an den 
 - unter `$HOME/.config/pipwerk`,
 - unter `/etc/pipwerk`.
 
-Bei der automatischen Suche gilt diese Reihenfolge als Priorität; eine mit `-c <PATH>` ausdrücklich angegebene Startkonfiguration hat höchste Priorität.
+Unter Windows gelten entsprechend:
+
+- `-c <PATH>`,
+- `%USERPROFILE%\\pipwerk\\etc`,
+- `%APPDATA%\\pipwerk`,
+- `%PROGRAMDATA%\\pipwerk`.
+
+Bei der automatischen Suche gilt die jeweils aufgeführte Reihenfolge als Priorität; eine mit `-c <PATH>` ausdrücklich angegebene Startkonfiguration hat höchste Priorität.
 
 Es wird genau eine Startkonfiguration verwendet. Inhalte mehrerer INI-Dateien werden nicht zusammengeführt.
 
