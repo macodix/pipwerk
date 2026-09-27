@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-09-25
+- stand: 2026-09-27
 
 ## 1. Ziel und Gegenstand
 
@@ -131,19 +131,43 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 | Nutzer | Fachliche Entscheidungen treffen; Bedienung und Verhalten des laufenden Prototyps praktisch prüfen; Ergebnisse freigeben. |
 | ChatGPT in diesem Projektchat | Konzept und Softwaredesign mit dem Nutzer entwickeln; Arbeitsaufträge mit Prüfkriterien formulieren; die Umsetzung im Repository gegen Auftrag, Fachmodell und Anforderungen prüfen; konkrete Korrekturen benennen. |
 | Claude Code auf dem Entwicklungsrechner | Vereinbarte Aufträge implementieren; lokale technische Prüfungen ausführen; Änderungen und Prüfergebnisse im Repository bereitstellen; festgestellte Mängel korrigieren. |
+| Codex auf dem Entwicklungsrechner | Repository und Änderungen unabhängig von Claude Code technisch prüfen; keine fachlichen Entscheidungen treffen oder offene Anforderungen selbst ergänzen. |
 
 Eine Fertigmeldung des implementierenden Agenten ersetzt weder die unabhängige Prüfung der Änderung noch die praktische Erprobung durch den Nutzer.
 
 ## 3. Ablauf je Arbeitspaket
 
-1. **Auftrag festlegen:** Fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien hier vereinbaren. Nicht entschiedene Punkte ausdrücklich kennzeichnen.
-2. **Umsetzen:** Claude Code arbeitet im Projekt auf dem Entwicklungsrechner in einem eigenen Branch. Es führt passende technische Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
-3. **Umsetzung prüfen:** ChatGPT liest Auftrag, geänderten Code und zugehörige Tests im Pull Request. Es prüft insbesondere Vollständigkeit, fachliche Konsistenz, Abweichungen vom Auftrag und erkennbare Fehler. Die Prüfung stützt sich auf den tatsächlichen Stand im Repository.
-4. **Mängel beheben:** Claude Code korrigiert konkrete Befunde. ChatGPT prüft die betroffenen Änderungen erneut.
-5. **Funktion erproben:** Der Nutzer bedient den Prototyp auf seinem Rechner anhand der beiden Strategien und meldet Abweichungen. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
-6. **Abschluss festhalten:** Ein Arbeitspaket gilt erst nach bestandener Umsetzungsprüfung und erforderlicher praktischer Erprobung als abgeschlossen.
+1. **Repository-Stand prüfen:** Vor Analyse, Planung, Arbeitsauftrag oder Prüfung wird der aktuelle Stand von `main` gelesen. Das Repository ist die maßgebliche Projektquelle.
+2. **Grundlagen prüfen:** Die für das Arbeitspaket einschlägigen Anforderungen, Fachmodelle, Entscheidungen und technischen Regeln werden auf ausreichende Eindeutigkeit und erkennbare Widersprüche geprüft. Widersprüche werden vor der Implementierung geklärt.
+3. **Auftrag festlegen:** Nutzer und ChatGPT vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet und dürfen vom Implementierer nicht selbst entschieden werden.
+4. **Umsetzen:** Claude Code arbeitet auf dem Entwicklungsrechner in einem eigenen Branch und Worktree. Es setzt ausschließlich den vereinbarten Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
+5. **Unabhängig prüfen:** ChatGPT prüft den Pull Request gegen Auftrag und aktuellen Repository-Stand. Codex kann zusätzlich im eigenen Review-Worktree eine unabhängige technische Prüfung durchführen. Eine Fertigmeldung oder Selbstprüfung von Claude Code ersetzt diese Prüfung nicht.
+6. **Mängel beheben:** Claude Code korrigiert konkrete Befunde im Arbeitsbranch. Die betroffenen Änderungen werden anschließend erneut unabhängig geprüft.
+7. **Funktion erproben:** Der Nutzer bedient den Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
+8. **Abschluss festhalten:** Ein Arbeitspaket gilt erst nach bestandener Umsetzungsprüfung und erforderlicher praktischer Erprobung als abgeschlossen und wird danach zusammengeführt beziehungsweise abgeschlossen.
 
-GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstände. Es ist nicht erforderlich, jede lokale Änderung sofort zu veröffentlichen.
+GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstände. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen grundsätzlich über Branch und Pull Request.
+
+### Lokale Arbeitsbereiche
+
+Auf dem Entwicklungsrechner werden getrennte Git-Arbeitsbereiche verwendet:
+
+- `repo/` -- Referenz-Worktree für den aktuellen Stand von `main`;
+- `claude/` -- Arbeits-Worktree für die Umsetzung durch Claude Code;
+- `codex/` -- unabhängiger Review-Worktree für Codex;
+- `transfer/` -- Übergabeverzeichnis für Analyse-, Prüf- und sonstige temporäre Arbeitsergebnisse zwischen den beteiligten Werkzeugen.
+
+Claude Code und Codex erhalten für vergleichende Prüfungen denselben sachlichen Auftrag und müssen sich auf denselben maßgeblichen Repository-Stand beziehen. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
+
+### Gültigkeit von Dokumentinhalten und Entscheidungen
+
+Eine Aussage wird nicht allein dadurch zu einer bestätigten fachlichen Festlegung, dass sie in einem Repository-Dokument steht. Der Dokumentstatus und die Herkunft der Aussage sind zu berücksichtigen.
+
+Insbesondere sind Inhalte eines mit `draft` gekennzeichneten Dokuments Arbeitsstand. Sie dürfen nicht ohne weitere Grundlage als vom Nutzer bestätigte fachliche Entscheidung behandelt werden. Bei Widersprüchen oder zweifelhafter Herkunft ist zunächst zu prüfen, ob eine bereits dokumentierte spätere Entscheidung, ein Änderungsnachweis oder die Git-Historie die Aussage eindeutig klärt.
+
+Eine erkennbare veraltete oder widersprüchliche Dokumentationsstelle wird nicht als neue fachliche Frage an den Nutzer zurückgegeben, wenn sie anhand bereits getroffener und dokumentierter Festlegungen eindeutig korrigiert werden kann. Nur tatsächlich noch offene fachliche Entscheidungen werden dem Nutzer zur Entscheidung vorgelegt.
+
+Chatverläufe, Agentenausgaben und Dateien in `transfer/` sind kein dauerhafter Dokumentationsspeicher. Neue Festlegungen werden in das dafür zuständige Dokument im Repository übernommen.
 
 ## Test und spätere Ablaufanalyse
 
@@ -192,3 +216,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-25 | Datenformat für Ablage und Weitergabe von Strategien ausdrücklich als viertes eigenes Klärungsthema festgehalten. |
 | 2026-09-25 | Pipwerk als Name für Gesamtsystem und Repository sowie Pipwerk Studio, Pipwerk Backtest, Pipwerk Trader und Pipwerk Relay als Komponentennamen festgelegt; Repository- und FHS-orientierte Installationsstruktur konkretisiert. |
 | 2026-09-25 | Öffentliches Repository `macodix/pipwerk` mit GPL-3.0 angelegt; Dokumentation in Entwurfs-, technische und Anwenderdokumentation gegliedert und FHS-Pfad für installierte Dokumentation ergänzt. |
+| 2026-09-27 | Entwicklungsprozess um Repository-Vorprüfung, Codex als unabhängige Prüfinstanz, getrennte lokale Worktrees, `transfer/` sowie Regeln zur Gültigkeit von Draft-Dokumenten und Agentenergebnissen ergänzt. |
