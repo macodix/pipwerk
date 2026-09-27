@@ -6,7 +6,7 @@ Das Register verwaltet die acht Teststrategien getrennt voneinander. Gemeinsamke
 
 ## Verbindliche Arbeitsregeln
 
-1. Jede Strategie erhält ein eigenes Dokument auf Basis von `strategie-vorlage.md`.
+1. Jede Strategie erhält ein eigenes Strategiedokument.
 2. Originalbeschreibung und Interpretation bleiben getrennt.
 3. Eine Aussage aus einer Strategie wird nicht auf eine andere übertragen.
 4. Begriffe werden nicht vereinheitlicht, bevor ihre Bedeutung je Strategie bestätigt wurde.
@@ -19,7 +19,7 @@ Das Register verwaltet die acht Teststrategien getrennt voneinander. Gemeinsamke
 
 | strategie-id | Strategie | Quelle | aktueller Stand | nächster Schritt |
 |---|---|---|---|---|
-| str-01 | Punkt-2-Ausbruch, einfach | Nutzerdatei `scalping-punkt-2-ausbruch-einfach(1).md` | Original vorhanden; bisherige Modellierung verworfen | separates Strategiedokument aus Original erstellen |
+| str-01 | Punkt-2-Ausbruch, einfach | Nutzerdatei `scalping-punkt-2-ausbruch-einfach(1).md` | separates Strategiedokument `str-01-fachlich-scalping-punkt-2-ausbruch-einfach.md` vorhanden | fachlichen Stand des Strategiedokuments weiter prüfen und klären |
 | str-02 | Punkt-2-Ausbruch mit Signal- und Handelszeiteinheit | Nutzerdatei `scalping-punkt-2-ausbruch(1).md` | Original und mehrere Klärungen vorhanden; bisherige Modellierung verworfen | separates Strategiedokument aus Original und bestätigten Klärungen erstellen |
 | str-03 | Trendfolge mit gleitenden Durchschnitten | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |
 | str-04 | Mean Reversion mit Bollinger-Bändern und RSI | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |

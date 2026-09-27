@@ -10,11 +10,11 @@
 
 Das Handelssystem beginnt dort, wo Strategiedefinitionen auf konkrete Konten angewendet und zur Laufzeit ausgeführt werden. Das gemeinsame fachliche Modell steht in `fachmodell.md`; Anforderungen an die Gestaltung von Strategien stehen in `anforderungen-strategiedesigner.md`.
 
-Der `OrderManager`, der `OrderBuilder`, Kontoanbindung, laufende Orderverwaltung und das fachliche Nachrichtensystem gehören zum Handelssystem. Die technische Aufteilung in Programme oder eigenständig ausführbare Module bleibt offen.
+Der `OrderManager`, der `OrderBuilder`, Kontoanbindung und laufende Orderverwaltung gehören zum Handelssystem. Für den Nachrichtenaustausch mit eigenständig arbeitenden Komponenten verwendet das Handelssystem das gemeinsame `Nachrichtensystem` gemäß `anforderungen-gesamtsystem.md`.
 
 ## 2. Kommunikation im Handelssystem
 
-### req-grund-003 -- Fachliches Nachrichtensystem
+### req-grund-003 -- Nutzung des Nachrichtensystems
 
 Für die Kommunikation zwischen eigenständig arbeitenden Komponenten des Handelssystems wird ein gemeinsames fachliches Nachrichtensystem vorgesehen. Komponenten übergeben vollständig beschriebene Nachrichten an einen Übertragungsmechanismus und müssen Nachrichten von diesem empfangen können.
 
@@ -91,7 +91,7 @@ Die technische Anbindung dieses Kontos wird vom fachlichen Ordermodell getrennt.
 
 Nach erfolgreicher Bestimmung und Prüfung wird eine freigegebene Order an den `OrderManager` übergeben.
 
-Der `OrderManager` übermittelt die Order über das fachliche Nachrichtensystem an das der Order zugeordnete `Konto`. Die Auflösung auf die zuständige Konto-Schnittstelle und den konkreten Kommunikationsweg erfolgt durch den Übertragungsmechanismus. Anschließend verwaltet der `OrderManager` den weiteren Lebenszyklus der Order.
+Der `OrderManager` übermittelt die Order über das `Nachrichtensystem` an das der Order zugeordnete `Konto`. Die Auflösung auf die zuständige Konto-Schnittstelle und den konkreten Kommunikationsweg erfolgt durch den Übertragungsmechanismus. Anschließend verwaltet der `OrderManager` den weiteren Lebenszyklus der Order.
 
 Das Orderobjekt selbst muss die konkrete Konto- oder MT5-Anbindung nicht kennen.
 
@@ -112,7 +112,7 @@ Bei aktiven Orders sind mindestens zwei unterschiedliche Sachverhalte zu überwa
 
 Eine Order kann fachlich ungültig werden, bevor sie ausgeführt wurde, beispielsweise wenn die Handelssituation, auf der sie beruht, nicht mehr besteht.
 
-Die Order hält beziehungsweise verwendet die für ihre fortbestehende Gültigkeit maßgebliche Bedingung oder Regel, die ihr beim Erzeugen aus der Strategiekonfiguration übergeben wurde. Der `OrderManager` stößt eine Prüfung an, wenn sie periodisch fällig ist oder wenn eine Nachricht eine Prüfung fordert beziehungsweise erforderlich macht. Die fachliche Auswertung der Bedingung beziehungsweise Regel erfolgt nicht im `OrderManager`. Ergibt die Prüfung, dass eine aktive Order fachlich ungültig ist, veranlasst der `OrderManager` ihre Stornierung über das fachliche Nachrichtensystem.
+Die Order hält beziehungsweise verwendet die für ihre fortbestehende Gültigkeit maßgebliche Bedingung oder Regel, die ihr beim Erzeugen aus der Strategiekonfiguration übergeben wurde. Der `OrderManager` stößt eine Prüfung an, wenn sie periodisch fällig ist oder wenn eine Nachricht eine Prüfung fordert beziehungsweise erforderlich macht. Die fachliche Auswertung der Bedingung beziehungsweise Regel erfolgt nicht im `OrderManager`. Ergibt die Prüfung, dass eine aktive Order fachlich ungültig ist, veranlasst der `OrderManager` ihre Stornierung über das `Nachrichtensystem`.
 
 Eine Order kann damit einen endgültigen Zustand erreichen, ohne jemals eine Position erzeugt zu haben.
 
@@ -121,5 +121,5 @@ Eine Order kann damit einen endgültigen Zustand erreichen, ohne jemals eine Pos
 | Datum | Änderung |
 |---|---|
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. OrderManager-, Kontoanbindungs-, Überwachungs- und Kommunikationsanforderungen wurden übernommen. |
-| 2026-09-24 | `OrderBuilder` zwischen Signal und OrderManager ergänzt; Übergabe und Stornierung auf das fachliche Nachrichtensystem korrigiert; Auslösung von Orderprüfungen auf periodische Prüfung oder auslösende Nachricht präzisiert. |
+| 2026-09-24 | `OrderBuilder` zwischen Signal und OrderManager ergänzt; Übergabe und Stornierung auf das `Nachrichtensystem` korrigiert; Auslösung von Orderprüfungen auf periodische Prüfung oder auslösende Nachricht präzisiert. |
 | 2026-09-25 | Separates `Signal`-Objekt aus dem aktuellen Ablaufmodell entfernt; `OrderBuilder` wird bei entsprechendem Ergebnis der Strategieauswertung direkt aus dem Strategieablauf beauftragt. |

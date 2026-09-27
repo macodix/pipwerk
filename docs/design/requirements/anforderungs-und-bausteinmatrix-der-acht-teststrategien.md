@@ -2,6 +2,8 @@
 
 ## 1. Zweck und Stand
 
+**Status: nicht verbindlicher, überholter Arbeitsstand.** Aus dieser Matrix dürfen derzeit keine Anforderungen oder verbindlichen Bausteine für die Implementierung abgeleitet werden. Maßgeblich für den Bearbeitungsstand der einzelnen Teststrategien ist `../strategies/strategieregister.md`. Die Matrix wird erst nach der dort vorgesehenen getrennten Erfassung der Strategien neu erstellt.
+
 Die acht Strategien bilden den Testkorpus für den grafischen Strategiedesigner. Die Matrix ermittelt gemeinsame Bausteine, besondere Modellierungsanforderungen und noch offene fachliche Festlegungen.
 
 Die beiden Punkt-2-Ausbruchstrategien sind fachliche Beschreibungen des Nutzers. Die sechs weiteren Strategien sind Testentwürfe. Keine der Strategien ist damit als profitabel oder vollständig ausführbar nachgewiesen.
@@ -185,4 +187,4 @@ Die acht Strategien decken gemeinsam die wesentlichen Strukturklassen des geplan
 - manuelle Eingaben und Benachrichtigungen
 - hierarchische und umschaltbare Teilstrategien
 
-Der nächste belastbare Entwurf kann daher auf diesem Bausteinkatalog aufbauen. Weitere Strategien werden erst dann benötigt, wenn ein neuer Testfall eine bislang nicht abgedeckte Struktur einführt.
+Dieser Bausteinkatalog ist derzeit nicht verbindlich und darf nicht als Grundlage eines Implementierungsauftrags verwendet werden. Eine belastbare gemeinsame Ableitung erfolgt erst nach der getrennten Erfassung der Strategien gemäß `../strategies/strategieregister.md`.

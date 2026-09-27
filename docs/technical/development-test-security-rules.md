@@ -28,7 +28,7 @@ Abhängigkeiten werden nur eingeführt, wenn sie einen konkreten Nutzen haben. E
 | TanStack Query | verbindlich für asynchronen Serverzustand in React-UIs | Abruf, Cache, Aktualisierung und Mutation von HTTP-Daten | kein maßgeblicher Speicher für Orders, Positionen, Strategien oder sonstigen Fachzustand |
 | Vitest + Testing Library | verbindlich für Frontend-Unit- und Komponententests | TypeScript-/React-Tests mit benutzernaher DOM-Prüfung | keine ausschließliche Prüfung über Implementierungsdetails oder Snapshots |
 | Playwright | verbindlich für Browser-End-to-End-Tests | reale Browserabläufe und komponentenübergreifende UI-Prüfungen | keine Verbindung zu produktiven Brokerkonten oder produktiven Handelsendpunkten |
-| SQLAlchemy | später, nur bei nachgewiesenem relationalem Persistenzbedarf | Datenbankzugriff und gegebenenfalls ORM | keine Einführung auf Vorrat; Fachkern bleibt vom ORM unabhängig |
+| SQLAlchemy | verbindlich für persistente Datenspeicherung | gemeinsame Speicherschnittstelle mit konfigurierbarem Backend | Fachkern bleibt vom ORM unabhängig |
 | Alembic | später zusammen mit SQLAlchemy bei veränderlichem relationalem Schema | versionierte Datenbankschemamigrationen | nicht ohne tatsächliche SQL-Persistenz |
 | Ruff | verbindlich | Python-Linting und Formatprüfung | ersetzt keine Typprüfung und keine Tests |
 | mypy | verbindlich für Python | statische Typprüfung des Python-Codes | Typausnahmen müssen lokal und begründet bleiben |
@@ -68,7 +68,7 @@ Folge: Die Backend-APIs bleiben unabhängig von TanStack Query.
 
 ### SQLAlchemy und Alembic
 
-SQLAlchemy wird erst eingeführt, wenn eine Komponente tatsächlich relationale Persistenz benötigt. Persistenzzugriffe liegen hinter fachlich beziehungsweise anwendungsseitig definierten Schnittstellen. ORM-Klassen bestimmen nicht die öffentlichen Fachobjekte.
+SQLAlchemy wird für persistente Datenspeicherung als gemeinsame Speicherschnittstelle verwendet. Das konkrete Speicher-Backend bleibt konfigurierbar. Persistenzzugriffe liegen hinter fachlich beziehungsweise anwendungsseitig definierten Schnittstellen. ORM-Klassen bestimmen nicht die öffentlichen Fachobjekte.
 
 Alembic wird nur zusammen mit einer SQLAlchemy-basierten, migrationsbedürftigen Datenbank eingesetzt. Migrationen sind versioniert, überprüfbar und vor produktiver Anwendung an einer Testdatenbank zu prüfen.
 
