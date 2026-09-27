@@ -167,7 +167,7 @@ Die Testbrowser von Playwright werden einmalig im Verzeichnis `frontend` install
 npx playwright install chromium firefox webkit
 ```
 
-Auf manchen Systemen benötigen die Browser zusätzliche Systembibliotheken. Playwright installiert sie mit `sudo npx playwright install-deps`.
+Die für die Playwright-Browser erforderliche Testumgebung einschließlich benötigter Betriebssystemabhängigkeiten muss auf dem Entwicklungs- beziehungsweise Testsystem vorhanden sein. Die allgemeinen Systemanforderungen dafür sind in `docs/technical/development-test-security-rules.md` festgelegt.
 
 Der Test wird mit folgendem Befehl ausgeführt:
 
