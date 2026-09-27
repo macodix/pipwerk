@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- stand: 2026-09-25
+- stand: 2026-09-27
 - geltungsbereich: gesamtes Pipwerk-Repository
 
 ## 1. Zweck und Grundsatz
@@ -74,7 +74,15 @@ Alembic wird nur zusammen mit einer SQLAlchemy-basierten, migrationsbedürftigen
 
 Folge: Datenbank und ORM bleiben austauschbare Infrastruktur.
 
-## 4. Entwicklungsregeln
+## 4. Systemanforderungen an Entwicklungs- und Testsysteme
+
+Entwicklungs- und Testsysteme müssen die für die verbindlichen Prüfwerkzeuge erforderlichen Laufzeit- und Betriebssystemabhängigkeiten bereitstellen.
+
+Für Browser-End-to-End-Tests mit Playwright müssen die vorgesehenen Playwright-Testbrowser und deren erforderliche Betriebssystembibliotheken installiert sein. Die Installation solcher Betriebssystempakete ist Einrichtung des Entwicklungs- beziehungsweise Testsystems und nicht Bestandteil einer einzelnen Pipwerk-Komponente.
+
+Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation mit den auf dem jeweiligen System vorgesehenen Administrationsmitteln. Pipwerk setzt hierfür insbesondere nicht die Verfügbarkeit von `sudo` voraus.
+
+## 5. Entwicklungsregeln
 
 1. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request.
 2. Jede Änderung muss einer dokumentierten Anforderung, Entscheidung, Fehlerbehebung oder einem klar beschriebenen technischen Zweck zugeordnet sein.
