@@ -195,6 +195,12 @@ Fachliche Definitionen stehen in `fachmodell.md`. Anforderungen an den Designer 
 - Datenformat für die dauerhafte Ablage und die Weitergabe von Strategien zwischen den Hauptkomponenten und über deren Schnittstellen; Bearbeitung als viertes eigenes Thema in einem eigenen Projektchat. Dabei sind insbesondere Schema, Versionierung, Validierung, Kompatibilität und Migration zu klären;
 - Verfahren für Versionsfreigabe und Zusammenführung geprüfter Änderungen;
 - Festlegung des dauerhaften Verhaltens der Oberflächensprache: Startsprache beziehungsweise Erkennung der Browsersprache und Speicherung der vom Nutzer gewählten Sprache;
+- Bereitstellung der browserbasierten Oberflächen im regulären Betrieb: integrierter Webserver der jeweiligen Pipwerk-Komponente, externer Webserver beziehungsweise Reverse Proxy oder anderes Betriebsmodell;
+- Prozessmodell der Hauptkomponenten: Festlegung, welche Teile einer Hauptkomponente als eigene Prozesse laufen und wie sie gestartet, beendet und überwacht werden;
+- gemeinsamer Betrieb mehrerer Hauptkomponenten auf demselben Rechner: Adressen, Ports sowie Prozess- und Diensttrennung;
+- Adressierung mehrerer Browseroberflächen: insbesondere getrennte Domains beziehungsweise Subdomains, Pfade oder ein anderes geeignetes Verfahren;
+- Verantwortung für HTTPS/TLS im regulären Betrieb: Pipwerk-Komponente selbst oder vorgeschalteter Webserver beziehungsweise Reverse Proxy;
+- Abgrenzung von Entwicklungsbetrieb, Testbetrieb und regulärem Betrieb einschließlich der jeweils vorgesehenen Bereitstellung der Browseroberflächen;
 - weitere Anforderungen an Entwicklungsprozess, Prüfung und Dokumentation.
 
 Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, lauffähigen Prototyp festgelegt und erprobt. Ihre vollständige Vorabdefinition ist keine Voraussetzung für den Beginn der Prototypentwicklung.
@@ -219,3 +225,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-27 | Entwicklungsprozess um Repository-Vorprüfung, Codex als unabhängige Prüfinstanz, getrennte lokale Worktrees, `transfer/` sowie Regeln zur Gültigkeit von Draft-Dokumenten und Agentenergebnissen ergänzt. |
 | 2026-09-27 | Nutzerrolle präzisiert: keine eigene PR-, Code- oder umfangreiche Dokumentationsprüfung erforderlich; ChatGPT/Codex übernehmen die unabhängige Prüfung und legen nur entscheidungsrelevante Punkte sowie eine kurze Ergebniszusammenfassung vor. |
 | 2026-09-27 | AP1 nach Annahme des Arbeitsauftrags nicht mehr als offen geführt; dauerhaftes Verhalten der Oberflächensprache als später zu klärender Punkt festgehalten. |
+| 2026-09-27 | Offene Betriebsfragen der browserbasierten Oberflächen zu Webserver/Reverse Proxy, Prozessmodell, gemeinsamem Komponentenbetrieb, Adressierung, HTTPS/TLS und Betriebsarten konkret festgehalten. |
