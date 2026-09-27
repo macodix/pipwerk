@@ -169,7 +169,6 @@ Fachliche Definitionen stehen in `fachmodell.md`. Anforderungen an den Designer 
 ## 6. Noch festzulegen
 
 - Datenformat für die dauerhafte Ablage und die Weitergabe von Strategien zwischen den Hauptkomponenten und über deren Schnittstellen; Bearbeitung als viertes eigenes Thema in einem eigenen Projektchat. Dabei sind insbesondere Schema, Versionierung, Validierung, Kompatibilität und Migration zu klären;
-- verbindliches Entwicklungsregelwerk für Python, TypeScript/React, Dokumentation, Tests und IT-Sicherheit; Bearbeitung als eigene Aufgabe in einem eigenen Projektchat. Dabei sind mindestens Python-PEPs, TypeScript-Prüfregeln, BSI IT-Grundschutz einschließlich `CON.8 Software-Entwicklung`, OWASP ASVS und OWASP API Security zu bewerten und in ein priorisiertes projektspezifisches Regelwerk zu überführen;
 - Umfang des ersten Arbeitspakets und dessen Abnahmekriterien;
 - Verfahren für Versionsfreigabe und Zusammenführung geprüfter Änderungen;
 - weitere Anforderungen an Entwicklungsprozess, Prüfung und Dokumentation.
