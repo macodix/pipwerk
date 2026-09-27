@@ -143,7 +143,7 @@ Eine Fertigmeldung des implementierenden Agenten ersetzt weder die unabhängige 
 4. **Umsetzen:** Claude Code arbeitet auf dem Entwicklungsrechner in einem eigenen Branch und Worktree. Es setzt ausschließlich den vereinbarten Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
 5. **Unabhängig prüfen:** ChatGPT prüft den Pull Request gegen Auftrag und aktuellen Repository-Stand. Codex kann zusätzlich im eigenen Review-Worktree eine unabhängige technische Prüfung durchführen. Eine Fertigmeldung oder Selbstprüfung von Claude Code ersetzt diese Prüfung nicht.
 6. **Mängel beheben:** Claude Code korrigiert konkrete Befunde im Arbeitsbranch. Die betroffenen Änderungen werden anschließend erneut unabhängig geprüft.
-7. **Funktion erproben:** Nach bestandener unabhängiger PR-Prüfung erhält der Nutzer eine kurze Zusammenfassung der funktionalen Änderung und noch erforderlicher Entscheidungen. Der Nutzer muss den Pull Request nicht selbst lesen oder technisch prüfen. Er bedient den Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
+7. **Funktion erproben:** Nach bestandener unabhängiger PR-Prüfung wird der zu erprobende Stand auf dem Entwicklungsrechner aus dem dafür vorgesehenen, aktuellen Repository-Stand bereitgestellt. Benötigte Abhängigkeiten werden eingerichtet und die für die Erprobung erforderlichen Prozesse gestartet und auf Erreichbarkeit geprüft. Erst danach erhält der Nutzer die kurze Zusammenfassung der funktionalen Änderung und noch erforderlicher Entscheidungen. Der Nutzer muss den Pull Request nicht selbst lesen, technisch prüfen oder den Teststand manuell installieren und starten. Er bedient den bereitgestellten Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
 8. **Abschluss festhalten:** Ein Arbeitspaket gilt erst nach bestandener Umsetzungsprüfung und erforderlicher praktischer Erprobung als abgeschlossen und wird danach zusammengeführt beziehungsweise abgeschlossen.
 
 GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstände. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen grundsätzlich über Branch und Pull Request.
@@ -155,7 +155,8 @@ Auf dem Entwicklungsrechner werden getrennte Git-Arbeitsbereiche verwendet:
 - `repo/` -- Referenz-Worktree für den aktuellen Stand von `main`;
 - `claude/` -- Arbeits-Worktree für die Umsetzung durch Claude Code;
 - `codex/` -- unabhängiger Review-Worktree für Codex;
-- `transfer/` -- Übergabeverzeichnis für Analyse-, Prüf- und sonstige temporäre Arbeitsergebnisse zwischen den beteiligten Werkzeugen.
+- `transfer/` -- Übergabeverzeichnis für Analyse-, Prüf- und sonstige temporäre Arbeitsergebnisse zwischen den beteiligten Werkzeugen;
+- `scripts/` -- lokale, nicht zum Produkt gehörende Automatisierung für Einrichtung, Aktualisierung, Start, Stop und Status der Entwicklungs- und Teststände auf dem Entwicklungsrechner.
 
 Claude Code und Codex erhalten für vergleichende Prüfungen denselben sachlichen Auftrag und müssen sich auf denselben maßgeblichen Repository-Stand beziehen. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
 
@@ -226,3 +227,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-27 | Nutzerrolle präzisiert: keine eigene PR-, Code- oder umfangreiche Dokumentationsprüfung erforderlich; ChatGPT/Codex übernehmen die unabhängige Prüfung und legen nur entscheidungsrelevante Punkte sowie eine kurze Ergebniszusammenfassung vor. |
 | 2026-09-27 | AP1 nach Annahme des Arbeitsauftrags nicht mehr als offen geführt; dauerhaftes Verhalten der Oberflächensprache als später zu klärender Punkt festgehalten. |
 | 2026-09-27 | Offene Betriebsfragen der browserbasierten Oberflächen zu Webserver/Reverse Proxy, Prozessmodell, gemeinsamem Komponentenbetrieb, Adressierung, HTTPS/TLS und Betriebsarten konkret festgehalten. |
+| 2026-09-27 | Übergabe zur praktischen Erprobung präzisiert: Teststand wird vor Übergabe auf dem Entwicklungsrechner bereitgestellt, gestartet und geprüft; lokale Rechnerautomatisierung liegt unter `/srv/aixlab/dev/pipwerk/scripts/`. |
