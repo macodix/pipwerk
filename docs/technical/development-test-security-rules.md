@@ -133,7 +133,7 @@ Ein Pull Request ist technisch nicht abnahmefähig, solange für den betroffenen
 
 ## 8. Sicherheitsregeln
 
-### 7.1 Sicherheitsreferenzen
+### 8.1 Sicherheitsreferenzen
 
 Für Pipwerk werden folgende Regelwerke als verbindliche Referenzen für die Ableitung und Prüfung konkreter Sicherheitsanforderungen verwendet:
 
@@ -146,7 +146,7 @@ Die Anwendung dieser Referenzen bedeutet nicht, dass Pipwerk pauschal eine BSI-,
 
 Wird von einer einschlägigen Sicherheitsanforderung abgewichen, wird die Abweichung mit Grund, Risiko und gegebenenfalls Ersatzmaßnahme dokumentiert. Sicherheitsanforderungen werden so konkret formuliert, dass ihre Umsetzung überprüft werden kann.
 
-### 7.2 Grundregeln
+### 8.2 Grundregeln
 
 
 1. Geheimnisse, API-Schlüssel, Broker-Zugangsdaten und Tokens werden niemals im Repository, in Testdaten oder in normalen Logs gespeichert.
@@ -162,7 +162,7 @@ Wird von einer einschlägigen Sicherheitsanforderung abgewichen, wird die Abweic
 11. Sicherheitsrelevante Regeln werden durch automatisierte Tests abgesichert, soweit sie technisch prüfbar sind.
 12. Sicherheitsmechanismen dürfen nicht ausschließlich von React, React Flow, TanStack Query oder anderen Browserbibliotheken abhängen.
 
-### 7.3 Mindestanforderungen aus den Referenzwerken
+### 8.3 Mindestanforderungen aus den Referenzwerken
 
 Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie auf die jeweilige Komponente anwendbar sind:
 
