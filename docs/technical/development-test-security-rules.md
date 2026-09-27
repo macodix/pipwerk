@@ -99,7 +99,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 13. Python-Code folgt PEP 8, soweit keine begründete und dokumentierte Pipwerk-Regel abweicht. Typannotationen richten sich nach dem aktuellen Python-Typisierungssystem; PEP 484 bildet dafür eine grundlegende Referenz. Python-Paket- und Abhängigkeitsversionen verwenden PEP-440-konforme Versionsangaben.
 14. PEP-Regeln ergänzen die Pipwerk-Regeln. PEPs werden nicht als allgemeines IT-Sicherheitsregelwerk behandelt.
 
-## 5. Installation und Distribution
+## 6. Installation und Distribution
 
 1. Jede der vier Pipwerk-Hauptkomponenten wird eigenständig installierbar und startbar ausgeliefert.
 2. Der Anwender muss zur Installation keine von Pipwerk benötigten Python-Pakete, Node-Pakete, Frameworks oder Build-Werkzeuge einzeln manuell installieren.
@@ -112,7 +112,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 9. Die konkrete Paketierungs- und Distributionstechnik wird erst festgelegt, wenn die Anforderungen an Zielsysteme, Betrieb und Aktualisierung ausreichend bestimmt sind. Dieses Regelwerk schreibt insbesondere weder Debian-Pakete, Container noch eine bestimmte gebündelte Laufzeit vor.
 10. Installations- und Aktualisierungsverfahren werden automatisiert getestet. Dabei werden mindestens Neuinstallation, Aktualisierung und ein sauber definierter Fehlerfall geprüft.
 
-## 6. Testregeln
+## 7. Testregeln
 
 Es gelten mindestens vier Testebenen:
 
@@ -131,7 +131,7 @@ Tests dürfen standardmäßig keine kostenpflichtigen, produktiven oder handelsa
 
 Ein Pull Request ist technisch nicht abnahmefähig, solange für den betroffenen Bereich vorgeschriebene Tests, Lint- oder Typprüfungen fehlschlagen.
 
-## 7. Sicherheitsregeln
+## 8. Sicherheitsregeln
 
 ### 7.1 Sicherheitsreferenzen
 
@@ -177,7 +177,7 @@ Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie 
 9. Für APIs werden insbesondere Autorisierung auf Objekt- und Funktionsebene, Authentisierung, Ressourcenbegrenzung, Sicherheitskonfiguration, Inventarisierung und der sichere Umgang mit fremden APIs geprüft.
 10. Welche BSI- und OWASP-Anforderungen für eine konkrete Pipwerk-Komponente gelten, wird spätestens vor deren produktiver Freigabe dokumentiert.
 
-## 8. Werkzeugbezogene Test- und Sicherheitsanforderungen
+## 9. Werkzeugbezogene Test- und Sicherheitsanforderungen
 
 | Werkzeug | Erforderliche Regeln |
 | --- | --- |
@@ -197,7 +197,7 @@ Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie 
 | mypy | Typprüfung im CI; `Any` und Ignorierungen an kritischen Grenzen minimieren und begründen |
 | TypeScript | `strict` im CI; kein Umgehen kritischer Typfehler durch unkontrolliertes `any` oder Typzusicherungen |
 
-## 9. Quellen und überprüfte technische Grundlagen
+## 10. Quellen und überprüfte technische Grundlagen
 
 Technische Aussagen dieses Dokuments wurden am 2026-09-25 gegen die jeweilige offizielle Dokumentation geprüft:
 
