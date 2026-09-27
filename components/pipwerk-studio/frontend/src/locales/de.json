@@ -1,0 +1,14 @@
+{
+  "app": {
+    "language": "Sprache"
+  },
+  "canvas": {
+    "label": "Designer-Arbeitsfläche",
+    "empty": "Die Arbeitsfläche ist leer."
+  },
+  "backend": {
+    "checking": "Backend: Verbindung wird geprüft",
+    "connected": "Backend: verbunden",
+    "unreachable": "Backend: nicht erreichbar"
+  }
+}

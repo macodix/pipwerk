@@ -5,3 +5,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 ## Verbindliche Regeln
 
 - [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md)
+
+## Komponenten
+
+- [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)
