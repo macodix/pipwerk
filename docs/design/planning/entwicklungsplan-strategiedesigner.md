@@ -128,8 +128,8 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 
 | Beteiligter | Aufgabe |
 |---|---|
-| Nutzer | Fachliche Entscheidungen treffen; Bedienung und Verhalten des laufenden Prototyps praktisch prüfen; Ergebnisse freigeben. |
-| ChatGPT in diesem Projektchat | Konzept und Softwaredesign mit dem Nutzer entwickeln; Arbeitsaufträge mit Prüfkriterien formulieren; die Umsetzung im Repository gegen Auftrag, Fachmodell und Anforderungen prüfen; konkrete Korrekturen benennen. |
+| Nutzer | Fachliche Entscheidungen treffen und das tatsächliche Verhalten des laufenden Prototyps praktisch erproben. Eine eigene Prüfung von Pull Requests, Programmcode oder umfangreichen Dokumentationsänderungen ist nicht erforderlich. |
+| ChatGPT in diesem Projektchat | Konzept und Softwaredesign mit dem Nutzer entwickeln; Arbeitsaufträge mit Prüfkriterien formulieren; Pull Requests einschließlich Code, Tests und Dokumentation gegen Auftrag und Repository-Stand prüfen; dem Nutzer nur entscheidungsrelevante offene Punkte, Befunde und eine kurze Ergebniszusammenfassung vorlegen. |
 | Claude Code auf dem Entwicklungsrechner | Vereinbarte Aufträge implementieren; lokale technische Prüfungen ausführen; Änderungen und Prüfergebnisse im Repository bereitstellen; festgestellte Mängel korrigieren. |
 | Codex auf dem Entwicklungsrechner | Repository und Änderungen unabhängig von Claude Code technisch prüfen; keine fachlichen Entscheidungen treffen oder offene Anforderungen selbst ergänzen. |
 
@@ -143,7 +143,7 @@ Eine Fertigmeldung des implementierenden Agenten ersetzt weder die unabhängige 
 4. **Umsetzen:** Claude Code arbeitet auf dem Entwicklungsrechner in einem eigenen Branch und Worktree. Es setzt ausschließlich den vereinbarten Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
 5. **Unabhängig prüfen:** ChatGPT prüft den Pull Request gegen Auftrag und aktuellen Repository-Stand. Codex kann zusätzlich im eigenen Review-Worktree eine unabhängige technische Prüfung durchführen. Eine Fertigmeldung oder Selbstprüfung von Claude Code ersetzt diese Prüfung nicht.
 6. **Mängel beheben:** Claude Code korrigiert konkrete Befunde im Arbeitsbranch. Die betroffenen Änderungen werden anschließend erneut unabhängig geprüft.
-7. **Funktion erproben:** Der Nutzer bedient den Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
+7. **Funktion erproben:** Nach bestandener unabhängiger PR-Prüfung erhält der Nutzer eine kurze Zusammenfassung der funktionalen Änderung und noch erforderlicher Entscheidungen. Der Nutzer muss den Pull Request nicht selbst lesen oder technisch prüfen. Er bedient den Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
 8. **Abschluss festhalten:** Ein Arbeitspaket gilt erst nach bestandener Umsetzungsprüfung und erforderlicher praktischer Erprobung als abgeschlossen und wird danach zusammengeführt beziehungsweise abgeschlossen.
 
 GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstände. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen grundsätzlich über Branch und Pull Request.
@@ -184,7 +184,7 @@ Jeder Pull Request enthält mindestens:
 - Ergebnis der ausgeführten technischen Prüfungen;
 - noch offene Punkte und bekannte Einschränkungen.
 
-ChatGPT bestätigt nur, was durch Code, Tests oder andere zugängliche Nachweise überprüfbar ist. Die praktische Nutzbarkeit bestätigt der Nutzer nach eigener Erprobung.
+ChatGPT bestätigt nur, was durch Code, Tests oder andere zugängliche Nachweise überprüfbar ist. Die technische und dokumentarische PR-Prüfung wird nicht auf den Nutzer verlagert. Die praktische Nutzbarkeit beurteilt der Nutzer nach eigener Erprobung.
 
 ## 5. Bestehende Grundlagen
 
@@ -217,3 +217,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-25 | Pipwerk als Name für Gesamtsystem und Repository sowie Pipwerk Studio, Pipwerk Backtest, Pipwerk Trader und Pipwerk Relay als Komponentennamen festgelegt; Repository- und FHS-orientierte Installationsstruktur konkretisiert. |
 | 2026-09-25 | Öffentliches Repository `macodix/pipwerk` mit GPL-3.0 angelegt; Dokumentation in Entwurfs-, technische und Anwenderdokumentation gegliedert und FHS-Pfad für installierte Dokumentation ergänzt. |
 | 2026-09-27 | Entwicklungsprozess um Repository-Vorprüfung, Codex als unabhängige Prüfinstanz, getrennte lokale Worktrees, `transfer/` sowie Regeln zur Gültigkeit von Draft-Dokumenten und Agentenergebnissen ergänzt. |
+| 2026-09-27 | Nutzerrolle präzisiert: keine eigene PR-, Code- oder umfangreiche Dokumentationsprüfung erforderlich; ChatGPT/Codex übernehmen die unabhängige Prüfung und legen nur entscheidungsrelevante Punkte sowie eine kurze Ergebniszusammenfassung vor. |
