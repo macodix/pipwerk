@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- stand: 2026-09-25
+- stand: 2026-09-27
 - geltungsbereich: gesamtes Pipwerk-Repository
 
 ## 1. Zweck und Grundsatz
@@ -74,7 +74,15 @@ Alembic wird nur zusammen mit einer SQLAlchemy-basierten, migrationsbedürftigen
 
 Folge: Datenbank und ORM bleiben austauschbare Infrastruktur.
 
-## 4. Entwicklungsregeln
+## 4. Systemanforderungen an Entwicklungs- und Testsysteme
+
+Entwicklungs- und Testsysteme müssen die für die verbindlichen Prüfwerkzeuge erforderlichen Laufzeit- und Betriebssystemabhängigkeiten bereitstellen.
+
+Für Browser-End-to-End-Tests mit Playwright müssen die vorgesehenen Playwright-Testbrowser und deren erforderliche Betriebssystembibliotheken installiert sein. Die Installation solcher Betriebssystempakete ist Einrichtung des Entwicklungs- beziehungsweise Testsystems und nicht Bestandteil einer einzelnen Pipwerk-Komponente.
+
+Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation mit den auf dem jeweiligen System vorgesehenen Administrationsmitteln. Pipwerk setzt hierfür insbesondere nicht die Verfügbarkeit von `sudo` voraus.
+
+## 5. Entwicklungsregeln
 
 1. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request.
 2. Jede Änderung muss einer dokumentierten Anforderung, Entscheidung, Fehlerbehebung oder einem klar beschriebenen technischen Zweck zugeordnet sein.
@@ -91,7 +99,7 @@ Folge: Datenbank und ORM bleiben austauschbare Infrastruktur.
 13. Python-Code folgt PEP 8, soweit keine begründete und dokumentierte Pipwerk-Regel abweicht. Typannotationen richten sich nach dem aktuellen Python-Typisierungssystem; PEP 484 bildet dafür eine grundlegende Referenz. Python-Paket- und Abhängigkeitsversionen verwenden PEP-440-konforme Versionsangaben.
 14. PEP-Regeln ergänzen die Pipwerk-Regeln. PEPs werden nicht als allgemeines IT-Sicherheitsregelwerk behandelt.
 
-## 5. Installation und Distribution
+## 6. Installation und Distribution
 
 1. Jede der vier Pipwerk-Hauptkomponenten wird eigenständig installierbar und startbar ausgeliefert.
 2. Der Anwender muss zur Installation keine von Pipwerk benötigten Python-Pakete, Node-Pakete, Frameworks oder Build-Werkzeuge einzeln manuell installieren.
@@ -104,7 +112,7 @@ Folge: Datenbank und ORM bleiben austauschbare Infrastruktur.
 9. Die konkrete Paketierungs- und Distributionstechnik wird erst festgelegt, wenn die Anforderungen an Zielsysteme, Betrieb und Aktualisierung ausreichend bestimmt sind. Dieses Regelwerk schreibt insbesondere weder Debian-Pakete, Container noch eine bestimmte gebündelte Laufzeit vor.
 10. Installations- und Aktualisierungsverfahren werden automatisiert getestet. Dabei werden mindestens Neuinstallation, Aktualisierung und ein sauber definierter Fehlerfall geprüft.
 
-## 6. Testregeln
+## 7. Testregeln
 
 Es gelten mindestens vier Testebenen:
 
@@ -123,9 +131,9 @@ Tests dürfen standardmäßig keine kostenpflichtigen, produktiven oder handelsa
 
 Ein Pull Request ist technisch nicht abnahmefähig, solange für den betroffenen Bereich vorgeschriebene Tests, Lint- oder Typprüfungen fehlschlagen.
 
-## 7. Sicherheitsregeln
+## 8. Sicherheitsregeln
 
-### 7.1 Sicherheitsreferenzen
+### 8.1 Sicherheitsreferenzen
 
 Für Pipwerk werden folgende Regelwerke als verbindliche Referenzen für die Ableitung und Prüfung konkreter Sicherheitsanforderungen verwendet:
 
@@ -138,7 +146,7 @@ Die Anwendung dieser Referenzen bedeutet nicht, dass Pipwerk pauschal eine BSI-,
 
 Wird von einer einschlägigen Sicherheitsanforderung abgewichen, wird die Abweichung mit Grund, Risiko und gegebenenfalls Ersatzmaßnahme dokumentiert. Sicherheitsanforderungen werden so konkret formuliert, dass ihre Umsetzung überprüft werden kann.
 
-### 7.2 Grundregeln
+### 8.2 Grundregeln
 
 
 1. Geheimnisse, API-Schlüssel, Broker-Zugangsdaten und Tokens werden niemals im Repository, in Testdaten oder in normalen Logs gespeichert.
@@ -154,7 +162,7 @@ Wird von einer einschlägigen Sicherheitsanforderung abgewichen, wird die Abweic
 11. Sicherheitsrelevante Regeln werden durch automatisierte Tests abgesichert, soweit sie technisch prüfbar sind.
 12. Sicherheitsmechanismen dürfen nicht ausschließlich von React, React Flow, TanStack Query oder anderen Browserbibliotheken abhängen.
 
-### 7.3 Mindestanforderungen aus den Referenzwerken
+### 8.3 Mindestanforderungen aus den Referenzwerken
 
 Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie auf die jeweilige Komponente anwendbar sind:
 
@@ -169,7 +177,7 @@ Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie 
 9. Für APIs werden insbesondere Autorisierung auf Objekt- und Funktionsebene, Authentisierung, Ressourcenbegrenzung, Sicherheitskonfiguration, Inventarisierung und der sichere Umgang mit fremden APIs geprüft.
 10. Welche BSI- und OWASP-Anforderungen für eine konkrete Pipwerk-Komponente gelten, wird spätestens vor deren produktiver Freigabe dokumentiert.
 
-## 8. Werkzeugbezogene Test- und Sicherheitsanforderungen
+## 9. Werkzeugbezogene Test- und Sicherheitsanforderungen
 
 | Werkzeug | Erforderliche Regeln |
 | --- | --- |
@@ -189,7 +197,7 @@ Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie 
 | mypy | Typprüfung im CI; `Any` und Ignorierungen an kritischen Grenzen minimieren und begründen |
 | TypeScript | `strict` im CI; kein Umgehen kritischer Typfehler durch unkontrolliertes `any` oder Typzusicherungen |
 
-## 9. Quellen und überprüfte technische Grundlagen
+## 10. Quellen und überprüfte technische Grundlagen
 
 Technische Aussagen dieses Dokuments wurden am 2026-09-25 gegen die jeweilige offizielle Dokumentation geprüft:
 

@@ -1,0 +1,14 @@
+{
+  "app": {
+    "language": "Language"
+  },
+  "canvas": {
+    "label": "Designer canvas",
+    "empty": "The canvas is empty."
+  },
+  "backend": {
+    "checking": "Backend: checking connection",
+    "connected": "Backend: connected",
+    "unreachable": "Backend: unreachable"
+  }
+}
