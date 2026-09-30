@@ -180,6 +180,17 @@ GitHub bleibt Repository und Pull-Request-Ablage. Die Entwicklungsorchestrierung
 
 Die konkrete Auswahl des Multi-LLM-Anbieters und der Modelle ist nicht Bestandteil dieser Festlegung. Zugangsdaten und API-Schlüssel werden nicht im Repository gespeichert. Die technische Umsetzung dieser Zielarchitektur ist ein eigenes Arbeitspaket und gilt erst nach einem nachgewiesenen vollständigen Durchlauf als eingerichtet.
 
+### Ausbau des Entwicklungsprozesses
+
+Der Entwicklungsprozess wird stufenweise erweitert. Die Stufen werden in der folgenden Reihenfolge umgesetzt und jeweils funktionsfähig nachgewiesen, bevor die nächste Stufe in den automatisierten Ablauf aufgenommen wird:
+
+1. **Agentischer Grundworkflow:** Zuerst wird ausschließlich der vollständige Ablauf mit KI-Koordinator, Implementierungs-Agent, unabhängigem Review-Agent, automatischer Korrekturschleife und anschließender Testbereitstellung eingerichtet und Ende-zu-Ende nachgewiesen.
+2. **Spec Kit:** Erst nach einem funktionierenden Grundworkflow wird Spec Kit als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge integriert. Spec Kit ersetzt weder die maßgebliche Pipwerk-Dokumentation noch den KI-Koordinator oder den unabhängigen Review-Agenten.
+3. **Linter und Codechecker:** Erst danach werden geeignete statische Prüfwerkzeuge für die tatsächlich verwendeten Sprachen und Komponenten ausgewählt und als automatische Quality Gates in den bestehenden Ablauf aufgenommen.
+4. **Weitere Qualitätswerkzeuge:** Weitere Werkzeuge, insbesondere für spezialisierte Tests, Vertragsprüfung, Sicherheitsprüfung, Architekturprüfung, Property-based Testing oder Mutation Testing, werden anschließend bedarfsgerecht bewertet und schrittweise ergänzt.
+
+Die Auswahl konkreter Werkzeuge der Stufen 3 und 4 wird erst getroffen, wenn die vorhergehenden Stufen funktionsfähig sind und der tatsächliche Prüfbedarf der entstandenen Software bekannt ist. Das Hinzufügen eines Werkzeugs gilt nicht als Qualitätsgewinn, solange seine Aufgabe, sein Prüfkriterium und seine Wirkung auf den Entwicklungsablauf nicht festgelegt und nachgewiesen sind.
+
 ### Gültigkeit von Dokumentinhalten und Entscheidungen
 
 Eine Aussage wird nicht allein dadurch zu einer bestätigten fachlichen Festlegung, dass sie in einem Repository-Dokument steht. Der Dokumentstatus und die Herkunft der Aussage sind zu berücksichtigen.
@@ -249,3 +260,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-27 | Offene Betriebsfragen der browserbasierten Oberflächen zu Webserver/Reverse Proxy, Prozessmodell, gemeinsamem Komponentenbetrieb, Adressierung, HTTPS/TLS und Betriebsarten konkret festgehalten. |
 | 2026-09-27 | Übergabe zur praktischen Erprobung präzisiert: Teststand wird vor Übergabe auf dem Entwicklungsrechner bereitgestellt, gestartet und geprüft; lokale Rechnerautomatisierung liegt unter `/srv/aixlab/dev/pipwerk/scripts/`. |
 | 2026-09-30 | Zielarchitektur für einen automatisierten agentenbasierten Entwicklungsablauf festgelegt: lokaler KI-Koordinator, API-Key-basierter Multi-LLM-Anbieter, getrennte Implementierungs- und Review-Agenten, automatische Korrekturschleife und Testbereitstellung; GitHub bleibt Repository und PR-Ablage. |
+| 2026-09-30 | Stufenweiser Ausbau des Entwicklungsprozesses festgelegt: zuerst agentischer Grundworkflow, danach Spec Kit, anschließend Linter und Codechecker und erst danach weitere Qualitätswerkzeuge. |
