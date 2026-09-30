@@ -129,9 +129,9 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 | Beteiligter | Aufgabe |
 |---|---|
 | Nutzer | Fachliche Entscheidungen treffen und das tatsächliche Verhalten des laufenden Prototyps praktisch erproben. Eine eigene Prüfung von Pull Requests, Programmcode oder umfangreichen Dokumentationsänderungen ist nicht erforderlich. |
-| ChatGPT in diesem Projektchat | Konzept und Softwaredesign mit dem Nutzer entwickeln; Arbeitsaufträge mit Prüfkriterien formulieren; Pull Requests einschließlich Code, Tests und Dokumentation gegen Auftrag und Repository-Stand prüfen; dem Nutzer nur entscheidungsrelevante offene Punkte, Befunde und eine kurze Ergebniszusammenfassung vorlegen. |
-| Claude Code auf dem Entwicklungsrechner | Vereinbarte Aufträge implementieren; lokale technische Prüfungen ausführen; Änderungen und Prüfergebnisse im Repository bereitstellen; festgestellte Mängel korrigieren. |
-| Codex auf dem Entwicklungsrechner | Repository und Änderungen unabhängig von Claude Code technisch prüfen; keine fachlichen Entscheidungen treffen oder offene Anforderungen selbst ergänzen. |
+| KI-Koordinator | Konzept und Softwaredesign mit dem Nutzer entwickeln; Repository-Stand und Grundlagen prüfen; Arbeitsaufträge mit Prüfkriterien formulieren; den automatisierten Entwicklungsablauf koordinieren; dem Nutzer nur entscheidungsrelevante offene Punkte, Befunde und eine kurze Ergebniszusammenfassung vorlegen. |
+| Implementierungs-Agent | Vereinbarte Aufträge in einem eigenen Arbeitsbereich implementieren; technische Prüfungen ausführen; Änderungen und Prüfergebnisse im Repository bereitstellen; festgestellte Mängel korrigieren. |
+| Review-Agent | Umsetzung unabhängig vom Implementierungs-Agenten gegen Auftrag, Repository-Stand, Code, Tests und Dokumentation prüfen; keine fachlichen Entscheidungen treffen oder offene Anforderungen selbst ergänzen. |
 
 Eine Fertigmeldung des implementierenden Agenten ersetzt weder die unabhängige Prüfung der Änderung noch die praktische Erprobung durch den Nutzer.
 
@@ -140,9 +140,9 @@ Eine Fertigmeldung des implementierenden Agenten ersetzt weder die unabhängige 
 1. **Repository-Stand prüfen:** Vor Analyse, Planung, Arbeitsauftrag oder Prüfung wird der aktuelle Stand von `main` gelesen. Das Repository ist die maßgebliche Projektquelle.
 2. **Grundlagen prüfen:** Die für das Arbeitspaket einschlägigen Anforderungen, Fachmodelle, Entscheidungen und technischen Regeln werden auf ausreichende Eindeutigkeit und erkennbare Widersprüche geprüft. Widersprüche werden vor der Implementierung geklärt.
 3. **Auftrag festlegen:** Nutzer und ChatGPT vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet und dürfen vom Implementierer nicht selbst entschieden werden.
-4. **Umsetzen:** Claude Code arbeitet auf dem Entwicklungsrechner in einem eigenen Branch und Worktree. Es setzt ausschließlich den vereinbarten Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
-5. **Unabhängig prüfen:** ChatGPT prüft den Pull Request gegen Auftrag und aktuellen Repository-Stand. Codex kann zusätzlich im eigenen Review-Worktree eine unabhängige technische Prüfung durchführen. Eine Fertigmeldung oder Selbstprüfung von Claude Code ersetzt diese Prüfung nicht.
-6. **Mängel beheben:** Claude Code korrigiert konkrete Befunde im Arbeitsbranch. Die betroffenen Änderungen werden anschließend erneut unabhängig geprüft.
+4. **Umsetzen:** Der Implementierungs-Agent arbeitet auf dem Entwicklungsrechner in einem eigenen Branch und Arbeitsbereich. Er setzt ausschließlich den vereinbarten Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
+5. **Unabhängig prüfen:** Ein vom Implementierungs-Agenten getrennter Review-Agent prüft den Pull Request gegen Auftrag und aktuellen Repository-Stand. Implementierungs- und Review-Agent sollen mit unterschiedlichen Modellen betrieben werden, damit die Prüfung nicht zur Selbstprüfung desselben Agenten wird. Eine Fertigmeldung oder Selbstprüfung des Implementierungs-Agenten ersetzt diese Prüfung nicht.
+6. **Mängel beheben:** Bei einem negativen Review übergibt der KI-Koordinator die konkreten Befunde automatisch an den Implementierungs-Agenten. Dieser korrigiert sie im Arbeitsbranch; anschließend wird die Änderung erneut unabhängig geprüft. Die Schleife läuft bis zur bestandenen Prüfung oder bis ein fachlich beziehungsweise technisch nicht automatisch lösbarer Punkt eine Entscheidung des Nutzers erfordert.
 7. **Funktion erproben:** Nach bestandener unabhängiger PR-Prüfung wird der zu erprobende Stand auf dem Entwicklungsrechner aus dem dafür vorgesehenen, aktuellen Repository-Stand bereitgestellt. Benötigte Abhängigkeiten werden eingerichtet und die für die Erprobung erforderlichen Prozesse gestartet und auf Erreichbarkeit geprüft. Erst danach erhält der Nutzer die kurze Zusammenfassung der funktionalen Änderung und noch erforderlicher Entscheidungen. Der Nutzer muss den Pull Request nicht selbst lesen, technisch prüfen oder den Teststand manuell installieren und starten. Er bedient den bereitgestellten Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
 8. **Abschluss festhalten:** Ein Arbeitspaket gilt erst nach bestandener Umsetzungsprüfung und erforderlicher praktischer Erprobung als abgeschlossen und wird danach zusammengeführt beziehungsweise abgeschlossen.
 
@@ -153,12 +153,32 @@ GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstä
 Auf dem Entwicklungsrechner werden getrennte Git-Arbeitsbereiche verwendet:
 
 - `repo/` -- Referenz-Worktree für den aktuellen Stand von `main`;
-- `claude/` -- Arbeits-Worktree für die Umsetzung durch Claude Code;
-- `codex/` -- unabhängiger Review-Worktree für Codex;
+- `implement/` -- Arbeitsbereich für den Implementierungs-Agenten;
+- `review/` -- unabhängiger Arbeitsbereich für den Review-Agenten;
 - `transfer/` -- Übergabeverzeichnis für Analyse-, Prüf- und sonstige temporäre Arbeitsergebnisse zwischen den beteiligten Werkzeugen;
 - `scripts/` -- lokale, nicht zum Produkt gehörende Automatisierung für Einrichtung, Aktualisierung, Start, Stop und Status der Entwicklungs- und Teststände auf dem Entwicklungsrechner.
 
-Claude Code und Codex erhalten für vergleichende Prüfungen denselben sachlichen Auftrag und müssen sich auf denselben maßgeblichen Repository-Stand beziehen. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
+Implementierungs- und Review-Agent erhalten für vergleichende Prüfungen denselben sachlichen Auftrag und müssen sich auf denselben maßgeblichen Repository-Stand beziehen. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
+
+### Automatisierter agentenbasierter Entwicklungsablauf
+
+Ziel ist, die manuelle Tätigkeit des Nutzers auf fachliche Entscheidungen bei der Auftragsklärung und die abschließende fachliche Erprobung der bereitgestellten Anwendung zu beschränken. Die technischen Schritte dazwischen werden automatisiert ausgeführt.
+
+Auf dem Entwicklungsrechner übernimmt ein KI-Koordinator die Ablaufsteuerung. Als vorgesehene technische Grundlage wird OpenClaw verwendet. Die KI-Modelle werden über einen API-Key-basierten Multi-LLM-Anbieter angebunden. Der Entwicklungsprozess darf dadurch nicht an einen einzelnen Modellanbieter oder ein einzelnes Modell gebunden werden.
+
+Der KI-Koordinator steuert mindestens folgende Schritte:
+
+1. maßgeblichen Repository-Stand und einschlägige Dokumentation lesen;
+2. vereinbarten Arbeitsauftrag an einen Implementierungs-Agenten übergeben;
+3. Implementierung, technische Tests, Commit und Pull Request ausführen lassen;
+4. Pull Request durch einen getrennten Review-Agenten prüfen lassen;
+5. bei festgestellten Mängeln die Befunde automatisch an den Implementierungs-Agenten zurückgeben und die Prüfung nach der Korrektur wiederholen;
+6. nach bestandener Prüfung den Teststand aktualisieren, erforderliche Abhängigkeiten einrichten, die Anwendung starten und ihre Erreichbarkeit prüfen;
+7. dem Nutzer erst danach den Stand zur fachlichen Erprobung übergeben.
+
+GitHub bleibt Repository und Pull-Request-Ablage. Die Entwicklungsorchestrierung wird nicht von GitHub abhängig gemacht. n8n ist für den Kernablauf nicht erforderlich; eine spätere Verwendung für davon unabhängige Automatisierungen bleibt möglich.
+
+Die konkrete Auswahl des Multi-LLM-Anbieters und der Modelle ist nicht Bestandteil dieser Festlegung. Zugangsdaten und API-Schlüssel werden nicht im Repository gespeichert. Die technische Umsetzung dieser Zielarchitektur ist ein eigenes Arbeitspaket und gilt erst nach einem nachgewiesenen vollständigen Durchlauf als eingerichtet.
 
 ### Gültigkeit von Dokumentinhalten und Entscheidungen
 
@@ -228,3 +248,4 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-27 | AP1 nach Annahme des Arbeitsauftrags nicht mehr als offen geführt; dauerhaftes Verhalten der Oberflächensprache als später zu klärender Punkt festgehalten. |
 | 2026-09-27 | Offene Betriebsfragen der browserbasierten Oberflächen zu Webserver/Reverse Proxy, Prozessmodell, gemeinsamem Komponentenbetrieb, Adressierung, HTTPS/TLS und Betriebsarten konkret festgehalten. |
 | 2026-09-27 | Übergabe zur praktischen Erprobung präzisiert: Teststand wird vor Übergabe auf dem Entwicklungsrechner bereitgestellt, gestartet und geprüft; lokale Rechnerautomatisierung liegt unter `/srv/aixlab/dev/pipwerk/scripts/`. |
+| 2026-09-30 | Zielarchitektur für einen automatisierten agentenbasierten Entwicklungsablauf festgelegt: lokaler KI-Koordinator, API-Key-basierter Multi-LLM-Anbieter, getrennte Implementierungs- und Review-Agenten, automatische Korrekturschleife und Testbereitstellung; GitHub bleibt Repository und PR-Ablage. |
