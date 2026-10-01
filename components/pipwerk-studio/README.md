@@ -2,7 +2,7 @@
 
 Graphical strategy designer of Pipwerk.
 
-The component consists of a Python backend (FastAPI) in `backend/` and a browser user interface (React, TypeScript, Vite, React Flow) in `frontend/`. The current state is the technical skeleton of work package AP1: an empty designer canvas, German and English as user interface languages and a connection check between user interface and backend.
+The component consists of a Python backend (FastAPI) in `backend/` and a browser user interface (React, TypeScript, Vite, React Flow) in `frontend/`. The current state is the technical skeleton of work package AP1: an empty designer canvas, German and English as user interface languages, a connection check between user interface and backend and the application name and version in the footer.
 
 Development setup, start and checks are described in [docs/technical/pipwerk-studio.md](../../docs/technical/pipwerk-studio.md). Usage is described in [docs/user/pipwerk-studio.md](../../docs/user/pipwerk-studio.md).
 

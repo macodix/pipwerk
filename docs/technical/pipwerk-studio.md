@@ -3,14 +3,14 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-09-27
+- stand: 2026-10-01
 - komponente: `pipwerk-studio`
 
 ## 1. Gegenstand
 
 Dieses Dokument beschreibt den technischen Aufbau von Pipwerk Studio, die Einrichtung einer Entwicklungsumgebung, den Start im Entwicklungsbetrieb und die vorgeschriebenen Prüfungen.
 
-Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1. Pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln und prüft, ob das Backend erreichbar ist. Fachliche Objekte, Strategien, Speicherung und Ausführung sind noch nicht enthalten.
+Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1. Pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln, prüft, ob das Backend erreichbar ist, und zeigt Name und Version der Anwendung in der Fußzeile an. Fachliche Objekte, Strategien, Speicherung und Ausführung sind noch nicht enthalten.
 
 ## 2. Aufbau der Komponente
 
@@ -25,7 +25,9 @@ Pipwerk Studio liegt im Verzeichnis `components/pipwerk-studio/` und besteht aus
 
 Das Backend ist eine FastAPI-Anwendung. Die Funktion `create_app()` in `backend/src/pipwerk_studio/app.py` erzeugt die Anwendung. Sie wird mit dem ASGI-Server Uvicorn gestartet.
 
-Das Backend enthält derzeit keine Fachlogik. Es stellt ausschließlich die in Abschnitt 5 beschriebene Verbindungsprüfung bereit.
+Das Backend enthält derzeit keine Fachlogik. Es stellt ausschließlich die in Abschnitt 5 beschriebenen technischen Endpunkte bereit: die Verbindungsprüfung und die Anwendungsinformation.
+
+Die Version des Backends wird ausschließlich in `backend/pyproject.toml` im Feld `project.version` gepflegt. Zur Laufzeit liest `app.py` sie über die Metadaten des installierten Pakets (`importlib.metadata.version`). Dadurch gibt es keine zweite Versionsangabe im Programmcode. Fehlen die Paketmetadaten, meldet das Backend die Ersatzangabe `0+unknown`.
 
 ### 2.2 Oberfläche
 
@@ -40,7 +42,8 @@ Die Oberfläche besteht aus folgenden Bestandteilen:
 | `src/DesignerCanvas.tsx` | leere Designer-Arbeitsfläche auf Grundlage von React Flow |
 | `src/LanguageSelect.tsx` | Auswahlfeld für die Oberflächensprache |
 | `src/BackendStatus.tsx` | Anzeige, ob das Backend erreichbar ist |
-| `src/api.ts` | Abruf und Prüfung der Antwort der Verbindungsprüfung |
+| `src/ApplicationVersion.tsx` | Anzeige von Name und Version der Anwendung in der Fußzeile |
+| `src/api.ts` | Abruf und Prüfung der Antworten der Verbindungsprüfung und der Anwendungsinformation |
 | `src/i18n.ts` | Einrichtung von i18next mit den unterstützten Sprachen |
 | `src/locales/de.json`, `src/locales/en.json` | deutsche und englische Oberflächentexte |
 | `src/styles.css` | Gestaltung der Oberfläche |
@@ -58,6 +61,8 @@ Beim Start ist Deutsch eingestellt. Die gewählte Sprache wird nicht gespeichert
 ### 2.4 Verbindung zwischen Oberfläche und Backend
 
 Die Oberfläche ruft beim Laden die Verbindungsprüfung des Backends mit TanStack Query ab. Sie prüft, ob die Antwort genau den erwarteten Inhalt hat. Das Ergebnis wird in der Fußzeile angezeigt. Bei einem HTTP-Fehler, einem Netzwerkfehler oder einer unerwarteten Antwort zeigt die Oberfläche an, dass das Backend nicht erreichbar ist.
+
+Ebenfalls beim Laden ruft die Oberfläche die Anwendungsinformation ab und zeigt Name und Version in der Fußzeile an. Name und Version stammen vollständig aus der Antwort des Backends und werden nicht übersetzt; übersetzt wird nur der umgebende Text. Solange die Anfrage läuft oder wenn sie fehlschlägt, bleibt die Fußzeile ohne Versionsangabe. Die übrige Oberfläche bleibt in diesem Fall unverändert benutzbar.
 
 Im Entwicklungsbetrieb ruft der Browser nur den Vite-Entwicklungsserver auf. Vite leitet alle Anfragen unter `/api` an das Backend weiter. Browser und Backend verwenden dadurch aus Sicht des Browsers dieselbe Adresse. Eine CORS-Freigabe im Backend ist deshalb nicht nötig und nicht eingerichtet.
 
@@ -126,10 +131,13 @@ Das Backend stellt derzeit genau einen Endpunkt bereit.
 | Methode | Pfad | Antwort | Zweck |
 | --- | --- | --- | --- |
 | `GET` | `/api/health` | HTTP 200 mit `{"status": "ok"}` | technische Prüfung, ob die Oberfläche ihr Backend erreicht |
+| `GET` | `/api/info` | HTTP 200 mit `{"name": "Pipwerk Studio", "version": "<Version>"}` | Name und Version der laufenden Anwendung für die Anzeige in der Fußzeile |
 
-Andere Methoden auf diesem Pfad werden mit HTTP 405 abgelehnt. Die Antwort wird mit dem Pydantic-Modell `HealthStatus` erzeugt, das keine zusätzlichen Felder zulässt.
+Andere Methoden auf diesen Pfaden werden mit HTTP 405 abgelehnt. Die Antworten werden mit den Pydantic-Modellen `HealthStatus` und `ApplicationInfo` erzeugt, die keine zusätzlichen Felder zulassen.
 
-Der Endpunkt ist eine interne Verbindung zwischen Oberfläche und Backend. Er ist kein Bestandteil der öffentlichen Web-API und kein versionierter Vertrag unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
+Die Version in `/api/info` ist die Version des Backend-Pakets aus `backend/pyproject.toml`. Der Endpunkt gibt keine weiteren Systemdetails preis.
+
+Beide Endpunkte sind interne Verbindungen zwischen Oberfläche und Backend. Sie sind kein Bestandteil der öffentlichen Web-API und kein versionierter Vertrag unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
 
 ## 6. Prüfungen
 
@@ -157,7 +165,7 @@ npm run typecheck
 npm test
 ```
 
-`npm run typecheck` führt den TypeScript-Compiler mit `strict` und ohne Ausgabe von Dateien aus. `npm test` führt die Vitest-Tests aus. Sie prüfen mit Testing Library das sichtbare Verhalten der Oberfläche: Produktname, leere Arbeitsfläche, Sprachwechsel, Anzeige des Backendzustands und Vollständigkeit der Übersetzungen. Die Anfrage an das Backend wird in diesen Tests durch eine festgelegte Antwort ersetzt.
+`npm run typecheck` führt den TypeScript-Compiler mit `strict` und ohne Ausgabe von Dateien aus. `npm test` führt die Vitest-Tests aus. Sie prüfen mit Testing Library das sichtbare Verhalten der Oberfläche: Produktname, leere Arbeitsfläche, Sprachwechsel, Anzeige des Backendzustands, Anzeige von Name und Version in der Fußzeile in beiden Sprachen, die weiterhin benutzbare Oberfläche ohne erreichbares Backend und Vollständigkeit der Übersetzungen. Die Anfragen an das Backend werden in diesen Tests durch festgelegte Antworten ersetzt.
 
 ### 6.3 Browser-End-to-End-Test
 
@@ -175,7 +183,7 @@ Der Test wird mit folgendem Befehl ausgeführt:
 npm run e2e
 ```
 
-Playwright startet dafür selbst ein Backend auf Port 18000 und eine Oberfläche auf Port 15173. Die Ports können mit den Umgebungsvariablen `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` geändert werden. Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt und dass der Sprachwechsel die sichtbaren Texte umschaltet.
+Playwright startet dafür selbst ein Backend auf Port 18000 und eine Oberfläche auf Port 15173. Die Ports können mit den Umgebungsvariablen `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` geändert werden. Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass die Fußzeile Name und Version des echten Backends zeigt und dass der Sprachwechsel die sichtbaren Texte umschaltet.
 
 ## 7. Abhängigkeiten
 

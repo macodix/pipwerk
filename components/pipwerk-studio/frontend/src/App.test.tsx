@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
-import { mockFetchResponse, renderWithProviders } from './test-utils';
+import { mockFetchRoutes, okRoutes, renderWithProviders } from './test-utils';
 
 describe('App', () => {
   beforeEach(() => {
-    mockFetchResponse(200, { status: 'ok' });
+    mockFetchRoutes(okRoutes);
   });
 
   it('shows the product name', () => {
@@ -45,6 +45,29 @@ describe('App', () => {
     expect(screen.getByRole('region', { name: 'Designer-Arbeitsfläche' })).toBeInTheDocument();
     expect(screen.getByText('Backend: verbunden')).toBeInTheDocument();
     expect(document.documentElement.lang).toBe('de');
+  });
+
+  it('shows name and version in the footer in German and English', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+
+    expect(await screen.findByText('Pipwerk Studio Version 0.1.0.dev0')).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Sprache'), 'English');
+
+    expect(await screen.findByText('Pipwerk Studio version 0.1.0.dev0')).toBeInTheDocument();
+    expect(screen.queryByText('Pipwerk Studio Version 0.1.0.dev0')).not.toBeInTheDocument();
+  });
+
+  it('stays usable without a reachable backend and shows no version', async () => {
+    mockFetchRoutes({});
+    renderWithProviders(<App />);
+
+    expect(await screen.findByText('Backend: nicht erreichbar')).toBeInTheDocument();
+    expect(screen.queryByText(/Version/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Pipwerk Studio' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Designer-Arbeitsfläche' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Sprache')).toBeEnabled();
   });
 
   it('keeps the product name unchanged when switching the language', async () => {
