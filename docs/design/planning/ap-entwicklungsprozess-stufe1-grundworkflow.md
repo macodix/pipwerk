@@ -17,7 +17,7 @@ Grundlage ist `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Absc
 ## Umfang
 
 1. KI-Koordinator auf dem Entwicklungsrechner auf Grundlage von OpenClaw einrichten.
-2. KI-Modelle über den API-Key-basierten Multi-LLM-Anbieter anbinden. Keine Bindung an einen einzelnen Modellanbieter oder ein einzelnes Modell; Anbieter und Modelle sind konfigurierbar.
+2. KI-Modelle über den API-Key-basierten Multi-LLM-Anbieter anbinden; derzeit OpenRouter. Keine Bindung an einen einzelnen Modellanbieter oder ein einzelnes Modell; Anbieter und Modelle sind konfigurierbar und im laufenden Betrieb änderbar.
 3. Implementierungs-Agenten mit eigenem Arbeitsbereich `implement/` einrichten: setzt den übergebenen Auftrag um, führt die vorgesehenen technischen Prüfungen aus, erstellt Commit und Pull Request.
 4. Review-Agenten mit eigenem Arbeitsbereich `review/` einrichten: prüft den Pull Request unabhängig gegen Auftrag und Repository-Stand; läuft mit einem anderen Modell als der Implementierungs-Agent.
 5. Automatische Korrekturschleife einrichten: Der Koordinator übergibt Review-Befunde an den Implementierungs-Agenten; nach der Korrektur wird erneut geprüft. Die Schleife endet mit bestandener Prüfung oder mit Vorlage eines nicht automatisch lösbaren Punkts an den Nutzer.
@@ -51,13 +51,23 @@ Das Arbeitspaket ist abnahmefähig, wenn:
 8. Die lokalen Arbeitsbereiche `implement/` und `review/` bestehen und verwendet wurden.
 9. Einrichtung und Bedienung dokumentiert sind.
 
+## Festlegungen zur Modellwahl
+
+Vom Nutzer entschieden am 2026-10-01:
+
+- Multi-LLM-Anbieter: OpenRouter.
+- KI-Koordinator: Claude Sonnet 5.
+- Implementierungs-Agent: Claude Opus 5.
+- Review-Agent: ein Modell eines anderen Herstellers als der Implementierungs-Agent; vorgesehen ein aktuelles GPT-5.x- oder Gemini-3-Modell. Die konkrete Version wird bei der Einrichtung anhand des OpenRouter-Katalogs festgelegt.
+
+Die Modellwahl ist Konfiguration und im laufenden Betrieb änderbar. Dauerhafte Bedingung: Implementierungs- und Review-Agent laufen mit unterschiedlichen Modellen.
+
 ## Offene Punkte [in Klärung]
 
 Vom Nutzer zu entscheiden, nicht vom Implementierer:
 
-1. Auswahl des Multi-LLM-Anbieters und der konkreten Modelle für Koordinator, Implementierungs- und Review-Agent. Der Entwicklungsplan legt diese Auswahl ausdrücklich nicht fest.
-2. Nachweis-Auftrag für den Ende-zu-Ende-Durchlauf.
-3. Begrenzung der Korrekturschleife: nach wie vielen erfolglosen Durchläufen wird dem Nutzer vorgelegt?
+1. Nachweis-Auftrag für den Ende-zu-Ende-Durchlauf.
+2. Begrenzung der Korrekturschleife: nach wie vielen erfolglosen Durchläufen wird dem Nutzer vorgelegt?
 
 ## Umsetzung
 
