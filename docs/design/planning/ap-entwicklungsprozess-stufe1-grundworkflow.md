@@ -62,12 +62,14 @@ Vom Nutzer entschieden am 2026-10-01:
 
 Die Modellwahl ist Konfiguration und im laufenden Betrieb änderbar. Dauerhafte Bedingung: Implementierungs- und Review-Agent laufen mit unterschiedlichen Modellen.
 
-## Offene Punkte [in Klärung]
+## Weitere Festlegungen
 
-Vom Nutzer zu entscheiden, nicht vom Implementierer:
+Vom Nutzer entschieden am 2026-10-01:
 
-1. Nachweis-Auftrag für den Ende-zu-Ende-Durchlauf.
-2. Begrenzung der Korrekturschleife: nach wie vielen erfolglosen Durchläufen wird dem Nutzer vorgelegt?
+- **Nachweis-Auftrag:** ein kleiner echter Code-Auftrag an Pipwerk Studio. Damit wird auch die Testbereitstellung (Anwendung starten, Erreichbarkeit prüfen) am echten Objekt nachgewiesen, und das Ergebnis bleibt nutzbar.
+- **Korrekturschleife:** keine feste Obergrenze. Die Schleife läuft, bis das Review bestanden ist. Dem Nutzer vorgelegt wird nur, wenn erkennbar kein Fortschritt mehr erfolgt (derselbe Befund bleibt nach einer Korrektur bestehen) oder eine fachliche Entscheidung erforderlich ist. Maßstab ist maximale Qualität: Das Ergebnis muss den Anforderungen vollständig entsprechen.
+
+Offene Punkte bestehen nicht mehr.
 
 ## Umsetzung
 
