@@ -38,7 +38,7 @@ Grundlage ist `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Absc
 - Änderungen an Produktkomponenten über das für den Nachweis-Durchlauf Erforderliche hinaus;
 - Orchestrierung über GitHub-Funktionen; GitHub bleibt Repository- und Pull-Request-Ablage.
 
-Offene fachliche oder technische Fragen dürfen nicht durch eigene Festlegungen vorweggenommen werden.
+Offene fachliche Fragen dürfen nicht selbst entschieden werden. Technische Entscheidungen folgen der festgelegten Rollenverteilung: Architekturentscheidungen innerhalb dokumentierter Vorgaben liegen beim Softwarearchitekten, normale Implementierungsentscheidungen beim Entwicklungs-Agenten; neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden dem Nutzer über den Projektleiter vorgelegt.
 
 ## Abnahmekriterien
 
