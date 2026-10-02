@@ -1,3 +1,8 @@
+---
+name: pipwerk-test-deployment
+description: Stellt ausschließlich den von QA freigegebenen Pipwerk-Codezustand für die Projektleiterprüfung bereit und verifiziert den laufenden Teststand.
+---
+
 # pipwerk-test-deployment
 
 ## Zweck
