@@ -1,3 +1,8 @@
+---
+name: pipwerk-repository-context
+description: Liest vor Pipwerk-Arbeit den maßgeblichen aktuellen Repository-Stand und bestimmt die für die Aufgabe relevanten Referenzen.
+---
+
 # pipwerk-repository-context
 
 ## Zweck
