@@ -59,21 +59,41 @@ Das Arbeitspaket ist abnahmefähig, wenn:
 13. Die dokumentierten Architekturvorgaben auf ausreichende Grundlage für selbständige Architekturentscheidungen geprüft wurden.
 14. Einrichtung und Bedienung dokumentiert sind.
 
-## Festlegungen zur Modellwahl
+## Grundsätze zur Modellwahl
 
-Vom Nutzer entschieden am 2026-10-01:
+Die Rollen sind nicht dauerhaft an konkrete KI-Modelle gebunden. Konkrete Modellnamen werden in Anforderungen, Architektur-, Rollen- und Prozessfestlegungen nicht als festgelegte Zuordnung geführt. Die jeweils eingesetzten Modelle sind austauschbare Laufzeitkonfiguration.
 
-- Multi-LLM-Anbieter: OpenRouter.
-- Softwarearchitekt-Agent: Claude Sonnet 5.
-- Entwicklungs-Agent: Claude Opus 5.
-- QA-Agent: ein Modell eines anderen Herstellers als der Entwicklungs-Agent; vorgesehen ein aktuelles GPT-5.x- oder Gemini-3-Modell. Die konkrete Version wird bei der Einrichtung anhand des OpenRouter-Katalogs festgelegt.
-- Die Modellzuordnung des Projektleiter-Agenten wird bei der Einrichtung konfiguriert.
+Die Auswahl erfolgt rollenbezogen anhand nachgewiesener Ergebnisqualität. Kosten, Tokenverbrauch und Geschwindigkeit können für Betriebsbeobachtung erfasst werden, sind aber kein Qualitäts- oder Auswahlkriterium.
 
-Die Modellwahl ist Konfiguration und im laufenden Betrieb änderbar. Dauerhafte Bedingung: Entwicklungs- und QA-Agent laufen mit unterschiedlichen Modellen.
+Für die Qualitätsbewertung werden mindestens betrachtet:
+
+- Korrektheit;
+- Vollständigkeit;
+- Anforderungstreue;
+- Fehlererkennung;
+- Entscheidungsqualität innerhalb der jeweiligen Rolle;
+- Robustheit über mehrere vergleichbare Aufgaben;
+- Korrekturqualität nach festgestellten Mängeln.
+
+Zusätzlich werden rollenspezifische Kriterien verwendet, insbesondere Qualität von Anforderungen und Abnahmekriterien für den Projektleiter, Architekturqualität für den Softwarearchitekten, Implementierungsqualität für die Entwicklung sowie Fehlererkennung und Qualität der Befunde für QA.
+
+Entwicklungs- und QA-Agent werden mit unterschiedlichen Modellen betrieben, um eine unabhängige Prüfung zu unterstützen.
+
+### Grobplan Modellbewertung
+
+1. Für jede Agentenrolle werden mehrere geeignete Modellkandidaten aus dem verfügbaren Multi-LLM-Angebot ausgewählt.
+2. Pro Rolle werden mehrere repräsentative, möglichst reale Pipwerk-Aufgaben als Vergleichsfälle verwendet.
+3. Alle Kandidaten einer Rolle bearbeiten vergleichbare Aufgaben unter möglichst gleichen Rahmenbedingungen.
+4. Die Ergebnisse werden anhand der gemeinsamen und rollenspezifischen Qualitätskriterien bewertet.
+5. Die Bewertung berücksichtigt nicht nur Einzelergebnisse, sondern auch die Zuverlässigkeit über mehrere Aufgaben und erforderliche Korrekturschleifen.
+6. Auf Grundlage der nachgewiesenen Ergebnisqualität wird die Laufzeitkonfiguration für die jeweilige Rolle gewählt.
+7. Das Verfahren bleibt wiederholbar, damit neue oder geänderte Modelle später mit denselben Grundsätzen neu bewertet werden können.
+
+Das konkrete Evaluationsverfahren — insbesondere Testfälle, Kandidatenauswahl, Bewertungsmethode, Gewichtungen, Mindestanforderungen und Dokumentation der Messergebnisse — wird gesondert festgelegt.
 
 ## Weitere Festlegungen
 
-Vom Nutzer entschieden am 2026-10-01:
+Vom Nutzer entschieden:
 
 - **Nachweis-Auftrag:** ein kleiner echter Code-Auftrag an Pipwerk Studio. Damit wird auch die Testbereitstellung (Anwendung starten, Erreichbarkeit prüfen) am echten Objekt nachgewiesen, und das Ergebnis bleibt nutzbar.
 - **Korrekturschleife:** keine feste Obergrenze. Die Schleife läuft, bis die QA bestanden und die anschließende Projektleiterprüfung mit „Auftrag erfüllt“ abgeschlossen ist. Dem Nutzer werden fachliche Entscheidungen, grundlegende Architekturentscheidungen und Fälle ohne erkennbaren Fortschritt vorgelegt. Maßstab ist vollständige Erfüllung der Anforderungen.

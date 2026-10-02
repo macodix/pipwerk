@@ -10,9 +10,9 @@
 
 Dokumentiert die Rollen des automatisierten agentenbasierten Entwicklungsablaufs und die Arbeitsanweisungen (Briefings) der einzelnen Agenten. Die Rollen sind: Projektleiter-Agent, Softwarearchitekt-Agent, Entwicklungs-Agent und QA-Agent. Der Nutzer ist Auftraggeber und trifft die fachlichen Grundsatz- und Abnahmeentscheidungen.
 
-Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist Konfiguration und nicht Bestandteil der Rollen; die aktuelle Festlegung steht in `docs/design/planning/ap-entwicklungsprozess-stufe1-grundworkflow.md`.
+Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist austauschbare Laufzeitkonfiguration und nicht Bestandteil der Rollen. Konkrete KI-Modelle werden in diesem Rollen- und Prozessdokument nicht als festgelegt geführt. Die Grundsätze der qualitätsbasierten Modellwahl stehen in `docs/design/planning/ap-entwicklungsprozess-stufe1-grundworkflow.md`.
 
-Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“.
+Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“. Die Abbildung dieser Rollen auf OpenClaw-Workspace-Dateien und Skills ist in `docs/technical/openclaw-agentenstruktur.md` festgelegt.
 
 ## Rollenübersicht
 
@@ -111,6 +111,7 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-02 | Modellzuordnung ausdrücklich als austauschbare Laufzeitkonfiguration abgegrenzt; keine konkreten Modelle als Rollenfestlegung. |
 | 2026-10-02 | Rollen zu Projektleiter, Softwarearchitekt, Entwicklung und QA präzisiert; Übergaben, Entscheidungsgrenzen, QA-Commitbindung, Testbereitstellung, Rückschleifen und Abschluss geregelt. |
 | 2026-10-01 | Auftraggeber-Agent als vierte Rolle mit Briefing ergänzt. |
 | 2026-10-01 | Erstfassung der drei Rollen mit Briefings. |
