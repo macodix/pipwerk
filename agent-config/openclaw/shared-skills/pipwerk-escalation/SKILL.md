@@ -1,3 +1,8 @@
+---
+name: pipwerk-escalation
+description: Ordnet offene fachliche, architektonische und technische Entscheidungen der zuständigen Pipwerk-Rolle zu und formuliert notwendige Eskalationen.
+---
+
 # pipwerk-escalation
 
 ## Zweck

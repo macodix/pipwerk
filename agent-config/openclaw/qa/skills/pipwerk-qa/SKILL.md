@@ -1,3 +1,8 @@
+---
+name: pipwerk-qa
+description: Prüft einen eindeutig bestimmten Pipwerk-Implementierungsstand unabhängig gegen Arbeitsauftrag, Architektur, technische Regeln, Tests und Dokumentation.
+---
+
 # pipwerk-qa
 
 ## Zweck

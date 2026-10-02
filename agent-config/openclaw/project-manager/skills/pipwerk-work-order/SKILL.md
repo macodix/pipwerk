@@ -1,3 +1,8 @@
+---
+name: pipwerk-work-order
+description: Erstellt oder aktualisiert ausführbare Pipwerk-Arbeitsaufträge mit ID, Status, Ziel, Scope, Abnahmekriterien und Referenzen.
+---
+
 # pipwerk-work-order
 
 ## Zweck

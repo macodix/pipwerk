@@ -1,3 +1,8 @@
+---
+name: pipwerk-close-work-order
+description: Steuert nach Projektleiterprüfung und Nutzererprobung die fachliche Abnahme und Abschlussfreigabe eines Pipwerk-Arbeitsauftrags.
+---
+
 # pipwerk-close-work-order
 
 ## Zweck
