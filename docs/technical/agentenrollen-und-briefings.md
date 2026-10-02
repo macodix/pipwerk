@@ -12,7 +12,7 @@ Dokumentiert die Rollen des automatisierten agentenbasierten Entwicklungsablaufs
 
 Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist austauschbare Laufzeitkonfiguration und nicht Bestandteil der Rollen. Konkrete KI-Modelle werden in diesem Rollen- und Prozessdokument nicht als festgelegt geführt. Die Grundsätze der qualitätsbasierten Modellwahl stehen in `docs/design/planning/ap-entwicklungsprozess-stufe1-grundworkflow.md`.
 
-Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“.
+Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“. Die Abbildung dieser Rollen auf OpenClaw-Workspace-Dateien und Skills ist in `docs/technical/openclaw-agentenstruktur.md` festgelegt.
 
 ## Rollenübersicht
 
