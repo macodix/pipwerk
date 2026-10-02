@@ -1,3 +1,8 @@
+---
+name: pipwerk-close-work-order
+description: Führt nach Nutzerabnahme den kontrollierten technischen Abschluss und Merge eines Pipwerk-Arbeitsauftrags durch und verifiziert den übernommenen Codezustand.
+---
+
 # pipwerk-close-work-order
 
 ## Zweck
