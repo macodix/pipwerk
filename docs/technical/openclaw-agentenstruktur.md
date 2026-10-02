@@ -157,7 +157,7 @@ Für den Grundworkflow werden zunächst folgende Skills vorgesehen:
 | `pipwerk-test-deployment` | QA-freigegebenen Commit bereitstellen, starten und Commit-Identität verifizieren. | Softwarearchitekt |
 | `pipwerk-close-work-order` | Nutzerabnahme, Abschlussfreigabe, Merge und Kontrolle des übernommenen Stands abwickeln. | Projektleiter, Softwarearchitekt |
 
-Die konkrete Implementierung und Abgrenzung der Skills erfolgt bei Einrichtung des Grundworkflows. Vor Erstellung eines Skills ist zu prüfen, ob das Verfahren tatsächlich wiederverwendbar ist und nicht besser als Projektregel oder einfache Rollenregel dokumentiert wird.
+Die versionierten OpenClaw-Vorlagen und die zunächst benötigten Skills liegen unter `agent-config/openclaw/`. Diese Dateien sind die Quelle für die Einrichtung der Agenten-Workspaces. Vor Ergänzung weiterer Skills ist zu prüfen, ob das Verfahren tatsächlich wiederverwendbar ist und nicht besser als Projektregel oder einfache Rollenregel dokumentiert wird.
 
 ## Konfigurationsgrundsatz
 
