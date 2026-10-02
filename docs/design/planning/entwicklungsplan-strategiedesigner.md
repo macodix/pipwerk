@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-09-27
+- stand: 2026-10-02
 
 ## 1. Ziel und Gegenstand
 
@@ -128,23 +128,29 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 
 | Beteiligter | Aufgabe |
 |---|---|
-| Nutzer | Fachliche Entscheidungen treffen und das tatsächliche Verhalten des laufenden Prototyps praktisch erproben. Eine eigene Prüfung von Pull Requests, Programmcode oder umfangreichen Dokumentationsänderungen ist nicht erforderlich. |
-| KI-Koordinator | Konzept und Softwaredesign mit dem Nutzer entwickeln; Repository-Stand und Grundlagen prüfen; Arbeitsaufträge mit Prüfkriterien formulieren; den automatisierten Entwicklungsablauf koordinieren; dem Nutzer nur entscheidungsrelevante offene Punkte, Befunde und eine kurze Ergebniszusammenfassung vorlegen. |
-| Implementierungs-Agent | Vereinbarte Aufträge in einem eigenen Arbeitsbereich implementieren; technische Prüfungen ausführen; Änderungen und Prüfergebnisse im Repository bereitstellen; festgestellte Mängel korrigieren. |
-| Review-Agent | Umsetzung unabhängig vom Implementierungs-Agenten gegen Auftrag, Repository-Stand, Code, Tests und Dokumentation prüfen; keine fachlichen Entscheidungen treffen oder offene Anforderungen selbst ergänzen. |
+| Nutzer / Auftraggeber | Fachliche Entscheidungen und grundlegende Architekturentscheidungen treffen, Arbeitsaufträge freigeben und das tatsächliche Verhalten des laufenden Prototyps praktisch erproben und abnehmen. Eine eigene Prüfung von Pull Requests, Programmcode oder umfangreichen Dokumentationsänderungen ist nicht erforderlich. |
+| Projektleiter-Agent | Anforderungen und Arbeitsaufträge mit dem Nutzer klären und formulieren, fachliche Entscheidungen dokumentieren, freigegebene Aufträge aktiv anstoßen und nach der Testbereitstellung die Auftragserfüllung gegen die Abnahmekriterien prüfen. |
+| Softwarearchitekt-Agent | Softwarearchitektur und technische Konzeption verantworten, Architekturentscheidungen innerhalb dokumentierter Vorgaben treffen und dokumentieren, Architekturkonformität überwachen und den automatisierten Entwicklungsablauf orchestrieren. |
+| Entwicklungs-Agent | Vereinbarte Aufträge innerhalb der fachlichen und architektonischen Vorgaben im eigenen Arbeitsbereich implementieren, technische Prüfungen ausführen, Änderungen und Prüfergebnisse bereitstellen und festgestellte Mängel korrigieren. |
+| QA-Agent | Technische Qualität unabhängig von der Entwicklung gegen Auftrag, Architekturvorgaben, Repository-Stand, Code, Tests, Dokumentation und technische Projektregeln prüfen. |
 
-Eine Fertigmeldung des implementierenden Agenten ersetzt weder die unabhängige Prüfung der Änderung noch die praktische Erprobung durch den Nutzer.
+Der Projektleiter entscheidet keine fachlichen Fragen anstelle des Nutzers. Der Softwarearchitekt darf dokumentierte Architekturvorgaben anwenden und innerhalb dieser Vorgaben Architekturentscheidungen treffen; neue Architekturgrundsätze oder Änderungen bestehender Architekturvorgaben bedürfen der Entscheidung des Nutzers über den Projektleiter. Normale Implementierungsentscheidungen innerhalb dieser Grenzen trifft der Entwicklungs-Agent.
+
+Eine Fertigmeldung des Entwicklungs-Agenten ersetzt weder die unabhängige QA noch die Prüfung der Auftragserfüllung durch den Projektleiter noch die praktische Erprobung durch den Nutzer.
 
 ## 3. Ablauf je Arbeitspaket
 
 1. **Repository-Stand prüfen:** Vor Analyse, Planung, Arbeitsauftrag oder Prüfung wird der aktuelle Stand von `main` gelesen. Das Repository ist die maßgebliche Projektquelle.
-2. **Grundlagen prüfen:** Die für das Arbeitspaket einschlägigen Anforderungen, Fachmodelle, Entscheidungen und technischen Regeln werden auf ausreichende Eindeutigkeit und erkennbare Widersprüche geprüft. Widersprüche werden vor der Implementierung geklärt.
-3. **Auftrag festlegen:** Nutzer und ChatGPT vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet und dürfen vom Implementierer nicht selbst entschieden werden.
-4. **Umsetzen:** Der Implementierungs-Agent arbeitet auf dem Entwicklungsrechner in einem eigenen Branch und Arbeitsbereich. Er setzt ausschließlich den vereinbarten Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request mit Änderung und Prüfergebnissen.
-5. **Unabhängig prüfen:** Ein vom Implementierungs-Agenten getrennter Review-Agent prüft den Pull Request gegen Auftrag und aktuellen Repository-Stand. Implementierungs- und Review-Agent sollen mit unterschiedlichen Modellen betrieben werden, damit die Prüfung nicht zur Selbstprüfung desselben Agenten wird. Eine Fertigmeldung oder Selbstprüfung des Implementierungs-Agenten ersetzt diese Prüfung nicht.
-6. **Mängel beheben:** Bei einem negativen Review übergibt der KI-Koordinator die konkreten Befunde automatisch an den Implementierungs-Agenten. Dieser korrigiert sie im Arbeitsbranch; anschließend wird die Änderung erneut unabhängig geprüft. Die Schleife läuft bis zur bestandenen Prüfung oder bis ein fachlich beziehungsweise technisch nicht automatisch lösbarer Punkt eine Entscheidung des Nutzers erfordert.
-7. **Funktion erproben:** Nach bestandener unabhängiger PR-Prüfung wird der zu erprobende Stand auf dem Entwicklungsrechner aus dem dafür vorgesehenen, aktuellen Repository-Stand bereitgestellt. Benötigte Abhängigkeiten werden eingerichtet und die für die Erprobung erforderlichen Prozesse gestartet und auf Erreichbarkeit geprüft. Erst danach erhält der Nutzer die kurze Zusammenfassung der funktionalen Änderung und noch erforderlicher Entscheidungen. Der Nutzer muss den Pull Request nicht selbst lesen, technisch prüfen oder den Teststand manuell installieren und starten. Er bedient den bereitgestellten Prototyp und prüft das tatsächliche Verhalten. Fachliche Änderungswünsche werden als neue oder angepasste Arbeitsaufträge behandelt.
-8. **Abschluss festhalten:** Ein Arbeitspaket gilt erst nach bestandener Umsetzungsprüfung und erforderlicher praktischer Erprobung als abgeschlossen und wird danach zusammengeführt beziehungsweise abgeschlossen.
+2. **Grundlagen prüfen:** Projektleiter und Softwarearchitekt prüfen die jeweils einschlägigen Anforderungen, Fachmodelle, Entscheidungen, Architekturvorgaben und technischen Regeln auf ausreichende Eindeutigkeit und erkennbare Widersprüche. Fachliche Widersprüche klärt der Projektleiter mit dem Nutzer; Architekturfragen innerhalb bestehender Vorgaben entscheidet der Softwarearchitekt. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden über den Projektleiter dem Nutzer vorgelegt.
+3. **Auftrag festlegen und freigeben:** Nutzer und Projektleiter-Agent vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Der Auftrag wird unter `docs/design/planning/work-orders/` abgelegt. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet. Ein Auftrag wird erst ausgeführt, wenn die für die Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde.
+4. **Auftrag aktiv übergeben:** Nach Nutzerfreigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den freigegebenen Arbeitsauftrag. Der Softwarearchitekt sucht oder pollt nicht nach neuen Aufträgen.
+5. **Technisch vorbereiten und umsetzen:** Der Softwarearchitekt prüft die technischen und architektonischen Grundlagen und übergibt Auftrag und geltende Architekturvorgaben an den Entwicklungs-Agenten. Dieser arbeitet im eigenen Branch und Arbeitsbereich, setzt den Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request.
+6. **Unabhängige QA:** Der Softwarearchitekt übergibt dem QA-Agenten den freigegebenen Auftrag und Abnahmekriterien, konkreten Pull Request und Commit, maßgeblichen Ausgangsstand von `main`, geltende Architektur- und Technikregeln sowie die Prüfnachweise des Entwicklungs-Agenten. QA prüft unabhängig und gibt bei Bestehen ausschließlich den eindeutig geprüften Commit frei.
+7. **Mängel beheben:** Bei negativer QA klassifiziert der Softwarearchitekt die Befunde. Implementierungsbefunde gehen an den Entwicklungs-Agenten; Architekturprobleme bearbeitet der Softwarearchitekt innerhalb seiner Zuständigkeit; fachlicher Klärungsbedarf geht über den Projektleiter an den Nutzer. Nach jeder Codeänderung erfolgt erneut unabhängige QA. Die Schleife läuft bis zur bestandenen QA oder bis fehlender Fortschritt beziehungsweise eine Entscheidung außerhalb der Zuständigkeit eine Eskalation erfordert.
+8. **Teststand bereitstellen:** Nach bestandener QA wird exakt der von QA freigegebene Commit bereitgestellt. Benötigte Abhängigkeiten werden eingerichtet, erforderliche Prozesse gestartet und ihre Erreichbarkeit geprüft. Vor der Übergabe wird verifiziert, dass der laufende Teststand exakt diesem Commit entspricht. Ändert sich danach der Code, ist die QA-Freigabe ungültig und eine erneute QA-Prüfung erforderlich.
+9. **Auftragserfüllung prüfen:** Der Projektleiter-Agent prüft am laufenden Teststand jedes Abnahmekriterium. Bei „Auftrag nicht erfüllt“ gehen konkrete Abweichungen an den Softwarearchitekten, der die Korrektur über Entwicklung, QA, erneute Testbereitstellung und erneute Projektleiterprüfung steuert. Nur erforderliche fachliche oder grundlegende Architekturentscheidungen werden dem Nutzer vorgelegt.
+10. **Nutzererprobung:** Erst nach „Auftrag erfüllt“ erhält der Nutzer den bereitgestellten Stand zur praktischen fachlichen Erprobung. Der Nutzer muss den Pull Request nicht selbst lesen, technisch prüfen oder den Teststand manuell installieren und starten.
+11. **Abschluss:** Nach erfolgreicher Erprobung und Abnahme durch den Nutzer gibt der Projektleiter-Agent den Abschluss frei. Der Softwarearchitekt veranlasst Merge und Abschluss und kontrolliert, dass der vorgesehene freigegebene Stand übernommen wurde. Bei Ablehnung durch den Nutzer geht der Auftrag zurück in den Klärungs- beziehungsweise Korrekturprozess.
 
 GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstände. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen grundsätzlich über Branch und Pull Request.
 
@@ -154,38 +160,46 @@ Auf dem Entwicklungsrechner werden getrennte Git-Arbeitsbereiche verwendet:
 
 - `repo/` -- Referenz-Worktree für den aktuellen Stand von `main`;
 - `implement/` -- Arbeitsbereich für den Implementierungs-Agenten;
-- `review/` -- unabhängiger Arbeitsbereich für den Review-Agenten;
+- `review/` -- unabhängiger Arbeitsbereich für den QA-Agenten;
 - `transfer/` -- Übergabeverzeichnis für Analyse-, Prüf- und sonstige temporäre Arbeitsergebnisse zwischen den beteiligten Werkzeugen;
 - `scripts/` -- lokale, nicht zum Produkt gehörende Automatisierung für Einrichtung, Aktualisierung, Start, Stop und Status der Entwicklungs- und Teststände auf dem Entwicklungsrechner.
 
-Implementierungs- und Review-Agent erhalten für vergleichende Prüfungen denselben sachlichen Auftrag und müssen sich auf denselben maßgeblichen Repository-Stand beziehen. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
+Entwicklungs- und QA-Agent erhalten denselben freigegebenen Arbeitsauftrag und müssen sich auf denselben maßgeblichen Ausgangsstand beziehen. QA prüft zusätzlich den eindeutig benannten PR und Commit. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
 
 ### Automatisierter agentenbasierter Entwicklungsablauf
 
-Ziel ist, die manuelle Tätigkeit des Nutzers auf fachliche Entscheidungen bei der Auftragsklärung und die abschließende fachliche Erprobung der bereitgestellten Anwendung zu beschränken. Die technischen Schritte dazwischen werden automatisiert ausgeführt.
+Ziel ist, die manuelle Tätigkeit des Nutzers auf fachliche und grundlegende Architekturentscheidungen, die Freigabe von Arbeitsaufträgen und die abschließende fachliche Erprobung der bereitgestellten Anwendung zu beschränken. Die technischen Schritte dazwischen werden automatisiert ausgeführt.
 
-Auf dem Entwicklungsrechner übernimmt ein KI-Koordinator die Ablaufsteuerung. Als vorgesehene technische Grundlage wird OpenClaw verwendet. Die KI-Modelle werden über einen API-Key-basierten Multi-LLM-Anbieter angebunden. Der Entwicklungsprozess darf dadurch nicht an einen einzelnen Modellanbieter oder ein einzelnes Modell gebunden werden.
+Als technische Grundlage der Agenten wird OpenClaw verwendet. Der Projektleiter-Agent bildet die Schnittstelle zum Nutzer. Nach Freigabe eines Arbeitsauftrags stößt er den Softwarearchitekt-Agenten aktiv mit eindeutiger Auftragsreferenz an. Der Softwarearchitekt verantwortet Architektur und technische Konzeption und orchestriert Entwicklung, QA, Korrekturschleifen und Testbereitstellung. Die KI-Modelle werden über einen API-Key-basierten Multi-LLM-Anbieter angebunden; der Prozess darf nicht an einen einzelnen Anbieter oder ein einzelnes Modell gebunden werden.
 
-Der KI-Koordinator steuert mindestens folgende Schritte:
+Der automatisierte Ablauf umfasst mindestens:
 
-1. maßgeblichen Repository-Stand und einschlägige Dokumentation lesen;
-2. vereinbarten Arbeitsauftrag an einen Implementierungs-Agenten übergeben;
-3. Implementierung, technische Tests, Commit und Pull Request ausführen lassen;
-4. Pull Request durch einen getrennten Review-Agenten prüfen lassen;
-5. bei festgestellten Mängeln die Befunde automatisch an den Implementierungs-Agenten zurückgeben und die Prüfung nach der Korrektur wiederholen;
-6. nach bestandener Prüfung den Teststand aktualisieren, erforderliche Abhängigkeiten einrichten, die Anwendung starten und ihre Erreichbarkeit prüfen;
-7. dem Nutzer erst danach den Stand zur fachlichen Erprobung übergeben.
+1. Projektleiter klärt und dokumentiert den Arbeitsauftrag mit dem Nutzer und erhält dessen Freigabe;
+2. Projektleiter stößt den Softwarearchitekten aktiv mit eindeutiger Auftragsreferenz an;
+3. Softwarearchitekt liest den maßgeblichen Repository-Stand und die einschlägige Dokumentation, trifft zulässige Architekturentscheidungen und übergibt Auftrag und Vorgaben an die Entwicklung;
+4. Entwicklungs-Agent implementiert, prüft technisch, committet und erstellt den Pull Request;
+5. Softwarearchitekt übergibt einen eindeutigen Prüfauftrag an den getrennten QA-Agenten;
+6. QA prüft unabhängig und bindet ein positives Ergebnis an einen konkreten Commit;
+7. bei Befunden steuert der Softwarearchitekt die Korrektur und erneute QA; fachliche Fragen gehen über den Projektleiter an den Nutzer;
+8. nach bestandener QA wird exakt der freigegebene Commit bereitgestellt, gestartet, auf Erreichbarkeit geprüft und seine Identität verifiziert;
+9. Projektleiter prüft den laufenden Teststand gegen alle Abnahmekriterien; bei Abweichungen läuft die Korrekturschleife erneut;
+10. erst nach „Auftrag erfüllt“ wird der Stand dem Nutzer zur praktischen Erprobung übergeben;
+11. nach Nutzerabnahme gibt der Projektleiter den Abschluss frei; der Softwarearchitekt veranlasst und kontrolliert Merge und Abschluss.
 
 GitHub bleibt Repository und Pull-Request-Ablage. Die Entwicklungsorchestrierung wird nicht von GitHub abhängig gemacht. n8n ist für den Kernablauf nicht erforderlich; eine spätere Verwendung für davon unabhängige Automatisierungen bleibt möglich.
 
-Die konkrete Auswahl des Multi-LLM-Anbieters und der Modelle ist nicht Bestandteil dieser Festlegung. Zugangsdaten und API-Schlüssel werden nicht im Repository gespeichert. Die technische Umsetzung dieser Zielarchitektur ist ein eigenes Arbeitspaket und gilt erst nach einem nachgewiesenen vollständigen Durchlauf als eingerichtet.
+Freigegebene Arbeitsaufträge liegen unter `docs/design/planning/work-orders/`. Der Pfad des konkreten Auftrags wird bei der aktiven Übergabe mitgegeben; ein Repository-Polling zur Auftragserkennung ist nicht vorgesehen.
+
+Vor Freigabe des automatisierten Grundworkflows wird geprüft, ob die dokumentierten Architekturvorgaben ausreichend sind, damit der Softwarearchitekt innerhalb klarer Grenzen selbständig entscheiden kann. Relevante Architekturentscheidungen werden dokumentiert. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden nicht selbständig eingeführt.
+
+Zugangsdaten und API-Schlüssel werden nicht im Repository gespeichert. Die technische Umsetzung dieser Zielarchitektur gilt erst nach einem nachgewiesenen vollständigen Durchlauf als eingerichtet.
 
 ### Ausbau des Entwicklungsprozesses
 
 Der Entwicklungsprozess wird stufenweise erweitert. Die Stufen werden in der folgenden Reihenfolge umgesetzt und jeweils funktionsfähig nachgewiesen, bevor die nächste Stufe in den automatisierten Ablauf aufgenommen wird:
 
-1. **Agentischer Grundworkflow:** Zuerst wird ausschließlich der vollständige Ablauf mit KI-Koordinator, Implementierungs-Agent, unabhängigem Review-Agent, automatischer Korrekturschleife und anschließender Testbereitstellung eingerichtet und Ende-zu-Ende nachgewiesen.
-2. **Spec Kit:** Erst nach einem funktionierenden Grundworkflow wird Spec Kit als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge integriert. Spec Kit ersetzt weder die maßgebliche Pipwerk-Dokumentation noch den KI-Koordinator oder den unabhängigen Review-Agenten.
+1. **Agentischer Grundworkflow:** Zuerst wird ausschließlich der vollständige Ablauf mit Projektleiter-Agent, Softwarearchitekt-Agent, Entwicklungs-Agent, unabhängigem QA-Agent, automatischer Korrekturschleife und anschließender Testbereitstellung eingerichtet und Ende-zu-Ende nachgewiesen.
+2. **Spec Kit:** Erst nach einem funktionierenden Grundworkflow wird Spec Kit als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge integriert. Spec Kit ersetzt weder die maßgebliche Pipwerk-Dokumentation noch den Projektleiter, Softwarearchitekt oder den unabhängigen QA-Agenten.
 3. **Linter und Codechecker:** Erst danach werden geeignete statische Prüfwerkzeuge für die tatsächlich verwendeten Sprachen und Komponenten ausgewählt und als automatische Quality Gates in den bestehenden Ablauf aufgenommen.
 4. **Weitere Qualitätswerkzeuge:** Weitere Werkzeuge, insbesondere für spezialisierte Tests, Vertragsprüfung, Sicherheitsprüfung, Architekturprüfung, Property-based Testing oder Mutation Testing, werden anschließend bedarfsgerecht bewertet und schrittweise ergänzt.
 
@@ -225,7 +239,6 @@ Fachliche Definitionen stehen in `fachmodell.md`. Anforderungen an den Designer 
 ## 6. Noch festzulegen
 
 - Datenformat für die dauerhafte Ablage und die Weitergabe von Strategien zwischen den Hauptkomponenten und über deren Schnittstellen; Bearbeitung als viertes eigenes Thema in einem eigenen Projektchat. Dabei sind insbesondere Schema, Versionierung, Validierung, Kompatibilität und Migration zu klären;
-- Verfahren für Versionsfreigabe und Zusammenführung geprüfter Änderungen;
 - Festlegung des dauerhaften Verhaltens der Oberflächensprache: Startsprache beziehungsweise Erkennung der Browsersprache und Speicherung der vom Nutzer gewählten Sprache;
 - Bereitstellung der browserbasierten Oberflächen im regulären Betrieb: integrierter Webserver der jeweiligen Pipwerk-Komponente, externer Webserver beziehungsweise Reverse Proxy oder anderes Betriebsmodell;
 - Prozessmodell der Hauptkomponenten: Festlegung, welche Teile einer Hauptkomponente als eigene Prozesse laufen und wie sie gestartet, beendet und überwacht werden;
@@ -241,6 +254,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-02 | Rollen und automatisierten Ablauf auf Projektleiter, Softwarearchitekt, Entwicklung und QA umgestellt; aktive Auftragsübergabe, Entscheidungsgrenzen, commitgebundene QA-Freigabe, Projektleiterprüfung und Abschlussprozess festgelegt. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
 | 2026-09-24 | Python als gemeinsamer fachlicher Kern, TypeScript/React als Browseroberfläche, CSS-Gestaltung und Schnittstellenabgrenzung festgehalten. |
 | 2026-09-24 | Gemeinsame Oberflächentechnik und konsistentes Erscheinungsbild für Designer und späteres Handelssystem ergänzt. |
