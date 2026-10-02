@@ -1,3 +1,8 @@
+---
+name: pipwerk-implementation
+description: Setzt einen freigegebenen Pipwerk-Arbeitsauftrag innerhalb der vorgegebenen Architektur um, prüft die Änderung und stellt sie als eindeutig referenzierten Commit und Pull Request bereit.
+---
+
 # pipwerk-implementation
 
 ## Zweck
