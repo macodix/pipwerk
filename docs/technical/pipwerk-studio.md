@@ -126,7 +126,7 @@ Der Befehl `npm run build` im Verzeichnis `frontend` prüft zuerst die Typen und
 
 ## 5. HTTP-Schnittstelle
 
-Das Backend stellt derzeit genau einen Endpunkt bereit.
+Das Backend stellt derzeit zwei Endpunkte bereit.
 
 | Methode | Pfad | Antwort | Zweck |
 | --- | --- | --- | --- |
