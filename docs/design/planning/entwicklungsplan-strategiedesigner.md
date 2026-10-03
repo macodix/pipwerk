@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-02
+- stand: 2026-10-04
 
 ## 1. Ziel und Gegenstand
 
@@ -239,7 +239,6 @@ Fachliche Definitionen stehen in `fachmodell.md`. Anforderungen an den Designer 
 ## 6. Noch festzulegen
 
 - Datenformat für die dauerhafte Ablage und die Weitergabe von Strategien zwischen den Hauptkomponenten und über deren Schnittstellen; Bearbeitung als viertes eigenes Thema in einem eigenen Projektchat. Dabei sind insbesondere Schema, Versionierung, Validierung, Kompatibilität und Migration zu klären;
-- Festlegung des dauerhaften Verhaltens der Oberflächensprache: Startsprache beziehungsweise Erkennung der Browsersprache und Speicherung der vom Nutzer gewählten Sprache;
 - Bereitstellung der browserbasierten Oberflächen im regulären Betrieb: integrierter Webserver der jeweiligen Pipwerk-Komponente, externer Webserver beziehungsweise Reverse Proxy oder anderes Betriebsmodell;
 - Prozessmodell der Hauptkomponenten: Festlegung, welche Teile einer Hauptkomponente als eigene Prozesse laufen und wie sie gestartet, beendet und überwacht werden;
 - gemeinsamer Betrieb mehrerer Hauptkomponenten auf demselben Rechner: Adressen, Ports sowie Prozess- und Diensttrennung;
@@ -255,6 +254,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | Datum | Änderung |
 |---|---|
 | 2026-10-02 | Rollen und automatisierten Ablauf auf Projektleiter, Softwarearchitekt, Entwicklung und QA umgestellt; aktive Auftragsübergabe, Entscheidungsgrenzen, commitgebundene QA-Freigabe, Projektleiterprüfung und Abschlussprozess festgelegt. |
+| 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
 | 2026-09-24 | Python als gemeinsamer fachlicher Kern, TypeScript/React als Browseroberfläche, CSS-Gestaltung und Schnittstellenabgrenzung festgehalten. |
 | 2026-09-24 | Gemeinsame Oberflächentechnik und konsistentes Erscheinungsbild für Designer und späteres Handelssystem ergänzt. |
