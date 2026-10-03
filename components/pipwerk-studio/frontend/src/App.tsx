@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ApplicationVersion } from './ApplicationVersion';
 import { BackendStatus } from './BackendStatus';
 import { DesignerCanvas } from './DesignerCanvas';
 import { LanguageSelect } from './LanguageSelect';
@@ -25,6 +26,7 @@ export function App() {
       </main>
       <footer className="studio-footer">
         <BackendStatus />
+        <ApplicationVersion />
       </footer>
     </div>
   );

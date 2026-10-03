@@ -26,12 +26,16 @@ test('starts with an empty canvas, reaches the backend and switches the language
   await healthResponse;
   await expect(page.getByRole('status')).toHaveText('Backend: verbunden');
 
+  const version = page.locator('.application-version');
+  await expect(version).toHaveText(/^Pipwerk Studio Version \S+$/);
+
   await page.getByLabel('Sprache').selectOption('en');
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('region', { name: 'Designer canvas' })).toBeVisible();
   await expect(page.getByText('The canvas is empty.')).toBeVisible();
   await expect(page.getByRole('status')).toHaveText('Backend: connected');
+  await expect(version).toHaveText(/^Pipwerk Studio version \S+$/);
 
   await page.getByLabel('Language').selectOption('de');
 

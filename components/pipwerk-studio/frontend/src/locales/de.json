@@ -1,6 +1,7 @@
 {
   "app": {
-    "language": "Sprache"
+    "language": "Sprache",
+    "version": "{{name}} Version {{version}}"
   },
   "canvas": {
     "label": "Designer-Arbeitsfläche",
