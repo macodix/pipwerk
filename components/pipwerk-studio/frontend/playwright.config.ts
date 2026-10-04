@@ -10,6 +10,10 @@ const frontendUrl = `http://127.0.0.1:${frontendPort}`;
 export default defineConfig({
   testDir: './e2e',
   forbidOnly: !!process.env.CI,
+  // All projects intentionally share one isolated temporary Studio database.
+  // Serial execution prevents language-changing tests in different browsers
+  // from racing against each other.
+  workers: 1,
   retries: 0,
   reporter: 'list',
   use: {
@@ -22,7 +26,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `uv run --frozen --project ../backend uvicorn --factory pipwerk_studio.app:create_app --host 127.0.0.1 --port ${backendPort}`,
+      command: `sh e2e/start-backend.sh ${backendPort}`,
       url: `${backendUrl}/api/health`,
       reuseExistingServer: false,
     },

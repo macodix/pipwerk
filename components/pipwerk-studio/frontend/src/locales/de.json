@@ -1,6 +1,7 @@
 {
   "app": {
-    "language": "Sprache"
+    "language": "Sprache",
+    "languageError": "Die Sprache konnte nicht gespeichert werden. Die aktuelle Sprache bleibt aktiv."
   },
   "canvas": {
     "label": "Designer-Arbeitsfläche",

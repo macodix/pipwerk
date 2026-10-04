@@ -3,44 +3,45 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-09-27
+- stand: 2026-10-04
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu Pipwerk Studio dient
 
-Pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Mit ihm sollen später Handelsstrategien auf einer Arbeitsfläche zusammengestellt und bearbeitet werden.
-
-Der derzeitige Stand ist ein technisches Grundgerüst. Pipwerk Studio zeigt eine leere Arbeitsfläche. Strategien können noch nicht angelegt, bearbeitet, gespeichert oder ausgeführt werden.
+Pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Der derzeitige Stand zeigt eine leere Arbeitsfläche und unterstützt eine dauerhaft gespeicherte deutsche oder englische Oberfläche. Strategien können noch nicht angelegt, bearbeitet, gespeichert oder ausgeführt werden.
 
 ## 2. Pipwerk Studio öffnen
 
-Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden. Eine Installation für Anwender gibt es noch nicht. Die Schritte zum Start stehen in der technischen Dokumentation unter `docs/technical/pipwerk-studio.md` im Abschnitt „Einrichtung und Start im Entwicklungsbetrieb“.
+Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden. Die Schritte stehen in `docs/technical/pipwerk-studio.md` unter „Einrichtung“ und „Start im Entwicklungsbetrieb“.
 
-Nach dem Start wird Pipwerk Studio in einem Webbrowser unter der Adresse `http://127.0.0.1:5173/` geöffnet.
+Nach dem Start wird Pipwerk Studio im Browser unter `http://127.0.0.1:5173/` geöffnet.
 
 ## 3. Aufbau der Oberfläche
 
-Die Oberfläche besteht aus drei Bereichen.
-
-Oben steht die Kopfzeile. Sie zeigt links den Namen „Pipwerk Studio“ und rechts das Auswahlfeld für die Sprache.
-
-In der Mitte liegt die Designer-Arbeitsfläche. Sie ist mit einem Punktraster hinterlegt. Oben links steht der Hinweis „Die Arbeitsfläche ist leer.“ Die Arbeitsfläche kann mit der Maus verschoben und mit dem Mausrad vergrößert oder verkleinert werden. Weitere Funktionen hat sie noch nicht.
-
-Unten steht die Fußzeile. Sie zeigt, ob Pipwerk Studio seinen Hintergrunddienst erreicht. Der Hintergrunddienst ist der Teil von Pipwerk Studio, der außerhalb des Browsers läuft.
+Die Kopfzeile zeigt den Namen „Pipwerk Studio“ und rechts die Sprachauswahl. In der Mitte liegt die leere Designer-Arbeitsfläche mit Punktraster. Sie kann verschoben sowie mit dem Mausrad vergrößert und verkleinert werden. Die Fußzeile zeigt den Zustand des Hintergrunddiensts:
 
 | Anzeige | Bedeutung |
 | --- | --- |
-| „Backend: Verbindung wird geprüft“ | Pipwerk Studio fragt gerade beim Hintergrunddienst an. |
-| „Backend: verbunden“ | Der Hintergrunddienst hat geantwortet. Pipwerk Studio ist bereit. |
-| „Backend: nicht erreichbar“ | Der Hintergrunddienst hat nicht oder nicht richtig geantwortet. In diesem Fall muss geprüft werden, ob er gestartet ist. Danach wird die Seite im Browser neu geladen. |
+| „Backend: Verbindung wird geprüft“ | Pipwerk Studio fragt beim Hintergrunddienst an. |
+| „Backend: verbunden“ | Der Hintergrunddienst hat korrekt geantwortet. |
+| „Backend: nicht erreichbar“ | Der Hintergrunddienst hat nicht oder unerwartet geantwortet. Prüfen Sie, ob er läuft, und laden Sie die Seite danach neu. |
 
 ## 4. Sprache wechseln
 
-Pipwerk Studio kann auf Deutsch und auf Englisch angezeigt werden. Beim Öffnen ist Deutsch eingestellt.
+Pipwerk Studio unterstützt Deutsch und Englisch. Ohne zuvor gespeicherte Auswahl startet es auf Deutsch.
 
-So wird die Sprache gewechselt:
+1. Öffnen Sie in der Kopfzeile das Auswahlfeld neben „Sprache“ beziehungsweise „Language“.
+2. Wählen Sie „English“ oder „Deutsch“.
 
-1. Klicken Sie in der Kopfzeile auf das Auswahlfeld neben „Sprache“.
-2. Wählen Sie „English“ für Englisch oder „Deutsch“ für Deutsch.
+Die sichtbaren Oberflächentexte wechseln sofort. Der Produktname „Pipwerk Studio“ bleibt unverändert. Selbst vergebene Namen, frei eingegebene Texte, Strategieinhalte und andere fachliche Einstellungen werden durch den Sprachwechsel nicht übersetzt oder verändert.
 
-Alle Texte der Oberfläche erscheinen sofort in der gewählten Sprache. Der Name „Pipwerk Studio“ bleibt unverändert. Die gewählte Sprache wird nicht gespeichert. Nach dem Neuladen der Seite ist wieder Deutsch eingestellt.
+Die Auswahl wird zentral im Hintergrunddienst für diese Pipwerk-Studio-Komponente gespeichert. Sie bleibt nach einem Neuladen der Browserseite und nach einem Neustart von Pipwerk Studio erhalten. Die Sprache gilt komponentenweit, nicht pro Benutzer; Benutzerkonten oder Anmeldungen gibt es in diesem Stand nicht. Die Auswahl wird nicht im Browser gespeichert.
+
+Während die gespeicherte Sprache beim Öffnen ermittelt wird, ist die Auswahl kurz deaktiviert. Kann die Sprache nicht gelesen oder eine Änderung nicht gespeichert werden, erscheint eine Fehlermeldung. Bei einem fehlgeschlagenen Wechsel bleibt die zuletzt bestätigte Sprache aktiv. Prüfen Sie in diesem Fall den Hintergrunddienst und versuchen Sie es erneut.
+
+## 5. Bekannte Einschränkungen
+
+- Die Arbeitsfläche ist noch leer; Strategien können noch nicht bearbeitet werden.
+- Pipwerk Studio besitzt noch kein Installationspaket für Anwender.
+- Die Sprache gilt für die gesamte laufende Studio-Komponente und nicht für einzelne Personen.
+- Weitere Sprachen als Deutsch und Englisch sind nicht verfügbar.
