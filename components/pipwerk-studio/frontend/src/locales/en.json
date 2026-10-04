@@ -1,6 +1,7 @@
 {
   "app": {
-    "language": "Language"
+    "language": "Language",
+    "languageError": "The language could not be saved. The current language stays active."
   },
   "canvas": {
     "label": "Designer canvas",

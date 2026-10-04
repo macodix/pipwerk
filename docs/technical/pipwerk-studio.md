@@ -3,83 +3,71 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-09-27
+- stand: 2026-10-04
 - komponente: `pipwerk-studio`
 
 ## 1. Gegenstand
 
-Dieses Dokument beschreibt den technischen Aufbau von Pipwerk Studio, die Einrichtung einer Entwicklungsumgebung, den Start im Entwicklungsbetrieb und die vorgeschriebenen Prüfungen.
-
-Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1. Pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln und prüft, ob das Backend erreichbar ist. Fachliche Objekte, Strategien, Speicherung und Ausführung sind noch nicht enthalten.
+Dieses Dokument beschreibt den technischen Aufbau von Pipwerk Studio, die Entwicklungsumgebung, den Start und die vorgeschriebenen Prüfungen. Pipwerk Studio zeigt derzeit eine leere Designer-Arbeitsfläche, unterstützt Deutsch und Englisch, speichert die komponentenweit gewählte Oberflächensprache dauerhaft und prüft die Verbindung zwischen Oberfläche und Backend. Fachliche Strategieobjekte und Strategieausführung sind noch nicht enthalten.
 
 ## 2. Aufbau der Komponente
 
-Pipwerk Studio liegt im Verzeichnis `components/pipwerk-studio/` und besteht aus zwei Teilen.
+Pipwerk Studio liegt unter `components/pipwerk-studio/` und besteht aus dem Python-Backend in `backend/` sowie der React-/TypeScript-Oberfläche in `frontend/`.
 
-| Verzeichnis | Inhalt |
-| --- | --- |
-| `backend/` | Python-Paket `pipwerk_studio` mit der HTTP-Anwendung, den Backend-Tests und der Python-Lockdatei `uv.lock` |
-| `frontend/` | Browseroberfläche mit React und TypeScript, Vite-Konfiguration, Frontend-Tests, Playwright-Tests und der npm-Lockdatei `package-lock.json` |
+### 2.1 Backend, Konfiguration und Persistenz
 
-### 2.1 Backend
+`backend/src/pipwerk_studio/app.py` erzeugt die FastAPI-Anwendung. `cli.py` ist der eigenständige Startpunkt, `config.py` liest die INI-Startkonfiguration, `settings_service.py` bildet die anwendungsseitige Servicegrenze und `storage.py` kapselt SQLAlchemy und das relationale Speichermodell.
 
-Das Backend ist eine FastAPI-Anwendung. Die Funktion `create_app()` in `backend/src/pipwerk_studio/app.py` erzeugt die Anwendung. Sie wird mit dem ASGI-Server Uvicorn gestartet.
+Die Oberflächensprache ist eine einzige betriebliche Einstellung der Komponente, nicht benutzerbezogen und kein Bestandteil von Strategiedaten. Der Browser ist nicht autoritativ und verwendet dafür weder Local Storage noch Session Storage noch Cookies. Ohne gespeicherten Wert liefert der Service Deutsch (`de`). Die Datenbank enthält höchstens einen zentralen Datensatz in `studio_settings`.
 
-Das Backend enthält derzeit keine Fachlogik. Es stellt ausschließlich die in Abschnitt 5 beschriebene Verbindungsprüfung bereit.
+SQLAlchemy bleibt hinter der Service-/Infrastrukturgrenze; ORM-Objekte werden nicht als API-Modelle verwendet. Das kleine initiale Schema wird beim Start angelegt. Da für dieses neue, einzeilige Schema noch keine Schemaänderung oder Bestandsmigration existiert, wird Alembic derzeit nicht eingesetzt. Vor einer späteren Schemaänderung ist eine versionierte Migration einzuführen.
 
-### 2.2 Oberfläche
+### 2.2 Zweistufige Konfiguration
 
-Die Oberfläche ist eine React-Anwendung in TypeScript. Vite dient im Entwicklungsbetrieb als Entwicklungsserver und erzeugt bei Bedarf die auslieferbaren Dateien.
+Die INI-Startkonfiguration enthält ausschließlich die SQLAlchemy-Datenbank-URL:
 
-Die Oberfläche besteht aus folgenden Bestandteilen:
+```ini
+[database]
+url = sqlite:///./pipwerk-studio.db
+```
+
+Ein vollständiges Beispiel liegt in `backend/pipwerk-studio.example.ini`. Die Sprache steht ausdrücklich nicht in der INI, sondern im konfigurierten Speicher.
+
+Eine mit `-c <PATH>` angegebene Datei hat höchste Priorität. Ohne `-c` wird genau die erste vorhandene Datei namens `pipwerk-studio.ini` in dieser Reihenfolge verwendet; Inhalte werden nicht zusammengeführt:
+
+1. `$HOME/pipwerk/etc/pipwerk-studio.ini`
+2. `$HOME/.config/pipwerk/pipwerk-studio.ini`
+3. `/etc/pipwerk/pipwerk-studio.ini`
+
+Unter Windows gelten entsprechend `%USERPROFILE%\pipwerk\etc`, `%APPDATA%\pipwerk` und `%PROGRAMDATA%\pipwerk`. Ist ohne explizite Datei an keinem Suchort eine Konfiguration vorhanden, wird ausschließlich für den Entwicklungsbetrieb `sqlite:///./pipwerk-studio.db` verwendet. Eine explizit angegebene fehlende oder unvollständige Datei beendet den Start mit einer Fehlermeldung.
+
+### 2.3 Oberfläche und Serverzustand
+
+Die wichtigsten Frontend-Dateien sind:
 
 | Datei | Aufgabe |
 | --- | --- |
-| `src/main.tsx` | Startpunkt; bindet Übersetzung, TanStack Query und die Anwendung ein |
-| `src/App.tsx` | Seitenaufbau aus Kopfzeile, Arbeitsfläche und Fußzeile; setzt das Attribut `lang` des Dokuments auf die gewählte Sprache |
-| `src/DesignerCanvas.tsx` | leere Designer-Arbeitsfläche auf Grundlage von React Flow |
-| `src/LanguageSelect.tsx` | Auswahlfeld für die Oberflächensprache |
-| `src/BackendStatus.tsx` | Anzeige, ob das Backend erreichbar ist |
-| `src/api.ts` | Abruf und Prüfung der Antwort der Verbindungsprüfung |
-| `src/i18n.ts` | Einrichtung von i18next mit den unterstützten Sprachen |
-| `src/locales/de.json`, `src/locales/en.json` | deutsche und englische Oberflächentexte |
-| `src/styles.css` | Gestaltung der Oberfläche |
+| `src/main.tsx` | bindet i18next, TanStack Query und React ein |
+| `src/App.tsx` | Seitenaufbau und `lang`-Attribut des Dokuments |
+| `src/DesignerCanvas.tsx` | leere React-Flow-Arbeitsfläche |
+| `src/LanguageSelect.tsx` | Sprachauswahl und sichtbarer Fehlerzustand |
+| `src/useStudioLanguage.ts` | Lesen und Schreiben des autoritativen Serverzustands mit TanStack Query |
+| `src/settingsApi.ts` | streng geprüfte Antworten der Spracheinstellungs-API |
+| `src/BackendStatus.tsx`, `src/api.ts` | Verbindungsprüfung |
+| `src/i18n.ts`, `src/locales/*.json` | Übersetzungen für Deutsch und Englisch |
 
-Die Arbeitsfläche enthält keine Knoten und keine Verbindungen. React-Flow-Objekte werden in diesem Stand weder erzeugt noch gespeichert.
+Beim Laden wird die Sprache vom Backend gelesen. Bis die erste Antwort vorliegt, ist die Auswahl deaktiviert. Eine Auswahl wird sofort sichtbar und per Mutation gespeichert. Nach Erfolg wird der Query-Cache mit der Backendantwort synchronisiert. Bei einem Fehler bleibt beziehungsweise wird die zuletzt vom Backend bestätigte Sprache wieder aktiv und eine verständliche Meldung erscheint. Der Sprachwechsel berührt keinen anderen Zustand.
 
-### 2.3 Mehrsprachigkeit
+Vite leitet im Entwicklungsbetrieb `/api` an das Backend weiter. Daher ist keine CORS-Freigabe eingerichtet.
 
-Alle sichtbaren Texte der Oberfläche werden über Übersetzungsschlüssel aus den Dateien in `src/locales/` geladen. Beide Dateien müssen dieselben Schlüssel enthalten; ein Frontend-Test prüft das.
+## 3. Voraussetzungen und Einrichtung
 
-Der Produktname „Pipwerk Studio“ wird nicht übersetzt. Die Sprachnamen im Auswahlfeld werden in ihrer eigenen Sprache angezeigt, also „Deutsch“ und „English“.
-
-Beim Start ist Deutsch eingestellt. Die gewählte Sprache wird nicht gespeichert und gilt nur bis zum Neuladen der Seite.
-
-### 2.4 Verbindung zwischen Oberfläche und Backend
-
-Die Oberfläche ruft beim Laden die Verbindungsprüfung des Backends mit TanStack Query ab. Sie prüft, ob die Antwort genau den erwarteten Inhalt hat. Das Ergebnis wird in der Fußzeile angezeigt. Bei einem HTTP-Fehler, einem Netzwerkfehler oder einer unerwarteten Antwort zeigt die Oberfläche an, dass das Backend nicht erreichbar ist.
-
-Im Entwicklungsbetrieb ruft der Browser nur den Vite-Entwicklungsserver auf. Vite leitet alle Anfragen unter `/api` an das Backend weiter. Browser und Backend verwenden dadurch aus Sicht des Browsers dieselbe Adresse. Eine CORS-Freigabe im Backend ist deshalb nicht nötig und nicht eingerichtet.
-
-## 3. Voraussetzungen für die Entwicklung
-
-Für die Entwicklung werden folgende Programme benötigt:
-
-| Programm | Version | Herkunft |
-| --- | --- | --- |
-| Python | 3.14 oder neuer | Ubuntu-Paketquelle (Ubuntu 26.04: Python 3.14) |
-| uv | geprüft mit 0.5.9 | Installation nach der Anleitung des Herstellers unter https://docs.astral.sh/uv/ |
-| Node.js mit npm | 24 oder neuer | geprüft mit Node.js 24.19.0 und npm 11.17.0 aus der konfigurierten Paketquelle |
-
-Alle Python-Pakete werden von uv in eine eigene virtuelle Umgebung unter `backend/.venv` installiert. Alle Node-Pakete werden von npm in `frontend/node_modules` installiert. Die systemweite Python- und Node-Umgebung wird dabei nicht verändert.
-
-Für die Playwright-Tests werden zusätzlich die Testbrowser von Playwright benötigt (siehe Abschnitt 6.3).
-
-## 4. Einrichtung und Start im Entwicklungsbetrieb
-
-### 4.1 Einrichtung
-
-Die Abhängigkeiten werden genau in den Versionen der Lockdateien installiert:
+| Programm | Mindestversion |
+| --- | --- |
+| Python | 3.14 |
+| uv | Lockdatei-kompatible aktuelle Version |
+| Node.js | 24 |
+| npm | mit Node.js bereitgestellt |
 
 ```sh
 cd components/pipwerk-studio/backend
@@ -89,160 +77,116 @@ cd ../frontend
 npm ci
 ```
 
-### 4.2 Start
+Python-Pakete liegen isoliert unter `backend/.venv`, Node-Pakete unter `frontend/node_modules`.
 
-Im Entwicklungsbetrieb laufen Backend und Oberfläche als zwei Prozesse. Beide werden in je einem eigenen Terminal gestartet.
+## 4. Start im Entwicklungsbetrieb
 
-Das Backend wird im Verzeichnis `components/pipwerk-studio/backend` gestartet:
+Backend mit expliziter Beispielkonfiguration:
 
 ```sh
-uv run --frozen uvicorn --factory pipwerk_studio.app:create_app --host 127.0.0.1 --port 8000
+cd components/pipwerk-studio/backend
+cp pipwerk-studio.example.ini pipwerk-studio.ini
+uv run --frozen pipwerk-studio -c pipwerk-studio.ini --host 127.0.0.1 --port 8000
 ```
 
-Die Oberfläche wird im Verzeichnis `components/pipwerk-studio/frontend` gestartet:
+Alternativ kann `-c` entfallen und einer der dokumentierten Suchpfade verwendet werden. Das Frontend läuft in einem zweiten Terminal:
 
 ```sh
+cd components/pipwerk-studio/frontend
 npm run dev
 ```
 
-Danach ist Pipwerk Studio im Browser unter `http://127.0.0.1:5173/` erreichbar.
-
-Vite leitet Anfragen unter `/api` standardmäßig an `http://127.0.0.1:8000` weiter. Läuft das Backend unter einer anderen Adresse, wird diese beim Start der Oberfläche in der Umgebungsvariable `PIPWERK_STUDIO_BACKEND_URL` angegeben:
+Danach ist die Oberfläche unter `http://127.0.0.1:5173/` erreichbar. Für ein Backend auf einer anderen Entwicklungsadresse:
 
 ```sh
 PIPWERK_STUDIO_BACKEND_URL=http://127.0.0.1:8100 npm run dev
 ```
 
-Beide Server nehmen standardmäßig nur Verbindungen vom eigenen Rechner an. Der Vite-Entwicklungsserver ist nur für die Entwicklung bestimmt und keine Sicherheitsgrenze.
+Beide Server binden standardmäßig nur an `127.0.0.1`. Der Vite-Server ist kein Produktionsserver. `npm run build` schreibt die auslieferbaren Dateien nach `frontend/dist`; das Backend liefert sie noch nicht selbst aus.
 
-### 4.3 Erzeugen der Oberflächendateien
+## 5. Interne HTTP-Schnittstellen
 
-Der Befehl `npm run build` im Verzeichnis `frontend` prüft zuerst die Typen und schreibt anschließend die auslieferbaren Oberflächendateien nach `frontend/dist`. Dieses Verzeichnis wird nicht versioniert. Ein Start, bei dem das Backend diese Dateien selbst ausliefert, ist noch nicht vorhanden.
-
-## 5. HTTP-Schnittstelle
-
-Das Backend stellt derzeit genau einen Endpunkt bereit.
-
-| Methode | Pfad | Antwort | Zweck |
+| Methode | Pfad | Erfolgsantwort | Zweck |
 | --- | --- | --- | --- |
-| `GET` | `/api/health` | HTTP 200 mit `{"status": "ok"}` | technische Prüfung, ob die Oberfläche ihr Backend erreicht |
+| `GET` | `/api/health` | `{"status":"ok"}` | technische Verbindungsprüfung |
+| `GET` | `/api/studio/settings/language` | `{"language":"de"}` oder `{"language":"en"}` | autoritative Sprache lesen |
+| `PUT` | `/api/studio/settings/language` | `{"language":"de"}` oder `{"language":"en"}` | Sprache zentral speichern |
 
-Andere Methoden auf diesem Pfad werden mit HTTP 405 abgelehnt. Die Antwort wird mit dem Pydantic-Modell `HealthStatus` erzeugt, das keine zusätzlichen Felder zulässt.
+Der PUT-Body enthält ausschließlich `{"language":"de"}` oder `{"language":"en"}`. Andere Werte, Typen und zusätzliche Felder werden mit HTTP 422 abgelehnt. Getrennte strikte Pydantic-Lese- und Schreibmodelle bilden die API-Grenze. Das Frontend akzeptiert seinerseits nur eine Antwort mit genau einem gültigen `language`-Feld.
 
-Der Endpunkt ist eine interne Verbindung zwischen Oberfläche und Backend. Er ist kein Bestandteil der öffentlichen Web-API und kein versionierter Vertrag unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
+Diese Endpunkte sind interne Verbindungen innerhalb von Pipwerk Studio und noch keine öffentliche versionierte API unter `contracts/`. FastAPIs OpenAPI-Darstellung ist im Entwicklungsbetrieb unter `/docs` beziehungsweise `/openapi.json` verfügbar.
 
 ## 6. Prüfungen
 
-Ein Pull Request ist nur abnahmefähig, wenn alle folgenden Prüfungen bestehen.
-
 ### 6.1 Backend
 
-Im Verzeichnis `components/pipwerk-studio/backend`:
+Im Verzeichnis `backend/`:
 
 ```sh
+uv sync --frozen
 uv run --frozen pytest
 uv run --frozen ruff check
 uv run --frozen ruff format --check
 uv run --frozen mypy
 ```
 
-pytest prüft die HTTP-Anwendung ohne gestarteten Server mit dem Testclient von FastAPI. Ruff prüft Programmierstil und typische Fehler; `ruff format --check` meldet Formatabweichungen, ohne Dateien zu ändern. mypy prüft die Typen im strengen Modus.
+Die Tests prüfen Konfigurationspriorität und Fehlerfälle, API-Validierung, Standardwert, Umschalten, Trennung verschiedener Datenbanken und die Wiederherstellung von Englisch sowie Deutsch nach echten Stop-/Startzyklen separater Backendprozesse mit derselben temporären INI und SQLite-Datei.
 
 ### 6.2 Frontend
 
-Im Verzeichnis `components/pipwerk-studio/frontend`:
+Im Verzeichnis `frontend/`:
 
 ```sh
+npm ci
 npm run typecheck
 npm test
+npm run build
+npm audit
 ```
 
-`npm run typecheck` führt den TypeScript-Compiler mit `strict` und ohne Ausgabe von Dateien aus. `npm test` führt die Vitest-Tests aus. Sie prüfen mit Testing Library das sichtbare Verhalten der Oberfläche: Produktname, leere Arbeitsfläche, Sprachwechsel, Anzeige des Backendzustands und Vollständigkeit der Übersetzungen. Die Anfrage an das Backend wird in diesen Tests durch eine festgelegte Antwort ersetzt.
+Vitest/Testing Library prüfen sichtbares Verhalten, Fehlerfälle, Mutationen, Übersetzungsvollständigkeit und Backendstatus.
 
-### 6.3 Browser-End-to-End-Test
+### 6.3 Browser-End-to-End
 
-Die Testbrowser von Playwright werden einmalig im Verzeichnis `frontend` installiert:
+Einmalig werden die installierbaren Playwright-Browser eingerichtet:
 
 ```sh
 npx playwright install chromium firefox webkit
 ```
 
-Die für die Playwright-Browser erforderliche Testumgebung einschließlich benötigter Betriebssystemabhängigkeiten muss auf dem Entwicklungs- beziehungsweise Testsystem vorhanden sein. Die allgemeinen Systemanforderungen dafür sind in `docs/technical/development-test-security-rules.md` festgelegt.
-
-Der Test wird mit folgendem Befehl ausgeführt:
+Dann:
 
 ```sh
 npm run e2e
 ```
 
-Playwright startet dafür selbst ein Backend auf Port 18000 und eine Oberfläche auf Port 15173. Die Ports können mit den Umgebungsvariablen `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` geändert werden. Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt und dass der Sprachwechsel die sichtbaren Texte umschaltet.
+Playwright startet ein isoliertes Backend auf Port 18000 und Vite auf Port 15173. Andere Ports können über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` gewählt werden. `e2e/write-backend-config.mjs` erzeugt je Lauf ein temporäres Verzeichnis mit INI und SQLite-Datei; `e2e/start-backend.sh` startet ausschließlich über die dokumentierte Option `-c`. Es gibt keine zusätzliche Datenbank-Umgebungsvariable.
 
-## 7. Abhängigkeiten
+Die E2E-Tests prüfen echte Browserabläufe einschließlich Sprachwechsel und Wiederherstellung nach einem Seiten-Reload. Sie behaupten keinen Backendneustart; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen. Vorgesehen sind Chromium, Firefox und WebKit, soweit Browser und Betriebssystembibliotheken installiert sind.
 
-Alle direkten und indirekten Abhängigkeiten sind in `backend/uv.lock` und `frontend/package-lock.json` festgeschrieben. Die direkten npm-Abhängigkeiten sind in `package.json` zusätzlich mit exakter Version angegeben.
+## 7. Abhängigkeiten und Sicherheit
 
-Die Abhängigkeiten wurden am 2026-09-27 geprüft. Die Spalte „Veröffentlicht“ nennt das Datum der verwendeten Version und dient als Hinweis auf den Wartungszustand. `npm audit` meldete für die npm-Abhängigkeiten keine bekannten Sicherheitslücken. `pip-audit` meldete für die festgeschriebenen Python-Abhängigkeiten keine bekannten Sicherheitslücken.
+Direkte und indirekte Versionen sind in `uv.lock` und `package-lock.json` reproduzierbar festgelegt. SQLAlchemy dient ausschließlich der konfigurierbaren Persistenz und bleibt hinter der Servicegrenze. FastAPI/Pydantic bilden die Transportgrenze; TanStack Query verwaltet lediglich asynchronen Serverzustand; i18next übersetzt nur Darstellungstexte.
 
-### 7.1 Laufzeitabhängigkeiten
+Backend und Entwicklungsserver sind lokal gebunden. Es werden keine Zugangsdaten benötigt oder gespeichert. Die Sprache ist nicht handelsrelevant, dennoch werden Eingaben und Antworten strikt validiert. Datenbank-URLs können Zugangsdaten enthalten und gehören deshalb in administrativ geschützte INI-Dateien, nicht in das Repository. Tests verwenden ausschließlich temporäre lokale SQLite-Dateien und keine externen oder produktiven Dienste.
 
-| Paket | Version | Lizenz | Veröffentlicht | Zweck | Kopplung |
-| --- | --- | --- | --- | --- | --- |
-| fastapi | 0.141.1 | MIT | 2026-07-29 | HTTP-Schnittstelle des Backends | nur in `app.py`; keine Fachlogik |
-| uvicorn | 0.54.0 | BSD-3-Clause | 2026-09-25 | ASGI-Server zum Start des Backends | nur beim Start verwendet |
-| pydantic | 2.13.5 | MIT | 2026-08-28 | Antwortmodell der Schnittstelle; indirekt über FastAPI | nur an der HTTP-Grenze |
-| react, react-dom | 19.3.0 | MIT | 2026-09-09 | Browseroberfläche | Oberfläche |
-| @xyflow/react (React Flow) | 12.12.0 | MIT | 2026-09-24 | Designer-Arbeitsfläche | nur in `DesignerCanvas.tsx` |
-| i18next | 26.4.2 | MIT | 2026-09-03 | Übersetzung der Oberflächentexte | nur Darstellung |
-| react-i18next | 17.0.15 | MIT | 2026-09-21 | Einbindung von i18next in React | nur Darstellung |
-| @tanstack/react-query | 5.104.0 | MIT | 2026-09-26 | Abruf des Backendzustands | nur in `BackendStatus.tsx` |
+Die Sicherheitsprüfung umfasst `npm audit`. Eine Python-Abhängigkeitsprüfung wird mit `pip-audit` ausgeführt, sofern das Werkzeug in der Umgebung vorhanden ist; fehlende Verfügbarkeit wird im Prüfnachweis ausgewiesen.
 
-### 7.2 Entwicklungs- und Prüfwerkzeuge
+## 8. Bekannte Einschränkungen
 
-| Paket | Version | Lizenz | Veröffentlicht | Zweck |
-| --- | --- | --- | --- | --- |
-| hatchling | 1.32.4 | MIT | 2026-09-20 | Bau des Python-Pakets |
-| pytest | 9.1.1 | MIT | 2026-06-19 | Backend-Tests |
-| httpx2 | 2.13.1 | BSD-3-Clause | 2026-09-23 | HTTP-Client für den Testclient von FastAPI |
-| ruff | 0.16.9 | MIT | 2026-09-24 | Python-Stil- und Fehlerprüfung |
-| mypy | 2.3.1 | MIT | 2026-08-15 | Python-Typprüfung |
-| vite | 8.3.1 | MIT | 2026-09-24 | Entwicklungsserver und Erzeugen der Oberflächendateien |
-| @vitejs/plugin-react | 6.1.1 | MIT | 2026-08-28 | React-Unterstützung für Vite |
-| typescript | 7.0.2 | Apache-2.0 | 2026-07-08 | TypeScript-Typprüfung |
-| vitest | 5.0.2 | MIT | 2026-09-25 | Frontend-Tests |
-| @testing-library/react, /dom, /user-event, /jest-dom | 16.3.3, 10.4.2, 14.6.7, 7.0.1 | MIT | 2026-08-09 bis 2026-09-13 | benutzernahe Prüfung der Oberfläche |
-| jsdom | 30.1.1 | MIT | 2026-09-22 | nachgebildete Browserumgebung für Vitest |
-| @playwright/test | 1.63.0 | Apache-2.0 | 2026-09-04 | Browser-End-to-End-Tests |
-| @types/react, @types/react-dom, @types/node | 19.3.0, 19.3.0, 26.6.3 | MIT | – | Typdefinitionen für TypeScript |
+- Strategien können noch nicht angelegt, gespeichert oder ausgeführt werden.
+- Das Backend liefert das gebaute Frontend nicht selbst aus; im Entwicklungsbetrieb laufen zwei Prozesse.
+- Installation und Paketierung für Anwendersysteme sind noch nicht festgelegt.
+- Die interne API ist nicht als öffentliche, versionierte Web-API festgelegt.
+- Die Einstellung ist bewusst komponentenweit und nicht benutzerbezogen; Benutzerkonten sind nicht Bestandteil dieses Auftrags.
 
-Für das Backend-Testwerkzeug wird `httpx2` statt `httpx` verwendet, weil Starlette die Verwendung von `httpx` mit seinem Testclient als veraltet meldet.
-
-## 8. Sicherheit
-
-Backend und Entwicklungsserver sind im Entwicklungsbetrieb nur an die Adresse `127.0.0.1` gebunden. Das Backend enthält keine schreibenden, ausführenden oder handelsbezogenen Funktionen. Es verarbeitet keine Eingaben von außen, speichert keine Daten und verwendet keine Zugangsdaten. Eine Authentifizierung ist deshalb in diesem Stand nicht eingerichtet; sie ist nicht Bestandteil von AP1.
-
-Die Oberfläche übernimmt die Antwort des Backends nur, wenn sie genau dem erwarteten Inhalt entspricht. Fehlermeldungen der Oberfläche enthalten keine technischen Details des Backends.
-
-## 9. Bekannte Einschränkungen
-
-Die folgenden Punkte sind im Stand AP1 bewusst noch nicht umgesetzt oder noch nicht festgelegt:
-
-- Es gibt keine INI-Startkonfiguration und keinen Aufrufparameter `-c <PATH>`. Adresse und Port werden beim Start direkt angegeben.
-- Das Backend liefert die Oberflächendateien nicht selbst aus. Im Entwicklungsbetrieb laufen deshalb zwei Prozesse.
-- Installation, Paketierung und Start außerhalb der Entwicklungsumgebung sind nicht festgelegt.
-- Die öffentliche Web-API und ihre Versionierung sind nicht festgelegt.
-- Die voreingestellte Sprache beim Start ist Deutsch. Eine Erkennung der Browsersprache und eine Speicherung der gewählten Sprache sind nicht vorhanden.
-
-## 10. Glossar
+## 9. Glossar
 
 | Begriff | Bedeutung |
 | --- | --- |
-| ASGI-Server | Programm, das eine Python-Webanwendung ausführt und ihr die HTTP-Anfragen aus dem Netzwerk übergibt. |
-| Backend | Der Teil einer Anwendung, der auf dem Rechner als eigener Prozess läuft und Anfragen der Oberfläche beantwortet. |
-| CORS | Regeln, mit denen ein Server erlaubt, dass eine Webseite von einer anderen Adresse aus auf ihn zugreift. |
-| Endpunkt | Eine Adresse der HTTP-Schnittstelle, die eine bestimmte Anfrage entgegennimmt. |
-| End-to-End-Test | Ein Test, der die Anwendung in einem echten Browser bedient und dabei alle beteiligten Teile gemeinsam prüft. |
-| Entwicklungsserver | Ein Programm, das die Oberfläche während der Entwicklung im Browser bereitstellt und Änderungen sofort sichtbar macht. |
-| Lockdatei | Datei, in der die genauen Versionen aller installierten Pakete festgehalten sind, damit jede Installation dieselben Versionen erhält. |
-| Oberfläche | Der im Browser angezeigte und bedienbare Teil von Pipwerk Studio. |
-| Übersetzungsschlüssel | Ein sprachneutraler Name für einen sichtbaren Text. Zu jedem Schlüssel gibt es einen Text je Sprache. |
-| Virtuelle Umgebung | Ein eigenes Verzeichnis mit Python-Paketen für ein Projekt, getrennt von den Paketen des Betriebssystems. |
+| Startkonfiguration | administrativ verwaltete INI mit Informationen zum Start und Auffinden des Speichers |
+| Betriebskonfiguration | im Komponentenspeicher abgelegte, zur Laufzeit verwendete Einstellungen wie die Sprache |
+| autoritativ | maßgebliche Quelle; hier ist dies das Backend und nicht der Browsercache |
+| SQLAlchemy-URL | Zeichenfolge, die Typ und Adresse eines Datenbankspeichers beschreibt |
+| End-to-End-Test | Browserprüfung der gemeinsam laufenden Oberfläche und des Backends |
+| Lockdatei | festgelegte Versionen aller Abhängigkeiten für reproduzierbare Installation |
