@@ -1,21 +1,12 @@
-# Pipwerk OpenClaw agent configuration
+# OpenClaw-Konfiguration – historischer Stand
 
-Versionierte Vorlagen für die OpenClaw-Workspaces der Pipwerk-Agenten.
+Status: `obsolete` seit 2026-10-05.
 
-## Verwendung
+Diese Dateien dokumentieren die frühere OpenClaw-Abbildung der Pipwerk-Agenten. Sie bleiben zur Nachvollziehbarkeit erhalten, sind aber keine Zielkonfiguration mehr.
 
-Die Dateien dieses Verzeichnisses werden in die jeweiligen OpenClaw-Workspaces übernommen. Das Pipwerk-Repository bleibt die maßgebliche Referenz für Projektstand, Anforderungen, Fachmodell, Architektur, Entscheidungen, Dokumentation und Programmcode.
+Aktuelle Zielstruktur:
+- `docs/technical/claude-code-agentenstruktur.md`
+- `.claude/agents/`
+- `.claude/skills/`
 
-Die Vorlagen enthalten deshalb keine davon unabhängigen Projektfestlegungen. Vor projektbezogener Arbeit muss der Agent den aktuellen maßgeblichen Repository-Stand lesen.
-
-## Agenten
-
-- `project-manager/` – Projektleiter-Agent
-- `software-architect/` – Softwarearchitekt-Agent
-- `developer/` – Entwicklungs-Agent
-- `qa/` – QA-Agent
-- `shared-skills/` – gemeinsam verwendete Skills
-
-## Versionierung
-
-Änderungen an diesen Vorlagen erfolgen über das Pipwerk-Repository und den normalen Branch-/Pull-Request-Prozess. Installierte Workspace-Dateien sollen aus einer eindeutig bestimmten Repository-Version erzeugt bzw. aktualisiert werden.
+Die verbindlichen Rollenregeln stehen weiterhin in `docs/technical/agentenrollen-und-briefings.md`.
