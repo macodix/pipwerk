@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-02
+- stand: 2026-10-05
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 
 ## Zweck
@@ -12,7 +12,7 @@ Dokumentiert die Rollen des automatisierten agentenbasierten Entwicklungsablaufs
 
 Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist austauschbare Laufzeitkonfiguration und nicht Bestandteil der Rollen. Konkrete KI-Modelle werden in diesem Rollen- und Prozessdokument nicht als festgelegt geführt. Die Grundsätze der qualitätsbasierten Modellwahl stehen in `docs/design/planning/ap-entwicklungsprozess-stufe1-grundworkflow.md`.
 
-Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“. Die Abbildung dieser Rollen auf OpenClaw-Workspace-Dateien und Skills ist in `docs/technical/openclaw-agentenstruktur.md` festgelegt.
+Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“. Die aktuelle technische Abbildung der Rollen auf Claude Code Agent Teams und Skills ist in `docs/technical/claude-code-agentenstruktur.md` festgelegt. Der Projektleiter bleibt außerhalb des Claude-Agent-Teams.
 
 ## Rollenübersicht
 
@@ -108,6 +108,8 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 - Eine Fertigmeldung oder Selbstprüfung des Entwicklungs-Agenten ersetzt deine unabhängige QA nicht.
 
 ## Änderungsnachweis
+
+| 2026-10-05 | Technische Zielumgebung auf Claude Code Agent Teams umgestellt; Projektleiter als externe Rolle klargestellt. |
 
 | Datum | Änderung |
 |---|---|
