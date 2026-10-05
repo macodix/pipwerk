@@ -40,14 +40,14 @@ Die Modellzuordnung ist die festgelegte Startkonfiguration für den ersten Versu
 
 ## Claude-Code-Struktur
 
-Projektbezogene Definitionen liegen direkt im Repository:
+Projektbezogene Definitionen liegen direkt im Repository. Agent Teams werden über `.claude/settings.json` mit `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` aktiviert. Die Funktion ist in Claude Code derzeit experimentell.
 
 - `.claude/agents/software-architect.md`
 - `.claude/agents/developer.md`
 - `.claude/agents/qa.md`
 - `.claude/skills/*/SKILL.md`
 
-Die fachlich weiterhin gültigen OpenClaw-Rollenregeln und Skills wurden übernommen, aber in die Claude-Code-Struktur überführt. OpenClaw-spezifische Dateien wie `IDENTITY.md`, `SOUL.md`, `AGENTS.md`, `USER.md`, `MEMORY.md` und `HEARTBEAT.md` sind für diese Zielstruktur nicht maßgeblich.
+Die fachlich weiterhin gültigen Rollenregeln und Skills wurden aus der bisherigen Struktur in die Claude-Code-Struktur überführt. Benötigte Skills werden den Agenten über das unterstützte `skills`-Frontmatter explizit vorgeladen. OpenClaw-spezifische Dateien wie `IDENTITY.md`, `SOUL.md`, `AGENTS.md`, `USER.md`, `MEMORY.md` und `HEARTBEAT.md` sind für diese Zielstruktur nicht maßgeblich.
 
 ## Kommunikation und Übergaben
 
@@ -64,7 +64,7 @@ Der spätere Dispatcher bestimmt, welcher freigegebene Auftrag gestartet wird. D
 
 ## Historie und Nachvollziehbarkeit
 
-Die frühere OpenClaw-Konfiguration bleibt im Git-Verlauf und vorläufig auch unter `agent-config/openclaw/` erhalten. Sie ist seit dieser Umstellung keine Zielkonfiguration mehr.
+Die frühere OpenClaw-Konfiguration ist aus dem aktuellen Repository-Stand entfernt. Ihre Historie bleibt über Git nachvollziehbar.
 
 Änderungen an Rollen, Skills und Ablauf erfolgen weiterhin versioniert über Branch und Pull Request. Git-Historie, Arbeitsaufträge, PRs und commitgebundene QA-Ergebnisse bilden den nachvollziehbaren Verlauf.
 
@@ -84,4 +84,5 @@ Erst nach erfolgreichem Nachweis folgt der Dispatcher.
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-05 | Technisch verifiziert: Agent-Team-Aktivierung ergänzt, Skills den Agenten explizit vorgeladen und OpenClaw-Altstruktur aus dem aktuellen Repository-Stand entfernt. |
 | 2026-10-05 | Erstfassung: OpenClaw im kritischen Entwicklungsablauf durch Claude Code Agent Teams ersetzt; Projektleiter außerhalb des Teams; Reihenfolge Claude-Struktur → Dispatcher → Matrix festgelegt. |
