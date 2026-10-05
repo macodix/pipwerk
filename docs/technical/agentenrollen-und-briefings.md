@@ -109,10 +109,9 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 ## Änderungsnachweis
 
-| 2026-10-05 | Technische Zielumgebung auf Claude Code Agent Teams umgestellt; Projektleiter als externe Rolle klargestellt. |
-
 | Datum | Änderung |
 |---|---|
+| 2026-10-05 | Technische Zielumgebung auf Claude Code Agent Teams umgestellt; Projektleiter als externe Rolle klargestellt. |
 | 2026-10-02 | Modellzuordnung ausdrücklich als austauschbare Laufzeitkonfiguration abgegrenzt; keine konkreten Modelle als Rollenfestlegung. |
 | 2026-10-02 | Rollen zu Projektleiter, Softwarearchitekt, Entwicklung und QA präzisiert; Übergaben, Entscheidungsgrenzen, QA-Commitbindung, Testbereitstellung, Rückschleifen und Abschluss geregelt. |
 | 2026-10-01 | Auftraggeber-Agent als vierte Rolle mit Briefing ergänzt. |
