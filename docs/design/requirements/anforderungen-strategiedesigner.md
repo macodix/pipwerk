@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-09-25`
+- zuletzt aktualisiert: `2026-10-04`
 
 ## 1. Zweck und Abgrenzung
 
@@ -265,6 +265,12 @@ Der Prototyp unterstützt Deutsch und Englisch als auswählbare Sprachen der Ben
 
 Ein Wechsel der Oberflächensprache darf die fachliche Bedeutung oder gespeicherte Konfiguration einer Strategie nicht verändern. Die Zuordnung fachlicher Objekte, Eigenschaften und Ergebnisse muss unabhängig vom angezeigten Sprachtext erfolgen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht automatisch übersetzt.
 
+### req-ui-008 -- Dauerhafte Oberflächensprache des Strategiedesigners
+
+Der Strategiedesigner muss die gewählte Oberflächensprache als zentrale Einstellung der Komponente dauerhaft speichern. Wenn noch keine Sprache gespeichert ist, startet der Strategiedesigner auf Deutsch. Nach der Auswahl von Englisch oder dem Rückwechsel zu Deutsch muss die gewählte Sprache sowohl nach einem Neuladen der Oberfläche als auch nach einem Neustart des Strategiedesigners wiederhergestellt werden.
+
+Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung darf weder Strategieinhalte noch sonstige fachliche Konfigurationen verändern. Die Sprache wird nicht im Browser und nicht benutzerbezogen gespeichert. Benutzerkonten, Anmeldung und weitere Oberflächensprachen gehören nicht zu dieser Anforderung.
+
 ## 7. Dokumententrennung
 
 ### req-doc-001 -- Strategiebeschreibung getrennt halten
@@ -314,6 +320,9 @@ Die folgenden Punkte sind noch nicht entschieden:
 7.  Mit welchem technischen Mechanismus Objekte ihre Eigenschaften,
     Parameter, Ein- und Ausgaben für Designer und GUI maschinenlesbar
     bereitstellen.
+8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
+    eingeführt werden, ist gesondert zu entscheiden, ob die
+    Oberflächensprache pro Benutzer gespeichert wird.
 
 ## 9. Änderungsnachweis
 
@@ -358,3 +367,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 
 | 2026-09-25 | Übergreifende Festlegung zur technischen Aufteilung in `anforderungen-gesamtsystem.md` verlagert; bisherige Offenhaltung der technischen Aufteilung entfernt. |
 | 2026-09-25 | Veralteten Verweis auf `Signal` als fachliches Objekt entfernt und `Strategie` als fachliches Objekt berücksichtigt. |
+| 2026-10-04 | Dauerhafte, komponentenweite Auswahl von Deutsch oder Englisch für den Strategiedesigner einschließlich Standardsprache, Abgrenzung und offenem Folgepunkt zu Benutzerkonten festgelegt. |
