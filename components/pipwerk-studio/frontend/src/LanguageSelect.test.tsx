@@ -1,4 +1,4 @@
-import { focusManager } from '@tanstack/react-query';
+import { focusManager, onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -13,9 +13,9 @@ import { createGate, mockFetchRoutes, renderWithProviders, type RouteResponse } 
 // docs/technical/pipwerk-studio.md, section 2.4.
 //
 //   A  first read:     A1 running, A2 succeeds, A3 fails, A4 times out,
-//                      A5 repeated read after a failed first read
+//                      A5 repeated read after a failed first read, A6 offline
 //   B  saving:         B1 running, B2 succeeds, B3 fails, B4 after a failed first read,
-//                      B5 times out
+//                      B5 times out, B6 offline
 //   C  later reads:    C1 succeeds, C2 fails, C3 succeeds after a failed first read,
 //                      C4 succeeds after a failed save without confirmed language
 //   D  overlap:        D1 read running when a save succeeds, D2 read started while saving,
@@ -479,6 +479,7 @@ describe('LanguageSelect, D4: read running when a save starts', () => {
 describe('LanguageSelect, time limit of the requests', () => {
   afterEach(() => {
     vi.useRealTimers();
+    onlineManager.setOnline(true);
   });
 
   async function advance(ms: number): Promise<void> {
@@ -550,5 +551,54 @@ describe('LanguageSelect, time limit of the requests', () => {
 
     expect(select()).toHaveValue('de');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('A6: a first read is sent although the browser reports being offline and ends with the read message after the time limit', async () => {
+    vi.useFakeTimers();
+    onlineManager.setOnline(false);
+    let reads = 0;
+    mockFetchRoutes({
+      getLanguage: () => {
+        reads += 1;
+        return 'pending';
+      },
+    });
+    renderWithProviders(<LanguageSelect />);
+    await advance(0);
+
+    expect(reads).toBe(1);
+    expect(select()).toBeDisabled();
+
+    await advance(LANGUAGE_REQUEST_TIMEOUT_MS + 100);
+    expect(screen.getByRole('alert')).toHaveTextContent(LOAD_ERROR_DE);
+    expect(select()).not.toBeDisabled();
+  });
+
+  it('B6: a save is sent although the browser reports being offline and ends with the save message after the time limit', async () => {
+    let puts = 0;
+    mockFetchRoutes({
+      getLanguage: LANGUAGE_BODY('de'),
+      putLanguage: () => {
+        puts += 1;
+        return 'pending';
+      },
+    });
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+    vi.useFakeTimers();
+    onlineManager.setOnline(false);
+
+    await act(async () => {
+      fireEvent.change(select(), { target: { value: 'en' } });
+    });
+    await advance(0);
+
+    expect(puts).toBe(1);
+    expect(select()).toBeDisabled();
+
+    await advance(LANGUAGE_REQUEST_TIMEOUT_MS + 100);
+    expect(screen.getByRole('alert')).toHaveTextContent(SAVE_ERROR_DE);
+    expect(select()).not.toBeDisabled();
+    expect(select()).toHaveValue('de');
   });
 });

@@ -51,8 +51,15 @@ const QUERY_KEY = ['studio-language'];
  * After a successful save, running reads are cancelled first and the
  * backend answer becomes the confirmed state, so an older read answer can
  * never overwrite it. After a failed save nothing is cancelled: a running
- * read still reports the real backend state. Reads never trigger a write. A language change never touches any other
- * application state.
+ * read still reports the real backend state. Reads never trigger a write.
+ * A language change never touches any other application state.
+ *
+ * The requests are sent whether or not the browser reports being online
+ * (`networkMode: 'always'`): the backend is the component's own local
+ * process, so the browser's internet state says nothing about whether it can
+ * be reached. The time limit of the requests applies in every case. The
+ * setting is limited to the Studio language; the shared query client is
+ * unchanged.
  */
 export function useStudioLanguage(): StudioLanguageState {
   const { i18n } = useTranslation();
@@ -62,10 +69,12 @@ export function useStudioLanguage(): StudioLanguageState {
     queryKey: QUERY_KEY,
     queryFn: ({ signal }) => fetchLanguage(signal),
     retry: false,
+    networkMode: 'always',
   });
 
   const mutation = useMutation({
     mutationFn: (language: SupportedLanguage) => updateLanguage(language),
+    networkMode: 'always',
     onSuccess: async (data) => {
       // Reads that started before or while saving may report the old state.
       await queryClient.cancelQueries({ queryKey: QUERY_KEY });

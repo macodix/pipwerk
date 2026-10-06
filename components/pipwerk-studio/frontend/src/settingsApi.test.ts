@@ -4,6 +4,10 @@ import { fetchLanguage, LANGUAGE_REQUEST_TIMEOUT_MS, LanguageRequestTimeoutError
 import { mockFetchRoutes } from './test-utils';
 
 describe('Studio language API time limit', () => {
+  it('is 10 seconds, as documented', () => {
+    expect(LANGUAGE_REQUEST_TIMEOUT_MS).toBe(10_000);
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -29,6 +33,38 @@ describe('Studio language API time limit', () => {
 
     await vi.advanceTimersByTimeAsync(1);
     expect(await outcome).toBeInstanceOf(LanguageRequestTimeoutError);
+  });
+
+  it.each([
+    ['reading', () => fetchLanguage()],
+    ['saving', () => updateLanguage('en')],
+  ])('answers %s at 10 seconds, not before', async (_name, call) => {
+    vi.useFakeTimers();
+    mockFetchRoutes({ getLanguage: 'pending', putLanguage: 'pending' });
+    let settled = false;
+    void call().then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(settled).toBe(true);
+  });
+
+  it('does not send a request when the caller has already aborted', async () => {
+    vi.useFakeTimers();
+    mockFetchRoutes({ getLanguage: { status: 200, body: { language: 'en' } } });
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(fetchLanguage(controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('passes a cancellation by the caller on unchanged and does not report a timeout', async () => {

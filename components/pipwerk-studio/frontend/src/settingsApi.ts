@@ -52,16 +52,23 @@ async function requestLanguage(
   init: RequestInit,
   signal?: AbortSignal,
 ): Promise<StudioLanguageResponse> {
-  const timeout = new AbortController();
+  // One controller ends the request, either at the time limit or when the
+  // caller aborts (without `AbortSignal.any`, which older browsers lack).
+  const controller = new AbortController();
   let timedOut = false;
+  if (signal?.aborted === true) {
+    controller.abort();
+  } else {
+    signal?.addEventListener('abort', () => controller.abort(), { once: true });
+  }
   const timer = setTimeout(() => {
     timedOut = true;
-    timeout.abort();
+    controller.abort();
   }, LANGUAGE_REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch('/api/studio/settings/language', {
       ...init,
-      signal: signal === undefined ? timeout.signal : AbortSignal.any([signal, timeout.signal]),
+      signal: controller.signal,
     });
     return await parseLanguageResponse(response);
   } catch (error) {
