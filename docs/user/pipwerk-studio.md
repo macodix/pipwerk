@@ -47,14 +47,15 @@ Alle Texte der Oberfläche erscheinen sofort in der gewählten Sprache. Der Name
 
 Die Auswahl wird zentral im Hintergrunddienst für diese Pipwerk-Studio-Komponente gespeichert. Sie bleibt nach einem Neuladen der Browserseite und nach einem Neustart von Pipwerk Studio erhalten. Die Sprache gilt komponentenweit, nicht pro Benutzer; Benutzerkonten oder Anmeldungen gibt es in diesem Stand nicht. Die Auswahl wird nicht im Browser gespeichert.
 
-Während die gespeicherte Sprache beim Öffnen ermittelt wird, ist das Auswahlfeld kurz deaktiviert. Es gibt zwei Fehlermeldungen:
+Während die gespeicherte Sprache beim Öffnen ermittelt wird, ist das Auswahlfeld kurz deaktiviert. Auch während eine Änderung gespeichert wird, ist es deaktiviert; Auswahlfeld und Texte zeigen dabei bereits die neu gewählte Sprache. Es gibt drei Fehlermeldungen:
 
 | Meldung | Bedeutung |
 | --- | --- |
 | „Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.“ | Beim Öffnen konnte die gespeicherte Sprache nicht vom Hintergrunddienst gelesen werden. Pipwerk Studio zeigt Deutsch an. Die Auswahl bleibt bedienbar. Prüfen Sie, ob der Hintergrunddienst läuft, und laden Sie die Seite neu. Ist die Sprache beim Öffnen bereits gelesen worden, erscheint diese Meldung später nicht mehr: Schlägt ein erneutes Lesen im Hintergrund fehl (zum Beispiel nach einem Wechsel zurück ins Browserfenster), bleibt die zuletzt bestätigte Sprache angezeigt. |
 | „Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv.“ | Eine Änderung wurde nicht gespeichert. Pipwerk Studio zeigt wieder die zuletzt bestätigte Sprache an. Prüfen Sie den Hintergrunddienst und versuchen Sie es erneut. |
+| „Die Sprache konnte nicht gespeichert werden. Es wird die Standardsprache Deutsch angezeigt, weil die gespeicherte Sprache nicht gelesen werden konnte.“ | Beim Öffnen konnte die gespeicherte Sprache nicht gelesen werden und die Änderung ließ sich ebenfalls nicht speichern. Es gibt keine bestätigte Sprache; Pipwerk Studio zeigt Deutsch an. Prüfen Sie den Hintergrunddienst und versuchen Sie es erneut. |
 
-Wird eine Änderung gerade gespeichert, zeigen das Auswahlfeld und die Texte bereits die neu gewählte Sprache.
+Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich gespeichert, verschwinden Meldungen, die darauf beruhten, dass keine Sprache bestätigt war.
 
 ## 5. Bekannte Einschränkungen
 

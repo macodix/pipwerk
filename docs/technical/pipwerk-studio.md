@@ -78,7 +78,25 @@ Alle sichtbaren Texte der Oberfläche werden über Übersetzungsschlüssel aus d
 
 Der Produktname „Pipwerk Studio“ wird nicht übersetzt. Die Sprachnamen im Auswahlfeld werden in ihrer eigenen Sprache angezeigt, also „Deutsch“ und „English“.
 
-Die Oberflächensprache wird vom Backend gelesen und dort dauerhaft gespeichert (Abschnitt 2.1). Ist noch nichts gespeichert, ist Deutsch eingestellt. Bis die erste Antwort des Backends vorliegt, ist die Auswahl deaktiviert. Der Hook `useStudioLanguage` leitet die angezeigte Sprache an einer Stelle ab: Während eine Speicheranfrage läuft, sind die Auswahl und die Texte in der gewählten Sprache; sonst in der zuletzt vom Backend bestätigten Sprache (ohne Antwort in Deutsch). Nach Erfolg wird der Query-Cache mit der Antwort des Backends abgeglichen. Zwei Fehler werden getrennt gemeldet: Konnte die gespeicherte Sprache beim ersten Lesen nicht gelesen werden (noch keine bestätigte Sprache), erscheint die Meldung zum Lesefehler, es wird Deutsch angezeigt und die Auswahl bleibt bedienbar. Schlägt ein späteres automatisches erneutes Abrufen fehl (zum Beispiel bei Fensterfokus oder Wiederverbindung, Standardverhalten von TanStack Query), bleibt die bereits bestätigte Sprache angezeigt und es erscheint keine Meldung, da sie sonst nicht dem angezeigten Zustand entspräche; das erneute Abrufen löst keine Schreibaktion aus, und eine erfolgreiche Antwort des Backends bleibt maßgeblich. Konnte eine Änderung nicht gespeichert werden, erscheint die Meldung zum Speicherfehler und die zuletzt bestätigte Sprache wird wieder angezeigt. Ein erfolgreiches Speichern beendet beide Meldungen. Der Browser speichert die Sprache weder in Local Storage noch in Session Storage noch in Cookies.
+Die Oberflächensprache wird vom Backend gelesen und dort dauerhaft gespeichert (Abschnitt 2.1). Ist noch nichts gespeichert, ist Deutsch eingestellt. Der Hook `useStudioLanguage` leitet die angezeigte Sprache, den Zustand der Auswahl und die Meldung an einer Stelle aus dem Lesezustand (TanStack Query) und dem Speicherzustand (Mutation) ab. Die Auswahl und die Texte zeigen immer dieselbe Sprache. Eine „bestätigte“ Sprache ist die zuletzt vom Backend gelesene oder nach dem Speichern zurückgegebene Sprache.
+
+| Zustand | Angezeigte Sprache | Auswahl | Meldung |
+| --- | --- | --- | --- |
+| erstes Lesen läuft | Deutsch (Standard) | deaktiviert | keine |
+| erstes Lesen erfolgreich | gelesene Sprache | bedienbar | keine |
+| erstes Lesen fehlgeschlagen | Deutsch (Standard) | bedienbar | Lesefehler |
+| Speichern läuft | gewählte Sprache | deaktiviert (nie zwei Speicheranfragen gleichzeitig) | keine |
+| Speichern erfolgreich | gespeicherte Sprache | bedienbar | keine (auch ein vorheriger Lesefehler entfällt) |
+| Speichern fehlgeschlagen, Sprache bestätigt | bestätigte Sprache | bedienbar | Speicherfehler |
+| Speichern fehlgeschlagen, keine Sprache bestätigt | Deutsch (Standard) | bedienbar | Speicherfehler mit Hinweis, dass die gespeicherte Sprache nicht gelesen werden konnte |
+| späteres Lesen erfolgreich (Fensterfokus, Wiederverbindung) | vom Backend gemeldete Sprache | unverändert | Lese- und Speicherfehler, die nur auf der fehlenden Bestätigung beruhten, entfallen bzw. wechseln zum Speicherfehler mit bestätigter Sprache |
+| späteres Lesen fehlgeschlagen, Sprache bestätigt | bestätigte Sprache | unverändert | keine zusätzliche Meldung |
+| Lesen beendet sich, während gespeichert wird | gewählte Sprache bis zum Ende des Speicherns | deaktiviert | keine |
+| Lesen läuft beim Beginn oder Erfolg des Speicherns | nach Erfolg die gespeicherte Sprache | bedienbar | keine |
+
+Beim Beginn und beim Erfolg eines Speicherns werden laufende Leseanfragen abgebrochen. Eine ältere Antwort kann dadurch die gespeicherte Sprache nicht überschreiben. Nach dem Speichern ist die Antwort des Backends der bestätigte Zustand. Das automatische erneute Lesen löst keine Schreibaktion aus; während des Speicherns wird keine Meldung angezeigt. Die Tests in `src/LanguageSelect.test.tsx` sind nach diesen Zuständen benannt (A bis E).
+
+Der Browser speichert die Sprache weder in Local Storage noch in Session Storage noch in Cookies.
 
 ### 2.5 Verbindung zwischen Oberfläche und Backend
 

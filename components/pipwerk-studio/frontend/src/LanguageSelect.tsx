@@ -4,10 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { isSupportedLanguage, languageNames, supportedLanguages } from './i18n';
 import { useStudioLanguage } from './useStudioLanguage';
 
+const messageSuffix = {
+  load: 'LoadError',
+  save: 'SaveError',
+  saveUnconfirmed: 'SaveUnconfirmedError',
+} as const;
+
 export function LanguageSelect() {
   const { t } = useTranslation();
   const id = useId();
-  const { displayedLanguage, isInitializing, error, changeLanguage } = useStudioLanguage();
+  const { displayedLanguage, isBusy, error, changeLanguage } = useStudioLanguage();
 
   return (
     <div className="language-select">
@@ -15,7 +21,7 @@ export function LanguageSelect() {
       <select
         id={id}
         value={displayedLanguage}
-        disabled={isInitializing}
+        disabled={isBusy}
         onChange={(event) => {
           const language = event.target.value;
           if (isSupportedLanguage(language)) {
@@ -31,7 +37,7 @@ export function LanguageSelect() {
       </select>
       {error !== null ? (
         <p className="language-select-error" role="alert">
-          {t(error === 'save' ? 'app.languageSaveError' : 'app.languageLoadError')}
+          {t(`app.language${messageSuffix[error]}`)}
         </p>
       ) : null}
     </div>

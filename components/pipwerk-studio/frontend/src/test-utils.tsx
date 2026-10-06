@@ -36,8 +36,19 @@ export function mockFetchResponse(status: number, body: unknown): void {
 /** `'pending'` never answers, which keeps the request open for the whole test. */
 export type RouteResponse = { status: number; body: unknown } | 'network-error' | 'pending';
 
-/** A route answer that may change between calls, for example to simulate a later failure. */
-export type RouteSource = RouteResponse | (() => RouteResponse);
+/** A route answer that may change between calls or be released later (see `createGate`). */
+export type RouteSource<Args extends unknown[] = []> =
+  | RouteResponse
+  | ((...args: Args) => RouteResponse | Promise<RouteResponse>);
+
+/** A request whose answer the test releases explicitly. */
+export function createGate(): { promise: Promise<RouteResponse>; release: (r: RouteResponse) => void } {
+  let release!: (r: RouteResponse) => void;
+  const promise = new Promise<RouteResponse>((resolve) => {
+    release = resolve;
+  });
+  return { promise, release };
+}
 
 /**
  * Mocks `fetch` with per-endpoint responses so tests can exercise the
@@ -48,11 +59,11 @@ export type RouteSource = RouteResponse | (() => RouteResponse);
 export function mockFetchRoutes(overrides: {
   health?: RouteResponse;
   getLanguage?: RouteSource;
-  putLanguage?: RouteResponse | ((requestBody: unknown) => RouteResponse);
+  putLanguage?: RouteSource<[unknown]>;
 } = {}): void {
   const health = overrides.health ?? { status: 200, body: { status: 'ok' } };
   const getLanguage = overrides.getLanguage ?? { status: 200, body: { language: 'de' } };
-  const putLanguageDefault: RouteResponse | ((requestBody: unknown) => RouteResponse) =
+  const putLanguage: RouteSource<[unknown]> =
     overrides.putLanguage ?? ((requestBody: unknown) => ({ status: 200, body: requestBody }));
 
   vi.stubGlobal(
@@ -61,28 +72,27 @@ export function mockFetchRoutes(overrides: {
       const url = typeof input === 'string' ? input : input.toString();
       const method = (init?.method ?? 'GET').toUpperCase();
 
-      let route: RouteResponse;
+      let route: RouteResponse | Promise<RouteResponse>;
       if (url.includes('/api/health')) {
         route = health;
       } else if (url.includes('/api/studio/settings/language') && method === 'GET') {
         route = typeof getLanguage === 'function' ? getLanguage() : getLanguage;
       } else if (url.includes('/api/studio/settings/language') && method === 'PUT') {
         const requestBody: unknown = init?.body !== undefined ? JSON.parse(String(init.body)) : {};
-        route =
-          typeof putLanguageDefault === 'function'
-            ? putLanguageDefault(requestBody)
-            : putLanguageDefault;
+        route = typeof putLanguage === 'function' ? putLanguage(requestBody) : putLanguage;
       } else {
         return Promise.reject(new Error(`Unmocked fetch call: ${method} ${url}`));
       }
 
-      if (route === 'pending') {
-        return new Promise<Response>(() => undefined);
-      }
-      if (route === 'network-error') {
-        return Promise.reject(new TypeError('network error'));
-      }
-      return Promise.resolve(toResponse(route.status, route.body));
+      return Promise.resolve(route).then((resolved) => {
+        if (resolved === 'pending') {
+          return new Promise<Response>(() => undefined);
+        }
+        if (resolved === 'network-error') {
+          return Promise.reject(new TypeError('network error'));
+        }
+        return toResponse(resolved.status, resolved.body);
+      });
     },
   );
 }

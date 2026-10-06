@@ -2,7 +2,8 @@
   "app": {
     "language": "Sprache",
     "languageLoadError": "Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.",
-    "languageSaveError": "Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv."
+    "languageSaveError": "Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv.",
+    "languageSaveUnconfirmedError": "Die Sprache konnte nicht gespeichert werden. Es wird die Standardsprache Deutsch angezeigt, weil die gespeicherte Sprache nicht gelesen werden konnte."
   },
   "canvas": {
     "label": "Designer-Arbeitsfläche",

@@ -4,154 +4,387 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import { LanguageSelect } from './LanguageSelect';
-import { mockFetchRoutes, renderWithProviders, type RouteResponse } from './test-utils';
+import { createGate, mockFetchRoutes, renderWithProviders, type RouteResponse } from './test-utils';
 
-describe('LanguageSelect', () => {
-  it('starts German when no language has been stored yet', async () => {
-    mockFetchRoutes({ getLanguage: { status: 200, body: { language: 'de' } } });
-    renderWithProviders(<LanguageSelect />);
+// The tests are grouped by the state sequences of the language display. Each
+// sequence fixes the displayed language (select value and label text), the
+// state of the select and the message. The same table is described in
+// docs/technical/pipwerk-studio.md, section 2.4.
+//
+//   A  first read:     A1 running, A2 succeeds, A3 fails
+//   B  saving:         B1 running, B2 succeeds, B3 fails, B4 after a failed first read
+//   C  later reads:    C1 succeeds, C2 fails, C3 succeeds after a failed first read,
+//                      C4 succeeds after a failed save without confirmed language
+//   D  overlap:        D1 read running when a save succeeds, D2 read started while saving,
+//                      D3 read finishes while saving, then the save fails
+//   E  repeated saves: E1 second save while one runs, E2 retry after a failed save
 
-    expect(await screen.findByDisplayValue('Deutsch')).toBeInTheDocument();
+const LOAD_ERROR_DE =
+  'Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.';
+const SAVE_ERROR_DE =
+  'Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv.';
+const SAVE_ERROR_EN = 'The language could not be saved. The last confirmed language stays active.';
+const SAVE_UNCONFIRMED_ERROR_DE =
+  'Die Sprache konnte nicht gespeichert werden. Es wird die Standardsprache Deutsch angezeigt, weil die gespeicherte Sprache nicht gelesen werden konnte.';
+const LANGUAGE_BODY = (language: 'de' | 'en'): RouteResponse => ({
+  status: 200,
+  body: { language },
+});
+
+function select(): HTMLSelectElement {
+  return screen.getByRole('combobox');
+}
+
+async function waitUntilEnabled(): Promise<void> {
+  await waitFor(() => expect(select()).not.toBeDisabled());
+}
+
+function refocusWindow(): void {
+  act(() => {
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
   });
+}
 
-  it('shows the initially stored English language once determined', async () => {
-    mockFetchRoutes({ getLanguage: { status: 200, body: { language: 'en' } } });
-    renderWithProviders(<LanguageSelect />, 'en');
-
-    expect(await screen.findByDisplayValue('English')).toBeInTheDocument();
+async function settle(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
   });
+}
 
-  it('keeps the select disabled while the initial determination is still open', () => {
-    // The GET call stays open for the whole test.
+describe('LanguageSelect, A: first read', () => {
+  it('A1: keeps the select disabled and shows no message while the read is running', () => {
     mockFetchRoutes({ getLanguage: 'pending' });
     renderWithProviders(<LanguageSelect />);
 
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(select()).toBeDisabled();
+    expect(select()).toHaveValue('de');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('switches from German to English and persists it via a server mutation', async () => {
-    mockFetchRoutes({ getLanguage: { status: 200, body: { language: 'de' } } });
-    const user = userEvent.setup();
+  it('A2: starts German when German is stored', async () => {
+    mockFetchRoutes({ getLanguage: LANGUAGE_BODY('de') });
     renderWithProviders(<LanguageSelect />);
-    await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
 
-    await user.selectOptions(screen.getByRole('combobox'), 'en');
-
-    await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('en'));
+    await waitUntilEnabled();
+    expect(select()).toHaveValue('de');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('switches from English back to German and persists it via a server mutation', async () => {
-    mockFetchRoutes({ getLanguage: { status: 200, body: { language: 'en' } } });
-    const user = userEvent.setup();
+  it('A2: shows English when English is stored', async () => {
+    mockFetchRoutes({ getLanguage: LANGUAGE_BODY('en') });
     renderWithProviders(<LanguageSelect />, 'en');
-    await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
-    expect(screen.getByRole('combobox')).toHaveValue('en');
 
-    await user.selectOptions(screen.getByRole('combobox'), 'de');
-
-    await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('de'));
-  });
-
-  it('shows the save error and keeps the confirmed language when the mutation fails', async () => {
-    mockFetchRoutes({
-      getLanguage: { status: 200, body: { language: 'de' } },
-      putLanguage: { status: 500, body: { detail: 'error' } },
-    });
-    const user = userEvent.setup();
-    renderWithProviders(<LanguageSelect />);
-    await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
-
-    await user.selectOptions(screen.getByRole('combobox'), 'en');
-
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(
-      'Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv.',
-    );
-    await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('de'));
-    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('English')).toBeInTheDocument();
+    expect(screen.getByText('Language')).toBeInTheDocument();
   });
 
   it.each([
     ['a network error', 'network-error' as const],
     ['an HTTP error', { status: 503, body: { detail: 'invalid' } }],
-  ])('shows the read error, not the save error, when the initial read fails with %s', async (_name, route) => {
+  ])('A3: shows the read message, German and a usable select when the read fails with %s', async (_n, route) => {
     mockFetchRoutes({ getLanguage: route });
     renderWithProviders(<LanguageSelect />);
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(
-      'Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.',
-    );
+    expect(alert).toHaveTextContent(LOAD_ERROR_DE);
     expect(alert).not.toHaveTextContent('gespeichert werden');
-    await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
-    expect(screen.getByRole('combobox')).toHaveValue('de');
+    await waitUntilEnabled();
+    expect(select()).toHaveValue('de');
+  });
+});
+
+describe('LanguageSelect, B: saving', () => {
+  it('B1: shows the requested language in select and texts, disabled and without message, while saving', async () => {
+    mockFetchRoutes({ getLanguage: LANGUAGE_BODY('de'), putLanguage: 'pending' });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+
+    await user.selectOptions(select(), 'en');
+
+    await waitFor(() => expect(screen.getByText('Language')).toBeInTheDocument());
+    expect(select()).toHaveValue('en');
+    expect(select()).toBeDisabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('clears the read error after a language was saved successfully', async () => {
-    mockFetchRoutes({ getLanguage: 'network-error' });
+  it('B2: switches from German to English and back and keeps the select usable', async () => {
+    mockFetchRoutes({ getLanguage: LANGUAGE_BODY('de') });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+
+    await user.selectOptions(select(), 'en');
+    await waitFor(() => expect(select()).toHaveValue('en'));
+    await waitUntilEnabled();
+    expect(screen.getByText('Language')).toBeInTheDocument();
+
+    await user.selectOptions(select(), 'de');
+    await waitFor(() => expect(select()).toHaveValue('de'));
+    await waitUntilEnabled();
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('B3: shows the save message and returns to the confirmed language when saving fails', async () => {
+    mockFetchRoutes({
+      getLanguage: LANGUAGE_BODY('de'),
+      putLanguage: { status: 500, body: { detail: 'error' } },
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+
+    await user.selectOptions(select(), 'en');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_DE);
+    await waitFor(() => expect(select()).toHaveValue('de'));
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(select()).not.toBeDisabled();
+  });
+
+  it('B4: after a failed first read, shows no message while saving and none after it succeeded', async () => {
+    const put = createGate();
+    mockFetchRoutes({ getLanguage: 'network-error', putLanguage: () => put.promise });
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />);
     await screen.findByRole('alert');
 
-    await user.selectOptions(screen.getByRole('combobox'), 'en');
+    await user.selectOptions(select(), 'en');
+    await waitFor(() => expect(select()).toBeDisabled());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
-    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
-    expect(screen.getByRole('combobox')).toHaveValue('en');
+    put.release(LANGUAGE_BODY('en'));
+    await waitUntilEnabled();
+    expect(select()).toHaveValue('en');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('shows the requested language in the select and in the texts while saving', async () => {
-    // The PUT call stays open, so the save request is still running.
+  it('B4: after a failed first read and a failed save, reports that no language is confirmed', async () => {
     mockFetchRoutes({
-      getLanguage: { status: 200, body: { language: 'de' } },
-      putLanguage: 'pending',
+      getLanguage: 'network-error',
+      putLanguage: { status: 500, body: { detail: 'error' } },
     });
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />);
-    await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
+    await screen.findByRole('alert');
 
-    await user.selectOptions(screen.getByRole('combobox'), 'en');
+    await user.selectOptions(select(), 'en');
 
-    await waitFor(() => expect(screen.getByText('Language')).toBeInTheDocument());
-    expect(screen.getByRole('combobox')).toHaveValue('en');
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(SAVE_UNCONFIRMED_ERROR_DE),
+    );
+    expect(select()).toHaveValue('de');
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(select()).not.toBeDisabled();
+  });
+});
+
+describe('LanguageSelect, C: later reads', () => {
+  it('C1: takes over the language the backend reports after a later successful read', async () => {
+    let answer: RouteResponse = LANGUAGE_BODY('en');
+    mockFetchRoutes({ getLanguage: () => answer });
+    renderWithProviders(<LanguageSelect />, 'en');
+    await waitFor(() => expect(select()).toHaveValue('en'));
+
+    answer = LANGUAGE_BODY('de');
+    refocusWindow();
+
+    await waitFor(() => expect(select()).toHaveValue('de'));
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  describe('automatic refetch after a confirmed language', () => {
-    function refocusWindow(): void {
-      act(() => {
-        focusManager.setFocused(false);
-        focusManager.setFocused(true);
-      });
-    }
+  it('C2: keeps the confirmed language and shows no message when a later read fails', async () => {
+    let answer: RouteResponse = LANGUAGE_BODY('en');
+    mockFetchRoutes({ getLanguage: () => answer });
+    renderWithProviders(<LanguageSelect />, 'en');
+    await waitFor(() => expect(select()).toHaveValue('en'));
 
-    it('keeps the confirmed language and shows no message when a later refetch fails', async () => {
-      let answer: RouteResponse = { status: 200, body: { language: 'en' } };
-      mockFetchRoutes({ getLanguage: () => answer });
-      renderWithProviders(<LanguageSelect />, 'en');
-      await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('en'));
-      expect(screen.getByText('Language')).toBeInTheDocument();
+    answer = 'network-error';
+    refocusWindow();
 
-      answer = 'network-error';
-      refocusWindow();
+    await settle();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(select()).toHaveValue('en');
+    expect(screen.getByText('Language')).toBeInTheDocument();
+  });
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-      expect(screen.getByRole('combobox')).toHaveValue('en');
-      expect(screen.getByText('Language')).toBeInTheDocument();
+  it('C3: removes the read message when a later read succeeds after a failed first read', async () => {
+    let answer: RouteResponse = 'network-error';
+    mockFetchRoutes({ getLanguage: () => answer });
+    renderWithProviders(<LanguageSelect />);
+    await screen.findByRole('alert');
+
+    answer = LANGUAGE_BODY('en');
+    refocusWindow();
+
+    await waitFor(() => expect(select()).toHaveValue('en'));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('Language')).toBeInTheDocument();
+  });
+
+  it('C4: switches the save message once a later read confirmed a language', async () => {
+    let answer: RouteResponse = 'network-error';
+    mockFetchRoutes({
+      getLanguage: () => answer,
+      putLanguage: { status: 500, body: { detail: 'error' } },
     });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await screen.findByRole('alert');
+    await user.selectOptions(select(), 'en');
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(SAVE_UNCONFIRMED_ERROR_DE),
+    );
 
-    it('takes over the language the backend reports after a later successful refetch', async () => {
-      let answer: RouteResponse = { status: 200, body: { language: 'en' } };
-      mockFetchRoutes({ getLanguage: () => answer });
-      renderWithProviders(<LanguageSelect />, 'en');
-      await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('en'));
+    answer = LANGUAGE_BODY('en');
+    refocusWindow();
 
-      answer = { status: 200, body: { language: 'de' } };
-      refocusWindow();
+    await waitFor(() => expect(select()).toHaveValue('en'));
+    expect(screen.getByRole('alert')).toHaveTextContent(SAVE_ERROR_EN);
+  });
+});
 
-      await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('de'));
-      expect(screen.getByText('Sprache')).toBeInTheDocument();
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+describe('LanguageSelect, D: reads overlapping with saving', () => {
+  it('D1: an older read answer arriving after a successful save does not overwrite it', async () => {
+    const staleRead = createGate();
+    let reads = 0;
+    mockFetchRoutes({
+      getLanguage: () => {
+        reads += 1;
+        return reads === 1 ? LANGUAGE_BODY('en') : staleRead.promise;
+      },
     });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />, 'en');
+    await waitFor(() => expect(select()).toHaveValue('en'));
+    refocusWindow();
+    await waitFor(() => expect(reads).toBe(2));
+
+    await user.selectOptions(select(), 'de');
+    await waitFor(() => expect(select()).toHaveValue('de'));
+    await waitUntilEnabled();
+    staleRead.release(LANGUAGE_BODY('en'));
+    await settle();
+
+    expect(select()).toHaveValue('de');
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('D2: a read started while saving does not overwrite the saved language', async () => {
+    const put = createGate();
+    const staleRead = createGate();
+    let reads = 0;
+    mockFetchRoutes({
+      getLanguage: () => {
+        reads += 1;
+        return reads === 1 ? LANGUAGE_BODY('en') : staleRead.promise;
+      },
+      putLanguage: () => put.promise,
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />, 'en');
+    await waitFor(() => expect(select()).toHaveValue('en'));
+    await user.selectOptions(select(), 'de');
+    await waitFor(() => expect(select()).toBeDisabled());
+    refocusWindow();
+    await waitFor(() => expect(reads).toBe(2));
+
+    put.release(LANGUAGE_BODY('de'));
+    await waitUntilEnabled();
+    staleRead.release(LANGUAGE_BODY('en'));
+    await settle();
+
+    expect(select()).toHaveValue('de');
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('D3: a read finishing while saving does not change the display; a failed save then shows what the read confirmed', async () => {
+    const put = createGate();
+    let reads = 0;
+    mockFetchRoutes({
+      getLanguage: () => {
+        reads += 1;
+        return LANGUAGE_BODY(reads === 1 ? 'de' : 'en');
+      },
+      putLanguage: () => put.promise,
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+    await user.selectOptions(select(), 'en');
+    await waitFor(() => expect(select()).toBeDisabled());
+    refocusWindow();
+    await waitFor(() => expect(reads).toBe(2));
+    await settle();
+
+    expect(select()).toHaveValue('en');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    put.release({ status: 500, body: { detail: 'error' } });
+
+    // The read confirmed English, so the message appears in English.
+    expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_EN);
+    expect(select()).toHaveValue('en');
+  });
+});
+
+describe('LanguageSelect, E: repeated saves', () => {
+  it('E1: sends only one save request while one is running', async () => {
+    const put = createGate();
+    let puts = 0;
+    mockFetchRoutes({
+      getLanguage: LANGUAGE_BODY('de'),
+      putLanguage: () => {
+        puts += 1;
+        return put.promise;
+      },
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+
+    await user.selectOptions(select(), 'en');
+    await waitFor(() => expect(select()).toBeDisabled());
+    await user.selectOptions(select(), 'de');
+
+    expect(puts).toBe(1);
+    expect(select()).toHaveValue('en');
+    put.release(LANGUAGE_BODY('en'));
+    await waitUntilEnabled();
+    expect(select()).toHaveValue('en');
+  });
+
+  it('E2: a retry after a failed save removes the message while running and after success', async () => {
+    const answers: RouteResponse[] = [{ status: 500, body: { detail: 'error' } }];
+    const retry = createGate();
+    let puts = 0;
+    mockFetchRoutes({
+      getLanguage: LANGUAGE_BODY('de'),
+      putLanguage: () => {
+        puts += 1;
+        return answers[puts - 1] ?? retry.promise;
+      },
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitUntilEnabled();
+    await user.selectOptions(select(), 'en');
+    expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_DE);
+    await waitFor(() => expect(select()).toHaveValue('de'));
+    await waitUntilEnabled();
+
+    await user.selectOptions(select(), 'en');
+    await waitFor(() => expect(select()).toBeDisabled());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    retry.release(LANGUAGE_BODY('en'));
+    await waitUntilEnabled();
+    expect(select()).toHaveValue('en');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
