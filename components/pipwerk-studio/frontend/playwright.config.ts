@@ -26,7 +26,9 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `sh e2e/start-backend.sh ${backendPort}`,
+      command: `node e2e/start-backend.mjs ${backendPort}`,
+      // Lets the launcher remove its temporary database directory.
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
       url: `${backendUrl}/api/health`,
       reuseExistingServer: false,
     },

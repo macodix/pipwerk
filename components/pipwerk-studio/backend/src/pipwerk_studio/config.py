@@ -29,24 +29,46 @@ class StartupConfigError(Exception):
     """Raised when an explicitly given startup configuration cannot be used."""
 
 
+#: System-wide search directory on POSIX systems.
+_POSIX_SYSTEM_DIR = Path("/etc/pipwerk")
+
+
+def _env_base(name: str) -> Path | None:
+    """Return the absolute directory in environment variable ``name``.
+
+    An unset, empty or relative value yields ``None`` so that no search
+    location can become relative to the current working directory.
+    """
+    value = os.environ.get(name, "")
+    if not value:
+        return None
+    path = Path(value)
+    return path if path.is_absolute() else None
+
+
+def _locations(entries: list[tuple[Path | None, tuple[str, ...]]]) -> list[Path]:
+    return [base.joinpath(*parts, CONFIG_FILE_NAME) for base, parts in entries if base is not None]
+
+
 def _posix_search_locations() -> list[Path]:
-    home = Path(os.environ.get("HOME", ""))
-    return [
-        home / "pipwerk" / "etc" / CONFIG_FILE_NAME,
-        home / ".config" / "pipwerk" / CONFIG_FILE_NAME,
-        Path("/etc/pipwerk") / CONFIG_FILE_NAME,
-    ]
+    home = _env_base("HOME")
+    return _locations(
+        [
+            (home, ("pipwerk", "etc")),
+            (home, (".config", "pipwerk")),
+            (_POSIX_SYSTEM_DIR, ()),
+        ]
+    )
 
 
 def _windows_search_locations() -> list[Path]:
-    userprofile = Path(os.environ.get("USERPROFILE", ""))
-    appdata = Path(os.environ.get("APPDATA", ""))
-    programdata = Path(os.environ.get("PROGRAMDATA", ""))
-    return [
-        userprofile / "pipwerk" / "etc" / CONFIG_FILE_NAME,
-        appdata / "pipwerk" / CONFIG_FILE_NAME,
-        programdata / "pipwerk" / CONFIG_FILE_NAME,
-    ]
+    return _locations(
+        [
+            (_env_base("USERPROFILE"), ("pipwerk", "etc")),
+            (_env_base("APPDATA"), ("pipwerk",)),
+            (_env_base("PROGRAMDATA"), ("pipwerk",)),
+        ]
+    )
 
 
 def default_search_locations() -> list[Path]:

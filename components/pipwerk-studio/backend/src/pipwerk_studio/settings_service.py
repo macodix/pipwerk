@@ -26,9 +26,13 @@ SUPPORTED_LANGUAGES: tuple[Language, ...] = get_args(Language)
 DEFAULT_LANGUAGE: Language = "de"
 
 
-def is_supported_language(value: str) -> bool:
-    """Return whether ``value`` is one of the supported Studio languages."""
-    return value in SUPPORTED_LANGUAGES
+class StoredLanguageInvalidError(Exception):
+    """Raised when the stored language value is not a supported language.
+
+    This is a technically defective storage content (for example a manually
+    edited database), not a user input error. Reading fails with this error
+    instead of guessing a replacement; writing a valid language repairs it.
+    """
 
 
 class SettingsService:
@@ -38,13 +42,22 @@ class SettingsService:
         self._session_factory = session_factory
 
     def get_language(self) -> Language:
-        """Return the stored language, or the documented default (req-ui-008)."""
+        """Return the stored language, or the documented default (req-ui-008).
+
+        Raises ``StoredLanguageInvalidError`` if the stored value is not a
+        supported language.
+        """
         with self._session_factory() as session:
             record = session.get(StudioSettingsRecord, SETTINGS_SINGLETON_ID)
             if record is None:
                 return DEFAULT_LANGUAGE
-            # The column is validated on write; a cast is safe here.
-            return record.language  # type: ignore[return-value]
+            stored = record.language
+            for language in SUPPORTED_LANGUAGES:
+                if stored == language:
+                    return language
+            raise StoredLanguageInvalidError(
+                f"Stored Studio language is not a supported language: {stored!r}"
+            )
 
     def set_language(self, language: Language) -> Language:
         """Persist ``language`` as the single authoritative Studio language.

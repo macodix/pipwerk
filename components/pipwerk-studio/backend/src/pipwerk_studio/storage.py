@@ -8,9 +8,6 @@ the public domain or API representation of Studio settings.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from contextlib import contextmanager
-
 from sqlalchemy import Integer, String, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
@@ -56,17 +53,3 @@ def create_studio_engine(database_url: str) -> Engine:
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:
     """Create a session factory bound to the given engine."""
     return sessionmaker(bind=engine, expire_on_commit=False)
-
-
-@contextmanager
-def session_scope(session_factory: sessionmaker[Session]) -> Iterator[Session]:
-    """Provide a single committed-or-rolled-back transactional session."""
-    session = session_factory()
-    try:
-        yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()

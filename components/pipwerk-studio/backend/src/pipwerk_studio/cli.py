@@ -2,7 +2,7 @@
 
 Supports the documented ``-c <PATH>`` startup configuration parameter
 (req-system-017, req-system-018) so Pipwerk Studio can be started as an
-eigenständiges Programm with an explicit startup configuration. When
+standalone program with an explicit startup configuration. When
 ``-c`` is omitted, the documented automatic search locations are used.
 """
 

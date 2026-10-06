@@ -20,17 +20,13 @@ describe('LanguageSelect', () => {
     expect(await screen.findByDisplayValue('English')).toBeInTheDocument();
   });
 
-  it('does not show an unconfirmed persisted language while still initializing', () => {
-    // The GET call never resolves within this test, simulating the initial
-    // determination still being in progress.
-    mockFetchRoutes({
-      getLanguage: { status: 200, body: { language: 'en' } },
-    });
+  it('keeps the select disabled while the initial determination is still open', () => {
+    // The GET call stays open for the whole test.
+    mockFetchRoutes({ getLanguage: 'pending' });
     renderWithProviders(<LanguageSelect />);
 
-    // Immediately after render and before the query settles, the select is
-    // disabled rather than falsely showing a final confirmed language.
     expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('switches from German to English and persists it via a server mutation', async () => {
@@ -56,7 +52,7 @@ describe('LanguageSelect', () => {
     await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('de'));
   });
 
-  it('shows an error and keeps the confirmed language when the mutation fails', async () => {
+  it('shows the save error and keeps the confirmed language when the mutation fails', async () => {
     mockFetchRoutes({
       getLanguage: { status: 200, body: { language: 'de' } },
       putLanguage: { status: 500, body: { detail: 'error' } },
@@ -67,15 +63,55 @@ describe('LanguageSelect', () => {
 
     await user.selectOptions(screen.getByRole('combobox'), 'en');
 
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv.',
+    );
     await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('de'));
+    expect(screen.getByText('Sprache')).toBeInTheDocument();
   });
 
-  it('shows an error and keeps the default language when the initial read fails', async () => {
-    mockFetchRoutes({ getLanguage: 'network-error' });
+  it.each([
+    ['a network error', 'network-error' as const],
+    ['an HTTP error', { status: 503, body: { detail: 'invalid' } }],
+  ])('shows the read error, not the save error, when the initial read fails with %s', async (_name, route) => {
+    mockFetchRoutes({ getLanguage: route });
     renderWithProviders(<LanguageSelect />);
 
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.',
+    );
+    expect(alert).not.toHaveTextContent('gespeichert werden');
     await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
     expect(screen.getByRole('combobox')).toHaveValue('de');
+  });
+
+  it('clears the read error after a language was saved successfully', async () => {
+    mockFetchRoutes({ getLanguage: 'network-error' });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await screen.findByRole('alert');
+
+    await user.selectOptions(screen.getByRole('combobox'), 'en');
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(screen.getByRole('combobox')).toHaveValue('en');
+  });
+
+  it('shows the requested language in the select and in the texts while saving', async () => {
+    // The PUT call stays open, so the save request is still running.
+    mockFetchRoutes({
+      getLanguage: { status: 200, body: { language: 'de' } },
+      putLanguage: 'pending',
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LanguageSelect />);
+    await waitFor(() => expect(screen.getByRole('combobox')).not.toBeDisabled());
+
+    await user.selectOptions(screen.getByRole('combobox'), 'en');
+
+    await waitFor(() => expect(screen.getByText('Language')).toBeInTheDocument());
+    expect(screen.getByRole('combobox')).toHaveValue('en');
   });
 });

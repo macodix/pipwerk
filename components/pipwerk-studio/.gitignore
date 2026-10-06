@@ -10,3 +10,11 @@ frontend/node_modules/
 frontend/dist/
 frontend/test-results/
 frontend/playwright-report/
+
+# Locally created startup configuration and development database of the
+# backend (the versioned example is backend/pipwerk-studio.example.ini)
+backend/pipwerk-studio.ini
+backend/pipwerk-studio.db
+backend/pipwerk-studio.db-journal
+backend/pipwerk-studio.db-wal
+backend/pipwerk-studio.db-shm

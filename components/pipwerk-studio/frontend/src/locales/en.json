@@ -1,7 +1,8 @@
 {
   "app": {
     "language": "Language",
-    "languageError": "The language could not be saved. The current language stays active."
+    "languageLoadError": "The stored language could not be read. The default language German is shown.",
+    "languageSaveError": "The language could not be saved. The last confirmed language stays active."
   },
   "canvas": {
     "label": "Designer canvas",

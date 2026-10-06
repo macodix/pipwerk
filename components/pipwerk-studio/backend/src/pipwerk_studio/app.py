@@ -9,14 +9,21 @@ No other domain logic lives in this module.
 
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from pipwerk_studio.config import load_database_url
-from pipwerk_studio.settings_service import Language, SettingsService
+from pipwerk_studio.settings_service import (
+    Language,
+    SettingsService,
+    StoredLanguageInvalidError,
+)
 from pipwerk_studio.storage import create_session_factory, create_studio_engine
+
+logger = logging.getLogger(__name__)
 
 
 class HealthStatus(BaseModel):
@@ -78,11 +85,19 @@ def create_app(database_url: str | None = None) -> FastAPI:
             "Internal Studio settings endpoint used by the Studio user "
             "interface. Returns the single, backend-authoritative Studio "
             "language. Defaults to German when no language has been "
-            "stored yet."
+            "stored yet. Responds with HTTP 503 if the stored value is not "
+            "a supported language; a valid write repairs it."
         ),
     )
     def read_language() -> StudioLanguage:
-        return StudioLanguage(language=settings_service.get_language())
+        try:
+            return StudioLanguage(language=settings_service.get_language())
+        except StoredLanguageInvalidError as error:
+            logger.error("%s", error)
+            raise HTTPException(
+                status_code=503,
+                detail="The stored Studio language is invalid.",
+            ) from error
 
     @app.put(
         "/api/studio/settings/language",

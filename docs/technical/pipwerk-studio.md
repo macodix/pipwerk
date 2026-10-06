@@ -23,9 +23,11 @@ Pipwerk Studio liegt im Verzeichnis `components/pipwerk-studio/` und besteht aus
 
 ### 2.1 Backend, Konfiguration und Persistenz
 
-`backend/src/pipwerk_studio/app.py` erzeugt die FastAPI-Anwendung. `cli.py` ist der eigenständige Startpunkt, `config.py` liest die INI-Startkonfiguration, `settings_service.py` bildet die anwendungsseitige Servicegrenze und `storage.py` kapselt SQLAlchemy und das relationale Speichermodell.
+Das Backend ist eine FastAPI-Anwendung. Die Funktion `create_app()` in `backend/src/pipwerk_studio/app.py` erzeugt die Anwendung. Sie wird mit dem ASGI-Server Uvicorn gestartet. `cli.py` ist der eigenständige Startpunkt, `config.py` liest die INI-Startkonfiguration, `settings_service.py` bildet die anwendungsseitige Servicegrenze und `storage.py` kapselt SQLAlchemy und das relationale Speichermodell.
 
 Die Oberflächensprache ist eine einzige betriebliche Einstellung der Komponente, nicht benutzerbezogen und kein Bestandteil von Strategiedaten. Der Browser ist nicht autoritativ und verwendet dafür weder Local Storage noch Session Storage noch Cookies. Ohne gespeicherten Wert liefert der Service Deutsch (`de`). Die Datenbank enthält höchstens einen zentralen Datensatz in `studio_settings`.
+
+Enthält der gespeicherte Wert keine unterstützte Sprache (technisch fehlerhafter Speicherinhalt, zum Beispiel nach händischer Änderung der Datenbank), wird keine Ersatzsprache angenommen. Der Lesezugriff schlägt mit HTTP 503 und der Meldung `The stored Studio language is invalid.` fehl und der Fehler wird im Backend protokolliert; die Oberfläche zeigt dann die Meldung zum fehlgeschlagenen Lesen (Abschnitt 2.4). Ein gültiger Schreibzugriff ersetzt den fehlerhaften Wert und behebt den Zustand.
 
 SQLAlchemy bleibt hinter der Service-/Infrastrukturgrenze; ORM-Objekte werden nicht als API-Modelle verwendet. Das kleine initiale Schema wird beim Start angelegt. Da für dieses neue, einzeilige Schema noch keine Schemaänderung oder Bestandsmigration existiert, wird Alembic derzeit nicht eingesetzt. Vor einer späteren Schemaänderung ist eine versionierte Migration einzuführen.
 
@@ -46,7 +48,7 @@ Eine mit `-c <PATH>` angegebene Datei hat höchste Priorität. Ohne `-c` wird ge
 2. `$HOME/.config/pipwerk/pipwerk-studio.ini`
 3. `/etc/pipwerk/pipwerk-studio.ini`
 
-Unter Windows gelten entsprechend `%USERPROFILE%\pipwerk\etc`, `%APPDATA%\pipwerk` und `%PROGRAMDATA%\pipwerk`. Ist ohne explizite Datei an keinem Suchort eine Konfiguration vorhanden, wird ausschließlich für den Entwicklungsbetrieb `sqlite:///./pipwerk-studio.db` verwendet. Eine explizit angegebene fehlende oder unvollständige Datei beendet den Start mit einer Fehlermeldung.
+Unter Windows gelten entsprechend `%USERPROFILE%\pipwerk\etc`, `%APPDATA%\pipwerk` und `%PROGRAMDATA%\pipwerk`. Ist ohne explizite Datei an keinem Suchort eine Konfiguration vorhanden, wird ausschließlich für den Entwicklungsbetrieb `sqlite:///./pipwerk-studio.db` verwendet. Eine explizit angegebene fehlende oder unvollständige Datei beendet den Start mit einer Fehlermeldung. Ist eine der Umgebungsvariablen `HOME`, `USERPROFILE`, `APPDATA` oder `PROGRAMDATA` nicht gesetzt, leer oder kein absoluter Pfad, entfallen die davon abhängigen Suchorte; es werden nie Pfade relativ zum Startverzeichnis durchsucht.
 
 ### 2.3 Oberfläche
 
@@ -76,7 +78,7 @@ Alle sichtbaren Texte der Oberfläche werden über Übersetzungsschlüssel aus d
 
 Der Produktname „Pipwerk Studio“ wird nicht übersetzt. Die Sprachnamen im Auswahlfeld werden in ihrer eigenen Sprache angezeigt, also „Deutsch“ und „English“.
 
-Die Oberflächensprache wird vom Backend gelesen und dort dauerhaft gespeichert (Abschnitt 2.1). Ist noch nichts gespeichert, ist Deutsch eingestellt. Bis die erste Antwort des Backends vorliegt, ist die Auswahl deaktiviert. Eine Auswahl wird sofort sichtbar und per Mutation gespeichert. Nach Erfolg wird der Query-Cache mit der Antwort des Backends abgeglichen. Bei einem Fehler bleibt beziehungsweise wird die zuletzt vom Backend bestätigte Sprache aktiv und eine Meldung erscheint. Der Browser speichert die Sprache weder in Local Storage noch in Session Storage noch in Cookies.
+Die Oberflächensprache wird vom Backend gelesen und dort dauerhaft gespeichert (Abschnitt 2.1). Ist noch nichts gespeichert, ist Deutsch eingestellt. Bis die erste Antwort des Backends vorliegt, ist die Auswahl deaktiviert. Der Hook `useStudioLanguage` leitet die angezeigte Sprache an einer Stelle ab: Während eine Speicheranfrage läuft, sind die Auswahl und die Texte in der gewählten Sprache; sonst in der zuletzt vom Backend bestätigten Sprache (ohne Antwort in Deutsch). Nach Erfolg wird der Query-Cache mit der Antwort des Backends abgeglichen. Zwei Fehler werden getrennt gemeldet: Konnte die gespeicherte Sprache nicht gelesen werden, erscheint die Meldung zum Lesefehler, es wird Deutsch angezeigt und die Auswahl bleibt bedienbar. Konnte eine Änderung nicht gespeichert werden, erscheint die Meldung zum Speicherfehler und die zuletzt bestätigte Sprache wird wieder angezeigt. Ein erfolgreiches Speichern beendet beide Meldungen. Der Browser speichert die Sprache weder in Local Storage noch in Session Storage noch in Cookies.
 
 ### 2.5 Verbindung zwischen Oberfläche und Backend
 
@@ -131,6 +133,8 @@ npm run dev
 
 Danach ist Pipwerk Studio im Browser unter `http://127.0.0.1:5173/` erreichbar.
 
+Die lokal erzeugten Dateien `backend/pipwerk-studio.ini` und `backend/pipwerk-studio.db` (einschließlich `-journal`, `-wal`, `-shm`) werden von `components/pipwerk-studio/.gitignore` ausgeschlossen und können nicht versehentlich committet werden. Versioniert bleibt nur `backend/pipwerk-studio.example.ini`.
+
 Vite leitet Anfragen unter `/api` standardmäßig an `http://127.0.0.1:8000` weiter. Läuft das Backend unter einer anderen Adresse, wird diese beim Start der Oberfläche in der Umgebungsvariable `PIPWERK_STUDIO_BACKEND_URL` angegeben:
 
 ```sh
@@ -145,15 +149,17 @@ Der Befehl `npm run build` im Verzeichnis `frontend` prüft zuerst die Typen und
 
 ## 5. HTTP-Schnittstelle
 
+Das Backend stellt derzeit drei Endpunkte bereit.
+
 | Methode | Pfad | Erfolgsantwort | Zweck |
 | --- | --- | --- | --- |
-| `GET` | `/api/health` | `{"status":"ok"}` | technische Verbindungsprüfung |
-| `GET` | `/api/studio/settings/language` | `{"language":"de"}` oder `{"language":"en"}` | autoritative Sprache lesen |
-| `PUT` | `/api/studio/settings/language` | `{"language":"de"}` oder `{"language":"en"}` | Sprache zentral speichern |
+| `GET` | `/api/health` | HTTP 200 mit `{"status": "ok"}` | technische Prüfung, ob die Oberfläche ihr Backend erreicht |
+| `GET` | `/api/studio/settings/language` | HTTP 200 mit `{"language": "de"}` oder `{"language": "en"}` | autoritative Oberflächensprache lesen; ohne gespeicherten Wert `de` |
+| `PUT` | `/api/studio/settings/language` | HTTP 200 mit `{"language": "de"}` oder `{"language": "en"}` | Oberflächensprache zentral speichern |
 
-Der PUT-Body enthält ausschließlich `{"language":"de"}` oder `{"language":"en"}`. Andere Werte, Typen und zusätzliche Felder werden mit HTTP 422 abgelehnt. Getrennte strikte Pydantic-Lese- und Schreibmodelle bilden die API-Grenze. Das Frontend akzeptiert seinerseits nur eine Antwort mit genau einem gültigen `language`-Feld.
+Andere Methoden auf diesen Pfaden werden mit HTTP 405 abgelehnt. Die Antworten werden mit den Pydantic-Modellen `HealthStatus` und `StudioLanguage` erzeugt, die keine zusätzlichen Felder zulassen. Der Schreibzugriff verwendet das getrennte Modell `StudioLanguageUpdate`: Der Body enthält ausschließlich `{"language": "de"}` oder `{"language": "en"}`; andere Werte, andere Typen, fehlende oder zusätzliche Felder und ein Body, der kein JSON ist, werden mit HTTP 422 abgelehnt. Ist der gespeicherte Wert ungültig, antwortet das Lesen mit HTTP 503 (Abschnitt 2.1). Das Frontend akzeptiert seinerseits nur eine Antwort mit genau einem gültigen `language`-Feld.
 
-Diese Endpunkte sind interne Verbindungen innerhalb von Pipwerk Studio und noch keine öffentliche versionierte API unter `contracts/`. FastAPIs OpenAPI-Darstellung ist im Entwicklungsbetrieb unter `/docs` beziehungsweise `/openapi.json` verfügbar.
+Die Endpunkte sind interne Verbindungen innerhalb von Pipwerk Studio. Sie sind kein Bestandteil der öffentlichen Web-API und kein versionierter Vertrag unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
 
 ## 6. Prüfungen
 
@@ -171,7 +177,7 @@ uv run --frozen ruff format --check
 uv run --frozen mypy
 ```
 
-pytest prüft die HTTP-Anwendung ohne gestarteten Server mit dem Testclient von FastAPI sowie die Konfiguration. Die Tests decken Konfigurationspriorität und Fehlerfälle, API-Validierung, Standardwert, Umschalten, Trennung verschiedener Datenbanken und die Wiederherstellung von Englisch und Deutsch nach echten Stop-/Startzyklen separater Backendprozesse mit derselben temporären INI und SQLite-Datei ab. Ruff prüft Programmierstil und typische Fehler; `ruff format --check` meldet Formatabweichungen, ohne Dateien zu ändern. mypy prüft die Typen im strengen Modus.
+pytest prüft die HTTP-Anwendung ohne gestarteten Server mit dem Testclient von FastAPI sowie die Konfiguration. Die Tests decken Konfigurationspriorität, Suchpfade (POSIX und Windows, auch bei leerem `HOME`; vom Rechner unabhängig), Fehlerfälle, API-Validierung, falsche Methoden, ungültigen gespeicherten Wert, den Ausweg bei gleichzeitigem ersten Schreiben, Standardwert, Umschalten, Trennung verschiedener Datenbanken und die Wiederherstellung von Englisch und Deutsch nach echten Stop-/Startzyklen separater Backendprozesse mit derselben temporären INI und SQLite-Datei ab. Ruff prüft Programmierstil und typische Fehler; `ruff format --check` meldet Formatabweichungen, ohne Dateien zu ändern. mypy prüft die Typen im strengen Modus.
 
 Die Prüfung der Python-Abhängigkeiten auf bekannte Sicherheitslücken erfolgt mit `pip-audit`, das über `uvx` ohne Installation in die Projektumgebung ausgeführt wird. Die Anforderungsliste wird aus der Lockdatei erzeugt:
 
@@ -214,9 +220,9 @@ Der Test wird mit folgendem Befehl ausgeführt:
 npm run e2e
 ```
 
-Playwright startet ein isoliertes Backend auf Port 18000 und Vite auf Port 15173. Andere Ports können über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` gewählt werden. `e2e/write-backend-config.mjs` erzeugt je Lauf ein temporäres Verzeichnis mit INI und SQLite-Datei; `e2e/start-backend.sh` startet ausschließlich über die dokumentierte Option `-c`. Es gibt keine zusätzliche Datenbank-Umgebungsvariable.
+Playwright startet ein isoliertes Backend auf Port 18000 und Vite auf Port 15173. Andere Ports können über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` gewählt werden. `e2e/start-backend.mjs` erzeugt je Lauf ein temporäres Verzeichnis mit INI und SQLite-Datei, startet das Backend ausschließlich über die dokumentierte Option `-c` und entfernt das Verzeichnis, wenn Playwright das Backend beendet (`gracefulShutdown` mit SIGTERM). Es gibt keine zusätzliche Datenbank-Umgebungsvariable.
 
-Die E2E-Tests prüfen echte Browserabläufe einschließlich Sprachwechsel und Wiederherstellung nach einem Seiten-Reload. Sie behaupten keinen Backendneustart; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen. Der Test läuft in Chromium, Firefox und WebKit.
+Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass der Sprachwechsel die sichtbaren Texte umschaltet und dass die gewählte Sprache nach einem Neuladen der Seite erhalten bleibt. Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen (Abschnitt 6.1).
 
 ## 7. Abhängigkeiten
 

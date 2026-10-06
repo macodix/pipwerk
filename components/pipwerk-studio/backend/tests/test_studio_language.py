@@ -1,7 +1,8 @@
 """Tests for the Studio language settings endpoints (req-ui-008).
 
 Covers: default German when nothing is stored yet, reading and writing
-German/English, rejection of invalid language values and unknown fields,
+German/English, rejection of invalid language values and unknown fields, wrong methods (405),
+an invalid stored value (HTTP 503, repaired by a valid write),
 persistence across real backend process restarts, and independence between
 separate database files.
 """
@@ -19,8 +20,14 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from pipwerk_studio.app import create_app
+from pipwerk_studio.storage import (
+    SETTINGS_SINGLETON_ID,
+    StudioSettingsRecord,
+    create_studio_engine,
+)
 
 
 def make_client(database_url: str) -> TestClient:
@@ -145,17 +152,61 @@ def test_rejects_unknown_fields(tmp_path: Path) -> None:
     assert response.status_code == 422
 
 
-def test_get_rejects_unknown_query_fields_body_is_not_applicable(tmp_path: Path) -> None:
-    # GET has no body to reject extra fields in; this documents that the read
-    # model itself still forbids unknown fields if ever constructed from
-    # untrusted input elsewhere.
+def test_rejects_wrong_value_type_and_non_json_body(tmp_path: Path) -> None:
+    client = make_client(f"sqlite:///{tmp_path / 'studio.db'}")
+
+    wrong_type = client.put("/api/studio/settings/language", json={"language": 1})
+    missing_field = client.put("/api/studio/settings/language", json={})
+    not_json = client.put(
+        "/api/studio/settings/language",
+        content="de",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert wrong_type.status_code == 422
+    assert missing_field.status_code == 422
+    assert not_json.status_code == 422
+    assert client.get("/api/studio/settings/language").json() == {"language": "de"}
+
+
+def test_other_methods_are_rejected_with_405(tmp_path: Path) -> None:
+    client = make_client(f"sqlite:///{tmp_path / 'studio.db'}")
+
+    assert client.post("/api/studio/settings/language", json={"language": "en"}).status_code == 405
+    assert client.delete("/api/studio/settings/language").status_code == 405
+    assert client.post("/api/health").status_code == 405
+    assert client.put("/api/health", json={"status": "ok"}).status_code == 405
+    assert client.get("/api/studio/settings/language").json() == {"language": "de"}
+
+
+def store_raw_language(database_url: str, value: str) -> None:
+    engine = create_studio_engine(database_url)
+    with Session(engine) as session:
+        session.add(StudioSettingsRecord(id=SETTINGS_SINGLETON_ID, language=value))
+        session.commit()
+    engine.dispose()
+
+
+def test_invalid_stored_value_is_reported_as_503_not_500(tmp_path: Path) -> None:
     db_url = f"sqlite:///{tmp_path / 'studio.db'}"
+    store_raw_language(db_url, "fr")
     client = make_client(db_url)
 
     response = client.get("/api/studio/settings/language")
 
-    assert response.status_code == 200
-    assert set(response.json().keys()) == {"language"}
+    assert response.status_code == 503
+    assert response.json() == {"detail": "The stored Studio language is invalid."}
+
+
+def test_writing_a_valid_language_repairs_an_invalid_stored_value(tmp_path: Path) -> None:
+    db_url = f"sqlite:///{tmp_path / 'studio.db'}"
+    store_raw_language(db_url, "fr")
+    client = make_client(db_url)
+
+    put_response = client.put("/api/studio/settings/language", json={"language": "en"})
+
+    assert put_response.status_code == 200
+    assert client.get("/api/studio/settings/language").json() == {"language": "en"}
 
 
 def test_language_persists_across_real_backend_process_restarts(tmp_path: Path) -> None:

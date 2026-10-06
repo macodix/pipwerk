@@ -1,21 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { defaultLanguage, type SupportedLanguage } from './i18n';
 import { fetchLanguage, updateLanguage } from './settingsApi';
 
+export type StudioLanguageError = 'load' | 'save';
+
 export type StudioLanguageState = {
-  /** Last backend-confirmed Studio language; used to render the select and to revert on error. */
-  confirmedLanguage: SupportedLanguage;
+  /**
+   * Language to show in the select: the requested language while a save
+   * request is running, otherwise the last backend-confirmed language. The
+   * interface texts are always displayed in this language.
+   */
+  displayedLanguage: SupportedLanguage;
   /**
    * Whether the authoritative initial Studio language has not been
    * determined yet. While `true`, the currently displayed language must not
    * be treated as a final, persisted value.
    */
   isInitializing: boolean;
-  /** Whether the last language change attempt failed; the confirmed language is kept unchanged. */
-  hasError: boolean;
+  /**
+   * `'save'` if the last language change attempt failed (the confirmed
+   * language is kept unchanged), `'load'` if the stored language could not
+   * be read, otherwise `null`.
+   */
+  error: StudioLanguageError | null;
   /** Request a language change; keeps the previously confirmed language on failure. */
   changeLanguage: (language: SupportedLanguage) => void;
 };
@@ -24,17 +34,16 @@ const QUERY_KEY = ['studio-language'];
 
 /**
  * Loads the single, backend-authoritative Studio language with TanStack
- * Query and writes changes with a mutation. After a
- * mutation, the authoritative backend state is synchronized; a failed
- * mutation never loses the currently confirmed language. A language change
- * never touches any other application state.
+ * Query and writes changes with a mutation. The language shown in the
+ * select and in the interface texts is derived from that state in one
+ * place: the requested language while a save request is running, otherwise
+ * the confirmed language (or the documented default if it could not be
+ * read). A failed save therefore falls back to the confirmed language. A
+ * language change never touches any other application state.
  */
 export function useStudioLanguage(): StudioLanguageState {
   const { i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const [confirmedLanguage, setConfirmedLanguage] = useState<SupportedLanguage>(defaultLanguage);
-  const [hasDeterminedInitialLanguage, setHasDeterminedInitialLanguage] = useState(false);
-  const [mutationFailed, setMutationFailed] = useState(false);
 
   const languageQuery = useQuery({
     queryKey: QUERY_KEY,
@@ -42,54 +51,31 @@ export function useStudioLanguage(): StudioLanguageState {
     retry: false,
   });
 
-  useEffect(() => {
-    if (languageQuery.data !== undefined) {
-      setConfirmedLanguage(languageQuery.data.language);
-      setHasDeterminedInitialLanguage(true);
-      void i18n.changeLanguage(languageQuery.data.language);
-    }
-  }, [languageQuery.data, i18n]);
-
-  useEffect(() => {
-    if (languageQuery.isError) {
-      // The backend could not be reached. Keep the documented default
-      // without claiming it as a confirmed persisted value; the select
-      // becomes usable again so the user is not blocked indefinitely.
-      setHasDeterminedInitialLanguage(true);
-    }
-  }, [languageQuery.isError]);
-
   const mutation = useMutation({
     mutationFn: (language: SupportedLanguage) => updateLanguage(language),
     onSuccess: (data) => {
-      setMutationFailed(false);
-      setConfirmedLanguage(data.language);
       queryClient.setQueryData(QUERY_KEY, data);
-      void i18n.changeLanguage(data.language);
-    },
-    onError: () => {
-      setMutationFailed(true);
-      // Revert the visible language to the last backend-confirmed value
-      // instead of keeping an unconfirmed, possibly wrong selection.
-      void i18n.changeLanguage(confirmedLanguage);
     },
   });
 
+  const confirmedLanguage = languageQuery.data?.language ?? defaultLanguage;
+  const displayedLanguage = mutation.isPending ? mutation.variables : confirmedLanguage;
+
+  useEffect(() => {
+    void i18n.changeLanguage(displayedLanguage);
+  }, [displayedLanguage, i18n]);
+
   function changeLanguage(language: SupportedLanguage): void {
-    if (language === confirmedLanguage) {
+    if (language === displayedLanguage) {
       return;
     }
-    // Optimistically show the requested language immediately; it is
-    // synchronized with the authoritative backend state once the mutation
-    // settles.
-    void i18n.changeLanguage(language);
     mutation.mutate(language);
   }
 
   return {
-    confirmedLanguage,
-    isInitializing: !hasDeterminedInitialLanguage,
-    hasError: mutationFailed || languageQuery.isError,
+    displayedLanguage,
+    isInitializing: languageQuery.isPending,
+    error: mutation.isError ? 'save' : languageQuery.isError ? 'load' : null,
     changeLanguage,
   };
 }

@@ -33,7 +33,8 @@ export function mockFetchResponse(status: number, body: unknown): void {
   vi.stubGlobal('fetch', () => Promise.resolve(toResponse(status, body)));
 }
 
-export type RouteResponse = { status: number; body: unknown } | 'network-error';
+/** `'pending'` never answers, which keeps the request open for the whole test. */
+export type RouteResponse = { status: number; body: unknown } | 'network-error' | 'pending';
 
 /**
  * Mocks `fetch` with per-endpoint responses so tests can exercise the
@@ -72,6 +73,9 @@ export function mockFetchRoutes(overrides: {
         return Promise.reject(new Error(`Unmocked fetch call: ${method} ${url}`));
       }
 
+      if (route === 'pending') {
+        return new Promise<Response>(() => undefined);
+      }
       if (route === 'network-error') {
         return Promise.reject(new TypeError('network error'));
       }

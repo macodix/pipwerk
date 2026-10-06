@@ -7,14 +7,14 @@ import { useStudioLanguage } from './useStudioLanguage';
 export function LanguageSelect() {
   const { t } = useTranslation();
   const id = useId();
-  const { confirmedLanguage, isInitializing, hasError, changeLanguage } = useStudioLanguage();
+  const { displayedLanguage, isInitializing, error, changeLanguage } = useStudioLanguage();
 
   return (
     <div className="language-select">
       <label htmlFor={id}>{t('app.language')}</label>
       <select
         id={id}
-        value={confirmedLanguage}
+        value={displayedLanguage}
         disabled={isInitializing}
         onChange={(event) => {
           const language = event.target.value;
@@ -29,9 +29,9 @@ export function LanguageSelect() {
           </option>
         ))}
       </select>
-      {hasError ? (
+      {error !== null ? (
         <p className="language-select-error" role="alert">
-          {t('app.languageError')}
+          {t(error === 'save' ? 'app.languageSaveError' : 'app.languageLoadError')}
         </p>
       ) : null}
     </div>
