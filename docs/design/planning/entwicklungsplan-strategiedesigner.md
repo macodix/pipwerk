@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-04
+- stand: 2026-10-06
 
 ## 1. Ziel und Gegenstand
 
@@ -170,7 +170,7 @@ Entwicklungs- und QA-Agent erhalten denselben freigegebenen Arbeitsauftrag und m
 
 Ziel ist, die manuelle Tätigkeit des Nutzers auf fachliche und grundlegende Architekturentscheidungen, die Freigabe von Arbeitsaufträgen und die abschließende fachliche Erprobung der bereitgestellten Anwendung zu beschränken. Die technischen Schritte dazwischen werden automatisiert ausgeführt.
 
-Als technische Grundlage der Agenten wird OpenClaw verwendet. Der Projektleiter-Agent bildet die Schnittstelle zum Nutzer. Nach Freigabe eines Arbeitsauftrags stößt er den Softwarearchitekt-Agenten aktiv mit eindeutiger Auftragsreferenz an. Der Softwarearchitekt verantwortet Architektur und technische Konzeption und orchestriert Entwicklung, QA, Korrekturschleifen und Testbereitstellung. Die KI-Modelle werden über einen API-Key-basierten Multi-LLM-Anbieter angebunden; der Prozess darf nicht an einen einzelnen Anbieter oder ein einzelnes Modell gebunden werden.
+Der kritische Entwicklungsablauf verwendet Claude Code Agent Teams; die technische Abbildung ist in `docs/technical/claude-code-agentenstruktur.md` festgelegt. Der Projektleiter-Agent bleibt außerhalb des Claude-Agent-Teams und bildet die Schnittstelle zum Nutzer. Nach Freigabe eines Arbeitsauftrags stößt er den Softwarearchitekt-Agenten aktiv mit eindeutiger Auftragsreferenz an. Der Softwarearchitekt verantwortet Architektur und technische Konzeption und orchestriert Entwicklung, QA, Korrekturschleifen und Testbereitstellung. Die Rollen verwenden derzeit folgende Modelle: Softwarearchitekt Opus, Entwickler Sonnet, QA Opus. Diese Modellzuordnung ist eine Startkonfiguration und kann aufgrund praktischer Erfahrungen geändert werden. Anbieterunabhängigkeit beziehungsweise ein Multi-LLM-Anbieter ist derzeit keine Anforderung des Entwicklungsprozesses.
 
 Der automatisierte Ablauf umfasst mindestens:
 
@@ -255,6 +255,8 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 |---|---|
 | 2026-10-02 | Rollen und automatisierten Ablauf auf Projektleiter, Softwarearchitekt, Entwicklung und QA umgestellt; aktive Auftragsübergabe, Entscheidungsgrenzen, commitgebundene QA-Freigabe, Projektleiterprüfung und Abschlussprozess festgelegt. |
 | 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
+| 2026-10-06 | Veraltete Angabe OpenClaw als technische Grundlage der Agenten entsprechend der Umstellung auf Claude Code Agent Teams korrigiert. |
+| 2026-10-06 | Grundsatz eines API-Key-basierten Multi-LLM-Anbieters nicht mehr als Zielarchitektur geführt; aktuelle Modellzuordnung als änderbare Startkonfiguration festgehalten; Anbieterunabhängigkeit derzeit keine Anforderung. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
 | 2026-09-24 | Python als gemeinsamer fachlicher Kern, TypeScript/React als Browseroberfläche, CSS-Gestaltung und Schnittstellenabgrenzung festgehalten. |
 | 2026-09-24 | Gemeinsame Oberflächentechnik und konsistentes Erscheinungsbild für Designer und späteres Handelssystem ergänzt. |
