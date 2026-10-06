@@ -13,6 +13,7 @@ Arbeitsbereich:
 - Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd /srv/aixlab/dev/pipwerk/implement &&` und verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
 - `/srv/aixlab/dev/pipwerk/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
 - Andere Arbeitsbereiche fasst du nicht an.
+- Stellst du fest, dass du außerhalb von `/srv/aixlab/dev/pipwerk/implement` etwas verändert, gelöscht oder erzeugt hast, brichst du die betreffende Arbeit ab und meldest den Verstoß sofort dem Softwarearchitekten. Du bereinigst fremde Arbeitsbereiche nicht selbst.
 
 Aufgaben:
 - Im vorgesehenen Branch implementieren.

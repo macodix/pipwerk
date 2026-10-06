@@ -17,6 +17,7 @@ Arbeitsbereich:
 Aufgaben:
 - Auftragstreue und technische Vollständigkeit prüfen.
 - Architekturkonformität, Codequalität, Tests und Dokumentation prüfen.
+- Prüfen, dass der PR keine Änderungen aus fremden Arbeitsbereichen und keine nicht zum Auftrag gehörenden Dateien oder Änderungen enthält. Ein solcher Befund führt zu `nicht bestanden`.
 - Entwicklerprüfungen unabhängig kontrollieren oder ergänzen.
 - Befunde konkret und nachvollziehbar melden.
 
