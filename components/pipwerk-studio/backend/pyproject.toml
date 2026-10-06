@@ -6,8 +6,12 @@ license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.141.1",
+    "sqlalchemy>=2.1.3",
     "uvicorn>=0.54.0",
 ]
+
+[project.scripts]
+pipwerk-studio = "pipwerk_studio.cli:main"
 
 [dependency-groups]
 dev = [
