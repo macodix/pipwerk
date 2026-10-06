@@ -2,7 +2,6 @@
 name: developer
 description: Implementiert freigegebene Pipwerk-Arbeitsaufträge im eigenen Branch und liefert geprüften Commit und Pull Request.
 model: sonnet
-skills: pipwerk-repository-context, pipwerk-escalation, pipwerk-implementation
 ---
 
 # Pipwerk Entwicklung
