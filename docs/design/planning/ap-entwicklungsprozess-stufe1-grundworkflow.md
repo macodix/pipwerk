@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-02
+- stand: 2026-10-05
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 
 ## Ziel
@@ -16,9 +16,9 @@ Grundlage ist `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Absc
 
 ## Umfang
 
-1. Projektleiter-Agent auf Grundlage von OpenClaw einrichten: klärt und formuliert Arbeitsaufträge mit dem Nutzer, legt freigegebene Aufträge unter `docs/design/planning/work-orders/` ab, stößt den Softwarearchitekt-Agenten aktiv mit eindeutiger Auftragsreferenz an und prüft nach der Testbereitstellung die Auftragserfüllung.
-2. Softwarearchitekt-Agent auf dem Entwicklungsrechner auf Grundlage von OpenClaw einrichten: verantwortet Softwarearchitektur und technische Konzeption, überwacht Architekturkonformität und orchestriert den automatisierten Ablauf.
-3. KI-Modelle über den API-Key-basierten Multi-LLM-Anbieter anbinden; derzeit OpenRouter. Keine Bindung an einen einzelnen Modellanbieter oder ein einzelnes Modell; Anbieter und Modelle sind konfigurierbar und im laufenden Betrieb änderbar.
+1. Projektleiter außerhalb des Claude-Agent-Teams belassen: Er klärt und formuliert Arbeitsaufträge mit dem Nutzer, legt freigegebene Aufträge unter `docs/design/planning/work-orders/` ab und prüft nach der Testbereitstellung die Auftragserfüllung.
+2. Claude Code Agent Team einrichten: Softwarearchitekt als Team Lead mit Opus, Entwicklungs-Agent mit Sonnet und QA-Agent mit Opus. Der Softwarearchitekt verantwortet Softwarearchitektur, technische Konzeption und Orchestrierung.
+3. Die Claude-Code-Agentendefinitionen und wiederverwendbaren Skills versioniert unter `.claude/agents/` und `.claude/skills/` führen. Die festgelegte Modellzuordnung ist Startkonfiguration und nach Auswertung änderbar.
 4. Entwicklungs-Agenten mit eigenem Arbeitsbereich `implement/` einrichten: setzt den übergebenen Auftrag innerhalb der Architekturvorgaben um, führt technische Prüfungen aus, erstellt Commit und Pull Request.
 5. QA-Agenten mit eigenem Arbeitsbereich `review/` einrichten: führt unabhängige technische Qualitätssicherung gegen Auftrag, Architektur, Projektregeln, Code, Tests und Dokumentation durch; läuft mit einem anderen Modell als der Entwicklungs-Agent.
 6. Automatische Korrekturschleifen einrichten: QA-Befunde und Abweichungen aus der Projektleiterprüfung werden über den Softwarearchitekt-Agenten klassifiziert und der zuständigen Rolle zur Korrektur zugeführt. Nach Codeänderungen erfolgt erneut QA.
@@ -36,7 +36,8 @@ Grundlage ist `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Absc
 - weitere Qualitätswerkzeuge (Stufe 4);
 - n8n-Anbindung;
 - Änderungen an Produktkomponenten über das für den Nachweis-Durchlauf Erforderliche hinaus;
-- Orchestrierung über GitHub-Funktionen; GitHub bleibt Repository- und Pull-Request-Ablage.
+- Dispatcher und dessen automatische Auftragsauswahl; dieser folgt erst nach erfolgreichem Test der Claude-Struktur;
+- Matrix-Anbindung; diese folgt erst nach erfolgreichem Test des Dispatchers.
 
 Offene fachliche Fragen dürfen nicht selbst entschieden werden. Technische Entscheidungen folgen der festgelegten Rollenverteilung: Architekturentscheidungen innerhalb dokumentierter Vorgaben liegen beim Softwarearchitekten, normale Implementierungsentscheidungen beim Entwicklungs-Agenten; neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden dem Nutzer über den Projektleiter vorgelegt.
 
@@ -61,9 +62,7 @@ Das Arbeitspaket ist abnahmefähig, wenn:
 
 ## Grundsätze zur Modellwahl
 
-Die Rollen sind nicht dauerhaft an konkrete KI-Modelle gebunden. Konkrete Modellnamen werden in Anforderungen, Architektur-, Rollen- und Prozessfestlegungen nicht als festgelegte Zuordnung geführt. Die jeweils eingesetzten Modelle sind austauschbare Laufzeitkonfiguration.
-
-Die konkrete Modellwahl erfolgt als austauschbare Laufzeitkonfiguration und ist nicht Gegenstand dieses Arbeitspakets. Entwicklungs- und QA-Agent werden mit unterschiedlichen Modellen betrieben, um eine unabhängige Prüfung zu unterstützen.
+Für den ersten Claude-Code-Versuch gilt als Startkonfiguration: Softwarearchitekt Opus, Entwickler Sonnet, QA Opus. Die Zuordnung dient dem konkreten Nachweis und kann nach Auswertung geändert werden.
 
 ## Weitere Festlegungen
 
@@ -74,7 +73,11 @@ Vom Nutzer entschieden:
 - **Arbeitsauftragsübergabe:** Der Projektleiter-Agent stößt nach Nutzerfreigabe den Softwarearchitekt-Agenten aktiv mit eindeutiger Referenz auf den Arbeitsauftrag an; der Softwarearchitekt sucht oder pollt nicht nach Aufträgen.
 - **QA-Freigabe:** Die QA-Freigabe gilt ausschließlich für den eindeutig geprüften Commit. Ändert sich danach der Code, ist die QA-Freigabe ungültig und eine erneute QA-Prüfung erforderlich.
 
-Offene Punkte bestehen nicht mehr.
+Die weitere Automatisierung erfolgt in der Reihenfolge: Claude-Struktur testen, danach Dispatcher bauen und testen, danach Matrix anbinden.
+
+## Änderungsnachweis
+
+- 2026-10-05: Zielumgebung von OpenClaw auf Claude Code Agent Teams geändert; Projektleiter außerhalb des Teams; Dispatcher und Matrix als nachgelagerte Schritte abgegrenzt.
 
 ## Umsetzung
 
