@@ -65,6 +65,8 @@ Teammates erhalten in Claude Code kein eigenes Arbeitsverzeichnis; sie starten i
 | Entwickler | ausschließlich vorhandener Worktree `/srv/aixlab/dev/pipwerk/implement` |
 | QA | ausschließlich vorhandener Worktree `/srv/aixlab/dev/pipwerk/review` |
 
+Der Softwarearchitekt arbeitet ausschließlich mit `/srv/aixlab/dev/pipwerk/repo` als eigenem Arbeitsverzeichnis und wechselt es nicht nach `implement/`, `review/` oder in andere Worktrees. Inhalte anderer Arbeitsbereiche prüft er mit absoluten Pfaden oder Befehlen, die sein Arbeitsverzeichnis nicht dauerhaft verändern.
+
 Entwickler und QA dürfen `repo/` als Referenz lesen, dort aber keine Änderungen vornehmen. Eine zusätzliche `isolation: worktree`-Konfiguration wird nicht verwendet.
 
 ## Kommunikation und Übergaben
@@ -112,6 +114,7 @@ Erst nach erfolgreichem Nachweis folgt der Dispatcher.
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-06 | Arbeitsverzeichnis des Softwarearchitekten abgesichert: ausschließlich `repo/`, kein Wechsel in andere Worktrees; Prüfung anderer Arbeitsbereiche mit absoluten Pfaden. |
 | 2026-10-06 | Dispatcher-Stand dokumentiert: Dispatcher umgesetzt und getestet; Auftragsauswahl durch den Projektleiter, Übergabe und Lebenszyklus der interaktiven `tmux`-Session durch den Dispatcher. |
 | 2026-10-06 | Startverzeichnis des Team Leads und Arbeitsbereiche der Teammates festgelegt; Arbeitstrennung als Anweisung in den Agentendefinitionen. |
 | 2026-10-06 | Dispatcher-Randbedingung dokumentiert: Agent Teams benötigen eine interaktive Claude-Code-Session; spätere Automatisierung über `tmux`, nicht über `claude -p`. Unwirksames `skills`-Frontmatter aus Agentendefinitionen entfernt. |
