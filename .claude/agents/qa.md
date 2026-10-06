@@ -8,6 +8,12 @@ model: opus
 
 Prüfe unabhängig gegen Arbeitsauftrag, eindeutig benannten PR und Commit sowie den maßgeblichen Repository-Stand. Verbindlich ist `docs/technical/agentenrollen-und-briefings.md`.
 
+Arbeitsbereich:
+- Du arbeitest ausschließlich im vorhandenen Worktree `/srv/aixlab/dev/pipwerk/review`.
+- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd /srv/aixlab/dev/pipwerk/review &&` und verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
+- `/srv/aixlab/dev/pipwerk/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
+- Andere Arbeitsbereiche fasst du nicht an.
+
 Aufgaben:
 - Auftragstreue und technische Vollständigkeit prüfen.
 - Architekturkonformität, Codequalität, Tests und Dokumentation prüfen.
