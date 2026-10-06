@@ -21,13 +21,61 @@ export function renderWithProviders(ui: ReactElement, language?: SupportedLangua
   };
 }
 
+function toResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/** Mocks every `fetch` call with the same response, regardless of URL. */
 export function mockFetchResponse(status: number, body: unknown): void {
-  vi.stubGlobal('fetch', () =>
-    Promise.resolve(
-      new Response(JSON.stringify(body), {
-        status,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    ),
+  vi.stubGlobal('fetch', () => Promise.resolve(toResponse(status, body)));
+}
+
+export type RouteResponse = { status: number; body: unknown } | 'network-error';
+
+/**
+ * Mocks `fetch` with per-endpoint responses so tests can exercise the
+ * backend health check and the Studio language endpoints independently.
+ * Defaults to a healthy backend and a stored German language when a route
+ * is not explicitly overridden.
+ */
+export function mockFetchRoutes(overrides: {
+  health?: RouteResponse;
+  getLanguage?: RouteResponse;
+  putLanguage?: RouteResponse | ((requestBody: unknown) => RouteResponse);
+} = {}): void {
+  const health = overrides.health ?? { status: 200, body: { status: 'ok' } };
+  const getLanguage = overrides.getLanguage ?? { status: 200, body: { language: 'de' } };
+  const putLanguageDefault: RouteResponse | ((requestBody: unknown) => RouteResponse) =
+    overrides.putLanguage ?? ((requestBody: unknown) => ({ status: 200, body: requestBody }));
+
+  vi.stubGlobal(
+    'fetch',
+    (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const method = (init?.method ?? 'GET').toUpperCase();
+
+      let route: RouteResponse;
+      if (url.includes('/api/health')) {
+        route = health;
+      } else if (url.includes('/api/studio/settings/language') && method === 'GET') {
+        route = getLanguage;
+      } else if (url.includes('/api/studio/settings/language') && method === 'PUT') {
+        const requestBody: unknown = init?.body !== undefined ? JSON.parse(String(init.body)) : {};
+        route =
+          typeof putLanguageDefault === 'function'
+            ? putLanguageDefault(requestBody)
+            : putLanguageDefault;
+      } else {
+        return Promise.reject(new Error(`Unmocked fetch call: ${method} ${url}`));
+      }
+
+      if (route === 'network-error') {
+        return Promise.reject(new TypeError('network error'));
+      }
+      return Promise.resolve(toResponse(route.status, route.body));
+    },
   );
 }

@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
-import { mockFetchResponse, renderWithProviders } from './test-utils';
+import { mockFetchRoutes, renderWithProviders } from './test-utils';
 
 describe('App', () => {
   beforeEach(() => {
-    mockFetchResponse(200, { status: 'ok' });
+    mockFetchRoutes();
   });
 
   it('shows the product name', () => {
@@ -30,10 +30,11 @@ describe('App', () => {
     const user = userEvent.setup();
     renderWithProviders(<App />);
     expect(await screen.findByText('Backend: verbunden')).toBeInTheDocument();
+    await screen.findByDisplayValue('Deutsch');
 
     await user.selectOptions(screen.getByLabelText('Sprache'), 'English');
 
-    expect(screen.getByLabelText('Language')).toHaveValue('en');
+    expect(await screen.findByLabelText('Language')).toHaveValue('en');
     expect(screen.getByRole('region', { name: 'Designer canvas' })).toBeInTheDocument();
     expect(screen.getByText('The canvas is empty.')).toBeInTheDocument();
     expect(screen.getByText('Backend: connected')).toBeInTheDocument();
@@ -42,7 +43,7 @@ describe('App', () => {
 
     await user.selectOptions(screen.getByLabelText('Language'), 'Deutsch');
 
-    expect(screen.getByRole('region', { name: 'Designer-Arbeitsfläche' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Designer-Arbeitsfläche' })).toBeInTheDocument();
     expect(screen.getByText('Backend: verbunden')).toBeInTheDocument();
     expect(document.documentElement.lang).toBe('de');
   });
@@ -50,6 +51,7 @@ describe('App', () => {
   it('keeps the product name unchanged when switching the language', async () => {
     const user = userEvent.setup();
     renderWithProviders(<App />);
+    await screen.findByDisplayValue('Deutsch');
 
     await user.selectOptions(screen.getByLabelText('Sprache'), 'English');
 

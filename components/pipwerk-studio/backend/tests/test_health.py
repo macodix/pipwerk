@@ -4,7 +4,7 @@ from pipwerk_studio.app import create_app
 
 
 def make_client() -> TestClient:
-    return TestClient(create_app())
+    return TestClient(create_app("sqlite:///:memory:"))
 
 
 def test_health_reports_ok() -> None:

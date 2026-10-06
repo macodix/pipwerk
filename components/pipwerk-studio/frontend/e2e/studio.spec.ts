@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ request }) => {
+  const response = await request.put('/api/studio/settings/language', {
+    data: { language: 'de' },
+  });
+  expect(response.ok()).toBe(true);
+});
+
 test('starts with an empty canvas, reaches the backend and switches the language', async ({
   page,
 }) => {
@@ -40,4 +47,25 @@ test('starts with an empty canvas, reaches the backend and switches the language
   await expect(page.getByRole('status')).toHaveText('Backend: verbunden');
 
   expect(errors).toEqual([]);
+});
+
+test('persists the Studio language across page reloads (req-ui-008)', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByLabel('Sprache')).toHaveValue('de');
+
+  await page.getByLabel('Sprache').selectOption('en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+  // Reload: the authoritative language must come back from the backend, not
+  // from any browser-side storage.
+  await page.reload();
+  await expect(page.getByLabel('Language')).toHaveValue('en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+  // Switch back to German and verify it is restored after another reload,
+  // without affecting anything else on the page.
+  await page.getByLabel('Language').selectOption('de');
+  await page.reload();
+  await expect(page.getByLabel('Sprache')).toHaveValue('de');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 });

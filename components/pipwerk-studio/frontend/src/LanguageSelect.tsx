@@ -2,21 +2,24 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isSupportedLanguage, languageNames, supportedLanguages } from './i18n';
+import { useStudioLanguage } from './useStudioLanguage';
 
 export function LanguageSelect() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const id = useId();
+  const { confirmedLanguage, isInitializing, hasError, changeLanguage } = useStudioLanguage();
 
   return (
     <div className="language-select">
       <label htmlFor={id}>{t('app.language')}</label>
       <select
         id={id}
-        value={i18n.resolvedLanguage}
+        value={confirmedLanguage}
+        disabled={isInitializing}
         onChange={(event) => {
           const language = event.target.value;
           if (isSupportedLanguage(language)) {
-            void i18n.changeLanguage(language);
+            changeLanguage(language);
           }
         }}
       >
@@ -26,6 +29,11 @@ export function LanguageSelect() {
           </option>
         ))}
       </select>
+      {hasError ? (
+        <p className="language-select-error" role="alert">
+          {t('app.languageError')}
+        </p>
+      ) : null}
     </div>
   );
 }
