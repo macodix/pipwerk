@@ -68,6 +68,12 @@ Die frühere OpenClaw-Konfiguration ist aus dem aktuellen Repository-Stand entfe
 
 Änderungen an Rollen, Skills und Ablauf erfolgen weiterhin versioniert über Branch und Pull Request. Git-Historie, Arbeitsaufträge, PRs und commitgebundene QA-Ergebnisse bilden den nachvollziehbaren Verlauf.
 
+## Spätere Dispatcher-Anbindung
+
+Claude Code Agent Teams werden in einer interaktiven Claude-Code-Session betrieben. Der nicht-interaktive `claude -p`-Modus ist für den vorgesehenen Team-Lead-Ablauf mit Teammates nicht geeignet.
+
+Der spätere Dispatcher soll deshalb bei Bedarf eine interaktive Claude-Code-Session in `tmux` starten. Der Softwarearchitekt arbeitet darin als Team Lead und setzt Entwickler und QA als Teammates ein. `tmux` ist dabei nur die Terminal-Laufzeit für die interaktive Claude-Sitzung; Lebenszyklus, Auftragsübergabe, Statusauswertung und Wiederanlauf gehören zum späteren Dispatcher und sind nicht Bestandteil dieses Schritts.
+
 ## Test vor Dispatcher
 
 Vor dem Bau des Dispatchers ist nachzuweisen, dass:
