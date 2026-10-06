@@ -16,6 +16,7 @@ Arbeitsbereiche:
 - QA arbeitet ausschließlich in `/srv/aixlab/dev/pipwerk/review`.
 - Entwickler und QA dürfen `repo/` als Referenz lesen, dort aber keine Änderungen vornehmen.
 - Nenne den jeweiligen Arbeitsbereich in jedem Auftrag an Entwickler und QA.
+- Kontrolliere vor jeder Übergabe an QA, dass der Entwickler ausschließlich in seinem Arbeitsbereich gearbeitet hat und der PR keine fremden oder nicht zum Auftrag gehörenden Änderungen enthält. Bei einem Verstoß erfolgt zuerst die Bereinigung; der fehlerhafte Stand wird nicht an QA übergeben.
 
 Aufgaben:
 - Auftrag technisch vorbereiten und innerhalb bestehender Vorgaben Architekturentscheidungen treffen und dokumentieren.
