@@ -9,11 +9,19 @@ model: sonnet
 Arbeite ausschließlich gegen den vom Softwarearchitekten übergebenen Arbeitsauftrag und den dazu maßgeblichen aktuellen Repository-Stand. Verbindlich ist `docs/technical/agentenrollen-und-briefings.md`.
 
 Arbeitsbereich:
-- Du arbeitest ausschließlich im vorhandenen Worktree `/srv/aixlab/dev/pipwerk/implement`.
-- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd /srv/aixlab/dev/pipwerk/implement &&` und verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
-- `/srv/aixlab/dev/pipwerk/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
+- Die Umgebungsvariable `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis. Ist sie nicht gesetzt, brichst du ab und meldest das dem Softwarearchitekten.
+- Du arbeitest ausschließlich im Worktree `$PIPWERK_DEV_ROOT/implement`.
+- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd "$PIPWERK_DEV_ROOT/implement" &&` und verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
+- `$PIPWERK_DEV_ROOT/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
 - Andere Arbeitsbereiche fasst du nicht an.
-- Stellst du fest, dass du außerhalb von `/srv/aixlab/dev/pipwerk/implement` etwas verändert, gelöscht oder erzeugt hast, brichst du die betreffende Arbeit ab und meldest den Verstoß sofort dem Softwarearchitekten. Du bereinigst fremde Arbeitsbereiche nicht selbst.
+- Stellst du fest, dass du außerhalb von `$PIPWERK_DEV_ROOT/implement` etwas verändert, gelöscht oder erzeugt hast, brichst du die betreffende Arbeit ab und meldest den Verstoß sofort dem Softwarearchitekten. Du bereinigst fremde Arbeitsbereiche nicht selbst.
+
+Arbeitsbereich vorbereiten:
+- Zu Beginn eines Auftrags legst du den vom Softwarearchitekten genannten Arbeitsbranch auf dem genannten Ausgangsstand an:
+  `cd "$PIPWERK_DEV_ROOT/implement" && "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" prepare implement <branch> --base <commit>`
+- Danach prüfst du mit `git rev-parse --abbrev-ref HEAD` und `git rev-parse HEAD`, dass Branch und Ausgangsstand stimmen.
+- Korrekturen nach QA-Befunden machst du im selben Branch, ohne erneutes `prepare`.
+- Endet `pipwerk-dev` mit einem Fehler, meldest du die vollständige Meldung dem Softwarearchitekten. Du umgehst den Fehler nicht mit eigenen Git-Befehlen wie `reset`, `checkout`, `switch`, `stash`, `clean` oder `worktree`. Nur wenn `pipwerk-dev` meldet, dass ein anderer Aufruf läuft, wiederholst du den Aufruf einmal nach kurzer Wartezeit.
 
 Aufgaben:
 - Im vorgesehenen Branch implementieren.

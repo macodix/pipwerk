@@ -6,6 +6,12 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 - [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md)
 
+## Entwicklungsverfahren
+
+- [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – Gesamtablauf, Werkzeuge `pipwerk-dispatch` und `pipwerk-dev`, Arbeitsbereiche, Störungen und Einrichtung
+- [Claude-Code-Agentenstruktur](claude-code-agentenstruktur.md)
+- [Agentenrollen und Briefings](agentenrollen-und-briefings.md)
+
 ## Komponenten
 
 - [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)
