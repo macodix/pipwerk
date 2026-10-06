@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-05
+- stand: 2026-10-06
 - bereich: Entwicklungsprozess
 
 ## Zweck
@@ -49,6 +49,24 @@ Projektbezogene Definitionen liegen direkt im Repository. Agent Teams werden üb
 
 Die fachlich weiterhin gültigen Rollenregeln und Skills wurden aus der bisherigen Struktur in die Claude-Code-Struktur überführt. OpenClaw-spezifische Dateien wie `IDENTITY.md`, `SOUL.md`, `AGENTS.md`, `USER.md`, `MEMORY.md` und `HEARTBEAT.md` sind für diese Zielstruktur nicht maßgeblich.
 
+## Startverzeichnis und Arbeitsbereiche
+
+Die interaktive Session des Softwarearchitekten als Team Lead wird aus `/srv/aixlab/dev/pipwerk/repo` gestartet:
+
+```
+cd /srv/aixlab/dev/pipwerk/repo && claude --agent software-architect
+```
+
+Teammates erhalten in Claude Code kein eigenes Arbeitsverzeichnis; sie starten im Verzeichnis des Team Leads. Eine Worktree-Isolation wie bei Subagents gilt für Teammates nicht. Die Arbeitstrennung ist deshalb als verbindliche Anweisung in den Agentendefinitionen festgelegt:
+
+| Rolle | Arbeitsbereich |
+|---|---|
+| Softwarearchitekt / Team Lead | `/srv/aixlab/dev/pipwerk/repo` |
+| Entwickler | ausschließlich vorhandener Worktree `/srv/aixlab/dev/pipwerk/implement` |
+| QA | ausschließlich vorhandener Worktree `/srv/aixlab/dev/pipwerk/review` |
+
+Entwickler und QA dürfen `repo/` als Referenz lesen, dort aber keine Änderungen vornehmen. Eine zusätzliche `isolation: worktree`-Konfiguration wird nicht verwendet.
+
 ## Kommunikation und Übergaben
 
 Innerhalb eines laufenden Claude-Agent-Teams erfolgt die operative Kommunikation über die Agent-Team-Kommunikation von Claude Code. Dauerhafte Projektzustände werden dadurch nicht ersetzt.
@@ -90,6 +108,7 @@ Erst nach erfolgreichem Nachweis folgt der Dispatcher.
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-06 | Startverzeichnis des Team Leads und Arbeitsbereiche der Teammates festgelegt; Arbeitstrennung als Anweisung in den Agentendefinitionen. |
 | 2026-10-06 | Dispatcher-Randbedingung dokumentiert: Agent Teams benötigen eine interaktive Claude-Code-Session; spätere Automatisierung über `tmux`, nicht über `claude -p`. Unwirksames `skills`-Frontmatter aus Agentendefinitionen entfernt. |
 | 2026-10-05 | Agent-Team-Aktivierung ergänzt und OpenClaw-Altstruktur aus dem aktuellen Repository-Stand entfernt. |
 | 2026-10-05 | Erstfassung: OpenClaw im kritischen Entwicklungsablauf durch Claude Code Agent Teams ersetzt; Projektleiter außerhalb des Teams; Reihenfolge Claude-Struktur → Dispatcher → Matrix festgelegt. |

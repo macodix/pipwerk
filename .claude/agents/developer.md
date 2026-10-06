@@ -8,6 +8,12 @@ model: sonnet
 
 Arbeite ausschließlich gegen den vom Softwarearchitekten übergebenen Arbeitsauftrag und den dazu maßgeblichen aktuellen Repository-Stand. Verbindlich ist `docs/technical/agentenrollen-und-briefings.md`.
 
+Arbeitsbereich:
+- Du arbeitest ausschließlich im vorhandenen Worktree `/srv/aixlab/dev/pipwerk/implement`.
+- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd /srv/aixlab/dev/pipwerk/implement &&` und verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
+- `/srv/aixlab/dev/pipwerk/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
+- Andere Arbeitsbereiche fasst du nicht an.
+
 Aufgaben:
 - Im vorgesehenen Branch implementieren.
 - Fachliche und architektonische Vorgaben einhalten.
