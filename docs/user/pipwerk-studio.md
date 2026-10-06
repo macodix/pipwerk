@@ -12,7 +12,7 @@ Pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Der derzeitige S
 
 ## 2. Pipwerk Studio öffnen
 
-Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden. Die Schritte stehen in `docs/technical/pipwerk-studio.md` unter „Einrichtung“ und „Start im Entwicklungsbetrieb“.
+Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden. Eine Installation für Anwender gibt es noch nicht. Die Schritte zum Start stehen in der technischen Dokumentation unter `docs/technical/pipwerk-studio.md` im Abschnitt „Einrichtung und Start im Entwicklungsbetrieb“.
 
 Nach dem Start wird Pipwerk Studio im Browser unter `http://127.0.0.1:5173/` geöffnet.
 
