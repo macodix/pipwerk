@@ -80,21 +80,30 @@ Der Produktname „Pipwerk Studio“ wird nicht übersetzt. Die Sprachnamen im A
 
 Die Oberflächensprache wird vom Backend gelesen und dort dauerhaft gespeichert (Abschnitt 2.1). Ist noch nichts gespeichert, ist Deutsch eingestellt. Der Hook `useStudioLanguage` leitet die angezeigte Sprache, den Zustand der Auswahl und die Meldung an einer Stelle aus dem Lesezustand (TanStack Query) und dem Speicherzustand (Mutation) ab. Die Auswahl und die Texte zeigen immer dieselbe Sprache. Eine „bestätigte“ Sprache ist die zuletzt vom Backend gelesene oder nach dem Speichern zurückgegebene Sprache.
 
-| Zustand | Angezeigte Sprache | Auswahl | Meldung |
-| --- | --- | --- | --- |
-| erstes Lesen läuft | Deutsch (Standard) | deaktiviert | keine |
-| erstes Lesen erfolgreich | gelesene Sprache | bedienbar | keine |
-| erstes Lesen fehlgeschlagen | Deutsch (Standard) | bedienbar | Lesefehler |
-| Speichern läuft | gewählte Sprache | deaktiviert (nie zwei Speicheranfragen gleichzeitig) | keine |
-| Speichern erfolgreich | gespeicherte Sprache | bedienbar | keine (auch ein vorheriger Lesefehler entfällt) |
-| Speichern fehlgeschlagen, Sprache bestätigt | bestätigte Sprache | bedienbar | Speicherfehler |
-| Speichern fehlgeschlagen, keine Sprache bestätigt | Deutsch (Standard) | bedienbar | Speicherfehler mit Hinweis, dass die gespeicherte Sprache nicht gelesen werden konnte |
-| späteres Lesen erfolgreich (Fensterfokus, Wiederverbindung) | vom Backend gemeldete Sprache | unverändert | Lese- und Speicherfehler, die nur auf der fehlenden Bestätigung beruhten, entfallen bzw. wechseln zum Speicherfehler mit bestätigter Sprache |
-| späteres Lesen fehlgeschlagen, Sprache bestätigt | bestätigte Sprache | unverändert | keine zusätzliche Meldung |
-| Lesen beendet sich, während gespeichert wird | gewählte Sprache bis zum Ende des Speicherns | deaktiviert | keine |
-| Lesen läuft beim Beginn oder Erfolg des Speicherns | nach Erfolg die gespeicherte Sprache | bedienbar | keine |
+| Zustand | Angezeigte Sprache | Auswahl | Meldung | Test |
+| --- | --- | --- | --- | --- |
+| erstes Lesen läuft | Deutsch (Standard) | deaktiviert | keine | A1 |
+| erstes Lesen erfolgreich | gelesene Sprache | bedienbar | keine | A2 |
+| erstes Lesen fehlgeschlagen (Fehler oder Zeitbegrenzung) | Deutsch (Standard) | bedienbar | Lesefehler | A3, A4 |
+| erneutes Lesen läuft, noch keine Sprache bestätigt (Fensterfokus, Wiederverbindung) | Deutsch (Standard) | deaktiviert | keine; schlägt es wieder fehl, kehrt der Lesefehler zurück | A5 |
+| erneutes Lesen läuft nach „Speichern fehlgeschlagen, keine Sprache bestätigt“ | Deutsch (Standard) | deaktiviert | Speicherfehler ohne bestätigte Sprache bleibt | B4 |
+| Speichern läuft | gewählte Sprache | deaktiviert (nie zwei Speicheranfragen gleichzeitig) | keine | B1, E1 |
+| Speichern erfolgreich | gespeicherte Sprache | bedienbar | keine (ein vorheriger Lese- oder Speicherfehler entfällt) | B2, B4, E2 |
+| Speichern fehlgeschlagen (Fehler oder Zeitbegrenzung), Sprache bestätigt | bestätigte Sprache | bedienbar | Speicherfehler | B3, B5 |
+| Speichern fehlgeschlagen, keine Sprache bestätigt | Deutsch (Standard) | bedienbar | Speicherfehler mit Hinweis, dass die gespeicherte Sprache nicht gelesen werden konnte | B4 |
+| Speichern wird wiederholt | gewählte Sprache | deaktiviert | keine, bis das Ergebnis vorliegt | E2 |
+| späteres Lesen erfolgreich, Sprache bestätigt | vom Backend gemeldete Sprache | unverändert | keine | C1 |
+| späteres Lesen fehlgeschlagen, Sprache bestätigt | bestätigte Sprache | unverändert | keine | C2 |
+| späteres Lesen erfolgreich nach fehlgeschlagenem ersten Lesen | gelesene Sprache | bedienbar | Lesefehler entfällt | C3 |
+| späteres Lesen erfolgreich nach „Speichern fehlgeschlagen, keine Sprache bestätigt“ | gelesene Sprache | bedienbar | wechselt zum Speicherfehler mit bestätigter Sprache | C4 |
+| Lesen läuft, Speichern ist erfolgreich | gespeicherte Sprache; die ältere Antwort wird verworfen | bedienbar | keine | D1 |
+| Lesen startet während des Speicherns, Speichern ist erfolgreich | gespeicherte Sprache; die ältere Antwort wird verworfen | bedienbar | keine | D2 |
+| Lesen endet während des Speicherns | gewählte Sprache bis zum Ende des Speicherns; danach bei Fehler die gelesene Sprache | deaktiviert, danach bedienbar | keine, danach Speicherfehler | D3 |
+| Lesen läuft beim Beginn des Speicherns, Speichern schlägt fehl | bestätigte Sprache; die Antwort des Lesens wird danach übernommen, es wird nichts abgebrochen | bedienbar | Speicherfehler | D4 |
 
-Beim Beginn und beim Erfolg eines Speicherns werden laufende Leseanfragen abgebrochen. Eine ältere Antwort kann dadurch die gespeicherte Sprache nicht überschreiben. Nach dem Speichern ist die Antwort des Backends der bestätigte Zustand. Das automatische erneute Lesen löst keine Schreibaktion aus; während des Speicherns wird keine Meldung angezeigt. Die Tests in `src/LanguageSelect.test.tsx` sind nach diesen Zuständen benannt (A bis E).
+Beim Erfolg eines Speicherns werden laufende Leseanfragen abgebrochen; ein Abbruch ist kein Fehler und erzeugt keine Meldung. Eine ältere Antwort kann dadurch die gespeicherte Sprache nicht überschreiben. Nach einem fehlgeschlagenen Speichern wird nichts abgebrochen, weil eine laufende Leseanfrage dann den tatsächlichen Zustand des Backends meldet. Nach dem Speichern ist die Antwort des Backends der bestätigte Zustand. Das automatische erneute Lesen löst keine Schreibaktion aus; während des Speicherns wird keine Meldung angezeigt. Die Kennungen der Tabelle stehen in den Testnamen in `src/LanguageSelect.test.tsx`.
+
+Jede Anfrage der Oberfläche an die Spracheinstellungs-API (Lesen und Speichern) hat eine feste Zeitbegrenzung von 10 Sekunden (`LANGUAGE_REQUEST_TIMEOUT_MS` in `src/settingsApi.ts`, nicht umgebungsabhängig). Das Backend ist ein lokaler Prozess, der eine einzelne Datenbankzeile liest oder schreibt; eine längere Wartezeit gilt deshalb als Fehler. Ohne Zeitbegrenzung bliebe die Auswahl bei einer nie beantworteten Anfrage dauerhaft deaktiviert. Läuft die Zeit ab, wird die Anfrage abgebrochen und wie jeder andere Fehler dieser Anfrage behandelt (Lese- bzw. Speicherfehler, kein eigener Meldungstext). Nach einem abgelaufenen Speichern ist unklar, ob das Backend die Änderung noch übernommen hat; die Oberfläche zeigt die zuletzt bestätigte Sprache und gleicht sich beim nächsten erfolgreichen Lesen mit dem Backend ab.
 
 Der Browser speichert die Sprache weder in Local Storage noch in Session Storage noch in Cookies.
 

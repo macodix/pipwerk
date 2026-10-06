@@ -48,9 +48,10 @@ const QUERY_KEY = ['studio-language'];
  * select and in the interface texts is derived from that state in one
  * place (see `StudioLanguageState`).
  *
- * After a save, the backend answer becomes the confirmed state. Running
- * reads are cancelled first, so an older answer can never overwrite it.
- * Reads never trigger a write. A language change never touches any other
+ * After a successful save, running reads are cancelled first and the
+ * backend answer becomes the confirmed state, so an older read answer can
+ * never overwrite it. After a failed save nothing is cancelled: a running
+ * read still reports the real backend state. Reads never trigger a write. A language change never touches any other
  * application state.
  */
 export function useStudioLanguage(): StudioLanguageState {
@@ -65,12 +66,8 @@ export function useStudioLanguage(): StudioLanguageState {
 
   const mutation = useMutation({
     mutationFn: (language: SupportedLanguage) => updateLanguage(language),
-    onMutate: async () => {
-      // A read that started before this save may report the old state.
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-    },
     onSuccess: async (data) => {
-      // Reads that started while saving may also report the old state.
+      // Reads that started before or while saving may report the old state.
       await queryClient.cancelQueries({ queryKey: QUERY_KEY });
       queryClient.setQueryData(QUERY_KEY, data);
     },

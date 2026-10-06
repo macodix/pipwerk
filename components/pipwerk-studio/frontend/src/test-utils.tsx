@@ -84,7 +84,17 @@ export function mockFetchRoutes(overrides: {
         return Promise.reject(new Error(`Unmocked fetch call: ${method} ${url}`));
       }
 
-      return Promise.resolve(route).then((resolved) => {
+      const signal = init?.signal ?? undefined;
+      // Like the real `fetch`, an aborted request rejects with an AbortError.
+      const aborted = new Promise<never>((_resolve, reject) => {
+        const fail = (): void => reject(new DOMException('The operation was aborted.', 'AbortError'));
+        if (signal?.aborted === true) {
+          fail();
+        } else {
+          signal?.addEventListener('abort', fail, { once: true });
+        }
+      });
+      const answered = Promise.resolve(route).then((resolved) => {
         if (resolved === 'pending') {
           return new Promise<Response>(() => undefined);
         }
@@ -93,6 +103,7 @@ export function mockFetchRoutes(overrides: {
         }
         return toResponse(resolved.status, resolved.body);
       });
+      return Promise.race([answered, aborted]);
     },
   );
 }
