@@ -36,6 +36,9 @@ export function mockFetchResponse(status: number, body: unknown): void {
 /** `'pending'` never answers, which keeps the request open for the whole test. */
 export type RouteResponse = { status: number; body: unknown } | 'network-error' | 'pending';
 
+/** A route answer that may change between calls, for example to simulate a later failure. */
+export type RouteSource = RouteResponse | (() => RouteResponse);
+
 /**
  * Mocks `fetch` with per-endpoint responses so tests can exercise the
  * backend health check and the Studio language endpoints independently.
@@ -44,7 +47,7 @@ export type RouteResponse = { status: number; body: unknown } | 'network-error' 
  */
 export function mockFetchRoutes(overrides: {
   health?: RouteResponse;
-  getLanguage?: RouteResponse;
+  getLanguage?: RouteSource;
   putLanguage?: RouteResponse | ((requestBody: unknown) => RouteResponse);
 } = {}): void {
   const health = overrides.health ?? { status: 200, body: { status: 'ok' } };
@@ -62,7 +65,7 @@ export function mockFetchRoutes(overrides: {
       if (url.includes('/api/health')) {
         route = health;
       } else if (url.includes('/api/studio/settings/language') && method === 'GET') {
-        route = getLanguage;
+        route = typeof getLanguage === 'function' ? getLanguage() : getLanguage;
       } else if (url.includes('/api/studio/settings/language') && method === 'PUT') {
         const requestBody: unknown = init?.body !== undefined ? JSON.parse(String(init.body)) : {};
         route =

@@ -23,7 +23,10 @@ export type StudioLanguageState = {
   /**
    * `'save'` if the last language change attempt failed (the confirmed
    * language is kept unchanged), `'load'` if the stored language could not
-   * be read, otherwise `null`.
+   * be read and none has been confirmed yet (the default is shown),
+   * otherwise `null`. A later failed automatic refetch (window focus,
+   * reconnect) keeps the confirmed language and reports nothing, because
+   * the displayed language is still the last confirmed one.
    */
   error: StudioLanguageError | null;
   /** Request a language change; keeps the previously confirmed language on failure. */
@@ -75,7 +78,11 @@ export function useStudioLanguage(): StudioLanguageState {
   return {
     displayedLanguage,
     isInitializing: languageQuery.isPending,
-    error: mutation.isError ? 'save' : languageQuery.isError ? 'load' : null,
+    error: mutation.isError
+      ? 'save'
+      : languageQuery.isError && languageQuery.data === undefined
+        ? 'load'
+        : null,
     changeLanguage,
   };
 }

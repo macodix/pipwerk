@@ -1,9 +1,10 @@
-import { screen, waitFor } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import { LanguageSelect } from './LanguageSelect';
-import { mockFetchRoutes, renderWithProviders } from './test-utils';
+import { mockFetchRoutes, renderWithProviders, type RouteResponse } from './test-utils';
 
 describe('LanguageSelect', () => {
   it('starts German when no language has been stored yet', async () => {
@@ -113,5 +114,44 @@ describe('LanguageSelect', () => {
 
     await waitFor(() => expect(screen.getByText('Language')).toBeInTheDocument());
     expect(screen.getByRole('combobox')).toHaveValue('en');
+  });
+
+  describe('automatic refetch after a confirmed language', () => {
+    function refocusWindow(): void {
+      act(() => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+      });
+    }
+
+    it('keeps the confirmed language and shows no message when a later refetch fails', async () => {
+      let answer: RouteResponse = { status: 200, body: { language: 'en' } };
+      mockFetchRoutes({ getLanguage: () => answer });
+      renderWithProviders(<LanguageSelect />, 'en');
+      await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('en'));
+      expect(screen.getByText('Language')).toBeInTheDocument();
+
+      answer = 'network-error';
+      refocusWindow();
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveValue('en');
+      expect(screen.getByText('Language')).toBeInTheDocument();
+    });
+
+    it('takes over the language the backend reports after a later successful refetch', async () => {
+      let answer: RouteResponse = { status: 200, body: { language: 'en' } };
+      mockFetchRoutes({ getLanguage: () => answer });
+      renderWithProviders(<LanguageSelect />, 'en');
+      await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('en'));
+
+      answer = { status: 200, body: { language: 'de' } };
+      refocusWindow();
+
+      await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('de'));
+      expect(screen.getByText('Sprache')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
   });
 });

@@ -51,7 +51,7 @@ Während die gespeicherte Sprache beim Öffnen ermittelt wird, ist das Auswahlfe
 
 | Meldung | Bedeutung |
 | --- | --- |
-| „Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.“ | Beim Öffnen konnte die gespeicherte Sprache nicht vom Hintergrunddienst gelesen werden. Pipwerk Studio zeigt Deutsch an. Die Auswahl bleibt bedienbar. Prüfen Sie, ob der Hintergrunddienst läuft, und laden Sie die Seite neu. |
+| „Die gespeicherte Sprache konnte nicht gelesen werden. Es wird die Standardsprache Deutsch angezeigt.“ | Beim Öffnen konnte die gespeicherte Sprache nicht vom Hintergrunddienst gelesen werden. Pipwerk Studio zeigt Deutsch an. Die Auswahl bleibt bedienbar. Prüfen Sie, ob der Hintergrunddienst läuft, und laden Sie die Seite neu. Ist die Sprache beim Öffnen bereits gelesen worden, erscheint diese Meldung später nicht mehr: Schlägt ein erneutes Lesen im Hintergrund fehl (zum Beispiel nach einem Wechsel zurück ins Browserfenster), bleibt die zuletzt bestätigte Sprache angezeigt. |
 | „Die Sprache konnte nicht gespeichert werden. Die zuletzt bestätigte Sprache bleibt aktiv.“ | Eine Änderung wurde nicht gespeichert. Pipwerk Studio zeigt wieder die zuletzt bestätigte Sprache an. Prüfen Sie den Hintergrunddienst und versuchen Sie es erneut. |
 
 Wird eine Änderung gerade gespeichert, zeigen das Auswahlfeld und die Texte bereits die neu gewählte Sprache.
