@@ -1,9 +1,9 @@
 """Application-level settings service of Pipwerk Studio.
 
 This module is the repository/service boundary in front of the SQLAlchemy
-persistence (Architekturvorgabe 2). It exposes a framework-independent
+persistence. It exposes a framework-independent
 domain type (``Language``) instead of leaking the ORM row. Studio language is
-operational, component-wide configuration (Architekturvorgabe 1): there is no
+operational, component-wide configuration: there is no
 user or account modelling and exactly one central language setting exists.
 """
 

@@ -24,7 +24,7 @@ const QUERY_KEY = ['studio-language'];
 
 /**
  * Loads the single, backend-authoritative Studio language with TanStack
- * Query and writes changes with a mutation (Architekturvorgabe 5). After a
+ * Query and writes changes with a mutation. After a
  * mutation, the authoritative backend state is synchronized; a failed
  * mutation never loses the currently confirmed language. A language change
  * never touches any other application state.
@@ -81,7 +81,7 @@ export function useStudioLanguage(): StudioLanguageState {
     }
     // Optimistically show the requested language immediately; it is
     // synchronized with the authoritative backend state once the mutation
-    // settles (Architekturvorgabe 5).
+    // settles.
     void i18n.changeLanguage(language);
     mutation.mutate(language);
   }

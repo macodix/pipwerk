@@ -1,7 +1,7 @@
 """Persistence infrastructure of Pipwerk Studio.
 
 SQLAlchemy is used as the shared storage interface (req-system-015) behind a
-small application-level repository/service boundary (Architekturvorgabe 2).
+small application-level repository/service boundary.
 SQLAlchemy ORM classes defined here are infrastructure only: they are never
 the public domain or API representation of Studio settings.
 """
@@ -21,7 +21,7 @@ class Base(DeclarativeBase):
 
 
 #: Fixed primary key of the single Studio settings row. Studio settings are
-#: a singleton operational configuration (Architekturvorgabe 1): exactly one
+#: a singleton operational configuration: exactly one
 #: central language setting exists, never one per user or session.
 SETTINGS_SINGLETON_ID = 1
 

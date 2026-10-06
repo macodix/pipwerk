@@ -3,8 +3,8 @@
 The application provides a technical health check and the internal Studio
 settings endpoints. The only operational setting kept today is the Studio
 user interface language (req-ui-008): a component-wide, backend-authoritative
-setting that is never stored in the browser and never part of strategy data
-(Architekturvorgabe 1). No other domain logic lives in this module.
+setting that is never stored in the browser and never part of strategy data.
+No other domain logic lives in this module.
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ class HealthStatus(BaseModel):
 class StudioLanguage(BaseModel):
     """Read model of the current Studio user interface language.
 
-    Returned by the read endpoint; see Architekturvorgabe 3 (separated read
-    and write models, strict validation, unknown fields rejected).
+    Returned by the read endpoint. Read and write models are separate and strictly
+    validated; unknown fields are rejected.
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -42,9 +42,8 @@ class StudioLanguage(BaseModel):
 class StudioLanguageUpdate(BaseModel):
     """Write model to change the Studio user interface language.
 
-    Only the supported languages German and English are accepted
-    (Architekturvorgabe 3); unknown fields are rejected rather than silently
-    ignored.
+    Only the supported languages German and English are accepted; unknown fields are
+    rejected rather than silently ignored.
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
