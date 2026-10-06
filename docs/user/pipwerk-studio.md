@@ -14,7 +14,7 @@ Der derzeitige Stand ist ein technisches Grundgerüst. Pipwerk Studio zeigt eine
 
 ## 2. Pipwerk Studio öffnen
 
-Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden. Eine Installation für Anwender gibt es noch nicht. Die Schritte zum Start stehen in der technischen Dokumentation unter `docs/technical/pipwerk-studio.md` im Abschnitt „Einrichtung und Start im Entwicklungsbetrieb“.
+Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden. Eine Installation für Anwender gibt es noch nicht. Die Schritte zum Start stehen in der technischen Dokumentation unter `docs/technical/pipwerk-studio.md` im Abschnitt „Einrichtung und Start im Entwicklungsbetrieb“. Pipwerk Studio startet nur mit einer gültigen INI-Startkonfiguration, die zur Installation gehört und mindestens die Datenbankverbindung festlegt. Ohne sie bricht der Start mit einer Fehlermeldung ab; eine Ersatzdatenbank wird nicht angelegt.
 
 Nach dem Start wird Pipwerk Studio in einem Webbrowser unter der Adresse `http://127.0.0.1:5173/` geöffnet.
 

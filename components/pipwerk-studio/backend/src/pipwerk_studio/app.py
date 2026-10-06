@@ -64,8 +64,9 @@ def create_app(database_url: str | None = None) -> FastAPI:
     ``database_url`` lets callers (notably the CLI entry point and tests)
     provide an explicit SQLAlchemy database URL. When omitted, the
     documented automatic startup configuration search
-    (req-system-016/req-system-017) is used, falling back to a development
-    SQLite default when no startup configuration file is found anywhere.
+    (req-system-016/req-system-017) is used. If no valid startup
+    configuration is found, ``StartupConfigError`` is raised; there is no
+    implicit replacement database.
     """
     resolved_database_url = database_url if database_url is not None else load_database_url()
     engine = create_studio_engine(resolved_database_url)

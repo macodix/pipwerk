@@ -31,14 +31,20 @@ def isolated_system_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
     return system_dir
 
 
-def test_falls_back_to_development_default_when_nothing_found(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_nothing_found_raises_with_searched_locations_and_hint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, isolated_system_dir: Path
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
 
-    url = load_database_url(None)
+    with pytest.raises(StartupConfigError) as caught:
+        load_database_url(None)
 
-    assert url.startswith("sqlite://")
+    message = str(caught.value)
+    assert "No startup configuration found" in message
+    assert str(tmp_path / "pipwerk" / "etc" / "pipwerk-studio.ini") in message
+    assert str(tmp_path / ".config" / "pipwerk" / "pipwerk-studio.ini") in message
+    assert str(isolated_system_dir / "pipwerk-studio.ini") in message
+    assert "-c <PATH>" in message
 
 
 def test_explicit_path_has_highest_priority(
@@ -179,4 +185,29 @@ def test_relative_ini_in_working_directory_is_not_found_with_empty_home(
     write_ini(tmp_path / "pipwerk" / "etc" / "pipwerk-studio.ini", "sqlite:///wrong.db")
     write_ini(tmp_path / ".config" / "pipwerk" / "pipwerk-studio.ini", "sqlite:///wrong.db")
 
-    assert resolve_config_path(None) is None
+    with pytest.raises(StartupConfigError):
+        resolve_config_path(None)
+
+
+@pytest.mark.parametrize("content", ["[database]\nurl =\n", "[database]\nurl =    \n"])
+def test_empty_url_raises(tmp_path: Path, content: str) -> None:
+    config_path = tmp_path / "empty.ini"
+    config_path.write_text(content, encoding="utf-8")
+
+    with pytest.raises(StartupConfigError, match="empty"):
+        load_database_url(config_path)
+
+
+def test_unparsable_file_raises(tmp_path: Path) -> None:
+    config_path = tmp_path / "broken.ini"
+    config_path.write_text("no section header\nurl = sqlite://\n", encoding="utf-8")
+
+    with pytest.raises(StartupConfigError, match="invalid"):
+        load_database_url(config_path)
+
+
+def test_url_is_returned_without_surrounding_whitespace(tmp_path: Path) -> None:
+    config_path = tmp_path / "ok.ini"
+    config_path.write_text("[database]\nurl =   sqlite:///x.db   \n", encoding="utf-8")
+
+    assert load_database_url(config_path) == "sqlite:///x.db"

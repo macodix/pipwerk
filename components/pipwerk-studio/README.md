@@ -25,4 +25,4 @@ npm run dev
 
 Then open `http://127.0.0.1:5173/` in a browser.
 
-The selected language is stored in the backend database and restored after page reloads and backend restarts. It is not stored in the browser. See the technical documentation for automatic INI search paths and all checks.
+The selected language is stored in the backend database and restored after page reloads and backend restarts. It is not stored in the browser. Pipwerk Studio does not start without a valid INI startup configuration that defines the database connection; there is no implicit replacement database. See the technical documentation for automatic INI search paths and all checks.

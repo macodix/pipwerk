@@ -19,14 +19,14 @@ from pathlib import Path
 #: location.
 CONFIG_FILE_NAME = "pipwerk-studio.ini"
 
-#: Development default used only when no startup configuration file is given
-#: explicitly and none is found at any documented automatic search location.
-#: Production deployments must provide an explicit startup configuration.
-DEFAULT_DATABASE_URL = "sqlite:///./pipwerk-studio.db"
-
 
 class StartupConfigError(Exception):
-    """Raised when an explicitly given startup configuration cannot be used."""
+    """Raised when no valid startup configuration is available.
+
+    Pipwerk Studio does not start without a valid INI startup configuration
+    that defines the database connection; there is no implicit replacement
+    database.
+    """
 
 
 #: System-wide search directory on POSIX systems.
@@ -78,14 +78,13 @@ def default_search_locations() -> list[Path]:
     return _posix_search_locations()
 
 
-def resolve_config_path(explicit_path: str | Path | None) -> Path | None:
+def resolve_config_path(explicit_path: str | Path | None) -> Path:
     """Resolve which startup configuration file to use.
 
     An explicitly given path has the highest priority (req-system-017). If
     none is given, the documented automatic search locations are checked in
-    their documented priority order. ``None`` is returned if no file exists
-    at any location, in which case callers fall back to a documented
-    default.
+    their documented priority order. If no file exists at any location,
+    ``StartupConfigError`` names the searched locations.
     """
     if explicit_path is not None:
         path = Path(explicit_path)
@@ -95,27 +94,36 @@ def resolve_config_path(explicit_path: str | Path | None) -> Path | None:
     for candidate in default_search_locations():
         if candidate.is_file():
             return candidate
-    return None
+    searched = ", ".join(str(location) for location in default_search_locations())
+    raise StartupConfigError(
+        "No startup configuration found. Pipwerk Studio does not start without one. "
+        f"Searched: {searched or '(no search location available)'}. "
+        "Provide a startup configuration file with -c <PATH>."
+    )
 
 
 def load_database_url(explicit_path: str | Path | None = None) -> str:
     """Load the configured SQLAlchemy database URL.
 
     Exactly one startup configuration is used; the contents of several INI
-    files are never merged (req-system-017). Falls back to a documented
-    development default when no startup configuration file is found
-    anywhere and no explicit path was given.
+    files are never merged (req-system-017). Raises ``StartupConfigError``
+    if no startup configuration is found, if it cannot be read or parsed,
+    or if it has no non-empty ``url`` in its ``[database]`` section.
     """
     path = resolve_config_path(explicit_path)
-    if path is None:
-        return DEFAULT_DATABASE_URL
     parser = configparser.ConfigParser()
-    read_files = parser.read(path, encoding="utf-8")
+    try:
+        read_files = parser.read(path, encoding="utf-8")
+    except (configparser.Error, UnicodeDecodeError) as error:
+        raise StartupConfigError(f"Startup configuration is invalid: {path}: {error}") from error
     if not read_files:
         raise StartupConfigError(f"Startup configuration could not be read: {path}")
     try:
-        return parser.get("database", "url")
+        url = parser.get("database", "url")
     except (configparser.NoSectionError, configparser.NoOptionError) as error:
         raise StartupConfigError(
             f"Startup configuration {path} is missing a [database] url entry"
         ) from error
+    if not url:
+        raise StartupConfigError(f"Startup configuration {path} has an empty [database] url")
+    return url
