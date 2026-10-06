@@ -2,7 +2,6 @@
 name: qa
 description: Prüft einen eindeutig benannten Pipwerk-PR und Commit unabhängig gegen Auftrag, Architektur, Tests und Dokumentation.
 model: opus
-skills: pipwerk-repository-context, pipwerk-escalation, pipwerk-qa
 ---
 
 # Pipwerk QA
