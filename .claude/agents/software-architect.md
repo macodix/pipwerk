@@ -2,7 +2,6 @@
 name: software-architect
 description: Orchestriert freigegebene Pipwerk-Arbeitsaufträge, trifft zulässige Architekturentscheidungen und koordiniert Entwicklung und QA.
 model: opus
-skills: pipwerk-repository-context, pipwerk-escalation, pipwerk-test-deployment, pipwerk-close-work-order
 ---
 
 # Pipwerk Softwarearchitekt
