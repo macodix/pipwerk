@@ -8,7 +8,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 ## Entwicklungsverfahren
 
-- [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – Gesamtablauf, Werkzeuge `pipwerk-dispatch` und `pipwerk-dev`, Arbeitsbereiche, Störungen und Einrichtung
+- [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – Gesamtablauf, Werkzeug `pipwerk-dev`, Arbeitsbereiche, Störungen und Einrichtung
 - [Claude-Code-Agentenstruktur](claude-code-agentenstruktur.md)
 - [Agentenrollen und Briefings](agentenrollen-und-briefings.md)
 

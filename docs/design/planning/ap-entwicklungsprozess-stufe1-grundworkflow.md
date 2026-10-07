@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-05
+- stand: 2026-10-07
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 
 ## Ziel
@@ -35,9 +35,7 @@ Grundlage ist `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Absc
 - Linter und Codechecker als Quality Gates (Stufe 3);
 - weitere Qualitätswerkzeuge (Stufe 4);
 - n8n-Anbindung;
-- Änderungen an Produktkomponenten über das für den Nachweis-Durchlauf Erforderliche hinaus;
-- Dispatcher und dessen automatische Auftragsauswahl; dieser folgt erst nach erfolgreichem Test der Claude-Struktur;
-- Matrix-Anbindung; diese folgt erst nach erfolgreichem Test des Dispatchers.
+- Änderungen an Produktkomponenten über das für den Nachweis-Durchlauf Erforderliche hinaus.
 
 Offene fachliche Fragen dürfen nicht selbst entschieden werden. Technische Entscheidungen folgen der festgelegten Rollenverteilung: Architekturentscheidungen innerhalb dokumentierter Vorgaben liegen beim Softwarearchitekten, normale Implementierungsentscheidungen beim Entwicklungs-Agenten; neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden dem Nutzer über den Projektleiter vorgelegt.
 
@@ -73,11 +71,12 @@ Vom Nutzer entschieden:
 - **Arbeitsauftragsübergabe:** Der Projektleiter-Agent stößt nach Nutzerfreigabe den Softwarearchitekt-Agenten aktiv mit eindeutiger Referenz auf den Arbeitsauftrag an; der Softwarearchitekt sucht oder pollt nicht nach Aufträgen.
 - **QA-Freigabe:** Die QA-Freigabe gilt ausschließlich für den eindeutig geprüften Commit. Ändert sich danach der Code, ist die QA-Freigabe ungültig und eine erneute QA-Prüfung erforderlich.
 
-Die weitere Automatisierung erfolgt in der Reihenfolge: Claude-Struktur testen, danach Dispatcher bauen und testen, danach Matrix anbinden.
+Der Grundworkflow verwendet das Claude-Code-Team und `pipwerk-dev`. Freigegebene Aufträge werden direkt an den Softwarearchitekten übergeben; Einrichtung und Start sind in `docs/technical/entwicklungsverfahren.md` beschrieben.
 
 ## Änderungsnachweis
 
-- 2026-10-05: Zielumgebung von OpenClaw auf Claude Code Agent Teams geändert; Projektleiter außerhalb des Teams; Dispatcher und Matrix als nachgelagerte Schritte abgegrenzt.
+- 2026-10-07: Veraltete Automatisierungsplanung entfernt; Claude-Code-Team, direkte Auftragsübergabe und `pipwerk-dev` bleiben Grundlage.
+- 2026-10-05: Claude Code Agent Teams als Zielumgebung festgelegt; Projektleiter außerhalb des Teams.
 
 ## Umsetzung
 

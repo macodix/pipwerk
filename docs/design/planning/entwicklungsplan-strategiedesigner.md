@@ -258,7 +258,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 |---|---|
 | 2026-10-02 | Rollen und automatisierten Ablauf auf Projektleiter, Softwarearchitekt, Entwicklung und QA umgestellt; aktive Auftragsübergabe, Entscheidungsgrenzen, commitgebundene QA-Freigabe, Projektleiterprüfung und Abschlussprozess festgelegt. |
 | 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
-| 2026-10-06 | Veraltete Angabe OpenClaw als technische Grundlage der Agenten entsprechend der Umstellung auf Claude Code Agent Teams korrigiert. |
+| 2026-10-06 | Claude Code Agent Teams als technische Grundlage der Agenten dokumentiert. |
 | 2026-10-06 | Lokale Arbeitsbereiche um `test/` ergänzt, Rolle von `repo/` als Arbeitsverzeichnis des Softwarearchitekten richtiggestellt und auf die Dokumentation des Entwicklungsverfahrens verwiesen. |
 | 2026-10-06 | Grundsatz eines API-Key-basierten Multi-LLM-Anbieters nicht mehr als Zielarchitektur geführt; aktuelle Modellzuordnung als änderbare Startkonfiguration festgehalten; Anbieterunabhängigkeit derzeit keine Anforderung. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
