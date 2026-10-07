@@ -369,6 +369,8 @@ Zu einzelnen Schritten:
 
 **Claude wurde beendet oder ist abgestürzt.** `status` meldet „Claude beendet“ mit dem Exitstatus. Soll der Auftrag weiterlaufen, `pipwerk-dispatch restart` aufrufen; der Softwarearchitekt setzt dieselbe Sitzung fort. Soll er nicht weiterlaufen, `pipwerk-dispatch stop` aufrufen.
 
+**Die Sitzung des Softwarearchitekten beginnt nicht mit der Arbeit, obwohl `status` „Lauf aktiv“ meldet.** Beim ersten Start in einem Verzeichnis, das Claude Code noch nicht kennt, fragt Claude Code, ob man dem Ordner vertraut, und wartet auf die Antwort. Man schaltet sich in die Sitzung ein und bestätigt die Abfrage einmalig.
+
 **Die tmux-Sitzung fehlt**, zum Beispiel nach einem Neustart des Rechners. `status` meldet „tmux-Session fehlt“. `restart` legt die Sitzung neu an und setzt die Claude-Sitzung fort.
 
 **Der Auftrag ist nicht freigegeben oder nicht auf main.** Der Dispatcher verweigert den Start. Der Projektleiter klärt die Freigabe und sorgt dafür, dass der Auftrag auf `main` liegt.
@@ -410,6 +412,7 @@ Weil das Verfahren auf diese Werkzeuge angewiesen ist, müssen sie außerhalb de
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Störungsfall „Vertrauensabfrage beim ersten Start“ ergänzt. |
 | 2026-10-07 | Testbereitstellung durch den Softwarearchitekten mit `pipwerk-dev start` und Verifikation verbindlich beschrieben; Verweis auf Recherche-Umfang und Dokumentationspflicht. |
 | 2026-10-06 | Serverbezogene Angaben entfernt; `pipwerk-dev sync-repo`, die Umgebungsvariable `PIPWERK_DEV_ROOT` und die Vorbereitung der Arbeitsbereiche durch Entwickler und QA beschrieben; Testdatenbank ausdrücklich als dauerhaft festgehalten; lokale Werkzeuge bleiben außerhalb des öffentlichen Repositorys. |
 | 2026-10-06 | Erstfassung: Gesamtverfahren, Beteiligte, Verzeichnisse, `pipwerk-dispatch`, `pipwerk-dev`, Ablauf eines Auftrags, Störungen und Einrichtung. |
