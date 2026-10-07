@@ -2,8 +2,9 @@
 
 ## Status
 
-- status: `freigegeben`
+- status: `umgesetzt`
 - freigegeben am: `2026-10-04`
+- übernommen in `main`: PR #31, Merge-Commit `780e81d85978556f12d82e195ea196dbe76cfd27`
 - maßgeblicher Ausgangsstand: `origin/main` bei Commit `829920faf45fc17b7a7a3987b1ba3d38ae6e245e`
 
 ## Ziel
