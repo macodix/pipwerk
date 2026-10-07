@@ -10,6 +10,7 @@ description: Bestimmt vor Pipwerk-Arbeit den maßgeblichen aktuellen Repository-
 3. Lies nur zusätzlich erforderliche aktuelle Anforderungen, Verträge, Architektur- und Technikregeln.
 4. Prüfe erkennbare Widersprüche.
 5. Frühere Agentenantworten oder Laufzeitkommunikation ersetzen keine Repository-Inhalte.
-6. Eskaliere nicht innerhalb der eigenen Rolle lösbare Widersprüche vor der Entscheidung.
+6. Untersuche keine alten Commits, geschlossenen PRs, alten Chats oder sonstige Historie vorsorglich; das ist nur bei einem aus dem aktuellen Stand nicht lösbaren Widerspruch oder auf ausdrücklichen Auftrag des Projektleiters zulässig.
+7. Eskaliere nicht innerhalb der eigenen Rolle lösbare Widersprüche vor der Entscheidung.
 
 Arbeite mit eindeutig benannten Repository-Referenzen.

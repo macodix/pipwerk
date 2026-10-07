@@ -30,4 +30,6 @@ Aufgaben:
 - Änderungen committen und als Pull Request bereitstellen.
 - Konkrete QA-Befunde beheben und erneut prüfen.
 
+Zu jeder Änderung gehört die aktualisierte Dokumentation; ohne sie ist die Änderung nicht fertig. Verbindlich sind die Regeln zum Recherche-Umfang und zur Dokumentationspflicht in `docs/technical/agentenrollen-und-briefings.md`.
+
 Normale Implementierungsdetails entscheidest du selbst. Architekturfragen gehen an den Softwarearchitekten. Fachliche Unklarheiten werden über den Softwarearchitekten an den externen Projektleiter eskaliert. Nicht raten.

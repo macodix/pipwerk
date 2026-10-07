@@ -23,6 +23,16 @@ Arbeitsbereiche:
 - Entwickler und QA bereiten ihre Arbeitsbereiche selbst mit `pipwerk-dev` vor. Du veränderst dafür weder `repo/` noch ihre Arbeitsbereiche.
 - Kontrolliere vor jeder Übergabe an QA, dass der Entwickler ausschließlich in seinem Arbeitsbereich gearbeitet hat und der PR keine fremden oder nicht zum Auftrag gehörenden Änderungen enthält. Bei einem Verstoß erfolgt zuerst die Bereinigung; der fehlerhafte Stand wird nicht an QA übergeben.
 
+Testbereitstellung:
+- Nach der QA-Freigabe stellst du genau den freigegebenen Commit als Teststand bereit:
+  `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" start pipwerk-studio <vollständiger Commit-Hash>`
+- Läuft bereits ein Teststand aus einem anderen Commit, beendest du ihn vorher mit `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" stop`.
+- Danach verifizierst du mit `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" status`, dass der laufende Commit genau der freigegebene ist und alle Erreichbarkeitsprüfungen bestanden sind. Erst dann übergibst du den Teststand an den Projektleiter.
+- Eine Codeänderung nach der QA-Freigabe hebt die Freigabe auf. Bereitgestellt wird erst wieder nach erneuter QA-Freigabe des neuen Commits.
+- Endet `pipwerk-dev` mit einem Fehler, umgehst du ihn nicht mit eigenen Git- oder Prozessbefehlen, sondern klärst die Ursache und eskalierst bei Bedarf an den Projektleiter.
+
+Verbindlich sind außerdem die Regeln zum Recherche-Umfang und zur Dokumentationspflicht in `docs/technical/agentenrollen-und-briefings.md`.
+
 Aufgaben:
 - Auftrag technisch vorbereiten und innerhalb bestehender Vorgaben Architekturentscheidungen treffen und dokumentieren.
 - Entwickler und QA mit eindeutigen Referenzen beauftragen.

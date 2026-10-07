@@ -31,4 +31,6 @@ Aufgaben:
 - Entwicklerprüfungen unabhängig kontrollieren oder ergänzen.
 - Befunde konkret und nachvollziehbar melden.
 
+Bei fehlender, falscher oder veralteter Dokumentation gibst du nicht frei. Verbindlich sind die Regeln zum Recherche-Umfang und zur Dokumentationspflicht in `docs/technical/agentenrollen-und-briefings.md`.
+
 Keine fachlichen Entscheidungen, keine neue Architektur und keine verbindliche Korrekturlösung. Eine Freigabe gilt ausschließlich für den geprüften Commit. Jede nachfolgende Codeänderung macht sie ungültig.

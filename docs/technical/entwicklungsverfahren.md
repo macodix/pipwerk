@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-06
+- stand: 2026-10-07
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 
 ## Worum es in diesem Dokument geht
@@ -70,7 +70,7 @@ Die Modellzuordnung ist eine Startkonfiguration und kann nach praktischen Erfahr
 
 ### Softwarearchitekt
 
-Der Softwarearchitekt bereitet den Auftrag technisch vor, trifft Architekturentscheidungen innerhalb der dokumentierten Vorgaben und steuert Entwicklung, QA, Korrekturschleifen, Testbereitstellung und Abschluss. Fachliche Fragen und neue Architekturgrundsätze gibt er über den Projektleiter an den Nutzer weiter.
+Der Softwarearchitekt bereitet den Auftrag technisch vor, trifft Architekturentscheidungen innerhalb der dokumentierten Vorgaben und steuert Entwicklung, QA, Korrekturschleifen und Abschluss. Den von der QA freigegebenen Commit stellt er selbst mit `pipwerk-dev start` als Teststand bereit und verifiziert danach mit `pipwerk-dev status` den laufenden Commit. Fachliche Fragen und neue Architekturgrundsätze gibt er über den Projektleiter an den Nutzer weiter.
 
 ### Entwickler
 
@@ -79,6 +79,10 @@ Der Entwickler setzt den Auftrag in einem eigenen Branch um, führt die vorgeseh
 ### QA
 
 Die QA prüft einen bestimmten Pull Request bei einem bestimmten Commit unabhängig gegen Auftrag, Architektur, Projektregeln, Code, Tests und Dokumentation. Sie beschreibt Befunde, legt aber keine Korrekturlösung fest. Eine Freigabe gilt nur für den geprüften Commit. Jede spätere Codeänderung macht sie ungültig.
+
+### Verbindliche Arbeitsregeln für alle Rollen
+
+Zwei Regeln aus [Agentenrollen und Briefings](agentenrollen-und-briefings.md) prägen die tägliche Arbeit besonders. Erstens arbeiten alle Rollen mit dem aktuellen Stand von `main`, dem Auftrag, dem aktuellen Pull Request und den unmittelbar nötigen Referenzen; ältere Historie wird nur bei einem sonst nicht lösbaren Widerspruch oder auf ausdrücklichen Auftrag des Projektleiters untersucht. Zweitens ist Dokumentation Teil jeder Änderung, auch an Werkzeugen, Infrastruktur, Konfiguration und Prozessen. Ohne aktuelle Dokumentation ist eine Änderung nicht fertig, und die QA gibt sie nicht frei.
 
 ### GitHub und Pull Requests
 
@@ -355,7 +359,7 @@ Zu einzelnen Schritten:
 
 **Schritte 2 und 3.** Der Dispatcher wird erst gestartet, wenn der Auftrag auf `main` liegt; vorher findet er die Datei auf `origin/main` nicht. Hat ein Merge Dateien unter `.claude/` geändert, nimmt der Dispatcher `repo/` erst nach `sync-repo` an.
 
-**Schritt 9.** Bereitgestellt wird genau der Commit, den die QA freigegeben hat. `pipwerk-dev start` meldet erst Erfolg, wenn die Anwendung antwortet, und `pipwerk-dev status` zeigt den laufenden Commit. Ändert sich danach der Code, ist die QA-Freigabe ungültig.
+**Schritt 9.** Der Softwarearchitekt stellt genau den Commit bereit, den die QA freigegeben hat, und übergibt `pipwerk-dev start` dafür den vollständigen Commit-Hash. Läuft noch ein Teststand aus einem anderen Commit, beendet er ihn vorher mit `pipwerk-dev stop`. `pipwerk-dev start` meldet erst Erfolg, wenn die Anwendung antwortet. Danach prüft der Softwarearchitekt mit `pipwerk-dev status`, dass der laufende Commit der freigegebene ist, und übergibt erst dann an den Projektleiter. Ändert sich nach der Freigabe der Code, ist die QA-Freigabe ungültig, und es wird erst nach erneuter Freigabe bereitgestellt.
 
 **Schritt 12.** Nach dem Merge ist die Sitzung des Softwarearchitekten noch offen. Erst nach `stop` kann der nächste Auftrag gestartet werden.
 
@@ -406,5 +410,6 @@ Weil das Verfahren auf diese Werkzeuge angewiesen ist, müssen sie außerhalb de
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Testbereitstellung durch den Softwarearchitekten mit `pipwerk-dev start` und Verifikation verbindlich beschrieben; Verweis auf Recherche-Umfang und Dokumentationspflicht. |
 | 2026-10-06 | Serverbezogene Angaben entfernt; `pipwerk-dev sync-repo`, die Umgebungsvariable `PIPWERK_DEV_ROOT` und die Vorbereitung der Arbeitsbereiche durch Entwickler und QA beschrieben; Testdatenbank ausdrücklich als dauerhaft festgehalten; lokale Werkzeuge bleiben außerhalb des öffentlichen Repositorys. |
 | 2026-10-06 | Erstfassung: Gesamtverfahren, Beteiligte, Verzeichnisse, `pipwerk-dispatch`, `pipwerk-dev`, Ablauf eines Auftrags, Störungen und Einrichtung. |
