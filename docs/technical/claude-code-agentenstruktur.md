@@ -51,7 +51,7 @@ Die fachlich weiterhin gültigen Rollenregeln und Skills wurden aus der bisherig
 
 ## Startverzeichnis und Arbeitsbereiche
 
-Alle Arbeitsbereiche liegen nebeneinander im Pipwerk-Entwicklungsverzeichnis des Entwicklungsrechners. Die Agenten finden es über die Umgebungsvariable `PIPWERK_DEV_ROOT`, die der Dispatcher beim Start setzt; die Agentendefinitionen enthalten deshalb keine Pfade des Rechners. Die interaktive Session des Softwarearchitekten als Team Lead wird aus dem Referenz-Repository `repo/` gestartet:
+Alle Arbeitsbereiche liegen nebeneinander im Pipwerk-Entwicklungsverzeichnis des Entwicklungsrechners. Die Agenten finden es über die Umgebungsvariable `PIPWERK_DEV_ROOT`, die ausschließlich der Dispatcher beim Start setzt; kein Agent setzt oder verändert sie. Die Agentendefinitionen enthalten deshalb keine Pfade des Rechners. Die interaktive Session des Softwarearchitekten als Team Lead wird aus dem Referenz-Repository `repo/` gestartet:
 
 ```
 cd "$PIPWERK_DEV_ROOT/repo" && claude --agent software-architect
@@ -110,6 +110,7 @@ Erst nach erfolgreichem Nachweis folgt der Dispatcher.
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Klargestellt, dass nur der Dispatcher `PIPWERK_DEV_ROOT` setzt. |
 | 2026-10-06 | Rechnerpfade durch `PIPWERK_DEV_ROOT` und Arbeitsbereichsnamen ersetzt; Vorbereitung der Arbeitsbereiche durch Entwickler und QA mit `pipwerk-dev` verankert. |
 | 2026-10-06 | Beschreibung des Dispatchers in das Dokument zum Entwicklungsverfahren verlagert; hier nur noch Abgrenzung und Verweis. |
 | 2026-10-06 | Arbeitsverzeichnis des Softwarearchitekten abgesichert: ausschließlich `repo/`, kein Wechsel in andere Worktrees; Prüfung anderer Arbeitsbereiche mit absoluten Pfaden. |

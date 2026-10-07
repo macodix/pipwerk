@@ -12,3 +12,5 @@ description: Stellt ausschließlich den von QA freigegebenen Pipwerk-Codezustand
 5. Verifiziere mit `pipwerk-dev status`, dass der laufende Teststand dem freigegebenen Commit entspricht und erreichbar ist.
 6. Stoppe die Übergabe bei Abweichung.
 7. Übergib Arbeitsauftrag, Commit und Prüfinformationen an den externen Projektleiter.
+
+Verwende `PIPWERK_DEV_ROOT` nur, wie der Dispatcher sie gesetzt hat; setze, exportiere oder überschreibe sie nie.

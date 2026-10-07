@@ -17,3 +17,5 @@ description: Setzt einen freigegebenen Pipwerk-Arbeitsauftrag um und stellt gepr
 10. Übergib PR und Commit eindeutig an den Softwarearchitekten.
 
 Bei QA-Korrekturen: Befund beheben, relevante Prüfungen wiederholen und neuen Commit übergeben.
+
+Verwende `PIPWERK_DEV_ROOT` nur, wie der Dispatcher sie gesetzt hat; setze, exportiere oder überschreibe sie nie.

@@ -68,6 +68,8 @@ Der Softwarearchitekt ist der Leiter des Teams (Team Lead). Er startet Entwickle
 
 Die Modellzuordnung ist eine Startkonfiguration und kann nach praktischen Erfahrungen geändert werden.
 
+Am Ende eines Auftrags fordert der Softwarearchitekt Entwickler und QA zum Beenden auf. Claude Code stellt die technische Bestätigung dieser Aufforderung dem Softwarearchitekten nicht zuverlässig zu; in einem Test am 2026-10-07 kam sie bei ihm nicht an, obwohl beide Teammates bestätigt hatten. Deshalb schicken Entwickler und QA vor der Bestätigung eine gewöhnliche Nachricht `ABMELDUNG BESTÄTIGT: <rolle>`. Nur diese Nachricht wertet der Softwarearchitekt aus, und nur ihr Fehlen meldet er als fehlende Abmeldung.
+
 ### Softwarearchitekt
 
 Der Softwarearchitekt bereitet den Auftrag technisch vor, trifft Architekturentscheidungen innerhalb der dokumentierten Vorgaben und steuert Entwicklung, QA, Korrekturschleifen und Abschluss. Den von der QA freigegebenen Commit stellt er selbst mit `pipwerk-dev start` als Teststand bereit und verifiziert danach mit `pipwerk-dev status` den laufenden Commit. Fachliche Fragen und neue Architekturgrundsätze gibt er über den Projektleiter an den Nutzer weiter.
@@ -98,7 +100,7 @@ Auf dem Entwicklungsrechner gibt es ein Pipwerk-Entwicklungsverzeichnis. Darin l
 
 Die Verzeichnisse `repo/`, `implement/`, `review/` und `test/` sind Git-Arbeitsbereiche desselben Repositorys. `repo/` ist ein normaler Klon von GitHub, die übrigen drei sind daran angehängte Worktrees. Ein Worktree ist ein zusätzliches Arbeitsverzeichnis, das sich die Git-Daten mit `repo/` teilt, aber einen eigenen Branch oder Commit ausgecheckt hat.
 
-Die Agenten finden das Pipwerk-Entwicklungsverzeichnis über die Umgebungsvariable `PIPWERK_DEV_ROOT`. Der Dispatcher setzt sie beim Start der Sitzung. Die Agentendefinitionen enthalten deshalb keine Pfade des Rechners. Ist die Variable nicht gesetzt, brechen die Agenten ab.
+Die Agenten finden das Pipwerk-Entwicklungsverzeichnis über die Umgebungsvariable `PIPWERK_DEV_ROOT`. Sie wird ausschließlich vom Dispatcher beim Start der Sitzung gesetzt. Kein Agent setzt, überschreibt oder entfernt sie; alle verwenden nur den gesetzten Wert und schreiben Pfade über die Variable. Der Softwarearchitekt nennt Entwickler und QA ihre Arbeitsbereiche deshalb nur als `$PIPWERK_DEV_ROOT/implement` und `$PIPWERK_DEV_ROOT/review`, nie als ausgeschriebenen Pfad. Die Agentendefinitionen enthalten keine Pfade des Rechners. Ist die Variable nicht gesetzt, brechen die Agenten ab.
 
 ### repo/ – Referenz-Repository
 
@@ -412,6 +414,7 @@ Weil das Verfahren auf diese Werkzeuge angewiesen ist, müssen sie außerhalb de
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | `PIPWERK_DEV_ROOT` nur vom Dispatcher gesetzt, keine ausgeschriebenen Pfade in Aufträgen; Abmeldung der Teammates über die Nachricht `ABMELDUNG BESTÄTIGT`. |
 | 2026-10-07 | Störungsfall „Vertrauensabfrage beim ersten Start“ ergänzt. |
 | 2026-10-07 | Testbereitstellung durch den Softwarearchitekten mit `pipwerk-dev start` und Verifikation verbindlich beschrieben; Verweis auf Recherche-Umfang und Dokumentationspflicht. |
 | 2026-10-06 | Serverbezogene Angaben entfernt; `pipwerk-dev sync-repo`, die Umgebungsvariable `PIPWERK_DEV_ROOT` und die Vorbereitung der Arbeitsbereiche durch Entwickler und QA beschrieben; Testdatenbank ausdrücklich als dauerhaft festgehalten; lokale Werkzeuge bleiben außerhalb des öffentlichen Repositorys. |

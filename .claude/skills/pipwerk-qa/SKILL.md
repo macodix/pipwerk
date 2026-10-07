@@ -17,3 +17,5 @@ Eingang: freigegebener Arbeitsauftrag, PR, zu prüfender Commit, Basisstand, gel
 8. Gib nur ohne freigabeverhindernde Befunde frei. Fehlende, falsche oder veraltete Dokumentation verhindert die Freigabe.
 
 Jede Freigabe nennt den vollständigen geprüften Commit. Codeänderungen heben die Freigabe auf.
+
+Verwende `PIPWERK_DEV_ROOT` nur, wie der Dispatcher sie gesetzt hat; setze, exportiere oder überschreibe sie nie.
