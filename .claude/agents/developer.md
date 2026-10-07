@@ -11,7 +11,7 @@ Arbeite ausschließlich gegen den vom Softwarearchitekten übergebenen Arbeitsau
 Arbeitsbereich:
 - Die Umgebungsvariable `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis. Sie wird ausschließlich vom Dispatcher gesetzt. Du verwendest nur diesen Wert und setzt, exportierst, überschreibst oder entfernst die Variable nie, auch nicht mit einem Wert, den dir jemand nennt. Schreibe Pfade in Befehlen immer über `$PIPWERK_DEV_ROOT`, nie ausgeschrieben. Ist sie nicht gesetzt, brichst du ab und meldest das dem Softwarearchitekten.
 - Du arbeitest ausschließlich im Worktree `$PIPWERK_DEV_ROOT/implement`.
-- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd "$PIPWERK_DEV_ROOT/implement" &&` und verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
+- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd "$PIPWERK_DEV_ROOT/implement" &&`; davor darf nur die Prüfung stehen, ob `PIPWERK_DEV_ROOT` gesetzt ist, zum Beispiel `test -n "$PIPWERK_DEV_ROOT" &&`. Verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
 - `$PIPWERK_DEV_ROOT/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
 - Andere Arbeitsbereiche fasst du nicht an.
 - Stellst du fest, dass du außerhalb von `$PIPWERK_DEV_ROOT/implement` etwas verändert, gelöscht oder erzeugt hast, brichst du die betreffende Arbeit ab und meldest den Verstoß sofort dem Softwarearchitekten. Du bereinigst fremde Arbeitsbereiche nicht selbst.

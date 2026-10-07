@@ -414,6 +414,7 @@ Weil das Verfahren auf diese Werkzeuge angewiesen ist, müssen sie außerhalb de
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Agentendefinitionen: vor dem Wechsel in den Arbeitsbereich ist nur die Prüfung erlaubt, ob `PIPWERK_DEV_ROOT` gesetzt ist. |
 | 2026-10-07 | `PIPWERK_DEV_ROOT` nur vom Dispatcher gesetzt, keine ausgeschriebenen Pfade in Aufträgen; Abmeldung der Teammates über die Nachricht `ABMELDUNG BESTÄTIGT`. |
 | 2026-10-07 | Störungsfall „Vertrauensabfrage beim ersten Start“ ergänzt. |
 | 2026-10-07 | Testbereitstellung durch den Softwarearchitekten mit `pipwerk-dev start` und Verifikation verbindlich beschrieben; Verweis auf Recherche-Umfang und Dokumentationspflicht. |
