@@ -210,7 +210,7 @@ Jeder Pull Request enthält mindestens:
 - Ergebnis der ausgeführten technischen Prüfungen;
 - noch offene Punkte und bekannte Einschränkungen.
 
-ChatGPT bestätigt nur, was durch Code, Tests oder andere zugängliche Nachweise überprüfbar ist. Die technische und dokumentarische PR-Prüfung wird nicht auf den Nutzer verlagert. Die praktische Nutzbarkeit beurteilt der Nutzer nach eigener Erprobung.
+Der QA-Agent bestätigt nur, was durch Code, Tests oder andere zugängliche Nachweise überprüfbar ist. Die technische und dokumentarische PR-Prüfung wird nicht auf den Nutzer verlagert. Die praktische Nutzbarkeit beurteilt der Nutzer nach eigener Erprobung.
 
 ## 5. Bestehende Grundlagen
 
@@ -233,6 +233,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Abschnitt 4: Prüfinstanz an das geltende Rollenmodell angepasst (QA-Agent statt ChatGPT). |
 | 2026-10-07 | Verworfene technische Prozessvorgaben und den bisherigen Einrichtungsauftrag entfernt; Rollen, Qualitätssicherung, Automatisierungsziel und bestehende Auftragsablage erhalten. Frühere Fassungen sind in Git nachvollziehbar. |
 | 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
