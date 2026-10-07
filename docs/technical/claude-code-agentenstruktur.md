@@ -51,23 +51,23 @@ Die fachlich weiterhin gültigen Rollenregeln und Skills wurden aus der bisherig
 
 ## Startverzeichnis und Arbeitsbereiche
 
-Die interaktive Session des Softwarearchitekten als Team Lead wird aus `/srv/aixlab/dev/pipwerk/repo` gestartet:
+Alle Arbeitsbereiche liegen nebeneinander im Pipwerk-Entwicklungsverzeichnis des Entwicklungsrechners. Die Agenten finden es über die Umgebungsvariable `PIPWERK_DEV_ROOT`, die ausschließlich der Dispatcher beim Start setzt; kein Agent setzt oder verändert sie. Die Agentendefinitionen enthalten deshalb keine Pfade des Rechners. Die interaktive Session des Softwarearchitekten als Team Lead wird aus dem Referenz-Repository `repo/` gestartet:
 
 ```
-cd /srv/aixlab/dev/pipwerk/repo && claude --agent software-architect
+cd "$PIPWERK_DEV_ROOT/repo" && claude --agent software-architect
 ```
 
 Teammates erhalten in Claude Code kein eigenes Arbeitsverzeichnis; sie starten im Verzeichnis des Team Leads. Eine Worktree-Isolation wie bei Subagents gilt für Teammates nicht. Die Arbeitstrennung ist deshalb als verbindliche Anweisung in den Agentendefinitionen festgelegt:
 
 | Rolle | Arbeitsbereich |
 |---|---|
-| Softwarearchitekt / Team Lead | `/srv/aixlab/dev/pipwerk/repo` |
-| Entwickler | ausschließlich vorhandener Worktree `/srv/aixlab/dev/pipwerk/implement` |
-| QA | ausschließlich vorhandener Worktree `/srv/aixlab/dev/pipwerk/review` |
+| Softwarearchitekt / Team Lead | `repo/` |
+| Entwickler | ausschließlich Worktree `implement/` |
+| QA | ausschließlich Worktree `review/` |
 
-Der Softwarearchitekt arbeitet ausschließlich mit `/srv/aixlab/dev/pipwerk/repo` als eigenem Arbeitsverzeichnis und wechselt es nicht nach `implement/`, `review/` oder in andere Worktrees. Inhalte anderer Arbeitsbereiche prüft er mit absoluten Pfaden oder Befehlen, die sein Arbeitsverzeichnis nicht dauerhaft verändern.
+Der Softwarearchitekt arbeitet ausschließlich mit `repo/` als eigenem Arbeitsverzeichnis und wechselt es nicht nach `implement/`, `review/` oder in andere Worktrees. Inhalte anderer Arbeitsbereiche prüft er mit absoluten Pfaden oder Befehlen, die sein Arbeitsverzeichnis nicht dauerhaft verändern.
 
-Entwickler und QA dürfen `repo/` als Referenz lesen, dort aber keine Änderungen vornehmen. Eine zusätzliche `isolation: worktree`-Konfiguration wird nicht verwendet.
+Entwickler und QA dürfen `repo/` als Referenz lesen, dort aber keine Änderungen vornehmen. Ihre Arbeitsbereiche bereiten sie selbst mit `pipwerk-dev` vor; die Befehle stehen in den Agentendefinitionen. Eine zusätzliche `isolation: worktree`-Konfiguration wird nicht verwendet.
 
 ## Kommunikation und Übergaben
 
@@ -92,11 +92,7 @@ Die frühere OpenClaw-Konfiguration ist aus dem aktuellen Repository-Stand entfe
 
 Claude Code Agent Teams werden in einer interaktiven Claude-Code-Session betrieben. Der nicht-interaktive `claude -p`-Modus ist für den vorgesehenen Team-Lead-Ablauf mit Teammates nicht geeignet und wird nicht verwendet.
 
-Der Dispatcher ist lokale Entwicklungsinfrastruktur unter `/srv/aixlab/dev/pipwerk/scripts/` und nicht Bestandteil des Repositorys. Seine Laufzeitdaten liegen ebenfalls außerhalb des Repositorys. Er erhält den freigegebenen Arbeitsauftrag ausdrücklich vom Projektleiter als Pfad unter `docs/design/planning/work-orders/` und prüft, dass die Datei auf `origin/main` vorhanden ist und den Status `freigegeben` hat.
-
-Der Dispatcher startet eine eindeutig benannte `tmux`-Session und darin aus `/srv/aixlab/dev/pipwerk/repo` die interaktive Session `claude --agent software-architect`. Die Auftragsreferenz mit dem Commit von `origin/main` wird als erste Eingabe aktiv übergeben; der Softwarearchitekt pollt nicht. Vor dem Start prüft der Dispatcher, dass `repo/` keine lokalen Änderungen hat und die Claude-Konfiguration von `origin/main` enthält.
-
-Es läuft höchstens ein Pipwerk-Teamlauf. Der Dispatcher zeigt an, ob ein Lauf aktiv ist, welcher Auftrag zugehört und welche `tmux`-Session verwendet wird. Nach beendetem oder abgebrochenem Claude-Prozess setzt ein Wiederanlauf dieselbe Claude-Session mit demselben Auftrag fort; ein anderer Auftrag wird dabei nicht angenommen. Zugangsdaten und API-Schlüssel werden vom Dispatcher weder gespeichert noch ausgegeben. Eine Matrix-Anbindung gehört nicht zum Dispatcher.
+Der Dispatcher `pipwerk-dispatch` ist lokale Entwicklungsinfrastruktur und nicht Bestandteil des Repositorys. Er startet die interaktive Session des Softwarearchitekten in `tmux` aus `repo/` und übergibt ihr aktiv den vom Projektleiter genannten freigegebenen Arbeitsauftrag. Funktionsweise, Bedienung und Wiederanlauf sind in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) beschrieben. Eine Matrix-Anbindung ist nicht vorhanden.
 
 ## Test vor Dispatcher
 
@@ -114,6 +110,9 @@ Erst nach erfolgreichem Nachweis folgt der Dispatcher.
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Klargestellt, dass nur der Dispatcher `PIPWERK_DEV_ROOT` setzt. |
+| 2026-10-06 | Rechnerpfade durch `PIPWERK_DEV_ROOT` und Arbeitsbereichsnamen ersetzt; Vorbereitung der Arbeitsbereiche durch Entwickler und QA mit `pipwerk-dev` verankert. |
+| 2026-10-06 | Beschreibung des Dispatchers in das Dokument zum Entwicklungsverfahren verlagert; hier nur noch Abgrenzung und Verweis. |
 | 2026-10-06 | Arbeitsverzeichnis des Softwarearchitekten abgesichert: ausschließlich `repo/`, kein Wechsel in andere Worktrees; Prüfung anderer Arbeitsbereiche mit absoluten Pfaden. |
 | 2026-10-06 | Dispatcher-Stand dokumentiert: Dispatcher umgesetzt und getestet; Auftragsauswahl durch den Projektleiter, Übergabe und Lebenszyklus der interaktiven `tmux`-Session durch den Dispatcher. |
 | 2026-10-06 | Startverzeichnis des Team Leads und Arbeitsbereiche der Teammates festgelegt; Arbeitstrennung als Anweisung in den Agentendefinitionen. |

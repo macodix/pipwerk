@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-05
+- stand: 2026-10-07
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 
 ## Zweck
@@ -28,6 +28,21 @@ Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschni
 Freigegebene Arbeitsaufträge werden als eigene Markdown-Dateien unter `docs/design/planning/work-orders/` abgelegt. Ein Arbeitsauftrag enthält mindestens eine eindeutige Kennung, Titel, Status, Ziel, Umfang und Nicht-Umfang, Abnahmekriterien, relevante Referenzen und gegebenenfalls ausdrücklich offene Punkte.
 
 Ein Auftrag ist erst ausführbar, wenn die für seine Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde. Nach der Freigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den Arbeitsauftrag. Der Softwarearchitekt-Agent sucht oder pollt nicht nach neuen Aufträgen.
+
+## Recherche-Umfang
+
+Diese Regel gilt verbindlich für alle Rollen.
+
+- Grundlage der Arbeit sind der aktuelle Stand von `main`, der Arbeitsauftrag, der aktuelle Pull Request beziehungsweise Branch des Auftrags und die unmittelbar erforderlichen Referenzen.
+- Alte Commits, geschlossene Pull Requests, alte Chats und sonstige Historie werden nicht vorsorglich untersucht.
+- Historische Recherche ist nur zulässig, wenn ein konkreter Widerspruch besteht, der sich aus dem aktuellen Stand nicht lösen lässt, oder wenn der Projektleiter sie ausdrücklich beauftragt.
+
+## Dokumentationspflicht
+
+Diese Regel gilt verbindlich und ohne Ausnahme für Produkt, Architektur, Entwicklungswerkzeuge, Infrastruktur, Konfiguration und Prozesse.
+
+- Dokumentation ist Bestandteil jeder Änderung. Eine Änderung gilt erst als fertig, wenn die betroffene Dokumentation aktualisiert und mit der Änderung konsistent ist.
+- QA gibt nicht frei, wenn Dokumentation fehlt, falsch oder veraltet ist.
 
 ## Entscheidungs- und Eskalationsregeln
 
@@ -111,6 +126,7 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Verbindliche Regeln zum Recherche-Umfang und zur Dokumentationspflicht ergänzt. |
 | 2026-10-05 | Technische Zielumgebung auf Claude Code Agent Teams umgestellt; Projektleiter als externe Rolle klargestellt. |
 | 2026-10-02 | Modellzuordnung ausdrücklich als austauschbare Laufzeitkonfiguration abgegrenzt; keine konkreten Modelle als Rollenfestlegung. |
 | 2026-10-02 | Rollen zu Projektleiter, Softwarearchitekt, Entwicklung und QA präzisiert; Übergaben, Entscheidungsgrenzen, QA-Commitbindung, Testbereitstellung, Rückschleifen und Abschluss geregelt. |

@@ -158,11 +158,14 @@ GitHub dient zur nachvollziehbaren Ablage und Prüfung abgegrenzter Zwischenstä
 
 Auf dem Entwicklungsrechner werden getrennte Git-Arbeitsbereiche verwendet:
 
-- `repo/` -- Referenz-Worktree für den aktuellen Stand von `main`;
+- `repo/` -- Klon des Repositorys auf dem aktuellen Stand von `main`; Arbeitsverzeichnis des Softwarearchitekten und Ausgangspunkt der übrigen Worktrees;
 - `implement/` -- Arbeitsbereich für den Implementierungs-Agenten;
 - `review/` -- unabhängiger Arbeitsbereich für den QA-Agenten;
+- `test/` -- Teststand; wird ausschließlich über die lokale Automatisierung auf einen freigegebenen Commit gesetzt;
 - `transfer/` -- Übergabeverzeichnis für Analyse-, Prüf- und sonstige temporäre Arbeitsergebnisse zwischen den beteiligten Werkzeugen;
 - `scripts/` -- lokale, nicht zum Produkt gehörende Automatisierung für Einrichtung, Aktualisierung, Start, Stop und Status der Entwicklungs- und Teststände auf dem Entwicklungsrechner.
+
+Zweck, Nutzung und Bedienung dieser Arbeitsbereiche und der lokalen Werkzeuge sind in `docs/technical/entwicklungsverfahren.md` beschrieben.
 
 Entwicklungs- und QA-Agent erhalten denselben freigegebenen Arbeitsauftrag und müssen sich auf denselben maßgeblichen Ausgangsstand beziehen. QA prüft zusätzlich den eindeutig benannten PR und Commit. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
 
@@ -256,6 +259,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-10-02 | Rollen und automatisierten Ablauf auf Projektleiter, Softwarearchitekt, Entwicklung und QA umgestellt; aktive Auftragsübergabe, Entscheidungsgrenzen, commitgebundene QA-Freigabe, Projektleiterprüfung und Abschlussprozess festgelegt. |
 | 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
 | 2026-10-06 | Veraltete Angabe OpenClaw als technische Grundlage der Agenten entsprechend der Umstellung auf Claude Code Agent Teams korrigiert. |
+| 2026-10-06 | Lokale Arbeitsbereiche um `test/` ergänzt, Rolle von `repo/` als Arbeitsverzeichnis des Softwarearchitekten richtiggestellt und auf die Dokumentation des Entwicklungsverfahrens verwiesen. |
 | 2026-10-06 | Grundsatz eines API-Key-basierten Multi-LLM-Anbieters nicht mehr als Zielarchitektur geführt; aktuelle Modellzuordnung als änderbare Startkonfiguration festgehalten; Anbieterunabhängigkeit derzeit keine Anforderung. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
 | 2026-09-24 | Python als gemeinsamer fachlicher Kern, TypeScript/React als Browseroberfläche, CSS-Gestaltung und Schnittstellenabgrenzung festgehalten. |
@@ -274,6 +278,6 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-27 | Nutzerrolle präzisiert: keine eigene PR-, Code- oder umfangreiche Dokumentationsprüfung erforderlich; ChatGPT/Codex übernehmen die unabhängige Prüfung und legen nur entscheidungsrelevante Punkte sowie eine kurze Ergebniszusammenfassung vor. |
 | 2026-09-27 | AP1 nach Annahme des Arbeitsauftrags nicht mehr als offen geführt; dauerhaftes Verhalten der Oberflächensprache als später zu klärender Punkt festgehalten. |
 | 2026-09-27 | Offene Betriebsfragen der browserbasierten Oberflächen zu Webserver/Reverse Proxy, Prozessmodell, gemeinsamem Komponentenbetrieb, Adressierung, HTTPS/TLS und Betriebsarten konkret festgehalten. |
-| 2026-09-27 | Übergabe zur praktischen Erprobung präzisiert: Teststand wird vor Übergabe auf dem Entwicklungsrechner bereitgestellt, gestartet und geprüft; lokale Rechnerautomatisierung liegt unter `/srv/aixlab/dev/pipwerk/scripts/`. |
+| 2026-09-27 | Übergabe zur praktischen Erprobung präzisiert: Teststand wird vor Übergabe auf dem Entwicklungsrechner bereitgestellt, gestartet und geprüft; lokale Rechnerautomatisierung liegt im Verzeichnis `scripts/` der lokalen Entwicklungsumgebung. |
 | 2026-09-30 | Zielarchitektur für einen automatisierten agentenbasierten Entwicklungsablauf festgelegt: lokaler KI-Koordinator, API-Key-basierter Multi-LLM-Anbieter, getrennte Implementierungs- und Review-Agenten, automatische Korrekturschleife und Testbereitstellung; GitHub bleibt Repository und PR-Ablage. |
 | 2026-09-30 | Stufenweiser Ausbau des Entwicklungsprozesses festgelegt: zuerst agentischer Grundworkflow, danach Spec Kit, anschließend Linter und Codechecker und erst danach weitere Qualitätswerkzeuge. |

@@ -14,6 +14,8 @@ Eingang: freigegebener Arbeitsauftrag, PR, zu prüfender Commit, Basisstand, gel
 5. Wiederhole oder ergänze technische Prüfungen soweit erforderlich.
 6. Prüfe Regressionen und unbeabsichtigte Änderungen.
 7. Melde jeden Befund mit Referenz, Ist, Soll und Nachweis.
-8. Gib nur ohne freigabeverhindernde Befunde frei.
+8. Gib nur ohne freigabeverhindernde Befunde frei. Fehlende, falsche oder veraltete Dokumentation verhindert die Freigabe.
 
 Jede Freigabe nennt den vollständigen geprüften Commit. Codeänderungen heben die Freigabe auf.
+
+Verwende `PIPWERK_DEV_ROOT` nur, wie der Dispatcher sie gesetzt hat; setze, exportiere oder überschreibe sie nie.
