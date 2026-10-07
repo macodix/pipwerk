@@ -20,4 +20,4 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md`. Befolg
 
 Bei QA-Korrekturen: Befund beheben, alle im Auftrag und in den geltenden Technikregeln vorgeschriebenen Prüfungen sowie die Prüfung des korrigierten Befunds wiederholen und neuen Commit übergeben.
 
-Verwende `PIPWERK_DEV_ROOT` nur, wie der Dispatcher sie gesetzt hat; setze, exportiere oder überschreibe sie nie.
+Verwende `PIPWERK_DEV_ROOT` nur mit dem von der Startumgebung bereitgestellten Wert; setze, exportiere oder überschreibe sie nie.

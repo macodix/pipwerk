@@ -3,119 +3,77 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-06
+- stand: 2026-10-07
 - bereich: Entwicklungsprozess
 
-## Zweck
+## Zweck und Abgrenzung
 
-Dieses Dokument legt die erste technische Zielstruktur für den Pipwerk-Entwicklungsworkflow mit Claude Code Agent Teams fest. Sie ersetzt OpenClaw im kritischen Entwicklungsablauf.
+Dieses Dokument beschreibt die im Repository vorhandenen Claude-Code-Rollendefinitionen und Skills. Verbindliche Zuständigkeiten stehen in [Agentenrollen und Briefings](agentenrollen-und-briefings.md), der transportunabhängige Ablauf in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md).
 
-Das Pipwerk-Repository bleibt die maßgebliche Referenz. Agentendefinitionen, Skills und Teamkommunikation dürfen keine davon unabhängigen Projektfestlegungen bilden.
+Die Anbindung des Claude-Code-Agent-Teams an eine künftige Automatisierung, insbesondere Auftragsübermittlung, Start und Wiederanlauf, ist offen. Der Projektleiter bleibt außerhalb des Teams und die Schnittstelle zum Nutzer.
 
-## Abgrenzung
+## Rollendefinitionen
 
-Die Einführung erfolgt bewusst in getrennten Schritten:
-
-1. Claude-Struktur erstellen und testen.
-2. Dispatcher erstellen und testen.
-3. Matrix-Anbindung ergänzen.
-
-Der Dispatcher (Schritt 2) ist umgesetzt und getestet; er ist im Abschnitt „Dispatcher“ beschrieben. Die Matrix-Anbindung (Schritt 3) ist nicht Bestandteil dieses Dokuments.
-
-## Rollen
-
-Der Projektleiter bleibt außerhalb des Claude-Agent-Teams. Er klärt Arbeitsaufträge mit dem Nutzer, hält sie im Repository fest und stößt über den Dispatcher den technischen Ablauf an.
-
-Das Claude-Agent-Team besteht aus:
-
-| Rolle | Funktion | Modell |
+| Rolle | Datei | Vorhandene Modellkonfiguration |
 |---|---|---|
-| Softwarearchitekt | Team Lead, Architektur und Orchestrierung | Opus |
-| Entwickler | Implementierung und technische Eigenprüfung | Sonnet |
-| QA | unabhängige technische Qualitätssicherung | Opus |
+| Softwarearchitekt | `.claude/agents/software-architect.md` | Opus |
+| Entwickler | `.claude/agents/developer.md` | Sonnet |
+| QA | `.claude/agents/qa.md` | Opus |
 
-Entwicklung und QA bleiben getrennte Rollen. Die QA prüft unabhängig und darf ihre eigene Korrekturlösung nicht verbindlich vorgeben.
+Die vorhandene Modellzuordnung bleibt eine änderbare Laufzeitkonfiguration, keine fachliche Rollenregel. Entwicklung und QA bleiben unabhängig und getrennt. Der Softwarearchitekt koordiniert Architektur, Umsetzung, Korrektur und Testbereitstellung innerhalb der dokumentierten Zuständigkeiten.
 
-Die Modellzuordnung ist die festgelegte Startkonfiguration für den ersten Versuch und kann nach Auswertung geändert werden.
+## Verbindliche Arbeitsbereiche
 
-## Claude-Code-Struktur
-
-Projektbezogene Definitionen liegen direkt im Repository. Agent Teams werden über `.claude/settings.json` mit `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` aktiviert. Die Funktion ist in Claude Code derzeit experimentell.
-
-- `.claude/agents/software-architect.md`
-- `.claude/agents/developer.md`
-- `.claude/agents/qa.md`
-- `.claude/skills/*/SKILL.md`
-
-Die fachlich weiterhin gültigen Rollenregeln und Skills wurden aus der bisherigen Struktur in die Claude-Code-Struktur überführt. OpenClaw-spezifische Dateien wie `IDENTITY.md`, `SOUL.md`, `AGENTS.md`, `USER.md`, `MEMORY.md` und `HEARTBEAT.md` sind für diese Zielstruktur nicht maßgeblich.
-
-## Startverzeichnis und Arbeitsbereiche
-
-Alle Arbeitsbereiche liegen nebeneinander im Pipwerk-Entwicklungsverzeichnis des Entwicklungsrechners. Die Agenten finden es über die Umgebungsvariable `PIPWERK_DEV_ROOT`, die ausschließlich der Dispatcher beim Start setzt; kein Agent setzt oder verändert sie. Die Agentendefinitionen enthalten deshalb keine Pfade des Rechners. Die interaktive Session des Softwarearchitekten als Team Lead wird aus dem Referenz-Repository `repo/` gestartet:
-
-```
-cd "$PIPWERK_DEV_ROOT/repo" && claude --agent software-architect
-```
-
-Teammates erhalten in Claude Code kein eigenes Arbeitsverzeichnis; sie starten im Verzeichnis des Team Leads. Eine Worktree-Isolation wie bei Subagents gilt für Teammates nicht. Die Arbeitstrennung ist deshalb als verbindliche Anweisung in den Agentendefinitionen festgelegt:
+Die bestehenden Verzeichnisse bleiben verbindlich:
 
 | Rolle | Arbeitsbereich |
 |---|---|
-| Softwarearchitekt / Team Lead | `repo/` |
-| Entwickler | ausschließlich Worktree `implement/` |
-| QA | ausschließlich Worktree `review/` |
+| Softwarearchitekt / Team Lead | `$PIPWERK_DEV_ROOT/repo` |
+| Entwickler | `$PIPWERK_DEV_ROOT/implement` |
+| QA | `$PIPWERK_DEV_ROOT/review` |
+| Testbereitstellung durch `pipwerk-dev` | `$PIPWERK_DEV_ROOT/test` |
 
-Der Softwarearchitekt arbeitet ausschließlich mit `repo/` als eigenem Arbeitsverzeichnis und wechselt es nicht nach `implement/`, `review/` oder in andere Worktrees. Inhalte anderer Arbeitsbereiche prüft er mit absoluten Pfaden oder Befehlen, die sein Arbeitsverzeichnis nicht dauerhaft verändern.
+### Verbindliche Aufrufschnittstelle
 
-Entwickler und QA dürfen `repo/` als Referenz lesen, dort aber keine Änderungen vornehmen. Ihre Arbeitsbereiche bereiten sie selbst mit `pipwerk-dev` vor; die Befehle stehen in den Agentendefinitionen. Eine zusätzliche `isolation: worktree`-Konfiguration wird nicht verwendet.
+Diese Vorgaben gelten für jedes Programm und Skript, das das Agententeam startet, unabhängig vom verwendeten Startmechanismus:
 
-## Kommunikation und Übergaben
+- `PIPWERK_DEV_ROOT` ist eine Pflichtangabe in der Prozessumgebung. Der Wert ist der absolute Pfad des Pipwerk-Entwicklungsverzeichnisses, unter dem die oben genannten Arbeitsbereiche liegen.
+- Das aufrufende Programm liest den Wert aus seiner Konfiguration und übergibt ihn beim Prozessstart als Umgebungsvariable. Eine Erwähnung im Prompt oder eine nicht exportierte Shell-Variable genügt nicht.
+- Vor dem Start prüft der Aufrufer, dass der Wert nicht leer ist, auf das vorgesehene Entwicklungsverzeichnis zeigt und das Referenz-Repository unter `repo/` zugänglich ist. Bei fehlendem oder ungültigem Wert startet er das Team nicht und meldet die verletzte Voraussetzung. Es gibt keinen geratenen Ersatzpfad.
+- Die Sitzung des Softwarearchitekten startet in `$PIPWERK_DEV_ROOT/repo`. Der Wert muss auch in der Ausführungsumgebung der Teammates verfügbar sein; er darf bei ihrer Erstellung oder beim Weiterreichen von Prozessumgebungen nicht verloren gehen.
+- Kein Agent setzt oder verändert die Variable. Fehlt sie beim Agenten, bricht er wie in seiner Rollendefinition vorgeschrieben ab. Diese zusätzliche Prüfung ersetzt nicht die Prüfung des Aufrufers.
 
-Innerhalb eines laufenden Claude-Agent-Teams erfolgt die operative Kommunikation über die Agent-Team-Kommunikation von Claude Code. Dauerhafte Projektzustände werden dadurch nicht ersetzt.
+Jede Umsetzung eines Aufrufers muss nachweisen, dass der konfigurierte Wert beim Team Lead und den Teammates ankommt, die bestehenden Arbeitsbereichsregeln eingehalten werden und ein fehlender oder ungültiger Wert den Start verhindert. Die konkrete Umsetzung des Aufrufers bleibt offen; diese Schnittstelle setzt keinen neuen Workflow voraus.
 
-Für nachvollziehbare Übergaben gelten weiterhin eindeutige Repository-Referenzen:
-- Arbeitsauftrag;
-- Branch;
-- Pull Request;
-- Commit;
-- QA-Ergebnis mit geprüftem Commit.
+Der Softwarearchitekt bleibt in seinem Referenz-Repository. Entwickler und QA wechseln vor jedem Shell-Befehl wie in ihren Agentendefinitionen vorgeschrieben in ihren eigenen Arbeitsbereich. Sie dürfen das Referenz-Repository nur lesen. Vorbereitung und Prüfung der Arbeitsbereiche erfolgen weiterhin über `pipwerk-dev`; seine Schutzprüfungen dürfen nicht umgangen werden. Testbereitstellung und Commit-Verifikation bleiben ebenfalls an dieses Werkzeug gebunden. Einzelheiten stehen in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md).
 
-Welcher freigegebene Auftrag gestartet wird, bestimmt der Projektleiter. Der Dispatcher übergibt diesen Auftrag; er wählt selbst keinen Auftrag aus. Diese Logik gehört nicht in die Agentenrollen.
+Arbeitsbranch, Ausgangsstand, PR und Prüfcommit werden eindeutig übergeben. Die feste Arbeitstrennung ist eine Agentenanweisung und keine technische Zugriffssperre zwischen den Verzeichnissen.
 
-## Historie und Nachvollziehbarkeit
+## Teamfunktion und interne Kommunikation
 
-Die frühere OpenClaw-Konfiguration ist aus dem aktuellen Repository-Stand entfernt. Ihre Historie bleibt über Git nachvollziehbar.
+Die bestehende Teamfunktion bleibt in `.claude/settings.json` über `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` aktiviert. Der Softwarearchitekt ist Team Lead und setzt Entwickler und QA als getrennte Teammates ein. Die Modellkonfiguration bleibt unverändert.
 
-Änderungen an Rollen, Skills und Ablauf erfolgen weiterhin versioniert über Branch und Pull Request. Git-Historie, Arbeitsaufträge, PRs und commitgebundene QA-Ergebnisse bilden den nachvollziehbaren Verlauf.
+Die operative Kommunikation erfolgt innerhalb des Teams. Die vorhandene Abmelderegel bleibt erhalten: Entwickler und QA senden vor der technischen Bestätigung einer Beendigungsaufforderung die Nachricht `ABMELDUNG BESTÄTIGT: developer` beziehungsweise `ABMELDUNG BESTÄTIGT: qa`. Der Softwarearchitekt wertet diese Nachricht aus und meldet eine Abmeldung nur bei fehlender Nachricht als fehlend. Diese Regel betrifft die teaminterne Kommunikation, nicht den Start oder Wiederanlauf des Teams.
 
-## Dispatcher
+Die Teamfunktion ersetzt keine Isolation der Arbeitsbereiche. Die Rollendefinitionen verlangen weiterhin die oben festgelegten getrennten Bereiche für Entwicklung und QA.
 
-Claude Code Agent Teams werden in einer interaktiven Claude-Code-Session betrieben. Der nicht-interaktive `claude -p`-Modus ist für den vorgesehenen Team-Lead-Ablauf mit Teammates nicht geeignet und wird nicht verwendet.
+## Wiederverwendbare Arbeitsschritte
 
-Der Dispatcher `pipwerk-dispatch` ist lokale Entwicklungsinfrastruktur und nicht Bestandteil des Repositorys. Er startet die interaktive Session des Softwarearchitekten in `tmux` aus `repo/` und übergibt ihr aktiv den vom Projektleiter genannten freigegebenen Arbeitsauftrag. Funktionsweise, Bedienung und Wiederanlauf sind in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) beschrieben. Eine Matrix-Anbindung ist nicht vorhanden.
+Die Dateien unter `.claude/skills/` enthalten:
 
-## Test vor Dispatcher
+- `pipwerk-repository-context`: aktuellen Repository-Stand und geltende Referenzen prüfen;
+- `pipwerk-implementation`: Auftrag umsetzen, prüfen, dokumentieren und als PR bereitstellen;
+- `pipwerk-qa`: unabhängig prüfen und das Ergebnis an einen Commit binden;
+- `pipwerk-test-deployment`: freigegebenen Commit bereitstellen und verifizieren;
+- `pipwerk-escalation`: Entscheidungsbedarf der zuständigen Rolle zuordnen;
+- `pipwerk-close-work-order`: nach Nutzerabnahme und Abschlussfreigabe Merge und Ergebnis kontrollieren.
 
-Vor dem Bau des Dispatchers ist nachzuweisen, dass:
-1. der Softwarearchitekt als Team Lead Entwickler und QA einsetzen kann;
-2. Entwickler und QA die vorgesehenen unterschiedlichen Rollen und Modelle verwenden;
-3. Übergaben mit eindeutigen Repository-Referenzen funktionieren;
-4. QA an einen konkreten Commit gebunden ist;
-5. eine Korrekturschleife Entwickler → QA funktioniert;
-6. Eskalationsbedarf an den externen Projektleiter zurückgegeben werden kann.
+## Übergaben und Nachvollziehbarkeit
 
-Erst nach erfolgreichem Nachweis folgt der Dispatcher.
+Übergaben benennen Arbeitsauftrag, Branch, PR, vollständigen Commit und Prüfergebnisse eindeutig. Operative Agentenkommunikation ersetzt keine Projektfestlegung. Dauerhafte Entscheidungen gehören in die zuständige Repository-Dokumentation. Änderungen an Rollen und Skills erfolgen versioniert über Branch und Pull Request.
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-07 | Klargestellt, dass nur der Dispatcher `PIPWERK_DEV_ROOT` setzt. |
-| 2026-10-06 | Rechnerpfade durch `PIPWERK_DEV_ROOT` und Arbeitsbereichsnamen ersetzt; Vorbereitung der Arbeitsbereiche durch Entwickler und QA mit `pipwerk-dev` verankert. |
-| 2026-10-06 | Beschreibung des Dispatchers in das Dokument zum Entwicklungsverfahren verlagert; hier nur noch Abgrenzung und Verweis. |
-| 2026-10-06 | Arbeitsverzeichnis des Softwarearchitekten abgesichert: ausschließlich `repo/`, kein Wechsel in andere Worktrees; Prüfung anderer Arbeitsbereiche mit absoluten Pfaden. |
-| 2026-10-06 | Dispatcher-Stand dokumentiert: Dispatcher umgesetzt und getestet; Auftragsauswahl durch den Projektleiter, Übergabe und Lebenszyklus der interaktiven `tmux`-Session durch den Dispatcher. |
-| 2026-10-06 | Startverzeichnis des Team Leads und Arbeitsbereiche der Teammates festgelegt; Arbeitstrennung als Anweisung in den Agentendefinitionen. |
-| 2026-10-06 | Dispatcher-Randbedingung dokumentiert: Agent Teams benötigen eine interaktive Claude-Code-Session; spätere Automatisierung über `tmux`, nicht über `claude -p`. Unwirksames `skills`-Frontmatter aus Agentendefinitionen entfernt. |
-| 2026-10-05 | Agent-Team-Aktivierung ergänzt und OpenClaw-Altstruktur aus dem aktuellen Repository-Stand entfernt. |
-| 2026-10-05 | Erstfassung: OpenClaw im kritischen Entwicklungsablauf durch Claude Code Agent Teams ersetzt; Projektleiter außerhalb des Teams; Reihenfolge Claude-Struktur → Dispatcher → Matrix festgelegt. |
+| 2026-10-07 | Rollendefinitionen und Skills von verworfener externer Laufzeitsteuerung entkoppelt; feste Arbeitsbereiche, Werkzeugbindung, Teamfunktion und interne Kommunikation erhalten. Frühere Fassungen sind in Git nachvollziehbar. |
