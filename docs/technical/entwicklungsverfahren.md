@@ -381,7 +381,7 @@ Zu einzelnen Schritten:
 
 **repo/ ist nicht sauber oder steht nicht auf main.** Weder der Dispatcher noch `sync-repo` verwerfen etwas. Zuerst muss geklärt werden, woher die Änderungen oder der andere Branch stammen. Erst danach wird `repo/` von Hand bereinigt und `sync-repo` erneut aufgerufen.
 
-**pipwerk-dev verweigert die Vorbereitung eines Arbeitsbereichs**, etwa wegen liegengebliebener Dateien in `implement/` oder `review/`. Der betroffene Agent meldet das dem Softwarearchitekten, dieser über den Projektleiter. Die Bereinigung geschieht bewusst von Hand, nicht durch die Agenten.
+**pipwerk-dev verweigert die Vorbereitung eines Arbeitsbereichs**, etwa wegen liegengebliebener Dateien in `implement/` oder `review/`. Der betroffene Agent meldet das dem Softwarearchitekten. Dieser ermittelt anhand von Diff, Auftragsreferenzen und Laufprotokollen den Ursprung und beauftragt die zuständige Rolle mit der Bereinigung ihrer eigenen Artefakte. Fremde Änderungen werden nicht verworfen. Nur wenn der Ursprung nicht feststellbar ist, fordert der Projektleiter vom Nutzer die Entscheidung zur Erhaltung oder Entfernung der konkret benannten Dateien an.
 
 **Entwickler oder QA haben in einem fremden Arbeitsbereich etwas verändert.** Der Entwickler ist angewiesen, in diesem Fall die Arbeit abzubrechen und den Verstoß dem Softwarearchitekten zu melden; fremde Bereiche bereinigt er nicht selbst. Der Softwarearchitekt lässt zuerst bereinigen und übergibt einen fehlerhaften Stand nicht an die QA. Die QA bewertet einen Pull Request mit fremden oder nicht zum Auftrag gehörenden Änderungen als „nicht bestanden“. `pipwerk-dev status` zeigt, in welchem Arbeitsbereich lokale Änderungen liegen.
 
@@ -399,7 +399,7 @@ Die konkrete Einrichtung des Entwicklungsrechners steht in der lokalen Dokumenta
 
 - **Programme:** Git, Python 3 ab Version 3.11 für die lokalen Werkzeuge, uv für das Backend, Node.js mit npm für die Oberfläche, die Playwright-Browser für die Oberflächentests, `tmux`, Claude Code und die GitHub-Kommandozeile `gh`, mit der die Agenten Pull Requests anlegen.
 - **Anmeldungen:** Claude Code muss für den ausführenden Benutzer angemeldet sein. `gh` muss bei GitHub mit einem Konto angemeldet sein, das Branches pushen und Pull Requests anlegen darf. Zugangsdaten gehören weder ins Repository noch in die Werkzeuge.
-- **Einstellungen von Claude Code:** Im Repository schaltet `.claude/settings.json` nur die Teamfunktion ein. Die Einstellungen des Benutzers müssen den Agenten erlauben, aus `repo/` heraus auf die übrigen Arbeitsbereiche zuzugreifen, und sollten eine Arbeit ohne Rückfragen zu Berechtigungen ermöglichen.
+- **Einstellungen von Claude Code:** Im Repository schaltet `.claude/settings.json` nur die Teamfunktion ein. Die Einstellungen des Benutzers müssen den Agenten erlauben, aus `repo/` heraus auf die übrigen Arbeitsbereiche zuzugreifen, und müssen die für den freigegebenen Auftrag benötigten Werkzeuge und Arbeitsbereiche freigeben.
 - **Verzeichnisse:** das Pipwerk-Entwicklungsverzeichnis mit `repo/` als Klon des Repositorys auf `main`, `transfer/` und `scripts/` mit den lokalen Werkzeugen. `implement/`, `review/` und `test/` legt `pipwerk-dev` als Worktrees an.
 
 Eine automatische Einrichtung gibt es nicht.
@@ -414,6 +414,7 @@ Weil das Verfahren auf diese Werkzeuge angewiesen ist, müssen sie außerhalb de
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Bereinigung eigener Arbeitsreste durch die zuständige Rolle verbindlich geregelt; Nutzerentscheidung ausschließlich bei ungeklärtem Ursprung. |
 | 2026-10-07 | Agentendefinitionen: vor dem Wechsel in den Arbeitsbereich ist nur die Prüfung erlaubt, ob `PIPWERK_DEV_ROOT` gesetzt ist. |
 | 2026-10-07 | `PIPWERK_DEV_ROOT` nur vom Dispatcher gesetzt, keine ausgeschriebenen Pfade in Aufträgen; Abmeldung der Teammates über die Nachricht `ABMELDUNG BESTÄTIGT`. |
 | 2026-10-07 | Störungsfall „Vertrauensabfrage beim ersten Start“ ergänzt. |
