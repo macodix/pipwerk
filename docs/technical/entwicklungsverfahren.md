@@ -19,7 +19,7 @@ Maßgeblich sind das aktuelle Repository, der freigegebene Arbeitsauftrag und di
 
 ## Arbeitsauftrag und Ablauf
 
-Ein Arbeitsauftrag enthält Kennung, Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien, geltende Referenzen und offene Punkte. Die bestehende Ablage unter `docs/design/planning/work-orders/` bleibt bestehen. Sie legt keinen technischen Auslöser und keine Auftragsauswahl durch ein Werkzeug fest.
+Ein Arbeitsauftrag enthält Kennung, Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien, geltende Referenzen und offene Punkte. Ablage und Statusverlauf regelt der Abschnitt [Auftragsablage und Statusverlauf](#auftragsablage-und-statusverlauf).
 
 1. Der Projektleiter klärt den Auftrag mit dem Nutzer und dokumentiert ihn im Repository. Er wird erst nach Nutzerfreigabe und Klärung der erforderlichen fachlichen Fragen umgesetzt.
 2. Der Softwarearchitekt erhält eine eindeutige Auftragsreferenz, prüft den aktuellen Repository-Stand und bereitet die Umsetzung innerhalb dokumentierter Architekturvorgaben vor.
@@ -30,6 +30,35 @@ Ein Arbeitsauftrag enthält Kennung, Ziel, Umfang und Nicht-Umfang, nachprüfbar
 7. Erst nach Nutzerabnahme und Abschlussfreigabe durch den Projektleiter veranlasst der Softwarearchitekt Merge und Abschluss und prüft den übernommenen Stand.
 
 Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, PR, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder PRs technisch prüfen noch den Teststand selbst installieren und starten.
+
+## Auftragsablage und Statusverlauf
+
+Jeder Arbeitsauftrag ist eine eigene Markdown-Datei unter `docs/design/planning/work-orders/`. Der Status steht im Abschnitt „Status“ der Datei im Feld `status`. Dieser Eintrag ist maßgeblich. Zusätzlich liegt die Datei im Unterverzeichnis, das ihrem Status zugeordnet ist. Die Verzeichnisse dienen der Übersicht; mehrere Status dürfen demselben Verzeichnis zugeordnet sein.
+
+| Status | Bedeutung | Verzeichnis | gesetzt von |
+|---|---|---|---|
+| `draft` | Auftrag in Klärung | keins; liegt nur im Pull Request des Auftrags | Projektleiter |
+| `approved` | vom Nutzer freigegeben | `approved/` | Projektleiter mit dem Merge des Auftrags nach Nutzerfreigabe |
+| `in-progress` | in Umsetzung, Korrektur oder QA | `in-progress/` | Softwarearchitekt bei Arbeitsbeginn; Projektleiter bei „Auftrag nicht erfüllt“ oder Ablehnung durch den Nutzer |
+| `acceptance` | Teststand bereit; Prüfung durch Projektleiter und Erprobung durch den Nutzer | `acceptance/` | Softwarearchitekt nach verifizierter Testbereitstellung |
+| `closed` | abgenommen, gemergt und abgeschlossen | `closed/` | Softwarearchitekt nach Abschlussfreigabe und kontrolliertem Merge |
+
+Weitere Status werden in diese Tabelle aufgenommen, bevor sie verwendet werden. Stimmen Statuseintrag und Verzeichnis nicht überein, ist das ein Fehler, den die Rolle behebt, die den Statuswechsel ausgeführt hat.
+
+Inhaltliche Änderungen eines Auftrags erfolgen über Branch und Pull Request und nach der Freigabe nur mit Zustimmung des Nutzers. Ein reiner Statuswechsel – Änderung des Feldes `status` und Verschiebung der Datei, ohne sonstige Inhaltsänderung – ist Verwaltungsarbeit und wird direkt auf `main` gebucht. Der Softwarearchitekt verändert dafür `repo/` nicht lokal, sondern bucht den Statuswechsel ohne lokalen Arbeitsbereich, zum Beispiel über die GitHub-API, und bringt `repo/` danach mit `pipwerk-dev sync-repo` auf den neuen Stand.
+
+Die Ablage in Statusverzeichnissen ist eine Übergangslösung. Ob Status und Verlauf später in einem anderen System geführt werden, ist offen. Der Statuseintrag in der Datei bleibt deshalb unabhängig von den Verzeichnissen erhalten.
+
+## Geplanter Anstoß der Umsetzung
+
+Dieser Abschnitt beschreibt das beschlossene Ziel. Die Einrichtung ist noch nicht erfolgt; bis dahin stößt der Nutzer die Sitzung des Softwarearchitekten an.
+
+- Ein GitHub-Actions-Workflow startet bei einem Push auf `main`, der Dateien unter `docs/design/planning/work-orders/approved/` ändert. Er setzt die Umsetzung nur für dort neu hinzugekommene Dateien in Gang; andere Änderungen, etwa das Herausschieben einer Datei beim Statuswechsel, beenden ihn ohne Wirkung.
+- Der Workflow läuft auf einem selbst betriebenen Runner auf dem Entwicklungsrechner unter einem eigenen Benutzer mit eingeschränkten Rechten. Er hat keine Auslöser für Pull Requests, damit Änderungsvorschläge Dritter im öffentlichen Repository keinen Code auf dem Entwicklungsrechner ausführen.
+- Der Runner prüft die [verbindliche Aufrufschnittstelle](claude-code-agentenstruktur.md#verbindliche-aufrufschnittstelle) und startet die Sitzung des Softwarearchitekten mit der Auftragsreferenz in `repo/`. Das Agententeam wird über tmux gestartet; ob die Teamfunktion so zuverlässig läuft, ist durch einen Probelauf nachzuweisen.
+- Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben, nicht verbrauchsabhängig abgerechnet. Eine Kostenbegrenzung je Lauf ist deshalb nicht vorgesehen; das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur.
+
+Offen sind die konkrete Workflow-Definition, die Einrichtung des Runners und der Nachweis eines vollständigen Durchlaufs gemäß dem [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md#ziel-der-entwicklungsautomatisierung).
 
 ## Arbeitsbereiche und Umgang mit Fehlern
 
@@ -180,4 +209,5 @@ Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeil
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Auftragsablage mit Statusfeld und Statusverzeichnissen, Statuswechsel als Verwaltungsarbeit auf `main` und geplanten Anstoß über GitHub Actions festgelegt. |
 | 2026-10-07 | Verworfene Auftrags- und Sitzungsautomatisierung entfernt; transportunabhängige Prozessregeln und die eigenständige Schnittstelle des lokalen Hilfswerkzeugs erhalten. Frühere Fassungen sind in Git nachvollziehbar. |

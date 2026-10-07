@@ -142,7 +142,7 @@ Eine Fertigmeldung des Entwicklungs-Agenten ersetzt weder die unabhängige QA no
 
 1. **Repository-Stand prüfen:** Vor Analyse, Planung, Arbeitsauftrag oder Prüfung wird der aktuelle Stand von `main` gelesen. Das Repository ist die maßgebliche Projektquelle.
 2. **Grundlagen prüfen:** Projektleiter und Softwarearchitekt prüfen die jeweils einschlägigen Anforderungen, Fachmodelle, Entscheidungen, Architekturvorgaben und technischen Regeln auf ausreichende Eindeutigkeit und erkennbare Widersprüche. Fachliche Widersprüche klärt der Projektleiter mit dem Nutzer; Architekturfragen innerhalb bestehender Vorgaben entscheidet der Softwarearchitekt. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden über den Projektleiter dem Nutzer vorgelegt.
-3. **Auftrag festlegen und freigeben:** Nutzer und Projektleiter-Agent vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Der Auftrag wird unter `docs/design/planning/work-orders/` abgelegt. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet. Ein Auftrag wird erst ausgeführt, wenn die für die Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde.
+3. **Auftrag festlegen und freigeben:** Nutzer und Projektleiter-Agent vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Der Auftrag wird unter `docs/design/planning/work-orders/` abgelegt. Statusführung und Ablage regelt `docs/technical/entwicklungsverfahren.md`. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet. Ein Auftrag wird erst ausgeführt, wenn die für die Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde.
 4. **Auftrag aktiv übergeben:** Nach Nutzerfreigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den freigegebenen Arbeitsauftrag. Der Softwarearchitekt sucht oder pollt nicht nach neuen Aufträgen.
 5. **Technisch vorbereiten und umsetzen:** Der Softwarearchitekt prüft die technischen und architektonischen Grundlagen und übergibt Auftrag und geltende Architekturvorgaben an den Entwicklungs-Agenten. Dieser arbeitet im eigenen Branch und Arbeitsbereich, setzt den Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request.
 6. **Unabhängige QA:** Der Softwarearchitekt übergibt dem QA-Agenten den freigegebenen Auftrag und Abnahmekriterien, konkreten Pull Request und Commit, maßgeblichen Ausgangsstand von `main`, geltende Architektur- und Technikregeln sowie die Prüfnachweise des Entwicklungs-Agenten. QA prüft unabhängig und gibt bei Bestehen ausschließlich den eindeutig geprüften Commit frei.
@@ -177,7 +177,7 @@ Die vorhandene Claude-Code-Teamfunktion, Rollendefinitionen und Skills stehen in
 
 Vor Freigabe einer Automatisierung sind ausreichende dokumentierte Architekturvorgaben und ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Entscheidungswege, commitgebundene Testbereitstellung, Projektleiterprüfung, Nutzerabnahme und kontrollierter Abschluss. Der Nachweis soll einen kleinen echten Code-Auftrag an Pipwerk Studio verwenden. Dies ist kein neuer Einrichtungsauftrag.
 
-Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Die technische Anbindung für die Auftragsübermittlung ist offen. Die bestehende Auftragsablage bleibt unverändert.
+Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Auftragsablage, Statusverlauf und der geplante Anstoß der Umsetzung über GitHub Actions sind in `docs/technical/entwicklungsverfahren.md` beschrieben; die Einrichtung ist offen.
 
 ### Weitere Qualitätswerkzeuge
 
@@ -233,6 +233,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Verweis auf Auftragsablage, Statusverlauf und geplanten Anstoß über GitHub Actions ergänzt. |
 | 2026-10-07 | Abschnitt 4: Prüfinstanz an das geltende Rollenmodell angepasst (QA-Agent statt ChatGPT). |
 | 2026-10-07 | Verworfene technische Prozessvorgaben und den bisherigen Einrichtungsauftrag entfernt; Rollen, Qualitätssicherung, Automatisierungsziel und bestehende Auftragsablage erhalten. Frühere Fassungen sind in Git nachvollziehbar. |
 | 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
