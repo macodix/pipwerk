@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-06
+- stand: 2026-10-07
 
 ## 1. Ziel und Gegenstand
 
@@ -130,7 +130,7 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 |---|---|
 | Nutzer / Auftraggeber | Fachliche Entscheidungen und grundlegende Architekturentscheidungen treffen, Arbeitsaufträge freigeben und das tatsächliche Verhalten des laufenden Prototyps praktisch erproben und abnehmen. Eine eigene Prüfung von Pull Requests, Programmcode oder umfangreichen Dokumentationsänderungen ist nicht erforderlich. |
 | Projektleiter-Agent | Anforderungen und Arbeitsaufträge mit dem Nutzer klären und formulieren, fachliche Entscheidungen dokumentieren, freigegebene Aufträge aktiv anstoßen und nach der Testbereitstellung die Auftragserfüllung gegen die Abnahmekriterien prüfen. |
-| Softwarearchitekt-Agent | Softwarearchitektur und technische Konzeption verantworten, Architekturentscheidungen innerhalb dokumentierter Vorgaben treffen und dokumentieren, Architekturkonformität überwachen und den automatisierten Entwicklungsablauf orchestrieren. |
+| Softwarearchitekt-Agent | Softwarearchitektur und technische Konzeption verantworten, Architekturentscheidungen innerhalb dokumentierter Vorgaben treffen und dokumentieren, Architekturkonformität überwachen und den Entwicklungsablauf koordinieren. |
 | Entwicklungs-Agent | Vereinbarte Aufträge innerhalb der fachlichen und architektonischen Vorgaben im eigenen Arbeitsbereich implementieren, technische Prüfungen ausführen, Änderungen und Prüfergebnisse bereitstellen und festgestellte Mängel korrigieren. |
 | QA-Agent | Technische Qualität unabhängig von der Entwicklung gegen Auftrag, Architekturvorgaben, Repository-Stand, Code, Tests, Dokumentation und technische Projektregeln prüfen. |
 
@@ -146,7 +146,7 @@ Eine Fertigmeldung des Entwicklungs-Agenten ersetzt weder die unabhängige QA no
 4. **Auftrag aktiv übergeben:** Nach Nutzerfreigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den freigegebenen Arbeitsauftrag. Der Softwarearchitekt sucht oder pollt nicht nach neuen Aufträgen.
 5. **Technisch vorbereiten und umsetzen:** Der Softwarearchitekt prüft die technischen und architektonischen Grundlagen und übergibt Auftrag und geltende Architekturvorgaben an den Entwicklungs-Agenten. Dieser arbeitet im eigenen Branch und Arbeitsbereich, setzt den Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request.
 6. **Unabhängige QA:** Der Softwarearchitekt übergibt dem QA-Agenten den freigegebenen Auftrag und Abnahmekriterien, konkreten Pull Request und Commit, maßgeblichen Ausgangsstand von `main`, geltende Architektur- und Technikregeln sowie die Prüfnachweise des Entwicklungs-Agenten. QA prüft unabhängig und gibt bei Bestehen ausschließlich den eindeutig geprüften Commit frei.
-7. **Mängel beheben:** Bei negativer QA klassifiziert der Softwarearchitekt die Befunde. Implementierungsbefunde gehen an den Entwicklungs-Agenten; Architekturprobleme bearbeitet der Softwarearchitekt innerhalb seiner Zuständigkeit; fachlicher Klärungsbedarf geht über den Projektleiter an den Nutzer. Nach jeder Codeänderung erfolgt erneut unabhängige QA. Die Schleife läuft bis zur bestandenen QA oder bis fehlender Fortschritt beziehungsweise eine Entscheidung außerhalb der Zuständigkeit eine Eskalation erfordert.
+7. **Mängel beheben:** Bei negativer QA klassifiziert der Softwarearchitekt die Befunde. Implementierungsbefunde gehen an den Entwicklungs-Agenten; Architekturprobleme bearbeitet der Softwarearchitekt innerhalb seiner Zuständigkeit; fachlicher Klärungsbedarf geht über den Projektleiter an den Nutzer. Nach jeder Codeänderung erfolgt erneut unabhängige QA. Die Schleife läuft bis zur bestandenen QA. Eskaliert werden ausschließlich fehlende Entscheidungen, Berechtigungen oder Handlungen außerhalb der eigenen Zuständigkeit; die Regeln zur Lösungsorientierung stehen in `docs/technical/agentenrollen-und-briefings.md`.
 8. **Teststand bereitstellen:** Nach bestandener QA wird exakt der von QA freigegebene Commit bereitgestellt. Benötigte Abhängigkeiten werden eingerichtet, erforderliche Prozesse gestartet und ihre Erreichbarkeit geprüft. Vor der Übergabe wird verifiziert, dass der laufende Teststand exakt diesem Commit entspricht. Ändert sich danach der Code, ist die QA-Freigabe ungültig und eine erneute QA-Prüfung erforderlich.
 9. **Auftragserfüllung prüfen:** Der Projektleiter-Agent prüft am laufenden Teststand jedes Abnahmekriterium. Bei „Auftrag nicht erfüllt“ gehen konkrete Abweichungen an den Softwarearchitekten, der die Korrektur über Entwicklung, QA, erneute Testbereitstellung und erneute Projektleiterprüfung steuert. Nur erforderliche fachliche oder grundlegende Architekturentscheidungen werden dem Nutzer vorgelegt.
 10. **Nutzererprobung:** Erst nach „Auftrag erfüllt“ erhält der Nutzer den bereitgestellten Stand zur praktischen fachlichen Erprobung. Der Nutzer muss den Pull Request nicht selbst lesen, technisch prüfen oder den Teststand manuell installieren und starten.
@@ -169,44 +169,21 @@ Zweck, Nutzung und Bedienung dieser Arbeitsbereiche und der lokalen Werkzeuge si
 
 Entwicklungs- und QA-Agent erhalten denselben freigegebenen Arbeitsauftrag und müssen sich auf denselben maßgeblichen Ausgangsstand beziehen. QA prüft zusätzlich den eindeutig benannten PR und Commit. Inhalte aus `transfer/` sind Arbeitsergebnisse und keine Projektfestlegungen. Dauerhafte Festlegungen werden in die zuständige Dokumentation im Repository übernommen.
 
-### Automatisierter agentenbasierter Entwicklungsablauf
+### Ziel der Entwicklungsautomatisierung
 
-Ziel ist, die manuelle Tätigkeit des Nutzers auf fachliche und grundlegende Architekturentscheidungen, die Freigabe von Arbeitsaufträgen und die abschließende fachliche Erprobung der bereitgestellten Anwendung zu beschränken. Die technischen Schritte dazwischen werden automatisiert ausgeführt.
+Ziel bleibt, die manuelle Tätigkeit des Nutzers auf fachliche und grundlegende Architekturentscheidungen, Auftragsfreigabe und abschließende fachliche Erprobung zu beschränken. Die technischen Schritte des oben beschriebenen Ablaufs sollen ohne manuelle technische Zwischenschritte des Nutzers ausgeführt werden. Die technische Umsetzung dieses Ziels ist offen; daraus folgt kein bereits eingerichteter Automatisierungsworkflow.
 
-Der kritische Entwicklungsablauf verwendet Claude Code Agent Teams; die technische Abbildung ist in `docs/technical/claude-code-agentenstruktur.md` festgelegt. Der Projektleiter-Agent bleibt außerhalb des Claude-Agent-Teams und bildet die Schnittstelle zum Nutzer. Nach Freigabe eines Arbeitsauftrags stößt er den Softwarearchitekt-Agenten aktiv mit eindeutiger Auftragsreferenz an. Der Softwarearchitekt verantwortet Architektur und technische Konzeption und orchestriert Entwicklung, QA, Korrekturschleifen und Testbereitstellung. Die Rollen verwenden derzeit folgende Modelle: Softwarearchitekt Opus, Entwickler Sonnet, QA Opus. Diese Modellzuordnung ist eine Startkonfiguration und kann aufgrund praktischer Erfahrungen geändert werden. Anbieterunabhängigkeit beziehungsweise ein Multi-LLM-Anbieter ist derzeit keine Anforderung des Entwicklungsprozesses.
+Die vorhandene Claude-Code-Teamfunktion, Rollendefinitionen und Skills stehen in `docs/technical/claude-code-agentenstruktur.md`. Teamaktivierung, Rollenaufteilung und interne Kommunikation bleiben erhalten; ihre Anbindung an die künftige Automatisierung ist offen. Die Modellzuordnung ist änderbare Laufzeitkonfiguration. Anbieterunabhängigkeit beziehungsweise ein Multi-LLM-Anbieter ist derzeit keine Anforderung des Entwicklungsprozesses.
 
-Der automatisierte Ablauf umfasst mindestens:
+Vor Freigabe einer Automatisierung sind ausreichende dokumentierte Architekturvorgaben und ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Entscheidungswege, commitgebundene Testbereitstellung, Projektleiterprüfung, Nutzerabnahme und kontrollierter Abschluss. Der Nachweis soll einen kleinen echten Code-Auftrag an Pipwerk Studio verwenden. Dies ist kein neuer Einrichtungsauftrag.
 
-1. Projektleiter klärt und dokumentiert den Arbeitsauftrag mit dem Nutzer und erhält dessen Freigabe;
-2. Projektleiter stößt den Softwarearchitekten aktiv mit eindeutiger Auftragsreferenz an;
-3. Softwarearchitekt liest den maßgeblichen Repository-Stand und die einschlägige Dokumentation, trifft zulässige Architekturentscheidungen und übergibt Auftrag und Vorgaben an die Entwicklung;
-4. Entwicklungs-Agent implementiert, prüft technisch, committet und erstellt den Pull Request;
-5. Softwarearchitekt übergibt einen eindeutigen Prüfauftrag an den getrennten QA-Agenten;
-6. QA prüft unabhängig und bindet ein positives Ergebnis an einen konkreten Commit;
-7. bei Befunden steuert der Softwarearchitekt die Korrektur und erneute QA; fachliche Fragen gehen über den Projektleiter an den Nutzer;
-8. nach bestandener QA wird exakt der freigegebene Commit bereitgestellt, gestartet, auf Erreichbarkeit geprüft und seine Identität verifiziert;
-9. Projektleiter prüft den laufenden Teststand gegen alle Abnahmekriterien; bei Abweichungen läuft die Korrekturschleife erneut;
-10. erst nach „Auftrag erfüllt“ wird der Stand dem Nutzer zur praktischen Erprobung übergeben;
-11. nach Nutzerabnahme gibt der Projektleiter den Abschluss frei; der Softwarearchitekt veranlasst und kontrolliert Merge und Abschluss.
+Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Die technische Anbindung für die Auftragsübermittlung ist offen. Die bestehende Auftragsablage bleibt unverändert.
 
-GitHub bleibt Repository und Pull-Request-Ablage. Die Entwicklungsorchestrierung wird nicht von GitHub abhängig gemacht. n8n ist für den Kernablauf nicht erforderlich; eine spätere Verwendung für davon unabhängige Automatisierungen bleibt möglich.
+### Weitere Qualitätswerkzeuge
 
-Freigegebene Arbeitsaufträge liegen unter `docs/design/planning/work-orders/`. Der Pfad des konkreten Auftrags wird bei der aktiven Übergabe mitgegeben; ein Repository-Polling zur Auftragserkennung ist nicht vorgesehen.
+Die bereits verbindlichen Prüfwerkzeuge und Qualitätsregeln stehen in `docs/technical/development-test-security-rules.md` und gelten unabhängig von der Entwicklungsautomatisierung. Ihre Anwendung wartet nicht auf eine neue Automatisierung.
 
-Vor Freigabe des automatisierten Grundworkflows wird geprüft, ob die dokumentierten Architekturvorgaben ausreichend sind, damit der Softwarearchitekt innerhalb klarer Grenzen selbständig entscheiden kann. Relevante Architekturentscheidungen werden dokumentiert. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden nicht selbständig eingeführt.
-
-Zugangsdaten und API-Schlüssel werden nicht im Repository gespeichert. Die technische Umsetzung dieser Zielarchitektur gilt erst nach einem nachgewiesenen vollständigen Durchlauf als eingerichtet.
-
-### Ausbau des Entwicklungsprozesses
-
-Der Entwicklungsprozess wird stufenweise erweitert. Die Stufen werden in der folgenden Reihenfolge umgesetzt und jeweils funktionsfähig nachgewiesen, bevor die nächste Stufe in den automatisierten Ablauf aufgenommen wird:
-
-1. **Agentischer Grundworkflow:** Zuerst wird ausschließlich der vollständige Ablauf mit Projektleiter-Agent, Softwarearchitekt-Agent, Entwicklungs-Agent, unabhängigem QA-Agent, automatischer Korrekturschleife und anschließender Testbereitstellung eingerichtet und Ende-zu-Ende nachgewiesen.
-2. **Spec Kit:** Erst nach einem funktionierenden Grundworkflow wird Spec Kit als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge integriert. Spec Kit ersetzt weder die maßgebliche Pipwerk-Dokumentation noch den Projektleiter, Softwarearchitekt oder den unabhängigen QA-Agenten.
-3. **Linter und Codechecker:** Erst danach werden geeignete statische Prüfwerkzeuge für die tatsächlich verwendeten Sprachen und Komponenten ausgewählt und als automatische Quality Gates in den bestehenden Ablauf aufgenommen.
-4. **Weitere Qualitätswerkzeuge:** Weitere Werkzeuge, insbesondere für spezialisierte Tests, Vertragsprüfung, Sicherheitsprüfung, Architekturprüfung, Property-based Testing oder Mutation Testing, werden anschließend bedarfsgerecht bewertet und schrittweise ergänzt.
-
-Die Auswahl konkreter Werkzeuge der Stufen 3 und 4 wird erst getroffen, wenn die vorhergehenden Stufen funktionsfähig sind und der tatsächliche Prüfbedarf der entstandenen Software bekannt ist. Das Hinzufügen eines Werkzeugs gilt nicht als Qualitätsgewinn, solange seine Aufgabe, sein Prüfkriterium und seine Wirkung auf den Entwicklungsablauf nicht festgelegt und nachgewiesen sind.
+Spec Kit ist erst nach einem nachgewiesenen Entwicklungsablauf als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge vorgesehen. Es ersetzt weder die maßgebliche Dokumentation noch die Rollen und unabhängige QA. Weitere Werkzeuge, insbesondere Vertrags-, Sicherheits-, Architektur-, Property-based- oder Mutationstests, werden anschließend bedarfsgerecht bewertet. Das Hinzufügen eines Werkzeugs gilt erst dann als Qualitätsgewinn, wenn Aufgabe, Prüfkriterium und Wirkung nachgewiesen sind.
 
 ### Gültigkeit von Dokumentinhalten und Entscheidungen
 
@@ -216,7 +193,7 @@ Insbesondere sind Inhalte eines mit `draft` gekennzeichneten Dokuments Arbeitsst
 
 Eine erkennbare veraltete oder widersprüchliche Dokumentationsstelle wird nicht als neue fachliche Frage an den Nutzer zurückgegeben, wenn sie anhand bereits getroffener und dokumentierter Festlegungen eindeutig korrigiert werden kann. Nur tatsächlich noch offene fachliche Entscheidungen werden dem Nutzer zur Entscheidung vorgelegt.
 
-Chatverläufe, Agentenausgaben und Dateien in `transfer/` sind kein dauerhafter Dokumentationsspeicher. Neue Festlegungen werden in das dafür zuständige Dokument im Repository übernommen.
+Chatverläufe, Agentenausgaben und temporäre Übergabedateien sind kein dauerhafter Dokumentationsspeicher. Neue Festlegungen werden in das dafür zuständige Dokument im Repository übernommen.
 
 ## Test und spätere Ablaufanalyse
 
@@ -256,11 +233,8 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-02 | Rollen und automatisierten Ablauf auf Projektleiter, Softwarearchitekt, Entwicklung und QA umgestellt; aktive Auftragsübergabe, Entscheidungsgrenzen, commitgebundene QA-Freigabe, Projektleiterprüfung und Abschlussprozess festgelegt. |
+| 2026-10-07 | Verworfene technische Prozessvorgaben und den bisherigen Einrichtungsauftrag entfernt; Rollen, Qualitätssicherung, Automatisierungsziel und bestehende Auftragsablage erhalten. Frühere Fassungen sind in Git nachvollziehbar. |
 | 2026-10-04 | Dauerhaftes Verhalten der Oberflächensprache des Strategiedesigners nach fachlicher Festlegung nicht mehr als offen geführt. |
-| 2026-10-06 | Veraltete Angabe OpenClaw als technische Grundlage der Agenten entsprechend der Umstellung auf Claude Code Agent Teams korrigiert. |
-| 2026-10-06 | Lokale Arbeitsbereiche um `test/` ergänzt, Rolle von `repo/` als Arbeitsverzeichnis des Softwarearchitekten richtiggestellt und auf die Dokumentation des Entwicklungsverfahrens verwiesen. |
-| 2026-10-06 | Grundsatz eines API-Key-basierten Multi-LLM-Anbieters nicht mehr als Zielarchitektur geführt; aktuelle Modellzuordnung als änderbare Startkonfiguration festgehalten; Anbieterunabhängigkeit derzeit keine Anforderung. |
 | 2026-09-24 | Erstfassung mit Rollen, Ablauf, Prüfnachweisen und offenen Festlegungen. |
 | 2026-09-24 | Python als gemeinsamer fachlicher Kern, TypeScript/React als Browseroberfläche, CSS-Gestaltung und Schnittstellenabgrenzung festgehalten. |
 | 2026-09-24 | Gemeinsame Oberflächentechnik und konsistentes Erscheinungsbild für Designer und späteres Handelssystem ergänzt. |
@@ -274,10 +248,6 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 | 2026-09-25 | Datenformat für Ablage und Weitergabe von Strategien ausdrücklich als viertes eigenes Klärungsthema festgehalten. |
 | 2026-09-25 | Pipwerk als Name für Gesamtsystem und Repository sowie Pipwerk Studio, Pipwerk Backtest, Pipwerk Trader und Pipwerk Relay als Komponentennamen festgelegt; Repository- und FHS-orientierte Installationsstruktur konkretisiert. |
 | 2026-09-25 | Öffentliches Repository `macodix/pipwerk` mit GPL-3.0 angelegt; Dokumentation in Entwurfs-, technische und Anwenderdokumentation gegliedert und FHS-Pfad für installierte Dokumentation ergänzt. |
-| 2026-09-27 | Entwicklungsprozess um Repository-Vorprüfung, Codex als unabhängige Prüfinstanz, getrennte lokale Worktrees, `transfer/` sowie Regeln zur Gültigkeit von Draft-Dokumenten und Agentenergebnissen ergänzt. |
 | 2026-09-27 | Nutzerrolle präzisiert: keine eigene PR-, Code- oder umfangreiche Dokumentationsprüfung erforderlich; ChatGPT/Codex übernehmen die unabhängige Prüfung und legen nur entscheidungsrelevante Punkte sowie eine kurze Ergebniszusammenfassung vor. |
 | 2026-09-27 | AP1 nach Annahme des Arbeitsauftrags nicht mehr als offen geführt; dauerhaftes Verhalten der Oberflächensprache als später zu klärender Punkt festgehalten. |
 | 2026-09-27 | Offene Betriebsfragen der browserbasierten Oberflächen zu Webserver/Reverse Proxy, Prozessmodell, gemeinsamem Komponentenbetrieb, Adressierung, HTTPS/TLS und Betriebsarten konkret festgehalten. |
-| 2026-09-27 | Übergabe zur praktischen Erprobung präzisiert: Teststand wird vor Übergabe auf dem Entwicklungsrechner bereitgestellt, gestartet und geprüft; lokale Rechnerautomatisierung liegt im Verzeichnis `scripts/` der lokalen Entwicklungsumgebung. |
-| 2026-09-30 | Zielarchitektur für einen automatisierten agentenbasierten Entwicklungsablauf festgelegt: lokaler KI-Koordinator, API-Key-basierter Multi-LLM-Anbieter, getrennte Implementierungs- und Review-Agenten, automatische Korrekturschleife und Testbereitstellung; GitHub bleibt Repository und PR-Ablage. |
-| 2026-09-30 | Stufenweiser Ausbau des Entwicklungsprozesses festgelegt: zuerst agentischer Grundworkflow, danach Spec Kit, anschließend Linter und Codechecker und erst danach weitere Qualitätswerkzeuge. |

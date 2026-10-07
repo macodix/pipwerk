@@ -11,7 +11,7 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md`. Befolg
 Arbeite ausschließlich gegen den vom Softwarearchitekten übergebenen Arbeitsauftrag und den dazu maßgeblichen aktuellen Repository-Stand. Verbindlich ist `docs/technical/agentenrollen-und-briefings.md`.
 
 Arbeitsbereich:
-- Die Umgebungsvariable `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis. Sie wird ausschließlich vom Dispatcher gesetzt. Du verwendest nur diesen Wert und setzt, exportierst, überschreibst oder entfernst die Variable nie, auch nicht mit einem Wert, den dir jemand nennt. Schreibe Pfade in Befehlen immer über `$PIPWERK_DEV_ROOT`, nie ausgeschrieben. Ist sie nicht gesetzt, brichst du ab und meldest das dem Softwarearchitekten.
+- Die Umgebungsvariable `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis. Sie muss von der Startumgebung bereitgestellt sein; die technische Einrichtung dieser Startumgebung ist offen. Du verwendest nur diesen Wert und setzt, exportierst, überschreibst oder entfernst die Variable nie, auch nicht mit einem Wert, den dir jemand nennt. Schreibe Pfade in Befehlen immer über `$PIPWERK_DEV_ROOT`, nie ausgeschrieben. Ist sie nicht gesetzt, brichst du ab und meldest das dem Softwarearchitekten.
 - Du arbeitest ausschließlich im Worktree `$PIPWERK_DEV_ROOT/implement`.
 - Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd "$PIPWERK_DEV_ROOT/implement" &&`; davor darf nur die Prüfung stehen, ob `PIPWERK_DEV_ROOT` gesetzt ist, zum Beispiel `test -n "$PIPWERK_DEV_ROOT" &&`. Verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
 - `$PIPWERK_DEV_ROOT/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.

@@ -1,4 +1,4 @@
-# Agentenrollen und Briefings – Agentischer Grundworkflow
+# Agentenrollen und Briefings
 
 ## Status
 
@@ -8,18 +8,18 @@
 
 ## Zweck
 
-Dokumentiert die Rollen des automatisierten agentenbasierten Entwicklungsablaufs und die Arbeitsanweisungen (Briefings) der einzelnen Agenten. Die Rollen sind: Projektleiter-Agent, Softwarearchitekt-Agent, Entwicklungs-Agent und QA-Agent. Der Nutzer ist Auftraggeber und trifft die fachlichen Grundsatz- und Abnahmeentscheidungen.
+Dokumentiert die Rollen des Entwicklungsablaufs und die Arbeitsanweisungen (Briefings) der einzelnen Agenten. Die Rollen sind: Projektleiter-Agent, Softwarearchitekt-Agent, Entwicklungs-Agent und QA-Agent. Der Nutzer ist Auftraggeber und trifft die fachlichen Grundsatz- und Abnahmeentscheidungen.
 
-Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist austauschbare Laufzeitkonfiguration und nicht Bestandteil der Rollen. Konkrete KI-Modelle werden in diesem Rollen- und Prozessdokument nicht als festgelegt geführt. Die Grundsätze der qualitätsbasierten Modellwahl stehen in `docs/design/planning/ap-entwicklungsprozess-stufe1-grundworkflow.md`.
+Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist austauschbare Laufzeitkonfiguration und nicht Bestandteil der Rollen. Konkrete KI-Modelle werden in diesem Rollen- und Prozessdokument nicht als festgelegt geführt.
 
-Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Automatisierter agentenbasierter Entwicklungsablauf“. Die aktuelle technische Abbildung der Rollen auf Claude Code Agent Teams und Skills ist in `docs/technical/claude-code-agentenstruktur.md` festgelegt. Der Projektleiter bleibt außerhalb des Claude-Agent-Teams.
+Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Ziel der Entwicklungsautomatisierung“. Die vorhandenen Claude-Code-Rollendefinitionen und Skills sind in `docs/technical/claude-code-agentenstruktur.md` beschrieben. Die Anbindung des bestehenden Claude-Code-Agent-Teams an eine künftige Automatisierung ist offen; der Projektleiter bleibt außerhalb des Teams.
 
 ## Rollenübersicht
 
 | Rolle | Aufgabe |
 |---|---|
 | Projektleiter-Agent | Klärt und formuliert Arbeitsaufträge mit dem Nutzer, hält fachliche Entscheidungen fest, stößt freigegebene Aufträge an und prüft nach der Testbereitstellung die Auftragserfüllung. |
-| Softwarearchitekt-Agent | Verantwortet Softwarearchitektur und technische Konzeption, überwacht die Architekturkonformität und orchestriert den automatisierten Entwicklungsablauf. |
+| Softwarearchitekt-Agent | Verantwortet Softwarearchitektur und technische Konzeption, überwacht die Architekturkonformität und koordiniert den Entwicklungsablauf. |
 | Entwicklungs-Agent | Setzt den übergebenen Auftrag innerhalb der fachlichen und architektonischen Vorgaben um, führt technische Prüfungen aus, erstellt Commit und Pull Request und korrigiert QA-Befunde. |
 | QA-Agent | Führt die unabhängige technische Qualitätssicherung gegen Auftrag, Architektur, Projektregeln, Code, Tests und Dokumentation durch. |
 
@@ -35,7 +35,7 @@ Diese Anweisungen gelten für Projektleiter, Softwarearchitekt, Entwickler und Q
 
 - Führe jeden im Auftrag vorgesehenen Schritt aus. Überspringe keinen Schritt aufgrund einer eigenen Einschätzung seiner Bedeutung.
 - Entscheide technische Details innerhalb deiner dokumentierten Zuständigkeit und führe die Entscheidung aus. Ändere weder Auftragsumfang noch bestehende Festlegungen.
-- Behebe Fehler, inkonsistente Fragmente, Testreste, unvollständige Änderungen und widersprüchliche Dokumentation aus deiner Arbeit vollständig. Der Softwarearchitekt steuert die Bereinigung von Fehlern des Claude-Teams; der Projektleiter steuert die Bereinigung seiner eigenen Arbeit.
+- Behebe Fehler, inkonsistente Fragmente, Testreste, unvollständige Änderungen und widersprüchliche Dokumentation aus deiner Arbeit vollständig. Der Softwarearchitekt steuert die Bereinigung von Fehlern des ausführenden Teams; der Projektleiter steuert die Bereinigung seiner eigenen Arbeit.
 - Bereinige ausschließlich nachweislich vom aktuellen Auftrag erzeugte Artefakte. Verwirf keine fremden Änderungen. Bei Fremdänderungen ermittelt der Softwarearchitekt anhand von Diff, Auftragsreferenzen und Laufprotokollen den Ursprung und beauftragt die zuständige Rolle. Entwickler und QA verändern dabei keinen fremden Arbeitsbereich.
 - Der zuständige Agent bereinigt eigene Testreste vor der nächsten Übergabe. Ist der Ursprung anhand dieser Nachweise nicht feststellbar, fordert der Projektleiter vom Nutzer ausschließlich die Entscheidung zur Erhaltung oder Entfernung der konkret benannten Dateien an.
 - Setze Korrekturen und ihre Prüfungen fort, bis Auftrag und Abnahmekriterien vollständig erfüllt sind. Lege keinen Fehler allein wegen seiner geringen Auswirkung zurück.
@@ -68,7 +68,7 @@ Diese Regel gilt verbindlich und ohne Ausnahme für Produkt, Architektur, Entwic
 - Implementierungsentscheidungen, die weder fachliches Verhalten noch Auftragsumfang, Abnahmekriterien oder Architekturvorgaben ändern, trifft der Entwicklungs-Agent selbst.
 - Ist die Zuordnung nicht eindeutig, wird nach oben eskaliert und nicht geraten.
 - Fachlicher Klärungsbedarf läuft über Entwicklungs-/QA-Agent → Softwarearchitekt-Agent → Projektleiter-Agent → Nutzer. Die Entscheidung wird im Arbeitsauftrag beziehungsweise der zuständigen Projektdokumentation festgehalten.
-- Vor Freigabe des automatisierten Grundworkflows wird geprüft, ob die dokumentierten Architekturvorgaben für selbständige Architekturentscheidungen ausreichend sind.
+- Vor Freigabe einer Entwicklungsautomatisierung wird geprüft, ob die dokumentierten Architekturvorgaben für selbständige Architekturentscheidungen ausreichend sind.
 
 ## Briefing Projektleiter-Agent
 
@@ -142,10 +142,4 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-07 | Lösungsorientierung für alle vier Rollen, konkrete Prüfpflichten und Eskalationsauslöser verbindlich festgelegt; Agentendefinitionen und alle sechs Skills angeglichen. |
-| 2026-10-07 | Verbindliche Regeln zum Recherche-Umfang und zur Dokumentationspflicht ergänzt. |
-| 2026-10-05 | Technische Zielumgebung auf Claude Code Agent Teams umgestellt; Projektleiter als externe Rolle klargestellt. |
-| 2026-10-02 | Modellzuordnung ausdrücklich als austauschbare Laufzeitkonfiguration abgegrenzt; keine konkreten Modelle als Rollenfestlegung. |
-| 2026-10-02 | Rollen zu Projektleiter, Softwarearchitekt, Entwicklung und QA präzisiert; Übergaben, Entscheidungsgrenzen, QA-Commitbindung, Testbereitstellung, Rückschleifen und Abschluss geregelt. |
-| 2026-10-01 | Auftraggeber-Agent als vierte Rolle mit Briefing ergänzt. |
-| 2026-10-01 | Erstfassung der drei Rollen mit Briefings. |
+| 2026-10-07 | Transportunabhängige Rollen, Briefings, Qualitäts- und Entscheidungsregeln erhalten; Bindung an die verworfene technische Ausführung entfernt. Frühere Fassungen sind in Git nachvollziehbar. |

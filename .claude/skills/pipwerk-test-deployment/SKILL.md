@@ -15,4 +15,4 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md`. Befolg
 6. Stoppe die Übergabe bei Abweichung. Prüfe Status und Laufprotokolle, veranlasse die Korrektur innerhalb der geltenden Zuständigkeiten und wiederhole Start und Statusprüfung.
 7. Übergib Arbeitsauftrag, Commit und Prüfinformationen an den externen Projektleiter.
 
-Verwende `PIPWERK_DEV_ROOT` nur, wie der Dispatcher sie gesetzt hat; setze, exportiere oder überschreibe sie nie.
+Verwende `PIPWERK_DEV_ROOT` nur mit dem von der Startumgebung bereitgestellten Wert; setze, exportiere oder überschreibe sie nie.
