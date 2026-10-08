@@ -48,6 +48,4 @@ keine
 
 ## Entscheidungen des Auftraggebers
 
-2026-10-08T15:25:00 – Freigabe des Auftrags durch den Nutzer.
-
 ## Verlauf
