@@ -1,10 +1,5 @@
 # Arbeitsaufträge
 
-Je Arbeitsauftrag eine Markdown-Datei. Maßgeblich ist das Feld `status` in der Datei; das Unterverzeichnis entspricht dem Status:
+Dieses Verzeichnis enthält die Arbeitsaufträge, je Auftrag eine Markdown-Datei. Die Unterverzeichnisse ordnen die Aufträge nach ihrem Status: `approved/`, `inprogress/`, `acceptance/` und `closed/`. Neue Aufträge entstehen aus [`template.md`](template.md).
 
-- `approved/` – freigegeben, Umsetzung noch nicht begonnen
-- `in-progress/` – in Umsetzung, Korrektur oder QA
-- `acceptance/` – Teststand bereit, in Prüfung und Erprobung
-- `closed/` – abgeschlossen
-
-Status, Zuständigkeiten und Regeln: [Das Pipwerk-Entwicklungsverfahren](../docs/technical/entwicklungsverfahren.md#auftragsablage-und-statusverlauf).
+Inhalt, Statusmodell und Regeln stehen in [Das Pipwerk-Entwicklungsverfahren](../docs/technical/entwicklungsverfahren.md#arbeitsaufträge).

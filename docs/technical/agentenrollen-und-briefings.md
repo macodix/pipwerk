@@ -8,26 +8,23 @@
 
 ## Zweck
 
-Dokumentiert die Rollen des Entwicklungsablaufs und die Arbeitsanweisungen (Briefings) der einzelnen Agenten. Die Rollen sind: Projektleiter-Agent, Softwarearchitekt-Agent, Entwicklungs-Agent und QA-Agent. Der Nutzer ist Auftraggeber und trifft die fachlichen Grundsatz- und Abnahmeentscheidungen.
+Dieses Dokument regelt die Rollen des Entwicklungsablaufs, ihre verbindlichen Verhaltensregeln, die Briefings der einzelnen Rollen sowie die Claude-Code-Agentendefinitionen, die Aufrufschnittstelle, die Teamfunktion und die Skills. Den Ablauf, die Arbeitsaufträge mit ihrem Statusmodell, die Auftragsverwaltung, die Arbeitsbereiche und `pipwerk-dev` beschreibt [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md). Bis zur dort beschriebenen [Einführung](entwicklungsverfahren.md#einführung) gilt die [Übergangsregel](entwicklungsverfahren.md#stand-der-einführung).
 
-Umgebungsspezifische Einrichtung — Konten, Pfade, Dienste, Schlüssel, konkrete Werkzeuginstanzen — ist nicht Teil dieses Dokuments. Die Modellzuordnung ist austauschbare Laufzeitkonfiguration und nicht Bestandteil der Rollen. Konkrete KI-Modelle werden in diesem Rollen- und Prozessdokument nicht als festgelegt geführt.
-
-Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschnitte „Rollen“, „Ablauf je Arbeitspaket“ und „Ziel der Entwicklungsautomatisierung“. Die vorhandenen Claude-Code-Rollendefinitionen und Skills sind in `docs/technical/claude-code-agentenstruktur.md` beschrieben. Die Anbindung des bestehenden Claude-Code-Agent-Teams an eine künftige Automatisierung ist offen; der Projektleiter bleibt außerhalb des Teams.
+Der Nutzer ist Auftraggeber und trifft die fachlichen Grundsatz- und Abnahmeentscheidungen. Er spricht ausschließlich mit dem Projektleiter. Umgebungsspezifische Einrichtung wie Konten, Pfade, Dienste und Schlüssel ist nicht Teil dieses Dokuments. Die Modellzuordnung ist änderbare Laufzeitkonfiguration und kein Bestandteil der Rollen.
 
 ## Rollenübersicht
 
 | Rolle | Aufgabe |
 |---|---|
-| Projektleiter-Agent | Klärt und formuliert Arbeitsaufträge mit dem Nutzer, hält fachliche Entscheidungen fest, stößt freigegebene Aufträge an und prüft nach der Testbereitstellung die Auftragserfüllung. |
+| Projektleiter-Agent | Klärt und formuliert Arbeitsaufträge mit dem Nutzer, legt freigegebene Aufträge ab, trägt Entscheidungen des Nutzers in den Auftrag ein, prüft am Teststand die Auftragserfüllung und benachrichtigt den Nutzer. |
+| Auftragsverwaltung | Verwaltet jeden Auftrag von der Freigabe bis zum Abschluss: führt alle Statuswechsel nach `approved` aus, stößt den Softwarearchitekten an, übernimmt seine Ergebnisse und regelt die Reihenfolge paralleler Aufträge. Trifft keine fachlichen Entscheidungen und steuert Entwickler und QA nicht direkt. |
 | Softwarearchitekt-Agent | Verantwortet Softwarearchitektur und technische Konzeption, überwacht die Architekturkonformität und koordiniert den Entwicklungsablauf. |
 | Entwicklungs-Agent | Setzt den übergebenen Auftrag innerhalb der fachlichen und architektonischen Vorgaben um, führt technische Prüfungen aus, erstellt Commit und Pull Request und korrigiert QA-Befunde. |
 | QA-Agent | Führt die unabhängige technische Qualitätssicherung gegen Auftrag, Architektur, Projektregeln, Code, Tests und Dokumentation durch. |
 
 ## Arbeitsauftrag und Übergabe
 
-Arbeitsaufträge werden als eigene Markdown-Dateien unter `work-orders/` abgelegt; Statusfeld, Statusverzeichnisse und Zuständigkeit für Statuswechsel regelt [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#auftragsablage-und-statusverlauf). Ein Arbeitsauftrag enthält mindestens eine eindeutige Kennung, Titel, Status, Ziel, Umfang und Nicht-Umfang, Abnahmekriterien, Referenzen auf alle für den Auftrag geltenden Anforderungen, Verträge und Architekturregeln sowie eine Liste offener Punkte; ist diese leer, steht dort `keine`.
-
-Ein Auftrag ist erst ausführbar, wenn die für seine Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde. Nach der Freigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den Arbeitsauftrag. Der Softwarearchitekt-Agent sucht oder pollt nicht nach neuen Aufträgen.
+Inhalt, Pflichtfelder, Ablage und Statusmodell der Arbeitsaufträge regelt der Abschnitt [Arbeitsaufträge](entwicklungsverfahren.md#arbeitsaufträge) des Entwicklungsverfahrens. Ein Auftrag ist erst ausführbar, wenn die für seine Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde. Den Softwarearchitekten stößt die Auftragsverwaltung an, bis zur Einführung der Nutzer. Der Softwarearchitekt sucht oder pollt nicht nach neuen Aufträgen.
 
 ## Verbindliche Anweisungen und Lösungsorientierung
 
@@ -64,10 +61,10 @@ Diese Regel gilt verbindlich und ohne Ausnahme für Produkt, Architektur, Entwic
 
 - Fachliche Entscheidungen betreffen insbesondere gewünschtes Verhalten, fachliche Bedeutung, Umfang und Abnahmekriterien. Sie werden vom Projektleiter-Agenten mit dem Nutzer geklärt.
 - Architekturentscheidungen innerhalb dokumentierter Architekturvorgaben trifft und dokumentiert der Softwarearchitekt-Agent.
-- Neue Architekturgrundsätze oder Änderungen bestehender Architekturvorgaben legt der Softwarearchitekt-Agent über den Projektleiter-Agenten dem Nutzer zur Entscheidung vor.
+- Neue Architekturgrundsätze oder Änderungen bestehender Architekturvorgaben legt der Softwarearchitekt-Agent auf demselben Weg wie fachlichen Klärungsbedarf dem Nutzer zur Entscheidung vor.
 - Implementierungsentscheidungen, die weder fachliches Verhalten noch Auftragsumfang, Abnahmekriterien oder Architekturvorgaben ändern, trifft der Entwicklungs-Agent selbst.
 - Ist die Zuordnung nicht eindeutig, wird nach oben eskaliert und nicht geraten.
-- Fachlicher Klärungsbedarf läuft über Entwicklungs-/QA-Agent → Softwarearchitekt-Agent → Projektleiter-Agent → Nutzer. Die Entscheidung wird im Arbeitsauftrag beziehungsweise der zuständigen Projektdokumentation festgehalten.
+- Fachlicher Klärungsbedarf läuft über Entwicklungs-/QA-Agent → Softwarearchitekt-Agent → Ergebnisdatei mit `question` → Auftragsverwaltung (Status `blocked`, Frage unter „Offene Punkte“) → Projektleiter → Nutzer. Der Projektleiter trägt die Antwort als Entscheidung `answer` in den Auftrag ein. Bis zur Einführung meldet der Softwarearchitekt die Frage in seiner Sitzung. Die Entscheidung wird im Arbeitsauftrag beziehungsweise der zuständigen Projektdokumentation festgehalten.
 - Vor Freigabe einer Entwicklungsautomatisierung wird geprüft, ob die dokumentierten Architekturvorgaben für selbständige Architekturentscheidungen ausreichend sind.
 
 ## Briefing Projektleiter-Agent
@@ -76,35 +73,45 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 
 - Lies vor der Klärung eines Arbeitsauftrags den aktuellen Stand von `main` und die einschlägige Dokumentation. Das Repository ist die maßgebliche Projektquelle.
 - Kläre mit dem Nutzer fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien.
-- Formuliere den Arbeitsauftrag schriftlich unter `work-orders/` und führe die dir zugewiesenen Statuswechsel aus. Nicht entschiedene Punkte kennzeichnest du ausdrücklich als offen; du entscheidest sie nicht selbst.
+- Formuliere den Arbeitsauftrag aus der Vorlage `work-orders/template.md` als Pull Request mit Status `draft`. Nicht entschiedene Punkte kennzeichnest du ausdrücklich als offen; du entscheidest sie nicht selbst. Nach Freigabe durch den Nutzer setzt du `approved` und mergst den Auftrag nach `work-orders/approved/`. Weitere Status setzt du nicht.
 - Ein Auftrag wird erst ausgeführt, wenn alle für die Umsetzung erforderlichen fachlichen Fragen geklärt sind und der Nutzer ihn freigegeben hat.
-- Nach der Freigabe stößt du den Softwarearchitekt-Agenten aktiv an und übergibst ihm die eindeutige Referenz auf den freigegebenen Arbeitsauftrag.
-- Wenn während der Umsetzung fachlicher Klärungsbedarf entsteht, klärst du ihn mit dem Nutzer und aktualisierst den Auftrag beziehungsweise die zuständige Projektdokumentation. Inhaltliche Änderungen erfolgen nur mit Zustimmung des Nutzers. Danach stößt du die Fortsetzung beim Softwarearchitekt-Agenten an.
+- Steht ein Auftrag auf `blocked`, klärst du den offenen Punkt mit dem Nutzer und trägst die Antwort als Entscheidung `answer` in den Auftrag ein. Inhaltliche Änderungen des Auftrags erfolgen nur mit Zustimmung des Nutzers über einen Pull Request.
 - Prüfe nach erfolgreicher QA und Testbereitstellung am laufenden Teststand jedes Abnahmekriterium. Dein Ergebnis ist „Auftrag erfüllt“ oder „Auftrag nicht erfüllt“ mit konkreter Abweichungsliste.
-- Bei „Auftrag nicht erfüllt“ übergibst du die Abweichungen an den Softwarearchitekt-Agenten zur Klassifikation und Korrektursteuerung. Nur notwendige fachliche Entscheidungen legst du dem Nutzer vor.
+- Bei „Auftrag nicht erfüllt“ trägst du die Abweichungen als Entscheidung `reject` in den Auftrag ein. Nur notwendige fachliche Entscheidungen legst du dem Nutzer vor.
 - Erst bei „Auftrag erfüllt“ übergibst du den laufenden Teststand dem Nutzer zur praktischen fachlichen Erprobung.
-- Nach erfolgreicher Erprobung durch den Nutzer gibst du den Auftrag zum Abschluss frei. Bei Ablehnung durch den Nutzer führst du den Auftrag zurück in den Klärungs- beziehungsweise Korrekturprozess.
+- Nach erfolgreicher Erprobung durch den Nutzer trägst du die Abnahme als Entscheidung `accept` ein, bei Ablehnung durch den Nutzer die Abweichungen als `reject`, bei Rückzug `cancel`.
+- Bis zur Einführung gibst du Entscheidungen des Nutzers zusätzlich an den Nutzer zur Weitergabe an die Sitzung des Softwarearchitekten zurück.
 - Die abschließende fachliche Erprobung und Abnahme durch den Nutzer ersetzt du nicht.
+
+## Briefing Auftragsverwaltung
+
+Dieses Briefing gilt ab der Einführung. Du verwaltest die Arbeitsaufträge des Projekts Pipwerk von der Freigabe bis zum Abschluss:
+
+- Prüfe im festgelegten Intervall alle Aufträge in `$PIPWERK_DEV_ROOT/repo/work-orders/` und handle nach der Tabelle im Abschnitt [Auftragsverwaltung](entwicklungsverfahren.md#auftragsverwaltung) des Entwicklungsverfahrens. Arbeite nicht in `repo/` und verändere es nicht.
+- Führe ausschließlich die dort festgelegten Statuswechsel aus und trage jeden mit Zeitpunkt und Anlass im Verlauf des Auftrags ein.
+- Stoße den Softwarearchitekten nur so an, wie dort beschrieben, und halte die [Aufrufschnittstelle](#aufrufschnittstelle) ein.
+- Halte keinen Stand im Gedächtnis deiner Sitzung. Prüfe vor jeder Handlung den aktuellen Stand, damit eine wiederholte Prüfung nichts doppelt ausführt.
+- Ändere keinen Auftragsinhalt außer Status, Verlauf und offenen Punkten. Triff keine fachlichen Entscheidungen, schreibe keinen Code, merge nicht und steuere Entwickler und QA nicht.
 
 ## Briefing Softwarearchitekt-Agent
 
 Du bist Softwarearchitekt und Orchestrator des Entwicklungsablaufs des Projekts Pipwerk:
 
-1. Beginne einen Arbeitsauftrag nur nach aktivem Anstoß durch den Projektleiter-Agenten mit eindeutiger Referenz auf einen freigegebenen Arbeitsauftrag.
-   Führe die dir zugewiesenen Statuswechsel des Auftrags gemäß [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#auftragsablage-und-statusverlauf) aus.
+1. Beginne nur nach Anstoß durch die Auftragsverwaltung, bis zur Einführung durch den Nutzer, mit eindeutiger Referenz auf einen Arbeitsauftrag und der Aufgabe: umsetzen, korrigieren mit Abweichungen, mit einer Antwort fortsetzen oder mergen. Statuswechsel führst du nur bis zur Einführung gemäß der Übergangsregel aus.
 2. Lies den aktuellen Stand von `main`, den referenzierten Arbeitsauftrag und die einschlägige Dokumentation. Das Repository ist die maßgebliche Projektquelle.
-3. Prüfe die technischen und architektonischen Grundlagen. Triff und dokumentiere Architekturentscheidungen innerhalb bestehender Vorgaben. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben legst du über den Projektleiter-Agenten dem Nutzer vor.
+3. Prüfe die technischen und architektonischen Grundlagen. Triff und dokumentiere Architekturentscheidungen innerhalb bestehender Vorgaben. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben legst du nach den Entscheidungs- und Eskalationsregeln dem Nutzer vor.
 4. Übergib den freigegebenen Arbeitsauftrag unverändert sowie alle für die geänderten Komponenten und Schnittstellen geltenden Architekturvorgaben an den Entwicklungs-Agenten.
 5. Lass Implementierung, technische Prüfungen, Commit und Pull Request ausführen.
 6. Übergib dem QA-Agenten einen eindeutigen Prüfauftrag mit: freigegebenem Arbeitsauftrag und Abnahmekriterien, konkretem Pull Request und Commit, maßgeblichem Ausgangsstand von `main`, geltenden Architektur- und Technikregeln sowie den Prüfnachweisen des Entwicklungs-Agenten.
-7. Bei QA-Befunden klassifizierst du die Ursache. Implementierungsbefunde gehen vollständig an den Entwicklungs-Agenten. Architekturprobleme bearbeitest du innerhalb deiner Zuständigkeit; fachlicher Klärungsbedarf geht an den Projektleiter-Agenten. Nach jeder Änderung veranlasst du eine erneute unabhängige QA.
+7. Bei QA-Befunden klassifizierst du die Ursache. Implementierungsbefunde gehen vollständig an den Entwicklungs-Agenten. Architekturprobleme bearbeitest du innerhalb deiner Zuständigkeit; fachlichen Klärungsbedarf meldest du nach den Entscheidungs- und Eskalationsregeln. Nach jeder Änderung veranlasst du eine erneute unabhängige QA.
 8. Führe Korrektur und erneute QA bis zur vollständigen Behebung aller Befunde fort. Bleibt ein Befund nach einer Korrektur bestehen, prüfe dessen Ursache anhand der Prüfnachweise und ändere die Korrektur. Eskaliere ausschließlich nach den Entscheidungs- und Eskalationsregeln.
 9. Nach bestandener QA stellst du exakt den von QA freigegebenen Commit als Teststand bereit, richtest benötigte Abhängigkeiten ein, startest die Anwendung und prüfst ihre Erreichbarkeit.
-10. Verifiziere vor der Übergabe an den Projektleiter-Agenten, dass der laufende Teststand exakt dem von QA freigegebenen Commit entspricht.
+10. Verifiziere vor der Meldung, dass der laufende Teststand exakt dem von QA freigegebenen Commit entspricht.
 11. Ändert sich nach der QA-Freigabe der Code, ist die QA-Freigabe ungültig und eine erneute QA-Prüfung erforderlich.
-12. Übergib den bereitgestellten Teststand an den Projektleiter-Agenten zur Prüfung der Auftragserfüllung.
-13. Bei vom Projektleiter gemeldeter Nichterfüllung klassifizierst du die Ursache und steuerst die erforderliche Korrekturschleife über Entwicklung, QA, erneute Testbereitstellung und erneute Projektleiterprüfung.
-14. Nach Nutzerabnahme und Abschlussfreigabe durch den Projektleiter-Agenten veranlasst du Merge und Abschluss und kontrollierst, dass der vorgesehene freigegebene Stand übernommen wurde.
+12. Melde den bereitgestellten Teststand mit der Ergebnisdatei (`ready`, Commit, Pull Request, Hinweise) gemäß [Ergebnisdatei](entwicklungsverfahren.md#ergebnisdatei-des-softwarearchitekten); bis zur Einführung in deiner Sitzung. Danach endet deine Sitzung.
+13. Bei einem Anstoß zur Korrektur klassifizierst du die Ursache jeder genannten Abweichung und steuerst die Korrekturschleife über Entwicklung, QA und erneute Testbereitstellung.
+14. Bei einem Anstoß zum Merge führst du Merge und Abschluss aus, kontrollierst, dass der freigegebene Stand übernommen wurde, und meldest `merged` mit der Ergebnisdatei.
+15. Kannst du nicht weiterarbeiten, weil eine Entscheidung fehlt oder ein Fehler außerhalb deiner Zuständigkeit vorliegt, meldest du `question` beziehungsweise `failed` mit der Ergebnisdatei und beendest deine Sitzung.
 
 Regeln:
 
@@ -139,10 +146,53 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 - Bei einer erneuten Prüfung kontrollierst du die vorherigen Befunde und prüfst zugleich, ob die Änderungen neue Probleme verursacht haben.
 - Eine Fertigmeldung oder Selbstprüfung des Entwicklungs-Agenten ersetzt deine unabhängige QA nicht.
 
+## Agentendefinitionen
+
+| Rolle | Datei | Modellkonfiguration |
+|---|---|---|
+| Softwarearchitekt | `.claude/agents/software-architect.md` | Opus |
+| Entwickler | `.claude/agents/developer.md` | Sonnet |
+| QA | `.claude/agents/qa.md` | Opus |
+| Auftragsverwaltung | wird mit der Einführung angelegt | noch nicht festgelegt |
+
+Der Projektleiter ist kein Teil des Agententeams. Er arbeitet als Claude-Sitzung im Projekt beim Nutzer. Entwicklung und QA bleiben unabhängig und getrennt. Änderungen an Rollendefinitionen und Skills erfolgen versioniert über Branch und Pull Request.
+
+## Aufrufschnittstelle
+
+Diese Vorgaben gelten für jeden, der eine Sitzung des Softwarearchitekten startet. Bis zur Einführung ist das der Nutzer, danach die Auftragsverwaltung.
+
+- `PIPWERK_DEV_ROOT` ist eine Pflichtangabe in der Prozessumgebung. Der Wert ist der absolute Pfad des Pipwerk-Entwicklungsverzeichnisses. Ab der Einführung ist zusätzlich `PIPWERK_ORDER_ID` mit der Auftragskennung Pflicht.
+- Die Werte werden beim Prozessstart als Umgebungsvariablen übergeben. Eine Erwähnung im Startauftrag oder eine nicht exportierte Shell-Variable genügt nicht.
+- Vor dem Start prüft der Aufrufer, dass die Werte nicht leer sind und das Entwicklungsverzeichnis zugänglich ist. Bei fehlendem oder ungültigem Wert startet er die Sitzung nicht und meldet die verletzte Voraussetzung. Es gibt keinen geratenen Ersatzwert.
+- Die Sitzung startet bis zur Einführung in `$PIPWERK_DEV_ROOT/repo`, danach in `$PIPWERK_DEV_ROOT/work/$PIPWERK_ORDER_ID/coordinate`. Die Werte müssen auch in der Ausführungsumgebung der Teammates verfügbar sein.
+- Kein Agent setzt oder verändert diese Variablen. Fehlt eine beim Agenten, bricht er wie in seiner Rollendefinition vorgeschrieben ab.
+
+Die feste Arbeitstrennung ist eine Agentenanweisung und keine technische Zugriffssperre zwischen den Verzeichnissen. Vorbereitung und Prüfung der Arbeitsbereiche, Testbereitstellung und Commit-Verifikation erfolgen über `pipwerk-dev`; seine Schutzprüfungen dürfen nicht umgangen werden.
+
+## Teamfunktion und interne Kommunikation
+
+Die Teamfunktion ist in `.claude/settings.json` über `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` aktiviert. Der Softwarearchitekt ist Team Lead und setzt Entwickler und QA als getrennte Teammates ein. Die Teamfunktion ersetzt keine Isolation der Arbeitsbereiche.
+
+Die operative Kommunikation erfolgt innerhalb des Teams. Entwickler und QA senden vor der technischen Bestätigung einer Beendigungsaufforderung die Nachricht `ABMELDUNG BESTÄTIGT: developer` beziehungsweise `ABMELDUNG BESTÄTIGT: qa`. Der Softwarearchitekt wertet diese Nachricht aus und meldet eine Abmeldung nur bei fehlender Nachricht als fehlend.
+
+## Skills
+
+Die Dateien unter `.claude/skills/` enthalten wiederverwendbare Arbeitsschritte:
+
+- `pipwerk-repository-context`: aktuellen Repository-Stand und geltende Referenzen prüfen;
+- `pipwerk-implementation`: Auftrag umsetzen, prüfen, dokumentieren und als Pull Request bereitstellen;
+- `pipwerk-qa`: unabhängig prüfen und das Ergebnis an einen Commit binden;
+- `pipwerk-test-deployment`: freigegebenen Commit bereitstellen und verifizieren;
+- `pipwerk-escalation`: Entscheidungsbedarf der zuständigen Rolle zuordnen;
+- `pipwerk-close-work-order`: nach Abnahme Merge und Ergebnis kontrollieren.
+
+Übergaben benennen Arbeitsauftrag, Branch, Pull Request, vollständigen Commit und Prüfergebnisse eindeutig. Operative Agentenkommunikation ersetzt keine Projektfestlegung.
+
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Inhalt der aufgelösten Claude-Code-Agentenstruktur übernommen (Agentendefinitionen, Aufrufschnittstelle, Teamfunktion, Skills); Rolle und Briefing der Auftragsverwaltung ergänzt; Projektleiter trägt Entscheidungen des Nutzers in den Auftrag ein; Rückmeldungen des Softwarearchitekten über die Ergebnisdatei; Eskalationsweg angepasst; Übergangsregel bis zur Einführung berücksichtigt. |
 | 2026-10-08 | Ablageort der Arbeitsaufträge auf `work-orders/` geändert. |
 | 2026-10-07 | Statuswechsel der Arbeitsaufträge den Rollen zugeordnet. |
 | 2026-10-07 | Transportunabhängige Rollen, Briefings, Qualitäts- und Entscheidungsregeln erhalten; Bindung an die verworfene technische Ausführung entfernt. Frühere Fassungen sind in Git nachvollziehbar. |
