@@ -25,7 +25,7 @@ Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschni
 
 ## Arbeitsauftrag und Übergabe
 
-Arbeitsaufträge werden als eigene Markdown-Dateien unter `work-orders/` abgelegt; Statusfeld, Statusverzeichnisse und Zuständigkeit für Statuswechsel regelt [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#auftragsablage-und-statusverlauf). Ein Arbeitsauftrag enthält mindestens eine eindeutige Kennung, Titel, Status, Ziel, Umfang und Nicht-Umfang, Abnahmekriterien, Referenzen auf alle für den Auftrag geltenden Anforderungen, Verträge und Architekturregeln sowie eine Liste offener Punkte; ist diese leer, steht dort `keine`.
+Arbeitsaufträge werden als eigene Markdown-Dateien unter `work-orders/` abgelegt; Statusfeld, Statusverzeichnisse und Zuständigkeit für Statuswechsel regelt [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#auftragsablage-und-statusverlauf). Ein Arbeitsauftrag enthält mindestens eine eindeutige Kennung, Titel, Status, Auftraggeber, die betroffenen Komponenten (`components`), Ziel, Umfang und Nicht-Umfang, Abnahmekriterien, Referenzen auf alle für den Auftrag geltenden Anforderungen, Verträge und Architekturregeln sowie eine Liste offener Punkte; ist diese leer, steht dort `keine`.
 
 Ein Auftrag ist erst ausführbar, wenn die für seine Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde. Nach der Freigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den Arbeitsauftrag. Der Softwarearchitekt-Agent sucht oder pollt nicht nach neuen Aufträgen.
 
@@ -143,6 +143,7 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Pflichtfelder Auftraggeber und betroffene Komponenten ergänzt. |
 | 2026-10-08 | Ablageort der Arbeitsaufträge auf `work-orders/` geändert. |
 | 2026-10-07 | Statuswechsel der Arbeitsaufträge den Rollen zugeordnet. |
 | 2026-10-07 | Transportunabhängige Rollen, Briefings, Qualitäts- und Entscheidungsregeln erhalten; Bindung an die verworfene technische Ausführung entfernt. Frühere Fassungen sind in Git nachvollziehbar. |

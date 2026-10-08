@@ -19,7 +19,7 @@ Maßgeblich sind das aktuelle Repository, der freigegebene Arbeitsauftrag und di
 
 ## Arbeitsauftrag und Ablauf
 
-Ein Arbeitsauftrag enthält Kennung, Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien, geltende Referenzen und offene Punkte. Ablage und Statusverlauf regelt der Abschnitt [Auftragsablage und Statusverlauf](#auftragsablage-und-statusverlauf).
+Ein Arbeitsauftrag enthält Kennung, Auftraggeber, betroffene Komponenten (`components`), Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien, geltende Referenzen und offene Punkte. Ablage und Statusverlauf regelt der Abschnitt [Auftragsablage und Statusverlauf](#auftragsablage-und-statusverlauf).
 
 1. Der Projektleiter klärt den Auftrag mit dem Nutzer und dokumentiert ihn im Repository. Er wird erst nach Nutzerfreigabe und Klärung der erforderlichen fachlichen Fragen umgesetzt.
 2. Der Softwarearchitekt erhält eine eindeutige Auftragsreferenz, prüft den aktuellen Repository-Stand und bereitet die Umsetzung innerhalb dokumentierter Architekturvorgaben vor.
@@ -39,7 +39,9 @@ Jeder Arbeitsauftrag ist eine eigene Markdown-Datei unter `work-orders/`. Der St
 |---|---|---|---|
 | `draft` | Auftrag in Klärung | keins; liegt nur im Pull Request des Auftrags | Projektleiter |
 | `approved` | vom Nutzer freigegeben | `approved/` | Projektleiter mit dem Merge des Auftrags nach Nutzerfreigabe |
-| `in-progress` | in Umsetzung, Korrektur oder QA | `in-progress/` | Softwarearchitekt bei Arbeitsbeginn; Projektleiter bei „Auftrag nicht erfüllt“ oder Ablehnung durch den Nutzer |
+| `queued` | freigegeben, wartet wegen Überschneidung mit einem laufenden Auftrag | `approved/` | Auftragsverwaltung |
+| `in-progress` | in Umsetzung, Korrektur oder QA | `in-progress/` | Auftragsverwaltung beim Anstoßen; bis zu ihrer Einrichtung der Softwarearchitekt bei Arbeitsbeginn; Projektleiter bei „Auftrag nicht erfüllt“ oder Ablehnung durch den Nutzer |
+| `blocked` | wartet auf eine Entscheidung des Auftraggebers; die Frage steht als offener Punkt im Auftrag | `in-progress/` | Rolle, die die Rückfrage stellt |
 | `acceptance` | Teststand bereit; Prüfung durch Projektleiter und Erprobung durch den Nutzer | `acceptance/` | Softwarearchitekt nach verifizierter Testbereitstellung |
 | `closed` | abgenommen, gemergt und abgeschlossen | `closed/` | Softwarearchitekt nach Abschlussfreigabe und kontrolliertem Merge |
 
@@ -49,16 +51,63 @@ Inhaltliche Änderungen eines Auftrags erfolgen über Branch und Pull Request un
 
 Die Ablage in Statusverzeichnissen ist eine Übergangslösung. Ob Status und Verlauf später in einem anderen System geführt werden, ist offen. Der Statuseintrag in der Datei bleibt deshalb unabhängig von den Verzeichnissen erhalten.
 
-## Geplanter Anstoß der Umsetzung
+## Auftragsübermittlung und Auftragsverwaltung
 
-Dieser Abschnitt beschreibt das beschlossene Ziel. Die Einrichtung ist noch nicht erfolgt; bis dahin stößt der Nutzer die Sitzung des Softwarearchitekten an.
+Dieser Abschnitt beschreibt das beschlossene Zielbild. Die Einrichtung ist noch nicht abgeschlossen; bis dahin stößt der Nutzer die Sitzung des Softwarearchitekten an.
 
-- Ein GitHub-Actions-Workflow startet bei einem Push auf `main`, der Dateien unter `work-orders/approved/` ändert. Er setzt die Umsetzung nur für dort neu hinzugekommene Dateien in Gang; andere Änderungen, etwa das Herausschieben einer Datei beim Statuswechsel, beenden ihn ohne Wirkung.
-- Der Workflow läuft auf einem selbst betriebenen Runner auf dem Entwicklungsrechner unter einem eigenen Benutzer mit eingeschränkten Rechten. Er hat keine Auslöser für Pull Requests, damit Änderungsvorschläge Dritter im öffentlichen Repository keinen Code auf dem Entwicklungsrechner ausführen.
-- Der Runner prüft die [verbindliche Aufrufschnittstelle](claude-code-agentenstruktur.md#verbindliche-aufrufschnittstelle) und startet die Sitzung des Softwarearchitekten mit der Auftragsreferenz in `repo/`. Das Agententeam wird über tmux gestartet; ob die Teamfunktion so zuverlässig läuft, ist durch einen Probelauf nachzuweisen.
+Nachrichtenübermittlung und Auftragsverwaltung sind getrennte Aufgaben. Beide werden so allgemein wie möglich und so spezifisch wie nötig festgelegt, damit sie später durch eine allgemeine Nachrichtenübermittlung und Auftragsverwaltung ersetzt werden können, ohne Aufträge oder Rollen zu ändern.
+
+### Nachrichtenübermittlung
+
+Die Nachrichtenübermittlung übernimmt ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner. Der Runner versteht den Inhalt der Nachrichten nicht.
+
+- `work-orders/approved/` ist der Eingang des Runners. Er wird nur ausgelöst, wenn dort durch einen Push auf `main` eine Auftragsdatei neu hinzukommt. Andere Änderungen lösen keine Zustellung aus.
+- Der Projektleiter versendet keine Nachrichten. Er legt freigegebene Aufträge in `approved/` ab.
+- Der Runner erzeugt daraus eine Nachricht an die Auftragsverwaltung und stellt sie zu. Derzeit ist das die einzige Nachrichtenart.
+- Der Workflow hat keine Auslöser für Pull Requests, damit Änderungsvorschläge Dritter im öffentlichen Repository keinen Code auf dem Entwicklungsrechner ausführen.
+
+Das Nachrichtenformat lehnt sich an `req-grund-004` in den [Anforderungen an das Handelssystem](../design/requirements/anforderungen-handelssystem.md) an:
+
+| Feld | Wert für die Nachricht „neuer Auftrag“ |
+|---|---|
+| Nachrichten-ID | vom Runner vergebene eindeutige Kennung |
+| Absender | Runner, mit seiner Kennung |
+| Adressat | Auftragsverwaltung |
+| Priorität | Standardwert; Werte sind noch nicht festgelegt |
+| Nachrichtenart | neuer Auftrag |
+| Inhalt | Auftragskennung, Pfad der Auftragsdatei und Commit, mit dem sie in `approved/` eingestellt wurde |
+
+Der Runner führt auf dem Entwicklungsrechner ein Logfile mit einer Zeile je Zustandswechsel einer Nachricht: Zeitpunkt, Nachrichten-ID, Absender, Adressat und Zustand (`eingestellt`, `abgeholt`, `zugestellt`, `fehlgeschlagen`). Das Logfile wird nicht automatisch gelöscht. Es ist die maßgebliche Quelle für die Frage, welche Nachrichten unterwegs sind und wo sie sich befinden.
+
+Ein Rückweg für Nachrichten an den Projektleiter ist derzeit nicht vorgesehen. Der Stand eines Auftrags steht in seinem Statusfeld.
+
+### Auftragsverwaltung
+
+Die Auftragsverwaltung ist eine eigene Rolle, die ein eigener Agent wahrnimmt. Sie ist weder Projektleiter noch Teil des Entwicklungsteams. Bei der Nachricht „neuer Auftrag“ liest sie den Auftrag im genannten Commit, prüft die Pflichtfelder, prüft die Überschneidung mit laufenden Aufträgen gemäß [Parallele Bearbeitung von Aufträgen](#parallele-bearbeitung-von-aufträgen), setzt den Status und stößt den Softwarearchitekten mit der Auftragskennung an. Weitere Aufgaben werden erst festgelegt, wenn sie gebraucht werden.
+
+Rückfragen an den Auftraggeber stehen als offene Punkte im Auftrag, der dafür den Status `blocked` erhält.
+
+### Benachrichtigung des Nutzers
+
+Eine geplante Prüfung des Projektleiters liest stündlich die Statusfelder der Aufträge im Repository. Wechselt ein Auftrag auf `acceptance` oder `blocked`, erhält der Nutzer eine Benachrichtigung mit Auftragskennung und einem Satz zum Inhalt. Der Nutzer kann den Stand außerdem jederzeit beim Projektleiter erfragen. Die Prüfung wird eingerichtet, sobald die Auftragsverwaltung arbeitet.
+
+### Betrieb
+
+- Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsbereiche gehören. `PIPWERK_DEV_ROOT` steht in der Umgebungsdatei des Runners.
+- Agentensitzungen werden in tmux-Sitzungen gestartet; ob die Teamfunktion so zuverlässig läuft, ist durch einen Probelauf nachzuweisen.
 - Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben, nicht verbrauchsabhängig abgerechnet. Eine Kostenbegrenzung je Lauf ist deshalb nicht vorgesehen; das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur.
 
-Offen sind die konkrete Workflow-Definition, die Einrichtung des Runners und der Nachweis eines vollständigen Durchlaufs gemäß dem [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md#ziel-der-entwicklungsautomatisierung).
+Offen sind die Workflow-Definition, die Rollendefinition der Auftragsverwaltung, der Anstoß wartender Aufträge (`queued`) nach Abschluss des überschneidenden Auftrags, die Einrichtung der geplanten Prüfung und der Nachweis eines vollständigen Durchlaufs gemäß dem [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md#ziel-der-entwicklungsautomatisierung).
+
+## Parallele Bearbeitung von Aufträgen
+
+Mehrere Aufträge dürfen gleichzeitig bearbeitet werden, wenn sie keine gemeinsame Komponente betreffen. Jeder Auftrag nennt dafür im Pflichtfeld `components` die betroffenen Komponenten. Als je eigene Komponente gelten außer den Hauptkomponenten unter `components/` auch jedes Paket unter `packages/`, `contracts/` sowie übergreifende Dokumente und Regeln außerhalb einer Komponente. Überschneidet sich ein neuer Auftrag mit einem laufenden, erhält er den Status `queued` und wird erst nach dessen Abschluss angestoßen.
+
+Die Einschränkung ist keine technische Notwendigkeit von Git, sondern vermeidet Konflikte beim Zusammenführen und damit erneute QA-Läufe. Wird ein paralleler Auftrag zuerst gemergt, bringt der andere seinen Branch auf den neuen Stand von `main`; danach ist eine erneute QA erforderlich.
+
+Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente einen eigenen Teststand. Jedes Agententeam läuft in einer eigenen tmux-Sitzung. Die dafür nötigen Änderungen an `pipwerk-dev` stehen in den [Anforderungen an pipwerk-dev – Parallelbetrieb](anforderungen-pipwerk-dev-parallelbetrieb.md). Bis zu ihrer Umsetzung wird nur ein Auftrag gleichzeitig bearbeitet, und es gelten die festen Arbeitsbereiche der folgenden Abschnitte.
+
+Mit der Umstellung von `pipwerk-dev` sind gleichzeitig anzupassen: die Arbeitsbereichsregeln und Befehle in den Rollendefinitionen `.claude/agents/software-architect.md`, `.claude/agents/developer.md` und `.claude/agents/qa.md`, die Skills `pipwerk-test-deployment` und `pipwerk-close-work-order` (Teststand je Komponente, Abbau des Auftragsarbeitsbereichs), die Abschnitte zu Arbeitsbereichen und `pipwerk-dev` in diesem Dokument, die Tabelle der Arbeitsbereiche und die Aufrufschnittstelle in [Claude-Code-Agentenstruktur](claude-code-agentenstruktur.md) sowie der Abschnitt „Lokale Arbeitsbereiche“ im [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md). Die Aufrufschnittstelle muss dann zusätzlich die Auftragskennung an die Sitzung übergeben.
 
 ## Arbeitsbereiche und Umgang mit Fehlern
 
@@ -209,6 +258,7 @@ Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeil
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Trennung von Nachrichtenübermittlung und Auftragsverwaltung, Nachrichtenformat, Logfile des Runners, Benachrichtigung des Nutzers, Status `queued` und `blocked`, Pflichtfelder Auftraggeber und `components` sowie parallele Bearbeitung von Aufträgen festgelegt. |
 | 2026-10-08 | Auftragsablage nach `work-orders/` auf oberster Ebene verlegt. |
 | 2026-10-07 | Auftragsablage mit Statusfeld und Statusverzeichnissen, Statuswechsel als Verwaltungsarbeit auf `main` und geplanten Anstoß über GitHub Actions festgelegt. |
 | 2026-10-07 | Verworfene Auftrags- und Sitzungsautomatisierung entfernt; transportunabhängige Prozessregeln und die eigenständige Schnittstelle des lokalen Hilfswerkzeugs erhalten. Frühere Fassungen sind in Git nachvollziehbar. |

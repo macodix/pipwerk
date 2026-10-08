@@ -10,6 +10,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 - [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – transportunabhängiger Ablauf, Qualitätsregeln und Dokumentation des lokalen Hilfswerkzeugs `pipwerk-dev`
 - [Claude-Code-Agentenstruktur](claude-code-agentenstruktur.md)
+- [Anforderungen an pipwerk-dev – Parallelbetrieb](anforderungen-pipwerk-dev-parallelbetrieb.md)
 - [Agentenrollen und Briefings](agentenrollen-und-briefings.md)
 
 ## Komponenten
