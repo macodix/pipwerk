@@ -7,4 +7,4 @@ Je Arbeitsauftrag eine Markdown-Datei. Maßgeblich ist das Feld `status` in der 
 - `acceptance/` – Teststand bereit, in Prüfung und Erprobung
 - `closed/` – abgeschlossen
 
-Status, Zuständigkeiten und Regeln: [Das Pipwerk-Entwicklungsverfahren](../../../technical/entwicklungsverfahren.md#auftragsablage-und-statusverlauf).
+Status, Zuständigkeiten und Regeln: [Das Pipwerk-Entwicklungsverfahren](../docs/technical/entwicklungsverfahren.md#auftragsablage-und-statusverlauf).

@@ -14,6 +14,7 @@ Pipwerk is a system for graphical strategy design, backtesting, trading executio
 - `components/`: independently runnable applications
 - `packages/`: shared Python and TypeScript packages
 - `contracts/`: versioned API, message and strategy contracts
+- `work-orders/`: work orders, filed by status
 - `docs/design/`: requirements, domain model, strategies and design work
 - `docs/technical/`: technical documentation
 - `docs/user/`: user documentation
