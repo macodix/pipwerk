@@ -38,7 +38,7 @@ Projektleiter und Auftragsverwaltung sind getrennte Rollen. Der Projektleiter se
 4. Die QA prüft unabhängig Auftrag, Ausgangsstand, Pull Request und Commit, Code, Tests und Dokumentation. Befunde werden vollständig korrigiert und erneut geprüft. Eine Fertigmeldung ersetzt die QA nicht.
 5. Der Softwarearchitekt stellt genau den von der QA freigegebenen Commit als Teststand bereit und prüft Erreichbarkeit und Commit-Identität. Eine spätere Codeänderung erfordert erneute QA. Er schreibt das Ergebnis in seine Ergebnisdatei; die Auftragsverwaltung setzt `acceptance`.
 6. Der Projektleiter prüft jedes Abnahmekriterium am Teststand. Erst bei erfülltem Auftrag erhält der Nutzer den Stand zur Erprobung. Abweichungen gibt der Projektleiter als Ablehnung an die Auftragsverwaltung weiter.
-7. Nach Abnahme durch den Nutzer trägt der Projektleiter die Abnahme in den Auftrag ein. Die Auftragsverwaltung stößt den Softwarearchitekten zum Merge an und setzt nach dessen Bestätigung `closed`.
+7. Nach Abnahme durch den Nutzer trägt der Projektleiter die Abnahme in den Auftrag ein. Die Auftragsverwaltung stößt den Softwarearchitekten zum Merge an und setzt nach dessen Bestätigung `closed`. Gemergt wird mit einem Merge-Commit, nicht durch Zusammenfassen (Squash), damit die Commits des Arbeitsbranches in `main` enthalten bleiben.
 
 Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, Pull Request, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder Pull Requests technisch prüfen noch den Teststand selbst installieren und starten.
 
@@ -56,7 +56,7 @@ Jeder Arbeitsauftrag ist eine eigene Markdown-Datei unter `work-orders/`. Neue A
 - den Abschnitt „Entscheidungen des Auftraggebers“, in den der Projektleiter Entscheidungen des Nutzers einträgt;
 - den Abschnitt „Verlauf“, in den die Auftragsverwaltung jeden Statuswechsel einträgt.
 
-Die Feldnamen sind maschinenlesbare Bezeichner und deshalb englisch. Die Auftragskennung hat die Form `WO-JJJJ-MM-TT-NNN` und wird auch in Verzeichnis- und Sitzungsnamen verwendet.
+Die Feldnamen sind maschinenlesbare Bezeichner und deshalb englisch. Die Auftragskennung hat die Form `WO-JJJJ-MM-TT-NNN` und wird auch in Verzeichnis- und Sitzungsnamen verwendet. Der Dateiname eines Auftrags beginnt mit seiner Auftragskennung. Zeitpunkte in den Abschnitten „Entscheidungen des Auftraggebers“ und „Verlauf“ haben die Form `JJJJ-MM-TTThh:mm:ss`.
 
 ### Statusmodell
 
@@ -80,12 +80,13 @@ Zulässig sind nur diese Statuswechsel:
 | `draft` | `approved` | Freigabe durch den Nutzer; Merge des Auftrags durch den Projektleiter |
 | `approved` | `inprogress` | Pflichtfelder vollständig, alle betroffenen Komponenten frei; Softwarearchitekt angestoßen |
 | `approved` | `queued` | Pflichtfelder vollständig, eine betroffene Komponente belegt |
-| `approved` | `blocked` | Pflichtfelder fehlen oder sind ungültig |
+| `approved` | `blocked` | Pflichtfelder fehlen oder sind ungültig, oder die Sitzung des Softwarearchitekten ließ sich nicht starten |
 | `queued` | `inprogress` | alle betroffenen Komponenten frei; Softwarearchitekt angestoßen |
+| `queued` | `blocked` | die Sitzung des Softwarearchitekten ließ sich nicht starten |
 | `inprogress` | `acceptance` | Ergebnis `ready` des Softwarearchitekten |
 | `inprogress` | `blocked` | Ergebnis `question` oder `failed`, oder die Sitzung des Softwarearchitekten endete ohne Ergebnis |
 | `inprogress` | `closed` | Ergebnis `merged` nach Abnahme |
-| `blocked` | `inprogress` | Entscheidung des Auftraggebers eingetragen; Softwarearchitekt erneut angestoßen |
+| `blocked` | `inprogress` | Entscheidung des Auftraggebers eingetragen oder fehlende Pflichtfelder ergänzt; Softwarearchitekt angestoßen |
 | `blocked` | `queued` | Entscheidung eingetragen, eine betroffene Komponente inzwischen belegt |
 | `acceptance` | `inprogress` | Ablehnung mit Abweichungen oder Abnahme eingetragen; Softwarearchitekt zur Korrektur beziehungsweise zum Merge angestoßen |
 | `approved`, `queued`, `inprogress`, `blocked`, `acceptance` | `cancelled` | Rückzug durch den Auftraggeber eingetragen |
@@ -102,7 +103,7 @@ Drei Arten von Änderungen sind Verwaltungsarbeit und werden direkt auf `main` g
 - Einträge im Abschnitt „Offene Punkte“ bei einem Wechsel nach `blocked`, durch die Auftragsverwaltung;
 - Einträge im Abschnitt „Entscheidungen des Auftraggebers“, durch den Projektleiter.
 
-Eine Entscheidung des Auftraggebers ist ein Eintrag mit Datum und einer der Entscheidungsarten `accept` (Abnahme), `reject` (Ablehnung mit Liste der Abweichungen), `cancel` (Rückzug) oder `answer` (Antwort auf einen offenen Punkt, mit Bezug auf diesen). Die Auftragsverwaltung erkennt neue Einträge daran, dass ihr Datum nach dem letzten Eintrag im Verlauf liegt.
+Eine Entscheidung des Auftraggebers ist ein Eintrag mit Zeitpunkt und einer der Entscheidungsarten `accept` (Abnahme), `reject` (Ablehnung mit Liste der Abweichungen), `cancel` (Rückzug) oder `answer` (Antwort auf einen offenen Punkt, mit Bezug auf diesen). Die Auftragsverwaltung erkennt neue Einträge daran, dass ihr Zeitpunkt nach dem Zeitpunkt des letzten Eintrags im Verlauf liegt.
 
 ## Auftragsverwaltung
 
@@ -114,23 +115,26 @@ Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWER
 
 | Lage | Handlung |
 |---|---|
+| Auftrag mit `queued` | Sind alle betroffenen Komponenten frei, anstoßen und `inprogress`. |
 | Auftrag mit `approved` | Pflichtfelder prüfen; bei Mangel `blocked` mit dem Mangel als offenem Punkt. Sonst Komponenten prüfen: belegt `queued`, frei anstoßen und `inprogress`. |
-| Auftrag mit `queued` | Sind alle betroffenen Komponenten frei, anstoßen und `inprogress`. Ältere Aufträge zuerst. |
-| Auftrag mit `inprogress`, Ergebnisdatei vorhanden | Ergebnis übernehmen: `ready` nach `acceptance`, `question` und `failed` nach `blocked` mit dem Text als offenem Punkt, `merged` nach `closed` und Arbeitsbereiche des Auftrags abbauen. Danach die tmux-Sitzung des Auftrags beenden. |
+| Auftrag mit `blocked`, nie angestoßen | Pflichtfelder erneut prüfen; sind sie vollständig, wie bei `approved` verfahren. |
+| Auftrag mit `inprogress`, Ergebnisdatei vorhanden | Ergebnis übernehmen: `ready` nach `acceptance`, `question` und `failed` nach `blocked` mit dem Text als offenem Punkt, `merged` nach `closed`. Nur wenn der Statuswechsel gelungen ist: die tmux-Sitzung des Auftrags beenden, bei `merged` danach die Arbeitsbereiche abbauen, und die Ergebnisdatei umbenennen. |
 | Auftrag mit `inprogress`, keine Ergebnisdatei, Sitzung läuft | nichts |
 | Auftrag mit `inprogress`, keine Ergebnisdatei, keine Sitzung | `blocked`; Abbruch als offenen Punkt vermerken |
-| neue Entscheidung `answer` bei `blocked` | Softwarearchitekten mit der Antwort erneut anstoßen und `inprogress`, bei belegter Komponente `queued` |
+| neue Entscheidung `answer` bei `blocked`, schon angestoßen | Softwarearchitekten mit der Antwort erneut anstoßen und `inprogress`, bei belegter Komponente `queued` |
 | neue Entscheidung `reject` bei `acceptance` | Softwarearchitekten mit der Liste der Abweichungen zur Korrektur anstoßen und `inprogress` |
 | neue Entscheidung `accept` bei `acceptance` | Softwarearchitekten zum Merge anstoßen und `inprogress` |
 | neue Entscheidung `cancel` | tmux-Sitzung des Auftrags beenden, Arbeitsbereiche abbauen und `cancelled` |
 
+Die Aufträge werden in dieser Reihenfolge behandelt: zuerst `queued`, dann `approved`, jeweils in aufsteigender Reihenfolge der Auftragskennung. Nach jedem Anstoß gelten die Komponenten des angestoßenen Auftrags sofort als belegt, auch wenn `repo/` den neuen Status noch nicht zeigt. Bei der Belegung zählt ein Auftrag seine eigenen Komponenten nicht mit. Ein Auftrag gilt als „nie angestoßen“, wenn für ihn kein Arbeitsbereich unter `work/<auftragskennung>/` besteht. Stimmen Statuseintrag und Verzeichnis eines Auftrags nicht überein, verschiebt die Auftragsverwaltung die Datei in das Verzeichnis seines Status.
+
 Lehnt `pipwerk-dev remove` den Abbau der Arbeitsbereiche ab, zum Beispiel wegen nicht übertragener Commits, vermerkt die Auftragsverwaltung den Grund im Verlauf und lässt die Arbeitsbereiche bestehen.
 
-Anstoßen heißt: den Arbeitsbereich `coordinate/` des Auftrags anlegen und darin die Sitzung des Softwarearchitekten mit `claude --agent software-architect` in einer tmux-Sitzung starten, deren Name die Auftragskennung ist. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag nennt die Auftragskennung und die Aufgabe: umsetzen, korrigieren mit Abweichungen, mit einer Antwort fortsetzen oder mergen.
+Anstoßen heißt: den Startauftrag schreiben, den Arbeitsbereich `coordinate/` des Auftrags anlegen, falls er noch nicht besteht, und darin die Sitzung des Softwarearchitekten mit `claude --agent software-architect` in einer tmux-Sitzung starten, deren Name die Auftragskennung ist. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag liegt in `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/start.md`. Er nennt die Auftragskennung, den Pfad der Auftragsdatei und die Aufgabe: `implement` (umsetzen), `rework` (korrigieren, mit der Liste der Abweichungen), `resume` (mit der Antwort auf einen offenen Punkt fortsetzen) oder `merge` (nach Abnahme mergen). Lässt sich die Sitzung nicht starten, setzt die Auftragsverwaltung den Auftrag mit dem Startfehler als offenem Punkt auf `blocked`; `inprogress` setzt sie erst nach erfolgreichem Start.
 
 Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. Ob die Sitzung eines Auftrags besteht, prüft die Auftragsverwaltung mit `tmux has-session -t <auftragskennung>`; beendet wird sie mit `tmux kill-session -t <auftragskennung>`. Weil der Sitzungsname die Auftragskennung ist, sind parallele Sitzungen eindeutig unterscheidbar. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
 
-Die Auftragsverwaltung hält keinen Stand im Gedächtnis ihrer Sitzung. Ihr gesamter Stand ergibt sich aus Auftragsdateien, tmux-Sitzungen und Ergebnisdateien. Ein Neustart ist deshalb jederzeit möglich. Jede Handlung prüft vor der Ausführung den aktuellen Stand, sodass eine wiederholte Prüfung nichts doppelt ausführt. Schlägt ein Statuswechsel fehl, weil sich die Datei auf `main` inzwischen geändert hat, wird er bei der nächsten Prüfung neu bewertet.
+Die Auftragsverwaltung hält keinen Stand im Gedächtnis ihrer Sitzung. Ihr gesamter Stand ergibt sich aus Auftragsdateien, tmux-Sitzungen und Ergebnisdateien. Ein Neustart ist deshalb jederzeit möglich. Jede Handlung prüft vor der Ausführung den aktuellen Stand, sodass eine wiederholte Prüfung nichts doppelt ausführt. Vor einem Statuswechsel prüft sie, dass der Status auf `main` noch dem erwarteten alten Status entspricht. Schlägt ein Statuswechsel fehl, weil sich `main` inzwischen geändert hat, unterbleiben alle davon abhängigen Schritte, und der Auftrag wird bei der nächsten Prüfung neu bewertet.
 
 ### Ergebnisdatei des Softwarearchitekten
 
@@ -149,9 +153,9 @@ Seine Sitzung bleibt danach geöffnet, bis die Auftragsverwaltung sie beendet. N
 
 ## Runner
 
-Ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner hält `repo/` aktuell. Er startet bei jedem Push auf `main` und führt `pipwerk-dev sync-repo` aus. Weitere Aufgaben hat er nicht.
+Ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner hält `repo/` aktuell. Er startet bei jedem Push auf `main` und kann auf GitHub zusätzlich von Hand gestartet werden. Er führt `pipwerk-dev sync-repo` aus. Weitere Aufgaben hat er nicht.
 
-Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsbereiche gehören. `PIPWERK_DEV_ROOT` steht in der Umgebungsdatei des Runners. Der Workflow hat keine Auslöser für Pull Requests, damit Änderungsvorschläge Dritter im öffentlichen Repository keinen Code auf dem Entwicklungsrechner ausführen. Schlägt `sync-repo` fehl, ist das im Lauf auf GitHub sichtbar; der nächste Push holt die Aktualisierung nach.
+Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsbereiche gehören. `PIPWERK_DEV_ROOT` steht in der Umgebungsdatei des Runners. Der Workflow hat keine Auslöser für Pull Requests. Das allein genügt nicht, weil ein Pull Request aus einer fremden Kopie des Repositorys eigene Workflow-Dateien mitbringen kann. Deshalb verlangt das Repository für Workflows aus Pull Requests aller externen Beitragenden eine Freigabe durch den Nutzer (siehe [Einrichtung auf dem Entwicklungsrechner](#einrichtung-auf-dem-entwicklungsrechner)). Ein solcher Workflow wird nicht freigegeben. Schlägt `sync-repo` fehl, ist das im Lauf auf GitHub sichtbar; der nächste Push holt die Aktualisierung nach.
 
 ## Benachrichtigung des Nutzers
 
@@ -172,17 +176,17 @@ Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` liegen:
 | Verzeichnis | Inhalt | verändert von |
 |---|---|---|
 | `repo/` | Klon des Repositorys auf dem Stand von `origin/main`; Träger der gemeinsamen Git-Daten | nur `pipwerk-dev sync-repo` |
-| `work/<auftragskennung>/coordinate/` | Worktree des Softwarearchitekten, Commit von `origin/main` beim Anstoßen, ohne Branch; Arbeitsverzeichnis seiner Sitzung | Auftragsverwaltung über `pipwerk-dev` |
+| `work/<auftragskennung>/coordinate/` | Worktree des Softwarearchitekten, Commit von `origin/main` beim ersten Anstoß, ohne Branch; Arbeitsverzeichnis seiner Sitzungen für diesen Auftrag | Auftragsverwaltung über `pipwerk-dev` |
 | `work/<auftragskennung>/implement/` | Worktree des Entwicklers mit dem Arbeitsbranch | Entwickler |
 | `work/<auftragskennung>/review/` | Worktree der QA mit dem lokalen Prüfbranch | QA |
 | `work/order-management/coordinate/` | Arbeitskopie der Auftragsverwaltung, Commit von `origin/main` bei ihrem Start, ohne Branch | `tools/order-management/start.sh` über `pipwerk-dev` |
 | `test/<komponente>/` | Teststand der Komponente, ohne Branch auf einem freigegebenen Commit | nur `pipwerk-dev` |
-| `transfer/` | Arbeitsergebnisse und Ergebnisdateien, keine Projektfestlegungen | Agenten |
+| `transfer/` | Arbeitsergebnisse, je Auftrag unter `transfer/<auftragskennung>/` Startauftrag und Ergebnisdateien; keine Projektfestlegungen | Agenten |
 | `scripts/` | `pipwerk-dev` und seine lokale Dokumentation, nicht Teil des Repositorys | nicht durch das Team |
 
 Kein Agent arbeitet in `repo/`. Entwickler und QA finden ihren Arbeitsbereich über `$PIPWERK_DEV_ROOT` und die Auftragskennung in `$PIPWERK_ORDER_ID`. Die Agentendefinitionen enthalten keine Pfade des Rechners.
 
-Jeder Worktree enthält alle Dateien des Repositorys, also auch `.claude/`. Wirksam sind nur die Agentendefinitionen im Arbeitsverzeichnis der Sitzung des Softwarearchitekten, also in `coordinate/`. Sie entsprechen damit dem Stand von `main` beim Anstoßen.
+Jeder Worktree enthält alle Dateien des Repositorys, also auch `.claude/`. Wirksam sind nur die Agentendefinitionen im Arbeitsverzeichnis der Sitzung des Softwarearchitekten, also in `coordinate/`. Sie entsprechen damit dem Stand von `main` beim ersten Anstoß des Auftrags und bleiben für alle seine Sitzungen gleich.
 
 ## Arbeitsbereiche und Umgang mit Fehlern
 
@@ -287,12 +291,13 @@ Die folgenden Schritte richten den Prozess auf dem Entwicklungsrechner ein. Sie 
 
 1. `pipwerk-dev` in der Fassung dieses Dokuments installieren. Bei der Umstellung werden die bisherigen festen Arbeitsbereiche `implement/`, `review/` und `test/` nur entfernt, wenn sie keine lokalen Änderungen und keine nicht übertragenen Commits enthalten.
 2. Den Runner als systemd-Dienst unter dem Benutzer betreiben, dem die Arbeitsbereiche gehören, mit `PIPWERK_DEV_ROOT` in seiner Umgebungsdatei.
-3. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository anmelden und Claude Code mit dem Claude-Abo anmelden.
-4. In den Benutzereinstellungen von Claude Code (`~/.claude/settings.json`) die rechnerspezifischen Freigaben eintragen: den Aufruf von `pipwerk-dev` mit seinem absoluten Pfad und Schreibrechte für Dateien unterhalb des Entwicklungsverzeichnisses. Die allgemeinen Freigaben stehen in `.claude/settings.json` im Repository. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an.
-5. Die Auftragsverwaltung mit `tools/order-management/start.sh` starten. Das Skript beendet eine laufende Sitzung, legt die Arbeitskopie `work/order-management/coordinate` auf dem aktuellen Stand von `origin/main` neu an und startet `claude --agent order-management` in der tmux-Sitzung `order-management`. Es wird spätestens alle 7 Tage erneut ausgeführt, bei Bedarf über einen Cron-Job.
-6. Der Projektleiter richtet die geplante Benachrichtigung des Nutzers ein.
+3. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository anmelden und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv in `repo/` starten und die Vertrauensabfrage für den Ordner bestätigen. Laut Claude-Code-Dokumentation gilt dieses Vertrauen auch für die Worktrees unter `work/`, weil sie zum selben Repository gehören; eine unbestätigte Abfrage würde eine unbediente Sitzung anhalten.
+4. Im Repository auf GitHub unter Settings → Actions → General für Workflows aus Pull Requests die Freigabe für alle externen Beitragenden verlangen.
+5. In den Benutzereinstellungen von Claude Code (`~/.claude/settings.json`) die rechnerspezifischen Freigaben eintragen: den Aufruf von `pipwerk-dev` mit seinem absoluten Pfad und Schreibrechte für Dateien unterhalb des Entwicklungsverzeichnisses. Die allgemeinen Freigaben stehen in `.claude/settings.json` im Repository. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an.
+6. Die Auftragsverwaltung mit `tools/order-management/start.sh` starten. Das Skript beendet eine laufende Sitzung, legt die Arbeitskopie `work/order-management/coordinate` auf dem aktuellen Stand von `origin/main` neu an und startet `claude --agent order-management` in der tmux-Sitzung `order-management`. Es wird spätestens alle 7 Tage erneut ausgeführt, bei Bedarf über einen Cron-Job.
+7. Der Projektleiter richtet die geplante Benachrichtigung des Nutzers ein.
 
-Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio. Er weist zugleich nach, dass `/loop` als `initialPrompt` arbeitet, dass die Teamfunktion in einer tmux-Sitzung zuverlässig läuft und dass alle vorgesehenen Befehle freigegeben sind.
+Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio. Er weist zugleich nach, dass `/loop` als `initialPrompt` arbeitet, dass die Teamfunktion in einer tmux-Sitzung zuverlässig läuft, dass in den Worktrees keine Vertrauensabfrage erscheint und dass alle vorgesehenen Befehle freigegeben sind.
 
 ## Weitere Qualitätswerkzeuge
 

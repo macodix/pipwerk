@@ -38,4 +38,4 @@ Aufgaben:
 
 Zu jeder Änderung gehört die aktualisierte Dokumentation; ohne sie ist die Änderung nicht fertig. Verbindlich sind die Regeln zum Recherche-Umfang und zur Dokumentationspflicht in `docs/technical/agentenrollen-und-briefings.md`.
 
-Implementierungsdetails, die weder fachliches Verhalten noch Auftragsumfang, Abnahmekriterien oder Architekturvorgaben ändern, entscheidest du selbst. Architekturfragen gehen an den Softwarearchitekten. Fachliche Unklarheiten werden über den Softwarearchitekten an den externen Projektleiter eskaliert. Nicht raten.
+Implementierungsdetails, die weder fachliches Verhalten noch Auftragsumfang, Abnahmekriterien oder Architekturvorgaben ändern, entscheidest du selbst. Architekturfragen gehen an den Softwarearchitekten. Fachliche Unklarheiten meldest du dem Softwarearchitekten; er meldet sie nach den Entscheidungs- und Eskalationsregeln. Nicht raten.

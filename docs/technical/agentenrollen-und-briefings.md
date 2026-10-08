@@ -48,7 +48,7 @@ Diese Regel gilt verbindlich für alle Rollen.
 
 - Grundlage der Arbeit sind der aktuelle Stand von `main`, der Arbeitsauftrag, der aktuelle Pull Request beziehungsweise Branch des Auftrags und alle im Auftrag genannten Referenzen sowie die aktuellen Anforderungen, Verträge und Technikregeln für jede geänderte Komponente und Schnittstelle.
 - Alte Commits, geschlossene Pull Requests, alte Chats und sonstige Historie werden nicht vorsorglich untersucht.
-- Historische Recherche ist nur zulässig, wenn ein konkreter Widerspruch besteht, der sich aus dem aktuellen Stand nicht lösen lässt, oder wenn der Projektleiter sie ausdrücklich beauftragt.
+- Historische Recherche ist nur zulässig, wenn ein konkreter Widerspruch besteht, der sich aus dem aktuellen Stand nicht lösen lässt, oder wenn der Arbeitsauftrag sie ausdrücklich vorsieht.
 
 ## Dokumentationspflicht
 

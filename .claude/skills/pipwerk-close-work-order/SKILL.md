@@ -9,7 +9,7 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md`. Befolg
 
 1. Verifiziere, dass der Startauftrag die Aufgabe `merge` nennt und der Arbeitsauftrag unter „Entscheidungen des Auftraggebers“ eine Abnahme `accept` enthält.
 2. Bestimme den abgenommenen und von der QA freigegebenen Commit und seinen Pull Request.
-3. Führe den Merge dieses Pull Requests aus.
+3. Führe den Merge dieses Pull Requests mit einem Merge-Commit aus, nicht durch Zusammenfassen (Squash).
 4. Verifiziere, dass der abgenommene Inhalt in `main` übernommen wurde.
 5. Prüfe den resultierenden Repository-Status.
 6. Beende den Teststand der betroffenen Komponenten mit `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" stop <komponente>`.

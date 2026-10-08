@@ -33,8 +33,8 @@ keine
 
 ## Entscheidungen des Auftraggebers
 
-Einträge des Projektleiters in der Form `JJJJ-MM-TTThh:mm – <accept|reject|cancel|answer> – Inhalt`.
+Einträge des Projektleiters in der Form `JJJJ-MM-TTThh:mm:ss – <accept|reject|cancel|answer> – Inhalt`.
 
 ## Verlauf
 
-Einträge der Auftragsverwaltung in der Form `JJJJ-MM-TTThh:mm – <alter Status> → <neuer Status> – Anlass`.
+Einträge der Auftragsverwaltung in der Form `JJJJ-MM-TTThh:mm:ss – <alter Status> → <neuer Status> – Anlass`.

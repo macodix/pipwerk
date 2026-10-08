@@ -14,8 +14,18 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
     tmux kill-session -t "$SESSION"
 fi
 
+# remove lehnt ab, solange in der Arbeitskopie noch ein Claude-Code-Prozess
+# läuft; deshalb bis zu 60 Sekunden lang erneut versuchen.
 if [ -d "$PIPWERK_DEV_ROOT/work/$SESSION" ]; then
-    "$DEV" remove --order "$SESSION"
+    tries=0
+    until "$DEV" remove --order "$SESSION"; do
+        tries=$((tries + 1))
+        if [ "$tries" -ge 12 ]; then
+            echo "Arbeitskopie der Auftragsverwaltung ließ sich nicht abbauen" >&2
+            exit 1
+        fi
+        sleep 5
+    done
 fi
 
 BASE=$(git -C "$PIPWERK_DEV_ROOT/repo" rev-parse origin/main)

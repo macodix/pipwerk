@@ -18,7 +18,16 @@ Das Prüfintervall steht im Feld `initialPrompt` dieser Datei. Eine Änderung de
 
 ## Eine Prüfung
 
-Lies alle Auftragsdateien in `approved/`, `inprogress/` und `acceptance/`. Bestimme je Auftrag das Feld `status`, die belegten Komponenten aller Aufträge mit `inprogress`, `blocked` oder `acceptance` und die neuen Einträge unter „Entscheidungen des Auftraggebers“. Ein Eintrag ist neu, wenn sein Zeitpunkt nach dem letzten Eintrag im Verlauf liegt. Handle dann je Auftrag nach der Tabelle im Abschnitt „Auftragsverwaltung“ des Entwicklungsverfahrens. Wartende Aufträge mit `queued` behandelst du in aufsteigender Reihenfolge ihrer Auftragskennung.
+Lies alle Auftragsdateien in `approved/`, `inprogress/` und `acceptance/`. Bestimme je Auftrag das Feld `status`, die neuen Einträge unter „Entscheidungen des Auftraggebers“ und die belegten Komponenten. Ein Eintrag ist neu, wenn sein Zeitpunkt nach dem Zeitpunkt des letzten Eintrags im Verlauf liegt. Eine Komponente ist für einen Auftrag belegt, wenn ein anderer Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
+
+Handle dann nach der Tabelle im Abschnitt „Auftragsverwaltung“ des Entwicklungsverfahrens in dieser Reihenfolge:
+
+1. Aufträge mit `inprogress`: Ergebnisdateien und Abbrüche.
+2. Neue Entscheidungen bei Aufträgen mit `blocked` und `acceptance` sowie `cancel` bei allen Aufträgen.
+3. Aufträge mit `blocked`, die nie angestoßen wurden, also ohne Verzeichnis `$PIPWERK_DEV_ROOT/work/<auftragskennung>/`: Pflichtfelder erneut prüfen.
+4. Aufträge mit `queued`, dann mit `approved`, jeweils in aufsteigender Reihenfolge der Auftragskennung.
+
+Nach jedem Anstoß gelten die Komponenten des angestoßenen Auftrags sofort als belegt, auch wenn `repo/` den neuen Status noch nicht zeigt. Stimmen Statuseintrag und Verzeichnis eines Auftrags nicht überein, verschiebst du die Datei mit einem Commit wie bei einem Statuswechsel in das Verzeichnis ihres Status.
 
 Prüfe vor jeder Handlung, ob sie schon ausgeführt ist, zum Beispiel ob die tmux-Sitzung schon läuft oder der Status auf `main` schon gesetzt ist. Führe nichts doppelt aus.
 
@@ -26,18 +35,18 @@ Ist in einer Prüfung nichts zu tun, gibst du nur eine Zeile mit Zeitpunkt und �
 
 ## Pflichtfelder
 
-Ein Auftrag mit `approved` ist vollständig, wenn der Dateiname mit der Auftragskennung beginnt und der Abschnitt „Status“ die Felder `id`, `status`, `client` und `components` enthält, `components` mindestens eine gültige Komponente nennt und die Abschnitte „Ziel“, „Umfang“, „Nicht-Umfang“, „Abnahmekriterien“, „Referenzen“, „Offene Punkte“, „Entscheidungen des Auftraggebers“ und „Verlauf“ vorhanden sind. Gültige Komponenten sind die Verzeichnisnamen unter `components/` und `packages/` sowie `contracts` und `common`.
+Ein Auftrag ist vollständig, wenn der Dateiname mit der Auftragskennung beginnt, die Datei eine Überschrift erster Ebene mit dem Titel hat, der Abschnitt „Status“ die Felder `id`, `status`, `client` und `components` enthält, `components` mindestens eine gültige Komponente nennt und die Abschnitte „Ziel“, „Umfang“, „Nicht-Umfang“, „Abnahmekriterien“, „Referenzen“, „Offene Punkte“, „Entscheidungen des Auftraggebers“ und „Verlauf“ vorhanden sind. Gültige Komponenten sind die Verzeichnisnamen unter `components/` und `packages/` sowie `contracts` und `common`.
 
 ## Statuswechsel
 
 Ein Statuswechsel ist genau ein Commit auf `main`, den du ohne lokalen Arbeitsbereich über die Git-Data-API von GitHub mit `gh api` erzeugst:
 
 1. Lies den aktuellen Commit von `main`: `gh api repos/macodix/pipwerk/git/ref/heads/main --jq .object.sha`.
-2. Lies die Auftragsdatei in genau diesem Commit über `gh api "repos/macodix/pipwerk/contents/<pfad>?ref=<commit>"`, nicht aus `repo/`.
-3. Ändere darin das Feld `status`, ergänze den Verlauf mit einer Zeile `JJJJ-MM-TTThh:mm – <alter Status> → <neuer Status> – Anlass` und bei einem Wechsel nach `blocked` den offenen Punkt.
+2. Lies die Auftragsdatei in genau diesem Commit über `gh api "repos/macodix/pipwerk/contents/<pfad>?ref=<commit>"`, nicht aus `repo/`. Steht dort nicht der erwartete alte Status, brichst du den Wechsel ab und bewertest den Auftrag in der nächsten Prüfung neu.
+3. Ändere darin das Feld `status`, ergänze den Verlauf mit einer Zeile `JJJJ-MM-TTThh:mm:ss – <alter Status> → <neuer Status> – Anlass` und bei einem Wechsel nach `blocked` den offenen Punkt.
 4. Erzeuge einen Baum auf Grundlage des Baums dieses Commits, der die geänderte Datei am Pfad des neuen Statusverzeichnisses enthält und den alten Pfad mit `"sha": null` entfernt, falls sich das Verzeichnis ändert.
 5. Erzeuge einen Commit mit der Nachricht `work-orders: <auftragskennung> <alter Status> -> <neuer Status>` und diesem Commit als einzigem Elternteil.
-6. Setze `refs/heads/main` mit `"force": false` auf den neuen Commit. Schlägt das fehl, weil sich `main` inzwischen bewegt hat, bewertest du den Auftrag in der nächsten Prüfung neu.
+6. Setze `refs/heads/main` mit `"force": false` auf den neuen Commit. Schlägt das fehl, weil sich `main` inzwischen bewegt hat, unterbleiben alle von diesem Statuswechsel abhängigen Schritte, und du bewertest den Auftrag in der nächsten Prüfung neu.
 
 Zulässig sind nur die Statuswechsel aus dem Statusmodell des Entwicklungsverfahrens.
 
@@ -48,7 +57,7 @@ Zulässig sind nur die Statuswechsel aus dem Statusmodell des Entwicklungsverfah
    `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" prepare --order <auftragskennung> coordinate --base <aktueller Commit von origin/main>`
 3. Starte die Sitzung:
    `tmux new-session -d -s <auftragskennung> -c "$PIPWERK_DEV_ROOT/work/<auftragskennung>/coordinate" -e "PIPWERK_DEV_ROOT=$PIPWERK_DEV_ROOT" -e "PIPWERK_ORDER_ID=<auftragskennung>" 'claude --agent software-architect "Lies $PIPWERK_DEV_ROOT/transfer/<auftragskennung>/start.md und führe den Startauftrag aus."'`
-4. Prüfe mit `tmux has-session -t <auftragskennung>`, dass die Sitzung läuft. Läuft sie nicht, setzt du den Auftrag auf `blocked` mit dem Startfehler als offenem Punkt.
+4. Prüfe mit `tmux has-session -t <auftragskennung>`, dass die Sitzung läuft. Läuft sie, setzt du den Status `inprogress`. Läuft sie nicht, setzt du den Auftrag auf `blocked` mit dem Startfehler als offenem Punkt.
 
 Starte nie eine zweite Sitzung für einen Auftrag, dessen tmux-Sitzung schon besteht.
 
@@ -56,16 +65,16 @@ Starte nie eine zweite Sitzung für einen Auftrag, dessen tmux-Sitzung schon bes
 
 Liegt `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/result.json` vor:
 
-1. Lies das Ergebnis und führe den zugehörigen Statuswechsel aus.
-2. Beende die Sitzung mit `tmux kill-session -t <auftragskennung>`.
-3. Bei `merged` baue die Arbeitsbereiche mit `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" remove --order <auftragskennung>` ab. Lehnt `pipwerk-dev` das ab, vermerkst du den Grund im Verlauf.
+1. Lies das Ergebnis und führe den zugehörigen Statuswechsel aus. Gelingt er nicht, unterbleiben die folgenden Schritte bis zur nächsten Prüfung.
+2. Beende die Sitzung mit `tmux kill-session -t <auftragskennung>` und warte, bis `tmux has-session -t <auftragskennung>` sie nicht mehr findet.
+3. Bei `merged` baue die Arbeitsbereiche mit `"$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" remove --order <auftragskennung>` ab. Lehnt `pipwerk-dev` das ab, vermerkst du den Grund mit einem Commit wie bei einem Statuswechsel im Verlauf.
 4. Benenne die Datei in `result-JJJJMMTThhmmss.json` um, gebildet aus dem Feld `created`.
 
 Besteht für einen Auftrag mit `inprogress` weder eine tmux-Sitzung noch eine Ergebnisdatei, setzt du ihn auf `blocked` und vermerkst den Abbruch als offenen Punkt.
 
 ## Rückzug
 
-Bei einer neuen Entscheidung `cancel` beendest du die tmux-Sitzung des Auftrags, falls sie besteht, baust seine Arbeitsbereiche mit `pipwerk-dev remove` ab und setzt `cancelled`.
+Bei einer neuen Entscheidung `cancel` setzt du `cancelled`. Danach beendest du die tmux-Sitzung des Auftrags, falls sie besteht, und baust seine Arbeitsbereiche mit `pipwerk-dev remove` ab, falls sie bestehen. Lehnt `pipwerk-dev` den Abbau ab, vermerkst du den Grund im Verlauf.
 
 ## Grenzen
 

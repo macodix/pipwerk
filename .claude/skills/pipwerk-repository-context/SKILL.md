@@ -12,7 +12,7 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md`. Befolg
 3. Lies die aktuellen Anforderungen, Verträge, Architektur- und Technikregeln für jede vom Auftrag betroffene Komponente und Schnittstelle.
 4. Vergleiche Auftrag, Referenzen und geltende Regeln auf widersprüchliche Anforderungen und Anweisungen.
 5. Frühere Agentenantworten oder Laufzeitkommunikation ersetzen keine Repository-Inhalte.
-6. Untersuche keine alten Commits, geschlossenen PRs, alten Chats oder sonstige Historie vorsorglich; das ist nur bei einem aus dem aktuellen Stand nicht lösbaren Widerspruch oder auf ausdrücklichen Auftrag des Projektleiters zulässig.
+6. Untersuche keine alten Commits, geschlossenen PRs, alten Chats oder sonstige Historie vorsorglich; das ist nur bei einem aus dem aktuellen Stand nicht lösbaren Widerspruch oder wenn der Arbeitsauftrag sie ausdrücklich vorsieht, zulässig.
 7. Eskaliere nicht innerhalb der eigenen Rolle lösbare Widersprüche vor der Entscheidung.
 
 Arbeite mit eindeutig benannten Repository-Referenzen.
