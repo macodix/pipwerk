@@ -4,6 +4,8 @@ Covers: valid hash gives 7 characters, every failure gives ``null`` and the
 application still starts, the real Git lookup, response model and wrong methods.
 """
 
+import logging
+import shutil
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
@@ -83,15 +85,6 @@ def test_health_is_unchanged() -> None:
     assert make_client(lambda: FULL_HASH).get("/api/health").json() == {"status": "ok"}
 
 
-def _fake_run(
-    returncode: int = 0, stdout: str = FULL_HASH + "\n"
-) -> Callable[..., subprocess.CompletedProcess[str]]:
-    def run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
-        return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout)
-
-    return run
-
-
 def test_git_lookup_uses_fixed_arguments_without_shell(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: dict[str, object] = {}
 
@@ -115,32 +108,136 @@ def test_git_lookup_uses_fixed_arguments_without_shell(monkeypatch: pytest.Monke
     assert kwargs["timeout"] == revision.GIT_TIMEOUT_SECONDS
 
 
-def test_git_lookup_failures_give_none(monkeypatch: pytest.MonkeyPatch) -> None:
-    def missing(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
-        raise FileNotFoundError("git")
-
-    def timeout(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
-        raise subprocess.TimeoutExpired(cmd="git", timeout=5)
-
-    for run in (
-        missing,
-        timeout,
-        _fake_run(returncode=128, stdout=""),
-        _fake_run(stdout="nonsense\n"),
-    ):
-        monkeypatch.setattr(subprocess, "run", run)
-        assert revision.determine_short_revision() is None
+STDOUT_MARKER = "STDOUT-MARKER-71f3"
+STDERR_MARKER = "STDERR-MARKER-9ac2"
+EXCEPTION_MARKER = "EXCEPTION-MARKER-5be8"
 
 
-def test_git_lookup_logs_one_warning_without_details(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+def _runner(
+    *, returncode: int = 0, stdout: str = "", stderr: str = ""
+) -> Callable[..., subprocess.CompletedProcess[str]]:
+    def run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=[], returncode=returncode, stdout=stdout, stderr=stderr
+        )
+
+    return run
+
+
+def _raiser(error: Exception) -> Callable[..., subprocess.CompletedProcess[str]]:
+    def run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise error
+
+    return run
+
+
+def test_git_not_executable_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(subprocess, "run", _raiser(FileNotFoundError("git")))
+
+    assert revision.determine_short_revision() is None
+
+
+def test_git_timeout_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(subprocess, "run", _raiser(subprocess.TimeoutExpired("git", 5)))
+
+    assert revision.determine_short_revision() is None
+
+
+def test_git_exit_code_not_zero_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    # An existing working tree, but Git exits with an error and writes to stderr.
+    monkeypatch.setattr(
+        subprocess, "run", _runner(returncode=1, stdout="", stderr="fatal: " + STDERR_MARKER)
+    )
+
+    assert revision.determine_short_revision() is None
+
+
+def test_git_invalid_output_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(subprocess, "run", _runner(stdout="nonsense\n"))
+
+    assert revision.determine_short_revision() is None
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="Git is not installed on this system")
+def test_real_git_outside_any_working_tree_gives_none(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    monkeypatch.setattr(subprocess, "run", _fake_run(returncode=128, stdout=""))
+    # Environment variables of the calling Git must not change the result.
+    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_CEILING_DIRECTORIES"):
+        monkeypatch.delenv(name, raising=False)
+    # Git must not search above the temporary directory for a working tree.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    outside = tmp_path / "outside"
+    outside.mkdir()
 
-    revision.determine_short_revision()
+    assert revision.lookup_git_revision(outside) is None
+    assert len([r for r in caplog.records if r.levelname == "WARNING"]) == 1
 
-    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+
+def test_app_starts_normally_when_revision_is_not_determinable() -> None:
+    client = make_client(lambda: None)
+
+    assert client.get("/api/health").json() == {"status": "ok"}
+    assert client.get("/api/studio/revision").json() == {"revision": None}
+
+
+def _failing_lookup_for(case: str, monkeypatch: pytest.MonkeyPatch) -> revision.RevisionLookup:
+    if case == "git-not-executable":
+        monkeypatch.setattr(
+            subprocess, "run", _raiser(FileNotFoundError(f"{EXCEPTION_MARKER} /secret/path/git"))
+        )
+    elif case == "exit-code-not-zero":
+        monkeypatch.setattr(
+            subprocess,
+            "run",
+            _runner(returncode=128, stdout=STDOUT_MARKER, stderr=f"fatal: {STDERR_MARKER}"),
+        )
+    elif case == "timeout":
+        monkeypatch.setattr(
+            subprocess, "run", _raiser(subprocess.TimeoutExpired("git " + EXCEPTION_MARKER, 5))
+        )
+    elif case == "invalid-output":
+        monkeypatch.setattr(
+            subprocess,
+            "run",
+            _runner(stdout=STDOUT_MARKER + "\n", stderr=STDERR_MARKER),
+        )
+    elif case == "lookup-raises":
+
+        def raising() -> str:
+            raise RuntimeError(f"{EXCEPTION_MARKER} /secret/path")
+
+        return raising
+    else:  # pragma: no cover
+        raise AssertionError(case)
+    return revision.lookup_git_revision
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["git-not-executable", "exit-code-not-zero", "timeout", "invalid-output", "lookup-raises"],
+)
+def test_failure_logs_exactly_one_warning_without_git_output_exception_or_path(
+    case: str, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    lookup = _failing_lookup_for(case, monkeypatch)
+
+    assert revision.determine_short_revision(lookup) is None
+
+    warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
     assert len(warnings) == 1
+    assert warnings[0].levelname == "WARNING"
+    text = caplog.text
+    package_directory = str(Path(revision.__file__).resolve().parent)
+    for forbidden in (
+        STDOUT_MARKER,
+        STDERR_MARKER,
+        EXCEPTION_MARKER,
+        "/secret/path",
+        package_directory,
+        "fatal",
+    ):
+        assert forbidden not in text
 
 
 def test_real_git_lookup_matches_git_or_is_none() -> None:

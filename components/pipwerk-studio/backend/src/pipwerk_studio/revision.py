@@ -26,17 +26,20 @@ RevisionLookup = Callable[[], str | None]
 _FULL_HASH = re.compile(r"[0-9a-f]{40}")
 
 
-def lookup_git_revision() -> str | None:
-    """Ask Git for ``HEAD`` of the working tree containing this package.
+def lookup_git_revision(directory: Path | None = None) -> str | None:
+    """Ask Git for ``HEAD`` of the working tree containing ``directory``.
+
+    ``directory`` defaults to the directory of the ``pipwerk_studio`` package;
+    only tests pass another one.
 
     Runs ``git rev-parse HEAD`` as a subprocess with a fixed argument list,
     without a shell, with a short time limit. Any failure is logged once as a
     warning without technical details and results in ``None``.
     """
-    package_directory = Path(__file__).resolve().parent
+    working_directory = directory if directory is not None else Path(__file__).resolve().parent
     try:
         result = subprocess.run(  # noqa: S603 - fixed argument list, no shell
-            ["git", "-C", str(package_directory), "rev-parse", "HEAD"],  # noqa: S607
+            ["git", "-C", str(working_directory), "rev-parse", "HEAD"],  # noqa: S607
             capture_output=True,
             text=True,
             timeout=GIT_TIMEOUT_SECONDS,
