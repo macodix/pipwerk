@@ -2,8 +2,9 @@
 
 ## Status
 
-- status: `accepted`
+- status: `closed`
 - stand: 2026-09-27
+- übernommen in `main`: PR #9, Merge-Commit `1d665217840829fb9d0681ba1b3ae4aab35999c3`
 - komponente: `pipwerk-studio`
 
 ## Ziel

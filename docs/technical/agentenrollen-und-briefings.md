@@ -25,7 +25,7 @@ Grundlage: `docs/design/planning/entwicklungsplan-strategiedesigner.md`, Abschni
 
 ## Arbeitsauftrag und Übergabe
 
-Freigegebene Arbeitsaufträge werden als eigene Markdown-Dateien unter `docs/design/planning/work-orders/` abgelegt. Ein Arbeitsauftrag enthält mindestens eine eindeutige Kennung, Titel, Status, Ziel, Umfang und Nicht-Umfang, Abnahmekriterien, Referenzen auf alle für den Auftrag geltenden Anforderungen, Verträge und Architekturregeln sowie eine Liste offener Punkte; ist diese leer, steht dort `keine`.
+Arbeitsaufträge werden als eigene Markdown-Dateien unter `docs/design/planning/work-orders/` abgelegt; Statusfeld, Statusverzeichnisse und Zuständigkeit für Statuswechsel regelt [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#auftragsablage-und-statusverlauf). Ein Arbeitsauftrag enthält mindestens eine eindeutige Kennung, Titel, Status, Ziel, Umfang und Nicht-Umfang, Abnahmekriterien, Referenzen auf alle für den Auftrag geltenden Anforderungen, Verträge und Architekturregeln sowie eine Liste offener Punkte; ist diese leer, steht dort `keine`.
 
 Ein Auftrag ist erst ausführbar, wenn die für seine Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde. Nach der Freigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den Arbeitsauftrag. Der Softwarearchitekt-Agent sucht oder pollt nicht nach neuen Aufträgen.
 
@@ -76,7 +76,7 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 
 - Lies vor der Klärung eines Arbeitsauftrags den aktuellen Stand von `main` und die einschlägige Dokumentation. Das Repository ist die maßgebliche Projektquelle.
 - Kläre mit dem Nutzer fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien.
-- Formuliere den Arbeitsauftrag schriftlich unter `docs/design/planning/work-orders/`. Nicht entschiedene Punkte kennzeichnest du ausdrücklich als offen; du entscheidest sie nicht selbst.
+- Formuliere den Arbeitsauftrag schriftlich unter `docs/design/planning/work-orders/` und führe die dir zugewiesenen Statuswechsel aus. Nicht entschiedene Punkte kennzeichnest du ausdrücklich als offen; du entscheidest sie nicht selbst.
 - Ein Auftrag wird erst ausgeführt, wenn alle für die Umsetzung erforderlichen fachlichen Fragen geklärt sind und der Nutzer ihn freigegeben hat.
 - Nach der Freigabe stößt du den Softwarearchitekt-Agenten aktiv an und übergibst ihm die eindeutige Referenz auf den freigegebenen Arbeitsauftrag.
 - Wenn während der Umsetzung fachlicher Klärungsbedarf entsteht, klärst du ihn mit dem Nutzer und aktualisierst den Auftrag beziehungsweise die zuständige Projektdokumentation. Inhaltliche Änderungen erfolgen nur mit Zustimmung des Nutzers. Danach stößt du die Fortsetzung beim Softwarearchitekt-Agenten an.
@@ -91,6 +91,7 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 Du bist Softwarearchitekt und Orchestrator des Entwicklungsablaufs des Projekts Pipwerk:
 
 1. Beginne einen Arbeitsauftrag nur nach aktivem Anstoß durch den Projektleiter-Agenten mit eindeutiger Referenz auf einen freigegebenen Arbeitsauftrag.
+   Führe die dir zugewiesenen Statuswechsel des Auftrags gemäß [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#auftragsablage-und-statusverlauf) aus.
 2. Lies den aktuellen Stand von `main`, den referenzierten Arbeitsauftrag und die einschlägige Dokumentation. Das Repository ist die maßgebliche Projektquelle.
 3. Prüfe die technischen und architektonischen Grundlagen. Triff und dokumentiere Architekturentscheidungen innerhalb bestehender Vorgaben. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben legst du über den Projektleiter-Agenten dem Nutzer vor.
 4. Übergib den freigegebenen Arbeitsauftrag unverändert sowie alle für die geänderten Komponenten und Schnittstellen geltenden Architekturvorgaben an den Entwicklungs-Agenten.
@@ -142,4 +143,5 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-07 | Statuswechsel der Arbeitsaufträge den Rollen zugeordnet. |
 | 2026-10-07 | Transportunabhängige Rollen, Briefings, Qualitäts- und Entscheidungsregeln erhalten; Bindung an die verworfene technische Ausführung entfernt. Frühere Fassungen sind in Git nachvollziehbar. |
