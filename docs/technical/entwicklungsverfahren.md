@@ -84,10 +84,11 @@ Zulässig sind nur diese Statuswechsel:
 | `queued` | `inprogress` | alle betroffenen Komponenten frei; Softwarearchitekt angestoßen |
 | `queued` | `blocked` | die Sitzung des Softwarearchitekten ließ sich nicht starten |
 | `inprogress` | `acceptance` | Ergebnis `ready` des Softwarearchitekten |
-| `inprogress` | `blocked` | Ergebnis `question` oder `failed`, oder die Sitzung des Softwarearchitekten endete ohne Ergebnis |
+| `inprogress` | `blocked` | Ergebnis `question` oder `failed`, die Sitzung des Softwarearchitekten endete ohne Ergebnis, oder die Höchstdauer ist ohne Ergebnis überschritten |
 | `inprogress` | `closed` | Ergebnis `merged` nach Abnahme |
 | `blocked` | `inprogress` | Entscheidung des Auftraggebers eingetragen oder fehlende Pflichtfelder ergänzt; Softwarearchitekt angestoßen |
 | `blocked` | `queued` | Entscheidung eingetragen oder fehlende Pflichtfelder ergänzt, eine betroffene Komponente inzwischen belegt |
+| `blocked` | `acceptance`, `closed` | nach Überschreiten der Höchstdauer doch noch Ergebnis `ready` beziehungsweise `merged` geliefert |
 | `acceptance` | `inprogress` | Ablehnung mit Abweichungen oder Abnahme eingetragen; Softwarearchitekt zur Korrektur beziehungsweise zum Merge angestoßen |
 | `approved`, `queued`, `inprogress`, `blocked`, `acceptance` | `cancelled` | Rückzug durch den Auftraggeber eingetragen |
 
@@ -119,7 +120,9 @@ Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWER
 | Auftrag mit `approved` | Pflichtfelder prüfen; bei Mangel `blocked` mit dem Mangel als offenem Punkt. Sonst Komponenten prüfen: belegt `queued`, frei anstoßen und `inprogress`. |
 | Auftrag mit `blocked`, nie angestoßen | Pflichtfelder erneut prüfen; sind sie vollständig, wie bei `approved` verfahren. |
 | Auftrag mit `inprogress`, Ergebnisdatei vorhanden | Ergebnis übernehmen: `ready` nach `acceptance`, `question` und `failed` nach `blocked` mit dem Text als offenem Punkt, `merged` nach `closed`. Nur wenn der Statuswechsel gelungen ist: die tmux-Sitzung des Auftrags beenden, bei `merged` danach die Arbeitsbereiche abbauen, und die Ergebnisdatei umbenennen. |
-| Auftrag mit `inprogress`, keine Ergebnisdatei, Sitzung läuft | nichts |
+| Auftrag mit `inprogress`, keine Ergebnisdatei, Sitzung läuft, Höchstdauer nicht überschritten | nichts |
+| Auftrag mit `inprogress`, keine Ergebnisdatei, Sitzung läuft, Höchstdauer überschritten | `blocked` mit der Zeitüberschreitung als offenem Punkt; die Sitzung läuft weiter |
+| Auftrag mit `blocked` wegen Zeitüberschreitung, Ergebnisdatei vorhanden | Ergebnis übernehmen wie bei `inprogress`; `question` und `failed` lassen ihn auf `blocked` und ergänzen den offenen Punkt |
 | Auftrag mit `inprogress`, keine Ergebnisdatei, keine Sitzung | `blocked`; Abbruch als offenen Punkt vermerken |
 | neue Entscheidung `answer` bei `blocked`, schon angestoßen | Softwarearchitekten mit der Antwort erneut anstoßen und `inprogress`, bei belegter Komponente `queued` |
 | neue Entscheidung `reject` bei `acceptance` | Softwarearchitekten mit der Liste der Abweichungen zur Korrektur anstoßen und `inprogress` |
@@ -133,7 +136,9 @@ Lehnt `pipwerk-dev remove` den Abbau der Arbeitsbereiche ab, zum Beispiel wegen 
 
 Anstoßen heißt: den Startauftrag schreiben, den Arbeitsbereich `coordinate/` des Auftrags anlegen, falls er noch nicht besteht, und darin die Sitzung des Softwarearchitekten mit `claude --agent software-architect` in einer tmux-Sitzung starten, deren Name die Auftragskennung ist. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag liegt in `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/start.md`. Er nennt die Auftragskennung, den Pfad der Auftragsdatei und die Aufgabe: `implement` (umsetzen), `rework` (korrigieren, mit der Liste der Abweichungen), `resume` (mit der Antwort auf einen offenen Punkt fortsetzen) oder `merge` (nach Abnahme mergen). Lässt sich die Sitzung nicht starten, setzt die Auftragsverwaltung den Auftrag mit dem Startfehler als offenem Punkt auf `blocked`; `inprogress` setzt sie erst nach erfolgreichem Start.
 
-Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. Ob die Sitzung eines Auftrags besteht, prüft die Auftragsverwaltung mit `tmux has-session -t <auftragskennung>`; beendet wird sie mit `tmux kill-session -t <auftragskennung>`. Weil der Sitzungsname die Auftragskennung ist, sind parallele Sitzungen eindeutig unterscheidbar. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress` oder `acceptance` steht oder nach einem Anstoß auf `blocked`. Ein nie angestoßener Auftrag mit `blocked` belegt keine Komponente.
+Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. Ob die Sitzung eines Auftrags besteht, prüft die Auftragsverwaltung mit `tmux has-session -t <auftragskennung>`; beendet wird sie mit `tmux kill-session -t <auftragskennung>`. Weil der Sitzungsname die Auftragskennung ist, sind parallele Sitzungen eindeutig unterscheidbar. Die Höchstdauer einer Sitzung des Softwarearchitekten steht in der Rollendefinition der Auftragsverwaltung, als Anfangswert 3 Stunden. Gemessen wird ab dem letzten Verlaufseintrag, mit dem der Auftrag auf `inprogress` gesetzt wurde. Der Wert wird nach den gemessenen Laufzeiten der ersten Aufträge überprüft. Eine Zeitüberschreitung beendet die Sitzung nicht, weil sie auch durch eine Pause wegen der Nutzungsgrenze entstehen kann.
+
+Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress` oder `acceptance` steht oder nach einem Anstoß auf `blocked`. Ein nie angestoßener Auftrag mit `blocked` belegt keine Komponente.
 
 Die Auftragsverwaltung hält keinen Stand im Gedächtnis ihrer Sitzung. Ihr gesamter Stand ergibt sich aus Auftragsdateien, tmux-Sitzungen und Ergebnisdateien. Ein Neustart ist deshalb jederzeit möglich. Jede Handlung prüft vor der Ausführung den aktuellen Stand, sodass eine wiederholte Prüfung nichts doppelt ausführt. Vor einem Statuswechsel prüft sie, dass der Status auf `main` noch dem erwarteten alten Status entspricht. Schlägt ein Statuswechsel fehl, weil sich `main` inzwischen geändert hat, unterbleiben alle davon abhängigen Schritte, und der Auftrag wird bei der nächsten Prüfung neu bewertet.
 
@@ -318,6 +323,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Höchstdauer einer Architektensitzung (Anfangswert 3 Stunden) mit Übergang nach `blocked` ohne Beenden der Sitzung und Übernahme eines späteren Ergebnisses festgelegt. |
 | 2026-10-08 | Einrichtung: `PIPWERK_DEV_ROOT` in der Anmeldeumgebung als Voraussetzung für `start.sh` ergänzt. |
 | 2026-10-08 | Beschreibung von `pipwerk-dev` an die umgesetzte Fassung angeglichen: Befehl `migrate`, Pflichtangabe `--base`, strengere Abbruchbedingungen von `remove`, Wartezeit auf die Sperre der gemeinsamen Git-Daten. |
 | 2026-10-08 | Festgelegt: Merge mit Merge-Commit, `coordinate/` auf dem Stand des ersten Anstoßes, Zeitpunkte auf die Sekunde, Reihenfolge und Belegung in der Auftragsverwaltung, Nachholen des Aufräumens, Freigabepflicht für Workflows aus fremden Pull Requests, Vertrauensabfrage über `repo/`. |
