@@ -1,0 +1,27 @@
+# Hält das Referenz-Repository auf dem Entwicklungsrechner auf dem Stand von main.
+# Beschreibung: docs/technical/entwicklungsverfahren.md, Abschnitt "Runner".
+# Bewusst ohne Auslöser für Pull Requests: Änderungsvorschläge Dritter dürfen
+# keinen Code auf dem Entwicklungsrechner ausführen.
+name: sync-repo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-repo
+  cancel-in-progress: false
+
+jobs:
+  sync-repo:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    steps:
+      - name: Referenz-Repository aktualisieren
+        run: |
+          test -n "$PIPWERK_DEV_ROOT"
+          "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" sync-repo

@@ -16,14 +16,6 @@ Maßgeblich sind das aktuelle Repository, der freigegebene Arbeitsauftrag und di
 
 Eine Aussage wird nicht allein dadurch zu einer bestätigten fachlichen Festlegung, dass sie in einem Repository-Dokument steht. Inhalte eines mit `draft` gekennzeichneten Dokuments sind Arbeitsstand und dürfen nicht ohne weitere Grundlage als vom Nutzer bestätigte fachliche Entscheidung behandelt werden. Bei Widersprüchen oder zweifelhafter Herkunft wird zunächst geprüft, ob eine dokumentierte spätere Entscheidung, ein Änderungsnachweis oder die Git-Historie die Aussage eindeutig klärt. Eine veraltete oder widersprüchliche Stelle, die sich anhand bereits getroffener Festlegungen eindeutig korrigieren lässt, wird korrigiert und nicht als neue fachliche Frage an den Nutzer zurückgegeben.
 
-## Stand der Einführung
-
-Dieses Dokument beschreibt den beschlossenen Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung. Er wird in einem Schritt eingeführt (siehe [Einführung](#einführung)). Bis dahin gilt die folgende Übergangsregel:
-
-- Der Nutzer startet die Sitzung des Softwarearchitekten von Hand in `repo/` und nennt ihm den Auftrag.
-- Die Aufgaben der Auftragsverwaltung führt der Softwarearchitekt aus, soweit sie für einen einzelnen Auftrag nötig sind: Er setzt die Status `inprogress`, `acceptance` und `closed` und meldet Rückfragen und Ergebnisse in seiner Sitzung.
-- Es wird nur ein Auftrag gleichzeitig bearbeitet. Es gelten die festen Arbeitsbereiche aus [Arbeitsbereiche bis zur Einführung](#arbeitsbereiche-bis-zur-einführung) und die heutigen Befehle von `pipwerk-dev`.
-
 ## Beteiligte
 
 | Beteiligter | Aufgabe im Ablauf |
@@ -114,9 +106,9 @@ Eine Entscheidung des Auftraggebers ist ein Eintrag mit Datum und einer der Ents
 
 ## Auftragsverwaltung
 
-Die Auftragsverwaltung verwaltet jeden Auftrag von der Freigabe bis zum Abschluss. Sie ist eine Übergangslösung bis zur Entwicklung einer allgemeinen Nachrichten- und Auftragsverwaltung als Teil von Pipwerk. Sie läuft als dauerhafte Claude-Code-Sitzung in der tmux-Sitzung `order-management` und wird mit `claude --agent order-management` im Entwicklungsverzeichnis gestartet. Ihre Rollendefinition legt im Feld `initialPrompt` die wiederkehrende Prüfung mit dem eingebauten Befehl `/loop` fest. Das Prüfintervall steht dort, als Standardwert 5 Minuten.
+Die Auftragsverwaltung verwaltet jeden Auftrag von der Freigabe bis zum Abschluss. Sie ist eine Übergangslösung bis zur Entwicklung einer allgemeinen Nachrichten- und Auftragsverwaltung als Teil von Pipwerk. Sie läuft als dauerhafte Claude-Code-Sitzung in der tmux-Sitzung `order-management` und wird mit `tools/order-management/start.sh` gestartet (siehe [Einrichtung auf dem Entwicklungsrechner](#einrichtung-auf-dem-entwicklungsrechner)). Ihre Rollendefinition legt im Feld `initialPrompt` die wiederkehrende Prüfung mit dem eingebauten Befehl `/loop` fest. Das Prüfintervall steht dort, als Standardwert 5 Minuten.
 
-Eine mit `/loop` angelegte wiederkehrende Aufgabe erlischt laut Claude-Code-Dokumentation nach 7 Tagen. Die Sitzung wird deshalb spätestens alle 7 Tage neu gestartet. Wird ihr Gesprächsverlauf zu groß, wird sie früher neu gestartet; der Neustart kann dann über einen Cron-Job erfolgen. Dass `/loop` als `initialPrompt` wie vorgesehen arbeitet, ist nicht dokumentiert und wird im Probelauf nachgewiesen.
+Eine mit `/loop` angelegte wiederkehrende Aufgabe erlischt laut Claude-Code-Dokumentation nach 7 Tagen. Die Sitzung wird deshalb spätestens alle 7 Tage neu gestartet. Wird ihr Gesprächsverlauf zu groß, wird sie früher neu gestartet; der Neustart kann dann über einen Cron-Job erfolgen. Dass `/loop` als `initialPrompt` wie vorgesehen arbeitet, ist in der Claude-Code-Dokumentation nicht beschrieben und wird im Nachweisdurchlauf geprüft.
 
 Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWERK_DEV_ROOT/repo/work-orders/`. Sie arbeitet nicht in `repo/` und verändert es nicht. Sie handelt wie folgt:
 
@@ -171,9 +163,9 @@ Mehrere Aufträge werden gleichzeitig bearbeitet, wenn sie keine gemeinsame Komp
 
 Die Einschränkung ist keine technische Notwendigkeit von Git. Sie vermeidet Konflikte beim Zusammenführen und damit erneute QA-Läufe. Wird ein paralleler Auftrag zuerst gemergt, bringt der andere seinen Branch auf den neuen Stand von `main`; danach ist eine erneute QA erforderlich.
 
-Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente einen eigenen Teststand, und jedes Agententeam läuft in einer eigenen tmux-Sitzung (siehe [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung)).
+Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente einen eigenen Teststand, und jedes Agententeam läuft in einer eigenen tmux-Sitzung (siehe [Arbeitsbereiche](#arbeitsbereiche)).
 
-## Arbeitsbereiche nach der Einführung
+## Arbeitsbereiche
 
 Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` liegen:
 
@@ -183,6 +175,7 @@ Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` liegen:
 | `work/<auftragskennung>/coordinate/` | Worktree des Softwarearchitekten, Commit von `origin/main` beim Anstoßen, ohne Branch; Arbeitsverzeichnis seiner Sitzung | Auftragsverwaltung über `pipwerk-dev` |
 | `work/<auftragskennung>/implement/` | Worktree des Entwicklers mit dem Arbeitsbranch | Entwickler |
 | `work/<auftragskennung>/review/` | Worktree der QA mit dem lokalen Prüfbranch | QA |
+| `work/order-management/coordinate/` | Arbeitskopie der Auftragsverwaltung, Commit von `origin/main` bei ihrem Start, ohne Branch | `tools/order-management/start.sh` über `pipwerk-dev` |
 | `test/<komponente>/` | Teststand der Komponente, ohne Branch auf einem freigegebenen Commit | nur `pipwerk-dev` |
 | `transfer/` | Arbeitsergebnisse und Ergebnisdateien, keine Projektfestlegungen | Agenten |
 | `scripts/` | `pipwerk-dev` und seine lokale Dokumentation, nicht Teil des Repositorys | nicht durch das Team |
@@ -193,202 +186,117 @@ Jeder Worktree enthält alle Dateien des Repositorys, also auch `.claude/`. Wirk
 
 ## Arbeitsbereiche und Umgang mit Fehlern
 
-Entwicklung und unabhängige QA verwenden getrennte Arbeitsbereiche. Die Arbeitsbereiche und ihre Schutzregeln stehen in den Abschnitten [Arbeitsbereiche bis zur Einführung](#arbeitsbereiche-bis-zur-einführung) und [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung). Ausgangs- beziehungsweise Prüfcommit werden im jeweiligen Auftrag eindeutig benannt. Der Teststand entspricht unverändert dem freigegebenen Commit.
+Entwicklung und unabhängige QA verwenden getrennte Arbeitsbereiche. Die Arbeitsbereiche und ihre Schutzregeln stehen im Abschnitt [Arbeitsbereiche](#arbeitsbereiche). Ausgangs- beziehungsweise Prüfcommit werden im jeweiligen Auftrag eindeutig benannt. Der Teststand entspricht unverändert dem freigegebenen Commit.
 
 Eigene Fehler, unvollständige Änderungen und Testreste werden vor der Übergabe vollständig beseitigt. Fremde Änderungen werden nicht verworfen. Die zuständige Rolle wird anhand von Diff, Auftragsreferenzen und Prüfnachweisen ermittelt. Nur zwingend fehlende Entscheidungen, Berechtigungen oder Handlungen außerhalb der eigenen Zuständigkeit werden eskaliert; unabhängige Arbeiten werden fortgesetzt.
 
-## Arbeitsbereiche bis zur Einführung
-
-Dieser Abschnitt gilt bis zur [Einführung](#einführung). Danach gelten die [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung).
-
-Auf dem Entwicklungsrechner gibt es ein Pipwerk-Entwicklungsverzeichnis. Darin liegen nebeneinander die folgenden Verzeichnisse. Die Namen sind fest, weil Werkzeuge und Agentendefinitionen sie verwenden.
-
-Die Verzeichnisse `repo/`, `implement/`, `review/` und `test/` sind Git-Arbeitsbereiche desselben Repositorys. `repo/` ist ein normaler Klon von GitHub, die übrigen drei sind daran angehängte Worktrees. Ein Worktree ist ein zusätzliches Arbeitsverzeichnis, das sich die Git-Daten mit `repo/` teilt, aber einen eigenen Branch oder Commit ausgecheckt hat.
-
-Die Agenten finden das Pipwerk-Entwicklungsverzeichnis über die Umgebungsvariable `PIPWERK_DEV_ROOT`. Jedes aufrufende Programm muss sie gemäß der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle) prüfen und in der Prozessumgebung des Teams bereitstellen. Bis zur Einführung ist der Nutzer der Aufrufer, der die Sitzung von Hand startet. Kein Agent setzt, überschreibt oder entfernt sie; alle verwenden nur den gesetzten Wert und schreiben Pfade über die Variable. Der Softwarearchitekt nennt Entwickler und QA ihre Arbeitsbereiche deshalb nur als `$PIPWERK_DEV_ROOT/implement` und `$PIPWERK_DEV_ROOT/review`, nie als ausgeschriebenen Pfad. Die Agentendefinitionen enthalten keine Pfade des Rechners. Ist die Variable nicht gesetzt, brechen die Agenten ab.
-
-### repo/ – Referenz-Repository
-
-`repo/` ist das Arbeitsverzeichnis des Softwarearchitekten. Die Claude-Code-Sitzung wird dort gestartet, damit Claude Code die Agentendefinitionen aus `repo/.claude/` liest. Deshalb muss `repo/` auf dem aktuellen Stand von `origin/main` stehen und darf keine lokalen Änderungen haben. Dieser Zustand muss vor Arbeitsbeginn geprüft werden.
-
-Der Softwarearchitekt arbeitet ausschließlich mit `repo/` als eigenem Arbeitsverzeichnis. Inhalte anderer Arbeitsbereiche prüft er über absolute Pfade, ohne in sie zu wechseln. Entwickler und QA dürfen `repo/` lesen, aber nichts darin ändern.
-
-Auf den aktuellen Stand gebracht wird `repo/` mit `pipwerk-dev sync-repo`. Sonst verändert `pipwerk-dev` dort nur Verwaltungsdaten: Es holt mit `git fetch` den Stand von GitHub und legt von dort aus die anderen Worktrees an. Den lokalen Branch `main` bewegt nur `sync-repo`.
-
-### implement/ – Arbeitsbereich des Entwicklers
-
-Nur der Entwickler ändert hier etwas, und zwar in seinem Arbeitsbranch. Zu Beginn eines Auftrags legt er den Branch mit `pipwerk-dev prepare` auf dem Ausgangsstand an, den der Softwarearchitekt nennt. Der Branch `main` wird hier nie ausgecheckt.
-
-### review/ – Arbeitsbereich der QA
-
-Dieser Bereich ist von `implement/` getrennt, damit die QA einen Stand unabhängig vom Entwickler prüfen kann. Nur die QA arbeitet hier. Sie legt für einen Auftrag einen lokalen Prüfbranch auf dem zu prüfenden Commit an und bringt ihn für eine erneute Prüfung auf den neuen Commit. Sie committet und pusht dort nichts.
-
-### test/ – Teststand
-
-Nur `pipwerk-dev` verändert diesen Arbeitsbereich: `pipwerk-dev start` und `pipwerk-dev update test` setzen ihn auf einen bestimmten Commit, ohne Branch („detached“). Von Hand oder von einem Agenten wird hier nichts geändert, sonst entspräche der Teststand nicht mehr dem freigegebenen Commit.
-
-### transfer/ – Ablage für Arbeitsergebnisse
-
-Hier liegen Arbeitsergebnisse zwischen den Beteiligten, zum Beispiel Berichte und Übergabenotizen. Die Inhalte sind keine Projektfestlegungen. Was dauerhaft gelten soll, wird in die zuständige Dokumentation im Repository übernommen. Kein Werkzeug verändert dieses Verzeichnis.
-
-### scripts/ – lokale Werkzeuge
-
-Hier liegen `pipwerk-dev`, seine automatischen Tests und die lokale Dokumentation der Entwicklungsumgebung. Diese Dateien gehören nicht zum Pipwerk-Repository. Das Team ändert sie nicht.
-
-### Lokales Zustandsverzeichnis
-
-`pipwerk-dev` schreibt seine Zustands- und Protokolldateien in ein lokales Zustandsverzeichnis des ausführenden Benutzers außerhalb aller Arbeitsbereiche. Nichts davon gelangt ins Repository.
-
 ## Lokales Hilfswerkzeug pipwerk-dev
 
-Die folgenden Unterabschnitte beschreiben den heutigen Stand des Werkzeugs. Die geplante Erweiterung steht in [Erweiterung für den Parallelbetrieb](#erweiterung-für-den-parallelbetrieb).
+`pipwerk-dev` erledigt auf dem Entwicklungsrechner die wiederkehrenden technischen Schritte rund um die Git-Arbeitsbereiche und Teststände. Es bringt das Referenz-Repository auf den Stand von `origin/main`, richtet die Arbeitsbereiche eines Auftrags ein, bringt sie auf einen Stand und baut sie wieder ab, führt die automatischen Prüfungen einer Komponente aus und startet einen bestimmten Commit als Teststand einer Komponente. Derzeit unterstützt es die Komponente `pipwerk-studio`. `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
 
-`pipwerk-dev` verwaltet Git-Arbeitsbereiche, Prüfungen und Teststände unabhängig von der Auftragsübermittlung. Seine bestehenden Schutzregeln und seine Verwendung durch die Agenten bleiben erhalten. Damit wird keine neue Auftragsanbindung festgelegt.
-
-Das Werkzeug ist nicht im Repository enthalten. Seine konkrete Installation, Konfiguration und Sicherung sind lokal zu dokumentieren; aus dieser Beschreibung folgt kein Nachweis über den aktuellen Zustand eines Entwicklungsrechners. Zugangsdaten und lokale Zustandsdateien gehören nicht ins öffentliche Repository.
-
-### Zweck
-
-`pipwerk-dev` erledigt auf dem Entwicklungsrechner die wiederkehrenden technischen Schritte rund um die Git-Arbeitsbereiche und den Teststand. Es bringt das Referenz-Repository auf den Stand von `origin/main`, richtet die anderen Arbeitsbereiche ein und bringt sie auf einen Stand, führt die automatischen Prüfungen einer Komponente aus und startet einen bestimmten Commit als Teststand. Derzeit unterstützt es nur die Komponente `pipwerk-studio`.
-
-`pipwerk-dev` startet keine Agenten und weiß nichts von Arbeitsaufträgen.
+Das Werkzeug ist nicht im Repository enthalten. Es wird nicht vom Agententeam geändert, sondern in einer eigenen Claude-Code-Sitzung auf Grundlage dieses Abschnitts. Seine Installation, Konfiguration und Sicherung sind lokal in `scripts/` dokumentiert. Zugangsdaten und lokale Zustandsdateien gehören nicht ins öffentliche Repository.
 
 ### Befehle im Überblick
-
-```sh
-pipwerk-dev sync-repo
-pipwerk-dev prepare <implement|review|test> <branch> [--base REF]
-pipwerk-dev update <implement|review|test> <ref>
-pipwerk-dev test pipwerk-studio --workspace <implement|review|test>
-pipwerk-dev start pipwerk-studio <commit-hash>
-pipwerk-dev stop [pipwerk-studio]
-pipwerk-dev status [--workspace <implement|review|test>]
-```
-
-Bei `prepare`, `update`, `test` und `status` kann `repo/` nicht angegeben werden; für `repo/` gibt es nur `sync-repo`. Jedes Kommando nimmt die Option `--json` an und gibt dann genau ein JSON-Objekt aus. Das ist für Agenten und andere Programme gedacht.
-
-### Referenz-Repository aktualisieren: sync-repo
-
-`sync-repo` aktualisiert das lokale Referenz-Repository, wenn `origin/main` inzwischen weiter ist, zum Beispiel nach dem Merge eines Pull Requests. Es holt den Stand von GitHub und spult den Branch `main` in `repo/` per Fast-Forward auf `origin/main` vor.
-
-`sync-repo` verwirft und überschreibt nie etwas. Es bricht mit Exitcode 3 ohne Änderung ab, wenn
-
-- `repo/` nicht auf dem Branch `main` steht,
-- `repo/` lokale Änderungen hat, auch neue, nicht versionierte Dateien oder eine unterbrochene Git-Operation,
-- `main` eigene Commits hat, die nicht auf `origin/main` liegen, so dass kein Fast-Forward möglich ist,
-- ein anderer Prozess in `repo/` arbeitet, zum Beispiel eine laufende Claude-Code-Sitzung des Softwarearchitekten.
-
-Steht `repo/` schon auf `origin/main`, meldet es Erfolg, ohne etwas zu tun.
-
-### Arbeitsbereiche einrichten: prepare
-
-`prepare` wird verwendet, wenn in `implement/`, `review/` oder `test/` ein neuer Branch beginnen soll. Es holt den aktuellen Stand von GitHub und legt den Branch auf `origin/main` an, oder auf einem mit `--base` genannten Stand. Fehlt der Arbeitsbereich oder ist er leer, wird er als Worktree angelegt.
-
-`prepare` bricht ohne Änderung ab, wenn der Arbeitsbereich lokale Änderungen hat, wenn dort ein von `pipwerk-dev` gestarteter Prozess läuft, wenn der Branch schon lokal oder auf GitHub existiert, wenn der Arbeitsbereich auf `main` steht oder fremde Daten enthält, oder wenn der Wechsel ignorierte Dateien überschreiben würde. Steht der Arbeitsbereich schon genau auf diesem Branch und Stand, meldet es Erfolg, ohne etwas zu tun.
-
-### Arbeitsbereiche nachziehen: update
-
-`update` bringt einen Arbeitsbereich auf einen angegebenen Git-Stand. In `implement/` und `review/` geschieht das nur als Vorspulen (Fast-Forward) des ausgecheckten Branches; ist das nicht möglich, bricht es ab. `test/` wird ohne Branch auf den Commit gesetzt und beim ersten Mal als Worktree angelegt. Lokale Änderungen, auch neue nicht versionierte Dateien, führen immer zum Abbruch.
-
-### Wie Entwickler und QA ihre Arbeitsbereiche vorbereiten
-
-Entwickler und QA bereiten ihre Arbeitsbereiche selbst mit `pipwerk-dev` vor. Die verbindlichen Befehle stehen in den Agentendefinitionen; hier ist der Zusammenhang beschrieben.
-
-Der Softwarearchitekt nennt dem Entwickler den Namen des Arbeitsbranches und den Ausgangsstand als vollständigen Commit-Hash. Der Entwickler legt den Branch mit `pipwerk-dev prepare implement <branch> --base <commit>` an und prüft danach Branch und Commit. Korrekturen macht er im selben Branch ohne erneutes `prepare`.
-
-Der QA nennt der Softwarearchitekt den Pull Request, den zu prüfenden Commit und den Namen eines lokalen Prüfbranches. Für die erste Prüfung legt die QA den Prüfbranch mit `pipwerk-dev prepare review <prüfbranch> --base <commit>` an. Für eine erneute Prüfung nach Korrekturen bringt sie ihn mit `pipwerk-dev update review <commit>` auf den neuen Commit. Vor der Prüfung kontrolliert sie, dass genau dieser Commit ausgecheckt ist.
-
-Keine der beiden Rollen verändert dafür `repo/`. Endet `pipwerk-dev` mit einem Fehler, melden Entwickler und QA die Meldung dem Softwarearchitekten und umgehen sie nicht mit eigenen Git-Befehlen. Nur wenn `pipwerk-dev` meldet, dass gerade ein anderer Aufruf läuft, wiederholen sie den Aufruf einmal.
-
-### Automatische Prüfungen: test
-
-`test` führt im angegebenen Arbeitsbereich die für Pipwerk Studio vorgesehenen Prüfungen aus. Für das Backend sind das `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`. Für die Oberfläche sind es `npm ci`, `npm run typecheck`, `npm test` und `npm run e2e`. Schlägt ein Schritt fehl, laufen die davon unabhängigen Schritte weiter; Schritte, die einen fehlgeschlagenen voraussetzen, werden übersprungen. Das Kommando endet dann mit Exitcode 1 und nennt die Datei mit der vollständigen Ausgabe.
-
-### Teststand bereitstellen und starten: start
-
-`start` wird verwendet, wenn ein von der QA freigegebener Commit als laufende Testversion bereitgestellt werden soll. Es nimmt nur einen Commit-Hash an, keinen Branch- oder Tag-Namen. So kann sich der Stand zwischen Freigabe und Start nicht unbemerkt verschieben. Danach geschieht Folgendes:
-
-1. Der Commit muss Pipwerk Studio enthalten, und die Ports müssen frei sein. Sind sie von fremden Programmen belegt, bricht `start` ab und fasst diese Programme nicht an.
-2. `test/` wird auf den Commit gesetzt.
-3. Die Abhängigkeiten werden installiert: `uv sync --frozen` für das Backend und `npm ci` für die Oberfläche.
-4. Die lokale Startkonfiguration wird geschrieben (siehe unten).
-5. Backend und Oberfläche werden gestartet: das Backend mit `pipwerk-studio -c <INI>`, die Oberfläche als Vite-Entwicklungsserver. Vite leitet Anfragen unter `/api` an das Backend weiter. Beide sind nur vom eigenen Rechner aus erreichbar.
-6. Innerhalb von 60 Sekunden müssen drei Adressen antworten: `/api/health` des Backends mit `{"status": "ok"}`, die Startseite der Oberfläche und `/api/health` über die Oberfläche. Antwortet etwas nicht, beendet `start` die gerade gestarteten Prozesse wieder und meldet einen Fehler.
-
-Läuft Pipwerk Studio bereits aus demselben Commit und ist erreichbar, startet `start` nichts neu und meldet Erfolg. Läuft es aus einem anderen Commit, bricht `start` ab; vorher ist `stop` nötig.
-
-### Lokale Startkonfiguration und Testdatenbank
-
-Pipwerk Studio startet nur mit einer gültigen INI-Startkonfiguration, die die Datenbank angibt (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)). `pipwerk-dev` schreibt diese INI vor jedem Start in sein lokales Zustandsverzeichnis. Sie verweist auf eine SQLite-Datenbank im selben Verzeichnis. Beide Dateien liegen außerhalb des Repositorys und können nicht versehentlich committet werden.
-
-Die Testdatenbank bleibt über Neustarts und über verschiedene Teststände hinweg erhalten. Eine im Teststand gespeicherte Einstellung, zum Beispiel die Oberflächensprache, ist deshalb auch beim nächsten Teststand noch vorhanden. Sie wird nicht automatisch zurückgesetzt. Wird später ein Test mit frischer Datenbank gebraucht, wird dafür ein ausdrücklich ausgelöster Vorgang festgelegt; einen solchen gibt es derzeit nicht.
-
-### Beenden: stop
-
-`stop` beendet nur Prozesse, die `pipwerk-dev start` gestartet hat. Jeder Prozess wird beim Start in einer eigenen Prozessgruppe gestartet, und `pipwerk-dev` merkt sich Prozessnummer und Startzeitpunkt. So werden nach einem Neustart oder bei wiederverwendeten Prozessnummern keine fremden Prozesse getroffen. Die Prozesse erhalten zuerst die Aufforderung zum Beenden und nach zehn Sekunden ein hartes Ende.
-
-### Zustand ansehen: status
-
-`status` zeigt für jeden Arbeitsbereich den Commit, den Branch oder „detached HEAD“ und die Zahl lokaler Änderungen. Für Pipwerk Studio zeigt es den laufenden Commit, die Prozesse und das Ergebnis der drei Erreichbarkeitsprüfungen. `status` verändert nichts, auch nicht den Git-Index.
-
-### Protokolle
-
-Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeile je zustandsänderndem Aufruf, die vollständige Ausgabe jeder Prüfung und Einrichtung, die Liste der gestarteten Prozesse und die Ausgabe von Backend und Oberfläche. Zugangsdaten in Adressen, GitHub-Token und Werte nach Angaben wie `token=`, `password=` oder `Authorization:` ersetzt `pipwerk-dev` vor der Ausgabe und vor dem Schreiben in Protokolle durch `***`.
-
-### Verhalten bei Fehlern und Exitcodes
-
-`pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein zweiter zustandsändernder Aufruf, während einer läuft, endet mit Exitcode 3.
-
-### Erweiterung für den Parallelbetrieb
-
-Für die [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung) muss `pipwerk-dev` folgende Anforderungen erfüllen. Das Werkzeug wird nicht vom Agententeam geändert, sondern in einer eigenen Claude-Code-Sitzung auf Grundlage dieses Abschnitts.
-
-Befehle:
 
 ```sh
 pipwerk-dev sync-repo
 pipwerk-dev prepare --order <auftragskennung> coordinate --base <commit>
 pipwerk-dev prepare --order <auftragskennung> <implement|review> <branch> --base <commit>
 pipwerk-dev update  --order <auftragskennung> <implement|review> <ref>
+pipwerk-dev remove  --order <auftragskennung>
 pipwerk-dev test    <komponente> --order <auftragskennung> --workspace <implement|review>
 pipwerk-dev start   <komponente> <commit-hash>
 pipwerk-dev stop    <komponente>
-pipwerk-dev remove  --order <auftragskennung>
 pipwerk-dev status  [--order <auftragskennung>]
 ```
 
-1. **Arbeitsbereiche je Auftrag:** `prepare` legt die Worktrees unter `work/<auftragskennung>/` an. `coordinate` wird ohne Branch auf den genannten Commit gesetzt. Die bisherigen Schutzregeln von `prepare` und `update` gelten für jeden dieser Worktrees unverändert.
-2. **Abbau:** `remove` entfernt die Worktrees und lokalen Branches eines Auftrags. Es bricht ohne Änderung ab, wenn ein Worktree lokale Änderungen hat, ein lokaler Branch Commits enthält, die nicht auf `origin` liegen, oder in einem der Worktrees ein verwalteter Prozess oder eine Claude-Code-Sitzung läuft.
-3. **Teststand je Komponente:** `start`, `stop` und `status` arbeiten je Komponente unter `test/<komponente>/` mit eigenen, je Komponente konfigurierten Ports und getrennter Testdatenbank. Teststände verschiedener Komponenten laufen gleichzeitig. Für dieselbe Komponente bricht `start` weiterhin ab, wenn sie aus einem anderen Commit läuft. Die übrigen Regeln von `start` bleiben erhalten.
-4. **Parallele Prüfungen:** `test` vergibt je Lauf freie Ports für die Browser-End-to-End-Tests, für Pipwerk Studio über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)).
-5. **Sperren je Bereich:** Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich oder Teststand. Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden kurz gemeinsam gesperrt. Ein gesperrter Aufruf endet mit Exitcode 3 und nennt den Grund.
-6. **Referenz-Repository:** `sync-repo` behält seine Abbruchbedingungen.
-7. **Erweiterbare Komponentenliste:** Prüfschritte, Startbefehle, Erreichbarkeitsprüfungen und Ports werden je Komponente beschrieben. Eine weitere Komponente kann ergänzt werden, ohne die Logik für Arbeitsbereiche, Sperren und Prozessverwaltung zu ändern. Umgesetzt wird zunächst nur `pipwerk-studio`.
-8. **Zustandsübersicht:** `status` ohne `--order` zeigt alle Auftragsarbeitsbereiche und alle Teststände. `status` verändert nichts.
-9. **Unveränderte Grundsätze:** Ausgabe mit `--json`, Exitcodes 0 bis 3, Protokolle im lokalen Zustandsverzeichnis, Ersetzen von Zugangsdaten in Ausgaben und Protokollen, kein Verändern fremder Daten, `main` bewegt nur `sync-repo`, `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
-10. **Umstellung:** Die bisherigen Arbeitsbereiche `implement/`, `review/` und `test/` werden nur entfernt, wenn sie keine lokalen Änderungen und keine nicht übertragenen Commits enthalten. Andernfalls bricht die Umstellung ab und nennt die betroffenen Dateien und Commits.
-11. **Nachweis:** Die automatischen Tests von `pipwerk-dev` decken jede dieser Anforderungen ab, insbesondere zwei gleichzeitige Aufträge, zwei gleichzeitige Prüfläufe und zwei gleichzeitige Teststände verschiedener Komponenten. Die lokale Dokumentation in `scripts/` wird vollständig aktualisiert.
+Für `repo/` gibt es nur `sync-repo`. Jedes Kommando nimmt die Option `--json` an und gibt dann genau ein JSON-Objekt aus. Das ist für Agenten und andere Programme gedacht. Die Kennung `order-management` ist für die Arbeitskopie der Auftragsverwaltung reserviert.
 
-## Einführung
+### Referenz-Repository aktualisieren: sync-repo
 
-Der beschlossene Prozess wird in einem Schritt eingeführt, weil seine Teile voneinander abhängen. Zum Einführungspaket gehören:
+`sync-repo` holt den Stand von GitHub und spult den Branch `main` in `repo/` per Fast-Forward auf `origin/main` vor. Es verwirft und überschreibt nie etwas. Es bricht mit Exitcode 3 ohne Änderung ab, wenn `repo/` nicht auf `main` steht, lokale Änderungen oder eine unterbrochene Git-Operation hat, `main` eigene Commits hat, die nicht auf `origin/main` liegen, oder ein anderer Prozess in `repo/` arbeitet. Steht `repo/` schon auf `origin/main`, meldet es Erfolg, ohne etwas zu tun.
 
-1. die Erweiterung von `pipwerk-dev` für den Parallelbetrieb;
-2. die Rollendefinitionen von Softwarearchitekt, Entwickler und QA mit den neuen Arbeitsbereichen und Befehlen, ohne Statuswechsel und mit der Ergebnisdatei statt der Meldung an den Projektleiter;
-3. die Skills `pipwerk-test-deployment`, `pipwerk-close-work-order` und `pipwerk-escalation` mit denselben Änderungen;
-4. die neue Rollendefinition der Auftragsverwaltung und der Startbefehl ihrer tmux-Sitzung;
-5. die Freigaben, damit Sitzungen ohne Bediener die in den Rollendefinitionen und Skills vorgesehenen Befehle ohne Rückfrage ausführen: allgemeine Befehle in `.claude/settings.json`, der rechnerspezifische Pfad von `pipwerk-dev` in den Benutzereinstellungen von Claude Code auf dem Entwicklungsrechner. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an; der Probelauf weist nach, dass alle vorgesehenen Befehle freigegeben sind;
-6. der Workflow des Runners;
-7. die geplante Benachrichtigung des Nutzers;
-8. die Aktualisierung dieses Dokuments und der [Agentenrollen und Briefings](agentenrollen-und-briefings.md): Wegfall der Übergangsregel und der Arbeitsbereiche bis zur Einführung.
+### Arbeitsbereiche einrichten: prepare
 
-Der Runner wird nicht vor der Erweiterung von `pipwerk-dev` in Betrieb genommen. Bis dahin arbeitet der Softwarearchitekt in `repo/`, und `sync-repo` würde während seiner Arbeit abgelehnt.
+`prepare` legt einen Worktree unter `work/<auftragskennung>/` an. `coordinate` wird ohne Branch auf den genannten Commit gesetzt. `implement` und `review` erhalten einen neuen Branch auf dem genannten Commit.
 
-Vor der Freigabe des eingeführten Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio.
+`prepare` bricht ohne Änderung ab, wenn der Arbeitsbereich lokale Änderungen hat, dort ein von `pipwerk-dev` gestarteter Prozess läuft, der Branch schon lokal oder auf GitHub existiert, der Arbeitsbereich auf `main` steht oder fremde Daten enthält oder der Wechsel ignorierte Dateien überschreiben würde. Steht der Arbeitsbereich schon genau auf diesem Branch und Stand, meldet es Erfolg, ohne etwas zu tun.
+
+### Arbeitsbereiche nachziehen: update
+
+`update` bringt `implement` oder `review` eines Auftrags per Fast-Forward des ausgecheckten Branches auf den angegebenen Git-Stand. Ist das nicht möglich, bricht es ab. Lokale Änderungen, auch neue nicht versionierte Dateien, führen immer zum Abbruch.
+
+### Arbeitsbereiche abbauen: remove
+
+`remove` entfernt die Worktrees und lokalen Branches eines Auftrags. Es bricht ohne Änderung ab, wenn ein Worktree lokale Änderungen hat, ein lokaler Branch Commits enthält, die nicht auf `origin` liegen, oder in einem der Worktrees ein verwalteter Prozess oder eine Claude-Code-Sitzung läuft.
+
+### Wie Entwickler und QA ihre Arbeitsbereiche vorbereiten
+
+Die verbindlichen Befehle stehen in den Agentendefinitionen; hier ist der Zusammenhang beschrieben. Der Softwarearchitekt nennt dem Entwickler den Namen des Arbeitsbranches und den Ausgangsstand als vollständigen Commit-Hash. Der Entwickler legt den Branch mit `prepare … implement` an und prüft danach Branch und Commit. Korrekturen macht er im selben Branch ohne erneutes `prepare`.
+
+Der QA nennt der Softwarearchitekt den Pull Request, den zu prüfenden Commit und den Namen eines lokalen Prüfbranches. Für die erste Prüfung legt die QA den Prüfbranch mit `prepare … review` an, für eine erneute Prüfung bringt sie ihn mit `update … review` auf den neuen Commit. Vor der Prüfung kontrolliert sie, dass genau dieser Commit ausgecheckt ist.
+
+Endet `pipwerk-dev` mit einem Fehler, melden Entwickler und QA die Meldung dem Softwarearchitekten und umgehen sie nicht mit eigenen Git-Befehlen. Nur wenn `pipwerk-dev` meldet, dass gerade ein anderer Aufruf denselben Bereich sperrt, wiederholen sie den Aufruf einmal.
+
+### Automatische Prüfungen: test
+
+`test` führt im angegebenen Arbeitsbereich die für die Komponente vorgesehenen Prüfungen aus. Für Pipwerk Studio sind das für das Backend `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`, für die Oberfläche `npm ci`, `npm run typecheck`, `npm test` und `npm run e2e`. Für die Browser-End-to-End-Tests vergibt `pipwerk-dev` je Lauf freie Ports über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)), damit Prüfläufe mehrerer Aufträge gleichzeitig laufen können. Schlägt ein Schritt fehl, laufen die davon unabhängigen Schritte weiter; Schritte, die einen fehlgeschlagenen voraussetzen, werden übersprungen. Das Kommando endet dann mit Exitcode 1 und nennt die Datei mit der vollständigen Ausgabe.
+
+### Teststand bereitstellen und starten: start
+
+`start` stellt einen von der QA freigegebenen Commit als laufenden Teststand einer Komponente unter `test/<komponente>/` bereit. Es nimmt nur einen Commit-Hash an, keinen Branch- oder Tag-Namen. Danach geschieht für Pipwerk Studio Folgendes:
+
+1. Der Commit muss die Komponente enthalten, und ihre Ports müssen frei sein. Sind sie von fremden Programmen belegt, bricht `start` ab und fasst diese Programme nicht an.
+2. `test/<komponente>/` wird ohne Branch auf den Commit gesetzt.
+3. Die Abhängigkeiten werden installiert: `uv sync --frozen` für das Backend und `npm ci` für die Oberfläche.
+4. Die lokale Startkonfiguration wird geschrieben (siehe unten).
+5. Backend und Oberfläche werden gestartet: das Backend mit `pipwerk-studio -c <INI>`, die Oberfläche als Vite-Entwicklungsserver. Vite leitet Anfragen unter `/api` an das Backend weiter. Beide sind nur vom eigenen Rechner aus erreichbar.
+6. Innerhalb von 60 Sekunden müssen drei Adressen antworten: `/api/health` des Backends mit `{"status": "ok"}`, die Startseite der Oberfläche und `/api/health` über die Oberfläche. Antwortet etwas nicht, beendet `start` die gerade gestarteten Prozesse wieder und meldet einen Fehler.
+
+Jede Komponente hat eigene, konfigurierte Ports, sodass Teststände verschiedener Komponenten gleichzeitig laufen. Für Pipwerk Studio sind das standardmäßig 8000 für das Backend und 5173 für die Oberfläche. Läuft die Komponente bereits aus demselben Commit und ist erreichbar, startet `start` nichts neu und meldet Erfolg. Läuft sie aus einem anderen Commit, bricht `start` ab; vorher ist `stop` nötig.
+
+### Lokale Startkonfiguration und Testdatenbank
+
+Pipwerk Studio startet nur mit einer gültigen INI-Startkonfiguration, die die Datenbank angibt (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)). `pipwerk-dev` schreibt diese INI vor jedem Start in sein lokales Zustandsverzeichnis. Sie verweist auf eine SQLite-Datenbank im selben Verzeichnis, getrennt je Komponente. Beide Dateien liegen außerhalb des Repositorys.
+
+Die Testdatenbank bleibt über Neustarts und über verschiedene Teststände hinweg erhalten und wird nicht automatisch zurückgesetzt. Wird später ein Test mit frischer Datenbank gebraucht, wird dafür ein ausdrücklich ausgelöster Vorgang festgelegt; einen solchen gibt es derzeit nicht.
+
+### Beenden: stop
+
+`stop` beendet nur Prozesse, die `pipwerk-dev start` für die genannte Komponente gestartet hat. Jeder Prozess wird beim Start in einer eigenen Prozessgruppe gestartet, und `pipwerk-dev` merkt sich Prozessnummer und Startzeitpunkt. So werden nach einem Neustart oder bei wiederverwendeten Prozessnummern keine fremden Prozesse getroffen. Die Prozesse erhalten zuerst die Aufforderung zum Beenden und nach zehn Sekunden ein hartes Ende.
+
+### Zustand ansehen: status
+
+`status` zeigt für jeden Auftragsarbeitsbereich den Commit, den Branch oder „detached HEAD“, die Zahl lokaler Änderungen und laufende Prozesse, für jeden Teststand den laufenden Commit, die Prozesse und das Ergebnis der Erreichbarkeitsprüfungen. Mit `--order` beschränkt es sich auf einen Auftrag. `status` verändert nichts, auch nicht den Git-Index.
+
+### Protokolle
+
+Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeile je zustandsänderndem Aufruf, die vollständige Ausgabe jeder Prüfung und Einrichtung, die Liste der gestarteten Prozesse und die Ausgabe der Teststände. Zugangsdaten in Adressen, GitHub-Token und Werte nach Angaben wie `token=`, `password=` oder `Authorization:` ersetzt `pipwerk-dev` vor der Ausgabe und vor dem Schreiben in Protokolle durch `***`.
+
+### Sperren, Fehler und Exitcodes
+
+`pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich oder Teststand; Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden kurz gemeinsam gesperrt. Ein gesperrter Aufruf endet mit Exitcode 3.
+
+### Erweiterbarkeit
+
+Prüfschritte, Startbefehle, Erreichbarkeitsprüfungen und Ports sind je Komponente beschrieben. Eine weitere Komponente wird ergänzt, ohne die Logik für Arbeitsbereiche, Sperren und Prozessverwaltung zu ändern; ihre Ports werden bei der Aufnahme festgelegt.
+
+## Einrichtung auf dem Entwicklungsrechner
+
+Die folgenden Schritte richten den Prozess auf dem Entwicklungsrechner ein. Sie werden vom Nutzer ausgeführt und lokal dokumentiert.
+
+1. `pipwerk-dev` in der Fassung dieses Dokuments installieren. Bei der Umstellung werden die bisherigen festen Arbeitsbereiche `implement/`, `review/` und `test/` nur entfernt, wenn sie keine lokalen Änderungen und keine nicht übertragenen Commits enthalten.
+2. Den Runner als systemd-Dienst unter dem Benutzer betreiben, dem die Arbeitsbereiche gehören, mit `PIPWERK_DEV_ROOT` in seiner Umgebungsdatei.
+3. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository anmelden und Claude Code mit dem Claude-Abo anmelden.
+4. In den Benutzereinstellungen von Claude Code (`~/.claude/settings.json`) die rechnerspezifischen Freigaben eintragen: den Aufruf von `pipwerk-dev` mit seinem absoluten Pfad und Schreibrechte für Dateien unterhalb des Entwicklungsverzeichnisses. Die allgemeinen Freigaben stehen in `.claude/settings.json` im Repository. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an.
+5. Die Auftragsverwaltung mit `tools/order-management/start.sh` starten. Das Skript beendet eine laufende Sitzung, legt die Arbeitskopie `work/order-management/coordinate` auf dem aktuellen Stand von `origin/main` neu an und startet `claude --agent order-management` in der tmux-Sitzung `order-management`. Es wird spätestens alle 7 Tage erneut ausgeführt, bei Bedarf über einen Cron-Job.
+6. Der Projektleiter richtet die geplante Benachrichtigung des Nutzers ein.
+
+Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio. Er weist zugleich nach, dass `/loop` als `initialPrompt` arbeitet, dass die Teamfunktion in einer tmux-Sitzung zuverlässig läuft und dass alle vorgesehenen Befehle freigegeben sind.
 
 ## Weitere Qualitätswerkzeuge
 
-Die verbindlichen Prüfwerkzeuge und Qualitätsregeln stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md) und gelten unabhängig vom Stand der Einführung.
+Die verbindlichen Prüfwerkzeuge und Qualitätsregeln stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md) und gelten unverändert.
 
 Spec Kit ist erst nach einem nachgewiesenen Durchlauf als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge vorgesehen. Es ersetzt weder die maßgebliche Dokumentation noch die Rollen und die unabhängige QA. Weitere Werkzeuge, insbesondere Vertrags-, Sicherheits-, Architektur-, Property-based- oder Mutationstests, werden anschließend bedarfsgerecht bewertet. Ein Werkzeug gilt erst dann als Qualitätsgewinn, wenn Aufgabe, Prüfkriterium und Wirkung nachgewiesen sind.
 
@@ -398,6 +306,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt: Übergangsregel und feste Arbeitsbereiche entfernt, `pipwerk-dev` mit Arbeitsbereichen je Auftrag und Teststand je Komponente beschrieben, Einrichtung auf dem Entwicklungsrechner und Arbeitskopie der Auftragsverwaltung ergänzt. |
 | 2026-10-08 | Betrieb der Auftragsverwaltung als dauerhafte Sitzung mit `/loop` über `initialPrompt` festgelegt; tmux-Sitzungsname gleich Auftragskennung; Übernahme des Ergebnisses unabhängig vom Sitzungsende und Beenden der Sitzung durch die Auftragsverwaltung; Freigaben präzisiert. |
 | 2026-10-08 | Zum maßgeblichen Prozessdokument ausgebaut: Prozessinhalte aus Entwicklungsplan übernommen, Dokumentationsorte, Beteiligte, vollständiges Statusmodell mit zulässigen Übergängen, Pflichtfelder und Abschnitte eines Auftrags, Auftragsverwaltung, Ergebnisdatei, Runner, Benachrichtigung, parallele Bearbeitung, Arbeitsbereiche nach der Einführung, Erweiterung von `pipwerk-dev` und Einführung festgelegt; Übergangsregel bis zur Einführung ergänzt. |
 | 2026-10-08 | Auftragsablage nach `work-orders/` auf oberster Ebene verlegt. |

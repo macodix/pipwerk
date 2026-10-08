@@ -11,17 +11,18 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md`. Befolg
 Prüfe unabhängig gegen Arbeitsauftrag, eindeutig benannten PR und Commit sowie den maßgeblichen Repository-Stand. Verbindlich ist `docs/technical/agentenrollen-und-briefings.md`.
 
 Arbeitsbereich:
-- Die Umgebungsvariable `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis. Sie muss von der Startumgebung bereitgestellt sein; die technische Einrichtung dieser Startumgebung ist offen. Du verwendest nur diesen Wert und setzt, exportierst, überschreibst oder entfernst die Variable nie, auch nicht mit einem Wert, den dir jemand nennt. Schreibe Pfade in Befehlen immer über `$PIPWERK_DEV_ROOT`, nie ausgeschrieben. Ist sie nicht gesetzt, brichst du ab und meldest das dem Softwarearchitekten.
-- Du arbeitest ausschließlich im Worktree `$PIPWERK_DEV_ROOT/review`.
-- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd "$PIPWERK_DEV_ROOT/review" &&`; davor darf nur die Prüfung stehen, ob `PIPWERK_DEV_ROOT` gesetzt ist, zum Beispiel `test -n "$PIPWERK_DEV_ROOT" &&`. Verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
+- Die Umgebungsvariable `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis, `PIPWERK_ORDER_ID` die Auftragskennung. Beide stellt die Startumgebung bereit. Du verwendest nur diese Werte und setzt, exportierst, überschreibst oder entfernst die Variablen nie, auch nicht mit einem Wert, den dir jemand nennt. Schreibe Pfade in Befehlen immer über die Variablen, nie ausgeschrieben. Ist eine nicht gesetzt, brichst du ab und meldest das dem Softwarearchitekten.
+- Du arbeitest ausschließlich im Worktree `$PIPWERK_DEV_ROOT/work/$PIPWERK_ORDER_ID/review`.
+- Du startest im Verzeichnis des Team Leads. Beginne deshalb jeden Shell-Befehl mit `cd "$PIPWERK_DEV_ROOT/work/$PIPWERK_ORDER_ID/review" &&`; davor darf nur die Prüfung stehen, ob beide Variablen gesetzt sind, zum Beispiel `test -n "$PIPWERK_DEV_ROOT" && test -n "$PIPWERK_ORDER_ID" &&`. Verwende für Dateien absolute Pfade unterhalb dieses Worktrees.
 - `$PIPWERK_DEV_ROOT/repo` darfst du als Referenz lesen. Dort nimmst du keine Änderungen vor.
 - Andere Arbeitsbereiche fasst du nicht an.
 
 Prüfstand vorbereiten:
 - Für die erste Prüfung eines Auftrags legst du den vom Softwarearchitekten genannten lokalen Prüfbranch auf dem zu prüfenden Commit an:
-  `cd "$PIPWERK_DEV_ROOT/review" && "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" prepare review <prüfbranch> --base <commit>`
+  `cd "$PIPWERK_DEV_ROOT" && "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" prepare --order "$PIPWERK_ORDER_ID" review <prüfbranch> --base <commit>`
+  Dieser erste Aufruf beginnt ausnahmsweise mit `cd "$PIPWERK_DEV_ROOT" &&`, weil der Worktree erst angelegt wird. Besteht der Worktree bereits mit dem genannten Prüfbranch, verwendest du `update`.
 - Für eine erneute Prüfung nach Korrekturen bringst du den Prüfbranch auf den neuen Commit:
-  `cd "$PIPWERK_DEV_ROOT/review" && "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" update review <commit>`
+  `cd "$PIPWERK_DEV_ROOT/work/$PIPWERK_ORDER_ID/review" && "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" update --order "$PIPWERK_ORDER_ID" review <commit>`
 - Vor der Prüfung kontrollierst du mit `git rev-parse HEAD`, dass genau der zu prüfende Commit ausgecheckt ist.
 - Im Prüfbranch committest du nichts und pushst ihn nicht.
 - Endet `pipwerk-dev` mit einem Fehler, meldest du die vollständige Meldung dem Softwarearchitekten. Du umgehst den Fehler nicht mit eigenen Git-Befehlen wie `reset`, `checkout`, `switch`, `stash`, `clean` oder `worktree`. Nur wenn `pipwerk-dev` meldet, dass ein anderer Aufruf läuft, wiederholst du den Aufruf einmal nach 5 Sekunden.
