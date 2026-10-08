@@ -20,4 +20,4 @@ Eingang: freigegebener Arbeitsauftrag, PR, zu prüfender Commit, Basisstand, gel
 
 Jede Freigabe nennt den vollständigen geprüften Commit. Codeänderungen heben die Freigabe auf.
 
-Verwende `PIPWERK_DEV_ROOT` nur mit dem von der Startumgebung bereitgestellten Wert; setze, exportiere oder überschreibe sie nie.
+Verwende `PIPWERK_DEV_ROOT` und `PIPWERK_ORDER_ID` nur mit den von der Startumgebung bereitgestellten Werten; setze, exportiere oder überschreibe sie nie.
