@@ -213,9 +213,10 @@ pipwerk-dev test    <komponente> --order <auftragskennung> --workspace <implemen
 pipwerk-dev start   <komponente> <commit-hash>
 pipwerk-dev stop    <komponente>
 pipwerk-dev status  [--order <auftragskennung>]
+pipwerk-dev migrate
 ```
 
-Für `repo/` gibt es nur `sync-repo`. Jedes Kommando nimmt die Option `--json` an und gibt dann genau ein JSON-Objekt aus. Das ist für Agenten und andere Programme gedacht. Die Kennung `order-management` ist für die Arbeitskopie der Auftragsverwaltung reserviert.
+Für `repo/` gibt es nur `sync-repo`. `--base` ist bei `prepare` Pflicht. Jedes Kommando nimmt die Option `--json` an und gibt dann genau ein JSON-Objekt aus. Das ist für Agenten und andere Programme gedacht. Die Kennung `order-management` ist für die Arbeitskopie der Auftragsverwaltung reserviert.
 
 ### Referenz-Repository aktualisieren: sync-repo
 
@@ -223,7 +224,7 @@ Für `repo/` gibt es nur `sync-repo`. Jedes Kommando nimmt die Option `--json` a
 
 ### Arbeitsbereiche einrichten: prepare
 
-`prepare` legt einen Worktree unter `work/<auftragskennung>/` an. `coordinate` wird ohne Branch auf den genannten Commit gesetzt. `implement` und `review` erhalten einen neuen Branch auf dem genannten Commit.
+`prepare` legt einen Worktree unter `work/<auftragskennung>/` an. `coordinate` wird ohne Branch auf den genannten Commit gesetzt; besteht es bereits auf einem anderen Commit, lehnt `prepare` ab. `implement` und `review` erhalten einen neuen Branch auf dem genannten Commit; für `order-management` sind sie ein falscher Aufruf. Die von `prepare` angelegten Branches merkt sich `pipwerk-dev` in `orders/<auftragskennung>.json` im Zustandsverzeichnis.
 
 `prepare` bricht ohne Änderung ab, wenn der Arbeitsbereich lokale Änderungen hat, dort ein von `pipwerk-dev` gestarteter Prozess läuft, der Branch schon lokal oder auf GitHub existiert, der Arbeitsbereich auf `main` steht oder fremde Daten enthält oder der Wechsel ignorierte Dateien überschreiben würde. Steht der Arbeitsbereich schon genau auf diesem Branch und Stand, meldet es Erfolg, ohne etwas zu tun.
 
@@ -233,7 +234,11 @@ Für `repo/` gibt es nur `sync-repo`. Jedes Kommando nimmt die Option `--json` a
 
 ### Arbeitsbereiche abbauen: remove
 
-`remove` entfernt die Worktrees und lokalen Branches eines Auftrags. Es bricht ohne Änderung ab, wenn ein Worktree lokale Änderungen hat, ein lokaler Branch Commits enthält, die nicht auf `origin` liegen, oder in einem der Worktrees ein verwalteter Prozess oder eine Claude-Code-Sitzung läuft.
+`remove` entfernt die Worktrees eines Auftrags sowie die ausgecheckten und die von `prepare` angelegten Branches. Es bricht ohne Änderung ab, wenn ein Worktree lokale Änderungen hat, ein Branch oder `coordinate` Commits enthält, die nicht auf `origin` liegen, in `work/<auftragskennung>/` irgendein Prozess läuft, dort fremde Einträge liegen oder ein Branch des Auftrags anderswo ausgecheckt ist.
+
+### Umstellung: migrate
+
+`migrate` entfernt die früheren festen Arbeitsbereiche `implement/`, `review/` und `test/`. Es bricht ab, wenn einer davon lokale Änderungen, nicht übertragene Commits, laufende Prozesse oder fremde Daten enthält, und nennt sie. Ignorierte Dateien in diesen Bereichen werden mit entfernt, die Testdatenbank im Zustandsverzeichnis bleibt erhalten. Die lokalen Branches der früheren Bereiche bleiben bestehen. `start` lehnt ab, solange die Umstellung nicht ausgeführt ist.
 
 ### Wie Entwickler und QA ihre Arbeitsbereiche vorbereiten
 
@@ -272,7 +277,7 @@ Die Testdatenbank bleibt über Neustarts und über verschiedene Teststände hinw
 
 ### Zustand ansehen: status
 
-`status` zeigt für jeden Auftragsarbeitsbereich den Commit, den Branch oder „detached HEAD“, die Zahl lokaler Änderungen und laufende Prozesse, für jeden Teststand den laufenden Commit, die Prozesse und das Ergebnis der Erreichbarkeitsprüfungen. Mit `--order` beschränkt es sich auf einen Auftrag. `status` verändert nichts, auch nicht den Git-Index.
+`status` zeigt `repo/` und `transfer/` nicht an. Es zeigt für jeden Auftragsarbeitsbereich den Commit, den Branch oder „detached HEAD“, die Zahl lokaler Änderungen und laufende Prozesse, für jeden Teststand den laufenden Commit, die Prozesse und das Ergebnis der Erreichbarkeitsprüfungen. Mit `--order` beschränkt es sich auf einen Auftrag. `status` verändert nichts, auch nicht den Git-Index.
 
 ### Protokolle
 
@@ -280,7 +285,7 @@ Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeil
 
 ### Sperren, Fehler und Exitcodes
 
-`pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich oder Teststand; Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden kurz gemeinsam gesperrt. Ein gesperrter Aufruf endet mit Exitcode 3.
+`pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich, Teststand oder bei `sync-repo` nur `repo/`. Ist dieser Bereich gesperrt, endet der Aufruf sofort mit Exitcode 3. Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden gemeinsam gesperrt; auf diese Sperre wartet ein Aufruf bis zu 120 Sekunden, einstellbar mit `PIPWERK_DEV_GIT_LOCK_TIMEOUT`, und endet erst dann mit Exitcode 3.
 
 ### Erweiterbarkeit
 
@@ -290,7 +295,7 @@ Prüfschritte, Startbefehle, Erreichbarkeitsprüfungen und Ports sind je Kompone
 
 Die folgenden Schritte richten den Prozess auf dem Entwicklungsrechner ein. Sie werden vom Nutzer ausgeführt und lokal dokumentiert.
 
-1. `pipwerk-dev` in der Fassung dieses Dokuments installieren. Bei der Umstellung werden die bisherigen festen Arbeitsbereiche `implement/`, `review/` und `test/` nur entfernt, wenn sie keine lokalen Änderungen und keine nicht übertragenen Commits enthalten.
+1. `pipwerk-dev` in der Fassung dieses Dokuments installieren und einmal `pipwerk-dev migrate` ausführen.
 2. Den Runner als systemd-Dienst unter dem Benutzer betreiben, dem die Arbeitsbereiche gehören, mit `PIPWERK_DEV_ROOT` in seiner Umgebungsdatei.
 3. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository anmelden und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv in `repo/` starten und die Vertrauensabfrage für den Ordner bestätigen. Laut Claude-Code-Dokumentation gilt dieses Vertrauen auch für die Worktrees unter `work/`, weil sie zum selben Repository gehören; eine unbestätigte Abfrage würde eine unbediente Sitzung anhalten.
 4. Im Repository auf GitHub unter Settings → Actions → General für Workflows aus Pull Requests die Freigabe für alle externen Beitragenden verlangen.
@@ -312,6 +317,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Beschreibung von `pipwerk-dev` an die umgesetzte Fassung angeglichen: Befehl `migrate`, Pflichtangabe `--base`, strengere Abbruchbedingungen von `remove`, Wartezeit auf die Sperre der gemeinsamen Git-Daten. |
 | 2026-10-08 | Festgelegt: Merge mit Merge-Commit, `coordinate/` auf dem Stand des ersten Anstoßes, Zeitpunkte auf die Sekunde, Reihenfolge und Belegung in der Auftragsverwaltung, Nachholen des Aufräumens, Freigabepflicht für Workflows aus fremden Pull Requests, Vertrauensabfrage über `repo/`. |
 | 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt: Übergangsregel und feste Arbeitsbereiche entfernt, `pipwerk-dev` mit Arbeitsbereichen je Auftrag und Teststand je Komponente beschrieben, Einrichtung auf dem Entwicklungsrechner und Arbeitskopie der Auftragsverwaltung ergänzt. |
 | 2026-10-08 | Betrieb der Auftragsverwaltung als dauerhafte Sitzung mit `/loop` über `initialPrompt` festgelegt; tmux-Sitzungsname gleich Auftragskennung; Übernahme des Ergebnisses unabhängig vom Sitzungsende und Beenden der Sitzung durch die Auftragsverwaltung; Freigaben präzisiert. |
