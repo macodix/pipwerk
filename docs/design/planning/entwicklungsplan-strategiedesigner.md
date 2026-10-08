@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-07
+- stand: 2026-10-08
 
 ## 1. Ziel und Gegenstand
 
@@ -90,6 +90,7 @@ Die Verzeichnisstruktur des Entwicklungsrepositorys muss nicht mit der späteren
 | `contracts/api/` | versionierte API-Verträge |
 | `contracts/messages/` | versionierte Nachrichtenformate |
 | `contracts/strategies/` | versionierte Schemata für Strategiedefinitionen |
+| `work-orders/` | Arbeitsaufträge, nach Status abgelegt |
 | `docs/` | gemeinsame Architektur-, Entwicklungs- und Betriebsdokumentation |
 | `tests/integration/` | komponentenübergreifende Tests |
 | `tools/` | gemeinsame Entwicklungs- und Prüfwerkzeuge |
@@ -142,7 +143,7 @@ Eine Fertigmeldung des Entwicklungs-Agenten ersetzt weder die unabhängige QA no
 
 1. **Repository-Stand prüfen:** Vor Analyse, Planung, Arbeitsauftrag oder Prüfung wird der aktuelle Stand von `main` gelesen. Das Repository ist die maßgebliche Projektquelle.
 2. **Grundlagen prüfen:** Projektleiter und Softwarearchitekt prüfen die jeweils einschlägigen Anforderungen, Fachmodelle, Entscheidungen, Architekturvorgaben und technischen Regeln auf ausreichende Eindeutigkeit und erkennbare Widersprüche. Fachliche Widersprüche klärt der Projektleiter mit dem Nutzer; Architekturfragen innerhalb bestehender Vorgaben entscheidet der Softwarearchitekt. Neue Architekturgrundsätze oder Änderungen bestehender Vorgaben werden über den Projektleiter dem Nutzer vorgelegt.
-3. **Auftrag festlegen und freigeben:** Nutzer und Projektleiter-Agent vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Der Auftrag wird unter `docs/design/planning/work-orders/` abgelegt. Statusführung und Ablage regelt `docs/technical/entwicklungsverfahren.md`. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet. Ein Auftrag wird erst ausgeführt, wenn die für die Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde.
+3. **Auftrag festlegen und freigeben:** Nutzer und Projektleiter-Agent vereinbaren fachliches Ziel, Geltungsbereich, gewünschtes Verhalten und nachprüfbare Abnahmekriterien. Der Auftrag wird unter `work-orders/` abgelegt. Statusführung und Ablage regelt `docs/technical/entwicklungsverfahren.md`. Nicht entschiedene Punkte werden ausdrücklich als offen gekennzeichnet. Ein Auftrag wird erst ausgeführt, wenn die für die Umsetzung erforderlichen fachlichen Fragen geklärt und der Auftrag vom Nutzer freigegeben wurde.
 4. **Auftrag aktiv übergeben:** Nach Nutzerfreigabe stößt der Projektleiter-Agent den Softwarearchitekt-Agenten aktiv an und übergibt die eindeutige Referenz auf den freigegebenen Arbeitsauftrag. Der Softwarearchitekt sucht oder pollt nicht nach neuen Aufträgen.
 5. **Technisch vorbereiten und umsetzen:** Der Softwarearchitekt prüft die technischen und architektonischen Grundlagen und übergibt Auftrag und geltende Architekturvorgaben an den Entwicklungs-Agenten. Dieser arbeitet im eigenen Branch und Arbeitsbereich, setzt den Auftrag um, führt die vorgesehenen technischen Prüfungen aus und erstellt einen Pull Request.
 6. **Unabhängige QA:** Der Softwarearchitekt übergibt dem QA-Agenten den freigegebenen Auftrag und Abnahmekriterien, konkreten Pull Request und Commit, maßgeblichen Ausgangsstand von `main`, geltende Architektur- und Technikregeln sowie die Prüfnachweise des Entwicklungs-Agenten. QA prüft unabhängig und gibt bei Bestehen ausschließlich den eindeutig geprüften Commit frei.
@@ -233,6 +234,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Arbeitsaufträge aus `docs/` in das eigene Verzeichnis `work-orders/` auf oberster Ebene verlegt. |
 | 2026-10-07 | Verweis auf Auftragsablage, Statusverlauf und geplanten Anstoß über GitHub Actions ergänzt. |
 | 2026-10-07 | Abschnitt 4: Prüfinstanz an das geltende Rollenmodell angepasst (QA-Agent statt ChatGPT). |
 | 2026-10-07 | Verworfene technische Prozessvorgaben und den bisherigen Einrichtungsauftrag entfernt; Rollen, Qualitätssicherung, Automatisierungsziel und bestehende Auftragsablage erhalten. Frühere Fassungen sind in Git nachvollziehbar. |
