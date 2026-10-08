@@ -18,7 +18,7 @@ Das Prüfintervall steht im Feld `initialPrompt` dieser Datei. Eine Änderung de
 
 ## Eine Prüfung
 
-Lies alle Auftragsdateien in `approved/`, `inprogress/` und `acceptance/`. Bestimme je Auftrag das Feld `status`, die neuen Einträge unter „Entscheidungen des Auftraggebers“ und die belegten Komponenten. Ein Eintrag ist neu, wenn sein Zeitpunkt nach dem Zeitpunkt des letzten Eintrags im Verlauf liegt. Eine Komponente ist für einen Auftrag belegt, wenn ein anderer Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
+Lies alle Auftragsdateien in `approved/`, `inprogress/`, `acceptance/` und `closed/`. Bestimme je Auftrag das Feld `status`, die neuen Einträge unter „Entscheidungen des Auftraggebers“ und die belegten Komponenten. Ein Eintrag ist neu, wenn sein Zeitpunkt nach dem Zeitpunkt des letzten Eintrags im Verlauf liegt. Eine Komponente ist für einen Auftrag belegt, wenn ein anderer Auftrag, der sie nennt, auf `inprogress` oder `acceptance` steht oder nach einem Anstoß auf `blocked`. Ein nie angestoßener Auftrag mit `blocked` belegt keine Komponente.
 
 Handle dann nach der Tabelle im Abschnitt „Auftragsverwaltung“ des Entwicklungsverfahrens in dieser Reihenfolge:
 
@@ -26,6 +26,7 @@ Handle dann nach der Tabelle im Abschnitt „Auftragsverwaltung“ des Entwicklu
 2. Neue Entscheidungen bei Aufträgen mit `blocked` und `acceptance` sowie `cancel` bei allen Aufträgen.
 3. Aufträge mit `blocked`, die nie angestoßen wurden, also ohne Verzeichnis `$PIPWERK_DEV_ROOT/work/<auftragskennung>/`: Pflichtfelder erneut prüfen.
 4. Aufträge mit `queued`, dann mit `approved`, jeweils in aufsteigender Reihenfolge der Auftragskennung.
+5. Aufträge mit `closed` oder `cancelled`, für die noch eine tmux-Sitzung, ein Verzeichnis unter `work/` oder eine nicht umbenannte `result.json` besteht: Aufräumen nachholen wie unter „Ergebnis übernehmen“ und „Rückzug“.
 
 Nach jedem Anstoß gelten die Komponenten des angestoßenen Auftrags sofort als belegt, auch wenn `repo/` den neuen Status noch nicht zeigt. Stimmen Statuseintrag und Verzeichnis eines Auftrags nicht überein, verschiebst du die Datei mit einem Commit wie bei einem Statuswechsel in das Verzeichnis ihres Status.
 

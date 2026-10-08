@@ -87,7 +87,7 @@ Zulässig sind nur diese Statuswechsel:
 | `inprogress` | `blocked` | Ergebnis `question` oder `failed`, oder die Sitzung des Softwarearchitekten endete ohne Ergebnis |
 | `inprogress` | `closed` | Ergebnis `merged` nach Abnahme |
 | `blocked` | `inprogress` | Entscheidung des Auftraggebers eingetragen oder fehlende Pflichtfelder ergänzt; Softwarearchitekt angestoßen |
-| `blocked` | `queued` | Entscheidung eingetragen, eine betroffene Komponente inzwischen belegt |
+| `blocked` | `queued` | Entscheidung eingetragen oder fehlende Pflichtfelder ergänzt, eine betroffene Komponente inzwischen belegt |
 | `acceptance` | `inprogress` | Ablehnung mit Abweichungen oder Abnahme eingetragen; Softwarearchitekt zur Korrektur beziehungsweise zum Merge angestoßen |
 | `approved`, `queued`, `inprogress`, `blocked`, `acceptance` | `cancelled` | Rückzug durch den Auftraggeber eingetragen |
 
@@ -111,7 +111,7 @@ Die Auftragsverwaltung verwaltet jeden Auftrag von der Freigabe bis zum Abschlus
 
 Eine mit `/loop` angelegte wiederkehrende Aufgabe erlischt laut Claude-Code-Dokumentation nach 7 Tagen. Die Sitzung wird deshalb spätestens alle 7 Tage neu gestartet. Wird ihr Gesprächsverlauf zu groß, wird sie früher neu gestartet; der Neustart kann dann über einen Cron-Job erfolgen. Dass `/loop` als `initialPrompt` wie vorgesehen arbeitet, ist in der Claude-Code-Dokumentation nicht beschrieben und wird im Nachweisdurchlauf geprüft.
 
-Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWERK_DEV_ROOT/repo/work-orders/`. Sie arbeitet nicht in `repo/` und verändert es nicht. Sie handelt wie folgt:
+Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWERK_DEV_ROOT/repo/work-orders/`, auch in `closed/`, damit ein unterbrochenes Aufräumen nachgeholt wird. Sie arbeitet nicht in `repo/` und verändert es nicht. Sie handelt wie folgt:
 
 | Lage | Handlung |
 |---|---|
@@ -124,15 +124,16 @@ Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWER
 | neue Entscheidung `answer` bei `blocked`, schon angestoßen | Softwarearchitekten mit der Antwort erneut anstoßen und `inprogress`, bei belegter Komponente `queued` |
 | neue Entscheidung `reject` bei `acceptance` | Softwarearchitekten mit der Liste der Abweichungen zur Korrektur anstoßen und `inprogress` |
 | neue Entscheidung `accept` bei `acceptance` | Softwarearchitekten zum Merge anstoßen und `inprogress` |
-| neue Entscheidung `cancel` | tmux-Sitzung des Auftrags beenden, Arbeitsbereiche abbauen und `cancelled` |
+| neue Entscheidung `cancel` | `cancelled`; danach tmux-Sitzung des Auftrags beenden und Arbeitsbereiche abbauen |
+| Auftrag mit `closed` oder `cancelled`, noch mit tmux-Sitzung, Arbeitsbereich oder nicht umbenannter Ergebnisdatei | Aufräumen nachholen: Sitzung beenden, Arbeitsbereiche abbauen, Ergebnisdatei umbenennen |
 
-Die Aufträge werden in dieser Reihenfolge behandelt: zuerst `queued`, dann `approved`, jeweils in aufsteigender Reihenfolge der Auftragskennung. Nach jedem Anstoß gelten die Komponenten des angestoßenen Auftrags sofort als belegt, auch wenn `repo/` den neuen Status noch nicht zeigt. Bei der Belegung zählt ein Auftrag seine eigenen Komponenten nicht mit. Ein Auftrag gilt als „nie angestoßen“, wenn für ihn kein Arbeitsbereich unter `work/<auftragskennung>/` besteht. Stimmen Statuseintrag und Verzeichnis eines Auftrags nicht überein, verschiebt die Auftragsverwaltung die Datei in das Verzeichnis seines Status.
+Die Aufträge werden in dieser Reihenfolge behandelt: zuerst Aufträge mit `inprogress`, dann neue Entscheidungen, dann nie angestoßene Aufträge mit `blocked`, dann `queued` und zuletzt `approved`, innerhalb jeder Stufe in aufsteigender Reihenfolge der Auftragskennung. Das Aufräumen bei `closed` und `cancelled` erfolgt am Ende jeder Prüfung. Nach jedem Anstoß gelten die Komponenten des angestoßenen Auftrags sofort als belegt, auch wenn `repo/` den neuen Status noch nicht zeigt. Bei der Belegung zählt ein Auftrag seine eigenen Komponenten nicht mit. Ein Auftrag gilt als „nie angestoßen“, wenn für ihn kein Arbeitsbereich unter `work/<auftragskennung>/` besteht. Stimmen Statuseintrag und Verzeichnis eines Auftrags nicht überein, verschiebt die Auftragsverwaltung die Datei in das Verzeichnis seines Status.
 
 Lehnt `pipwerk-dev remove` den Abbau der Arbeitsbereiche ab, zum Beispiel wegen nicht übertragener Commits, vermerkt die Auftragsverwaltung den Grund im Verlauf und lässt die Arbeitsbereiche bestehen.
 
 Anstoßen heißt: den Startauftrag schreiben, den Arbeitsbereich `coordinate/` des Auftrags anlegen, falls er noch nicht besteht, und darin die Sitzung des Softwarearchitekten mit `claude --agent software-architect` in einer tmux-Sitzung starten, deren Name die Auftragskennung ist. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag liegt in `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/start.md`. Er nennt die Auftragskennung, den Pfad der Auftragsdatei und die Aufgabe: `implement` (umsetzen), `rework` (korrigieren, mit der Liste der Abweichungen), `resume` (mit der Antwort auf einen offenen Punkt fortsetzen) oder `merge` (nach Abnahme mergen). Lässt sich die Sitzung nicht starten, setzt die Auftragsverwaltung den Auftrag mit dem Startfehler als offenem Punkt auf `blocked`; `inprogress` setzt sie erst nach erfolgreichem Start.
 
-Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. Ob die Sitzung eines Auftrags besteht, prüft die Auftragsverwaltung mit `tmux has-session -t <auftragskennung>`; beendet wird sie mit `tmux kill-session -t <auftragskennung>`. Weil der Sitzungsname die Auftragskennung ist, sind parallele Sitzungen eindeutig unterscheidbar. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
+Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. Ob die Sitzung eines Auftrags besteht, prüft die Auftragsverwaltung mit `tmux has-session -t <auftragskennung>`; beendet wird sie mit `tmux kill-session -t <auftragskennung>`. Weil der Sitzungsname die Auftragskennung ist, sind parallele Sitzungen eindeutig unterscheidbar. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress` oder `acceptance` steht oder nach einem Anstoß auf `blocked`. Ein nie angestoßener Auftrag mit `blocked` belegt keine Komponente.
 
 Die Auftragsverwaltung hält keinen Stand im Gedächtnis ihrer Sitzung. Ihr gesamter Stand ergibt sich aus Auftragsdateien, tmux-Sitzungen und Ergebnisdateien. Ein Neustart ist deshalb jederzeit möglich. Jede Handlung prüft vor der Ausführung den aktuellen Stand, sodass eine wiederholte Prüfung nichts doppelt ausführt. Vor einem Statuswechsel prüft sie, dass der Status auf `main` noch dem erwarteten alten Status entspricht. Schlägt ein Statuswechsel fehl, weil sich `main` inzwischen geändert hat, unterbleiben alle davon abhängigen Schritte, und der Auftrag wird bei der nächsten Prüfung neu bewertet.
 
@@ -311,6 +312,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Festgelegt: Merge mit Merge-Commit, `coordinate/` auf dem Stand des ersten Anstoßes, Zeitpunkte auf die Sekunde, Reihenfolge und Belegung in der Auftragsverwaltung, Nachholen des Aufräumens, Freigabepflicht für Workflows aus fremden Pull Requests, Vertrauensabfrage über `repo/`. |
 | 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt: Übergangsregel und feste Arbeitsbereiche entfernt, `pipwerk-dev` mit Arbeitsbereichen je Auftrag und Teststand je Komponente beschrieben, Einrichtung auf dem Entwicklungsrechner und Arbeitskopie der Auftragsverwaltung ergänzt. |
 | 2026-10-08 | Betrieb der Auftragsverwaltung als dauerhafte Sitzung mit `/loop` über `initialPrompt` festgelegt; tmux-Sitzungsname gleich Auftragskennung; Übernahme des Ergebnisses unabhängig vom Sitzungsende und Beenden der Sitzung durch die Auftragsverwaltung; Freigaben präzisiert. |
 | 2026-10-08 | Zum maßgeblichen Prozessdokument ausgebaut: Prozessinhalte aus Entwicklungsplan übernommen, Dokumentationsorte, Beteiligte, vollständiges Statusmodell mit zulässigen Übergängen, Pflichtfelder und Abschnitte eines Auftrags, Auftragsverwaltung, Ergebnisdatei, Runner, Benachrichtigung, parallele Bearbeitung, Arbeitsbereiche nach der Einführung, Erweiterung von `pipwerk-dev` und Einführung festgelegt; Übergangsregel bis zur Einführung ergänzt. |
