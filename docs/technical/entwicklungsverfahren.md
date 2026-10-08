@@ -6,122 +6,204 @@
 - stand: 2026-10-08
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 
-## Geltungsbereich
+## Geltungsbereich und Dokumentationsorte
 
-Dieses Dokument beschreibt die weiterhin geltenden, vom Transport eines Arbeitsauftrags unabhängigen Prozessregeln. Die technische Ausführung und Anbindung einer künftigen Entwicklungsautomatisierung sind offen.
+Dieses Dokument ist die maßgebliche Beschreibung des Entwicklungsprozesses von Pipwerk: Ablauf, Arbeitsaufträge und ihr Statusmodell, Auftragsverwaltung, Runner, Benachrichtigung, parallele Bearbeitung, Arbeitsbereiche und das lokale Hilfswerkzeug `pipwerk-dev`. Rollen, Verhaltensregeln, Briefings, Agentendefinitionen und Skills stehen in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die technischen Qualitätsanforderungen an Code und Tests stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md). Der [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md) enthält nur die Produktplanung.
 
-Maßgeblich sind das aktuelle Repository, der freigegebene Arbeitsauftrag und die für die Änderung geltenden Anforderungen und Verträge. Chats und temporäre Übergaben ersetzen keine Repository-Dokumentation.
+Für die Dokumentation gilt: Jede Festlegung steht an genau einer Stelle unter `docs/`. Eine README-Datei dient nur der Orientierung in ihrem Verzeichnis. Sie beschreibt, wozu das Verzeichnis da ist, und verweist auf das zuständige Dokument, enthält aber selbst keine Festlegungen.
 
-- [Agentenrollen und Briefings](agentenrollen-und-briefings.md) regeln Zuständigkeiten, Entscheidungsgrenzen, Recherche, Dokumentation und Bereinigung eigener Arbeitsreste.
-- [Claude-Code-Agentenstruktur](claude-code-agentenstruktur.md) beschreibt die vorhandenen Rollendefinitionen und Skills.
-- [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md) enthält die Prozessgrundsätze und Produktplanung.
-- [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md) bestimmen die technischen Qualitätsanforderungen.
+Maßgeblich sind das aktuelle Repository, der freigegebene Arbeitsauftrag und die für die Änderung geltenden Anforderungen und Verträge. Chats, Agentenausgaben und temporäre Übergaben ersetzen keine Repository-Dokumentation. Neue Festlegungen werden in das zuständige Dokument übernommen.
 
-## Arbeitsauftrag und Ablauf
+Eine Aussage wird nicht allein dadurch zu einer bestätigten fachlichen Festlegung, dass sie in einem Repository-Dokument steht. Inhalte eines mit `draft` gekennzeichneten Dokuments sind Arbeitsstand und dürfen nicht ohne weitere Grundlage als vom Nutzer bestätigte fachliche Entscheidung behandelt werden. Bei Widersprüchen oder zweifelhafter Herkunft wird zunächst geprüft, ob eine dokumentierte spätere Entscheidung, ein Änderungsnachweis oder die Git-Historie die Aussage eindeutig klärt. Eine veraltete oder widersprüchliche Stelle, die sich anhand bereits getroffener Festlegungen eindeutig korrigieren lässt, wird korrigiert und nicht als neue fachliche Frage an den Nutzer zurückgegeben.
 
-Ein Arbeitsauftrag enthält Kennung, Auftraggeber, betroffene Komponenten (`components`), Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien, geltende Referenzen und offene Punkte. Ablage und Statusverlauf regelt der Abschnitt [Auftragsablage und Statusverlauf](#auftragsablage-und-statusverlauf).
+## Stand der Einführung
 
-1. Der Projektleiter klärt den Auftrag mit dem Nutzer und dokumentiert ihn im Repository. Er wird erst nach Nutzerfreigabe und Klärung der erforderlichen fachlichen Fragen umgesetzt.
-2. Der Softwarearchitekt erhält eine eindeutige Auftragsreferenz, prüft den aktuellen Repository-Stand und bereitet die Umsetzung innerhalb dokumentierter Architekturvorgaben vor.
-3. Der Entwickler implementiert im eigenen Branch und Arbeitsbereich, führt die vorgesehenen Prüfungen aus, aktualisiert die Dokumentation und erstellt einen Pull Request.
-4. Die unabhängige QA prüft Auftrag, Ausgangsstand, konkreten PR und Commit, Code, Tests und Dokumentation. Befunde werden vollständig korrigiert und erneut geprüft. Eine Fertigmeldung ersetzt die QA nicht.
-5. Der Softwarearchitekt stellt genau den QA-freigegebenen Commit als Teststand bereit, startet die Anwendung und prüft Erreichbarkeit und Commit-Identität. Eine spätere Codeänderung erfordert erneute QA.
-6. Der Projektleiter prüft jedes Abnahmekriterium am Teststand. Erst bei erfülltem Auftrag erhält der Nutzer den Stand zur praktischen Erprobung. Abweichungen führen zurück in die Korrektur.
-7. Erst nach Nutzerabnahme und Abschlussfreigabe durch den Projektleiter veranlasst der Softwarearchitekt Merge und Abschluss und prüft den übernommenen Stand.
+Dieses Dokument beschreibt den beschlossenen Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung. Er wird in einem Schritt eingeführt (siehe [Einführung](#einführung)). Bis dahin gilt die folgende Übergangsregel:
 
-Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, PR, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder PRs technisch prüfen noch den Teststand selbst installieren und starten.
+- Der Nutzer startet die Sitzung des Softwarearchitekten von Hand in `repo/` und nennt ihm den Auftrag.
+- Die Aufgaben der Auftragsverwaltung führt der Softwarearchitekt aus, soweit sie für einen einzelnen Auftrag nötig sind: Er setzt die Status `inprogress`, `acceptance` und `closed` und meldet Rückfragen und Ergebnisse in seiner Sitzung.
+- Es wird nur ein Auftrag gleichzeitig bearbeitet. Es gelten die festen Arbeitsbereiche aus [Arbeitsbereiche bis zur Einführung](#arbeitsbereiche-bis-zur-einführung) und die heutigen Befehle von `pipwerk-dev`.
 
-## Auftragsablage und Statusverlauf
+## Beteiligte
 
-Jeder Arbeitsauftrag ist eine eigene Markdown-Datei unter `work-orders/`. Der Status steht im Abschnitt „Status“ der Datei im Feld `status`. Dieser Eintrag ist maßgeblich. Zusätzlich liegt die Datei im Unterverzeichnis, das ihrem Status zugeordnet ist. Die Verzeichnisse dienen der Übersicht; mehrere Status dürfen demselben Verzeichnis zugeordnet sein.
+| Beteiligter | Aufgabe im Ablauf |
+|---|---|
+| Nutzer | Auftraggeber. Trifft fachliche und grundlegende Architekturentscheidungen, gibt Aufträge frei, erprobt und nimmt ab. Spricht ausschließlich mit dem Projektleiter. |
+| Projektleiter | Klärt Aufträge mit dem Nutzer, legt sie ab, gibt Entscheidungen des Nutzers an die Auftragsverwaltung weiter, prüft die Abnahmekriterien am Teststand und benachrichtigt den Nutzer. |
+| Auftragsverwaltung | Verwaltet jeden Auftrag von der Freigabe bis zum Abschluss: Statuswechsel, Anstoß des Softwarearchitekten, Übernahme seiner Ergebnisse, Reihenfolge paralleler Aufträge. |
+| Softwarearchitekt | Setzt einen Auftrag mit Entwickler und QA um, stellt den Teststand bereit und führt nach der Abnahme den Merge aus. |
+| Entwickler | Implementiert im eigenen Arbeitsbereich und Branch. |
+| QA | Prüft unabhängig im eigenen Arbeitsbereich. |
+| Runner | Hält `repo/` auf dem Stand von `origin/main`. |
+
+Projektleiter und Auftragsverwaltung sind getrennte Rollen. Der Projektleiter setzt außer `draft` und `approved` keinen Auftragsstatus. Die Auftragsverwaltung trifft keine fachlichen Entscheidungen und steuert Entwickler und QA nicht direkt. Zuständigkeiten, Entscheidungsgrenzen und Briefings stehen in [Agentenrollen und Briefings](agentenrollen-und-briefings.md).
+
+## Ablauf eines Arbeitsauftrags
+
+1. Der Projektleiter klärt den Auftrag mit dem Nutzer, legt ihn als Pull Request mit Status `draft` an und merget ihn nach Freigabe durch den Nutzer mit Status `approved` nach `work-orders/approved/`. Ein Auftrag wird erst freigegeben, wenn die für die Umsetzung erforderlichen fachlichen Fragen geklärt sind.
+2. Der Runner bringt `repo/` auf den neuen Stand. Die Auftragsverwaltung findet den Auftrag bei ihrer nächsten Prüfung, prüft ihn und stößt den Softwarearchitekten an oder reiht den Auftrag ein.
+3. Der Softwarearchitekt prüft den aktuellen Repository-Stand und die Grundlagen und lässt den Auftrag vom Entwickler im eigenen Branch umsetzen. Der Entwickler führt die vorgesehenen Prüfungen aus, aktualisiert die Dokumentation und erstellt einen Pull Request.
+4. Die QA prüft unabhängig Auftrag, Ausgangsstand, Pull Request und Commit, Code, Tests und Dokumentation. Befunde werden vollständig korrigiert und erneut geprüft. Eine Fertigmeldung ersetzt die QA nicht.
+5. Der Softwarearchitekt stellt genau den von der QA freigegebenen Commit als Teststand bereit und prüft Erreichbarkeit und Commit-Identität. Eine spätere Codeänderung erfordert erneute QA. Er schreibt das Ergebnis in seine Ergebnisdatei; die Auftragsverwaltung setzt `acceptance`.
+6. Der Projektleiter prüft jedes Abnahmekriterium am Teststand. Erst bei erfülltem Auftrag erhält der Nutzer den Stand zur Erprobung. Abweichungen gibt der Projektleiter als Ablehnung an die Auftragsverwaltung weiter.
+7. Nach Abnahme durch den Nutzer trägt der Projektleiter die Abnahme in den Auftrag ein. Die Auftragsverwaltung stößt den Softwarearchitekten zum Merge an und setzt nach dessen Bestätigung `closed`.
+
+Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, Pull Request, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder Pull Requests technisch prüfen noch den Teststand selbst installieren und starten.
+
+Jeder Pull Request enthält mindestens den Bezug auf den Arbeitsauftrag und seine Abnahmekriterien, eine kurze Beschreibung der tatsächlich vorgenommenen Änderungen, das Ergebnis der ausgeführten Prüfungen sowie offene Punkte und bekannte Einschränkungen. Die QA bestätigt nur, was durch Code, Tests oder andere zugängliche Nachweise überprüfbar ist.
+
+## Arbeitsaufträge
+
+### Inhalt
+
+Jeder Arbeitsauftrag ist eine eigene Markdown-Datei unter `work-orders/`. Neue Aufträge werden aus der Vorlage [`work-orders/template.md`](../../work-orders/template.md) erstellt. Ein Auftrag enthält:
+
+- im Abschnitt „Status“ die Felder `id` (Auftragskennung), `status`, `client` (Auftraggeber) und `components` (betroffene Komponenten, siehe [Parallele Bearbeitung](#parallele-bearbeitung)); `client` ist derzeit immer `Nutzer`;
+- Titel, Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien und Referenzen auf alle geltenden Anforderungen, Verträge und Architekturregeln;
+- den Abschnitt „Offene Punkte“; ist er leer, steht dort `keine`;
+- den Abschnitt „Entscheidungen des Auftraggebers“, in den der Projektleiter Entscheidungen des Nutzers einträgt;
+- den Abschnitt „Verlauf“, in den die Auftragsverwaltung jeden Statuswechsel einträgt.
+
+Die Feldnamen sind maschinenlesbare Bezeichner und deshalb englisch. Die Auftragskennung hat die Form `WO-JJJJ-MM-TT-NNN` und wird auch in Verzeichnis- und Sitzungsnamen verwendet.
+
+### Statusmodell
+
+Der Status steht im Feld `status` der Auftragsdatei. Dieser Eintrag ist maßgeblich. Zusätzlich liegt die Datei im Unterverzeichnis, das ihrem Status zugeordnet ist. Die Verzeichnisse dienen der Übersicht; mehrere Status können demselben Verzeichnis zugeordnet sein.
 
 | Status | Bedeutung | Verzeichnis | gesetzt von |
 |---|---|---|---|
-| `draft` | Auftrag in Klärung | keins; liegt nur im Pull Request des Auftrags | Projektleiter |
-| `approved` | vom Nutzer freigegeben | `approved/` | Projektleiter mit dem Merge des Auftrags nach Nutzerfreigabe |
-| `queued` | freigegeben, wartet wegen Überschneidung mit einem laufenden Auftrag | `approved/` | Auftragsverwaltung |
-| `in-progress` | in Umsetzung, Korrektur oder QA | `in-progress/` | Auftragsverwaltung beim Anstoßen; bis zu ihrer Einrichtung der Softwarearchitekt bei Arbeitsbeginn; Projektleiter bei „Auftrag nicht erfüllt“ oder Ablehnung durch den Nutzer |
-| `blocked` | wartet auf eine Entscheidung des Auftraggebers; die Frage steht als offener Punkt im Auftrag | `in-progress/` | Rolle, die die Rückfrage stellt |
-| `acceptance` | Teststand bereit; Prüfung durch Projektleiter und Erprobung durch den Nutzer | `acceptance/` | Softwarearchitekt nach verifizierter Testbereitstellung |
-| `closed` | abgenommen, gemergt und abgeschlossen | `closed/` | Softwarearchitekt nach Abschlussfreigabe und kontrolliertem Merge |
+| `draft` | Auftrag in Klärung | `approved/`, aber nur im Pull Request des Auftrags; auf `main` erst mit dem Merge | Projektleiter |
+| `approved` | vom Nutzer freigegeben, von der Auftragsverwaltung noch nicht übernommen | `approved/` | Projektleiter mit dem Merge nach Freigabe |
+| `queued` | übernommen, wartet, weil eine betroffene Komponente belegt ist | `approved/` | Auftragsverwaltung |
+| `inprogress` | in Umsetzung, Korrektur, QA, Testbereitstellung oder Merge | `inprogress/` | Auftragsverwaltung |
+| `blocked` | wartet auf eine Entscheidung oder Handlung des Auftraggebers; der Grund steht unter „Offene Punkte“ | `inprogress/` | Auftragsverwaltung |
+| `acceptance` | Teststand bereit; Prüfung durch den Projektleiter und Erprobung durch den Nutzer | `acceptance/` | Auftragsverwaltung |
+| `closed` | abgenommen, gemergt und abgeschlossen | `closed/` | Auftragsverwaltung |
+| `cancelled` | vom Auftraggeber zurückgezogen | `closed/` | Auftragsverwaltung |
 
-Weitere Status werden in diese Tabelle aufgenommen, bevor sie verwendet werden. Stimmen Statuseintrag und Verzeichnis nicht überein, ist das ein Fehler, den die Rolle behebt, die den Statuswechsel ausgeführt hat.
+Zulässig sind nur diese Statuswechsel:
 
-Inhaltliche Änderungen eines Auftrags erfolgen über Branch und Pull Request und nach der Freigabe nur mit Zustimmung des Nutzers. Ein reiner Statuswechsel – Änderung des Feldes `status` und Verschiebung der Datei, ohne sonstige Inhaltsänderung – ist Verwaltungsarbeit und wird direkt auf `main` gebucht. Der Softwarearchitekt verändert dafür `repo/` nicht lokal, sondern bucht den Statuswechsel ohne lokalen Arbeitsbereich, zum Beispiel über die GitHub-API, und bringt `repo/` danach mit `pipwerk-dev sync-repo` auf den neuen Stand.
+| von | nach | Anlass |
+|---|---|---|
+| `draft` | `approved` | Freigabe durch den Nutzer; Merge des Auftrags durch den Projektleiter |
+| `approved` | `inprogress` | Pflichtfelder vollständig, alle betroffenen Komponenten frei; Softwarearchitekt angestoßen |
+| `approved` | `queued` | Pflichtfelder vollständig, eine betroffene Komponente belegt |
+| `approved` | `blocked` | Pflichtfelder fehlen oder sind ungültig |
+| `queued` | `inprogress` | alle betroffenen Komponenten frei; Softwarearchitekt angestoßen |
+| `inprogress` | `acceptance` | Ergebnis `ready` des Softwarearchitekten |
+| `inprogress` | `blocked` | Ergebnis `question` oder `failed`, oder die Sitzung des Softwarearchitekten endete ohne Ergebnis |
+| `inprogress` | `closed` | Ergebnis `merged` nach Abnahme |
+| `blocked` | `inprogress` | Entscheidung des Auftraggebers eingetragen; Softwarearchitekt erneut angestoßen |
+| `blocked` | `queued` | Entscheidung eingetragen, eine betroffene Komponente inzwischen belegt |
+| `acceptance` | `inprogress` | Ablehnung mit Abweichungen oder Abnahme eingetragen; Softwarearchitekt zur Korrektur beziehungsweise zum Merge angestoßen |
+| `approved`, `queued`, `inprogress`, `blocked`, `acceptance` | `cancelled` | Rückzug durch den Auftraggeber eingetragen |
 
-Die Ablage in Statusverzeichnissen ist eine Übergangslösung. Ob Status und Verlauf später in einem anderen System geführt werden, ist offen. Der Statuseintrag in der Datei bleibt deshalb unabhängig von den Verzeichnissen erhalten.
+`closed` und `cancelled` sind Endzustände. Ein weiterer Status wird erst verwendet, nachdem er in beide Tabellen aufgenommen wurde. Stimmen Statuseintrag und Verzeichnis nicht überein, ist das ein Fehler, den die Auftragsverwaltung bei ihrer nächsten Prüfung behebt.
 
-## Auftragsübermittlung und Auftragsverwaltung
+### Änderungen an einem Auftrag
 
-Dieser Abschnitt beschreibt das beschlossene Zielbild. Die Einrichtung ist noch nicht abgeschlossen; bis dahin stößt der Nutzer die Sitzung des Softwarearchitekten an.
+Inhaltliche Änderungen eines Auftrags erfolgen über Branch und Pull Request und nach der Freigabe nur mit Zustimmung des Nutzers.
 
-Nachrichtenübermittlung und Auftragsverwaltung sind getrennte Aufgaben. Beide werden so allgemein wie möglich und so spezifisch wie nötig festgelegt, damit sie später durch eine allgemeine Nachrichtenübermittlung und Auftragsverwaltung ersetzt werden können, ohne Aufträge oder Rollen zu ändern.
+Drei Arten von Änderungen sind Verwaltungsarbeit und werden direkt auf `main` gebucht, ohne lokalen Arbeitsbereich, zum Beispiel über die GitHub-API:
 
-### Nachrichtenübermittlung
+- Statuswechsel mit Verschieben der Datei und Eintrag im Verlauf, durch die Auftragsverwaltung;
+- Einträge im Abschnitt „Offene Punkte“ bei einem Wechsel nach `blocked`, durch die Auftragsverwaltung;
+- Einträge im Abschnitt „Entscheidungen des Auftraggebers“, durch den Projektleiter.
 
-Die Nachrichtenübermittlung übernimmt ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner. Der Runner versteht den Inhalt der Nachrichten nicht.
+Eine Entscheidung des Auftraggebers ist ein Eintrag mit Datum und einer der Entscheidungsarten `accept` (Abnahme), `reject` (Ablehnung mit Liste der Abweichungen), `cancel` (Rückzug) oder `answer` (Antwort auf einen offenen Punkt, mit Bezug auf diesen). Die Auftragsverwaltung erkennt neue Einträge daran, dass ihr Datum nach dem letzten Eintrag im Verlauf liegt.
 
-- `work-orders/approved/` ist der Eingang des Runners. Er wird nur ausgelöst, wenn dort durch einen Push auf `main` eine Auftragsdatei neu hinzukommt. Andere Änderungen lösen keine Zustellung aus.
-- Der Projektleiter versendet keine Nachrichten. Er legt freigegebene Aufträge in `approved/` ab.
-- Der Runner erzeugt daraus eine Nachricht an die Auftragsverwaltung und stellt sie zu. Derzeit ist das die einzige Nachrichtenart.
-- Der Workflow hat keine Auslöser für Pull Requests, damit Änderungsvorschläge Dritter im öffentlichen Repository keinen Code auf dem Entwicklungsrechner ausführen.
+## Auftragsverwaltung
 
-Das Nachrichtenformat lehnt sich an `req-grund-004` in den [Anforderungen an das Handelssystem](../design/requirements/anforderungen-handelssystem.md) an:
+Die Auftragsverwaltung verwaltet jeden Auftrag von der Freigabe bis zum Abschluss. Sie ist eine Übergangslösung bis zur Entwicklung einer allgemeinen Nachrichten- und Auftragsverwaltung als Teil von Pipwerk. Sie wird als dauerhaft laufender Agent betrieben, den ein systemd-Dienst in einer tmux-Sitzung startet und nach einem Abbruch neu startet. Ihre Rollendefinition legt das Prüfintervall fest, als Standardwert 5 Minuten.
 
-| Feld | Wert für die Nachricht „neuer Auftrag“ |
+Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWERK_DEV_ROOT/repo/work-orders/`. Sie arbeitet nicht in `repo/` und verändert es nicht. Sie handelt wie folgt:
+
+| Lage | Handlung |
 |---|---|
-| Nachrichten-ID | vom Runner vergebene eindeutige Kennung |
-| Absender | Runner, mit seiner Kennung |
-| Adressat | Auftragsverwaltung |
-| Priorität | Standardwert; Werte sind noch nicht festgelegt |
-| Nachrichtenart | neuer Auftrag |
-| Inhalt | Auftragskennung, Pfad der Auftragsdatei und Commit, mit dem sie in `approved/` eingestellt wurde |
+| Auftrag mit `approved` | Pflichtfelder prüfen; bei Mangel `blocked` mit dem Mangel als offenem Punkt. Sonst Komponenten prüfen: belegt `queued`, frei anstoßen und `inprogress`. |
+| Auftrag mit `queued` | Sind alle betroffenen Komponenten frei, anstoßen und `inprogress`. Ältere Aufträge zuerst. |
+| Auftrag mit `inprogress`, Sitzung läuft | nichts |
+| Auftrag mit `inprogress`, Sitzung beendet, Ergebnisdatei vorhanden | Ergebnis übernehmen: `ready` nach `acceptance`, `question` und `failed` nach `blocked` mit dem Text als offenem Punkt, `merged` nach `closed` und Arbeitsbereiche des Auftrags abbauen |
+| Auftrag mit `inprogress`, Sitzung beendet, keine Ergebnisdatei | `blocked`; Abbruch als offenen Punkt vermerken |
+| neue Entscheidung `answer` bei `blocked` | Softwarearchitekten mit der Antwort erneut anstoßen und `inprogress`, bei belegter Komponente `queued` |
+| neue Entscheidung `reject` bei `acceptance` | Softwarearchitekten mit der Liste der Abweichungen zur Korrektur anstoßen und `inprogress` |
+| neue Entscheidung `accept` bei `acceptance` | Softwarearchitekten zum Merge anstoßen und `inprogress` |
+| neue Entscheidung `cancel` | laufende Sitzung beenden, Arbeitsbereiche abbauen und `cancelled` |
 
-Der Runner führt auf dem Entwicklungsrechner ein Logfile mit einer Zeile je Zustandswechsel einer Nachricht: Zeitpunkt, Nachrichten-ID, Absender, Adressat und Zustand (`eingestellt`, `abgeholt`, `zugestellt`, `fehlgeschlagen`). Das Logfile wird nicht automatisch gelöscht. Es ist die maßgebliche Quelle für die Frage, welche Nachrichten unterwegs sind und wo sie sich befinden.
+Lehnt `pipwerk-dev remove` den Abbau der Arbeitsbereiche ab, zum Beispiel wegen nicht übertragener Commits, vermerkt die Auftragsverwaltung den Grund im Verlauf und lässt die Arbeitsbereiche bestehen.
 
-Ein Rückweg für Nachrichten an den Projektleiter ist derzeit nicht vorgesehen. Der Stand eines Auftrags steht in seinem Statusfeld.
+Anstoßen heißt: den Arbeitsbereich `coordinate/` des Auftrags anlegen und darin die Sitzung des Softwarearchitekten in einer tmux-Sitzung `pipwerk-<auftragskennung>` starten. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag nennt die Auftragskennung und die Aufgabe: umsetzen, korrigieren mit Abweichungen, mit einer Antwort fortsetzen oder mergen.
 
-### Auftragsverwaltung
+Ob die Sitzung läuft, prüft die Auftragsverwaltung mit `tmux has-session -t pipwerk-<auftragskennung>`. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
 
-Die Auftragsverwaltung ist eine eigene Rolle, die ein eigener Agent wahrnimmt. Sie ist weder Projektleiter noch Teil des Entwicklungsteams. Bei der Nachricht „neuer Auftrag“ liest sie den Auftrag im genannten Commit, prüft die Pflichtfelder, prüft die Überschneidung mit laufenden Aufträgen gemäß [Parallele Bearbeitung von Aufträgen](#parallele-bearbeitung-von-aufträgen), setzt den Status und stößt den Softwarearchitekten mit der Auftragskennung an. Weitere Aufgaben werden erst festgelegt, wenn sie gebraucht werden.
+Die Auftragsverwaltung hält keinen Stand im Gedächtnis ihrer Sitzung. Ihr gesamter Stand ergibt sich aus Auftragsdateien, tmux-Sitzungen und Ergebnisdateien. Ein Neustart ist deshalb jederzeit möglich. Jede Handlung prüft vor der Ausführung den aktuellen Stand, sodass eine wiederholte Prüfung nichts doppelt ausführt. Schlägt ein Statuswechsel fehl, weil sich die Datei auf `main` inzwischen geändert hat, wird er bei der nächsten Prüfung neu bewertet.
 
-Rückfragen an den Auftraggeber stehen als offene Punkte im Auftrag, der dafür den Status `blocked` erhält.
+### Ergebnisdatei des Softwarearchitekten
 
-### Benachrichtigung des Nutzers
+Der Softwarearchitekt schreibt als letzte Handlung seiner Sitzung die Datei `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/result.json`:
 
-Eine geplante Prüfung des Projektleiters liest stündlich die Statusfelder der Aufträge im Repository. Wechselt ein Auftrag auf `acceptance` oder `blocked`, erhält der Nutzer eine Benachrichtigung mit Auftragskennung und einem Satz zum Inhalt. Der Nutzer kann den Stand außerdem jederzeit beim Projektleiter erfragen. Die Prüfung wird eingerichtet, sobald die Auftragsverwaltung arbeitet.
+| Feld | Inhalt |
+|---|---|
+| `id` | Auftragskennung |
+| `outcome` | `ready` (Teststand bereit), `question` (Rückfrage an den Auftraggeber), `failed` (Arbeit nicht möglich) oder `merged` (Merge abgeschlossen) |
+| `commit` | vollständiger Commit-Hash des Teststands beziehungsweise des Merge, sonst leer |
+| `pull_request` | Nummer des Pull Requests, sonst leer |
+| `text` | Rückfrage, Fehlerbeschreibung oder Hinweise zum Teststand in ganzen Sätzen |
+| `created` | Zeitpunkt der Erstellung |
 
-### Betrieb
+Nach der Übernahme benennt die Auftragsverwaltung die Datei in `result-JJJJMMTThhmmss.json` um, gebildet aus `created`. Damit bleibt jedes Ergebnis erhalten, und ein neues ist eindeutig erkennbar.
 
-- Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsbereiche gehören. `PIPWERK_DEV_ROOT` steht in der Umgebungsdatei des Runners.
-- Agentensitzungen werden in tmux-Sitzungen gestartet; ob die Teamfunktion so zuverlässig läuft, ist durch einen Probelauf nachzuweisen.
-- Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben, nicht verbrauchsabhängig abgerechnet. Eine Kostenbegrenzung je Lauf ist deshalb nicht vorgesehen; das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur.
+## Runner
 
-Offen sind die Workflow-Definition, die Rollendefinition der Auftragsverwaltung, der Anstoß wartender Aufträge (`queued`) nach Abschluss des überschneidenden Auftrags, die Einrichtung der geplanten Prüfung und der Nachweis eines vollständigen Durchlaufs gemäß dem [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md#ziel-der-entwicklungsautomatisierung).
+Ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner hält `repo/` aktuell. Er startet bei jedem Push auf `main` und führt `pipwerk-dev sync-repo` aus. Weitere Aufgaben hat er nicht.
 
-## Parallele Bearbeitung von Aufträgen
+Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsbereiche gehören. `PIPWERK_DEV_ROOT` steht in der Umgebungsdatei des Runners. Der Workflow hat keine Auslöser für Pull Requests, damit Änderungsvorschläge Dritter im öffentlichen Repository keinen Code auf dem Entwicklungsrechner ausführen. Schlägt `sync-repo` fehl, ist das im Lauf auf GitHub sichtbar; der nächste Push holt die Aktualisierung nach.
 
-Mehrere Aufträge dürfen gleichzeitig bearbeitet werden, wenn sie keine gemeinsame Komponente betreffen. Jeder Auftrag nennt dafür im Pflichtfeld `components` die betroffenen Komponenten. Als je eigene Komponente gelten außer den Hauptkomponenten unter `components/` auch jedes Paket unter `packages/`, `contracts/` sowie übergreifende Dokumente und Regeln außerhalb einer Komponente. Überschneidet sich ein neuer Auftrag mit einem laufenden, erhält er den Status `queued` und wird erst nach dessen Abschluss angestoßen.
+## Benachrichtigung des Nutzers
 
-Die Einschränkung ist keine technische Notwendigkeit von Git, sondern vermeidet Konflikte beim Zusammenführen und damit erneute QA-Läufe. Wird ein paralleler Auftrag zuerst gemergt, bringt der andere seinen Branch auf den neuen Stand von `main`; danach ist eine erneute QA erforderlich.
+Eine geplante Prüfung des Projektleiters liest stündlich die Statusfelder der Aufträge auf `main`. Ist ein Auftrag seit der letzten Prüfung auf `acceptance` oder `blocked` gewechselt, erhält der Nutzer eine Benachrichtigung mit Auftragskennung und einem Satz zum Inhalt. Der Nutzer kann den Stand außerdem jederzeit beim Projektleiter erfragen.
 
-Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente einen eigenen Teststand. Jedes Agententeam läuft in einer eigenen tmux-Sitzung. Die dafür nötigen Änderungen an `pipwerk-dev` stehen in den [Anforderungen an pipwerk-dev – Parallelbetrieb](anforderungen-pipwerk-dev-parallelbetrieb.md). Bis zu ihrer Umsetzung wird nur ein Auftrag gleichzeitig bearbeitet, und es gelten die festen Arbeitsbereiche der folgenden Abschnitte.
+## Parallele Bearbeitung
 
-Mit der Umstellung von `pipwerk-dev` sind gleichzeitig anzupassen: die Arbeitsbereichsregeln und Befehle in den Rollendefinitionen `.claude/agents/software-architect.md`, `.claude/agents/developer.md` und `.claude/agents/qa.md`, die Skills `pipwerk-test-deployment` und `pipwerk-close-work-order` (Teststand je Komponente, Abbau des Auftragsarbeitsbereichs), die Abschnitte zu Arbeitsbereichen und `pipwerk-dev` in diesem Dokument, die Tabelle der Arbeitsbereiche und die Aufrufschnittstelle in [Claude-Code-Agentenstruktur](claude-code-agentenstruktur.md) sowie der Abschnitt „Lokale Arbeitsbereiche“ im [Entwicklungsplan](../design/planning/entwicklungsplan-strategiedesigner.md). Die Aufrufschnittstelle muss dann zusätzlich die Auftragskennung an die Sitzung übergeben.
+Mehrere Aufträge werden gleichzeitig bearbeitet, wenn sie keine gemeinsame Komponente betreffen. Als je eigene Komponente gelten jede Hauptkomponente unter `components/`, jedes Paket unter `packages/`, `contracts/` sowie übergreifende Dokumente und Regeln außerhalb einer Komponente unter dem Namen `common`.
+
+Die Einschränkung ist keine technische Notwendigkeit von Git. Sie vermeidet Konflikte beim Zusammenführen und damit erneute QA-Läufe. Wird ein paralleler Auftrag zuerst gemergt, bringt der andere seinen Branch auf den neuen Stand von `main`; danach ist eine erneute QA erforderlich.
+
+Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente einen eigenen Teststand, und jedes Agententeam läuft in einer eigenen tmux-Sitzung (siehe [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung)).
+
+## Arbeitsbereiche nach der Einführung
+
+Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` liegen:
+
+| Verzeichnis | Inhalt | verändert von |
+|---|---|---|
+| `repo/` | Klon des Repositorys auf dem Stand von `origin/main`; Träger der gemeinsamen Git-Daten | nur `pipwerk-dev sync-repo` |
+| `work/<auftragskennung>/coordinate/` | Worktree des Softwarearchitekten, Commit von `origin/main` beim Anstoßen, ohne Branch; Arbeitsverzeichnis seiner Sitzung | Auftragsverwaltung über `pipwerk-dev` |
+| `work/<auftragskennung>/implement/` | Worktree des Entwicklers mit dem Arbeitsbranch | Entwickler |
+| `work/<auftragskennung>/review/` | Worktree der QA mit dem lokalen Prüfbranch | QA |
+| `test/<komponente>/` | Teststand der Komponente, ohne Branch auf einem freigegebenen Commit | nur `pipwerk-dev` |
+| `transfer/` | Arbeitsergebnisse und Ergebnisdateien, keine Projektfestlegungen | Agenten |
+| `scripts/` | `pipwerk-dev` und seine lokale Dokumentation, nicht Teil des Repositorys | nicht durch das Team |
+
+Kein Agent arbeitet in `repo/`. Entwickler und QA finden ihren Arbeitsbereich über `$PIPWERK_DEV_ROOT` und die Auftragskennung in `$PIPWERK_ORDER_ID`. Die Agentendefinitionen enthalten keine Pfade des Rechners.
+
+Jeder Worktree enthält alle Dateien des Repositorys, also auch `.claude/`. Wirksam sind nur die Agentendefinitionen im Arbeitsverzeichnis der Sitzung des Softwarearchitekten, also in `coordinate/`. Sie entsprechen damit dem Stand von `main` beim Anstoßen.
 
 ## Arbeitsbereiche und Umgang mit Fehlern
 
-Entwicklung und unabhängige QA verwenden getrennte Arbeitsbereiche. Die festen Arbeitsbereiche und ihre Schutzregeln stehen im folgenden Abschnitt. Ausgangs- beziehungsweise Prüfcommit werden im jeweiligen Auftrag eindeutig benannt. Der Teststand entspricht unverändert dem freigegebenen Commit.
+Entwicklung und unabhängige QA verwenden getrennte Arbeitsbereiche. Die Arbeitsbereiche und ihre Schutzregeln stehen in den Abschnitten [Arbeitsbereiche bis zur Einführung](#arbeitsbereiche-bis-zur-einführung) und [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung). Ausgangs- beziehungsweise Prüfcommit werden im jeweiligen Auftrag eindeutig benannt. Der Teststand entspricht unverändert dem freigegebenen Commit.
 
 Eigene Fehler, unvollständige Änderungen und Testreste werden vor der Übergabe vollständig beseitigt. Fremde Änderungen werden nicht verworfen. Die zuständige Rolle wird anhand von Diff, Auftragsreferenzen und Prüfnachweisen ermittelt. Nur zwingend fehlende Entscheidungen, Berechtigungen oder Handlungen außerhalb der eigenen Zuständigkeit werden eskaliert; unabhängige Arbeiten werden fortgesetzt.
 
-## Verbindliche Arbeitsbereiche
+## Arbeitsbereiche bis zur Einführung
+
+Dieser Abschnitt gilt bis zur [Einführung](#einführung). Danach gelten die [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung).
 
 Auf dem Entwicklungsrechner gibt es ein Pipwerk-Entwicklungsverzeichnis. Darin liegen nebeneinander die folgenden Verzeichnisse. Die Namen sind fest, weil Werkzeuge und Agentendefinitionen sie verwenden.
 
 Die Verzeichnisse `repo/`, `implement/`, `review/` und `test/` sind Git-Arbeitsbereiche desselben Repositorys. `repo/` ist ein normaler Klon von GitHub, die übrigen drei sind daran angehängte Worktrees. Ein Worktree ist ein zusätzliches Arbeitsverzeichnis, das sich die Git-Daten mit `repo/` teilt, aber einen eigenen Branch oder Commit ausgecheckt hat.
 
-Die Agenten finden das Pipwerk-Entwicklungsverzeichnis über die Umgebungsvariable `PIPWERK_DEV_ROOT`. Jedes aufrufende Programm muss sie gemäß der [verbindlichen Aufrufschnittstelle](claude-code-agentenstruktur.md#verbindliche-aufrufschnittstelle) prüfen und in der Prozessumgebung des Teams bereitstellen. Die konkrete Umsetzung des Aufrufers ist offen. Kein Agent setzt, überschreibt oder entfernt sie; alle verwenden nur den gesetzten Wert und schreiben Pfade über die Variable. Der Softwarearchitekt nennt Entwickler und QA ihre Arbeitsbereiche deshalb nur als `$PIPWERK_DEV_ROOT/implement` und `$PIPWERK_DEV_ROOT/review`, nie als ausgeschriebenen Pfad. Die Agentendefinitionen enthalten keine Pfade des Rechners. Ist die Variable nicht gesetzt, brechen die Agenten ab.
+Die Agenten finden das Pipwerk-Entwicklungsverzeichnis über die Umgebungsvariable `PIPWERK_DEV_ROOT`. Jedes aufrufende Programm muss sie gemäß der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle) prüfen und in der Prozessumgebung des Teams bereitstellen. Bis zur Einführung ist der Nutzer der Aufrufer, der die Sitzung von Hand startet. Kein Agent setzt, überschreibt oder entfernt sie; alle verwenden nur den gesetzten Wert und schreiben Pfade über die Variable. Der Softwarearchitekt nennt Entwickler und QA ihre Arbeitsbereiche deshalb nur als `$PIPWERK_DEV_ROOT/implement` und `$PIPWERK_DEV_ROOT/review`, nie als ausgeschriebenen Pfad. Die Agentendefinitionen enthalten keine Pfade des Rechners. Ist die Variable nicht gesetzt, brechen die Agenten ab.
 
 ### repo/ – Referenz-Repository
 
@@ -156,6 +238,8 @@ Hier liegen `pipwerk-dev`, seine automatischen Tests und die lokale Dokumentatio
 `pipwerk-dev` schreibt seine Zustands- und Protokolldateien in ein lokales Zustandsverzeichnis des ausführenden Benutzers außerhalb aller Arbeitsbereiche. Nichts davon gelangt ins Repository.
 
 ## Lokales Hilfswerkzeug pipwerk-dev
+
+Die folgenden Unterabschnitte beschreiben den heutigen Stand des Werkzeugs. Die geplante Erweiterung steht in [Erweiterung für den Parallelbetrieb](#erweiterung-für-den-parallelbetrieb).
 
 `pipwerk-dev` verwaltet Git-Arbeitsbereiche, Prüfungen und Teststände unabhängig von der Auftragsübermittlung. Seine bestehenden Schutzregeln und seine Verwendung durch die Agenten bleiben erhalten. Damit wird keine neue Auftragsanbindung festgelegt.
 
@@ -253,12 +337,66 @@ Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeil
 
 `pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein zweiter zustandsändernder Aufruf, während einer läuft, endet mit Exitcode 3.
 
+### Erweiterung für den Parallelbetrieb
+
+Für die [Arbeitsbereiche nach der Einführung](#arbeitsbereiche-nach-der-einführung) muss `pipwerk-dev` folgende Anforderungen erfüllen. Das Werkzeug wird nicht vom Agententeam geändert, sondern in einer eigenen Claude-Code-Sitzung auf Grundlage dieses Abschnitts.
+
+Befehle:
+
+```sh
+pipwerk-dev sync-repo
+pipwerk-dev prepare --order <auftragskennung> coordinate --base <commit>
+pipwerk-dev prepare --order <auftragskennung> <implement|review> <branch> --base <commit>
+pipwerk-dev update  --order <auftragskennung> <implement|review> <ref>
+pipwerk-dev test    <komponente> --order <auftragskennung> --workspace <implement|review>
+pipwerk-dev start   <komponente> <commit-hash>
+pipwerk-dev stop    <komponente>
+pipwerk-dev remove  --order <auftragskennung>
+pipwerk-dev status  [--order <auftragskennung>]
+```
+
+1. **Arbeitsbereiche je Auftrag:** `prepare` legt die Worktrees unter `work/<auftragskennung>/` an. `coordinate` wird ohne Branch auf den genannten Commit gesetzt. Die bisherigen Schutzregeln von `prepare` und `update` gelten für jeden dieser Worktrees unverändert.
+2. **Abbau:** `remove` entfernt die Worktrees und lokalen Branches eines Auftrags. Es bricht ohne Änderung ab, wenn ein Worktree lokale Änderungen hat, ein lokaler Branch Commits enthält, die nicht auf `origin` liegen, oder in einem der Worktrees ein verwalteter Prozess oder eine Claude-Code-Sitzung läuft.
+3. **Teststand je Komponente:** `start`, `stop` und `status` arbeiten je Komponente unter `test/<komponente>/` mit eigenen, je Komponente konfigurierten Ports und getrennter Testdatenbank. Teststände verschiedener Komponenten laufen gleichzeitig. Für dieselbe Komponente bricht `start` weiterhin ab, wenn sie aus einem anderen Commit läuft. Die übrigen Regeln von `start` bleiben erhalten.
+4. **Parallele Prüfungen:** `test` vergibt je Lauf freie Ports für die Browser-End-to-End-Tests, für Pipwerk Studio über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)).
+5. **Sperren je Bereich:** Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich oder Teststand. Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden kurz gemeinsam gesperrt. Ein gesperrter Aufruf endet mit Exitcode 3 und nennt den Grund.
+6. **Referenz-Repository:** `sync-repo` behält seine Abbruchbedingungen.
+7. **Erweiterbare Komponentenliste:** Prüfschritte, Startbefehle, Erreichbarkeitsprüfungen und Ports werden je Komponente beschrieben. Eine weitere Komponente kann ergänzt werden, ohne die Logik für Arbeitsbereiche, Sperren und Prozessverwaltung zu ändern. Umgesetzt wird zunächst nur `pipwerk-studio`.
+8. **Zustandsübersicht:** `status` ohne `--order` zeigt alle Auftragsarbeitsbereiche und alle Teststände. `status` verändert nichts.
+9. **Unveränderte Grundsätze:** Ausgabe mit `--json`, Exitcodes 0 bis 3, Protokolle im lokalen Zustandsverzeichnis, Ersetzen von Zugangsdaten in Ausgaben und Protokollen, kein Verändern fremder Daten, `main` bewegt nur `sync-repo`, `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
+10. **Umstellung:** Die bisherigen Arbeitsbereiche `implement/`, `review/` und `test/` werden nur entfernt, wenn sie keine lokalen Änderungen und keine nicht übertragenen Commits enthalten. Andernfalls bricht die Umstellung ab und nennt die betroffenen Dateien und Commits.
+11. **Nachweis:** Die automatischen Tests von `pipwerk-dev` decken jede dieser Anforderungen ab, insbesondere zwei gleichzeitige Aufträge, zwei gleichzeitige Prüfläufe und zwei gleichzeitige Teststände verschiedener Komponenten. Die lokale Dokumentation in `scripts/` wird vollständig aktualisiert.
+
+## Einführung
+
+Der beschlossene Prozess wird in einem Schritt eingeführt, weil seine Teile voneinander abhängen. Zum Einführungspaket gehören:
+
+1. die Erweiterung von `pipwerk-dev` für den Parallelbetrieb;
+2. die Rollendefinitionen von Softwarearchitekt, Entwickler und QA mit den neuen Arbeitsbereichen und Befehlen, ohne Statuswechsel und mit der Ergebnisdatei statt der Meldung an den Projektleiter;
+3. die Skills `pipwerk-test-deployment`, `pipwerk-close-work-order` und `pipwerk-escalation` mit denselben Änderungen;
+4. die neue Rollendefinition der Auftragsverwaltung und ihr systemd-Dienst;
+5. die Freigaben in `.claude/settings.json`, damit Sitzungen ohne Bediener die in den Rollendefinitionen und Skills vorgesehenen Befehle ohne Rückfrage ausführen;
+6. der Workflow des Runners;
+7. die geplante Benachrichtigung des Nutzers;
+8. die Aktualisierung dieses Dokuments und der [Agentenrollen und Briefings](agentenrollen-und-briefings.md): Wegfall der Übergangsregel und der Arbeitsbereiche bis zur Einführung.
+
+Der Runner wird nicht vor der Erweiterung von `pipwerk-dev` in Betrieb genommen. Bis dahin arbeitet der Softwarearchitekt in `repo/`, und `sync-repo` würde während seiner Arbeit abgelehnt.
+
+Vor der Freigabe des eingeführten Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio.
+
+## Weitere Qualitätswerkzeuge
+
+Die verbindlichen Prüfwerkzeuge und Qualitätsregeln stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md) und gelten unabhängig vom Stand der Einführung.
+
+Spec Kit ist erst nach einem nachgewiesenen Durchlauf als zusätzliche Qualitätsschicht für Spezifikation, Klärung, Planung und prüfbare Arbeitsaufträge vorgesehen. Es ersetzt weder die maßgebliche Dokumentation noch die Rollen und die unabhängige QA. Weitere Werkzeuge, insbesondere Vertrags-, Sicherheits-, Architektur-, Property-based- oder Mutationstests, werden anschließend bedarfsgerecht bewertet. Ein Werkzeug gilt erst dann als Qualitätsgewinn, wenn Aufgabe, Prüfkriterium und Wirkung nachgewiesen sind.
+
+Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben, nicht verbrauchsabhängig. Eine Kostenbegrenzung je Lauf ist deshalb nicht vorgesehen; das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur. Die Modellzuordnung der Rollen ist änderbare Laufzeitkonfiguration. Anbieterunabhängigkeit beziehungsweise der Einsatz mehrerer Sprachmodell-Anbieter ist derzeit keine Anforderung an den Entwicklungsprozess.
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-08 | Trennung von Nachrichtenübermittlung und Auftragsverwaltung, Nachrichtenformat, Logfile des Runners, Benachrichtigung des Nutzers, Status `queued` und `blocked`, Pflichtfelder Auftraggeber und `components` sowie parallele Bearbeitung von Aufträgen festgelegt. |
+| 2026-10-08 | Zum maßgeblichen Prozessdokument ausgebaut: Prozessinhalte aus Entwicklungsplan übernommen, Dokumentationsorte, Beteiligte, vollständiges Statusmodell mit zulässigen Übergängen, Pflichtfelder und Abschnitte eines Auftrags, Auftragsverwaltung, Ergebnisdatei, Runner, Benachrichtigung, parallele Bearbeitung, Arbeitsbereiche nach der Einführung, Erweiterung von `pipwerk-dev` und Einführung festgelegt; Übergangsregel bis zur Einführung ergänzt. |
 | 2026-10-08 | Auftragsablage nach `work-orders/` auf oberster Ebene verlegt. |
 | 2026-10-07 | Auftragsablage mit Statusfeld und Statusverzeichnissen, Statuswechsel als Verwaltungsarbeit auf `main` und geplanten Anstoß über GitHub Actions festgelegt. |
 | 2026-10-07 | Verworfene Auftrags- und Sitzungsautomatisierung entfernt; transportunabhängige Prozessregeln und die eigenständige Schnittstelle des lokalen Hilfswerkzeugs erhalten. Frühere Fassungen sind in Git nachvollziehbar. |

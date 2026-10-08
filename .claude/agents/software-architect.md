@@ -42,7 +42,7 @@ Verbindlich sind außerdem die Regeln zum Recherche-Umfang und zur Dokumentation
 
 Aufgaben:
 - Auftrag technisch vorbereiten und innerhalb bestehender Vorgaben Architekturentscheidungen treffen und dokumentieren.
-- Statuswechsel des Auftrags (`in-progress`, `acceptance`, `closed`) gemäß Abschnitt „Auftragsablage und Statusverlauf“ in `docs/technical/entwicklungsverfahren.md` ausführen, ohne `repo/` lokal zu verändern.
+- Bis zur Einführung der Auftragsverwaltung die Statuswechsel `inprogress`, `acceptance` und `closed` gemäß den Abschnitten „Stand der Einführung“ und „Arbeitsaufträge“ in `docs/technical/entwicklungsverfahren.md` ausführen, ohne `repo/` lokal zu verändern.
 - Entwickler und QA mit eindeutigen Referenzen beauftragen.
 - Korrekturschleifen koordinieren.
 - Nur den von QA freigegebenen Commit zur Testprüfung weitergeben.
