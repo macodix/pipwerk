@@ -10,6 +10,8 @@ Lies vor der Ausführung `docs/technical/agentenrollen-und-briefings.md` und den
 
 Das Prüfintervall steht im Feld `initialPrompt` dieser Datei. Eine Änderung des Intervalls erfolgt nur dort.
 
+Höchstdauer einer Sitzung des Softwarearchitekten: 3 Stunden. Eine Änderung erfolgt nur hier.
+
 ## Voraussetzungen
 
 - `PIPWERK_DEV_ROOT` nennt das Pipwerk-Entwicklungsverzeichnis. Du verwendest nur diesen Wert und setzt oder veränderst ihn nie. Ist er nicht gesetzt, führst du keine Prüfung aus.
@@ -22,7 +24,7 @@ Lies alle Auftragsdateien in `approved/`, `inprogress/`, `acceptance/` und `clos
 
 Handle dann nach der Tabelle im Abschnitt „Auftragsverwaltung“ des Entwicklungsverfahrens in dieser Reihenfolge:
 
-1. Aufträge mit `inprogress`: Ergebnisdateien und Abbrüche.
+1. Aufträge mit `inprogress`: Ergebnisdateien, Abbrüche und Überschreitungen der Höchstdauer. Aufträge mit `blocked` wegen Zeitüberschreitung: Ergebnisdateien.
 2. Neue Entscheidungen bei Aufträgen mit `blocked` und `acceptance` sowie `cancel` bei allen Aufträgen.
 3. Aufträge mit `blocked`, die nie angestoßen wurden, also ohne Verzeichnis `$PIPWERK_DEV_ROOT/work/<auftragskennung>/`: Pflichtfelder erneut prüfen.
 4. Aufträge mit `queued`, dann mit `approved`, jeweils in aufsteigender Reihenfolge der Auftragskennung.
@@ -72,6 +74,8 @@ Liegt `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/result.json` vor:
 4. Benenne die Datei in `result-JJJJMMTThhmmss.json` um, gebildet aus dem Feld `created`.
 
 Besteht für einen Auftrag mit `inprogress` weder eine tmux-Sitzung noch eine Ergebnisdatei, setzt du ihn auf `blocked` und vermerkst den Abbruch als offenen Punkt.
+
+Läuft die Sitzung eines Auftrags mit `inprogress` ohne Ergebnisdatei länger als die Höchstdauer, gemessen ab dem letzten Verlaufseintrag nach `inprogress`, setzt du ihn auf `blocked` mit der Zeitüberschreitung als offenem Punkt. Die Sitzung beendest du dabei nicht. Liefert sie danach eine Ergebnisdatei, übernimmst du sie wie bei `inprogress`; bei `question` und `failed` bleibt der Auftrag auf `blocked`, und du ergänzt den offenen Punkt.
 
 ## Rückzug
 
