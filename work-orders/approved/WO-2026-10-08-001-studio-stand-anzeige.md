@@ -3,7 +3,7 @@
 ## Status
 
 - id: `WO-2026-10-08-001`
-- status: `draft`
+- status: `approved`
 - client: Nutzer
 - components: `pipwerk-studio`
 
@@ -47,5 +47,7 @@ Wie der Stand technisch ermittelt und an die Oberfläche übergeben wird, entsch
 keine
 
 ## Entscheidungen des Auftraggebers
+
+2026-10-08T15:25:00 – Freigabe des Auftrags durch den Nutzer.
 
 ## Verlauf
