@@ -114,7 +114,9 @@ Eine Entscheidung des Auftraggebers ist ein Eintrag mit Datum und einer der Ents
 
 ## Auftragsverwaltung
 
-Die Auftragsverwaltung verwaltet jeden Auftrag von der Freigabe bis zum Abschluss. Sie ist eine Übergangslösung bis zur Entwicklung einer allgemeinen Nachrichten- und Auftragsverwaltung als Teil von Pipwerk. Sie wird als dauerhaft laufender Agent betrieben, den ein systemd-Dienst in einer tmux-Sitzung startet und nach einem Abbruch neu startet. Ihre Rollendefinition legt das Prüfintervall fest, als Standardwert 5 Minuten.
+Die Auftragsverwaltung verwaltet jeden Auftrag von der Freigabe bis zum Abschluss. Sie ist eine Übergangslösung bis zur Entwicklung einer allgemeinen Nachrichten- und Auftragsverwaltung als Teil von Pipwerk. Sie läuft als dauerhafte Claude-Code-Sitzung in der tmux-Sitzung `order-management` und wird mit `claude --agent order-management` im Entwicklungsverzeichnis gestartet. Ihre Rollendefinition legt im Feld `initialPrompt` die wiederkehrende Prüfung mit dem eingebauten Befehl `/loop` fest. Das Prüfintervall steht dort, als Standardwert 5 Minuten.
+
+Eine mit `/loop` angelegte wiederkehrende Aufgabe erlischt laut Claude-Code-Dokumentation nach 7 Tagen. Die Sitzung wird deshalb spätestens alle 7 Tage neu gestartet. Wird ihr Gesprächsverlauf zu groß, wird sie früher neu gestartet; der Neustart kann dann über einen Cron-Job erfolgen. Dass `/loop` als `initialPrompt` wie vorgesehen arbeitet, ist nicht dokumentiert und wird im Probelauf nachgewiesen.
 
 Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWERK_DEV_ROOT/repo/work-orders/`. Sie arbeitet nicht in `repo/` und verändert es nicht. Sie handelt wie folgt:
 
@@ -122,25 +124,25 @@ Bei jeder Prüfung liest die Auftragsverwaltung alle Auftragsdateien in `$PIPWER
 |---|---|
 | Auftrag mit `approved` | Pflichtfelder prüfen; bei Mangel `blocked` mit dem Mangel als offenem Punkt. Sonst Komponenten prüfen: belegt `queued`, frei anstoßen und `inprogress`. |
 | Auftrag mit `queued` | Sind alle betroffenen Komponenten frei, anstoßen und `inprogress`. Ältere Aufträge zuerst. |
-| Auftrag mit `inprogress`, Sitzung läuft | nichts |
-| Auftrag mit `inprogress`, Sitzung beendet, Ergebnisdatei vorhanden | Ergebnis übernehmen: `ready` nach `acceptance`, `question` und `failed` nach `blocked` mit dem Text als offenem Punkt, `merged` nach `closed` und Arbeitsbereiche des Auftrags abbauen |
-| Auftrag mit `inprogress`, Sitzung beendet, keine Ergebnisdatei | `blocked`; Abbruch als offenen Punkt vermerken |
+| Auftrag mit `inprogress`, Ergebnisdatei vorhanden | Ergebnis übernehmen: `ready` nach `acceptance`, `question` und `failed` nach `blocked` mit dem Text als offenem Punkt, `merged` nach `closed` und Arbeitsbereiche des Auftrags abbauen. Danach die tmux-Sitzung des Auftrags beenden. |
+| Auftrag mit `inprogress`, keine Ergebnisdatei, Sitzung läuft | nichts |
+| Auftrag mit `inprogress`, keine Ergebnisdatei, keine Sitzung | `blocked`; Abbruch als offenen Punkt vermerken |
 | neue Entscheidung `answer` bei `blocked` | Softwarearchitekten mit der Antwort erneut anstoßen und `inprogress`, bei belegter Komponente `queued` |
 | neue Entscheidung `reject` bei `acceptance` | Softwarearchitekten mit der Liste der Abweichungen zur Korrektur anstoßen und `inprogress` |
 | neue Entscheidung `accept` bei `acceptance` | Softwarearchitekten zum Merge anstoßen und `inprogress` |
-| neue Entscheidung `cancel` | laufende Sitzung beenden, Arbeitsbereiche abbauen und `cancelled` |
+| neue Entscheidung `cancel` | tmux-Sitzung des Auftrags beenden, Arbeitsbereiche abbauen und `cancelled` |
 
 Lehnt `pipwerk-dev remove` den Abbau der Arbeitsbereiche ab, zum Beispiel wegen nicht übertragener Commits, vermerkt die Auftragsverwaltung den Grund im Verlauf und lässt die Arbeitsbereiche bestehen.
 
-Anstoßen heißt: den Arbeitsbereich `coordinate/` des Auftrags anlegen und darin die Sitzung des Softwarearchitekten in einer tmux-Sitzung `pipwerk-<auftragskennung>` starten. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag nennt die Auftragskennung und die Aufgabe: umsetzen, korrigieren mit Abweichungen, mit einer Antwort fortsetzen oder mergen.
+Anstoßen heißt: den Arbeitsbereich `coordinate/` des Auftrags anlegen und darin die Sitzung des Softwarearchitekten mit `claude --agent software-architect` in einer tmux-Sitzung starten, deren Name die Auftragskennung ist. Die Auftragsverwaltung ist dabei der Aufrufer im Sinne der [Aufrufschnittstelle](agentenrollen-und-briefings.md#aufrufschnittstelle). Der Startauftrag nennt die Auftragskennung und die Aufgabe: umsetzen, korrigieren mit Abweichungen, mit einer Antwort fortsetzen oder mergen.
 
-Ob die Sitzung läuft, prüft die Auftragsverwaltung mit `tmux has-session -t pipwerk-<auftragskennung>`. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
+Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. Ob die Sitzung eines Auftrags besteht, prüft die Auftragsverwaltung mit `tmux has-session -t <auftragskennung>`; beendet wird sie mit `tmux kill-session -t <auftragskennung>`. Weil der Sitzungsname die Auftragskennung ist, sind parallele Sitzungen eindeutig unterscheidbar. Eine Komponente gilt als belegt, solange ein Auftrag, der sie nennt, auf `inprogress`, `blocked` oder `acceptance` steht.
 
 Die Auftragsverwaltung hält keinen Stand im Gedächtnis ihrer Sitzung. Ihr gesamter Stand ergibt sich aus Auftragsdateien, tmux-Sitzungen und Ergebnisdateien. Ein Neustart ist deshalb jederzeit möglich. Jede Handlung prüft vor der Ausführung den aktuellen Stand, sodass eine wiederholte Prüfung nichts doppelt ausführt. Schlägt ein Statuswechsel fehl, weil sich die Datei auf `main` inzwischen geändert hat, wird er bei der nächsten Prüfung neu bewertet.
 
 ### Ergebnisdatei des Softwarearchitekten
 
-Der Softwarearchitekt schreibt als letzte Handlung seiner Sitzung die Datei `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/result.json`:
+Der Softwarearchitekt schreibt als letzte Handlung die Datei `$PIPWERK_DEV_ROOT/transfer/<auftragskennung>/result.json`:
 
 | Feld | Inhalt |
 |---|---|
@@ -151,7 +153,7 @@ Der Softwarearchitekt schreibt als letzte Handlung seiner Sitzung die Datei `$PI
 | `text` | Rückfrage, Fehlerbeschreibung oder Hinweise zum Teststand in ganzen Sätzen |
 | `created` | Zeitpunkt der Erstellung |
 
-Nach der Übernahme benennt die Auftragsverwaltung die Datei in `result-JJJJMMTThhmmss.json` um, gebildet aus `created`. Damit bleibt jedes Ergebnis erhalten, und ein neues ist eindeutig erkennbar.
+Seine Sitzung bleibt danach geöffnet, bis die Auftragsverwaltung sie beendet. Nach der Übernahme benennt die Auftragsverwaltung die Datei in `result-JJJJMMTThhmmss.json` um, gebildet aus `created`. Damit bleibt jedes Ergebnis erhalten, und ein neues ist eindeutig erkennbar.
 
 ## Runner
 
@@ -374,8 +376,8 @@ Der beschlossene Prozess wird in einem Schritt eingeführt, weil seine Teile von
 1. die Erweiterung von `pipwerk-dev` für den Parallelbetrieb;
 2. die Rollendefinitionen von Softwarearchitekt, Entwickler und QA mit den neuen Arbeitsbereichen und Befehlen, ohne Statuswechsel und mit der Ergebnisdatei statt der Meldung an den Projektleiter;
 3. die Skills `pipwerk-test-deployment`, `pipwerk-close-work-order` und `pipwerk-escalation` mit denselben Änderungen;
-4. die neue Rollendefinition der Auftragsverwaltung und ihr systemd-Dienst;
-5. die Freigaben in `.claude/settings.json`, damit Sitzungen ohne Bediener die in den Rollendefinitionen und Skills vorgesehenen Befehle ohne Rückfrage ausführen;
+4. die neue Rollendefinition der Auftragsverwaltung und der Startbefehl ihrer tmux-Sitzung;
+5. die Freigaben, damit Sitzungen ohne Bediener die in den Rollendefinitionen und Skills vorgesehenen Befehle ohne Rückfrage ausführen: allgemeine Befehle in `.claude/settings.json`, der rechnerspezifische Pfad von `pipwerk-dev` in den Benutzereinstellungen von Claude Code auf dem Entwicklungsrechner. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an; der Probelauf weist nach, dass alle vorgesehenen Befehle freigegeben sind;
 6. der Workflow des Runners;
 7. die geplante Benachrichtigung des Nutzers;
 8. die Aktualisierung dieses Dokuments und der [Agentenrollen und Briefings](agentenrollen-und-briefings.md): Wegfall der Übergangsregel und der Arbeitsbereiche bis zur Einführung.
@@ -396,6 +398,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Betrieb der Auftragsverwaltung als dauerhafte Sitzung mit `/loop` über `initialPrompt` festgelegt; tmux-Sitzungsname gleich Auftragskennung; Übernahme des Ergebnisses unabhängig vom Sitzungsende und Beenden der Sitzung durch die Auftragsverwaltung; Freigaben präzisiert. |
 | 2026-10-08 | Zum maßgeblichen Prozessdokument ausgebaut: Prozessinhalte aus Entwicklungsplan übernommen, Dokumentationsorte, Beteiligte, vollständiges Statusmodell mit zulässigen Übergängen, Pflichtfelder und Abschnitte eines Auftrags, Auftragsverwaltung, Ergebnisdatei, Runner, Benachrichtigung, parallele Bearbeitung, Arbeitsbereiche nach der Einführung, Erweiterung von `pipwerk-dev` und Einführung festgelegt; Übergangsregel bis zur Einführung ergänzt. |
 | 2026-10-08 | Auftragsablage nach `work-orders/` auf oberster Ebene verlegt. |
 | 2026-10-07 | Auftragsablage mit Statusfeld und Statusverzeichnissen, Statuswechsel als Verwaltungsarbeit auf `main` und geplanten Anstoß über GitHub Actions festgelegt. |

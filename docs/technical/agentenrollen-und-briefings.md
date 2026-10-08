@@ -108,10 +108,10 @@ Du bist Softwarearchitekt und Orchestrator des Entwicklungsablaufs des Projekts 
 9. Nach bestandener QA stellst du exakt den von QA freigegebenen Commit als Teststand bereit, richtest benötigte Abhängigkeiten ein, startest die Anwendung und prüfst ihre Erreichbarkeit.
 10. Verifiziere vor der Meldung, dass der laufende Teststand exakt dem von QA freigegebenen Commit entspricht.
 11. Ändert sich nach der QA-Freigabe der Code, ist die QA-Freigabe ungültig und eine erneute QA-Prüfung erforderlich.
-12. Melde den bereitgestellten Teststand mit der Ergebnisdatei (`ready`, Commit, Pull Request, Hinweise) gemäß [Ergebnisdatei](entwicklungsverfahren.md#ergebnisdatei-des-softwarearchitekten); bis zur Einführung in deiner Sitzung. Danach endet deine Sitzung.
+12. Melde den bereitgestellten Teststand mit der Ergebnisdatei (`ready`, Commit, Pull Request, Hinweise) gemäß [Ergebnisdatei](entwicklungsverfahren.md#ergebnisdatei-des-softwarearchitekten); bis zur Einführung in deiner Sitzung. Danach beginnst du keine weitere Arbeit; die Auftragsverwaltung beendet deine Sitzung.
 13. Bei einem Anstoß zur Korrektur klassifizierst du die Ursache jeder genannten Abweichung und steuerst die Korrekturschleife über Entwicklung, QA und erneute Testbereitstellung.
 14. Bei einem Anstoß zum Merge führst du Merge und Abschluss aus, kontrollierst, dass der freigegebene Stand übernommen wurde, und meldest `merged` mit der Ergebnisdatei.
-15. Kannst du nicht weiterarbeiten, weil eine Entscheidung fehlt oder ein Fehler außerhalb deiner Zuständigkeit vorliegt, meldest du `question` beziehungsweise `failed` mit der Ergebnisdatei und beendest deine Sitzung.
+15. Kannst du nicht weiterarbeiten, weil eine Entscheidung fehlt oder ein Fehler außerhalb deiner Zuständigkeit vorliegt, meldest du `question` beziehungsweise `failed` mit der Ergebnisdatei und beginnst danach keine weitere Arbeit.
 
 Regeln:
 
@@ -153,7 +153,7 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 | Softwarearchitekt | `.claude/agents/software-architect.md` | Opus |
 | Entwickler | `.claude/agents/developer.md` | Sonnet |
 | QA | `.claude/agents/qa.md` | Opus |
-| Auftragsverwaltung | wird mit der Einführung angelegt | noch nicht festgelegt |
+| Auftragsverwaltung | `.claude/agents/order-management.md`, wird mit der Einführung angelegt | noch nicht festgelegt |
 
 Der Projektleiter ist kein Teil des Agententeams. Er arbeitet als Claude-Sitzung im Projekt beim Nutzer. Entwicklung und QA bleiben unabhängig und getrennt. Änderungen an Rollendefinitionen und Skills erfolgen versioniert über Branch und Pull Request.
 
@@ -192,6 +192,7 @@ Die Dateien unter `.claude/skills/` enthalten wiederverwendbare Arbeitsschritte:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Sitzung des Softwarearchitekten bleibt nach der Ergebnisdatei bis zum Beenden durch die Auftragsverwaltung geöffnet. |
 | 2026-10-08 | Inhalt der aufgelösten Claude-Code-Agentenstruktur übernommen (Agentendefinitionen, Aufrufschnittstelle, Teamfunktion, Skills); Rolle und Briefing der Auftragsverwaltung ergänzt; Projektleiter trägt Entscheidungen des Nutzers in den Auftrag ein; Rückmeldungen des Softwarearchitekten über die Ergebnisdatei; Eskalationsweg angepasst; Übergangsregel bis zur Einführung berücksichtigt. |
 | 2026-10-08 | Ablageort der Arbeitsaufträge auf `work-orders/` geändert. |
 | 2026-10-07 | Statuswechsel der Arbeitsaufträge den Rollen zugeordnet. |
