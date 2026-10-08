@@ -6,6 +6,11 @@ set -eu
 : "${PIPWERK_DEV_ROOT:?PIPWERK_DEV_ROOT ist nicht gesetzt}"
 test -d "$PIPWERK_DEV_ROOT/repo/.git" || { echo "Referenz-Repository fehlt: $PIPWERK_DEV_ROOT/repo" >&2; exit 1; }
 
+# Neutrales Arbeitsverzeichnis: Startet dieser Aufruf den tmux-Server, behält
+# der Server dieses Verzeichnis. Läge es in repo/, verweigerte sync-repo die
+# Aktualisierung, solange der tmux-Server läuft.
+cd "$PIPWERK_DEV_ROOT"
+
 SESSION=order-management
 DEV="$PIPWERK_DEV_ROOT/scripts/pipwerk-dev"
 WORKDIR="$PIPWERK_DEV_ROOT/work/$SESSION/coordinate"
