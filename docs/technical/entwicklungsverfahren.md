@@ -300,8 +300,9 @@ Die folgenden Schritte richten den Prozess auf dem Entwicklungsrechner ein. Sie 
 3. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository anmelden und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv in `repo/` starten und die Vertrauensabfrage für den Ordner bestätigen. Laut Claude-Code-Dokumentation gilt dieses Vertrauen auch für die Worktrees unter `work/`, weil sie zum selben Repository gehören; eine unbestätigte Abfrage würde eine unbediente Sitzung anhalten.
 4. Im Repository auf GitHub unter Settings → Actions → General für Workflows aus Pull Requests die Freigabe für alle externen Beitragenden verlangen.
 5. In den Benutzereinstellungen von Claude Code (`~/.claude/settings.json`) die rechnerspezifischen Freigaben eintragen: den Aufruf von `pipwerk-dev` mit seinem absoluten Pfad und Schreibrechte für Dateien unterhalb des Entwicklungsverzeichnisses. Die allgemeinen Freigaben stehen in `.claude/settings.json` im Repository. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an.
-6. Die Auftragsverwaltung mit `tools/order-management/start.sh` starten. Das Skript beendet eine laufende Sitzung, legt die Arbeitskopie `work/order-management/coordinate` auf dem aktuellen Stand von `origin/main` neu an und startet `claude --agent order-management` in der tmux-Sitzung `order-management`. Es wird spätestens alle 7 Tage erneut ausgeführt, bei Bedarf über einen Cron-Job.
-7. Der Projektleiter richtet die geplante Benachrichtigung des Nutzers ein.
+6. `PIPWERK_DEV_ROOT` in der Anmeldeumgebung dieses Benutzers setzen und exportieren, zum Beispiel in `~/.profile`, und bei einem späteren Cron-Job in dessen Umgebung. `start.sh` errät den Wert nicht, sondern bricht ohne ihn ab.
+7. Die Auftragsverwaltung mit `tools/order-management/start.sh` starten. Das Skript beendet eine laufende Sitzung, legt die Arbeitskopie `work/order-management/coordinate` auf dem aktuellen Stand von `origin/main` neu an und startet `claude --agent order-management` in der tmux-Sitzung `order-management`. Es wird spätestens alle 7 Tage erneut ausgeführt, bei Bedarf über einen Cron-Job.
+8. Der Projektleiter richtet die geplante Benachrichtigung des Nutzers ein.
 
 Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio. Er weist zugleich nach, dass `/loop` als `initialPrompt` arbeitet, dass die Teamfunktion in einer tmux-Sitzung zuverlässig läuft, dass in den Worktrees keine Vertrauensabfrage erscheint und dass alle vorgesehenen Befehle freigegeben sind.
 
@@ -317,6 +318,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-08 | Einrichtung: `PIPWERK_DEV_ROOT` in der Anmeldeumgebung als Voraussetzung für `start.sh` ergänzt. |
 | 2026-10-08 | Beschreibung von `pipwerk-dev` an die umgesetzte Fassung angeglichen: Befehl `migrate`, Pflichtangabe `--base`, strengere Abbruchbedingungen von `remove`, Wartezeit auf die Sperre der gemeinsamen Git-Daten. |
 | 2026-10-08 | Festgelegt: Merge mit Merge-Commit, `coordinate/` auf dem Stand des ersten Anstoßes, Zeitpunkte auf die Sekunde, Reihenfolge und Belegung in der Auftragsverwaltung, Nachholen des Aufräumens, Freigabepflicht für Workflows aus fremden Pull Requests, Vertrauensabfrage über `repo/`. |
 | 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt: Übergangsregel und feste Arbeitsbereiche entfernt, `pipwerk-dev` mit Arbeitsbereichen je Auftrag und Teststand je Komponente beschrieben, Einrichtung auf dem Entwicklungsrechner und Arbeitskopie der Auftragsverwaltung ergänzt. |
