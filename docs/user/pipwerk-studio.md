@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-06
+- stand: 2026-10-08
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu Pipwerk Studio dient
@@ -26,13 +26,22 @@ Oben steht die Kopfzeile. Sie zeigt links den Namen „Pipwerk Studio“ und rec
 
 In der Mitte liegt die Designer-Arbeitsfläche. Sie ist mit einem Punktraster hinterlegt. Oben links steht der Hinweis „Die Arbeitsfläche ist leer.“ Die Arbeitsfläche kann mit der Maus verschoben und mit dem Mausrad vergrößert oder verkleinert werden. Weitere Funktionen hat sie noch nicht.
 
-Unten steht die Fußzeile. Sie zeigt, ob Pipwerk Studio seinen Hintergrunddienst erreicht. Der Hintergrunddienst ist der Teil von Pipwerk Studio, der außerhalb des Browsers läuft.
+Unten steht die Fußzeile. Sie zeigt links, ob Pipwerk Studio seinen Hintergrunddienst erreicht, und rechts daneben den Stand, aus dem Pipwerk Studio läuft. Der Hintergrunddienst ist der Teil von Pipwerk Studio, der außerhalb des Browsers läuft.
 
 | Anzeige | Bedeutung |
 | --- | --- |
 | „Backend: Verbindung wird geprüft“ | Pipwerk Studio fragt gerade beim Hintergrunddienst an. |
 | „Backend: verbunden“ | Der Hintergrunddienst hat geantwortet. Pipwerk Studio ist bereit. |
 | „Backend: nicht erreichbar“ | Der Hintergrunddienst hat nicht oder nicht richtig geantwortet. In diesem Fall muss geprüft werden, ob er gestartet ist. Danach wird die Seite im Browser neu geladen. |
+
+Der Stand ist die Kurzform des Commits, also die ersten 7 Zeichen der Kennung des Arbeitsstands, aus dem Pipwerk Studio gestartet wurde. Damit ist bei einer Prüfung erkennbar, welcher Stand bereitgestellt ist. Er ist keine Versionsnummer und kein Datum. Die Bezeichnung folgt der gewählten Sprache.
+
+| Anzeige | Bedeutung |
+| --- | --- |
+| „Stand: <kurzform>“ (Deutsch), „Revision: <kurzform>“ (Englisch) | Pipwerk Studio läuft aus dem Commit, dessen Kennung mit diesen 7 Zeichen beginnt. |
+| „Stand: unbekannt“ (Deutsch), „Revision: unknown“ (Englisch) | Der Stand lässt sich nicht ermitteln, zum Beispiel weil Pipwerk Studio außerhalb eines Git-Arbeitsbereichs oder ohne Git gestartet wurde. Dasselbe wird kurz angezeigt, solange die Anfrage läuft, und wenn sie fehlschlägt. Pipwerk Studio arbeitet unabhängig davon normal. |
+
+Der Stand wird einmal beim Start von Pipwerk Studio ermittelt. Wird der Arbeitsbereich danach auf einen anderen Commit gesetzt, zeigt ein weiterlaufendes Pipwerk Studio weiter den Stand beim Start; nach einem Neustart zeigt es den neuen Stand.
 
 ## 4. Sprache wechseln
 

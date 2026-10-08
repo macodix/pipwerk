@@ -3,14 +3,14 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-06
+- stand: 2026-10-08
 - komponente: `pipwerk-studio`
 
 ## 1. Gegenstand
 
 Dieses Dokument beschreibt den technischen Aufbau von Pipwerk Studio, die Einrichtung einer Entwicklungsumgebung, den Start im Entwicklungsbetrieb und die vorgeschriebenen Prüfungen.
 
-Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1, erweitert um die dauerhafte Oberflächensprache (WO-2026-10-04-001). Pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln, speichert die gewählte Sprache dauerhaft im Backend und prüft, ob das Backend erreichbar ist. Fachliche Objekte, Strategien und Ausführung sind noch nicht enthalten.
+Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1, erweitert um die dauerhafte Oberflächensprache (WO-2026-10-04-001) und die Anzeige des Stands (WO-2026-10-08-001). Pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln, speichert die gewählte Sprache dauerhaft im Backend, prüft, ob das Backend erreichbar ist, und zeigt in der Fußzeile den Stand (Kurzform des Commits), aus dem es läuft. Fachliche Objekte, Strategien und Ausführung sind noch nicht enthalten.
 
 ## 2. Aufbau der Komponente
 
@@ -23,7 +23,7 @@ Pipwerk Studio liegt im Verzeichnis `components/pipwerk-studio/` und besteht aus
 
 ### 2.1 Backend, Konfiguration und Persistenz
 
-Das Backend ist eine FastAPI-Anwendung. Die Funktion `create_app()` in `backend/src/pipwerk_studio/app.py` erzeugt die Anwendung. Sie wird mit dem ASGI-Server Uvicorn gestartet. `cli.py` ist der eigenständige Startpunkt, `config.py` liest die INI-Startkonfiguration, `settings_service.py` bildet die anwendungsseitige Servicegrenze und `storage.py` kapselt SQLAlchemy und das relationale Speichermodell.
+Das Backend ist eine FastAPI-Anwendung. Die Funktion `create_app()` in `backend/src/pipwerk_studio/app.py` erzeugt die Anwendung. Sie wird mit dem ASGI-Server Uvicorn gestartet. `cli.py` ist der eigenständige Startpunkt, `config.py` liest die INI-Startkonfiguration, `settings_service.py` bildet die anwendungsseitige Servicegrenze, `storage.py` kapselt SQLAlchemy und das relationale Speichermodell und `revision.py` ermittelt den Stand (Abschnitt 2.6).
 
 Die Oberflächensprache ist eine einzige betriebliche Einstellung der Komponente, nicht benutzerbezogen und kein Bestandteil von Strategiedaten. Der Browser ist nicht autoritativ und verwendet dafür weder Local Storage noch Session Storage noch Cookies. Ohne gespeicherten Wert liefert der Service Deutsch (`de`). Die Datenbank enthält höchstens einen zentralen Datensatz in `studio_settings`.
 
@@ -74,6 +74,8 @@ Die Oberfläche besteht aus folgenden Bestandteilen:
 | `src/settingsApi.ts` | Abruf und strenge Prüfung der Antworten der Spracheinstellungs-Schnittstelle |
 | `src/BackendStatus.tsx` | Anzeige, ob das Backend erreichbar ist |
 | `src/api.ts` | Abruf und Prüfung der Antwort der Verbindungsprüfung |
+| `src/RevisionDisplay.tsx` | Anzeige des Stands in der Fußzeile rechts neben dem Backend-Status |
+| `src/revisionApi.ts` | Abruf und strenge Prüfung der Antwort der Stand-Schnittstelle |
 | `src/i18n.ts` | Einrichtung von i18next mit den unterstützten Sprachen |
 | `src/locales/de.json`, `src/locales/en.json` | deutsche und englische Oberflächentexte |
 | `src/styles.css` | Gestaltung der Oberfläche |
@@ -120,6 +122,21 @@ Der Browser speichert die Sprache weder in Local Storage noch in Session Storage
 Die Oberfläche ruft beim Laden die Verbindungsprüfung des Backends mit TanStack Query ab. Sie prüft, ob die Antwort genau den erwarteten Inhalt hat. Das Ergebnis wird in der Fußzeile angezeigt. Bei einem HTTP-Fehler, einem Netzwerkfehler oder einer unerwarteten Antwort zeigt die Oberfläche an, dass das Backend nicht erreichbar ist.
 
 Im Entwicklungsbetrieb ruft der Browser nur den Vite-Entwicklungsserver auf. Vite leitet alle Anfragen unter `/api` an das Backend weiter. Browser und Backend verwenden dadurch aus Sicht des Browsers dieselbe Adresse. Eine CORS-Freigabe im Backend ist deshalb nicht nötig und nicht eingerichtet.
+
+### 2.6 Anzeige des Stands
+
+Die Fußzeile zeigt rechts neben dem Backend-Status den Stand, aus dem Pipwerk Studio läuft: die ersten 7 Zeichen des Git-Commits. Auf Deutsch lautet die Anzeige „Stand: <kurzform>“, auf Englisch „Revision: <kurzform>“; ein Sprachwechsel schaltet die Bezeichnung um. Die Texte stehen unter dem Schlüssel `revision` in `de.json` und `en.json`. Lässt sich der Stand nicht ermitteln, erscheint „Stand: unbekannt“ beziehungsweise „Revision: unknown“.
+
+Architekturentscheidung (Softwarearchitekt, WO-2026-10-08-001):
+
+- Das Backend ermittelt den Stand einmal beim Erzeugen der Anwendung in `create_app()`, nicht je Anfrage. Der Stand ändert sich während eines Prozesses nicht; der Prozess läuft aus dem Stand, der beim Start ausgecheckt war. Eine Ermittlung je Anfrage würde den Stand eines später veränderten Arbeitsbereichs melden, aus dem der Prozess gar nicht läuft, und für jede Anfrage einen Unterprozess starten.
+- Die Ermittlung (`revision.py`) führt `git -C <Verzeichnis des Pakets pipwerk_studio> rev-parse HEAD` als Unterprozess mit fester Argumentliste, ohne Shell und mit einer Zeitbegrenzung von 5 Sekunden aus. Gültig ist nur eine Ausgabe aus genau 40 Hexadezimalzeichen in Kleinbuchstaben; die Kurzform sind deren erste 7 Zeichen. `--short` wird nicht verwendet, weil Git die Kurzform bei Mehrdeutigkeit verlängert, die Anzeige aber genau 7 Zeichen hat.
+- Jeder Fehler (Git nicht vorhanden, kein Git-Arbeitsbereich, Zeitüberschreitung, Exitcode ungleich 0, ungültige Ausgabe) ergibt „nicht ermittelbar“. Das Backend startet und arbeitet dann normal und protokolliert den Grund einmal als Warnung, ohne technische Details der Git-Ausgabe.
+- Die Ermittlung ist über den optionalen Parameter `revision_lookup` von `create_app()` austauschbar, damit Tests ohne echtes Git deterministisch sind.
+- Die Oberfläche ruft den Stand über die interne Schnittstelle `GET /api/studio/revision` (Abschnitt 5) mit TanStack Query ab. `/api/health` bleibt unverändert, weil `pipwerk-dev` genau `{"status": "ok"}` erwartet.
+- Solange der Abruf läuft, fehlschlägt, eine ungültige Antwort liefert oder `null` liefert, zeigt die Oberfläche „unbekannt“ beziehungsweise „unknown“. Die Anzeige trägt bewusst nicht die Rolle `status`, die allein dem Backend-Status gehört.
+
+Der Stand ist keine Versionsnummer und kein Build-Datum.
 
 ## 3. Voraussetzungen für die Entwicklung
 
@@ -184,17 +201,18 @@ Der Befehl `npm run build` im Verzeichnis `frontend` prüft zuerst die Typen und
 
 ## 5. HTTP-Schnittstelle
 
-Das Backend stellt derzeit drei Endpunkte bereit.
+Das Backend stellt derzeit vier Endpunkte bereit.
 
 | Methode | Pfad | Erfolgsantwort | Zweck |
 | --- | --- | --- | --- |
 | `GET` | `/api/health` | HTTP 200 mit `{"status": "ok"}` | technische Prüfung, ob die Oberfläche ihr Backend erreicht |
 | `GET` | `/api/studio/settings/language` | HTTP 200 mit `{"language": "de"}` oder `{"language": "en"}` | autoritative Oberflächensprache lesen; ohne gespeicherten Wert `de` |
 | `PUT` | `/api/studio/settings/language` | HTTP 200 mit `{"language": "de"}` oder `{"language": "en"}` | Oberflächensprache zentral speichern |
+| `GET` | `/api/studio/revision` | HTTP 200 mit `{"revision": "<7 Zeichen>"}` oder `{"revision": null}` | Stand (Kurzform des Commits) lesen; `null`, wenn er nicht ermittelbar ist (Abschnitt 2.6) |
 
-Andere Methoden auf diesen Pfaden werden mit HTTP 405 abgelehnt. Die Antworten werden mit den Pydantic-Modellen `HealthStatus` und `StudioLanguage` erzeugt, die keine zusätzlichen Felder zulassen. Der Schreibzugriff verwendet das getrennte Modell `StudioLanguageUpdate`: Der Body enthält ausschließlich `{"language": "de"}` oder `{"language": "en"}`; andere Werte, andere Typen, fehlende oder zusätzliche Felder und ein Body, der kein JSON ist, werden mit HTTP 422 abgelehnt. Ist der gespeicherte Wert ungültig, antwortet das Lesen mit HTTP 503 (Abschnitt 2.1). Das Frontend akzeptiert seinerseits nur eine Antwort mit genau einem gültigen `language`-Feld.
+Andere Methoden auf diesen Pfaden werden mit HTTP 405 abgelehnt. Die Antworten werden mit den Pydantic-Modellen `HealthStatus`, `StudioLanguage` und `StudioRevision` erzeugt, die keine zusätzlichen Felder zulassen. Der Schreibzugriff verwendet das getrennte Modell `StudioLanguageUpdate`: Der Body enthält ausschließlich `{"language": "de"}` oder `{"language": "en"}`; andere Werte, andere Typen, fehlende oder zusätzliche Felder und ein Body, der kein JSON ist, werden mit HTTP 422 abgelehnt. Ist der gespeicherte Wert ungültig, antwortet das Lesen mit HTTP 503 (Abschnitt 2.1). Das Frontend akzeptiert seinerseits nur eine Antwort mit genau einem gültigen `language`-Feld beziehungsweise bei der Stand-Schnittstelle genau einem Feld `revision` mit 7 Hexadezimalzeichen (Kleinbuchstaben) oder `null`.
 
-Die Endpunkte sind interne Verbindungen innerhalb von Pipwerk Studio. Sie sind kein Bestandteil der öffentlichen Web-API und kein versionierter Vertrag unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
+Die Endpunkte sind interne Verbindungen innerhalb von Pipwerk Studio (auch `/api/studio/revision`). Sie sind kein Bestandteil der öffentlichen Web-API und kein versionierter Vertrag unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
 
 ## 6. Prüfungen
 
@@ -212,7 +230,7 @@ uv run --frozen ruff format --check
 uv run --frozen mypy
 ```
 
-pytest prüft die HTTP-Anwendung ohne gestarteten Server mit dem Testclient von FastAPI sowie die Konfiguration. Die Tests decken Konfigurationspriorität, Suchpfade (POSIX und Windows, auch bei leerem `HOME`; vom Rechner unabhängig), Fehlerfälle, API-Validierung, Start ohne gültige INI (kein Ersatzwert, Exitcode, Meldung, leere `url`, nicht nutzbare Datenbank-URL, `create_app()` ohne Konfiguration), falsche Methoden, ungültigen gespeicherten Wert, den Ausweg bei gleichzeitigem ersten Schreiben, Standardwert, Umschalten, Trennung verschiedener Datenbanken und die Wiederherstellung von Englisch und Deutsch nach echten Stop-/Startzyklen separater Backendprozesse mit derselben temporären INI und SQLite-Datei ab. Ruff prüft Programmierstil und typische Fehler; `ruff format --check` meldet Formatabweichungen, ohne Dateien zu ändern. mypy prüft die Typen im strengen Modus.
+pytest prüft die HTTP-Anwendung ohne gestarteten Server mit dem Testclient von FastAPI sowie die Konfiguration. Die Tests decken Konfigurationspriorität, Suchpfade (POSIX und Windows, auch bei leerem `HOME`; vom Rechner unabhängig), Fehlerfälle, API-Validierung, Start ohne gültige INI (kein Ersatzwert, Exitcode, Meldung, leere `url`, nicht nutzbare Datenbank-URL, `create_app()` ohne Konfiguration), falsche Methoden, ungültigen gespeicherten Wert, den Ausweg bei gleichzeitigem ersten Schreiben, Standardwert, Umschalten, Trennung verschiedener Datenbanken, den Stand (`tests/test_revision.py`: gültiger Hash ergibt 7 Zeichen; fehlendes Git, kein Arbeitsbereich, Exitcode ungleich 0, ungültige Ausgabe und Zeitüberschreitung ergeben `null` bei normalem Start; einmalige Ermittlung; Antwortmodell; falsche Methoden; Aufruf ohne Shell mit fester Argumentliste) und die Wiederherstellung von Englisch und Deutsch nach echten Stop-/Startzyklen separater Backendprozesse mit derselben temporären INI und SQLite-Datei ab. Ruff prüft Programmierstil und typische Fehler; `ruff format --check` meldet Formatabweichungen, ohne Dateien zu ändern. mypy prüft die Typen im strengen Modus.
 
 Die Prüfung der Python-Abhängigkeiten auf bekannte Sicherheitslücken erfolgt mit `pip-audit`, das über `uvx` ohne Installation in die Projektumgebung ausgeführt wird. Die Anforderungsliste wird aus der Lockdatei erzeugt:
 
@@ -237,7 +255,7 @@ npm run build
 npm audit
 ```
 
-`npm run typecheck` führt den TypeScript-Compiler mit `strict` und ohne Ausgabe von Dateien aus. `npm test` führt die Vitest-Tests aus. Sie prüfen mit Testing Library das sichtbare Verhalten der Oberfläche: Produktname, leere Arbeitsfläche, Sprachwechsel einschließlich Fehlerfällen und Speichern per Mutation, Anzeige des Backendzustands und Vollständigkeit der Übersetzungen. Die Anfragen an das Backend werden in diesen Tests durch festgelegte Antworten ersetzt. `npm audit` prüft die npm-Abhängigkeiten auf bekannte Sicherheitslücken.
+`npm run typecheck` führt den TypeScript-Compiler mit `strict` und ohne Ausgabe von Dateien aus. `npm test` führt die Vitest-Tests aus. Sie prüfen mit Testing Library das sichtbare Verhalten der Oberfläche: Produktname, leere Arbeitsfläche, Sprachwechsel einschließlich Fehlerfällen und Speichern per Mutation, Anzeige des Backendzustands, Anzeige des Stands (Deutsch und Englisch, Sprachwechsel, `null`, Fehler, ungültige Antwort, Position rechts neben dem Backend-Status) und Vollständigkeit der Übersetzungen. Die Anfragen an das Backend werden in diesen Tests durch festgelegte Antworten ersetzt. `npm audit` prüft die npm-Abhängigkeiten auf bekannte Sicherheitslücken.
 
 ### 6.3 Browser-End-to-End-Test
 
@@ -257,7 +275,7 @@ npm run e2e
 
 Playwright startet ein isoliertes Backend auf Port 18000 und Vite auf Port 15173. Andere Ports können über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` gewählt werden. `e2e/start-backend.mjs` erzeugt je Lauf ein temporäres Verzeichnis mit INI und SQLite-Datei, startet das Backend ausschließlich über die dokumentierte Option `-c` und entfernt das Verzeichnis, wenn Playwright das Backend beendet (`gracefulShutdown` mit SIGTERM). Es gibt keine zusätzliche Datenbank-Umgebungsvariable.
 
-Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass der Sprachwechsel die sichtbaren Texte umschaltet und dass die gewählte Sprache nach einem Neuladen der Seite erhalten bleibt. Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen (Abschnitt 6.1).
+Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass der Sprachwechsel die sichtbaren Texte umschaltet, dass die Fußzeile rechts neben dem Backend-Status den Stand zeigt (7 Hexadezimalzeichen, gleich den ersten 7 Zeichen von `git rev-parse HEAD` des Arbeitsbereichs, in dem der Test läuft; ohne Git-Arbeitsbereich „unbekannt“) und beim Sprachwechsel die Bezeichnung umschaltet, und dass die gewählte Sprache nach einem Neuladen der Seite erhalten bleibt. Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen (Abschnitt 6.1).
 
 ## 7. Abhängigkeiten
 
@@ -277,7 +295,7 @@ Die Abhängigkeiten wurden am 2026-10-06 geprüft. Die Spalte „Veröffentlicht
 | @xyflow/react (React Flow) | 12.12.0 | MIT | 2026-09-24 | Designer-Arbeitsfläche | nur in `DesignerCanvas.tsx` |
 | i18next | 26.4.2 | MIT | 2026-09-03 | Übersetzung der Oberflächentexte | nur Darstellung |
 | react-i18next | 17.0.15 | MIT | 2026-09-21 | Einbindung von i18next in React | nur Darstellung |
-| @tanstack/react-query | 5.104.0 | MIT | 2026-09-26 | Abruf und Schreiben des Backendzustands | nur in `BackendStatus.tsx`, `useStudioLanguage.ts` und `settingsApi.ts` |
+| @tanstack/react-query | 5.104.0 | MIT | 2026-09-26 | Abruf und Schreiben des Backendzustands | nur in `BackendStatus.tsx`, `RevisionDisplay.tsx`, `useStudioLanguage.ts` und `settingsApi.ts` |
 
 ### 7.2 Entwicklungs- und Prüfwerkzeuge
 
@@ -301,7 +319,7 @@ Für das Backend-Testwerkzeug wird `httpx2` statt `httpx` verwendet, weil Starle
 
 ## 8. Sicherheit
 
-Backend und Entwicklungsserver sind im Entwicklungsbetrieb nur an die Adresse `127.0.0.1` gebunden. Das Backend enthält eine schreibende Funktion: das Speichern der Oberflächensprache. Es nimmt dafür nur die Werte `de` und `en` an; andere Werte, Typen und zusätzliche Felder werden abgelehnt. Es enthält keine ausführenden oder handelsbezogenen Funktionen und verwendet keine Zugangsdaten. Eine Authentifizierung ist in diesem Stand nicht eingerichtet; sie ist nicht Bestandteil von AP1 und von WO-2026-10-04-001.
+Backend und Entwicklungsserver sind im Entwicklungsbetrieb nur an die Adresse `127.0.0.1` gebunden. Das Backend enthält eine schreibende Funktion: das Speichern der Oberflächensprache. Es nimmt dafür nur die Werte `de` und `en` an; andere Werte, Typen und zusätzliche Felder werden abgelehnt. Es startet beim Erzeugen der Anwendung genau einen Unterprozess, `git rev-parse HEAD` (Abschnitt 2.6), mit fester Argumentliste, ohne Shell, ohne Eingaben von außen und mit Zeitbegrenzung. Es enthält keine ausführenden oder handelsbezogenen Funktionen und verwendet keine Zugangsdaten. Eine Authentifizierung ist in diesem Stand nicht eingerichtet; sie ist nicht Bestandteil von AP1 und von WO-2026-10-04-001.
 
 Die Datenbank-URL der INI-Startkonfiguration kann Zugangsdaten enthalten. Die INI gehört deshalb in einen administrativ geschützten Ort und nicht in das Repository. Die Tests verwenden ausschließlich temporäre lokale SQLite-Dateien.
 

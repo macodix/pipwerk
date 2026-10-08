@@ -13,5 +13,9 @@
     "checking": "Backend: Verbindung wird geprüft",
     "connected": "Backend: verbunden",
     "unreachable": "Backend: nicht erreichbar"
+  },
+  "revision": {
+    "known": "Stand: {{revision}}",
+    "unknown": "Stand: unbekannt"
   }
 }
