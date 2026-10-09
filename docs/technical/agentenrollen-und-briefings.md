@@ -141,11 +141,11 @@ Du führst die unabhängige technische Qualitätssicherung für das Projekt Pipw
 
 | Rolle | Datei | Modellkonfiguration |
 |---|---|---|
-| Softwarearchitekt | `.claude/agents/software-architect.md` | Opus |
-| Entwickler | `.claude/agents/developer.md` | Sonnet |
-| QA | `.claude/agents/qa.md` | Opus |
+| Softwarearchitekt | `devteam/agents/software-architect.md` | Opus |
+| Entwickler | `devteam/agents/developer.md` | Sonnet |
+| QA | `devteam/agents/qa.md` | Opus |
 
-Der Projektleiter ist kein Teil des Agententeams. Er arbeitet als Claude-Sitzung im Projekt beim Nutzer. Entwicklung und QA bleiben unabhängig und getrennt. Änderungen an Rollendefinitionen und Skills erfolgen versioniert über Branch und Pull Request.
+Der Projektleiter ist kein Teil des Agententeams. Er arbeitet als Claude-Sitzung im Projekt beim Nutzer. Entwicklung und QA bleiben unabhängig und getrennt. Agentendefinitionen und Skills liegen nicht im Repository, sondern in `devteam/` auf dem Entwicklungsrechner (siehe [Konfiguration des Agententeams](entwicklungsverfahren.md#konfiguration-des-agententeams)). Sie setzen die Briefings dieses Dokuments um; maßgeblich sind die Briefings. Änderungen an den Briefings erfolgen über Branch und Pull Request, die Umsetzung in `devteam/` veranlasst danach der Projektleiter.
 
 ## Aufrufschnittstelle
 
@@ -161,13 +161,13 @@ Die feste Arbeitstrennung ist eine Agentenanweisung und keine technische Zugriff
 
 ## Teamfunktion und interne Kommunikation
 
-Die Teamfunktion ist in `.claude/settings.json` über `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` aktiviert. Der Softwarearchitekt ist Team Lead und setzt Entwickler und QA als getrennte Teammates ein. Die Teamfunktion ersetzt keine Isolation der Arbeitsbereiche.
+Die Teamfunktion ist in `devteam/settings.json` über `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` aktiviert. Entwickler und QA laufen als Teammates im selben Prozess wie der Softwarearchitekt. Der Softwarearchitekt ist Team Lead und setzt Entwickler und QA als getrennte Teammates ein. Die Teamfunktion ersetzt keine Isolation der Arbeitsbereiche.
 
 Die operative Kommunikation erfolgt innerhalb des Teams. Entwickler und QA senden vor der technischen Bestätigung einer Beendigungsaufforderung die Nachricht `ABMELDUNG BESTÄTIGT: developer` beziehungsweise `ABMELDUNG BESTÄTIGT: qa`. Der Softwarearchitekt wertet diese Nachricht aus und meldet eine Abmeldung nur bei fehlender Nachricht als fehlend.
 
 ## Skills
 
-Die Dateien unter `.claude/skills/` enthalten wiederverwendbare Arbeitsschritte:
+Die Skills in `devteam/skills/` enthalten wiederverwendbare Arbeitsschritte:
 
 - `pipwerk-repository-context`: aktuellen Repository-Stand und geltende Referenzen prüfen;
 - `pipwerk-implementation`: Auftrag umsetzen, prüfen, dokumentieren und als Pull Request bereitstellen;
@@ -182,6 +182,7 @@ Die Dateien unter `.claude/skills/` enthalten wiederverwendbare Arbeitsschritte:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-09 | Agentendefinitionen, Skills und Teamfunktion aus dem Repository nach `devteam/` verlegt; Briefings bleiben maßgeblich. |
 | 2026-10-09 | Prüfung jedes Entwurfs durch einen frischen Agenten vor Abschluss der Konzeptphase in das Briefing des Projektleiters aufgenommen. |
 | 2026-10-09 | Auftragsverwaltung als Programm `ordermgr`, Start des Softwarearchitekten durch `agentrun`; Rolle und Briefing der Auftragsverwaltung entfernt; Ergebnis als Eintrag in der Akte; Entscheidungen des Nutzers als Aufträge der Art `decision`; Projektleiter führt die Liste der Arbeitspakete. |
 | 2026-10-08 | Einführung: Übergangsregeln entfernt, Aufrufschnittstelle auf Auftragsverwaltung und Startskript bezogen. |
