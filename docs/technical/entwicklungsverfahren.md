@@ -137,7 +137,7 @@ Ergebnisse sind:
 | `stopped` | Lauf auf Stornierung beendet und Arbeitsbereiche abgebaut | `agentrun` |
 | `cleaned` | Arbeitsbereiche abgebaut | `agentrun` |
 
-Der Text eines Ergebnisses steht in ganzen Sätzen in derselben Zeile. Teaminterne Kommunikation und Prüfprotokolle gehören nicht in die Akte; sie stehen im Pull Request. Außer den Einträgen in der Akte und dem Feld `status` verändert niemand den Inhalt eines übernommenen Auftrags. Inhaltliche Änderungen erfolgen nur mit Zustimmung des Nutzers über einen neuen Auftrag.
+Der Text eines Ergebnisses steht in ganzen Sätzen in derselben Zeile. Teaminterne Kommunikation und Prüfprotokolle gehören nicht in die Akte; sie stehen im Pull Request. Außer den Einträgen in der Akte, dem Feld `status` und dem Abschnitt „Offene Punkte“ verändert niemand den Inhalt eines übernommenen Auftrags. In „Offene Punkte“ trägt `ordermgr` den Grund jedes Wechsels nach `blocked` ein; die Einträge bleiben nach einer Antwort stehen. Inhaltliche Änderungen erfolgen nur mit Zustimmung des Nutzers über einen neuen Auftrag.
 
 ### Statusmodell
 
@@ -163,7 +163,7 @@ Zulässig sind nur diese Statuswechsel:
 | `draft` | `approved` | Freigabe durch den Nutzer; Merge des Auftrags durch den Projektleiter |
 | `approved` | `inprogress` | Art `work`, Auftrag brauchbar, alle betroffenen Komponenten frei; an `agentrun` übergeben |
 | `approved` | `queued` | Art `work`, Auftrag brauchbar, eine betroffene Komponente belegt |
-| `approved` | `blocked` | Auftrag unbrauchbar: Pflichtangabe fehlt oder ist ungültig, Kennung schon vorhanden, Bezugsauftrag fehlt oder die Entscheidung passt nicht zu seinem Status |
+| `approved` | `blocked` | Auftrag unbrauchbar: Pflichtangabe fehlt oder ist ungültig, Bezugsauftrag fehlt oder die Entscheidung passt nicht zu seinem Status |
 | `approved` | `closed` | Art `decision`, `cancel` oder `status` ausgeführt |
 | `queued` | `inprogress` | alle betroffenen Komponenten frei; an `agentrun` übergeben |
 | `inprogress` | `acceptance` | Ergebnis `ready` |
@@ -174,7 +174,7 @@ Zulässig sind nur diese Statuswechsel:
 | `acceptance` | `inprogress` | Entscheidung `reject` oder `accept`; an `agentrun` zur Korrektur beziehungsweise zum Merge übergeben |
 | `approved`, `queued`, `inprogress`, `blocked`, `acceptance` | `cancelled` | Auftrag der Art `cancel` |
 
-`closed` und `cancelled` sind Endzustände. Ein unbrauchbarer Auftrag in `failed/` wird nicht fortgesetzt; der Projektleiter erteilt bei Bedarf einen neuen Auftrag mit neuer Kennung. Ein weiterer Status wird erst verwendet, nachdem er in beide Tabellen aufgenommen wurde.
+`closed` und `cancelled` sind Endzustände. Ein unbrauchbarer Auftrag in `failed/` wird nicht fortgesetzt; der Projektleiter erteilt bei Bedarf einen neuen Auftrag mit neuer Kennung. Die Eindeutigkeit der Kennungen verantwortet der Projektleiter. Liegt eine Kennung aus `incoming/` bei `ordermgr` schon vor, gilt der Auftrag als übernommen, und `ordermgr` wiederholt nur das Entfernen aus `incoming/`. Ein weiterer Status wird erst verwendet, nachdem er in beide Tabellen aufgenommen wurde.
 
 Ein Auftrag mit `blocked` nach einem Lauf wird mit `answer` fortgesetzt, auch nach `failed`. Die Antwort nennt dann, was geändert wurde oder wie fortzufahren ist.
 
