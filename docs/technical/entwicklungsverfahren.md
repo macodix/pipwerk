@@ -283,6 +283,7 @@ Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` liegen:
 | `scripts/` | `pipwerk-dev`, `agentrun` und `heartbeat` mit ihrer lokalen Dokumentation, nicht Teil des Repositorys | nicht durch das Team |
 | `run/` | `agentrun.pid` und je Auftrag `<auftragskennung>.heartbeat` | `agentrun`, `heartbeat` |
 | `ordermgr/` | Programm, Laufzeitdateien und Aufträge der Auftragsverwaltung, siehe [ordermgr](#ordermgr) | `ordermgr`; `running/` auch `agentrun` und Softwarearchitekt |
+| `transfer/` | Ablage des Nutzers für Dateiübergaben außerhalb des Ablaufs, zum Beispiel Berichte von Sitzungen auf dem Entwicklungsrechner; kein Teil des Ablaufs | Nutzer und auf seine Anweisung |
 
 Kein Agent arbeitet in `repo/`. Entwickler und QA finden ihren Arbeitsbereich über `$PIPWERK_DEV_ROOT` und die Auftragskennung in `$PIPWERK_ORDER_ID`. Die Agentendefinitionen enthalten keine Pfade des Rechners.
 
@@ -407,7 +408,7 @@ Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Au
 
 `ordermgr`, `agentrun` und `heartbeat` werden nicht vom Agententeam entwickelt, weil das Team erst mit ihnen arbeitsfähig ist. Sie entstehen wie `pipwerk-dev` in einer eigenen Claude-Code-Sitzung auf dem Entwicklungsrechner auf Grundlage dieses Dokuments; ihre lokale Dokumentation liegt bei den Programmen. Zum Einführungspaket gehören außerdem:
 
-1. die Rollendefinition des Softwarearchitekten und die Skills `pipwerk-test-deployment`, `pipwerk-close-work-order` und `pipwerk-escalation`: Auftrag über den übergebenen Pfad lesen, Ergebnis als Eintrag `result` in die Akte schreiben, keine Ergebnisdatei und kein `transfer/`;
+1. die Rollendefinition des Softwarearchitekten und die Skills `pipwerk-test-deployment`, `pipwerk-close-work-order` und `pipwerk-escalation`: Auftrag über den übergebenen Pfad lesen, Ergebnis als Eintrag `result` in die Akte schreiben, keine Ergebnisdatei, `transfer/` nicht mehr im Ablauf;
 2. die Entfernung der Rollendefinition `order-management`, von `tools/order-management/` und der nur dafür eingetragenen Freigaben in `.claude/settings.json`;
 3. `work-orders/` mit `incoming/`, `outgoing/` und der neuen Vorlage; die bisherigen Aufträge werden nach `outgoing/` verschoben und nach ihrer Kennung benannt;
 4. die Übernahme des offenen Auftrags WO-2026-10-08-001 in `ordermgr`.
@@ -426,7 +427,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-09 | Auftragsverwaltung als Skript `ordermgr` statt Claude-Code-Sitzung; Läufe des Softwarearchitekten mit `agentrun` und Herzschlag statt Höchstdauer; Repository als Eingangs- und Ausgangswarteschlange; Auftrag als Akte in einer Datei; Auftragsarten `decision`, `cancel` und `status`; Planungsebenen mit Arbeitspaketen und Arbeitspaketliste; Benachrichtigung des Nutzers, Ergebnisdatei und `transfer/` entfallen. |
+| 2026-10-09 | Auftragsverwaltung als Skript `ordermgr` statt Claude-Code-Sitzung; Läufe des Softwarearchitekten mit `agentrun` und Herzschlag statt Höchstdauer; Repository als Eingangs- und Ausgangswarteschlange; Auftrag als Akte in einer Datei; Auftragsarten `decision`, `cancel` und `status`; Planungsebenen mit Arbeitspaketen und Arbeitspaketliste; Benachrichtigung des Nutzers und Ergebnisdatei entfallen; `transfer/` bleibt Ablage des Nutzers außerhalb des Ablaufs. |
 | 2026-10-08 | `start.sh` startet tmux aus `$PIPWERK_DEV_ROOT`, damit der tmux-Server `sync-repo` nicht blockiert. |
 | 2026-10-08 | Einrichtung: Start der Auftragsverwaltung und Vertrauensabfrage so beschrieben, dass kein Prozess in `repo/` verbleibt. |
 | 2026-10-08 | Höchstdauer einer Architektensitzung (Anfangswert 3 Stunden) mit Übergang nach `blocked` ohne Beenden der Sitzung und Übernahme eines späteren Ergebnisses festgelegt. |
