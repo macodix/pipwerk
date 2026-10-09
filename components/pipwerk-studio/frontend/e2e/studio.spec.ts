@@ -4,23 +4,59 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test } from '@playwright/test';
 
+const packageDirectory = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../backend/src/pipwerk_studio',
+);
+
+function git(...args: string[]): string {
+  return execFileSync('git', ['-C', packageDirectory, ...args], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
 // The backend determines its revision from the Git working tree of its package.
 // The expected value comes from the same working tree; without Git it is unknown.
 function expectedShortRevision(): string | null {
-  const packageDirectory = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    '../../backend/src/pipwerk_studio',
-  );
   try {
-    const hash = execFileSync('git', ['-C', packageDirectory, 'rev-parse', 'HEAD'], {
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
+    const hash = git('rev-parse', 'HEAD');
     return /^[0-9a-f]{40}$/.test(hash) ? hash.slice(0, 7) : null;
   } catch {
     return null;
   }
 }
+
+// The time zone of the test browser; the expected date is computed in it.
+const TEST_TIME_ZONE = 'Asia/Kolkata';
+
+// Full commit hash and committer date of the working tree, with the date
+// rendered in TEST_TIME_ZONE independently of the production code (`Intl`
+// instead of the date parts of the Studio user interface).
+function expectedCommit(): { commit: string; local: Record<string, string> } | null {
+  try {
+    const commit = git('rev-parse', 'HEAD');
+    const committedAt = git('log', '-1', '--no-show-signature', '--format=%cI', commit);
+    if (!/^[0-9a-f]{40}$/.test(commit) || Number.isNaN(Date.parse(committedAt))) {
+      return null;
+    }
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: TEST_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(committedAt));
+    const local = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return { commit, local };
+  } catch {
+    return null;
+  }
+}
+
+test.use({ timezoneId: TEST_TIME_ZONE });
 
 test.beforeEach(async ({ request }) => {
   const response = await request.put('/api/studio/settings/language', {
@@ -105,7 +141,7 @@ test('shows the revision in the footer next to the backend status and switches i
   await expect(footer.getByRole('status')).toHaveText('Backend: verbunden');
   await expect(footer.getByText(german, { exact: true })).toBeVisible();
   if (short !== null) {
-    await expect(footer).toContainText(/Stand: [0-9a-f]{7}$/);
+    await expect(footer.locator('.studio-revision')).toHaveText(/^Stand: [0-9a-f]{7}$/);
   }
   // The revision is right of the backend status.
   const backendBox = await footer.getByRole('status').boundingBox();
@@ -122,4 +158,44 @@ test('shows the revision in the footer next to the backend status and switches i
   await page.getByLabel('Language').selectOption('de');
 
   await expect(footer.getByText(german, { exact: true })).toBeVisible();
+});
+
+test('shows commit and commit date as tooltip and accessible description', async ({ page }) => {
+  const expected = expectedCommit();
+  await page.goto('/');
+
+  const display = page.locator('.studio-revision');
+  await expect(page.getByRole('contentinfo').getByRole('status')).toHaveText('Backend: verbunden');
+  if (expected === null) {
+    await expect(display).toContainText('Stand: unbekannt');
+    await expect(display).not.toHaveAttribute('title', /.*/);
+    await expect(display).not.toHaveAttribute('aria-describedby', /.*/);
+    return;
+  }
+  const { commit, local } = expected;
+  const german = `Commit ${commit} vom ${local.day}.${local.month}.${local.year} ${local.hour}:${local.minute}`;
+  const english = `Commit ${commit} from ${local.year}-${local.month}-${local.day} ${local.hour}:${local.minute}`;
+
+  await expect(display).toHaveAttribute('title', german);
+  await expect(display).toHaveAccessibleDescription(german);
+
+  await page.getByLabel('Sprache').selectOption('en');
+
+  await expect(display).toHaveAttribute('title', english);
+  await expect(display).toHaveAccessibleDescription(english);
+
+  await page.getByLabel('Language').selectOption('de');
+
+  await expect(display).toHaveAttribute('title', german);
+  await expect(display).toHaveAccessibleDescription(german);
+});
+
+test('shows no tooltip without a Git working tree', async ({ page }) => {
+  test.skip(expectedShortRevision() !== null, 'The test workspace is a Git working tree.');
+  await page.goto('/');
+
+  const display = page.locator('.studio-revision');
+  await expect(display).toContainText('Stand: unbekannt');
+  await expect(display).not.toHaveAttribute('title', /.*/);
+  await expect(display).not.toHaveAttribute('aria-describedby', /.*/);
 });

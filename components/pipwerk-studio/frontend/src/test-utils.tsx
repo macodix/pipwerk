@@ -63,7 +63,7 @@ export function mockFetchRoutes(overrides: {
   putLanguage?: RouteSource<[unknown]>;
 } = {}): void {
   const health = overrides.health ?? { status: 200, body: { status: 'ok' } };
-  const revision = overrides.revision ?? { status: 200, body: { revision: null } };
+  const revision = overrides.revision ?? { status: 200, body: { revision: null, commit: null, committed_at: null } };
   const getLanguage = overrides.getLanguage ?? { status: 200, body: { language: 'de' } };
   const putLanguage: RouteSource<[unknown]> =
     overrides.putLanguage ?? ((requestBody: unknown) => ({ status: 200, body: requestBody }));

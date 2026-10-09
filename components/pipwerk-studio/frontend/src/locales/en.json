@@ -16,6 +16,8 @@
   },
   "revision": {
     "known": "Revision: {{revision}}",
-    "unknown": "Revision: unknown"
+    "unknown": "Revision: unknown",
+    "commit": "Commit {{commit}}",
+    "commitAt": "Commit {{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}"
   }
 }
