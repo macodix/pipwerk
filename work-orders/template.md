@@ -3,8 +3,10 @@
 ## Status
 
 - id: `WO-JJJJ-MM-TT-NNN`
+- type: `work`
 - status: `draft`
-- client: Nutzer
+- client: `Nutzer`
+- workpackage: `APn`
 - components: `pipwerk-studio`
 
 ## Ziel
@@ -31,10 +33,4 @@ Was ausdrücklich nicht zum Auftrag gehört.
 
 keine
 
-## Entscheidungen des Auftraggebers
-
-Einträge des Projektleiters in der Form `JJJJ-MM-TTThh:mm:ss – <accept|reject|cancel|answer> – Inhalt`.
-
-## Verlauf
-
-Einträge der Auftragsverwaltung in der Form `JJJJ-MM-TTThh:mm:ss – <alter Status> → <neuer Status> – Anlass`.
+## Akte

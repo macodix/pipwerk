@@ -101,14 +101,14 @@ Der Abschnitt „Status“ enthält die Felder:
 | `type` | `work`, `decision`, `cancel` oder `status` | allen Arten |
 | `status` | Status nach dem [Statusmodell](#statusmodell) | allen Arten |
 | `client` | Auftraggeber, derzeit immer `Nutzer` | allen Arten |
-| `workpackage` | Kennung des Arbeitspakets | `work` |
+| `workpackage` | Kennung des Arbeitspakets; `none` bei einem Auftrag, der zu keinem Arbeitspaket gehört, zum Beispiel am Entwicklungsverfahren | `work` |
 | `components` | betroffene Komponenten, siehe [Parallele Bearbeitung](#parallele-bearbeitung) | `work` |
 | `ref` | Kennung des Bezugsauftrags | `decision`, `cancel`; bei `status` optional |
 | `decision` | `accept`, `reject` oder `answer` | `decision` |
 
 Ein Auftrag der Art `work` enthält außerdem Titel, Ziel, Umfang und Nicht-Umfang, nachprüfbare Abnahmekriterien, Referenzen auf alle geltenden Anforderungen, Verträge und Architekturregeln, den Abschnitt „Offene Punkte“ (ist er leer, steht dort `keine`) und den Abschnitt „Akte“. Ein Auftrag der Arten `decision`, `cancel` und `status` enthält einen Titel, den Abschnitt „Inhalt“ mit den Abweichungen, der Antwort oder dem Grund und den Abschnitt „Akte“.
 
-Die Feldnamen und Werte sind maschinenlesbare Bezeichner und deshalb englisch.
+Der Abschnitt „Akte“ ist bei allen Arten der letzte Abschnitt der Datei; neue Einträge werden an ihr Ende angehängt. Die Feldnamen und Werte sind maschinenlesbare Bezeichner und deshalb englisch.
 
 ### Akte
 
@@ -456,6 +456,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-09 | `work-orders/` auf `incoming/` und `outgoing/` umgestellt, neue Vorlage mit Akte; Akte als letzter Abschnitt; `workpackage` `none` für Aufträge ohne Arbeitspaket. |
 | 2026-10-09 | Claude-Code-Konfiguration aus dem Repository nach `devteam/` verlegt und `.claude/` sowie `tools/order-management/` entfernt; Startbefehl von `agentrun` mit festen Einstellungsquellen und Freigabemodus; Ergebnis des Machbarkeitstests. |
 | 2026-10-09 | Auftragsverwaltung als Skript `ordermgr` statt Claude-Code-Sitzung; Läufe des Softwarearchitekten mit `agentrun` und Herzschlag statt Höchstdauer; Repository als Eingangs- und Ausgangswarteschlange; Auftrag als Akte in einer Datei; Auftragsarten `decision`, `cancel` und `status`; Planungsebenen mit Arbeitspaketen und Arbeitspaketliste; Benachrichtigung des Nutzers und Ergebnisdatei entfallen; `transfer/` bleibt Ablage des Nutzers außerhalb des Ablaufs. |
 | 2026-10-08 | `start.sh` startet tmux aus `$PIPWERK_DEV_ROOT`, damit der tmux-Server `sync-repo` nicht blockiert. |
