@@ -259,7 +259,7 @@ Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. `agentrun` b
 
 ### Herzschlag
 
-Ein Hook von Claude Code für die Ereignisse `PreToolUse` und `PostToolUse` ruft bei jedem Werkzeugaufruf das Skript `scripts/heartbeat` auf. Es liest das Arbeitsverzeichnis aus den Hook-Daten. Liegt es unter `work/<auftragskennung>/`, aktualisiert es den Zeitstempel von `run/<auftragskennung>.heartbeat`; sonst tut es nichts. Es gibt nichts aus und endet immer mit Exitcode 0, damit es Claude Code nicht beeinflusst. Weil Softwarearchitekt, Entwickler und QA unter `work/<auftragskennung>/` arbeiten, zählt die Tätigkeit aller drei.
+Ein Hook von Claude Code für die Ereignisse `PreToolUse`, `PostToolUse` und `PostToolUseFailure` ruft bei jedem Werkzeugaufruf das Skript `scripts/heartbeat` auf. Es liest das Arbeitsverzeichnis aus den Hook-Daten. Liegt es unter `work/<auftragskennung>/`, aktualisiert es den Zeitstempel von `run/<auftragskennung>.heartbeat`; sonst tut es nichts. Es gibt nichts aus und endet immer mit Exitcode 0, damit es Claude Code nicht beeinflusst. Weil Softwarearchitekt, Entwickler und QA unter `work/<auftragskennung>/` arbeiten, zählt die Tätigkeit aller drei.
 
 Gemessen wird ab dem späteren Zeitpunkt von Start des Laufs und letztem Herzschlag. Ein einzelner Bash-Aufruf läuft in Claude Code höchstens 10 Minuten; 15 Minuten ohne Werkzeugaufruf bedeuten, dass keine Sitzung des Auftrags mehr arbeitet. Das gilt auch, wenn eine Sitzung auf eine Freigabe, eine Eingabe oder das Ende einer Pause wegen der Nutzungsgrenze wartet. Der Projektleiter setzt den Auftrag dann mit `answer` fort.
 
@@ -274,6 +274,7 @@ devteam/
   .claude-plugin/plugin.json   Name devteam
   agents/                      software-architect, developer, qa
   skills/                      Skills der Rollen
+  bin/                         pipwerk-dev (Aufruf von scripts/pipwerk-dev), orderresult (Ergebniszeile in die Akte)
   hooks/hooks.json             Herzschlag
   settings.json                Teamfunktion und Freigaben
 ```
@@ -427,7 +428,7 @@ Die folgenden Schritte richten den Prozess auf dem Entwicklungsrechner ein. Sie 
 2. Den Runner als systemd-Dienst unter dem Benutzer betreiben, dem die Arbeitsbereiche gehören, mit `PIPWERK_DEV_ROOT` in seiner Umgebungsdatei.
 3. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository anmelden und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv in `repo/` starten und die Vertrauensabfrage für den Ordner bestätigen. Danach diese Sitzung beenden und `repo/` verlassen. Laut Claude-Code-Dokumentation gilt dieses Vertrauen auch für die Worktrees unter `work/`, weil sie zum selben Repository gehören; eine unbestätigte Abfrage würde eine unbediente Sitzung anhalten.
 4. Im Repository auf GitHub unter Settings → Actions → General für Workflows aus Pull Requests die Freigabe für alle externen Beitragenden verlangen.
-5. `devteam/` anlegen (siehe [Konfiguration des Agententeams](#konfiguration-des-agententeams)). `devteam/settings.json` enthält alle Freigaben, die Rollen und Skills brauchen, darunter den Aufruf von `pipwerk-dev` mit seinem absoluten Pfad. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an, bis der fehlende Herzschlag den Lauf beendet.
+5. `devteam/` anlegen (siehe [Konfiguration des Agententeams](#konfiguration-des-agententeams)). `devteam/settings.json` enthält alle Freigaben, die Rollen und Skills brauchen. `pipwerk-dev` und `orderresult` liegen in `devteam/bin/` und damit auf dem Suchpfad der Sitzungen; die Agenten rufen sie ohne Pfad auf und wechseln das Verzeichnis nicht. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an, bis der fehlende Herzschlag den Lauf beendet.
 6. `inotify-tools` installieren, `ordermgr` nach `ordermgr/bin/` und `agentrun` und `heartbeat` nach `scripts/` installieren und die Cron-Jobs für die Prüfung beider PID-Dateien einrichten. Beide Programme werden aus einem Verzeichnis außerhalb von `repo/` gestartet. Solange irgendein Prozess, auch eine Shell, ein tmux-Server oder eine Claude-Code-Sitzung, sein Arbeitsverzeichnis in `repo/` hat, lehnt `sync-repo` die Aktualisierung mit Exitcode 3 ab.
 
 Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss sowie eine Stornierung. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio. Er weist zugleich nach, dass die Teamfunktion in einer tmux-Sitzung zuverlässig läuft, dass der Herzschlag aus den Sitzungen von Softwarearchitekt, Entwickler und QA ankommt, dass in den Worktrees keine Vertrauensabfrage erscheint und dass alle vorgesehenen Befehle freigegeben sind.
