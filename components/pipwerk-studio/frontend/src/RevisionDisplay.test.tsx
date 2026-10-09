@@ -100,6 +100,16 @@ describe('RevisionDisplay', () => {
     { ...KNOWN, committed_at: '2026-10-09T14:52:03+0200' },
     { ...KNOWN, committed_at: '2026-10-09' },
     { ...KNOWN, committed_at: '2026-13-45T25:61:61+02:00' },
+    { ...KNOWN, committed_at: '2026-02-31T10:00:00+02:00' },
+    { ...KNOWN, committed_at: '2026-04-31T10:00:00Z' },
+    { ...KNOWN, committed_at: '2026-10-09T24:00:00Z' },
+    { ...KNOWN, committed_at: '2026-02-29T10:00:00Z' },
+    { ...KNOWN, committed_at: '2100-02-29T10:00:00Z' },
+    { ...KNOWN, committed_at: '2026-10-09T10:00:60Z' },
+    { ...KNOWN, committed_at: '2026-10-09T10:00:00+24:00' },
+    { ...KNOWN, committed_at: '2026-10-09T10:00:00+02:60' },
+    { ...KNOWN, committed_at: '2026-00-09T10:00:00Z' },
+    { ...KNOWN, committed_at: '2026-10-00T10:00:00Z' },
     { ...KNOWN, committed_at: 1760000000 },
     {},
     [],
@@ -222,6 +232,17 @@ describe('RevisionDisplay tooltip', () => {
     expect(await findDisplay('Revision: 0123456')).toHaveAttribute(
       'title',
       `Commit ${COMMIT} from ${english}`,
+    );
+  });
+
+  it('accepts a leap day', async () => {
+    useTimeZone('UTC');
+    mockFetchResponse(200, { ...KNOWN, committed_at: '2028-02-29T23:59:59Z' });
+    renderWithProviders(<RevisionDisplay />, 'de');
+
+    expect(await findDisplay('Stand: 0123456')).toHaveAttribute(
+      'title',
+      `Commit ${COMMIT} vom 29.02.2028 23:59`,
     );
   });
 
