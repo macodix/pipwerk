@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { BackendStatus } from './BackendStatus';
 import { DesignerCanvas } from './DesignerCanvas';
 import { LanguageSelect } from './LanguageSelect';
+import { RevisionDisplay } from './RevisionDisplay';
 
 export function App() {
   const { i18n } = useTranslation();
@@ -25,6 +26,7 @@ export function App() {
       </main>
       <footer className="studio-footer">
         <BackendStatus />
+        <RevisionDisplay />
       </footer>
     </div>
   );

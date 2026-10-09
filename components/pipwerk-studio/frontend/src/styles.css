@@ -57,11 +57,18 @@ body,
 }
 
 .studio-footer {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
   padding: 0.25rem 1rem;
   border-top: 1px solid #d0d7de;
   font-size: 0.875rem;
 }
 
 .backend-status {
+  margin: 0;
+}
+
+.studio-revision {
   margin: 0;
 }

@@ -52,16 +52,18 @@ export function createGate(): { promise: Promise<RouteResponse>; release: (r: Ro
 
 /**
  * Mocks `fetch` with per-endpoint responses so tests can exercise the
- * backend health check and the Studio language endpoints independently.
- * Defaults to a healthy backend and a stored German language when a route
+ * backend health check, the Studio revision and the Studio language endpoints independently.
+ * Defaults to a healthy backend, an undeterminable revision and a stored German language when a route
  * is not explicitly overridden.
  */
 export function mockFetchRoutes(overrides: {
   health?: RouteResponse;
+  revision?: RouteResponse;
   getLanguage?: RouteSource;
   putLanguage?: RouteSource<[unknown]>;
 } = {}): void {
   const health = overrides.health ?? { status: 200, body: { status: 'ok' } };
+  const revision = overrides.revision ?? { status: 200, body: { revision: null } };
   const getLanguage = overrides.getLanguage ?? { status: 200, body: { language: 'de' } };
   const putLanguage: RouteSource<[unknown]> =
     overrides.putLanguage ?? ((requestBody: unknown) => ({ status: 200, body: requestBody }));
@@ -75,6 +77,8 @@ export function mockFetchRoutes(overrides: {
       let route: RouteResponse | Promise<RouteResponse>;
       if (url.includes('/api/health')) {
         route = health;
+      } else if (url.includes('/api/studio/revision')) {
+        route = revision;
       } else if (url.includes('/api/studio/settings/language') && method === 'GET') {
         route = typeof getLanguage === 'function' ? getLanguage() : getLanguage;
       } else if (url.includes('/api/studio/settings/language') && method === 'PUT') {

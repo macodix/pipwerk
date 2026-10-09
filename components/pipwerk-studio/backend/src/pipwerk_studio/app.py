@@ -1,9 +1,10 @@
 """HTTP application of Pipwerk Studio.
 
-The application provides a technical health check and the internal Studio
-settings endpoints. The only operational setting kept today is the Studio
-user interface language (req-ui-008): a component-wide, backend-authoritative
-setting that is never stored in the browser and never part of strategy data.
+The application provides a technical health check, the internal Studio
+settings endpoints and the internal Studio revision endpoint. The only
+operational setting kept today is the Studio user interface language
+(req-ui-008): a component-wide, backend-authoritative setting that
+is never stored in the browser and never part of strategy data.
 No other domain logic lives in this module.
 """
 
@@ -16,6 +17,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from pipwerk_studio.config import load_database_url
+from pipwerk_studio.revision import RevisionLookup, determine_short_revision, lookup_git_revision
 from pipwerk_studio.settings_service import (
     Language,
     SettingsService,
@@ -58,7 +60,22 @@ class StudioLanguageUpdate(BaseModel):
     language: Language
 
 
-def create_app(database_url: str | None = None) -> FastAPI:
+class StudioRevision(BaseModel):
+    """Read model of the revision Studio runs from.
+
+    ``revision`` is the 7-character short form of the Git commit or ``null`` if
+    the revision is not determinable.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    revision: str | None
+
+
+def create_app(
+    database_url: str | None = None,
+    revision_lookup: RevisionLookup = lookup_git_revision,
+) -> FastAPI:
     """Create the Pipwerk Studio HTTP application.
 
     ``database_url`` lets callers (notably the CLI entry point and tests)
@@ -67,11 +84,15 @@ def create_app(database_url: str | None = None) -> FastAPI:
     (req-system-016/req-system-017) is used. If no valid startup
     configuration is found, ``StartupConfigError`` is raised; there is no
     implicit replacement database.
+
+    ``revision_lookup`` determines the full commit hash once at creation; tests
+    replace it to stay independent of a real Git working tree.
     """
     resolved_database_url = database_url if database_url is not None else load_database_url()
     engine = create_studio_engine(resolved_database_url)
     session_factory = create_session_factory(engine)
     settings_service = SettingsService(session_factory)
+    revision = determine_short_revision(revision_lookup)
 
     app = FastAPI(title="Pipwerk Studio")
 
@@ -114,5 +135,17 @@ def create_app(database_url: str | None = None) -> FastAPI:
     def write_language(update: StudioLanguageUpdate) -> StudioLanguage:
         stored = settings_service.set_language(update.language)
         return StudioLanguage(language=stored)
+
+    @app.get(
+        "/api/studio/revision",
+        summary="Read the revision Studio runs from",
+        description=(
+            "Internal Studio endpoint used by the Studio user interface. "
+            "Returns the 7-character short form of the Git commit determined "
+            "once at startup, or null if it is not determinable."
+        ),
+    )
+    def read_revision() -> StudioRevision:
+        return StudioRevision(revision=revision)
 
     return app
