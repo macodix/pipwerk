@@ -165,6 +165,7 @@ Zulässig sind nur diese Statuswechsel:
 | `approved` | `queued` | Art `work`, Auftrag brauchbar, eine betroffene Komponente belegt |
 | `approved` | `blocked` | Auftrag unbrauchbar: Pflichtangabe fehlt oder ist ungültig, Bezugsauftrag fehlt oder die Entscheidung passt nicht zu seinem Status |
 | `approved` | `closed` | Art `decision`, `cancel` oder `status` ausgeführt |
+| `draft` | `blocked` | Auftrag mit Status `draft` in `incoming/` auf `main`; unbrauchbar |
 | `queued` | `inprogress` | alle betroffenen Komponenten frei; an `agentrun` übergeben |
 | `inprogress` | `acceptance` | Ergebnis `ready` |
 | `inprogress` | `blocked` | Ergebnis `question` oder `failed` |
@@ -172,6 +173,7 @@ Zulässig sind nur diese Statuswechsel:
 | `blocked` | `inprogress` | Entscheidung `answer`; an `agentrun` zur Fortsetzung übergeben |
 | `blocked` | `queued` | Entscheidung `answer`, eine betroffene Komponente inzwischen belegt |
 | `acceptance` | `inprogress` | Entscheidung `reject` oder `accept`; an `agentrun` zur Korrektur beziehungsweise zum Merge übergeben |
+| `acceptance` | `queued` | Entscheidung `reject` oder `accept`, eine betroffene Komponente belegt |
 | `approved`, `queued`, `inprogress`, `blocked`, `acceptance` | `cancelled` | Auftrag der Art `cancel` |
 
 `closed` und `cancelled` sind Endzustände. Ein unbrauchbarer Auftrag in `failed/` wird nicht fortgesetzt; der Projektleiter erteilt bei Bedarf einen neuen Auftrag mit neuer Kennung. Die Eindeutigkeit der Kennungen verantwortet der Projektleiter. Liegt eine Kennung aus `incoming/` bei `ordermgr` schon vor, gilt der Auftrag als übernommen, und `ordermgr` wiederholt nur das Entfernen aus `incoming/`. Ein weiterer Status wird erst verwendet, nachdem er in beide Tabellen aufgenommen wurde.
