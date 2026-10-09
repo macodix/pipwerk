@@ -127,7 +127,7 @@ Im Entwicklungsbetrieb ruft der Browser nur den Vite-Entwicklungsserver auf. Vit
 
 Die Fußzeile zeigt rechts neben dem Backend-Status den Stand, aus dem Pipwerk Studio läuft: die ersten 7 Zeichen des Git-Commits. Auf Deutsch lautet die Anzeige „Stand: <kurzform>“, auf Englisch „Revision: <kurzform>“; ein Sprachwechsel schaltet die Bezeichnung um. Die Texte stehen unter dem Schlüssel `revision` in `de.json` und `en.json`. Lässt sich der Stand nicht ermitteln, erscheint „Stand: unbekannt“ beziehungsweise „Revision: unknown“ ohne Tooltip.
 
-Fährt man mit dem Mauszeiger über die Standanzeige, erscheint ein Tooltip mit dem vollständigen Commit (40 Zeichen) und dem Committer-Datum dieses Commits. Auf Deutsch lautet er „Commit <hash> vom TT.MM.JJJJ hh:mm“, auf Englisch „Commit <hash> from YYYY-MM-DD hh:mm“; die Uhrzeit hat das 24-Stunden-Format und ist die Ortszeit des Browsers. Ist das Datum nicht ermittelbar, lautet er „Commit <hash>“. Ein Sprachwechsel schaltet den Tooltip um. Die Texte stehen unter den Schlüsseln `revision.commit` und `revision.commitAt` in `de.json` und `en.json`.
+Fährt man mit dem Mauszeiger über die Standanzeige, erscheint ein Tooltip mit dem vollständigen Commit (40 Zeichen) und dem Committer-Datum dieses Commits. Auf Deutsch lautet er „Commit <hash> vom TT.MM.JJJJ, hh:mm Uhr“, auf Englisch „Commit <hash> from YYYY-MM-DD hh:mm“; die Uhrzeit hat das 24-Stunden-Format und ist die Ortszeit des Browsers. Ist das Datum nicht ermittelbar, lautet er „Commit <hash>“. Ein Sprachwechsel schaltet den Tooltip um. Die Texte stehen unter den Schlüsseln `revision.commit` und `revision.commitAt` in `de.json` und `en.json`.
 
 Architekturentscheidung (Softwarearchitekt, WO-2026-10-08-001):
 

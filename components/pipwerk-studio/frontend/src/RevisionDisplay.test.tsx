@@ -135,7 +135,7 @@ describe('RevisionDisplay tooltip', () => {
     renderWithProviders(<RevisionDisplay />, 'de');
 
     const display = await findDisplay('Stand: 0123456');
-    expect(display).toHaveAttribute('title', `Commit ${COMMIT} vom 09.10.2026 14:52`);
+    expect(display).toHaveAttribute('title', `Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`);
   });
 
   it('shows commit and date in English', async () => {
@@ -151,11 +151,11 @@ describe('RevisionDisplay tooltip', () => {
     renderWithProviders(<RevisionDisplay />, 'de');
 
     const display = await findDisplay('Stand: 0123456');
-    expect(display).toHaveAccessibleDescription(`Commit ${COMMIT} vom 09.10.2026 14:52`);
+    expect(display).toHaveAccessibleDescription(`Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`);
     const id = display.getAttribute('aria-describedby');
     expect(id).not.toBeNull();
     const description = document.getElementById(id ?? '');
-    expect(description).toHaveTextContent(`Commit ${COMMIT} vom 09.10.2026 14:52`);
+    expect(description).toHaveTextContent(`Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`);
     expect(description).not.toBeVisible();
   });
 
@@ -214,11 +214,11 @@ describe('RevisionDisplay tooltip', () => {
   });
 
   it.each([
-    ['Europe/Berlin', '09.10.2026 14:52', '2026-10-09 14:52'],
-    ['UTC', '09.10.2026 12:52', '2026-10-09 12:52'],
-    ['America/Los_Angeles', '09.10.2026 05:52', '2026-10-09 05:52'],
-    ['Asia/Kolkata', '09.10.2026 18:22', '2026-10-09 18:22'],
-    ['Pacific/Auckland', '10.10.2026 01:52', '2026-10-10 01:52'],
+    ['Europe/Berlin', '09.10.2026, 14:52 Uhr', '2026-10-09 14:52'],
+    ['UTC', '09.10.2026, 12:52 Uhr', '2026-10-09 12:52'],
+    ['America/Los_Angeles', '09.10.2026, 05:52 Uhr', '2026-10-09 05:52'],
+    ['Asia/Kolkata', '09.10.2026, 18:22 Uhr', '2026-10-09 18:22'],
+    ['Pacific/Auckland', '10.10.2026, 01:52 Uhr', '2026-10-10 01:52'],
   ])('converts the date to the local time zone %s', async (zone, german, english) => {
     useTimeZone(zone);
     mockFetchResponse(200, KNOWN);
@@ -242,7 +242,7 @@ describe('RevisionDisplay tooltip', () => {
 
     expect(await findDisplay('Stand: 0123456')).toHaveAttribute(
       'title',
-      `Commit ${COMMIT} vom 29.02.2028 23:59`,
+      `Commit ${COMMIT} vom 29.02.2028, 23:59 Uhr`,
     );
   });
 
@@ -253,7 +253,7 @@ describe('RevisionDisplay tooltip', () => {
 
     expect(await findDisplay('Stand: 0123456')).toHaveAttribute(
       'title',
-      `Commit ${COMMIT} vom 02.01.2026 00:05`,
+      `Commit ${COMMIT} vom 02.01.2026, 00:05 Uhr`,
     );
   });
 });
@@ -276,7 +276,7 @@ describe('RevisionDisplay in the footer', () => {
     renderWithProviders(<App />);
     expect(await screen.findByText('Stand: 0123456')).toHaveAttribute(
       'title',
-      `Commit ${COMMIT} vom 09.10.2026 14:52`,
+      `Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`,
     );
     await screen.findByDisplayValue('Deutsch');
 
@@ -290,7 +290,7 @@ describe('RevisionDisplay in the footer', () => {
     await user.selectOptions(screen.getByLabelText('Language'), 'Deutsch');
 
     const german = await screen.findByText('Stand: 0123456');
-    expect(german).toHaveAttribute('title', `Commit ${COMMIT} vom 09.10.2026 14:52`);
-    expect(german).toHaveAccessibleDescription(`Commit ${COMMIT} vom 09.10.2026 14:52`);
+    expect(german).toHaveAttribute('title', `Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`);
+    expect(german).toHaveAccessibleDescription(`Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`);
   });
 });

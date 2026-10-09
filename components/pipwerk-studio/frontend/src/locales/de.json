@@ -18,6 +18,6 @@
     "known": "Stand: {{revision}}",
     "unknown": "Stand: unbekannt",
     "commit": "Commit {{commit}}",
-    "commitAt": "Commit {{commit}} vom {{day}}.{{month}}.{{year}} {{hours}}:{{minutes}}"
+    "commitAt": "Commit {{commit}} vom {{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr"
   }
 }

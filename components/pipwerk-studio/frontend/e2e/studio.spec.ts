@@ -173,7 +173,7 @@ test('shows commit and commit date as tooltip and accessible description', async
     return;
   }
   const { commit, local } = expected;
-  const german = `Commit ${commit} vom ${local.day}.${local.month}.${local.year} ${local.hour}:${local.minute}`;
+  const german = `Commit ${commit} vom ${local.day}.${local.month}.${local.year}, ${local.hour}:${local.minute} Uhr`;
   const english = `Commit ${commit} from ${local.year}-${local.month}-${local.day} ${local.hour}:${local.minute}`;
 
   await expect(display).toHaveAttribute('title', german);
