@@ -76,6 +76,7 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 - Formuliere den Arbeitsauftrag aus der Vorlage `work-orders/template.md` als Pull Request mit Status `draft` in `work-orders/incoming/`. Nicht entschiedene Punkte kennzeichnest du ausdrücklich als offen; du entscheidest sie nicht selbst. Nach Freigabe durch den Nutzer setzt du `approved` und mergst den Auftrag. Weitere Status setzt du nicht.
 - Lies zu Beginn jeder Arbeit mit dem Nutzer `work-orders/outgoing/` und die Liste der Arbeitspakete. Akten mit `blocked` oder `acceptance` sind offene Aufgaben.
 - Ein Auftrag wird erst ausgeführt, wenn alle für die Umsetzung erforderlichen fachlichen Fragen geklärt sind und der Nutzer ihn freigegeben hat.
+- Ein Konzept, ein Auftrag oder eine Anweisung an eine andere Sitzung gilt erst als abgeschlossen, wenn ein frischer Agent ohne Kenntnis des Chats den Entwurf geprüft hat. Er liest nur den Entwurf und die darin referenzierten Dokumente und listet jede Rückfrage, die er bei der Umsetzung hätte, sowie Widersprüche und ungeregelte Fälle. Punkte, die eine Entscheidung des Nutzers brauchen, klärst du mit ihm; die übrigen beantwortest du selbst und arbeitest sie in den Entwurf ein. Erst danach gibst du den Entwurf frei beziehungsweise zur Umsetzung weiter.
 - Steht ein Auftrag auf `blocked`, klärst du den offenen Punkt mit dem Nutzer und gibst die Antwort mit einem Auftrag der Art `decision` und der Entscheidung `answer` weiter. Liegt der offene Punkt in deiner Zuständigkeit, antwortest du selbst. Inhaltliche Änderungen erfolgen nur mit Zustimmung des Nutzers über einen neuen Auftrag.
 - Prüfe nach erfolgreicher QA und Testbereitstellung am laufenden Teststand jedes Abnahmekriterium. Dein Ergebnis ist „Auftrag erfüllt“ oder „Auftrag nicht erfüllt“ mit konkreter Abweichungsliste.
 - Bei „Auftrag nicht erfüllt“ gibst du die Abweichungen mit einem Auftrag `decision` und der Entscheidung `reject` weiter. Nur notwendige fachliche Entscheidungen legst du dem Nutzer vor.
@@ -181,6 +182,7 @@ Die Dateien unter `.claude/skills/` enthalten wiederverwendbare Arbeitsschritte:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-09 | Prüfung jedes Entwurfs durch einen frischen Agenten vor Abschluss der Konzeptphase in das Briefing des Projektleiters aufgenommen. |
 | 2026-10-09 | Auftragsverwaltung als Programm `ordermgr`, Start des Softwarearchitekten durch `agentrun`; Rolle und Briefing der Auftragsverwaltung entfernt; Ergebnis als Eintrag in der Akte; Entscheidungen des Nutzers als Aufträge der Art `decision`; Projektleiter führt die Liste der Arbeitspakete. |
 | 2026-10-08 | Einführung: Übergangsregeln entfernt, Aufrufschnittstelle auf Auftragsverwaltung und Startskript bezogen. |
 | 2026-10-08 | Sitzung des Softwarearchitekten bleibt nach der Ergebnisdatei bis zum Beenden durch die Auftragsverwaltung geöffnet. |
