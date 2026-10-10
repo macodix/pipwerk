@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-08
+- stand: 2026-10-10
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu Pipwerk Studio dient
@@ -34,12 +34,14 @@ Unten steht die Fußzeile. Sie zeigt links, ob Pipwerk Studio seinen Hintergrund
 | „Backend: verbunden“ | Der Hintergrunddienst hat geantwortet. Pipwerk Studio ist bereit. |
 | „Backend: nicht erreichbar“ | Der Hintergrunddienst hat nicht oder nicht richtig geantwortet. In diesem Fall muss geprüft werden, ob er gestartet ist. Danach wird die Seite im Browser neu geladen. |
 
-Der Stand ist die Kurzform des Commits, also die ersten 7 Zeichen der Kennung des Arbeitsstands, aus dem Pipwerk Studio gestartet wurde. Damit ist bei einer Prüfung erkennbar, welcher Stand bereitgestellt ist. Er ist keine Versionsnummer und kein Datum. Die Bezeichnung folgt der gewählten Sprache.
+Der Stand ist die Kurzform des Commits, also die ersten 7 Zeichen der Kennung des Arbeitsstands, aus dem Pipwerk Studio gestartet wurde. Damit ist bei einer Prüfung erkennbar, welcher Stand bereitgestellt ist. Er ist keine Versionsnummer. Die Bezeichnung folgt der gewählten Sprache.
 
 | Anzeige | Bedeutung |
 | --- | --- |
 | „Stand: <kurzform>“ (Deutsch), „Revision: <kurzform>“ (Englisch) | Pipwerk Studio läuft aus dem Commit, dessen Kennung mit diesen 7 Zeichen beginnt. |
-| „Stand: unbekannt“ (Deutsch), „Revision: unknown“ (Englisch) | Der Stand lässt sich nicht ermitteln, zum Beispiel weil Pipwerk Studio außerhalb eines Git-Arbeitsbereichs oder ohne Git gestartet wurde. Dasselbe wird kurz angezeigt, solange die Anfrage läuft, und wenn sie fehlschlägt. Pipwerk Studio arbeitet unabhängig davon normal. |
+| „Stand: unbekannt“ (Deutsch), „Revision: unknown“ (Englisch) | Der Stand lässt sich nicht ermitteln, zum Beispiel weil Pipwerk Studio außerhalb eines Git-Arbeitsbereichs oder ohne Git gestartet wurde. Dasselbe wird kurz angezeigt, solange die Anfrage läuft, und wenn sie fehlschlägt. Es erscheint kein Tooltip. Pipwerk Studio arbeitet unabhängig davon normal. |
+
+Fahren Sie mit dem Mauszeiger über die Standanzeige, erscheint ein Tooltip mit der vollständigen Kennung des Commits (40 Zeichen) und dem Datum dieses Commits. Auf Deutsch lautet er „Commit <kennung> vom TT.MM.JJJJ, hh:mm Uhr“, auf Englisch „Commit <kennung> from YYYY-MM-DD hh:mm“. Die Uhrzeit steht im 24-Stunden-Format in der Ortszeit Ihres Browsers. Das Datum ist das Datum des Commits, nicht der Zeitpunkt, an dem Pipwerk Studio gebaut oder gestartet wurde. Lässt sich nur das Datum nicht ermitteln, lautet der Tooltip „Commit <kennung>“. Der Tooltip wechselt mit der Sprache. Hilfstechnik wie ein Bildschirmleser liest denselben Text als Beschreibung der Standanzeige vor. Lässt sich der Stand nicht ermitteln, gibt es keinen Tooltip.
 
 Der Stand wird einmal beim Start von Pipwerk Studio ermittelt. Wird der Arbeitsbereich danach auf einen anderen Commit gesetzt, zeigt ein weiterlaufendes Pipwerk Studio weiter den Stand beim Start; nach einem Neustart zeigt es den neuen Stand.
 
