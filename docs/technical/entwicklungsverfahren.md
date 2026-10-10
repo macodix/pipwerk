@@ -20,8 +20,8 @@ Eine Aussage wird nicht allein dadurch zu einer bestätigten fachlichen Festlegu
 
 | Beteiligter | Aufgabe im Ablauf |
 |---|---|
-| Nutzer | Auftraggeber. Trifft fachliche und grundlegende Architekturentscheidungen, gibt Aufträge frei, erprobt und nimmt ab. Spricht ausschließlich mit dem Projektleiter. |
-| Projektleiter | Plant mit dem Nutzer die Arbeitspakete, klärt und erteilt Aufträge, gibt Entscheidungen des Nutzers als Aufträge weiter, prüft die Abnahmekriterien am Teststand und führt die Liste der Arbeitspakete. |
+| Nutzer | Auftraggeber. Stellt Anforderungen aus Anwendersicht, legt Bedienabläufe und Fachlichkeit fest, trifft grundlegende Architekturentscheidungen, gibt Aufträge frei, erprobt und nimmt ab. Spricht ausschließlich mit dem Projektleiter. |
+| Projektleiter | Übersetzt die Anforderungen des Nutzers in technische Anforderungen, prüft ihre Umsetzbarkeit und stimmt die technischen Festlegungen aufbereitet mit dem Nutzer ab. Plant mit dem Nutzer die Arbeitspakete, klärt und erteilt Aufträge, gibt Entscheidungen des Nutzers als Aufträge weiter, prüft die Abnahmekriterien am Teststand und führt die Liste der Arbeitspakete. Einzelheiten in [Agentenrollen und Briefings](agentenrollen-und-briefings.md#arbeitsteilung-zwischen-nutzer-und-projektleiter). |
 | `ordermgr` | Programm der Auftragsverwaltung. Übernimmt Aufträge aus dem Repository, führt Status und Akte, übergibt Aufträge an `agentrun`, wertet Ergebnisse aus, regelt die Reihenfolge paralleler Aufträge und gibt jeden Auftrag an das Repository zurück. |
 | `agentrun` | Programm für die Läufe des Softwarearchitekten. Richtet den Arbeitsbereich ein, startet und überwacht die Sitzung, beendet sie und baut Arbeitsbereiche ab. |
 | Softwarearchitekt | Setzt einen Auftrag mit Entwickler und QA um, stellt den Teststand bereit und führt nach der Abnahme den Merge aus. |
@@ -441,6 +441,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-10 | Beteiligte: Arbeitsteilung zwischen Nutzer und Projektleiter aufgenommen. |
 | 2026-10-10 | Startauftrag von `agentrun` mit Entwicklungsverzeichnis und Auftragskennung; Abschnitt zur Einführung entfernt. |
 | 2026-10-09 | `work-orders/` auf `incoming/` und `outgoing/` umgestellt, neue Vorlage mit Akte; Akte als letzter Abschnitt; `workpackage` `none` für Aufträge ohne Arbeitspaket. |
 | 2026-10-09 | Claude-Code-Konfiguration aus dem Repository nach `devteam/` verlegt und `.claude/` sowie `tools/order-management/` entfernt; Startbefehl von `agentrun` mit festen Einstellungsquellen und Freigabemodus; Ergebnis des Machbarkeitstests. |
