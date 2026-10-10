@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-09
+- stand: 2026-10-10
 
 ## 1. Ziel und Gegenstand
 
@@ -57,7 +57,17 @@ Die deutschsprachigen Fachbegriffe der Konzeptdokumente werden bei der Umsetzung
 - Die React-Oberfläche kommuniziert mit dem Python-Backend über eine direkte API und bei Bedarf über eine Echtzeitschnittstelle. Das Nachrichtensystem dient der Kommunikation zwischen Hauptkomponenten und ersetzt nicht pauschal die interne GUI-Backend-Schnittstelle.
 - Web-API, Format der Strategiedefinition, Nachrichtenformate und gemeinsame fachliche Datenformate werden als versionierte Verträge behandelt. Eine Komponente kann durch eine andere Implementierung ersetzt werden, wenn diese Verträge und das vereinbarte fachliche Verhalten eingehalten werden.
 - Externe Erreichbarkeit, Authentifizierung und Berechtigungen müssen konfigurierbar sein. Schreibende, ausführende und handelsbezogene Funktionen werden nicht ungeschützt veröffentlicht.
-- Die konkrete Schnittstelle zwischen Python-Kern und Oberfläche sowie das Format gespeicherter Strategien sind noch festzulegen.
+- Die konkrete Schnittstelle zwischen Python-Kern und Oberfläche ist noch festzulegen.
+
+## Ablage fachlicher Objekte
+
+Eine Strategie ist ein Objekt des Python-Fachkerns. Sie wird als JSON-Dokument serialisiert und als Datei im konfigurierten Strategieverzeichnis abgelegt. Das JSON-Schema des Dokuments wird aus den Modellen des Fachkerns erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API, als Export- und Importdatei und als Nachrichteninhalt verwendet.
+
+Die Datenbank der Komponente führt einen Index der abgelegten Strategien mit Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiverweis und Zeitstempeln; weitere Eigenschaften kommen bei Bedarf hinzu. Die Datei ist maßgeblich; der Index ist aus den Dateien neu aufbaubar.
+
+Andere eigenständig wiederverwendbare fachliche Objekte werden bei Bedarf nach demselben Muster abgelegt: Objekt im Fachkern, serialisiertes Dokument als Datei, Index mit Eigenschaften in der Datenbank. Objekte mit schutzbedürftigen Inhalten, insbesondere Zugangs- und Kontodaten, fallen nicht unter dieses Muster; für sie wird je Objekt gesondert festgelegt, ob und wie sie gespeichert werden.
+
+Als Datenbank wird derzeit SQLite verwendet. PostgreSQL und MariaDB sollen zu gegebener Zeit mindestens in die Tests aufgenommen werden.
 
 ## Webstandards und Browserkompatibilität
 
@@ -141,7 +151,7 @@ Fachliche Definitionen stehen in `fachmodell.md`. Anforderungen an den Designer 
 
 ## 4. Noch festzulegen
 
-- Datenformat für die dauerhafte Ablage und die Weitergabe von Strategien zwischen den Hauptkomponenten und über deren Schnittstellen; Bearbeitung als viertes eigenes Thema in einem eigenen Projektchat. Dabei sind insbesondere Schema, Versionierung, Validierung, Kompatibilität und Migration zu klären;
+- Versionierung, Validierung, Kompatibilität und Migration des Strategiedokuments im Einzelnen;
 - Bereitstellung der browserbasierten Oberflächen im regulären Betrieb: integrierter Webserver der jeweiligen Pipwerk-Komponente, externer Webserver beziehungsweise Reverse Proxy oder anderes Betriebsmodell;
 - Prozessmodell der Hauptkomponenten: Festlegung, welche Teile einer Hauptkomponente als eigene Prozesse laufen und wie sie gestartet, beendet und überwacht werden;
 - gemeinsamer Betrieb mehrerer Hauptkomponenten auf demselben Rechner: Adressen, Ports sowie Prozess- und Diensttrennung;
@@ -155,6 +165,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-10 | Ablage fachlicher Objekte festgelegt: Strategie als serialisiertes Objekt in Datei, Index in der Datenbank, gleiches Muster für weitere Objekte, Ausnahme für schutzbedürftige Inhalte; Datenformat nicht mehr als offen geführt. |
 | 2026-10-09 | Arbeitspakete und ihre Liste unter `workpackages/` verwiesen; Beschreibung von `work-orders/` angepasst. |
 | 2026-10-08 | Prozessinhalte (Rollen, Ablauf, Prüfnachweise, Arbeitsbereiche, Automatisierungsziel, Qualitätswerkzeuge, Gültigkeit von Dokumentinhalten) in das Entwicklungsverfahren und die Agentenrollen verlagert; der Entwicklungsplan enthält nur noch die Produktplanung. |
 | 2026-10-08 | Arbeitsaufträge aus `docs/` in das eigene Verzeichnis `work-orders/` auf oberster Ebene verlegt. |
