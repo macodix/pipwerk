@@ -137,7 +137,7 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 
 ## 2. Entwicklungsprozess
 
-Rollen, Ablauf, Arbeitsaufträge, Qualitätssicherung und Arbeitsbereiche der Entwicklung sind in [Das Pipwerk-Entwicklungsverfahren](../../technical/entwicklungsverfahren.md) und [Agentenrollen und Briefings](../../technical/agentenrollen-und-briefings.md) festgelegt. Dieser Entwicklungsplan enthält nur die Produktplanung. Aus ihm ergeben sich die Arbeitspakete; sie liegen mit ihrer Liste unter [`workpackages/`](workpackages/workpackages.csv).
+Rollen, Ablauf, Arbeitsaufträge, Qualitätssicherung und Arbeitsbereiche der Entwicklung sind in [Das Pipwerk-Entwicklungsverfahren](../../technical/entwicklungsverfahren.md) und [Agentenrollen und Briefings](../../technical/agentenrollen-und-briefings.md) festgelegt. Dieser Entwicklungsplan enthält nur die Produktplanung. Aus ihm ergeben sich die Arbeitspakete; sie liegen mit ihrer Liste unter [`workpackages/`](workpackages/workpackages.csv). Die technischen Festlegungen für Schritt 1 des Strategiedesigners (Strategien gestalten und speichern) stehen im [Pflichtenheft](pflichtenheft-strategiedesigner.md).
 
 ## Test und spätere Ablaufanalyse
 
@@ -165,6 +165,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-10 | Verweis auf das Pflichtenheft für Schritt 1 ergänzt; Arbeitspakete AP2 bis AP9 als Entwurf angelegt. |
 | 2026-10-10 | Ablage fachlicher Objekte festgelegt: Strategie als serialisiertes Objekt in Datei, Index in der Datenbank, gleiches Muster für weitere Objekte, Ausnahme für schutzbedürftige Inhalte; Datenformat nicht mehr als offen geführt. |
 | 2026-10-09 | Arbeitspakete und ihre Liste unter `workpackages/` verwiesen; Beschreibung von `work-orders/` angepasst. |
 | 2026-10-08 | Prozessinhalte (Rollen, Ablauf, Prüfnachweise, Arbeitsbereiche, Automatisierungsziel, Qualitätswerkzeuge, Gültigkeit von Dokumentinhalten) in das Entwicklungsverfahren und die Agentenrollen verlagert; der Entwicklungsplan enthält nur noch die Produktplanung. |
