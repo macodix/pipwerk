@@ -151,11 +151,12 @@ Der Projektleiter ist kein Teil des Agententeams. Er arbeitet als Claude-Sitzung
 
 Diese Vorgaben gelten für `agentrun`, das die Sitzung des Softwarearchitekten startet.
 
-- `PIPWERK_DEV_ROOT` mit dem absoluten Pfad des Pipwerk-Entwicklungsverzeichnisses und `PIPWERK_ORDER_ID` mit der Auftragskennung sind Pflichtangaben in der Prozessumgebung. Sie werden beim Start als Umgebungsvariablen übergeben. Eine Erwähnung im Startauftrag oder eine nicht exportierte Shell-Variable genügt nicht.
-- Der Startauftrag nennt den absoluten Pfad der Auftragsdatei. Der Softwarearchitekt liest den Auftrag nur dort und schreibt dort ausschließlich seinen Eintrag `result` in die Akte.
+- `PIPWERK_DEV_ROOT` mit dem absoluten Pfad des Pipwerk-Entwicklungsverzeichnisses und `PIPWERK_ORDER_ID` mit der Auftragskennung werden beim Start als Umgebungsvariablen übergeben. Sie dienen `pipwerk-dev` und `orderresult`.
+- Der Startauftrag nennt die Auftragsdatei, das Entwicklungsverzeichnis und die Auftragskennung ausgeschrieben. Die Agenten verwenden in Befehlen nur diese ausgeschriebenen Werte, nie Variablen, und der Softwarearchitekt gibt sie an Entwickler und QA weiter (siehe [Konfiguration des Agententeams](entwicklungsverfahren.md#konfiguration-des-agententeams)).
+- Der Softwarearchitekt liest den Auftrag nur in der Auftragsdatei und schreibt dort ausschließlich seinen Eintrag `result` mit `orderresult` in die Akte.
 - Bei fehlendem oder ungültigem Wert startet `agentrun` die Sitzung nicht und trägt den Startfehler als Ergebnis `failed` ein. Es gibt keinen geratenen Ersatzwert.
-- Die Sitzung des Softwarearchitekten startet in `$PIPWERK_DEV_ROOT/work/$PIPWERK_ORDER_ID/coordinate`. Die Werte müssen auch in der Ausführungsumgebung der Teammates verfügbar sein.
-- Kein Agent setzt oder verändert diese Variablen. Fehlt eine beim Agenten, bricht er wie in seiner Rollendefinition vorgeschrieben ab.
+- Die Sitzung des Softwarearchitekten startet in `work/<auftragskennung>/coordinate` des Entwicklungsverzeichnisses.
+- Kein Agent setzt oder verändert die Umgebungsvariablen.
 
 Die feste Arbeitstrennung ist eine Agentenanweisung und keine technische Zugriffssperre zwischen den Verzeichnissen. Vorbereitung und Prüfung der Arbeitsbereiche, Testbereitstellung und Commit-Verifikation erfolgen über `pipwerk-dev`; seine Schutzprüfungen dürfen nicht umgangen werden.
 
@@ -182,6 +183,7 @@ Die Skills in `devteam/skills/` enthalten wiederverwendbare Arbeitsschritte:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-10 | Aufrufschnittstelle: ausgeschriebene Werte im Startauftrag, keine Variablen in Befehlen, Ergebnis über `orderresult`. |
 | 2026-10-09 | Agentendefinitionen, Skills und Teamfunktion aus dem Repository nach `devteam/` verlegt; Briefings bleiben maßgeblich. |
 | 2026-10-09 | Prüfung jedes Entwurfs durch einen frischen Agenten vor Abschluss der Konzeptphase in das Briefing des Projektleiters aufgenommen. |
 | 2026-10-09 | Auftragsverwaltung als Programm `ordermgr`, Start des Softwarearchitekten durch `agentrun`; Rolle und Briefing der Auftragsverwaltung entfernt; Ergebnis als Eintrag in der Akte; Entscheidungen des Nutzers als Aufträge der Art `decision`; Projektleiter führt die Liste der Arbeitspakete. |

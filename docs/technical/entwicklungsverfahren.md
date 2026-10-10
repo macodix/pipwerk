@@ -232,7 +232,7 @@ Liegt ein Auftrag danach in `waiting/`, `done/` oder `failed/`, schreibt `orderm
 
 Für jeden Auftrag in `running/` liest `agentrun` den letzten Eintrag `start`:
 
-- `implement`, `rework`, `resume`, `merge`: Fehlt `work/<auftragskennung>/coordinate`, legt `agentrun` es mit `pipwerk-dev prepare --order <auftragskennung> coordinate --base <aktueller Commit von origin/main>` an. Dann startet es die Sitzung des Softwarearchitekten in einer tmux-Sitzung, deren Name die Auftragskennung ist, mit Arbeitsverzeichnis `coordinate`, `PIPWERK_DEV_ROOT` und `PIPWERK_ORDER_ID` als Umgebungsvariablen und dem absoluten Pfad der Auftragsdatei im Startauftrag:
+- `implement`, `rework`, `resume`, `merge`: Fehlt `work/<auftragskennung>/coordinate`, legt `agentrun` es mit `pipwerk-dev prepare --order <auftragskennung> coordinate --base <aktueller Commit von origin/main>` an. Dann startet es die Sitzung des Softwarearchitekten in einer tmux-Sitzung, deren Name die Auftragskennung ist, mit Arbeitsverzeichnis `coordinate` und `PIPWERK_DEV_ROOT` und `PIPWERK_ORDER_ID` als Umgebungsvariablen. Der Startauftrag lautet „Bearbeite den Arbeitsauftrag <absoluter Pfad der Auftragsdatei>. Entwicklungsverzeichnis: <Pfad>. Auftragskennung: <auftragskennung>.“:
 
   ```sh
   claude --setting-sources project --permission-mode default \
@@ -240,7 +240,7 @@ Für jeden Auftrag in `running/` liest `agentrun` den letzten Eintrag `start`:
     --teammate-mode in-process --agent devteam:software-architect "<Startauftrag>"
   ```
 
-  Damit kommen Agentendefinitionen, Skills, Hooks und Freigaben ausschließlich aus `devteam/` (siehe [Konfiguration des Agententeams](#konfiguration-des-agententeams)). Die Benutzereinstellungen werden nicht geladen; der Freigabemodus ist fest `default`, sodass nur ausdrücklich freigegebene Befehle ohne Rückfrage laufen.
+  Damit kommen Agentendefinitionen, Skills, Hooks und Freigaben ausschließlich aus `devteam/` (siehe [Konfiguration des Agententeams](#konfiguration-des-agententeams)). Die Benutzereinstellungen werden nicht geladen; der Freigabemodus ist fest `default`, sodass nur freigegebene Aktionen ohne Rückfrage laufen.
 - `cleanup`: Arbeitsbereiche mit `pipwerk-dev remove --order <auftragskennung>` abbauen, Ergebnis `cleaned` eintragen.
 
 Der Lauf endet, wenn einer dieser Fälle eintritt:
@@ -253,7 +253,7 @@ Der Lauf endet, wenn einer dieser Fälle eintritt:
 | 15 Minuten kein Herzschlag | Sitzung beenden, Ergebnis `failed` – kein Herzschlag seit 15 Minuten |
 | Stornierung angefordert | Sitzung beenden, Arbeitsbereiche abbauen, Ergebnis `stopped` |
 
-Danach verschiebt `agentrun` den Auftrag nach `returned/`. Lehnt `pipwerk-dev remove` den Abbau ab, nennt `agentrun` den Grund im Text des Ergebnisses. Eine Stornierung fordert `ordermgr` mit einer leeren Datei `running/<auftragskennung>.stop` an; `agentrun` entfernt sie nach der Rückgabe.
+Danach verschiebt `agentrun` den Auftrag nach `returned/`. Vor dem Abbau der Arbeitsbereiche wartet `agentrun` höchstens 30 Sekunden, bis kein Prozess mehr sein Arbeitsverzeichnis unter `work/<auftragskennung>/` hat, weil der Prozess einer beendeten Sitzung noch kurz weiterläuft. Lehnt `pipwerk-dev remove` den Abbau ab, nennt `agentrun` den Grund im Text des Ergebnisses. Eine Stornierung fordert `ordermgr` mit einer leeren Datei `running/<auftragskennung>.stop` an; `agentrun` entfernt sie nach der Rückgabe.
 
 Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. `agentrun` beendet sie mit `tmux kill-session -t <auftragskennung>`. Beim Start bewertet `agentrun` alle Aufträge in `running/` neu: Besteht ihre Sitzung, überwacht es sie weiter.
 
@@ -261,7 +261,7 @@ Eine interaktive Claude-Code-Sitzung beendet sich nicht von selbst. `agentrun` b
 
 Ein Hook von Claude Code für die Ereignisse `PreToolUse`, `PostToolUse` und `PostToolUseFailure` ruft bei jedem Werkzeugaufruf das Skript `scripts/heartbeat` auf. Es liest das Arbeitsverzeichnis aus den Hook-Daten. Liegt es unter `work/<auftragskennung>/`, aktualisiert es den Zeitstempel von `run/<auftragskennung>.heartbeat`; sonst tut es nichts. Es gibt nichts aus und endet immer mit Exitcode 0, damit es Claude Code nicht beeinflusst. Weil Softwarearchitekt, Entwickler und QA unter `work/<auftragskennung>/` arbeiten, zählt die Tätigkeit aller drei.
 
-Gemessen wird ab dem späteren Zeitpunkt von Start des Laufs und letztem Herzschlag. Ein einzelner Bash-Aufruf läuft in Claude Code höchstens 10 Minuten; 15 Minuten ohne Werkzeugaufruf bedeuten, dass keine Sitzung des Auftrags mehr arbeitet. Das gilt auch, wenn eine Sitzung auf eine Freigabe, eine Eingabe oder das Ende einer Pause wegen der Nutzungsgrenze wartet. Der Projektleiter setzt den Auftrag dann mit `answer` fort.
+Gemessen wird ab dem späteren Zeitpunkt von Start des Laufs und letztem Herzschlag. 15 Minuten ohne Werkzeugaufruf werden als Stillstand gewertet. Das gilt auch, wenn eine Sitzung auf eine Freigabe, eine Eingabe oder das Ende einer Pause wegen der Nutzungsgrenze wartet. Der Projektleiter setzt den Auftrag dann mit `answer` fort.
 
 Der Hook steht in `devteam/hooks/hooks.json`. Er greift laut Machbarkeitstest auch bei den Werkzeugaufrufen der Teammates.
 
@@ -280,6 +280,16 @@ devteam/
 ```
 
 Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie für Claude Code um und enthalten Pfade und Befehle des Rechners. Änderungen daran veranlasst der Projektleiter über einen Auftrag an eine Sitzung auf dem Entwicklungsrechner, nicht über das Agententeam.
+
+Freigaben in `devteam/settings.json`:
+
+- Bash ist grundsätzlich freigegeben (`Bash`). Gesperrt sind erzwungenes Überschreiben beim Push, `git reset --hard`, `git clean`, das Löschen und Ändern des Repositorys auf GitHub, `gh secret`, `gh auth` sowie das Schreiben mit den Bearbeitungswerkzeugen in `repo/`, `devteam/`, `scripts/` und `ordermgr/`.
+- Lesen ist im ganzen Entwicklungsverzeichnis erlaubt, Schreiben mit den Bearbeitungswerkzeugen nur unter `work/`.
+- `ordermgr/orders/running/`, `work/` und `repo/` sind zusätzliche Arbeitsverzeichnisse.
+
+Die Freigaben sind keine Sicherheitsgrenze: Über Bash, `uv`, `npm` und `git` können die Agenten mit den Rechten des Benutzers der Arbeitsbereiche handeln. Die Grenze bilden dessen Dateirechte und der Umfang seines GitHub-Zugangs. Eine Sandbox des Betriebssystems war auf dem Entwicklungsrechner nicht nutzbar.
+
+Befehle der Agenten enthalten keine Umgebungsvariablen und keine Kommandoersetzungen. Für solche Befehle verlangt Claude Code unabhängig von den Freigaben eine Bestätigung („A variable in this command can't be checked before it runs“), und eine unbediente Sitzung bleibt stehen. Die Agenten verwenden deshalb die ausgeschriebenen Pfade aus dem Startauftrag; `PIPWERK_DEV_ROOT` und `PIPWERK_ORDER_ID` werden nur von `pipwerk-dev` und `orderresult` intern gelesen.
 
 Ein Machbarkeitstest mit Claude Code 2.1.295 hat nachgewiesen: Der Softwarearchitekt startet als Agent aus `devteam/`, setzt Teammates nach den Agentendefinitionen aus `devteam/` ein, der Hook greift auch bei den Teammates, und die Freigaben aus `devteam/settings.json` gelten im Modus `default` für alle ohne Rückfrage.
 
@@ -431,7 +441,7 @@ Die folgenden Schritte richten den Prozess auf dem Entwicklungsrechner ein. Sie 
 5. `devteam/` anlegen (siehe [Konfiguration des Agententeams](#konfiguration-des-agententeams)). `devteam/settings.json` enthält alle Freigaben, die Rollen und Skills brauchen. `pipwerk-dev` und `orderresult` liegen in `devteam/bin/` und damit auf dem Suchpfad der Sitzungen; die Agenten rufen sie ohne Pfad auf und wechseln das Verzeichnis nicht. Eine nicht freigegebene Aktion hält eine unbediente Sitzung an, bis der fehlende Herzschlag den Lauf beendet.
 6. `inotify-tools` installieren, `ordermgr` nach `ordermgr/bin/` und `agentrun` und `heartbeat` nach `scripts/` installieren und die Cron-Jobs für die Prüfung beider PID-Dateien einrichten. Beide Programme werden aus einem Verzeichnis außerhalb von `repo/` gestartet. Solange irgendein Prozess, auch eine Shell, ein tmux-Server oder eine Claude-Code-Sitzung, sein Arbeitsverzeichnis in `repo/` hat, lehnt `sync-repo` die Aktualisierung mit Exitcode 3 ab.
 
-Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Auftrag, Implementierung, unabhängige QA, Korrektur und erneute QA, Rückfrage, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Abnahme und kontrollierter Abschluss sowie eine Stornierung. Der Nachweis verwendet einen kleinen echten Code-Auftrag an Pipwerk Studio. Er weist zugleich nach, dass die Teamfunktion in einer tmux-Sitzung zuverlässig läuft, dass der Herzschlag aus den Sitzungen von Softwarearchitekt, Entwickler und QA ankommt, dass in den Worktrees keine Vertrauensabfrage erscheint und dass alle vorgesehenen Befehle freigegeben sind.
+Der vollständige Durchlauf ist am 2026-10-09/10 nachgewiesen (Akten in `work-orders/outgoing/`): Umsetzung mit unabhängiger QA und Korrektur innerhalb des Teams, commitgebundene Testbereitstellung, Prüfung durch den Projektleiter, Ablehnung mit Korrektur und erneuter QA, Abnahme und Merge mit Abbau der Arbeitsbereiche (WO-2026-10-09-004, WO-2026-10-10-001, WO-2026-10-10-002); Warten bei belegter Komponente und Stornierung (WO-2026-10-09-005, WO-2026-10-09-006); Statusanfrage (WO-2026-10-09-007); Erkennen eines Stillstands über den Herzschlag mit Rückgabe als `blocked` und Fortsetzung mit `answer` (WO-2026-10-08-001). Eine Rückfrage (`question`) kam im Nachweis nicht vor.
 
 ## Einführung von ordermgr und agentrun
 
@@ -442,7 +452,7 @@ Vor der Freigabe des Prozesses ist ein vollständiger Durchlauf nachzuweisen: Au
 3. `work-orders/` mit `incoming/`, `outgoing/` und der neuen Vorlage; die bisherigen Aufträge werden nach `outgoing/` verschoben und nach ihrer Kennung benannt;
 4. die Übernahme des offenen Auftrags WO-2026-10-08-001 in `ordermgr`.
 
-`.claude/` und `tools/order-management/` sind bereits aus dem Repository entfernt; ihr früherer Inhalt ist in der Git-Historie Ausgangspunkt für `devteam/`. Bis zur Einführung beschreibt dieses Dokument den Zielstand.
+Die Einführung ist abgeschlossen. `.claude/` und `tools/order-management/` sind aus dem Repository entfernt.
 
 ## Weitere Qualitätswerkzeuge
 
@@ -456,6 +466,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-10 | Ergebnis des Nachweisdurchlaufs; Einführung abgeschlossen; Freigaben in `devteam/settings.json`, Verbot von Variablen in Befehlen, Startauftrag mit Entwicklungsverzeichnis und Auftragskennung, Warten vor dem Abbau der Arbeitsbereiche. |
 | 2026-10-09 | `work-orders/` auf `incoming/` und `outgoing/` umgestellt, neue Vorlage mit Akte; Akte als letzter Abschnitt; `workpackage` `none` für Aufträge ohne Arbeitspaket. |
 | 2026-10-09 | Claude-Code-Konfiguration aus dem Repository nach `devteam/` verlegt und `.claude/` sowie `tools/order-management/` entfernt; Startbefehl von `agentrun` mit festen Einstellungsquellen und Freigabemodus; Ergebnis des Machbarkeitstests. |
 | 2026-10-09 | Auftragsverwaltung als Skript `ordermgr` statt Claude-Code-Sitzung; Läufe des Softwarearchitekten mit `agentrun` und Herzschlag statt Höchstdauer; Repository als Eingangs- und Ausgangswarteschlange; Auftrag als Akte in einer Datei; Auftragsarten `decision`, `cancel` und `status`; Planungsebenen mit Arbeitspaketen und Arbeitspaketliste; Benachrichtigung des Nutzers und Ergebnisdatei entfallen; `transfer/` bleibt Ablage des Nutzers außerhalb des Ablaufs. |
