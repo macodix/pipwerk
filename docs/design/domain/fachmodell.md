@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
-- zuletzt aktualisiert: `2026-09-25`
+- zuletzt aktualisiert: `2026-10-11`
 
 ## 1. Zweck und Abgrenzung
 
@@ -45,6 +45,12 @@ Sie müssen jedoch über die Struktur des Trendobjekts für andere fachliche Ele
 Indikatoren werden als eigenständige Objekte behandelt. Sie besitzen eigene Parameter und stellen definierte Ergebnisse bereit, die in Berechnungsverfahren und Bedingungen verwendet werden können.
 
 Bedingungen vergleichen konkrete Ergebnisse beziehungsweise Ausgaben von Objekten. Ein Indikator mit nur einer fachlich relevanten Ausgabe kann in der Benutzeroberfläche vereinfacht dargestellt werden.
+
+### req-fach-013a -- Aufbau und Wiederverwendung von Indikatoren und Trends
+
+Ein Indikator kann aus fest programmierten Einheiten, aus Regeln oder aus einer Kombination von beidem bestehen. Für die Verwendung in Strategien ist das nicht unterscheidbar: Jeder Indikator beschreibt seine Parameter und Ergebnisse auf dieselbe Weise.
+
+Ein konfigurierter Indikator und ein konfigurierter Trend sind eigenständige Objekte. Sie werden einmal angelegt und können in beliebig vielen Strategien verwendet werden. Eine Strategie verweist auf sie und enthält sie nicht als Kopie.
 
 ### req-fach-014 -- Zustandswechsel als Bedingung
 
@@ -145,6 +151,24 @@ Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 - `Take-Profit` -- KANN.
 
 Ein vorgegebener Orderpreis ist keine Eigenschaft der `MarketOrder`; der tatsächliche Ausführungspreis entsteht bei der Ausführung.
+
+### req-fach-029 -- Pending-Ordertypen von MetaTrader 5 (Entwurf)
+
+Als Spezialisierungen von `Order` werden die Pending-Ordertypen von MetaTrader 5 geführt. Die Handelsrichtung ist Bestandteil des Typs und keine eigene Eigenschaft.
+
+| Ordertyp | Bedeutung | zusätzliche Eigenschaften |
+|---|---|---|
+| `BuyStopOrder`, `SellStopOrder` | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Ablaufzeit` -- KANN |
+| `BuyLimitOrder`, `SellLimitOrder` | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
+| `BuyStopLimitOrder`, `SellStopLimitOrder` | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
+
+Offen: Die Ordertypen von MetaTrader 5 sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Die Tabelle gilt bis zur Abstimmung dieser Erfassung als Entwurf.
+
+### req-fach-030 -- Herkunft und Verfügbarkeit von Ordertypen
+
+Es gibt keine Ordertypen, deren Verfügbarkeit bei jeder Handelssoftware und jedem Broker gewährleistet ist. Jeder Ordertyp gehört zu der Handelssoftware, deren Anbindung ihn bereitstellt, und trägt deren Kennzeichnung. Eine Strategie darf jeden bereitgestellten Ordertyp verwenden.
+
+Ob Handelssoftware, Broker und Instrument eines Kontos einen Ordertyp anbieten, wird bei der Zuordnung einer Strategie zu diesem Konto geprüft. Ist das nicht der Fall, wird die Zuordnung mit Angabe des Grundes abgelehnt. Ein Ordertyp einer Handelssoftware wird nicht in den einer anderen übersetzt.
 
 ### req-fach-032 -- CloseOrder
 
@@ -292,5 +316,6 @@ Ein allgemeiner fachlicher Objekttyp `Aktion` wird daraus derzeit nicht abgeleit
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-11 | Aufbau und Wiederverwendung von Indikatoren und Trends festgelegt. Pending-Ordertypen von MetaTrader 5 als Entwurf ergänzt. Herkunft und Verfügbarkeit von Ordertypen festgelegt. Abgestimmt mit dem Nutzer am 2026-10-11. |
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. Bestehende fachliche Festlegungen und IDs wurden übernommen. |
 | 2026-09-25 | `Strategie` als fachliches Objekt sowie Ablauf, Berechnung und Beauftragung des `OrderBuilder` konkretisiert; separates `Signal`-Objekt aus dem aktuellen Modell entfernt. |

@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-10
+- stand: 2026-10-11
 
 ## 1. Ziel und Gegenstand
 
@@ -61,11 +61,11 @@ Die deutschsprachigen Fachbegriffe der Konzeptdokumente werden bei der Umsetzung
 
 ## Ablage fachlicher Objekte
 
-Eine Strategie ist ein Objekt des Python-Fachkerns. Sie wird als JSON-Dokument serialisiert und als Datei im konfigurierten Strategieverzeichnis abgelegt. Das JSON-Schema des Dokuments wird aus den Modellen des Fachkerns erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API, als Export- und Importdatei und als Nachrichteninhalt verwendet.
+Eine Strategie ist ein Objekt der gemeinsamen Python-Bibliothek `packages/domain-core`. Sie wird als JSON-Dokument serialisiert und als Datei im konfigurierten Strategieverzeichnis abgelegt. Das JSON-Schema des Dokuments wird aus den Modellen an der Schnittstelle erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API, als Export- und Importdatei und als Nachrichteninhalt verwendet.
 
 Die Datenbank der Komponente führt einen Index der abgelegten Strategien mit Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiverweis und Zeitstempeln; weitere Eigenschaften kommen bei Bedarf hinzu. Die Datei ist maßgeblich; der Index ist aus den Dateien neu aufbaubar.
 
-Andere eigenständig wiederverwendbare fachliche Objekte werden bei Bedarf nach demselben Muster abgelegt: Objekt im Fachkern, serialisiertes Dokument als Datei, Index mit Eigenschaften in der Datenbank. Objekte mit schutzbedürftigen Inhalten, insbesondere Zugangs- und Kontodaten, fallen nicht unter dieses Muster; für sie wird je Objekt gesondert festgelegt, ob und wie sie gespeichert werden.
+Konfigurierte Indikatoren, konfigurierte Trends, Regeln und RegelSets werden nach demselben Muster abgelegt: Objekt in der gemeinsamen Python-Bibliothek, JSON-Dokument als Datei, Index mit Eigenschaften in der Datenbank. Strategien verweisen auf sie über ihre Kennung. Weitere eigenständig wiederverwendbare fachliche Objekte folgen bei Bedarf demselben Muster. Objekte mit schutzbedürftigen Inhalten, insbesondere Zugangs- und Kontodaten, fallen nicht unter dieses Muster; für sie wird je Objekt gesondert festgelegt, ob und wie sie gespeichert werden.
 
 Als Datenbank wird derzeit SQLite verwendet. PostgreSQL und MariaDB sollen zu gegebener Zeit mindestens in die Tests aufgenommen werden.
 
@@ -165,6 +165,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-11 | Ablage: Indikatoren, Trends, Regeln und RegelSets als eigenständige Objekte. Begriffe nach Glossar. |
 | 2026-10-10 | Verweis auf das Pflichtenheft für Schritt 1 ergänzt; Arbeitspakete AP2 bis AP9 als Entwurf angelegt. |
 | 2026-10-10 | Ablage fachlicher Objekte festgelegt: Strategie als serialisiertes Objekt in Datei, Index in der Datenbank, gleiches Muster für weitere Objekte, Ausnahme für schutzbedürftige Inhalte; Datenformat nicht mehr als offen geführt. |
 | 2026-10-09 | Arbeitspakete und ihre Liste unter `workpackages/` verwiesen; Beschreibung von `work-orders/` angepasst. |

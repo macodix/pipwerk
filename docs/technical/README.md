@@ -5,6 +5,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 ## Verbindliche Regeln
 
 - [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md)
+- [Glossar](glossar.md) – verbindliche Begriffe für Dokumente, Aufträge und Abstimmungen
 
 ## Entwicklungsverfahren
 
