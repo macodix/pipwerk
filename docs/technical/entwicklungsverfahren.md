@@ -21,10 +21,10 @@ Eine Aussage wird nicht allein dadurch zu einer bestätigten fachlichen Festlegu
 | Beteiligter | Aufgabe im Ablauf |
 |---|---|
 | Nutzer | Auftraggeber. Stellt Anforderungen aus Anwendersicht, legt Bedienabläufe und Fachlichkeit fest, trifft grundlegende Architekturentscheidungen, gibt Aufträge frei, erprobt und nimmt ab. Spricht ausschließlich mit dem Projektleiter. |
-| Projektleiter | Übersetzt die Anforderungen des Nutzers in technische Anforderungen, prüft ihre Umsetzbarkeit und stimmt die technischen Festlegungen aufbereitet mit dem Nutzer ab. Plant mit dem Nutzer die Arbeitspakete, klärt und erteilt Aufträge, gibt Entscheidungen des Nutzers als Aufträge weiter, prüft die Abnahmekriterien am Teststand und führt die Liste der Arbeitspakete. Einzelheiten in [Agentenrollen und Briefings](agentenrollen-und-briefings.md#arbeitsteilung-zwischen-nutzer-und-projektleiter). |
+| Projektleiter | Übersetzt die Anforderungen des Nutzers in technische Anforderungen, prüft ihre Umsetzbarkeit und stimmt die technischen Festlegungen aufbereitet mit dem Nutzer ab. Plant mit dem Nutzer die Arbeitspakete, klärt und erteilt Aufträge, gibt Entscheidungen des Nutzers als Aufträge weiter, prüft die Abnahmekriterien in der Testumgebung und führt die Liste der Arbeitspakete. Einzelheiten in [Agentenrollen und Briefings](agentenrollen-und-briefings.md#arbeitsteilung-zwischen-nutzer-und-projektleiter). |
 | `ordermgr` | Programm der Auftragsverwaltung. Übernimmt Aufträge aus dem Repository, führt Status und Akte, übergibt Aufträge an `agentrun`, wertet Ergebnisse aus, regelt die Reihenfolge paralleler Aufträge und gibt jeden Auftrag an das Repository zurück. |
 | `agentrun` | Programm für die Läufe des Softwarearchitekten. Richtet den Arbeitsbereich ein, startet und überwacht die Sitzung, beendet sie und baut Arbeitsbereiche ab. |
-| Softwarearchitekt | Setzt einen Auftrag mit Entwickler und QA um, stellt den Teststand bereit und führt nach der Abnahme den Merge aus. |
+| Softwarearchitekt | Setzt einen Auftrag mit Entwickler und QA um, stellt die Testumgebung bereit und führt nach der Abnahme den Merge aus. |
 | Entwickler | Implementiert im eigenen Arbeitsbereich und Branch. |
 | QA | Prüft unabhängig im eigenen Arbeitsbereich. |
 | Runner | Hält `repo/` auf dem Stand von `origin/main`. |
@@ -57,11 +57,11 @@ Die Liste und die Akten in `work-orders/outgoing/` zeigen den gesamten Arbeitsst
 2. Der Runner bringt `repo/` auf den neuen Stand. `ordermgr` übernimmt den Auftrag, prüft ihn und übergibt ihn an `agentrun` oder reiht ihn ein.
 3. `agentrun` startet den Softwarearchitekten. Dieser lässt den Auftrag vom Entwickler im eigenen Branch umsetzen. Der Entwickler führt die vorgesehenen Prüfungen aus, aktualisiert die Dokumentation und erstellt einen Pull Request.
 4. Die QA prüft unabhängig Auftrag, Ausgangsstand, Pull Request und Commit, Code, Tests und Dokumentation. Befunde werden vollständig korrigiert und erneut geprüft. Eine Fertigmeldung ersetzt die QA nicht.
-5. Der Softwarearchitekt stellt genau den von der QA freigegebenen Commit als Teststand bereit, prüft Erreichbarkeit und Commit-Identität und trägt das Ergebnis `ready` in die Akte ein. Eine spätere Codeänderung erfordert erneute QA. `agentrun` beendet die Sitzung, `ordermgr` setzt `acceptance` und legt die Akte nach `work-orders/outgoing/`.
-6. Der Projektleiter prüft jedes Abnahmekriterium am Teststand. Abweichungen gibt er mit einem Auftrag der Art `decision` und der Entscheidung `reject` weiter. Ist der Auftrag erfüllt, setzt er das Arbeitspaket auf `testing`.
-7. Der Nutzer erprobt den Teststand und trägt das Ergebnis in die Liste der Arbeitspakete ein. Bei Abnahme erteilt der Projektleiter einen Auftrag `decision` mit `accept`, bei Abweichungen mit `reject`. Nach `accept` lässt `ordermgr` den Softwarearchitekten mergen und setzt nach dessen Ergebnis `merged` den Status `closed`. Gemergt wird mit einem Merge-Commit, nicht durch Zusammenfassen (Squash), damit die Commits des Arbeitsbranches in `main` enthalten bleiben.
+5. Der Softwarearchitekt stellt genau den von der QA freigegebenen Commit als Testumgebung bereit, prüft Erreichbarkeit und Commit-Identität und trägt das Ergebnis `ready` in die Akte ein. Eine spätere Codeänderung erfordert erneute QA. `agentrun` beendet die Sitzung, `ordermgr` setzt `acceptance` und legt die Akte nach `work-orders/outgoing/`.
+6. Der Projektleiter prüft jedes Abnahmekriterium in der Testumgebung. Abweichungen gibt er mit einem Auftrag der Art `decision` und der Entscheidung `reject` weiter. Ist der Auftrag erfüllt, setzt er das Arbeitspaket auf `testing`.
+7. Der Nutzer erprobt die Testumgebung und trägt das Ergebnis in die Liste der Arbeitspakete ein. Bei Abnahme erteilt der Projektleiter einen Auftrag `decision` mit `accept`, bei Abweichungen mit `reject`. Nach `accept` lässt `ordermgr` den Softwarearchitekten mergen und setzt nach dessen Ergebnis `merged` den Status `closed`. Gemergt wird mit einem Merge-Commit, nicht durch Zusammenfassen (Squash), damit die Commits des Arbeitsbranches in `main` enthalten bleiben.
 
-Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, Pull Request, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder Pull Requests technisch prüfen noch den Teststand selbst installieren und starten.
+Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, Pull Request, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder Pull Requests technisch prüfen noch die Testumgebung selbst installieren und starten.
 
 Jeder Pull Request enthält mindestens den Bezug auf den Arbeitsauftrag und seine Abnahmekriterien, eine kurze Beschreibung der tatsächlich vorgenommenen Änderungen, das Ergebnis der ausgeführten Prüfungen sowie offene Punkte und bekannte Einschränkungen. Die QA bestätigt nur, was durch Code, Tests oder andere zugängliche Nachweise überprüfbar ist.
 
@@ -130,7 +130,7 @@ Ergebnisse sind:
 
 | Ergebnis | Bedeutung | geschrieben von |
 |---|---|---|
-| `ready` | Teststand bereit | Softwarearchitekt |
+| `ready` | Testumgebung bereit | Softwarearchitekt |
 | `question` | Rückfrage an den Auftraggeber | Softwarearchitekt |
 | `failed` | Arbeit nicht möglich; auch Startfehler, Ende der Sitzung ohne Ergebnis und fehlender Herzschlag | Softwarearchitekt oder `agentrun` |
 | `merged` | Merge abgeschlossen | Softwarearchitekt |
@@ -150,7 +150,7 @@ Der Status steht im Feld `status` des Auftrags. Dieser Eintrag ist maßgeblich. 
 | `queued` | wartet, weil eine betroffene Komponente belegt ist | `new/` | `ordermgr` |
 | `inprogress` | Lauf des Softwarearchitekten | `running/`, nach dem Lauf `returned/` | `ordermgr` |
 | `blocked` | wartet auf eine Entscheidung des Auftraggebers; der Grund steht unter „Offene Punkte“ | `waiting/`, bei einem unbrauchbaren Auftrag `failed/`; Kopie in `work-orders/outgoing/` | `ordermgr` |
-| `acceptance` | Teststand bereit; Prüfung durch den Projektleiter und Erprobung durch den Nutzer | `waiting/`; Kopie in `work-orders/outgoing/` | `ordermgr` |
+| `acceptance` | Testumgebung bereit; Prüfung durch den Projektleiter und Erprobung durch den Nutzer | `waiting/`; Kopie in `work-orders/outgoing/` | `ordermgr` |
 | `closed` | abgeschlossen | `done/` und `work-orders/outgoing/` | `ordermgr` |
 | `cancelled` | vom Auftraggeber storniert | während des Abbaus `running/` und `returned/`, danach `done/` und `work-orders/outgoing/` | `ordermgr` |
 
@@ -293,7 +293,7 @@ Mehrere Aufträge werden gleichzeitig bearbeitet, wenn sie keine gemeinsame Komp
 
 Die Einschränkung ist keine technische Notwendigkeit von Git. Sie vermeidet Konflikte beim Zusammenführen und damit erneute QA-Läufe. Wird ein paralleler Auftrag zuerst gemergt, bringt der andere seinen Branch auf den neuen Stand von `main`; danach ist eine erneute QA erforderlich.
 
-Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente einen eigenen Teststand, und jedes Agententeam läuft in einer eigenen tmux-Sitzung (siehe [Arbeitsbereiche](#arbeitsbereiche)).
+Jeder Auftrag erhält eigene Arbeitsbereiche, jede Komponente eine eigene Testumgebung, und jedes Agententeam läuft in einer eigenen tmux-Sitzung (siehe [Arbeitsbereiche](#arbeitsbereiche)).
 
 ## Arbeitsbereiche
 
@@ -305,7 +305,7 @@ Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` liegen:
 | `work/<auftragskennung>/coordinate/` | Worktree des Softwarearchitekten, Commit von `origin/main` beim ersten Lauf, ohne Branch; Arbeitsverzeichnis seiner Sitzungen für diesen Auftrag | `agentrun` über `pipwerk-dev` |
 | `work/<auftragskennung>/implement/` | Worktree des Entwicklers mit dem Arbeitsbranch | Entwickler |
 | `work/<auftragskennung>/review/` | Worktree der QA mit dem lokalen Prüfbranch | QA |
-| `test/<komponente>/` | Teststand der Komponente, ohne Branch auf einem freigegebenen Commit | nur `pipwerk-dev` |
+| `test/<komponente>/` | Testumgebung der Komponente, ohne Branch auf einem freigegebenen Commit | nur `pipwerk-dev` |
 | `scripts/` | `pipwerk-dev`, `agentrun` und `heartbeat` mit ihrer lokalen Dokumentation, nicht Teil des Repositorys | nicht durch das Team |
 | `run/` | `agentrun.pid` und je Auftrag `<auftragskennung>.heartbeat` | `agentrun`, `heartbeat` |
 | `ordermgr/` | Programm, Laufzeitdateien und Aufträge der Auftragsverwaltung, siehe [ordermgr](#ordermgr) | `ordermgr`; `running/` auch `agentrun` und Softwarearchitekt |
@@ -318,13 +318,13 @@ Das Repository enthält keine Claude-Code-Konfiguration. Agentendefinitionen, Sk
 
 ## Arbeitsbereiche und Umgang mit Fehlern
 
-Entwicklung und unabhängige QA verwenden getrennte Arbeitsbereiche. Die Arbeitsbereiche und ihre Schutzregeln stehen im Abschnitt [Arbeitsbereiche](#arbeitsbereiche). Ausgangs- beziehungsweise Prüfcommit werden im jeweiligen Auftrag eindeutig benannt. Der Teststand entspricht unverändert dem freigegebenen Commit.
+Entwicklung und unabhängige QA verwenden getrennte Arbeitsbereiche. Die Arbeitsbereiche und ihre Schutzregeln stehen im Abschnitt [Arbeitsbereiche](#arbeitsbereiche). Ausgangs- beziehungsweise Prüfcommit werden im jeweiligen Auftrag eindeutig benannt. Die Testumgebung entspricht unverändert dem freigegebenen Commit.
 
 Eigene Fehler, unvollständige Änderungen und Testreste werden vor der Übergabe vollständig beseitigt. Fremde Änderungen werden nicht verworfen. Die zuständige Rolle wird anhand von Diff, Auftragsreferenzen und Prüfnachweisen ermittelt. Nur zwingend fehlende Entscheidungen, Berechtigungen oder Handlungen außerhalb der eigenen Zuständigkeit werden eskaliert; unabhängige Arbeiten werden fortgesetzt.
 
 ## Lokales Hilfswerkzeug pipwerk-dev
 
-`pipwerk-dev` erledigt auf dem Entwicklungsrechner die wiederkehrenden technischen Schritte rund um die Git-Arbeitsbereiche und Teststände. Es bringt das Referenz-Repository auf den Stand von `origin/main`, richtet die Arbeitsbereiche eines Auftrags ein, bringt sie auf einen Stand und baut sie wieder ab, führt die automatischen Prüfungen einer Komponente aus und startet einen bestimmten Commit als Teststand einer Komponente. Derzeit unterstützt es die Komponente `pipwerk-studio`. `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
+`pipwerk-dev` erledigt auf dem Entwicklungsrechner die wiederkehrenden technischen Schritte rund um die Git-Arbeitsbereiche und Testumgebungen. Es bringt das Referenz-Repository auf den Stand von `origin/main`, richtet die Arbeitsbereiche eines Auftrags ein, bringt sie auf einen Stand und baut sie wieder ab, führt die automatischen Prüfungen einer Komponente aus und startet einen bestimmten Commit als Testumgebung einer Komponente. Derzeit unterstützt es die Komponente `pipwerk-studio`. `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
 
 Das Werkzeug ist nicht im Repository enthalten. Es wird nicht vom Agententeam geändert, sondern in einer eigenen Claude-Code-Sitzung auf Grundlage dieses Abschnitts. Seine Installation, Konfiguration und Sicherung sind lokal in `scripts/` dokumentiert. Zugangsdaten und lokale Zustandsdateien gehören nicht ins öffentliche Repository.
 
@@ -379,9 +379,9 @@ Endet `pipwerk-dev` mit einem Fehler, melden Entwickler und QA die Meldung dem S
 
 `test` führt im angegebenen Arbeitsbereich die für die Komponente vorgesehenen Prüfungen aus. Für Pipwerk Studio sind das für das Backend `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`, für die Oberfläche `npm ci`, `npm run typecheck`, `npm test` und `npm run e2e`. Für die Browser-End-to-End-Tests vergibt `pipwerk-dev` je Lauf freie Ports über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)), damit Prüfläufe mehrerer Aufträge gleichzeitig laufen können. Schlägt ein Schritt fehl, laufen die davon unabhängigen Schritte weiter; Schritte, die einen fehlgeschlagenen voraussetzen, werden übersprungen. Das Kommando endet dann mit Exitcode 1 und nennt die Datei mit der vollständigen Ausgabe.
 
-### Teststand bereitstellen und starten: start
+### Testumgebung bereitstellen und starten: start
 
-`start` stellt einen von der QA freigegebenen Commit als laufenden Teststand einer Komponente unter `test/<komponente>/` bereit. Es nimmt nur einen Commit-Hash an, keinen Branch- oder Tag-Namen. Danach geschieht für Pipwerk Studio Folgendes:
+`start` stellt einen von der QA freigegebenen Commit als laufendie Testumgebung einer Komponente unter `test/<komponente>/` bereit. Es nimmt nur einen Commit-Hash an, keinen Branch- oder Tag-Namen. Danach geschieht für Pipwerk Studio Folgendes:
 
 1. Der Commit muss die Komponente enthalten, und ihre Ports müssen frei sein. Sind sie von fremden Programmen belegt, bricht `start` ab und fasst diese Programme nicht an.
 2. `test/<komponente>/` wird ohne Branch auf den Commit gesetzt.
@@ -390,13 +390,13 @@ Endet `pipwerk-dev` mit einem Fehler, melden Entwickler und QA die Meldung dem S
 5. Backend und Oberfläche werden gestartet: das Backend mit `pipwerk-studio -c <INI>`, die Oberfläche als Vite-Entwicklungsserver. Vite leitet Anfragen unter `/api` an das Backend weiter. Beide sind nur vom eigenen Rechner aus erreichbar.
 6. Innerhalb von 60 Sekunden müssen drei Adressen antworten: `/api/health` des Backends mit `{"status": "ok"}`, die Startseite der Oberfläche und `/api/health` über die Oberfläche. Antwortet etwas nicht, beendet `start` die gerade gestarteten Prozesse wieder und meldet einen Fehler.
 
-Jede Komponente hat eigene, konfigurierte Ports, sodass Teststände verschiedener Komponenten gleichzeitig laufen. Für Pipwerk Studio sind das standardmäßig 8000 für das Backend und 5173 für die Oberfläche. Läuft die Komponente bereits aus demselben Commit und ist erreichbar, startet `start` nichts neu und meldet Erfolg. Läuft sie aus einem anderen Commit, bricht `start` ab; vorher ist `stop` nötig.
+Jede Komponente hat eigene, konfigurierte Ports, sodass Testumgebungen verschiedener Komponenten gleichzeitig laufen. Für Pipwerk Studio sind das standardmäßig 8000 für das Backend und 5173 für die Oberfläche. Läuft die Komponente bereits aus demselben Commit und ist erreichbar, startet `start` nichts neu und meldet Erfolg. Läuft sie aus einem anderen Commit, bricht `start` ab; vorher ist `stop` nötig.
 
 ### Lokale Startkonfiguration und Testdatenbank
 
 Pipwerk Studio startet nur mit einer gültigen INI-Startkonfiguration, die die Datenbank angibt (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)). `pipwerk-dev` schreibt diese INI vor jedem Start in sein lokales Zustandsverzeichnis. Sie verweist auf eine SQLite-Datenbank im selben Verzeichnis, getrennt je Komponente. Beide Dateien liegen außerhalb des Repositorys.
 
-Die Testdatenbank bleibt über Neustarts und über verschiedene Teststände hinweg erhalten und wird nicht automatisch zurückgesetzt. Wird später ein Test mit frischer Datenbank gebraucht, wird dafür ein ausdrücklich ausgelöster Vorgang festgelegt; einen solchen gibt es derzeit nicht.
+Die Testdatenbank bleibt über Neustarts und über verschiedene Testumgebungen hinweg erhalten und wird nicht automatisch zurückgesetzt. Wird später ein Test mit frischer Datenbank gebraucht, wird dafür ein ausdrücklich ausgelöster Vorgang festgelegt; einen solchen gibt es derzeit nicht.
 
 ### Beenden: stop
 
@@ -404,15 +404,15 @@ Die Testdatenbank bleibt über Neustarts und über verschiedene Teststände hinw
 
 ### Zustand ansehen: status
 
-`status` zeigt `repo/` nicht an. Es zeigt für jeden Auftragsarbeitsbereich den Commit, den Branch oder „detached HEAD“, die Zahl lokaler Änderungen und laufende Prozesse, für jeden Teststand den laufenden Commit, die Prozesse und das Ergebnis der Erreichbarkeitsprüfungen. Mit `--order` beschränkt es sich auf einen Auftrag. `status` verändert nichts, auch nicht den Git-Index.
+`status` zeigt `repo/` nicht an. Es zeigt für jeden Auftragsarbeitsbereich den Commit, den Branch oder „detached HEAD“, die Zahl lokaler Änderungen und laufende Prozesse, für jedie Testumgebung den laufenden Commit, die Prozesse und das Ergebnis der Erreichbarkeitsprüfungen. Mit `--order` beschränkt es sich auf einen Auftrag. `status` verändert nichts, auch nicht den Git-Index.
 
 ### Protokolle
 
-Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeile je zustandsänderndem Aufruf, die vollständige Ausgabe jeder Prüfung und Einrichtung, die Liste der gestarteten Prozesse und die Ausgabe der Teststände. Zugangsdaten in Adressen, GitHub-Token und Werte nach Angaben wie `token=`, `password=` oder `Authorization:` ersetzt `pipwerk-dev` vor der Ausgabe und vor dem Schreiben in Protokolle durch `***`.
+Im lokalen Zustandsverzeichnis führt `pipwerk-dev` ein Protokoll mit einer Zeile je zustandsänderndem Aufruf, die vollständige Ausgabe jeder Prüfung und Einrichtung, die Liste der gestarteten Prozesse und die Ausgabe der Testumgebungen. Zugangsdaten in Adressen, GitHub-Token und Werte nach Angaben wie `token=`, `password=` oder `Authorization:` ersetzt `pipwerk-dev` vor der Ausgabe und vor dem Schreiben in Protokolle durch `***`.
 
 ### Sperren, Fehler und Exitcodes
 
-`pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich, Teststand oder bei `sync-repo` nur `repo/`. Ist dieser Bereich gesperrt, endet der Aufruf sofort mit Exitcode 3. Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden gemeinsam gesperrt; auf diese Sperre wartet ein Aufruf bis zu 120 Sekunden, einstellbar mit `PIPWERK_DEV_GIT_LOCK_TIMEOUT`, und endet erst dann mit Exitcode 3.
+`pipwerk-dev` bricht lieber ab, als einen unklaren Zustand zu verändern. Jede Ablehnung nennt den Grund. Die Exitcodes sind: 0 Erfolg, 1 fehlgeschlagen, 2 falscher Aufruf, 3 verweigert. Ein Aufruf sperrt nur den betroffenen Auftragsarbeitsbereich, die betroffene Testumgebung oder bei `sync-repo` nur `repo/`. Ist dieser Bereich gesperrt, endet der Aufruf sofort mit Exitcode 3. Operationen auf den gemeinsamen Git-Daten wie `git fetch` und das Anlegen oder Entfernen von Worktrees werden gemeinsam gesperrt; auf diese Sperre wartet ein Aufruf bis zu 120 Sekunden, einstellbar mit `PIPWERK_DEV_GIT_LOCK_TIMEOUT`, und endet erst dann mit Exitcode 3.
 
 ### Erweiterbarkeit
 
@@ -452,7 +452,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 | 2026-10-08 | Einrichtung: `PIPWERK_DEV_ROOT` in der Anmeldeumgebung als Voraussetzung für `start.sh` ergänzt. |
 | 2026-10-08 | Beschreibung von `pipwerk-dev` an die umgesetzte Fassung angeglichen: Befehl `migrate`, Pflichtangabe `--base`, strengere Abbruchbedingungen von `remove`, Wartezeit auf die Sperre der gemeinsamen Git-Daten. |
 | 2026-10-08 | Festgelegt: Merge mit Merge-Commit, `coordinate/` auf dem Stand des ersten Anstoßes, Zeitpunkte auf die Sekunde, Reihenfolge und Belegung in der Auftragsverwaltung, Nachholen des Aufräumens, Freigabepflicht für Workflows aus fremden Pull Requests, Vertrauensabfrage über `repo/`. |
-| 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt: Übergangsregel und feste Arbeitsbereiche entfernt, `pipwerk-dev` mit Arbeitsbereichen je Auftrag und Teststand je Komponente beschrieben, Einrichtung auf dem Entwicklungsrechner und Arbeitskopie der Auftragsverwaltung ergänzt. |
+| 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt: Übergangsregel und feste Arbeitsbereiche entfernt, `pipwerk-dev` mit Arbeitsbereichen je Auftrag und Testumgebung je Komponente beschrieben, Einrichtung auf dem Entwicklungsrechner und Arbeitskopie der Auftragsverwaltung ergänzt. |
 | 2026-10-08 | Betrieb der Auftragsverwaltung als dauerhafte Sitzung mit `/loop` über `initialPrompt` festgelegt; tmux-Sitzungsname gleich Auftragskennung; Übernahme des Ergebnisses unabhängig vom Sitzungsende und Beenden der Sitzung durch die Auftragsverwaltung; Freigaben präzisiert. |
 | 2026-10-08 | Zum maßgeblichen Prozessdokument ausgebaut: Prozessinhalte aus Entwicklungsplan übernommen, Dokumentationsorte, Beteiligte, vollständiges Statusmodell mit zulässigen Übergängen, Pflichtfelder und Abschnitte eines Auftrags, Auftragsverwaltung, Ergebnisdatei, Runner, Benachrichtigung, parallele Bearbeitung, Arbeitsbereiche nach der Einführung, Erweiterung von `pipwerk-dev` und Einführung festgelegt; Übergangsregel bis zur Einführung ergänzt. |
 | 2026-10-08 | Auftragsablage nach `work-orders/` auf oberster Ebene verlegt. |
