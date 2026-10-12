@@ -75,9 +75,16 @@ JSON statt Python-eigener Serialisierung (pickle), weil die Oberfläche in TypeS
 
 ### PH-08 Ablage in Pipwerk Studio
 
-Jedes eigenständige Objekt liegt als Datei `<uuid>.<art>.json` (Art: `strategy`, `indicator`, `trend`, `rule`, `ruleset`) im Objektverzeichnis, das in der INI-Startkonfiguration unter `[storage] directory` festgelegt ist. Die Datei ist die verbindliche Fassung des Objekts.
+Jedes eigenständige Objekt liegt als Datei `<uuid>.<art>.json` (Art: `strategy`, `indicator`, `trend`, `rule`, `ruleset`) im Objektverzeichnis. Die Datei ist die verbindliche Fassung des Objekts.
 
-Die Datenbank führt je Art eine Indextabelle (`strategy_index`, `indicator_index`, `trend_index`, `rule_index`, `ruleset_index`) mit `id`, `name`, `description`, `format_version`, `file_name`, `created_at`, `updated_at`. Der Index enthält das Objekt nicht, sondern verweist auf die Datei. Ein Abgleich baut den Index aus den Dateien neu auf. Mit dieser Schemaerweiterung wird Alembic eingeführt. Objekte mit schutzbedürftigen Inhalten (Zugangs- und Kontodaten) fallen nicht unter dieses Ablagemuster.
+Das Objektverzeichnis ist eine Einstellung der Komponente. Es wird in der Datenbank abgelegt und über den Menüpunkt „Einstellungen“ geändert, ohne Neustart. Die Startkonfiguration enthält weiterhin nur die Datenbankadresse. Solange kein Wert gespeichert ist, gilt der Anfangswert nach dem Ort, an dem die Startkonfiguration gefunden wurde:
+
+| System | Startkonfiguration unter `/etc/pipwerk` bzw. `%PROGRAMDATA%` | sonst |
+|---|---|---|
+| Linux, Unix | `/var/lib/pipwerk/studio/objects` | `$HOME/.local/share/pipwerk/studio/objects` |
+| Windows | `%PROGRAMDATA%\pipwerk\studio\objects` | `%LOCALAPPDATA%\pipwerk\studio\objects` |
+
+Die Datenbank enthält je Objektart eine Indextabelle (`strategy_index`, `indicator_index`, `trend_index`, `rule_index`, `ruleset_index`) mit mindestens `id`, `name`, `description`, `format_version`, `file_name`, `created_at`, `updated_at`. Weitere Felder können hinzukommen. Jeder Eintrag verweist auf eine Datei. Die Indextabellen lassen sich aus den Dateien neu erzeugen. Mit dieser Schemaerweiterung wird Alembic eingeführt. Objekte mit schutzbedürftigen Inhalten (Zugangs- und Kontodaten) fallen nicht unter dieses Ablagemuster.
 
 ### PH-09 Web-API von Pipwerk Studio
 
@@ -144,6 +151,6 @@ Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-12 | PH-10: Menüpunkt „Einstellungen“ mit Sprachauswahl. |
+| 2026-10-12 | PH-10: Menüpunkt „Einstellungen“ mit Sprachauswahl. PH-08: Objektverzeichnis als Einstellung in der Datenbank mit Anfangswerten nach FHS und Benutzerverzeichnis statt Eintrag in der Startkonfiguration. |
 | 2026-10-11 | Nach erster Abstimmungsrunde: Begriffe nach Glossar. Indikatoren, Trends, Regeln und RegelSets als eigenständig gespeicherte Objekte. Mitgelieferte Indikatoren mit Berechnung. Ordertypen aus Anbindungspaketen ohne allgemeine Ebene. Prüfung mit Zeitpunkt und Folgen beschrieben. Oberflächenentwurf als getrennter Abstimmungspunkt. Begründung für JSON ergänzt. |
 | 2026-10-10 | Erstfassung für Schritt 1. |
