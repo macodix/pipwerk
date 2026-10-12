@@ -186,7 +186,20 @@ Tester und QA schreiben ihren Bericht unter dem Dateinamen, den der Softwarearch
 
 ### Meldungen
 
-Eine Meldung ist eine Markdown-Datei `development/messages/<empfänger>/<JJJJMMTThhmmss>-<absender>-<nn>.md` mit dem Zeitpunkt ihrer Erstellung und einer laufenden Nummer innerhalb eines Commits. Die Felder sind maschinenlesbare Bezeichner und deshalb englisch:
+Eine Meldung ist eine Markdown-Datei `development/messages/<empfänger>/<JJJJMMTThhmmss>-<absender>-<nn>.md` mit dem Zeitpunkt ihrer Erstellung in UTC und einer laufenden Nummer innerhalb eines Commits. Aufbau:
+
+```markdown
+# Meldung
+
+- from: `architect`
+- ref: `<vorhaben>/<arbeitspaket>`
+- task: `acceptance`
+- document: `<zweig>:<pfad>`
+
+Kurzer Text bei Bedarf.
+```
+
+Die Felder sind maschinenlesbare Bezeichner und deshalb englisch:
 
 | Feld | Inhalt |
 |---|---|
@@ -248,14 +261,14 @@ Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` auf dem Entwicklun
 | `work/<vorhaben>/<rolle>/` | Arbeitsverzeichnisse der Phasen 2 und 3 | die jeweilige Rolle |
 | `work/<vorhaben>/<arbeitspaket>/<rolle>/` | Arbeitsverzeichnisse der Phase 4 | die jeweilige Rolle |
 | `test/<vorhaben>-<arbeitspaket>/` | Testumgebung eines Arbeitspakets | Softwarearchitekt |
-| `scripts/` | `agentrun` und `heartbeat`, nicht Teil des Repositorys | nicht durch das Team |
-| `run/` | `agentrun.pid`, Herzschlagdateien und die Liste der gestarteten Meldungen | `agentrun`, `heartbeat` |
+| `scripts/` | `agentrun`, `heartbeat` und `pidcheck` mit Tests und Beschreibung, nicht Teil des Repositorys | nicht durch das Team |
+| `run/` | PID-Datei, Sperren und Protokoll von `agentrun`, Liste der gestarteten Meldungen, je laufender Sitzung Zustands- und Herzschlagdatei, noch nicht übertragene Meldungen `failed` | `agentrun`, `heartbeat`, `pidcheck` |
 | `devteam/` | Konfiguration der Rollen für Claude Code und die Startskripte | nicht durch das Team |
 | `transfer/` | Ablage des Auftraggebers für Dateiübergaben außerhalb des Ablaufs | Auftraggeber und auf seine Anweisung |
 
 Die Rollennamen der Arbeitsverzeichnisse sind `architect`, `backend`, `frontend`, `functiontest`, `securitytest` und `qa`. In Phase 4 hat der Softwarearchitekt zusätzlich `architectmain` für seine Arbeit auf `main`. Ein weiterer Entwickler desselben Gebiets erhält eine Nummer, zum Beispiel `backend2`.
 
-Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis des Softwarearchitekten an, falls es fehlt, und startet die Sitzung darin. Die Rollen richten ihr Arbeitsverzeichnis selbst mit `git worktree add` aus `repo/` ein. Folgesitzungen desselben Arbeitspakets verwenden die bestehenden Arbeitsverzeichnisse weiter. Der Softwarearchitekt entfernt die Arbeitsverzeichnisse der Phasen 2 und 3 am Ende jeder Sitzung, die der Phase 4 bei der Integration, jeweils für alle Rollen.
+Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis des Softwarearchitekten an, falls es fehlt, und startet die Sitzung darin. Die Rollen richten ihr Arbeitsverzeichnis selbst mit `git worktree add` aus `repo/` ein. Folgesitzungen desselben Arbeitspakets verwenden die bestehenden Arbeitsverzeichnisse weiter. Der Softwarearchitekt entfernt die Arbeitsverzeichnisse der Phasen 2 und 3 am Ende jeder Sitzung, die der Phase 4 bei der Integration, jeweils für alle Rollen und mit `git worktree remove`, sein eigenes als letzten Befehl. Leere Verzeichnisse unter `work/<ref>/` entfernt danach `agentrun`.
 
 ### Zweige
 
@@ -273,11 +286,11 @@ Alle Zweige werden nach GitHub übertragen. Der Softwarearchitekt führt einen A
 
 `agentrun` ist ein Shell-Skript in `scripts/`. Es läuft dauerhaft und überwacht mit `inotifywait` das Verzeichnis `repo/development/messages/architect/`.
 
-- Für jede neue Meldung startet es eine Sitzung des Softwarearchitekten in einer tmux-Sitzung. Name der tmux-Sitzung und Herzschlagdatei leiten sich aus `ref` ab. Der Startauftrag nennt den Pfad der Meldung und das Entwicklungsverzeichnis. Arbeitsverzeichnis ist `work/<ref>/architect/`.
+- Für jede neue Meldung startet es eine Sitzung des Softwarearchitekten in einer tmux-Sitzung. Name der tmux-Sitzung und der Dateien in `run/` ist `ref` mit `-` statt `/`, zum Beispiel `studio1-wp01`. Der Startauftrag nennt den Pfad der Meldung und das Entwicklungsverzeichnis. Arbeitsverzeichnis ist `work/<ref>/architect/`.
 - Je `ref` läuft höchstens eine Sitzung. Eine weitere Meldung mit demselben `ref` startet erst nach dem Ende der laufenden Sitzung.
 - Jede Meldung startet es genau einmal und vermerkt sie in `run/`.
 - Es beendet die Sitzung, sobald in `repo/development/messages/projectlead/` nach dem Start eine Meldung des Softwarearchitekten mit demselben `ref` liegt. Mit dieser Antwortmeldung endet jede Sitzung, auch bei einer Frage.
-- Besteht die Sitzung nicht mehr ohne Antwortmeldung oder fehlt der Herzschlag 15 Minuten lang, beendet es die Sitzung und schreibt eine Meldung `failed` an den Projektleiter. Diese Meldung legt es über die Schnittstelle für Dateiinhalte der GitHub-API direkt auf `main` an, ohne Arbeitsverzeichnis.
+- Besteht die Sitzung nicht mehr ohne Antwortmeldung oder fehlt der Herzschlag 15 Minuten lang, beendet es die Sitzung und schreibt eine Meldung `failed` an den Projektleiter. Diese Meldung legt es über die Schnittstelle für Dateiinhalte der GitHub-API direkt auf `main` an, ohne Arbeitsverzeichnis. Gelingt das nicht, wiederholt es den Versuch bei jeder Prüfung. Eine Meldung mit ungültigem `ref` und ein fehlgeschlagener Start führen ebenfalls zu `failed`.
 
 Die Sitzung startet mit festen Einstellungsquellen, sodass Agentendefinitionen, Skills, Hooks und Freigaben ausschließlich aus `devteam/` kommen:
 
@@ -327,12 +340,15 @@ Die Claude-Code-Konfiguration ist Implementierungsdetail des Entwicklungsrechner
 ```text
 devteam/
   .claude-plugin/plugin.json   Name devteam
-  agents/                      Softwarearchitekt und Entwickler
-  skills/                      Skills der Rollen
-  bin/                         Startskripte für Tester und QA
+  agents/                      software-architect, backend, frontend, functiontest, securitytest, qa
+  bin/                         Startskripte functiontest, securitytest, qa
+  lib/startrole                gemeinsamer Teil der Startskripte
+  start.conf                   Programmaufruf der Startskripte
   hooks/hooks.json             Herzschlag
   settings.json                Freigaben
 ```
+
+Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`.
 
 Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie um. Änderungen daran veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
@@ -363,6 +379,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Einrichtung auf dem Entwicklungsrechner übernommen: Aufbau einer Meldung, Inhalt von `run/` und `devteam/`, Aufräumen der Arbeitsverzeichnisse, weitere Fälle von `failed`. |
 | 2026-10-12 | Runner aktualisiert `repo/` mit Git statt `pipwerk-dev`. |
 | 2026-10-12 | Ergebnis des Versuchs auf dem Entwicklungsrechner: Hook löst bei Unteragenten aus, Vertrauen des Entwicklungsverzeichnisses gilt für `work/`. Absolute Pfade für Entwickler. |
 | 2026-10-12 | Herzschlag von Tester und QA über den Hook von Claude Code, kein eigener Herzschlag der Startskripte. |
