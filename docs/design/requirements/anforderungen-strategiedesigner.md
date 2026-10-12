@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-04`
+- zuletzt aktualisiert: `2026-10-12`
 
 ## 1. Zweck und Abgrenzung
 
@@ -271,6 +271,10 @@ Der Strategiedesigner muss die gewählte Oberflächensprache als zentrale Einste
 
 Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung darf weder Strategieinhalte noch sonstige fachliche Konfigurationen verändern. Die Sprache wird nicht im Browser und nicht benutzerbezogen gespeichert. Benutzerkonten, Anmeldung und weitere Oberflächensprachen gehören nicht zu dieser Anforderung.
 
+### req-ui-009 -- Einstellungsbereich
+
+Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
+
 ## 7. Dokumententrennung
 
 ### req-doc-001 -- Strategiebeschreibung getrennt halten
@@ -368,3 +372,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-09-25 | Übergreifende Festlegung zur technischen Aufteilung in `anforderungen-gesamtsystem.md` verlagert; bisherige Offenhaltung der technischen Aufteilung entfernt. |
 | 2026-09-25 | Veralteten Verweis auf `Signal` als fachliches Objekt entfernt und `Strategie` als fachliches Objekt berücksichtigt. |
 | 2026-10-04 | Dauerhafte, komponentenweite Auswahl von Deutsch oder Englisch für den Strategiedesigner einschließlich Standardsprache, Abgrenzung und offenem Folgepunkt zu Benutzerkonten festgelegt. |
+| 2026-10-12 | Einstellungsbereich mit der Sprachauswahl als eigener Menüpunkt festgelegt. |
