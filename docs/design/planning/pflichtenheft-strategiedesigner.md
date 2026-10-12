@@ -9,7 +9,7 @@
 
 ## 1. Gegenstand
 
-Schritt 1 umfasst das Anlegen, Gestalten, Prüfen, Speichern, Laden, Exportieren und Importieren von Strategien und der darin verwendeten wiederverwendbaren Objekte in Pipwerk Studio. Die Ausführung von Strategien (Schritt 2: Debuggen, Schritt 3: Testen) gehört nicht zu Schritt 1. Deren Anforderungen werden erst erhoben, wenn der Bedienablauf des Designers feststeht.
+Schritt 1 umfasst das Anlegen, Gestalten, Prüfen, Speichern und Laden von Strategien und der darin verwendeten wiederverwendbaren Objekte in Pipwerk Studio. Die Ausführung von Strategien (Schritt 2: Debuggen, Schritt 3: Testen) gehört nicht zu Schritt 1. Deren Anforderungen werden erst erhoben, wenn der Bedienablauf des Designers feststeht.
 
 Prüffälle für Schritt 1 sind die Trendfolge mit zwei exponentiellen gleitenden Durchschnitten (`str-03`) und der einfache Punkt-2-Ausbruch (`str-01`). Beide müssen sich vollständig im Designer gestalten, speichern und wieder laden lassen.
 
@@ -71,7 +71,7 @@ Jedes eigenständig gespeicherte Objekt und die Strategie werden als JSON-Dokume
 
 Kopffelder jedes Dokuments: `format` (z. B. `pipwerk.strategy`, `pipwerk.rule`, `pipwerk.indicator`), `format_version` = `1.0`. Die Schemata liegen unter `contracts/strategies/v1/`. Beim Laden wird gegen das Schema geprüft. Dokumente mit unbekannter höherer Formatversion werden abgelehnt. Dass Schreiben und Lesen jedes Objekttyps wieder dasselbe Objekt ergibt, wird mit pytest geprüft.
 
-JSON statt Python-eigener Serialisierung (pickle), weil die Oberfläche in TypeScript dieselben Dokumente über die Web-API liest und schreibt, weil Export, Import und spätere Nachrichten ein allgemein lesbares Format brauchen, und weil pickle beim Einlesen Code ausführt und bei Klassenänderungen bricht.
+JSON statt Python-eigener Serialisierung (pickle), weil die Oberfläche in TypeScript dieselben Dokumente über die Web-API liest und schreibt, weil spätere Nachrichten an Pipwerk Backtest und Pipwerk Trader ein allgemein lesbares Format brauchen, und weil pickle beim Einlesen Code ausführt und bei Klassenänderungen bricht.
 
 ### PH-08 Ablage in Pipwerk Studio
 
@@ -84,7 +84,11 @@ Das Objektverzeichnis ist eine Einstellung der Komponente. Es wird in der Datenb
 | Linux, Unix | `/var/lib/pipwerk/studio/objects` | `$HOME/.local/share/pipwerk/studio/objects` |
 | Windows | `%PROGRAMDATA%\pipwerk\studio\objects` | `%LOCALAPPDATA%\pipwerk\studio\objects` |
 
-Die Datenbank enthält je Objektart eine Indextabelle (`strategy_index`, `indicator_index`, `trend_index`, `rule_index`, `ruleset_index`) mit mindestens `id`, `name`, `description`, `format_version`, `file_name`, `created_at`, `updated_at`. Weitere Felder können hinzukommen. Jeder Eintrag verweist auf eine Datei. Die Indextabellen lassen sich aus den Dateien neu erzeugen. Mit dieser Schemaerweiterung wird Alembic eingeführt. Objekte mit schutzbedürftigen Inhalten (Zugangs- und Kontodaten) fallen nicht unter dieses Ablagemuster.
+Die Datenbank enthält je Objektart eine Indextabelle (`strategy_index`, `indicator_index`, `trend_index`, `rule_index`, `ruleset_index`) mit mindestens `id`, `name`, `description`, `format_version`, `file_name`, `created_at`, `updated_at`. Weitere Felder können hinzukommen. Jeder Eintrag verweist auf eine Datei.
+
+Die Tabelle `object_reference` enthält je Verweis eines Objekts auf ein eigenständiges Objekt eine Zeile (`source_id`, `target_id`), zum Beispiel Strategie → Regel, RegelSet → Regel, Trend → Indikator. Beide Spalten sind Fremdschlüssel auf die Indextabellen, `target_id` mit `ON DELETE RESTRICT`. Bei SQLite wird `PRAGMA foreign_keys = ON` je Verbindung gesetzt. Beim Speichern eines Objekts werden seine Zeilen in `object_reference` in derselben Transaktion ersetzt. Löschen über die Web-API: In einer Transaktion wird der Indexeintrag gelöscht, danach die Datei, dann wird bestätigt. Wird das Objekt noch verwendet, lehnt die Datenbank das Löschen ab, die Datei bleibt unverändert, und die Web-API antwortet mit einem Fehler, der die verwendenden Objekte nennt. Schlägt das Löschen der Datei fehl, wird die Transaktion zurückgenommen.
+
+Indextabellen und `object_reference` lassen sich aus den Dateien neu erzeugen. Dateien, die außerhalb von Pipwerk Studio im Objektverzeichnis gelöscht werden, kann die Datenbank nicht verhindern. Der Abgleich Dateien → Index meldet dann die betroffenen Verweise, und die Prüfung (PH-06) meldet sie als Verweis auf ein nicht vorhandenes Objekt. Mit dieser Schemaerweiterung wird Alembic eingeführt. Objekte mit schutzbedürftigen Inhalten (Zugangs- und Kontodaten) fallen nicht unter dieses Ablagemuster.
 
 ### PH-09 Web-API von Pipwerk Studio
 
@@ -97,10 +101,8 @@ Die öffentliche Web-API liegt unter `/api/v1/`. Ihre OpenAPI-Beschreibung wird 
 | `POST` | `/api/v1/<art>` | Objekt anlegen (Dokument im Body) |
 | `GET` | `/api/v1/<art>/{id}` | Dokument lesen |
 | `PUT` | `/api/v1/<art>/{id}` | Dokument speichern |
-| `DELETE` | `/api/v1/<art>/{id}` | Objekt löschen. Wird es noch verwendet, wird das Löschen abgelehnt und die verwendenden Strategien werden genannt. |
+| `DELETE` | `/api/v1/<art>/{id}` | Objekt löschen. Wird es noch verwendet, wird das Löschen mit einem Fehler abgelehnt, der die verwendenden Objekte nennt (PH-08). |
 | `POST` | `/api/v1/strategies/validate` | Strategie prüfen (PH-06), ohne zu speichern |
-| `POST` | `/api/v1/<art>/import` | Dokument aus Datei übernehmen. Bei vorhandener Kennung wird eine neue vergeben. |
-| `GET` | `/api/v1/<art>/{id}/export` | Dokument als Datei herunterladen. Beim Export einer Strategie werden die verwendeten eigenständigen Objekte mitgeliefert. |
 
 Die bestehenden internen Endpunkte unter `/api/` bleiben unverändert.
 
@@ -138,7 +140,7 @@ Ordertypen: Jeder Ordertyp ist ein Bausteintyp mit Typbeschreibung. Er wird vom 
 Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test-security-rules.md`. Der Nachweis von Schritt 1 besteht aus:
 
 1. Beide Prüffälle liegen als Dokumentdateien (Strategie und ihre eigenständigen Objekte) unter `contracts/strategies/v1/testcases/`. Automatische Tests laden sie, prüfen sie gegen die Schemata und die Prüfung aus PH-06, schreiben sie wieder und vergleichen das Ergebnis mit der Ausgangsdatei.
-2. Ein Browsertest mit Playwright baut jeden Prüffall in der Oberfläche aus der leeren Zeichenfläche auf, speichert, lädt neu, exportiert und vergleicht die exportierten Dateien mit den Dateien aus Punkt 1.
+2. Ein Browsertest mit Playwright baut jeden Prüffall in der Oberfläche aus der leeren Zeichenfläche auf, speichert, lädt neu und vergleicht die gespeicherten Dateien im Objektverzeichnis mit den Dateien aus Punkt 1.
 3. Der Nutzer erprobt beide Prüffälle in der Testumgebung mit der Anwenderdokumentation. Seine Abnahme schließt Schritt 1 ab.
 
 ## 3. Offene Punkte
@@ -151,6 +153,7 @@ Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Import und Export aus Schritt 1 gestrichen (kein Bedarf, die Dateien im Objektverzeichnis sind bereits JSON). PH-08: Löschschutz für verwendete Objekte über `object_reference` mit Fremdschlüsseln. |
 | 2026-10-12 | PH-10: Menüpunkt „Einstellungen“ mit Sprachauswahl. PH-08: Objektverzeichnis als Einstellung in der Datenbank mit Anfangswerten nach FHS und Benutzerverzeichnis statt Eintrag in der Startkonfiguration. |
 | 2026-10-11 | Nach erster Abstimmungsrunde: Begriffe nach Glossar. Indikatoren, Trends, Regeln und RegelSets als eigenständig gespeicherte Objekte. Mitgelieferte Indikatoren mit Berechnung. Ordertypen aus Anbindungspaketen ohne allgemeine Ebene. Prüfung mit Zeitpunkt und Folgen beschrieben. Oberflächenentwurf als getrennter Abstimmungspunkt. Begründung für JSON ergänzt. |
 | 2026-10-10 | Erstfassung für Schritt 1. |

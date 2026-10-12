@@ -40,7 +40,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Bausteintypen. Pipwerk Studio, Pipwerk Backtest und Pipwerk Trader binden es ein. |
 | Typbeschreibung | Die maschinenlesbare Beschreibung eines Bausteintyps: Kennung, Beschriftungen in Deutsch und Englisch, Parameter mit Datentyp und erlaubten Bindungsarten, Eingaben, Ausgaben. Die Oberfläche baut daraus Bausteinbibliothek, Bausteine und Eigenschaftenansicht auf. |
 | Bausteinregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Bausteintypen angemeldet sind und von der sie abgefragt werden. |
-| Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API, Export und Import verwendet. |
+| Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API und Nachrichten verwendet. |
 | Strategiedatei | Eine Datei im Strategieverzeichnis, die ein Strategiedokument enthält. Sie ist die verbindliche Fassung der Strategie. |
 | Schema | Die formale Beschreibung, welche Felder ein Dokument enthalten muss und welche Werte zulässig sind. Pipwerk verwendet JSON-Schema. Schemata liegen versioniert unter `contracts/`. |
 | Formatversion | Die Versionsnummer des Schemas, nach dem ein Dokument geschrieben wurde. Sie steht im Dokument und erlaubt, ältere Dateien später zu erkennen und zu überführen. |
