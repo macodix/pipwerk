@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Technische Festlegungen für die Umsetzung von Schritt 1 des Strategiedesigner-Prototyps. Grundlage der Arbeitspakete AP2 bis AP9.
-- stand: 2026-10-11
+- stand: 2026-10-12
 - abstimmung: erste Abstimmungsrunde mit dem Nutzer am 2026-10-10/11 durchgeführt. Die Begriffe folgen dem [Glossar](../../technical/glossar.md).
 
 ## 1. Gegenstand
@@ -101,7 +101,7 @@ Die bestehenden internen Endpunkte unter `/api/` bleiben unverändert.
 
 Der Entwurf der Oberfläche wird getrennt erstellt und mit dem Nutzer abgestimmt, bevor AP6 bis AP8 beauftragt werden. Er baut auf den vorhandenen Elementen von Pipwerk Studio (Sprachauswahl als Auswahlliste, Standanzeige, Zeichenfläche) und den bisherigen Entwürfen unter `docs/design/ui/` auf und spielt den Bedienablauf von „neue Strategie“ bis „gespeichert“ an der EMA-Trendfolge durch.
 
-Technisch festgelegt: Die Bausteinbibliothek zeigt zwei Ebenen, die Bausteintypen zum Anlegen neuer Objekte und die bereits angelegten eigenständigen Objekte zum Einfügen per Verweis. Die Eigenschaftenansicht wird aus der Typbeschreibung erzeugt. Das React-Flow-Modell ist Darstellung. Maßgeblich ist das Strategiedokument, das bei jeder Änderung daraus abgeleitet wird. Alle sichtbaren Texte sind in `de` und `en` vorhanden. Beschriftungen der Bausteine kommen aus den Typbeschreibungen.
+Technisch festgelegt: Die Bausteinbibliothek zeigt zwei Ebenen, die Bausteintypen zum Anlegen neuer Objekte und die bereits angelegten eigenständigen Objekte zum Einfügen per Verweis. Die Eigenschaftenansicht wird aus der Typbeschreibung erzeugt. Das React-Flow-Modell ist Darstellung. Maßgeblich ist das Strategiedokument, das bei jeder Änderung daraus abgeleitet wird. Alle sichtbaren Texte sind in `de` und `en` vorhanden. Beschriftungen der Bausteine kommen aus den Typbeschreibungen. Die Oberfläche hat einen Menüpunkt „Einstellungen“ mit der Sprachauswahl und weiteren Einstellungen der Komponente (req-ui-009). Die Sprachauswahl wird aus der Kopfzeile dorthin verlegt.
 
 ### PH-11 Bausteine für Schritt 1
 
@@ -144,5 +144,6 @@ Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | PH-10: Menüpunkt „Einstellungen“ mit Sprachauswahl. |
 | 2026-10-11 | Nach erster Abstimmungsrunde: Begriffe nach Glossar. Indikatoren, Trends, Regeln und RegelSets als eigenständig gespeicherte Objekte. Mitgelieferte Indikatoren mit Berechnung. Ordertypen aus Anbindungspaketen ohne allgemeine Ebene. Prüfung mit Zeitpunkt und Folgen beschrieben. Oberflächenentwurf als getrennter Abstimmungspunkt. Begründung für JSON ergänzt. |
 | 2026-10-10 | Erstfassung für Schritt 1. |
