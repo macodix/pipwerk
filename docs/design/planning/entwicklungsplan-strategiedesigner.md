@@ -61,7 +61,7 @@ Die deutschsprachigen Fachbegriffe der Konzeptdokumente werden bei der Umsetzung
 
 ## Ablage fachlicher Objekte
 
-Eine Strategie ist ein Objekt der gemeinsamen Python-Bibliothek `packages/domain-core`. Sie wird als JSON-Dokument serialisiert und als Datei im Objektverzeichnis abgelegt. Das Objektverzeichnis ist eine über die Oberfläche änderbare Einstellung der Komponente. Sein Anfangswert folgt dem FHS (`/var/lib/pipwerk/<komponente>/`) beziehungsweise dem Datenverzeichnis des Benutzers. Das JSON-Schema des Dokuments wird aus den Modellen an der Schnittstelle erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API, als Export- und Importdatei und als Nachrichteninhalt verwendet.
+Eine Strategie ist ein Objekt der gemeinsamen Python-Bibliothek `packages/domain-core`. Sie wird als JSON-Dokument serialisiert und als Datei im Objektverzeichnis abgelegt. Das Objektverzeichnis ist eine über die Oberfläche änderbare Einstellung der Komponente. Sein Anfangswert folgt dem FHS (`/var/lib/pipwerk/<komponente>/`) beziehungsweise dem Datenverzeichnis des Benutzers. Das JSON-Schema des Dokuments wird aus den Modellen an der Schnittstelle erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API und als Nachrichteninhalt verwendet.
 
 Die Datenbank der Komponente führt einen Index der abgelegten Strategien mit Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiverweis und Zeitstempeln; weitere Eigenschaften kommen bei Bedarf hinzu. Die Datei ist maßgeblich; der Index ist aus den Dateien neu aufbaubar.
 

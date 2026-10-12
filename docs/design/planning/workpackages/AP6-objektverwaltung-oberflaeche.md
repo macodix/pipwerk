@@ -10,7 +10,7 @@
 
 ## Ziel
 
-In der Oberfläche lassen sich Strategien, Indikatoren, Trends, Regeln und RegelSets anlegen, aus der Liste öffnen, umbenennen, speichern, löschen, exportieren und importieren. Die Zeichenfläche zeigt eine geladene Strategie, noch ohne Bearbeitung.
+In der Oberfläche lassen sich Strategien, Indikatoren, Trends, Regeln und RegelSets anlegen, aus der Liste öffnen, umbenennen, speichern und löschen. Das Löschen eines verwendeten Objekts wird mit Fehlermeldung abgelehnt, die die verwendenden Objekte nennt. Die Zeichenfläche zeigt eine geladene Strategie, noch ohne Bearbeitung.
 
 ## Umfang
 
