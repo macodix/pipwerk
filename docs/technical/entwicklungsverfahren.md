@@ -293,7 +293,7 @@ Eine interaktive Sitzung beendet sich nicht von selbst. `agentrun` beendet sie m
 
 Ein Hook von Claude Code für die Ereignisse `PreToolUse`, `PostToolUse` und `PostToolUseFailure` ruft bei jedem Werkzeugaufruf das Skript `scripts/heartbeat` auf. Es liest das Arbeitsverzeichnis aus den Hook-Daten. Liegt es unter `work/<vorhaben>/<rolle>/` oder `work/<vorhaben>/<arbeitspaket>/<rolle>/`, aktualisiert es den Zeitstempel der Herzschlagdatei dieses `ref` in `run/`. Sonst tut es nichts. Es gibt nichts aus und endet immer mit Exitcode 0.
 
-Tester und QA laufen mit demselben Hook. Ihre Tätigkeit zählt über ihre Arbeitsverzeichnisse unter `work/` zum `ref` des Arbeitspakets.
+Der Hook löst auch bei Werkzeugaufrufen der Unteragenten aus und meldet dabei immer das Startverzeichnis der Sitzung, also `work/<ref>/architect/`. Tester und QA laufen mit demselben Hook. Ihre Tätigkeit zählt über ihre Arbeitsverzeichnisse unter `work/` zum `ref` des Arbeitspakets.
 
 Gemessen wird ab dem späteren Zeitpunkt von Start der Sitzung und letztem Herzschlag. 15 Minuten ohne Herzschlag gelten als Stillstand, auch wenn die Sitzung auf eine Freigabe oder das Ende einer Pause wegen der Nutzungsgrenze wartet.
 
@@ -301,7 +301,7 @@ Gemessen wird ab dem späteren Zeitpunkt von Start der Sitzung und letztem Herzs
 
 Der Softwarearchitekt startet sie mit dem Pfad ihres Übergabedokuments.
 
-- Entwickler laufen als Unteragenten seiner Sitzung, je Entwicklergebiet mit eigener Agentendefinition. Mehrere Entwickler gleichzeitig nur für voneinander unabhängige Teile, jeder mit eigenem Arbeitsverzeichnis.
+- Entwickler laufen als Unteragenten seiner Sitzung, je Entwicklergebiet mit eigener Agentendefinition. Mehrere Entwickler gleichzeitig nur für voneinander unabhängige Teile, jeder mit eigenem Arbeitsverzeichnis. Ein Unteragent arbeitet im Startverzeichnis der Sitzung, ein `cd` gilt nur für den einzelnen Befehl. Entwickler nennen ihr Arbeitsverzeichnis deshalb in jedem Befehl mit absolutem Pfad, zum Beispiel mit `git -C`.
 - Tester und QA startet er über ein Startskript je Rolle in `devteam/bin/`. Das ausgeführte Programm ist einstellbar, derzeit Claude Code mit Hooks, Skills und Freigaben aus `devteam/`. Er startet das Skript im Hintergrund und wartet auf den Bericht.
 - Eine Teamfunktion mit direkten Nachrichten zwischen Agenten wird nicht verwendet.
 
@@ -341,7 +341,7 @@ Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenr
 Die Schritte führt der Auftraggeber aus oder lässt sie von einer Sitzung auf dem Entwicklungsrechner ausführen. Sie werden lokal dokumentiert.
 
 1. Runner als systemd-Dienst unter dem Benutzer der Arbeitsverzeichnisse betreiben, mit `PIPWERK_DEV_ROOT` in seiner Umgebungsdatei.
-2. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv in `repo/` und in `work/` starten, die Vertrauensabfrage jeweils bestätigen, die Sitzung beenden und das Verzeichnis verlassen.
+2. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv im Entwicklungsverzeichnis starten, die Vertrauensabfrage bestätigen, die Sitzung beenden und das Verzeichnis verlassen. Das Vertrauen gilt für alle Unterverzeichnisse, auch für neu angelegte unter `work/`.
 3. Im Repository auf GitHub für Workflows aus Pull Requests die Freigabe für alle externen Beitragenden verlangen.
 4. `devteam/` anlegen.
 5. `inotify-tools` installieren, `agentrun` und `heartbeat` nach `scripts/` installieren und den Cron-Job für `run/agentrun.pid` einrichten. `agentrun` wird aus einem Verzeichnis außerhalb von `repo/` gestartet.
@@ -356,8 +356,6 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 ## Offene Punkte
 
-- Ob der Hook bei Werkzeugaufrufen von Unteragenten auslöst, wird auf dem Entwicklungsrechner geprüft.
-- Ob eine Sitzung in einem neu angelegten Verzeichnis unter `work/` ohne Vertrauensabfrage startet, wird mit demselben Versuch geprüft.
 - Der Runner-Workflow ruft derzeit noch `pipwerk-dev sync-repo` auf. Mit dem Wegfall von `pipwerk-dev` wird dieser Aufruf durch einen Git-Befehl im Workflow ersetzt.
 - Vergleich von Claude und Codex als Tester mit gezielt eingebauten Fehlern, sobald der erste Durchlauf steht.
 - Eigene Rolle für die Anwenderdokumentation, nur falls die Dokumente der Entwickler nicht genügen.
@@ -366,6 +364,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Ergebnis des Versuchs auf dem Entwicklungsrechner: Hook löst bei Unteragenten aus, Vertrauen des Entwicklungsverzeichnisses gilt für `work/`. Absolute Pfade für Entwickler. |
 | 2026-10-12 | Herzschlag von Tester und QA über den Hook von Claude Code, kein eigener Herzschlag der Startskripte. |
 | 2026-10-12 | An die bestätigte Präsentation des Entwicklungsprozesses angepasst: sechs Phasen mit Rückwegen, Entscheidungsrechte, Übergabedokumente mit Ablage unter `development/` und Meldungen, Schleifen und Eskalation, Start von Entwickler, Tester und QA, Skripte je Komponente. Auftragsverwaltung `ordermgr` mit Statusmodell und Akte, `work-orders/`, Arbeitspaketliste und `pipwerk-dev` entfallen. |
 | 2026-10-12 | `pipwerk-dev` unterstützt `domain-core`: Prüfungen und Bereitstellung ohne laufendes Programm. Prüfung der Abnahmekriterien bei einer Bibliothek. |
