@@ -249,7 +249,7 @@ Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` auf dem Entwicklun
 | `work/<vorhaben>/<arbeitspaket>/<rolle>/` | Arbeitsverzeichnisse der Phase 4 | die jeweilige Rolle |
 | `test/<vorhaben>-<arbeitspaket>/` | Testumgebung eines Arbeitspakets | Softwarearchitekt |
 | `scripts/` | `agentrun` und `heartbeat`, nicht Teil des Repositorys | nicht durch das Team |
-| `run/` | `agentrun.pid`, Herzschlagdateien und die Liste der gestarteten Meldungen | `agentrun`, `heartbeat`, Startskripte |
+| `run/` | `agentrun.pid`, Herzschlagdateien und die Liste der gestarteten Meldungen | `agentrun`, `heartbeat` |
 | `devteam/` | Konfiguration der Rollen für Claude Code und die Startskripte | nicht durch das Team |
 | `transfer/` | Ablage des Auftraggebers für Dateiübergaben außerhalb des Ablaufs | Auftraggeber und auf seine Anweisung |
 
@@ -293,7 +293,7 @@ Eine interaktive Sitzung beendet sich nicht von selbst. `agentrun` beendet sie m
 
 Ein Hook von Claude Code für die Ereignisse `PreToolUse`, `PostToolUse` und `PostToolUseFailure` ruft bei jedem Werkzeugaufruf das Skript `scripts/heartbeat` auf. Es liest das Arbeitsverzeichnis aus den Hook-Daten. Liegt es unter `work/<vorhaben>/<rolle>/` oder `work/<vorhaben>/<arbeitspaket>/<rolle>/`, aktualisiert es den Zeitstempel der Herzschlagdatei dieses `ref` in `run/`. Sonst tut es nichts. Es gibt nichts aus und endet immer mit Exitcode 0.
 
-Die Startskripte für Tester und QA aktualisieren die Herzschlagdatei ihres `ref` einmal je Minute, solange ihr Programm läuft.
+Tester und QA laufen mit demselben Hook. Ihre Tätigkeit zählt über ihre Arbeitsverzeichnisse unter `work/` zum `ref` des Arbeitspakets.
 
 Gemessen wird ab dem späteren Zeitpunkt von Start der Sitzung und letztem Herzschlag. 15 Minuten ohne Herzschlag gelten als Stillstand, auch wenn die Sitzung auf eine Freigabe oder das Ende einer Pause wegen der Nutzungsgrenze wartet.
 
@@ -302,7 +302,7 @@ Gemessen wird ab dem späteren Zeitpunkt von Start der Sitzung und letztem Herzs
 Der Softwarearchitekt startet sie mit dem Pfad ihres Übergabedokuments.
 
 - Entwickler laufen als Unteragenten seiner Sitzung, je Entwicklergebiet mit eigener Agentendefinition. Mehrere Entwickler gleichzeitig nur für voneinander unabhängige Teile, jeder mit eigenem Arbeitsverzeichnis.
-- Tester und QA startet er über ein Startskript je Rolle in `devteam/bin/`. Das ausgeführte Programm ist einstellbar, zum Beispiel Claude Code oder Codex. Er startet das Skript im Hintergrund und wartet auf den Bericht.
+- Tester und QA startet er über ein Startskript je Rolle in `devteam/bin/`. Das ausgeführte Programm ist einstellbar, derzeit Claude Code mit Hooks, Skills und Freigaben aus `devteam/`. Er startet das Skript im Hintergrund und wartet auf den Bericht.
 - Eine Teamfunktion mit direkten Nachrichten zwischen Agenten wird nicht verwendet.
 
 ### Skripte je Komponente
@@ -356,9 +356,8 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 ## Offene Punkte
 
-- Ob der Hook bei Unteragenten das Arbeitsverzeichnis des Unteragenten meldet, wird auf dem Entwicklungsrechner geprüft.
+- Ob der Hook bei Werkzeugaufrufen von Unteragenten auslöst, wird auf dem Entwicklungsrechner geprüft.
 - Ob eine Sitzung in einem neu angelegten Verzeichnis unter `work/` ohne Vertrauensabfrage startet, wird mit demselben Versuch geprüft.
-- Wie ein Stillstand von Tester oder QA erkannt wird, solange ihr Startskript den Herzschlag weiter schreibt.
 - Der Runner-Workflow ruft derzeit noch `pipwerk-dev sync-repo` auf. Mit dem Wegfall von `pipwerk-dev` wird dieser Aufruf durch einen Git-Befehl im Workflow ersetzt.
 - Vergleich von Claude und Codex als Tester mit gezielt eingebauten Fehlern, sobald der erste Durchlauf steht.
 - Eigene Rolle für die Anwenderdokumentation, nur falls die Dokumente der Entwickler nicht genügen.
@@ -367,6 +366,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Herzschlag von Tester und QA über den Hook von Claude Code, kein eigener Herzschlag der Startskripte. |
 | 2026-10-12 | An die bestätigte Präsentation des Entwicklungsprozesses angepasst: sechs Phasen mit Rückwegen, Entscheidungsrechte, Übergabedokumente mit Ablage unter `development/` und Meldungen, Schleifen und Eskalation, Start von Entwickler, Tester und QA, Skripte je Komponente. Auftragsverwaltung `ordermgr` mit Statusmodell und Akte, `work-orders/`, Arbeitspaketliste und `pipwerk-dev` entfallen. |
 | 2026-10-12 | `pipwerk-dev` unterstützt `domain-core`: Prüfungen und Bereitstellung ohne laufendes Programm. Prüfung der Abnahmekriterien bei einer Bibliothek. |
 | 2026-10-10 | Beteiligte: Arbeitsteilung zwischen Nutzer und Projektleiter aufgenommen. |
