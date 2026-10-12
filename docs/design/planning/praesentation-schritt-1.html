@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipwerk Studio Schritt 1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0;background:#2a2f2c;color:#1b2a24;font-family:'IBM Plex Sans',Arial,sans-serif}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px}
+.frame{width:min(96vw,1920px);aspect-ratio:16/9;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.frame .slide{transform-origin:top left;transform:scale(var(--s))}
+h1,h2,h3,p,ul,ol{margin:0}
+ul,ol{padding-left:1.1em}
+table{border-collapse:collapse;width:100%}
+th,td{padding:.35em .6em;border-bottom:1px solid #d5ddd8;vertical-align:top}
+.slide p,.slide li{line-height:1.4}
+.num{position:absolute;right:48px;bottom:32px;font-size:24px;color:#8fa39a}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide" id="cover" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#1b2a24;color:#f4f6f3;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-size:28px;color:#8fcbb9;letter-spacing:2px;text-transform:uppercase">Pipwerk Studio · Pflichtenheft</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-size:112px;font-weight:600;line-height:1.05;width:1500px">Schritt 1: Strategien gestalten und speichern</h1>
+<p style="font-size:40px;color:#bfd8d0;width:1400px">Stand nach der ersten Abstimmungsrunde. Die Festlegungen stehen im Pflichtenheft (PH-01 bis PH-12) und im Fachmodell im Repository.</p>
+</div>
+<p style="font-size:28px;color:#8fcbb9">11. Oktober 2026 · Projektleiter an Martin</p>
+<p class=num>1 / 9</p></section>
+</div><div class="frame"><section class="slide" id="ziel" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Was am Ende von Schritt 1 geht</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:40px">
+<h3 style="font-size:36px;font-weight:600;color:#1f6f5f">Im Designer</h3>
+<ul style="font-size:30px;line-height:1.45;color:#3b4a43">
+<li>Strategien, Indikatoren, Trends und Regeln anlegen, öffnen, umbenennen, löschen</li>
+<li>Bausteine auf die Zeichenfläche ziehen und verbinden. Ein Baustein ist ein fachliches Element der Strategie: Auslöser, Indikator, Trend, Bedingung, Berechnung, Regel oder Order-Aktion.</li>
+<li>Parameter setzen: fest, per Regel, bei der Anwendung, aus einer Ausgabe</li>
+<li>Strategie prüfen, Befunde am Baustein sehen</li>
+<li>Speichern, exportieren, importieren</li>
+<li>Menüpunkt „Einstellungen“ mit der Sprachauswahl Deutsch/Englisch</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:40px">
+<h3 style="font-size:36px;font-weight:600;color:#1f6f5f">Prüffälle</h3>
+<p style="font-size:30px;line-height:1.45;color:#3b4a43"><b>EMA-Trendfolge</b> (str-03): zwei gleitende Durchschnitte, Kreuzung, ATR-Stop, Market-Order.</p>
+<p style="font-size:30px;line-height:1.45;color:#3b4a43"><b>Punkt-2-Ausbruch, einfach</b> (str-01): ZigZag, Markttechnik 1-2-3, zwei Zeiteinheiten, Stop-Order.</p>
+<p style="font-size:30px;line-height:1.45;color:#3b4a43">Beide müssen sich vollständig gestalten, speichern und wieder laden lassen.</p>
+</div>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#6b7a72">Nicht in Schritt 1: Anbindung an Kursdaten, Auswertung des Ablaufs, Vorschau, Debuggen, Backtest, eigene Bausteintypen ohne Programmierung, Benutzerkonten. Die Indikatoren bringen ihre Berechnung bereits mit.</p>
+<p class=num>2 / 9</p></section>
+</div><div class="frame"><section class="slide" id="reihenfolge" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Acht Arbeitspakete in dieser Reihenfolge</h2>
+<div style="position:relative;width:1664px;height:560px">
+<p style="position:absolute;left:0;top:0;width:700px;font-size:24px;color:#6b7a72;letter-spacing:2px;text-transform:uppercase">Gemeinsame Python-Bibliothek und Schemata</p>
+<div style="position:absolute;left:0;top:110px;width:340px;background:#dde9f3;border:2px solid #2d5f8a;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP2 Grundmodell</h3><p style="font-size:22px;color:#3b4a43">Typbeschreibung, Register, Strategie, Prüfung</p></div>
+<div style="position:absolute;left:420px;top:40px;width:340px;background:#dde9f3;border:2px solid #2d5f8a;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP3 Dokumente</h3><p style="font-size:22px;color:#3b4a43">JSON-Dokumente und Schemata</p></div>
+<div style="position:absolute;left:420px;top:180px;width:340px;background:#dde9f3;border:2px solid #2d5f8a;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP4 Bausteintypen</h3><p style="font-size:22px;color:#3b4a43">Auslöser, Indikatoren, Trends, Regeln, Ordertypen</p></div>
+<div style="position:absolute;left:840px;top:110px;width:340px;background:#f3e7da;border:2px solid #8a5a2d;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP5 Web-API, Ablage</h3><p style="font-size:22px;color:#3b4a43">Dateien, Index, /api/v1</p></div>
+<svg style="position:absolute;left:330px;top:90px;width:100px;height:80px;overflow:visible;pointer-events:none" viewBox="330 90 100 80"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M340 160 L420 100" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<svg style="position:absolute;left:330px;top:175px;width:100px;height:75px;overflow:visible;pointer-events:none" viewBox="330 175 100 75"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M340 185 L420 240" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<svg style="position:absolute;left:750px;top:90px;width:100px;height:80px;overflow:visible;pointer-events:none" viewBox="750 90 100 80"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M760 100 L840 160" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<svg style="position:absolute;left:750px;top:175px;width:100px;height:75px;overflow:visible;pointer-events:none" viewBox="750 175 100 75"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M760 240 L840 185" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<svg style="position:absolute;left:1000px;top:225px;width:20px;height:107px;overflow:visible;pointer-events:none" viewBox="1000 225 20 107"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M1010 235 L1010 322" fill="none" stroke="#6b7a72" stroke-width="2"/></svg>
+<svg style="position:absolute;left:160px;top:312px;width:860px;height:20px;overflow:visible;pointer-events:none" viewBox="160 312 860 20"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M1010 322 L170 322" fill="none" stroke="#6b7a72" stroke-width="2"/></svg>
+<svg style="position:absolute;left:160px;top:312px;width:20px;height:98px;overflow:visible;pointer-events:none" viewBox="160 312 20 98"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M170 322 L170 400" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<p style="position:absolute;left:220px;top:350px;width:700px;font-size:24px;color:#6b7a72;letter-spacing:2px;text-transform:uppercase">Oberfläche von Pipwerk Studio</p>
+<div style="position:absolute;left:0;top:400px;width:340px;background:#f3e7da;border:2px solid #8a5a2d;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP6 Verwaltung</h3><p style="font-size:22px;color:#3b4a43">Anlegen, Öffnen, Speichern, Export, Import</p></div>
+<div style="position:absolute;left:420px;top:400px;width:340px;background:#f3e7da;border:2px solid #8a5a2d;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP7 Zeichenfläche</h3><p style="font-size:22px;color:#3b4a43">Bausteine ziehen und verbinden</p></div>
+<div style="position:absolute;left:840px;top:400px;width:340px;background:#f3e7da;border:2px solid #8a5a2d;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP8 Eigenschaften</h3><p style="font-size:22px;color:#3b4a43">Parameter setzen, Befunde anzeigen</p></div>
+<div style="position:absolute;left:1260px;top:400px;width:404px;background:#dcefe9;border:2px solid #1f6f5f;border-radius:12px;padding:16px 22px"><h3 style="font-size:28px;font-weight:600">AP9 Nachweis</h3><p style="font-size:22px;color:#3b4a43">Beide Prüffälle, Abnahme durch dich</p></div>
+<svg style="position:absolute;left:330px;top:450px;width:100px;height:20px;overflow:visible;pointer-events:none" viewBox="330 450 100 20"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M340 460 L420 460" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<svg style="position:absolute;left:750px;top:450px;width:100px;height:20px;overflow:visible;pointer-events:none" viewBox="750 450 100 20"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M760 460 L840 460" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+<svg style="position:absolute;left:1170px;top:450px;width:100px;height:20px;overflow:visible;pointer-events:none" viewBox="1170 450 100 20"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a72"/></marker></defs><path d="M1180 460 L1260 460" fill="none" stroke="#6b7a72" stroke-width="2" marker-end="url(#ah)"/></svg>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#6b7a72">AP3 und AP4 können gleichzeitig laufen. Vor AP4 wird die Erfassung der MetaTrader-Ordertypen abgestimmt, vor AP6 der Oberflächenentwurf. Jedes Paket wird einzeln beauftragt, geprüft und in der Testumgebung abgenommen.</p>
+<p class=num>3 / 9</p></section>
+</div><div class="frame"><section class="slide" id="bibliothek" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Gemeinsame Python-Bibliothek</h2>
+<p style="font-size:30px;line-height:1.4;color:#3b4a43;width:1600px">Ein Python-Paket, das Pipwerk Studio, Pipwerk Backtest und Pipwerk Trader gemeinsam einbinden. Es enthält die fachlichen Objekte, die Beschreibung aller Bausteintypen (Baustein: ein fachliches Element der Strategie wie Indikator, Trend, Bedingung, Regel oder Order-Aktion. Bausteintyp: seine Art, zum Beispiel „gleitender Durchschnitt“), die Berechnung der Indikatoren und die Prüfung von Strategien. Die Fachlichkeit wird so nur einmal programmiert.</p>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1b2a24;border-radius:16px;padding:36px;color:#f4f6f3">
+<p style="font-size:24px;color:#8fcbb9;letter-spacing:2px;text-transform:uppercase">Typbeschreibung eines Bausteintyps (PH-02)</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:25px;line-height:1.5;color:#dfe9e4">type_id: indicator.ema<br>category: indicator<br>storage: standalone<br>labels: de "Gleitender Durchschnitt (EMA)"<br>parameters:<br>&#160;&#160;source: series, Pflicht<br>&#160;&#160;period: integer, 1..500, Standard 20<br>&#160;&#160;&#160;&#160;Bindung: fest | Regel | Anwendung<br>outputs:<br>&#160;&#160;value: series</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Jeder Bausteintyp beschreibt sich selbst</h3><p style="font-size:27px;line-height:1.4;color:#3b4a43">Die Oberfläche baut Bausteinbibliothek, Bausteine und Eigenschaftenansicht nur aus dieser Beschreibung. Ein neuer Bausteintyp braucht keine Änderung an der Oberfläche (PH-02, PH-03).</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Indikatoren rechnen</h3><p style="font-size:27px;line-height:1.4;color:#3b4a43">Für Schritt 1 werden EMA, ATR und ZigZag umgesetzt, weil die beiden Prüffälle sie brauchen. Weitere Indikatoren kommen als zusätzliche Bausteintypen dazu. Jeder bringt seine Berechnung mit. Ein Indikator kann fest programmiert sein, aus Regeln bestehen oder beides verbinden. Von außen ist das nicht zu unterscheiden (PH-11).</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Prüfung beim Speichern</h3><p style="font-size:27px;line-height:1.4;color:#3b4a43">Beim Speichern und auf Anforderung wird die Strategie geprüft, zum Beispiel auf fehlende Pflichtparameter oder Verweise auf gelöschte Objekte. Speichern bleibt auch mit Fehlern möglich. Jeder Befund nennt Stufe und Baustein (PH-06).</p></div>
+</div>
+</div>
+<p class=num>4 / 9</p></section>
+</div><div class="frame"><section class="slide" id="dokumente" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Speichern von Strategien und ihren Objekten</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Was eine Strategie enthält (PH-05)</h3>
+<p style="font-size:27px;line-height:1.4;color:#3b4a43"><b>Eingebettet in der Strategiedatei:</b> Kennung, Bezeichnung, Beschreibung, der Auslöser, Bedingungen, Berechnungen, die Order-Aktion und die Verbindungen.</p>
+<p style="font-size:27px;line-height:1.4;color:#3b4a43"><b>Eigenständig gespeichert, in der Strategie per Verweis:</b> konfigurierte Indikatoren, konfigurierte Trends, Regeln, RegelSets. Einmal angelegt, in beliebig vielen Strategien verwendbar.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Wie gespeichert wird (PH-07, PH-08)</h3>
+<p style="font-size:26px;line-height:1.4;color:#3b4a43">Jedes Objekt wird als JSON-Datei im Objektverzeichnis gespeichert. Das Verzeichnis wird unter „Einstellungen“ festgelegt. Solange nichts eingestellt ist, gilt der übliche Ort für Anwendungsdaten des Systems oder des Benutzers (Linux: /var/lib/pipwerk/… oder ~/.local/share/pipwerk/…). Die Datei ist die verbindliche Fassung des Objekts.</p>
+<p style="font-size:26px;line-height:1.4;color:#3b4a43">Die Python-Klassen definieren den Aufbau jedes Objekttyps. Daraus wird je Objekttyp eine Schemadatei erzeugt (JSON-Schema) und versioniert im Repository abgelegt. Mit ihr kann jedes Programm, auch ohne Python, prüfen, ob eine Datei gültig ist. Beim Laden wird jede Datei dagegen geprüft.</p>
+<p style="font-size:26px;line-height:1.4;color:#3b4a43">Die Datenbank enthält je Objekttyp eine Indextabelle mit mindestens Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiname und Zeitstempeln. Weitere Felder können hinzukommen. Jeder Eintrag verweist auf eine Datei. Die Indextabelle lässt sich aus den Dateien neu erzeugen.</p>
+</div>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#6b7a72;width:1600px">JSON statt eines Python-eigenen Formats, weil die Oberfläche in TypeScript dieselben Dokumente über die Web-API liest und schreibt und weil Export, Import und Nachrichten ein allgemein lesbares Format brauchen. Datenbank derzeit SQLite. PostgreSQL und MariaDB kommen später in die Tests.</p>
+<p class=num>5 / 9</p></section>
+</div><div class="frame"><section class="slide" id="ordertypen" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Ordertypen</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Festgelegt</h3>
+<p style="font-size:27px;line-height:1.4;color:#3b4a43">Es gibt keine Ordertypen, die bei jeder Handelssoftware und jedem Broker gewährleistet sind. Jeder Ordertyp gehört zu der Handelssoftware, deren Anbindung ihn bereitstellt, und ist daran erkennbar.</p>
+<p style="font-size:27px;line-height:1.4;color:#3b4a43">Eine Strategie darf jeden bereitgestellten Ordertyp verwenden. Ob Handelssoftware, Broker und Instrument eines Kontos ihn anbieten, wird geprüft, wenn die Strategie dem Konto zugeordnet wird. Wenn nicht, wird die Zuordnung mit Begründung abgelehnt.</p>
+<p style="font-size:27px;line-height:1.4;color:#3b4a43">Pipwerk übersetzt keinen Ordertyp einer Handelssoftware in den einer anderen.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Für den Anfang: MetaTrader 5</h3>
+<table style="font-size:25px;color:#3b4a43">
+<tr><th style="width:38%;text-align:left">Ordertyp</th><th style="width:62%;text-align:left">Eigenschaften</th></tr>
+<tr><td>Market</td><td>Instrument, Richtung, Volumen, Stop-Loss, Take-Profit</td></tr>
+<tr><td>Buy / Sell Stop</td><td>Instrument, Volumen, Preis, Stop-Loss, Take-Profit, Ablaufzeit</td></tr>
+<tr><td>Buy / Sell Limit</td><td>wie Stop</td></tr>
+<tr><td>Buy / Sell Stop Limit</td><td>wie Stop, zusätzlich Limitpreis</td></tr>
+<tr><td>Close</td><td>Position, Volumen</td></tr>
+</table>
+<p style="font-size:25px;line-height:1.4;color:#6b7a72">Entwurf. Die vollständige Erfassung der MetaTrader-Ordertypen aus der Dokumentation wird vor AP4 abgestimmt.</p>
+</div>
+</div>
+<p class=num>6 / 9</p></section>
+</div><div class="frame"><section class="slide" id="oberflaeche" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Oberfläche: eigener Entwurf, eigene Abstimmung</h2>
+<p style="font-size:32px;line-height:1.45;color:#3b4a43;width:1600px">Der Entwurf der Oberfläche wird getrennt erstellt und mit dir abgestimmt, bevor die Pakete AP6 bis AP8 beauftragt werden. Er baut auf den vorhandenen Elementen von Pipwerk Studio auf (Sprachauswahl als Auswahlliste, Standanzeige, Zeichenfläche) und auf den bisherigen Entwürfen im Repository. Der Bedienablauf wird von „neue Strategie“ bis „gespeichert“ an der EMA-Trendfolge durchgespielt.</p>
+<div style="display:flex;flex-direction:column;gap:12px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Bereits technisch festgelegt (PH-10)</h3>
+<ul style="font-size:28px;line-height:1.45;color:#3b4a43">
+<li>Die Bausteinbibliothek zeigt Bausteintypen zum Anlegen neuer Objekte und vorhandene Indikatoren, Trends und Regeln zum Einfügen per Verweis.</li>
+<li>Die Eigenschaftenansicht wird aus der Typbeschreibung erzeugt.</li>
+<li>Maßgeblich ist das Strategiedokument. Die Zeichenfläche ist seine Darstellung.</li>
+<li>Alle Texte in Deutsch und Englisch. Beschriftungen der Bausteine kommen aus den Typbeschreibungen.</li>
+</ul>
+</div>
+<p class=num>7 / 9</p></section>
+</div><div class="frame"><section class="slide" id="nachweis" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#1b2a24;color:#f4f6f3;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:56px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Nachweis für Schritt 1</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;border:2px solid #3d5a50;border-radius:16px;padding:40px"><p style="font-size:24px;color:#8fcbb9;letter-spacing:2px;text-transform:uppercase">1 · Automatische Tests der Bibliothek</p><p style="font-size:29px;line-height:1.4;color:#dfe9e4">Beide Prüffälle liegen als Dateien im Repository. Tests laden sie, prüfen sie gegen die Schemata und die Prüfung, schreiben sie wieder und vergleichen das Ergebnis mit der Ausgangsdatei.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;border:2px solid #3d5a50;border-radius:16px;padding:40px"><p style="font-size:24px;color:#8fcbb9;letter-spacing:2px;text-transform:uppercase">2 · Automatische Tests im Browser</p><p style="font-size:29px;line-height:1.4;color:#dfe9e4">Ein Browsertest (Werkzeug Playwright, bedient die Oberfläche wie ein Nutzer) baut jeden Prüffall aus der leeren Zeichenfläche auf, speichert, lädt neu, exportiert und vergleicht mit den Dateien aus 1.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;border:2px solid #3d5a50;border-radius:16px;padding:40px"><p style="font-size:24px;color:#8fcbb9;letter-spacing:2px;text-transform:uppercase">3 · Erprobung durch dich</p><p style="font-size:29px;line-height:1.4;color:#dfe9e4">Du erprobst beide Prüffälle in der Testumgebung mit der Anwenderdokumentation. Deine Abnahme schließt Schritt 1 ab.</p></div>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#bfd8d0">Jedes Paket davor prüft der Projektleiter in der Testumgebung. Du erprobst erst bei AP9 selbst. Zwischenstände kannst du jederzeit ansehen.</p>
+<p class=num>8 / 9</p></section>
+</div><div class="frame"><section class="slide" id="stand" data-transition="fade" style="position:relative;width:1920px;height:1080px;box-sizing:border-box;flex-shrink:0;background:#f4f6f3;color:#1b2a24;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:72px;font-weight:600;line-height:1.1">Stand nach der ersten Abstimmungsrunde</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#dcefe9;border:2px solid #1f6f5f;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#1f6f5f">Abgestimmt</h3>
+<ul style="font-size:27px;line-height:1.45;color:#3b4a43">
+<li>Speichern: Objekt als JSON-Datei, Index in der Datenbank. Gilt für Strategien, Indikatoren, Trends, Regeln, RegelSets.</li>
+<li>Indikatoren bringen ihre Berechnung mit und können aus Python, Regeln oder beidem bestehen.</li>
+<li>Konfigurierte Indikatoren und Trends sind wiederverwendbar.</li>
+<li>Ordertypen gehören zu ihrer Handelssoftware. Verfügbarkeit wird bei der Zuordnung zum Konto geprüft.</li>
+<li>Punkt-2-Prüffall ist die einfache Variante (str-01).</li>
+<li>Glossar mit verbindlichen Begriffen im Repository.</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#ffffff;border:1px solid #d5ddd8;border-radius:16px;padding:36px">
+<h3 style="font-size:32px;font-weight:600;color:#8a5a2d">Nächste Abstimmungen</h3>
+<ul style="font-size:27px;line-height:1.45;color:#3b4a43">
+<li>Freigabe des Plans. Danach erster Auftrag für AP2.</li>
+<li>Erfassung der MetaTrader-Ordertypen mit allen Eigenschaften, vor AP4.</li>
+<li>Entwurf der Oberfläche mit Bedienablauf, vor AP6.</li>
+</ul>
+<p style="font-size:25px;line-height:1.4;color:#6b7a72">Die Arbeitspakete AP2 bis AP9 stehen als Entwurf im Repository. Mit der Freigabe werden sie in die Liste der Arbeitspakete übernommen.</p>
+</div>
+</div>
+<p class=num>9 / 9</p></section>
+</div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(f=>{f.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
