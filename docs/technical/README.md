@@ -9,8 +9,9 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 ## Entwicklungsverfahren
 
-- [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – Ablauf, Arbeitsaufträge und Statusmodell, Auftragsverwaltung, Arbeitsbereiche und `pipwerk-dev`
-- [Agentenrollen und Briefings](agentenrollen-und-briefings.md) – Rollen, Regeln, Briefings, Agentendefinitionen und Skills
+- [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – Phasen, Übergabedokumente, Meldungen, Eskalation und technische Ausführung
+- [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html) – abgestimmte Aufbereitung des Prozesses
+- [Agentenrollen und Briefings](agentenrollen-und-briefings.md) – Rollen, Entscheidungsrechte, Regeln und Briefings
 
 ## Komponenten
 

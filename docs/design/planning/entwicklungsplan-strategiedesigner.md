@@ -100,7 +100,7 @@ Die Verzeichnisstruktur des Entwicklungsrepositorys muss nicht mit der späteren
 | `contracts/api/` | versionierte API-Verträge |
 | `contracts/messages/` | versionierte Nachrichtenformate |
 | `contracts/strategies/` | versionierte Schemata für Strategiedefinitionen |
-| `work-orders/` | Eingangs- und Ausgangswarteschlange der Arbeitsaufträge |
+| `development/` | Übergabedokumente der Entwicklung: Spezifikationen, Pläne, Aufträge, Test-, Prüf- und Abnahmeberichte, Meldungen |
 | `docs/` | gemeinsame Architektur-, Entwicklungs- und Betriebsdokumentation |
 | `tests/integration/` | komponentenübergreifende Tests |
 | `tools/` | gemeinsame Entwicklungs- und Prüfwerkzeuge |
@@ -137,7 +137,7 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 
 ## 2. Entwicklungsprozess
 
-Rollen, Ablauf, Arbeitsaufträge, Qualitätssicherung und Arbeitsbereiche der Entwicklung sind in [Das Pipwerk-Entwicklungsverfahren](../../technical/entwicklungsverfahren.md) und [Agentenrollen und Briefings](../../technical/agentenrollen-und-briefings.md) festgelegt. Dieser Entwicklungsplan enthält nur die Produktplanung. Aus ihm ergeben sich die Arbeitspakete; sie liegen mit ihrer Liste unter [`workpackages/`](workpackages/workpackages.csv). Die technischen Festlegungen für Schritt 1 des Strategiedesigners (Strategien gestalten und speichern) stehen im [Pflichtenheft](pflichtenheft-strategiedesigner.md). Die Aufbereitung für die Abstimmung mit dem Nutzer liegt als [Präsentation](praesentation-schritt-1.html) daneben.
+Rollen, Phasen, Übergabedokumente, Qualitätssicherung und technische Ausführung der Entwicklung sind in [Das Pipwerk-Entwicklungsverfahren](../../technical/entwicklungsverfahren.md) und [Agentenrollen und Briefings](../../technical/agentenrollen-und-briefings.md) festgelegt. Dieser Entwicklungsplan enthält nur die Produktplanung. Die bisherigen Arbeitspakete für Schritt 1 liegen unter [`workpackages/`](workpackages/). Offen: Sie werden nach dem Entwicklungsverfahren neu aufgeteilt und kommen danach als Arbeitspaketplan nach `development/`. Die technischen Festlegungen für Schritt 1 des Strategiedesigners (Strategien gestalten und speichern) stehen im [Pflichtenheft](pflichtenheft-strategiedesigner.md). Die Aufbereitung für die Abstimmung mit dem Auftraggeber liegt als [Präsentation](praesentation-schritt-1.html) daneben.
 
 ## Test und spätere Ablaufanalyse
 
@@ -165,6 +165,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Verzeichnis `development/` statt `work-orders/`, Verweis auf das Entwicklungsverfahren angepasst. |
 | 2026-10-12 | Objektverzeichnis als Einstellung mit Anfangswert nach FHS. |
 | 2026-10-11 | Ablage: Indikatoren, Trends, Regeln und RegelSets als eigenständige Objekte. Begriffe nach Glossar. |
 | 2026-10-10 | Verweis auf das Pflichtenheft für Schritt 1 ergänzt; Arbeitspakete AP2 bis AP9 als Entwurf angelegt. |
