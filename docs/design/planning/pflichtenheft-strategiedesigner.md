@@ -2,10 +2,10 @@
 
 ## Status
 
-- status: `draft`
+- status: `accepted`
 - zweck: Technische Festlegungen für die Umsetzung von Schritt 1 des Strategiedesigner-Prototyps. Grundlage der Arbeitspakete AP2 bis AP9.
 - stand: 2026-10-12
-- abstimmung: erste Abstimmungsrunde mit dem Nutzer am 2026-10-10/11 durchgeführt. Die Begriffe folgen dem [Glossar](../../technical/glossar.md).
+- abstimmung: erste Abstimmungsrunde mit dem Nutzer am 2026-10-10/11 durchgeführt, Plan mit AP2 bis AP9 am 2026-10-12 vom Nutzer freigegeben. Die Begriffe folgen dem [Glossar](../../technical/glossar.md).
 
 ## 1. Gegenstand
 
@@ -153,6 +153,7 @@ Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Plan freigegeben, Status `accepted`. Offen bleiben die Abstimmung der MetaTrader-5-Ordertypen vor AP4 und der Oberflächenentwurf vor AP6. |
 | 2026-10-12 | Import und Export aus Schritt 1 gestrichen (kein Bedarf, die Dateien im Objektverzeichnis sind bereits JSON). PH-08: Löschschutz für verwendete Objekte über `object_reference` mit Fremdschlüsseln. |
 | 2026-10-12 | PH-10: Menüpunkt „Einstellungen“ mit Sprachauswahl. PH-08: Objektverzeichnis als Einstellung in der Datenbank mit Anfangswerten nach FHS und Benutzerverzeichnis statt Eintrag in der Startkonfiguration. |
 | 2026-10-11 | Nach erster Abstimmungsrunde: Begriffe nach Glossar. Indikatoren, Trends, Regeln und RegelSets als eigenständig gespeicherte Objekte. Mitgelieferte Indikatoren mit Berechnung. Ordertypen aus Anbindungspaketen ohne allgemeine Ebene. Prüfung mit Zeitpunkt und Folgen beschrieben. Oberflächenentwurf als getrennter Abstimmungspunkt. Begründung für JSON ergänzt. |

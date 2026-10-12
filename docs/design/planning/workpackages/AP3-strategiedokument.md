@@ -3,8 +3,8 @@
 ## Status
 
 - id: `AP3`
-- status: `draft`
-- stand: 2026-10-11
+- status: `accepted`
+- stand: 2026-10-12
 - komponenten: `packages/domain-core`, `contracts/strategies`
 - pflichtenheft: PH-01, PH-07
 
