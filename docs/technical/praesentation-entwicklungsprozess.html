@@ -125,7 +125,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="phase">
 <div class="k">Rollen</div><div>Softwarearchitekt, Entwickler, QA, Projektleiter, Auftraggeber</div>
 <div class="k">Eingabe</div><div>Anforderungsdokument</div>
-<div class="k">Tätigkeit</div><div>Zuerst prüft die QA das Anforderungsdokument auf Widersprüche, Lücken, mehrdeutige Begriffe, nicht gekennzeichnete offene Fragen und Umsetzungsdetails. Der Bericht geht über den Softwarearchitekten an den Projektleiter. Was nur der Auftraggeber entscheiden kann, geht in Phase 1, der Rest wird ohne ihn korrigiert. Dann erstellt der Softwarearchitekt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, etwa bei der Oberfläche, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Die QA prüft die Spezifikation gegen die Anforderungen. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.</div>
+<div class="k">Tätigkeit</div><div>Zuerst prüft die QA jedes Anforderungsdokument des Vorhabens laut <code>scope.md</code> und seine Widerspruchsfreiheit zum Dokument des Gesamtsystems. Sie sucht Widersprüche, Lücken, mehrdeutige Begriffe, nicht gekennzeichnete offene Fragen und Umsetzungsdetails. Der Bericht geht über den Softwarearchitekten an den Projektleiter. Was nur der Auftraggeber entscheiden kann, geht in Phase 1, der Rest wird ohne ihn korrigiert. Dann erstellt der Softwarearchitekt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, etwa bei der Oberfläche, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Die QA prüft die Spezifikation gegen die Anforderungen. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.</div>
 <div class="k">Ergebnis</div><div>Prüfbericht der QA zum Anforderungsdokument, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung</div>
 <div class="k">Schleifen</div><div>QA und Softwarearchitekt höchstens drei Durchläufe, dann Eskalation. Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.</div>
 </div>
@@ -196,7 +196,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <tr><td>Tester</td><td>Entwickler, Softwarearchitekt</td><td>Testbericht</td></tr>
 <tr><td>Projektleiter</td><td>Softwarearchitekt</td><td>Abnahmebericht mit den Mängeln</td></tr>
 </table>
-<p class="note">Jedes Übergabedokument ist so vollständig, dass die empfangende Rolle ohne Rückgriff auf Gespräche arbeiten kann. Ablage im Repository unter <code>development/</code>: je Vorhaben Spezifikation, Arbeitspaketplan, Prüfberichte und Präsentationen, darunter je Arbeitspaket Aufträge, Test-, Prüf- und Abnahmeberichte. Das Anforderungsdokument bleibt als lebendes Dokument unter <code>docs/design/requirements/</code>. Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.</p>
+<p class="note">Jedes Übergabedokument ist so vollständig, dass die empfangende Rolle ohne Rückgriff auf Gespräche arbeiten kann. Ablage im Repository unter <code>development/</code>: je Vorhaben Spezifikation, Arbeitspaketplan, Prüfberichte und Präsentationen, darunter je Arbeitspaket Aufträge, Test-, Prüf- und Abnahmeberichte. Anforderungsdokumente, eines für das Gesamtsystem und je eines je Komponente, bleiben als lebende Dokumente unter <code>docs/design/requirements/</code>. Welche für ein Vorhaben gelten, steht in dessen <code>scope.md</code>, die der Projektleiter führt. Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.</p>
 <p class="num">11 / 14</p></section></div>
 
 <div class="frame"><section class="slide">
@@ -233,7 +233,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>Test und QA getrennt, Beginn mit zwei Entwicklern und zwei Testern</li>
 <li>Übergaben als Dokumente im Repository</li>
 <li>drei Durchläufe je Schleife, dann eine Ebene höher</li>
-<li>Prüfung des Anforderungsdokuments durch die QA zu Beginn von Phase 2</li>
+<li>Prüfung der Anforderungsdokumente durch die QA zu Beginn von Phase 2, Liste je Vorhaben in <code>scope.md</code></li>
 <li>technische Ausführung (Folie 13)</li></ul>
 <p class="note">Bestätigung dieser Präsentation durch den Auftraggeber: offen</p></div>
 <div class="card col"><h3 style="color:var(--amber)">Bewusst verschoben</h3><ul>
