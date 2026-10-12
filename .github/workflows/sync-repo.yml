@@ -24,4 +24,8 @@ jobs:
       - name: Referenz-Repository aktualisieren
         run: |
           test -n "$PIPWERK_DEV_ROOT"
-          "$PIPWERK_DEV_ROOT/scripts/pipwerk-dev" sync-repo
+          repo="$PIPWERK_DEV_ROOT/repo"
+          test "$(git -C "$repo" symbolic-ref --short HEAD)" = main
+          test -z "$(git -C "$repo" status --porcelain)"
+          git -C "$repo" fetch --prune origin
+          git -C "$repo" merge --ff-only origin/main
