@@ -137,7 +137,7 @@ Keine Komponente schreibt während des Betriebs nach `/usr`. Dokumentation und z
 
 ## 2. Entwicklungsprozess
 
-Rollen, Ablauf, Arbeitsaufträge, Qualitätssicherung und Arbeitsbereiche der Entwicklung sind in [Das Pipwerk-Entwicklungsverfahren](../../technical/entwicklungsverfahren.md) und [Agentenrollen und Briefings](../../technical/agentenrollen-und-briefings.md) festgelegt. Dieser Entwicklungsplan enthält nur die Produktplanung. Aus ihm ergeben sich die Arbeitspakete; sie liegen mit ihrer Liste unter [`workpackages/`](workpackages/workpackages.csv). Die technischen Festlegungen für Schritt 1 des Strategiedesigners (Strategien gestalten und speichern) stehen im [Pflichtenheft](pflichtenheft-strategiedesigner.md).
+Rollen, Ablauf, Arbeitsaufträge, Qualitätssicherung und Arbeitsbereiche der Entwicklung sind in [Das Pipwerk-Entwicklungsverfahren](../../technical/entwicklungsverfahren.md) und [Agentenrollen und Briefings](../../technical/agentenrollen-und-briefings.md) festgelegt. Dieser Entwicklungsplan enthält nur die Produktplanung. Aus ihm ergeben sich die Arbeitspakete; sie liegen mit ihrer Liste unter [`workpackages/`](workpackages/workpackages.csv). Die technischen Festlegungen für Schritt 1 des Strategiedesigners (Strategien gestalten und speichern) stehen im [Pflichtenheft](pflichtenheft-strategiedesigner.md). Die Aufbereitung für die Abstimmung mit dem Nutzer liegt als [Präsentation](praesentation-schritt-1.html) daneben.
 
 ## Test und spätere Ablaufanalyse
 
