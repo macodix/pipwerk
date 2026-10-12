@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-09-26`
+- zuletzt aktualisiert: `2026-10-12`
 
 ## 1. Systemaufteilung
 
@@ -45,7 +45,7 @@ Jede Hauptkomponente muss einschließlich ihrer benötigten Laufzeitbestandteile
 
 ### req-system-007 -- Gemeinsamer fachlicher Python-Kern
 
-Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe versionierte Python-Bibliothek für fachliche Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
+Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe versionierte Python-Bibliothek für Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
 
 Das `Nachrichtensystem` wird ebenfalls in Python implementiert. Seine eigenständige Ausführbarkeit und die sprachunabhängige Definition seiner Schnittstellen bleiben davon unberührt.
 
@@ -126,7 +126,7 @@ Unter Windows gelten entsprechend:
 - `%APPDATA%\\pipwerk`,
 - `%PROGRAMDATA%\\pipwerk`.
 
-Bei der automatischen Suche gilt die jeweils aufgeführte Reihenfolge als Priorität; eine mit `-c <PATH>` ausdrücklich angegebene Startkonfiguration hat höchste Priorität.
+Bei der automatischen Suche gilt die jeweils aufgeführte Reihenfolge als Priorität. Eine mit `-c <PATH>` ausdrücklich angegebene Startkonfiguration hat höchste Priorität.
 
 Es wird genau eine Startkonfiguration verwendet. Inhalte mehrerer INI-Dateien werden nicht zusammengeführt.
 
@@ -191,3 +191,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-09-26 | Zweistufige Konfiguration aus INI-Startkonfiguration und gespeicherter Betriebskonfiguration, Suchpfade und Zusammenhang zwischen eigenem Speicher und eigenständiger Startbarkeit festgelegt. |
 | 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
 | 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung maschinenlesbarer Verträge sowie deren menschenlesbare Dokumentation festgelegt. |
+| 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |

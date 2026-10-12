@@ -30,7 +30,7 @@ Jede Rolle spricht nur mit ihren Nachbarn in dieser Kette. Das Team hat keinen d
 Der Auftraggeber entscheidet den Inhalt von:
 
 - Anforderungsdokumenten: Arbeitsabläufe und Bedienablauf
-- Fachmodell: Handelsobjekte, ihre Eigenschaften und Regeln
+- Fachmodell: Objekte, ihre Eigenschaften und Regeln
 - Strategiebeschreibungen
 
 Alles andere entscheiden Softwarearchitekt und Team in ihrer Zuständigkeit. Braucht die Umsetzung eine Aussage, die in eines dieser Dokumente gehört und dort fehlt, wird sie nicht selbst getroffen. Sie geht als Frage an den Auftraggeber.
@@ -72,7 +72,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 
 - Rollen: Auftraggeber, Projektleiter
 - Eingabe: Vorhaben des Auftraggebers, Rückmeldungen aus allen späteren Phasen
-- Tätigkeit: Der Auftraggeber beschreibt Arbeitsabläufe, Handelsobjekte und Regeln. Der Projektleiter fragt nach, schreibt das Anforderungsdokument fort und erstellt eine Präsentation der wichtigsten Aussagen. Beide stimmen die Präsentation ab. Der Projektleiter legt für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führt dort die geltenden Anforderungsdokumente.
+- Tätigkeit: Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleiter fragt nach, schreibt das Anforderungsdokument fort und erstellt eine Präsentation der wichtigsten Aussagen. Beide stimmen die Präsentation ab. Der Projektleiter legt für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führt dort die geltenden Anforderungsdokumente.
 - Ergebnis: fortgeschriebenes Anforderungsdokument und abgestimmte Präsentation, beide im Repository, Bestätigung in der Präsentation vermerkt
 - Rückkopplung: Das Anforderungsdokument ist ein lebendes Dokument. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück.
 
@@ -379,6 +379,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | „Handelsobjekte“ durch „Objekte“ ersetzt (Glossar). |
 | 2026-10-12 | Einrichtung auf dem Entwicklungsrechner übernommen: Aufbau einer Meldung, Inhalt von `run/` und `devteam/`, Aufräumen der Arbeitsverzeichnisse, weitere Fälle von `failed`. |
 | 2026-10-12 | Runner aktualisiert `repo/` mit Git statt `pipwerk-dev`. |
 | 2026-10-12 | Ergebnis des Versuchs auf dem Entwicklungsrechner: Hook löst bei Unteragenten aus, Vertrauen des Entwicklungsverzeichnisses gilt für `work/`. Absolute Pfade für Entwickler. |

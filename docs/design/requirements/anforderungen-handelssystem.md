@@ -4,13 +4,13 @@
 
 - status: `draft`
 - zweck: Anforderungen an Anwendung und Ausführung von Strategien auf konkreten Handelskonten
-- zuletzt aktualisiert: `2026-09-25`
+- zuletzt aktualisiert: `2026-10-12`
 
 ## 1. Zweck und Abgrenzung
 
-Das Handelssystem beginnt dort, wo Strategiedefinitionen auf konkrete Konten angewendet und zur Laufzeit ausgeführt werden. Das gemeinsame fachliche Modell steht in `fachmodell.md`; Anforderungen an die Gestaltung von Strategien stehen in `anforderungen-strategiedesigner.md`.
+Das Handelssystem beginnt dort, wo Strategiedefinitionen auf konkrete Konten angewendet und zur Laufzeit ausgeführt werden. Das gemeinsame fachliche Modell steht in `fachmodell.md`. Anforderungen an die Gestaltung von Strategien stehen in `anforderungen-strategiedesigner.md`.
 
-Der `OrderManager`, der `OrderBuilder`, Kontoanbindung und laufende Orderverwaltung gehören zum Handelssystem. Für den Nachrichtenaustausch mit eigenständig arbeitenden Komponenten verwendet das Handelssystem das gemeinsame `Nachrichtensystem` gemäß `anforderungen-gesamtsystem.md`.
+Der `OrderManager`, die Entgegennahme der vom Element `Order aufgeben` übergebenen Orders, Kontoanbindung und laufende Orderverwaltung gehören zum Handelssystem. Für den Nachrichtenaustausch mit eigenständig arbeitenden Komponenten verwendet das Handelssystem das gemeinsame `Nachrichtensystem` gemäß `anforderungen-gesamtsystem.md`.
 
 ## 2. Kommunikation im Handelssystem
 
@@ -29,14 +29,14 @@ Eine Nachricht besitzt mindestens folgende Eigenschaften:
 - `Adressat` -- MUSS; fachliches Ziel der Nachricht. Bei Nachrichten des `OrderManager` an die Kontoanbindung ist dies das betreffende `Konto`. Die Auflösung des fachlichen Adressaten auf den tatsächlichen Kommunikationsweg beziehungsweise die zuständige Komponente ist Aufgabe des Übertragungsmechanismus.
 - `Priorität` -- MUSS; bestimmt die relative Dringlichkeit der Nachricht. Konkrete Prioritätswerte und deren Wirkung sind noch nicht festgelegt.
 - `Nachrichtenart` -- MUSS; bezeichnet die vom Empfänger zu verarbeitende fachliche Funktion beziehungsweise den Zweck der Nachricht. Für einen ersten Prototyp kann die Nachrichtenart dem Namen der zugehörigen Empfangsfunktion entsprechen.
-- `Inhalt` -- MUSS; enthält die für die Nachrichtenart erforderlichen fachlichen Daten beziehungsweise fachlichen Objekte.
+- `Inhalt` -- MUSS; enthält die für die Nachrichtenart erforderlichen fachlichen Daten beziehungsweise Objekte.
 - `Bezug-Nachrichten-ID` -- KANN; verweist insbesondere bei einer Antwort auf die auslösende Nachricht.
 
 Die Bedeutung einer Nachricht darf nicht davon abhängen, dass Informationen wie der Absender aus dem Format der `Nachrichten-ID` abgeleitet werden.
 
-### req-grund-005 -- Fachliche Objekte als Nachrichteninhalt
+### req-grund-005 -- Objekte als Nachrichteninhalt
 
-Vorhandene fachliche Objekte sollen unmittelbar als Nachrichteninhalt verwendet werden können, wenn sie den benötigten Inhalt bereits vollständig beschreiben. Eine konkrete `Order` kann damit beispielsweise als Inhalt einer Nachricht zur Übermittlung dieser Order dienen.
+Vorhandene Objekte sollen unmittelbar als Nachrichteninhalt verwendet werden können, wenn sie den benötigten Inhalt bereits vollständig beschreiben. Eine konkrete `Order` kann damit beispielsweise als Inhalt einer Nachricht zur Übermittlung dieser Order dienen.
 
 Für Abfragen und Rückmeldungen werden nur die fachlichen Nachrichtenarten und Inhalte definiert, die tatsächlich benötigt werden. Eine zusätzliche Hierarchie aus Anfrage-, Antwort- und Ereignisobjekten wird derzeit nicht vorausgesetzt.
 
@@ -53,23 +53,23 @@ Für den `OrderManager` sind derzeit insbesondere folgende Kommunikationsbedarfe
 - Übermittlung einer konkreten Order an das der Order zugeordnete Konto,
 - Abfrage von `Orderinformation` zur Statuspflege und Überwachung,
 - Empfang von `Orderinformation` als Antwort auf eine Abfrage oder als unaufgeforderte Mitteilung,
-- Abfrage von `Kontoinformation`; dabei sollen die verfügbaren aktuellen Kontoparameter gemeinsam geliefert werden, statt für einzelne Kontowerte jeweils eigene Anfragearten zu definieren.
+- Abfrage von `Kontoinformation`. Dabei sollen die verfügbaren aktuellen Kontoparameter gemeinsam geliefert werden, statt für einzelne Kontowerte jeweils eigene Anfragearten zu definieren.
 
 Die konkreten Nachrichtenarten, ihre endgültige Benennung sowie die genaue Struktur von `Orderinformation` und `Kontoinformation` werden bei ihrer fachlichen Definition festgelegt.
 
 ## 3. Ordererzeugung und Orderverwaltung zur Laufzeit
 
-### req-grund-007 -- OrderBuilder zwischen Strategieauswertung und OrderManager
+### req-grund-007 -- Übergabe von Orders aus dem Strategieablauf an das Handelssystem
 
-Wenn der Ablauf einer Strategie nach Auswertung der erforderlichen Bedingungen eine Order auslösen soll, beauftragt er den `OrderBuilder`. Ein zusätzliches fachliches Objekt `Signal` wird dafür derzeit nicht vorausgesetzt.
+Wenn der Ablauf einer Strategie nach Auswertung der erforderlichen Bedingungen eine Order veranlassen soll, erreicht er das Element `Order aufgeben`. Dieses legt Ordertyp und Parameter der Order fest und übergibt die Order an das Handelssystem. Ein zusätzliches Objekt `Signal` wird dafür derzeit nicht vorausgesetzt.
 
-Der `OrderBuilder` ist eine Schnittstelle beziehungsweise Komponente des Handelssystems und kein zusätzliches fachliches Trading-Objekt.
+Das Handelssystem erhält die im Strategieablauf bestimmte Order-Konfiguration und das konkrete `Konto`, auf dem die Strategie angewendet wird. Daraus entsteht eine konkrete Order des konfigurierten Ordertyps mit den vorgesehenen direkten Eigenschaftswerten und Regeln. Dazu gehört auch eine in der Strategie konfigurierte Bedingung oder Regel für die fortbestehende Gültigkeit einer aktiven Order.
 
-Der `OrderBuilder` erhält die im Strategieablauf bestimmte Order-Konfiguration und das konkrete `Konto`, auf dem die Strategie angewendet wird. Daraus erzeugt er eine konkrete Order des konfigurierten Ordertyps und übergibt ihr die vorgesehenen direkten Eigenschaftswerte und Regeln. Dazu gehört auch eine in der Strategie konfigurierte Bedingung oder Regel für die fortbestehende Gültigkeit einer aktiven Order.
-
-Die fachliche Bestimmung noch zu bestimmender Order-Eigenschaften sowie die fachliche Prüfung der Order bleiben Aufgabe der Order und der von ihr verwendeten Regeln. Der `OrderBuilder` übernimmt diese Aufgaben nicht.
+Die fachliche Bestimmung noch zu bestimmender Order-Eigenschaften sowie die fachliche Prüfung der Order bleiben Aufgabe der Order und der von ihr verwendeten Regeln.
 
 Nur eine erfolgreich freigegebene konkrete Order wird an den `OrderManager` übergeben. Der `OrderManager` benötigt dafür keine Kenntnis der verursachenden Strategie.
+
+Offen: ob das Handelssystem dafür einen eigenen OrderBuilder verwendet. Falls ja, ist der OrderBuilder eine Komponente des Handelssystems und kein Objekt. Er erzeugt dann die konkrete Order, übernimmt aber nicht deren Bestimmung und Prüfung.
 
 ### req-fach-022 -- OrderManager
 
@@ -77,7 +77,7 @@ Für die Verwaltung bestehender Orders gibt es einen eigenständigen `OrderManag
 
 Der `OrderManager` verwaltet mehrere gleichzeitig bestehende Orders und deren Lebenszyklus. Dazu gehören insbesondere die Verwaltung aktiver Orders anhand ihrer Order-ID und die Überwachung ihres Status.
 
-Die fachliche Bestimmung von Order-Eigenschaften und die fachliche Auswertung der für eine konkrete Order geltenden Regeln gehören nicht zur Aufgabe des `OrderManager`. Der `OrderManager` darf erforderliche Prüfungen anstoßen und auf deren Ergebnis reagieren; die fachliche Auswertung selbst erfolgt durch die Order beziehungsweise die von ihr verwendete Regel.
+Die fachliche Bestimmung von Order-Eigenschaften und die fachliche Auswertung der für eine konkrete Order geltenden Regeln gehören nicht zur Aufgabe des `OrderManager`. Der `OrderManager` darf erforderliche Prüfungen anstoßen und auf deren Ergebnis reagieren. Die fachliche Auswertung selbst erfolgt durch die Order beziehungsweise die von ihr verwendete Regel.
 
 ### req-fach-026 -- Trennung von Strategiedefinition, Order und Kontoanbindung
 
@@ -123,3 +123,4 @@ Eine Order kann damit einen endgültigen Zustand erreichen, ohne jemals eine Pos
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. OrderManager-, Kontoanbindungs-, Überwachungs- und Kommunikationsanforderungen wurden übernommen. |
 | 2026-09-24 | `OrderBuilder` zwischen Signal und OrderManager ergänzt; Übergabe und Stornierung auf das `Nachrichtensystem` korrigiert; Auslösung von Orderprüfungen auf periodische Prüfung oder auslösende Nachricht präzisiert. |
 | 2026-09-25 | Separates `Signal`-Objekt aus dem aktuellen Ablaufmodell entfernt; `OrderBuilder` wird bei entsprechendem Ergebnis der Strategieauswertung direkt aus dem Strategieablauf beauftragt. |
+| 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |

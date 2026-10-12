@@ -18,28 +18,33 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Auslöser | Das Ereignis, bei dem eine Strategie ausgewertet wird, zum Beispiel der Schluss einer Kerze auf einer Zeiteinheit. Jede Strategie hat genau einen Auslöser. |
-| Baustein | Ein fachliches Element, das auf der Zeichenfläche platziert wird: ein Indikator, ein Trend, eine Bedingung, eine Berechnung, eine Regel oder die Order-Aktion. In der Graphentheorie heißt das Knoten. Dieses Wort wird nicht verwendet. |
-| Bausteintyp | Die Art eines Bausteins, zum Beispiel „gleitender Durchschnitt (EMA)“ oder „Markttechnik-Trend“. Aus einem Bausteintyp werden konkrete Bausteine mit eigenen Parameterwerten angelegt. |
-| Bausteinbibliothek | Der Bereich der Oberfläche, der die verfügbaren Bausteintypen und die bereits angelegten, wiederverwendbaren Objekte zur Auswahl anbietet. |
-| Verbindung | Eine Linie zwischen zwei Bausteinen auf der Zeichenfläche. Sie bedeutet entweder „danach folgt“ im Ablauf, den wahr- oder falsch-Pfad einer Bedingung oder die Verwendung einer Ausgabe durch einen anderen Baustein. In der Graphentheorie heißt das Kante. Dieses Wort wird nicht verwendet. |
+| Objekt | Etwas, mit dem ein Händler arbeitet, beschrieben im Fachmodell, zum Beispiel Strategie, Trend, Indikator, Regel, Regelwerk oder Order. Ein Objekt hat Eigenschaften, unabhängig davon, ob und wie es auf der Zeichenfläche dargestellt wird. Die Begriffe „Handelsobjekt“ und „fachliches Objekt“ werden nicht verwendet. |
+| Objekttyp | Die Art eines Objekts, zum Beispiel „gleitender Durchschnitt (EMA)“ oder „Markttechnik-Trend“. Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
+| Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Order aufgeben, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
+| Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
+| Elementbibliothek | Der Bereich der Oberfläche, der die verfügbaren Elementtypen und die bereits angelegten Objekte zur Auswahl anbietet. |
+| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie ausgewertet wird, zum Beispiel der Schluss einer Kerze auf einer Zeiteinheit. Es steht am Anfang des Ablaufs. Jede Strategie hat mindestens einen Auslöser. |
+| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. |
+| Regelwerk | Eine benannte, geordnete Sammlung eigenständiger Regeln. Die Regeln behalten darin ihre Einzelergebnisse. |
+| Verbindung | Ein Element in Form einer Linie zwischen zwei Elementen auf der Zeichenfläche. Sie bedeutet entweder „danach folgt“ im Ablauf, den wahr- oder falsch-Pfad einer Bedingung oder die Verwendung einer Eigenschaft oder eines Ergebnisses durch ein anderes Element. Das Wort „Kante“ wird nicht verwendet. |
 | Verweis | Die Verwendung eines eigenständig gespeicherten Objekts (zum Beispiel einer Regel oder eines Indikators) in einer Strategie über seine Kennung, ohne das Objekt zu kopieren. |
-| Ausgabe | Ein Ergebnis, das ein Baustein anderen Bausteinen zur Verfügung stellt, zum Beispiel die Richtung eines Trends oder der Wert eines Indikators. |
-| Parameter | Eine einstellbare Eigenschaft eines Bausteins, zum Beispiel die Periode eines gleitenden Durchschnitts. |
-| Bindungsart | Die Art, wie ein Parameter seinen Wert erhält: fest in der Strategie eingetragen, durch eine Regel bestimmt, erst bei der Anwendung übergeben, oder aus der Ausgabe eines anderen Bausteins. |
-| Zeichenfläche | Der Bereich der Oberfläche, auf dem Bausteine angeordnet und verbunden werden. |
-| Eigenschaftenansicht | Der Bereich der Oberfläche, in dem die Parameter des ausgewählten Bausteins angezeigt und geändert werden. |
+| Eigenschaft | Alles, was ein Objekt beschreibt, ob vom Anwender eingestellt oder vom Objekt ermittelt. Die Richtung eines Trends ist eine Eigenschaft, auch wenn sie berechnet wird. |
+| Parameter | Eine Eigenschaft, die der Anwender einstellt, zum Beispiel die Zeiteinheit eines Trends oder die Periode eines gleitenden Durchschnitts. |
+| Ergebnis | Das, was eine Regel, eine Bedingung oder eine Berechnung liefert. Objekte liefern keine Ergebnisse, sondern haben Eigenschaften. Der Begriff „Ausgabe“ wird nicht verwendet. |
+| Bindungsart | Die Art, wie ein Parameter seinen Wert erhält: fest in der Strategie eingetragen, durch eine Regel bestimmt, erst bei der Anwendung übergeben, oder aus einer Eigenschaft oder einem Ergebnis eines anderen Elements. |
+| Zeichenfläche | Der Bereich der Oberfläche, auf dem Elemente angeordnet und verbunden werden. |
+| Eigenschaftenansicht | Der Bereich der Oberfläche, in dem die Eigenschaften des ausgewählten Elements angezeigt und seine Parameter geändert werden. |
 | Prüfung | Die Kontrolle einer Strategie auf Vollständigkeit und Widerspruchsfreiheit, ohne sie auszuführen. Sie läuft beim Speichern und auf Anforderung. |
-| Befund | Ein einzelnes Ergebnis der Prüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Beschreibung und dem betroffenen Baustein. |
+| Befund | Ein einzelnes Ergebnis der Prüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Beschreibung und dem betroffenen Element. |
 | Prüffall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
 
 ## Technische Begriffe
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Bausteintypen. Pipwerk Studio, Pipwerk Backtest und Pipwerk Trader binden es ein. |
-| Typbeschreibung | Die maschinenlesbare Beschreibung eines Bausteintyps: Kennung, Beschriftungen in Deutsch und Englisch, Parameter mit Datentyp und erlaubten Bindungsarten, Eingaben, Ausgaben. Die Oberfläche baut daraus Bausteinbibliothek, Bausteine und Eigenschaftenansicht auf. |
-| Bausteinregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Bausteintypen angemeldet sind und von der sie abgefragt werden. |
+| Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Elementtypen. Pipwerk Studio, Pipwerk Backtest und Pipwerk Trader binden es ein. |
+| Typbeschreibung | Die maschinenlesbare Beschreibung eines Elementtyps: Kennung, Beschriftungen in Deutsch und Englisch, Parameter mit Datentyp und erlaubten Bindungsarten, Eingaben, Eigenschaften und Ergebnisse. Die Oberfläche baut daraus Elementbibliothek, Elemente und Eigenschaftenansicht auf. |
+| Elementregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Elementtypen angemeldet sind und von der sie abgefragt werden. |
 | Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API und Nachrichten verwendet. |
 | Strategiedatei | Eine Datei im Strategieverzeichnis, die ein Strategiedokument enthält. Sie ist die verbindliche Fassung der Strategie. |
 | Schema | Die formale Beschreibung, welche Felder ein Dokument enthalten muss und welche Werte zulässig sind. Pipwerk verwendet JSON-Schema. Schemata liegen versioniert unter `contracts/`. |
@@ -61,7 +66,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Alembic | Werkzeug zu SQLAlchemy, das Änderungen am Datenbankaufbau versioniert durchführt. Eine bestehende Datenbank wird damit auf einen neuen Aufbau gebracht, ohne sie neu anzulegen. |
 | pytest | Werkzeug für automatische Tests von Python-Code. |
 | React, TypeScript, Vite | Grundlage der Browseroberfläche: React für die Bedienelemente, TypeScript als Programmiersprache, Vite zum Bauen und für den Entwicklungsbetrieb. |
-| React Flow | Bibliothek für die Zeichenfläche: Anordnen und Verbinden von Bausteinen im Browser. |
+| React Flow | Bibliothek für die Zeichenfläche: Anordnen und Verbinden von Elementen im Browser. |
 | i18next | Bibliothek für die deutschen und englischen Texte der Oberfläche. |
 | TanStack Query | Bibliothek, mit der die Oberfläche Daten der Web-API abruft und zwischenspeichert. |
 | Vitest, Testing Library | Werkzeuge für automatische Tests der Oberfläche ohne Browser. |
@@ -74,5 +79,6 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |

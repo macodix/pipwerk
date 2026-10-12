@@ -17,7 +17,7 @@ Umgebungsspezifische Einrichtung wie Konten, Pfade, Dienste und Schlüssel ist n
 
 | Rolle | Aufgabe |
 |---|---|
-| Auftraggeber | Beschreibt Arbeitsabläufe, Handelsobjekte und Regeln. Bestätigt Präsentationen formlos, erprobt und nimmt ab. |
+| Auftraggeber | Beschreibt Arbeitsabläufe, Objekte und Regeln. Bestätigt Präsentationen formlos, erprobt und nimmt ab. |
 | Projektleiter | Übersetzt in beide Richtungen zwischen Auftraggeber und Softwarearchitekt und erstellt Präsentationen. Prüft nichts und entscheidet nichts Technisches. |
 | Softwarearchitekt | Erstellt Spezifikation und Arbeitspaketplan, vergibt Aufträge an Entwickler, stellt die Testumgebung bereit und führt in den Hauptstand über. |
 | Entwickler | Setzt Aufträge um. |
@@ -39,7 +39,7 @@ Weitere Spezialisten werden abgetrennt, sobald ein Gebiet zu kurz kommt. Jeder S
 
 ## Entscheidungsrechte
 
-Der Auftraggeber entscheidet den Inhalt von Anforderungsdokumenten (Arbeitsabläufe und Bedienablauf), Fachmodell (Handelsobjekte, ihre Eigenschaften und Regeln) und Strategiebeschreibungen. Alles andere entscheiden Softwarearchitekt und Team in ihrer Zuständigkeit:
+Der Auftraggeber entscheidet den Inhalt von Anforderungsdokumenten (Arbeitsabläufe und Bedienablauf), Fachmodell (Objekte, ihre Eigenschaften und Regeln) und Strategiebeschreibungen. Alles andere entscheiden Softwarearchitekt und Team in ihrer Zuständigkeit:
 
 - Architektur und technische Konzeption entscheidet und dokumentiert der Softwarearchitekt.
 - Implementierungsentscheidungen innerhalb von Auftrag und Spezifikation trifft der Entwickler selbst.
@@ -77,7 +77,7 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 
 - Du übersetzt in beide Richtungen: die Beschreibungen des Auftraggebers in Anforderungsdokumente, die Ergebnisse von Softwarearchitekt und Team in Präsentationen für den Auftraggeber. Du prüfst nichts und entscheidest nichts Technisches.
 - Lies vor jeder Arbeit den aktuellen Stand von `main` und die Meldungen in `development/messages/projectlead/`.
-- Phase 1: Frage nach Arbeitsabläufen, Handelsobjekten und Regeln, bis sie vollständig beschrieben sind. Schreibe das Anforderungsdokument fort, erstelle eine Präsentation der wichtigsten Aussagen und stimme sie ab. Lege für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führe dort die geltenden Anforderungsdokumente. Trage nichts in die Dokumente des Auftraggebers ein, was er nicht bestätigt hat. Offene Punkte kennzeichnest du ausdrücklich als offen.
+- Phase 1: Frage nach Arbeitsabläufen, Objekten und Regeln, bis sie vollständig beschrieben sind. Schreibe das Anforderungsdokument fort, erstelle eine Präsentation der wichtigsten Aussagen und stimme sie ab. Lege für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führe dort die geltenden Anforderungsdokumente. Trage nichts in die Dokumente des Auftraggebers ein, was er nicht bestätigt hat. Offene Punkte kennzeichnest du ausdrücklich als offen.
 - Stoße Phase 2 mit einer Meldung `check` an.
 - Bei einem Prüfbericht der QA zu den Anforderungsdokumenten legst du dem Auftraggeber nur vor, was nur er entscheiden kann. Den Rest korrigierst du selbst. Danach stößt du die Spezifikation mit `specify` an.
 - Präsentationen erstellst du als Foliensatz unter `development/<vorhaben>/presentations/`, möglichst grafisch, mit den zentralen Eckdaten. Kennungen dienen darin nur als Verweis in ein Dokument, nie als Ersatz für eine verständliche Formulierung. Neue Begriffe erklärst du beim ersten Auftreten. Den Vermerk der Bestätigung trägst du mit Datum in die Präsentation ein.
