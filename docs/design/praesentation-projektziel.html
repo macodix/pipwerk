@@ -63,7 +63,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p style="font-size:38px;width:1450px">Zweck, Zielgruppe und Erfolgskriterien von pipwerk. Das oberste Dokument, auf das sich alle Anforderungen beziehen.</p>
 </div>
 <p style="font-size:26px;color:var(--coveraccent)">12. Oktober 2026 · Projektleiter an Martin</p>
-<p class="num">1 / 6</p></section></div>
+<p class="num">1 / 7</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Zweck</h2>
@@ -75,7 +75,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="step"><b>4</b><span>Auswerten</span><i>gehandelte Strategien grafisch auswerten</i></div>
 </div>
 <p class="note">Finanzinstrumente: Aktien, ETFs, Devisen, Futures, CFDs, Optionen und vergleichbare handelbare Werte.</p>
-<p class="num">2 / 6</p></section></div>
+<p class="num">2 / 7</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Zielgruppe und Ziel</h2>
@@ -83,7 +83,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="card col"><h3>Zielgruppe</h3><p>Grundsätzlich jeder Händler, der pipwerk benutzen möchte.</p><p>Maßstab für Entscheidungen sind zunächst die Bedürfnisse des Auftraggebers.</p></div>
 <div class="card col"><h3>Ziel</h3><p>Eine Software, die den beschriebenen Zweck erfüllt.</p><p>Der Name wird klein geschrieben: pipwerk.</p></div>
 </div>
-<p class="num">3 / 6</p></section></div>
+<p class="num">3 / 7</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Erfolgskriterien</h2>
@@ -95,7 +95,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <tr><td>4</td><td>Die gehandelten Strategien lassen sich grafisch auswerten.</td></tr>
 </table>
 <p class="note">Einzelne Strategien wie der Punkt-2-Ausbruch oder die EMA-Trendfolge sind Prüffälle für den jeweiligen Entwicklungsstand, nicht Bestandteil des Ziels.</p>
-<p class="num">4 / 6</p></section></div>
+<p class="num">4 / 7</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Abgrenzung und Aufbau</h2>
@@ -108,7 +108,21 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p>pipwerk ist eine reine Handelssoftware und bleibt es. Das Neue an pipwerk ist der Strategiedesigner.</p></div>
 <div class="card col"><h3>Aufbau</h3><p>pipwerk ist, soweit technisch sinnvoll machbar, aus Modulen aufgebaut. Jedes Modul ist eigenständig lauffähig.</p><p>Das dient der Stabilität und erlaubt, die Module auf verschiedenen Rechnern zu betreiben.</p></div>
 </div>
-<p class="num">5 / 6</p></section></div>
+<p class="num">5 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Module</h2>
+<table>
+<tr><th style="width:300px">Modul</th><th style="width:300px">Name</th><th>Aufgabe</th></tr>
+<tr><td>Strategiedesigner</td><td>pipwerk studio</td><td>Strategien gestalten und prüfen</td></tr>
+<tr><td>Strategietester</td><td>pipwerk backtest</td><td>Strategien gegen historische Kursdaten testen, Ergebnis grafisch auswerten</td></tr>
+<tr><td>Handelssystem</td><td>pipwerk trader</td><td>Strategien auf Handelskonten anwenden, gehandelte Strategien grafisch auswerten</td></tr>
+<tr><td>Kontoverwaltung</td><td>pipwerk vault</td><td>Handelskonten mit Broker, Instrumenten und deren Eigenschaften, Kontostand, Positionen und Orders. Liefert diese Informationen an alle Module.</td></tr>
+<tr><td>Verbindungsmodul</td><td>pipwerk bridge</td><td>Je Handelsplattform oder Datenquelle eines, zunächst pipwerk bridge mt5. Übersetzt Orders, Kontodaten, laufende und historische Kursdaten.</td></tr>
+<tr><td>Nachrichtensystem</td><td>pipwerk relay</td><td>Technischer Austausch zwischen den Modulen</td></tr>
+</table>
+<p class="note">Was nicht entschieden ist, bleibt als Möglichkeit offen und wird durch den Aufbau nicht verhindert.</p>
+<p class="num">6 / 7</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Stand und nächste Schritte</h2>
@@ -117,7 +131,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>Zweck mit den vier Fähigkeiten</li>
 <li>Zielgruppe und Maßstab</li>
 <li>vier Erfolgskriterien</li>
-<li>Abgrenzung und modularer Aufbau</li>
+<li>Abgrenzung, modularer Aufbau und sechs Module mit Namen</li>
 <li>Ablage: <code>docs/design/projektziel.md</code></li></ul>
 <p class="note">Bestätigt durch den Auftraggeber im Chat am 12. Oktober 2026</p></div>
 <div class="card col"><h3 style="color:var(--amber)">Als Nächstes</h3><ul>
@@ -125,7 +139,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>Arbeitsabläufe je Komponente</li>
 <li>Fachmodell</li></ul></div>
 </div>
-<p class="num">6 / 6</p></section></div>
+<p class="num">7 / 7</p></section></div>
 
 </div>
 <script>

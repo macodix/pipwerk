@@ -53,6 +53,17 @@ pipwerk ist nicht:
 
 pipwerk ist, soweit technisch sinnvoll machbar, aus Modulen aufgebaut. Jedes Modul ist eigenständig lauffähig. Das dient der Stabilität und erlaubt, die Module auf verschiedenen Rechnern zu betreiben.
 
+| Modul | Name | Aufgabe |
+|---|---|---|
+| Strategiedesigner | pipwerk studio | Strategien gestalten und prüfen |
+| Strategietester | pipwerk backtest | Strategien gegen historische Kursdaten testen, Ergebnis grafisch auswerten |
+| Handelssystem | pipwerk trader | Strategien auf Handelskonten anwenden, gehandelte Strategien grafisch auswerten |
+| Kontoverwaltung | pipwerk vault | Handelskonten mit Broker, Instrumenten und deren Eigenschaften, Kontostand, Positionen und Orders. Liefert diese Informationen an alle Module. |
+| Verbindungsmodul | pipwerk bridge | Je Handelsplattform oder Datenquelle ein Modul, zunächst pipwerk bridge mt5 für MetaTrader 5. Übersetzt zwischen pipwerk und der jeweiligen Schnittstelle: Orders, Kontodaten, laufende und historische Kursdaten. |
+| Nachrichtensystem | pipwerk relay | Technischer Austausch zwischen den Modulen |
+
+Was nicht entschieden ist, bleibt als Möglichkeit offen und wird durch den Aufbau nicht verhindert. Das gilt insbesondere für historische Kursdaten aus anderen Quellen als dem Broker.
+
 ## Schreibweise
 
 Der Name des Systems wird klein geschrieben: pipwerk.
@@ -61,4 +72,4 @@ Der Name des Systems wird klein geschrieben: pipwerk.
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. Abgrenzung und Aufbau ergänzt. |
+| 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. Abgrenzung, Aufbau und Module ergänzt. |
