@@ -3,12 +3,12 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Nutzer. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-11
+- zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
+- stand: 2026-10-12
 
 ## Regeln
 
-- Dokumente, Folien, Aufträge und Antworten an den Nutzer verwenden die Begriffe dieses Glossars. Ein Begriff wird nicht durch ein Synonym oder eine wörtliche Übersetzung aus dem Englischen ersetzt.
+- Dokumente, Folien, Aufträge und Antworten an den Auftraggeber verwenden die Begriffe dieses Glossars. Ein Begriff wird nicht durch ein Synonym oder eine wörtliche Übersetzung aus dem Englischen ersetzt.
 - Ein neuer Begriff wird beim ersten Auftreten erklärt: was er bezeichnet und wozu er gebraucht wird. Danach wird er hier eingetragen.
 - Produktnamen von Werkzeugen und Bibliotheken werden beim ersten Auftreten in einem Text mit ihrem Zweck genannt.
 
@@ -47,8 +47,9 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Index | Eine Tabelle in der Datenbank mit Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiname und Zeitstempeln jedes gespeicherten Objekts. Der Index enthält das Objekt nicht, sondern verweist auf seine Datei, und lässt sich aus den Dateien neu aufbauen. |
 | Schnittstelle | Eine Stelle, an der Daten in ein Programm hinein- oder herauskommen: die Web-API, das Lesen und Schreiben von Dateien, das Lesen der Konfiguration. |
 | Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. |
-| Testumgebung | Die auf dem Entwicklungsrechner aus einem von der QA freigegebenen Commit gestartete Komponente. Der Projektleiter prüft dort die Abnahmekriterien, der Nutzer erprobt dort die Funktion. |
-| Entwicklungsrechner | Der Rechner, auf dem Arbeitsbereiche, Testumgebungen, Auftragsverwaltung und Agentenläufe liegen. |
+| Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Die QA prüft dort aus Kundensicht, der Auftraggeber erprobt dort und nimmt ab. |
+| Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt und Team liegen. |
+| Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#begriffe). |
 
 ## Werkzeuge und Bibliotheken
 
@@ -67,10 +68,11 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Playwright | Werkzeug für automatische Tests in einem echten Browser. Es bedient die Oberfläche wie ein Nutzer. |
 | Ruff, mypy | Werkzeuge, die Python-Code auf Stil und Typfehler prüfen. |
 | uv | Werkzeug, das Python-Pakete installiert und ihre Versionen festschreibt. |
-| tmux | Programm, das Terminalsitzungen im Hintergrund weiterlaufen lässt. Jedes Agententeam läuft in einer eigenen tmux-Sitzung. |
+| tmux | Programm, das Terminalsitzungen im Hintergrund weiterlaufen lässt. Jede Sitzung des Softwarearchitekten läuft in einer eigenen tmux-Sitzung. |
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |

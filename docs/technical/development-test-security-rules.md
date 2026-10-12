@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- stand: 2026-09-27
+- stand: 2026-10-12
 - geltungsbereich: gesamtes Pipwerk-Repository
 
 ## 1. Zweck und Grundsatz
@@ -84,7 +84,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 
 ## 5. Entwicklungsregeln
 
-1. Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request.
+1. Änderungen an Programmcode erfolgen in einem eigenen Zweig und kommen nach [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) in den Hauptstand.
 2. Jede Änderung muss einer dokumentierten Anforderung, Entscheidung, Fehlerbehebung oder einem klar beschriebenen technischen Zweck zugeordnet sein.
 3. Fachkern, Transport, Persistenz und Benutzeroberfläche werden durch definierte Schnittstellen getrennt.
 4. Keine Frameworkklasse darf erforderlich sein, um eine fachliche Kernoperation auszuführen.
@@ -129,7 +129,7 @@ Frontendtests mit Testing Library prüfen bevorzugt sichtbares und zugängliches
 
 Tests dürfen standardmäßig keine kostenpflichtigen, produktiven oder handelsauslösenden externen Dienste ansprechen. Tests mit externen Systemen benötigen eine ausdrückliche Kennzeichnung und getrennte Konfiguration.
 
-Ein Pull Request ist technisch nicht abnahmefähig, solange für den betroffenen Bereich vorgeschriebene Tests, Lint- oder Typprüfungen fehlschlagen.
+Ein Commit ist technisch nicht abnahmefähig, solange für den betroffenen Bereich vorgeschriebene Tests, Lint- oder Typprüfungen fehlschlagen.
 
 ## 8. Sicherheitsregeln
 
