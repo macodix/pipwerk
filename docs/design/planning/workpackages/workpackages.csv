@@ -1,9 +1,1 @@
 id,title,status,workorders,testresult
-AP2,Grundmodell der gemeinsamen Python-Bibliothek,open,,
-AP3,Dokumente und Schemata,open,,
-AP4,Bausteintypen der Prüffälle,open,,
-AP5,Web-API und Ablage in Pipwerk Studio,open,,
-AP6,Verwaltung von Strategien und Objekten in der Oberfläche,open,,
-AP7,Bearbeitung auf der Zeichenfläche,open,,
-AP8,Eigenschaftenansicht und Prüfung,open,,
-AP9,Nachweis für Schritt 1,open,,
