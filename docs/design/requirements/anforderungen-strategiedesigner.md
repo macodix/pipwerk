@@ -14,7 +14,7 @@ Dieses Dokument enthält ausschließlich Anforderungen an den `Strategiedesigner
 
 ### req-grund-001 -- Trennung von Strategiedesigner und Handelssystem
 
-Der `Strategiedesigner` dient der Gestaltung und Bearbeitung von Strategiedefinitionen, Regeln und den darin verwendeten fachlichen Elementen. Sein Ergebnis ist eine ausführbare Strategiedefinition.
+Der `Strategiedesigner` dient der Gestaltung und Bearbeitung von Strategiedefinitionen, Regeln und den darin verwendeten Objekten. Sein Ergebnis ist eine ausführbare Strategiedefinition.
 
 Die Zuordnung einer Strategiedefinition zu einem konkreten Handelskonto und deren laufende Anwendung auf diesem Konto gehören nicht zum Strategiedesigner, sondern zum `Handelssystem`.
 
@@ -30,9 +30,9 @@ Erst bei der Anwendung einer Strategie im Handelssystem erfolgt die Zuordnung zu
 
 ## 3. Anforderungen an fachliche Arbeit im Designer
 
-### req-fach-001 -- Fachliche Elemente als primäre Bausteine
+### req-fach-001 -- Objekte als Grundlage von Strategien
 
-Der Nutzer muss Strategien mit fachlichen Elementen erstellen können.
+Der Nutzer muss Strategien mit Objekten erstellen können.
 
 Beispiele sind:
 
@@ -44,7 +44,7 @@ Beispiele sind:
 -   Order,
 -   Position.
 
-Weitere fachliche Elemente können abhängig von der konkreten Strategie,
+Weitere Objekte können abhängig von der konkreten Strategie,
 dem verwendeten Berechnungsverfahren oder anderen fachlichen
 Anforderungen hinzukommen.
 
@@ -56,13 +56,13 @@ technische Begriffe ersetzt werden.
 
 ### req-fach-003 -- Ausführbare Bedeutung
 
-Ein fachliches Element darf nicht nur eine grafische Beschriftung sein.
+Ein Objekt darf nicht nur eine grafische Beschriftung sein.
 Es benötigt eine eindeutige fachliche Definition und eine ausführbare
 Bedeutung für Prüfung, Backtest und Live-Ausführung.
 
 ### req-fach-004 -- Fachliche Bedingungen
 
-Der Designer muss Bedingungen aus fachlichen Werten und Ergebnissen
+Der Designer muss Bedingungen aus Eigenschaften von Objekten und Ergebnissen
 bilden können.
 
 Beispiele:
@@ -71,72 +71,69 @@ Beispiele:
 
 > Trendrichtung != seitwärts
 
-Welche Werte und Ergebnisse für eine Bedingung verfügbar sind, muss sich
-aus den tatsächlich verwendeten fachlichen Objekten und Berechnungen
+Welche Eigenschaften und Ergebnisse für eine Bedingung verfügbar sind, muss sich
+aus den tatsächlich verwendeten Objekten und Berechnungen
 ergeben und darf nicht für einzelne Strategien fest in der
 Benutzeroberfläche hinterlegt sein.
 
-### req-fach-005 -- Referenzierbare fachliche Ergebnisse
+### req-fach-005 -- Referenzierbare Eigenschaften und Ergebnisse
 
-Ergebnisse einer fachlichen Auswertung müssen von nachfolgenden
+Eigenschaften von Objekten und Ergebnisse von Regeln, Bedingungen und Berechnungen müssen von nachfolgenden
 Elementen einzeln verwendet werden können.
 
-Welche Ergebnisse verfügbar sind, wird durch das jeweilige fachliche
+Welche Eigenschaften verfügbar sind, wird durch das jeweilige
 Objekt beziehungsweise die darin verwendeten Komponenten bestimmt.
 
 ### req-fach-006 -- Fachliche Objekte als Grundlage
 
-Der Strategiedesigner arbeitet primär mit fachlichen Objekten
-beziehungsweise fachlichen Bausteinen. Fachliche Objekte repräsentieren
+Der Strategiedesigner arbeitet primär mit Objekten. Objekte repräsentieren
 Begriffe und Funktionen der Handelsdomäne.
 
-Der konkrete Inhalt und die Fähigkeiten eines fachlichen Objekts dürfen
+Der konkrete Inhalt und die Fähigkeiten eines Objekts dürfen
 nicht vollständig und unveränderlich in der Benutzeroberfläche
 festgelegt sein. Fachliche Objekte müssen erweiterbar beziehungsweise
-konfigurierbar sein und ihre verfügbaren Eigenschaften, Parameter, Ein-
-und Ausgaben dem Designer maschinenlesbar zur Verfügung stellen können.
+konfigurierbar sein und ihre verfügbaren Eigenschaften, Parameter, Eigenschaften und Ergebnisse dem Designer maschinenlesbar zur Verfügung stellen können.
 
-### req-fach-007 -- Zusammensetzbare fachliche Objekte
+### req-fach-007 -- Zusammensetzbare Objekte
 
-Fachliche Objekte können andere fachliche beziehungsweise technische
-Objekte verwenden oder enthalten. Dadurch muss ihre konkrete Ausprägung
+Objekte können andere Objekte oder technische Komponenten verwenden oder enthalten. Dadurch muss ihre konkrete Ausprägung
 konfigurierbar sein.
 
-Beispielsweise kann ein fachliches Objekt `Trend` ein oder mehrere
+Beispielsweise kann ein Objekt `Trend` ein oder mehrere
 Verfahren beziehungsweise Indikatoren zur Trendbestimmung verwenden.
 Welche Indikatoren verwendet werden, ist nicht generell durch den
 Designer vorgegeben, sondern Bestandteil der jeweiligen Konfiguration.
 
 Die Benutzeroberfläche muss die von einem konkret konfigurierten Objekt
-bereitgestellten Eigenschaften, Parameter und Ergebnisse dynamisch
+bereitgestellten Eigenschaften und Parameter dynamisch
 darstellen können.
 
 ### req-fach-008 -- Keine unbegründete Austauschbarkeit
 
 Unterschiedliche Berechnungsverfahren dürfen nicht allein deshalb als
 austauschbar behandelt werden, weil sie einzelne gleich benannte
-Ergebnisse liefern.
+Eigenschaften liefern.
 
-Eine Strategie kann fachliche Ergebnisse benötigen, die nur bestimmte
+Eine Strategie kann Eigenschaften benötigen, die nur bestimmte
 Verfahren bereitstellen. Beispielsweise kann eine Strategie neben einer
-Trendrichtung zusätzliche fachliche Merkmale benötigen. Der Designer
+Trendrichtung zusätzliche Eigenschaften benötigen. Der Designer
 muss solche Abhängigkeiten abbilden und prüfen können.
 
-### req-fach-009 – Benutzerdefinierte fachliche Objekttypen
+### req-fach-009 – Benutzerdefinierte Objekttypen
 
-Der Strategiedesigner muss die Definition neuer fachlicher Objekttypen ermöglichen, ohne dass dafür der Strategiedesigner selbst geändert werden muss.
+Der Strategiedesigner muss die Definition neuer Objekttypen ermöglichen, ohne dass dafür der Strategiedesigner selbst geändert werden muss.
 
-Benutzerdefinierte fachliche Objekttypen müssen hinsichtlich Konfiguration, Parametrisierung, Ein- und Ausgaben sowie Wiederverwendung grundsätzlich wie mitgelieferte fachliche Objekttypen behandelt werden können.
+Benutzerdefinierte Objekttypen müssen hinsichtlich Konfiguration, Parametrisierung, Eigenschaften sowie Wiederverwendung grundsätzlich wie mitgelieferte Objekttypen behandelt werden können.
 
-Ein neuer fachlicher Objekttyp kann insbesondere aus bereits vorhandenen fachlichen Objekten, Indikatoren, Berechnungen oder anderen verfügbaren Komponenten zusammengesetzt werden.
+Ein neuer Objekttyp kann insbesondere aus bereits vorhandenen Objekten, Indikatoren, Berechnungen oder anderen verfügbaren Komponenten zusammengesetzt werden.
 
 Dadurch ist das fachliche Vokabular des Designers nicht auf die bei der Entwicklung bekannten Begriffe und Handelsansätze beschränkt. Wiederkehrende benutzerspezifische fachliche Konzepte können einmal definiert und anschließend in unterschiedlichen Strategien wiederverwendet werden.
 
-Die konkrete technische Repräsentation eines fachlichen Objekttyps – beispielsweise als Klasse, Schema, Graphdefinition oder durch einen anderen Mechanismus – ist nicht Bestandteil dieser Anforderung.
+Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als Klasse, Schema, Graphdefinition oder durch einen anderen Mechanismus – ist nicht Bestandteil dieser Anforderung.
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Strategieabläufe werden durch einen fachlich benannten Auslöser gestartet beziehungsweise erneut ausgewertet. Auslöser sind nicht auf periodische Prüfungen beschränkt. Ein zeitbasierter Auslöser kann beispielsweise ein Kerzenschluss sein; andere ereignisbasierte Auslöser müssen grundsätzlich möglich sein.
+Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie hat mindestens einen Auslöser. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs. Auslöser sind nicht auf periodische Prüfungen beschränkt. Ein zeitbasierter Auslöser kann beispielsweise ein Kerzenschluss sein. Andere ereignisbasierte Auslöser müssen grundsätzlich möglich sein.
 
 Die Wiederholung einer Strategieauswertung ergibt sich aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -150,17 +147,17 @@ Die Strategie muss außerdem festlegen können, unter welchen fachlichen Bedingu
 
 ## 4. Konfiguration und Parameter
 
-### req-param-001 -- Konfigurierbare fachliche Objekte
+### req-param-001 -- Konfigurierbare Objekte
 
-Fachliche Objekte müssen konfigurierbar sein. Zur Konfiguration kann
+Objekte müssen konfigurierbar sein. Zur Konfiguration kann
 insbesondere die Zuordnung anderer Objekte oder Komponenten gehören.
 
-Beispielsweise kann einem fachlichen Objekt ein bestimmter Indikator
+Beispielsweise kann einem Objekt ein bestimmter Indikator
 oder ein bestimmtes Berechnungsverfahren zugeordnet werden.
 
-### req-param-002 -- Parametrisierbare fachliche Objekte und Komponenten
+### req-param-002 -- Parametrisierbare Objekte und Komponenten
 
-Fachliche Objekte und die von ihnen verwendeten Komponenten müssen
+Objekte und die von ihnen verwendeten Komponenten müssen
 parametrisierbar sein.
 
 Parameter können beispielsweise sein:
@@ -192,7 +189,7 @@ Zeiteinheit fest vorgeben oder diese Größen erst zur Laufzeit erhalten.
 ### req-param-004 -- Selbstbeschreibung für die Benutzeroberfläche
 
 Die Benutzeroberfläche darf die Eigenschaften und Parameter konkreter
-fachlicher Objekte, Indikatoren oder Strategien nicht fest
+von Objekten wie Indikatoren oder Strategien nicht fest
 einprogrammieren müssen.
 
 Die verwendeten Objekte und Komponenten müssen die für Darstellung und
@@ -200,13 +197,25 @@ Konfiguration notwendigen Informationen maschinenlesbar bereitstellen.
 Die konkrete technische Umsetzung dieses Mechanismus ist noch nicht
 festgelegt.
 
+### req-param-005 -- Parameter und Standardwerte eines gespeicherten Objekts
+
+Ein gespeichertes Objekt legt seinen Objekttyp, seine Parameter und deren Standardwerte fest. Alles, was sich zwischen Strategien unterscheiden kann, ist ein Parameter des Objekts. Beim Trend ist auch das Berechnungsverfahren ein Parameter. Je nach gewähltem Verfahren zeigt die Eigenschaftenansicht die zugehörigen weiteren Parameter.
+
+Die Werte der Parameter legt jede Strategie an der Stelle fest, an der sie das Objekt verwendet. Beim Einfügen werden die Standardwerte übernommen. Eine Änderung eines Parameterwerts in einer Strategie betrifft nur diese Strategie.
+
+Das Bearbeiten eines gespeicherten Objekts beschränkt sich auf das Ergänzen von Parametern und das Ändern von Standardwerten.
+
+### req-param-006 -- Pflichtparameter und optionale Parameter
+
+Der Objekttyp legt fest, welche Parameter Pflichtparameter und welche optional sind. Ein Pflichtparameter ohne Wert, der auch nicht erst bei der Anwendung übergeben wird, ist bei der Konsistenzprüfung ein Fehler. Ein optionaler Parameter ohne Wert ist kein Befund.
+
 ## 5. Gemeinsamer Kern des Designers
 
-### req-core-001 -- Ansatzunabhängige fachliche Objekte
+### req-core-001 -- Ansatzunabhängige Objekte
 
-Der Strategiedesigner stellt fachliche Objekte für die Gestaltung von Strategien bereit. Ihre Auswahl und Darstellung richten sich nach der fachlichen Bedeutung im Strategieablauf. Dazu gehören die bereits beschriebenen Objekte wie `Strategie`, `Regel` und konfigurierbare Ordertypen; weitere fachliche Objekte können hinzukommen.
+Der Strategiedesigner stellt Objekte für die Gestaltung von Strategien bereit. Ihre Auswahl und Darstellung richten sich nach der fachlichen Bedeutung im Strategieablauf. Dazu gehören die bereits beschriebenen Objekte wie `Strategie`, `Regel` und konfigurierbare Ordertypen. Weitere Objekte können hinzukommen.
 
-Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständigen Objekttypen allein aufgrund ihrer Bezeichnung. Der Designer zeigt die jeweils tatsächlich verwendeten fachlichen Objekte und Tätigkeiten. Welche zusätzlichen Ordertypen, etwa eine `ExitOrder`, benötigt und wie sie definiert werden, ist im Fachmodell festzulegen.
+Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständigen Objekttypen allein aufgrund ihrer Bezeichnung. Der Designer zeigt die jeweils tatsächlich verwendeten Objekte und Tätigkeiten. Welche zusätzlichen Ordertypen, etwa eine `ExitOrder`, benötigt und wie sie definiert werden, ist im Fachmodell festzulegen.
 
 ### req-core-002 -- Trennung von Strategie und allgemeinen Regeln
 
@@ -223,12 +232,12 @@ Technische Details dürfen die fachliche Lesbarkeit nicht überlagern.
 
 ### req-ui-002 -- Ein- und ausklappbare Details
 
-Komplexe fachliche Elemente sollen intern aus detaillierteren Elementen
+Komplexe Elemente sollen intern aus detaillierteren Elementen
 bestehen können. Der Nutzer muss diese Details bei Bedarf öffnen können.
 
 ### req-ui-003 -- Tätigkeiten und Prüfungen im Ablauf
 
-Ablaufelemente müssen eine Tätigkeit oder eine konkrete Prüfung
+Elemente des Ablaufs müssen eine Tätigkeit oder eine konkrete Prüfung
 ausdrücken. Reine Substantive wie „Marktstruktur", „Handelsplanung" oder
 „Pending Order" genügen nicht als Ablaufschritt.
 
@@ -247,7 +256,7 @@ müssen getrennte, miteinander verknüpfte Ebenen bilden.
 
 ### req-ui-005 -- Dynamische Eigenschaftenansicht
 
-Auswahl und Konfiguration eines fachlichen Objekts erfolgen über eine
+Auswahl und Konfiguration eines Objekts erfolgen über eine
 zugehörige Eigenschaftenansicht.
 
 Diese Eigenschaftenansicht muss soweit möglich dynamisch aus den vom
@@ -261,9 +270,9 @@ Die Strategie muss als verständliche Gesamtübersicht darstellbar bleiben. Komp
 
 ### req-ui-007 -- Deutsch und Englisch als Oberflächensprachen
 
-Der Prototyp unterstützt Deutsch und Englisch als auswählbare Sprachen der Benutzeroberfläche. Dazu gehören insbesondere Menüs, Beschriftungen und Erläuterungen fachlicher Objekte, Parameter und Ergebnisse sowie Meldungen zur Prüfung einer Strategie.
+Der Prototyp unterstützt Deutsch und Englisch als auswählbare Sprachen der Benutzeroberfläche. Dazu gehören insbesondere Menüs, Beschriftungen und Erläuterungen von Objekten, Eigenschaften und Ergebnissen sowie Meldungen zur Konsistenzprüfung einer Strategie.
 
-Ein Wechsel der Oberflächensprache darf die fachliche Bedeutung oder gespeicherte Konfiguration einer Strategie nicht verändern. Die Zuordnung fachlicher Objekte, Eigenschaften und Ergebnisse muss unabhängig vom angezeigten Sprachtext erfolgen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht automatisch übersetzt.
+Ein Wechsel der Oberflächensprache darf die fachliche Bedeutung oder gespeicherte Konfiguration einer Strategie nicht verändern. Die Zuordnung von Objekten, Eigenschaften und Ergebnisse muss unabhängig vom angezeigten Sprachtext erfolgen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht automatisch übersetzt.
 
 ### req-ui-008 -- Dauerhafte Oberflächensprache des Strategiedesigners
 
@@ -275,7 +284,50 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
-## 7. Dokumententrennung
+## 7. Arbeitsabläufe
+
+### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
+
+Der Strategiedesigner bietet folgende Arbeitsabläufe:
+
+1. Strategie anlegen, öffnen, bearbeiten, speichern, schließen, löschen
+2. Objekt anlegen, öffnen, bearbeiten, speichern, löschen (Indikator, Trend, Regel, Regelwerk)
+3. Konsistenzprüfung Strategie
+4. Einstellungen ändern
+
+### req-ablauf-002 -- Strategie anlegen
+
+Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenfläche mit einem Auslöser-Element, dessen Parameter noch zu setzen sind. Bezeichnung und Beschreibung gibt der Anwender in der Eigenschaftenansicht der Strategie ein. Beide sind jederzeit änderbar. Gespeichert wird erst, wenn der Anwender speichert.
+
+### req-ablauf-003 -- Objekte in einer Strategie verwenden
+
+Der Anwender zieht einen Objekttyp aus der Elementbibliothek auf die Zeichenfläche und setzt die Parameter in der Eigenschaftenansicht. Beim Speichern der Strategie wird das Objekt als eigenes Objekt mitgespeichert und steht danach in der Elementbibliothek für andere Strategien zur Verfügung.
+
+Alternativ zieht der Anwender ein bereits gespeichertes Objekt aus der Elementbibliothek auf die Zeichenfläche. Die Parameterwerte setzt die Strategie an der Verwendungsstelle (req-param-005).
+
+### req-ablauf-004 -- Objekt anlegen (vorläufig)
+
+Der Anwender wählt in der Elementbibliothek „Neues Objekt“ und einen Objekttyp. In der Eigenschaftenansicht gibt er Bezeichnung, Beschreibung und die Standardwerte der Parameter ein. Nach dem Speichern steht das Objekt in der Elementbibliothek.
+
+### req-ablauf-005 -- Strategie speichern und schließen (vorläufig)
+
+Beim Speichern läuft die Konsistenzprüfung. Befunde werden angezeigt. Gespeichert wird auch bei Befunden. Beim Schließen einer Strategie mit ungespeicherten Änderungen fragt der Designer: speichern, verwerfen oder abbrechen.
+
+### req-ablauf-006 -- Strategie und Objekt löschen
+
+Eine Strategie wird nach Rückfrage gelöscht. Ein Objekt, das noch in Strategien verwendet wird, kann nicht gelöscht werden. Der Designer zeigt, welche Strategien es verwenden.
+
+### req-ablauf-007 -- Konsistenzprüfung Strategie
+
+Die Konsistenzprüfung läuft beim Speichern und auf Anforderung. Sie findet mindestens:
+
+- Auslöser ohne Verbindung in den Ablauf (Fehler)
+- Element ohne Verbindung (Fehler)
+- Pflichtparameter ohne Wert, der auch nicht erst bei der Anwendung übergeben wird (Fehler)
+- Bedingung, die eine Eigenschaft verwendet, die das Objekt nicht hat (Fehler)
+- Kein Element „Order aufgeben“ erreichbar (Hinweis)
+
+## 8. Dokumententrennung
 
 ### req-doc-001 -- Strategiebeschreibung getrennt halten
 
@@ -303,32 +355,33 @@ nicht in fachliche Strategiebeschreibungen eingefügt werden.
 Brokerregeln werden außerhalb einzelner Strategiebeschreibungen
 gepflegt.
 
-## 8. Noch offene Punkte
+## 9. Noch offene Punkte
 
 
 Die folgenden Punkte sind noch nicht entschieden:
 
-1.  Wie fachliche Objekte und Definitionen erstellt, strukturiert,
+1.  Wie Objekte und Definitionen erstellt, strukturiert,
     versioniert und erweitert werden.
-2.  Wie Nutzer eigene fachliche Objekte beziehungsweise Definitionen
+2.  Wie Nutzer eigene Objekte beziehungsweise Definitionen
     bereitstellen können.
 3.  Welche allgemeinen technischen Elemente fortgeschrittene Nutzer
     direkt verwenden dürfen.
-4.  Wie die Kompatibilität zwischen fachlichen Objekten,
-    Berechnungsverfahren und benötigten Ergebnissen geprüft und
+4.  Wie die Kompatibilität zwischen Objekten,
+    Berechnungsverfahren und benötigten Eigenschaften geprüft und
     dargestellt wird.
-5.  Wie fachliche Elemente intern in ausführbare technische Elemente
+5.  Wie Elemente intern in ausführbare technische Einheiten
     übersetzt werden.
 6.  Wie Änderungen einer Fachdefinition bestehende Strategien und
     Backtests beeinflussen.
 7.  Mit welchem technischen Mechanismus Objekte ihre Eigenschaften,
-    Parameter, Ein- und Ausgaben für Designer und GUI maschinenlesbar
+    Parameter und Ergebnisse für Designer und GUI maschinenlesbar
     bereitstellen.
 8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
+9.  Welche Objekte als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
 
-## 9. Änderungsnachweis
+## 10. Änderungsnachweis
 
 
   -----------------------------------------------------------------------
@@ -374,3 +427,5 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-04 | Dauerhafte, komponentenweite Auswahl von Deutsch oder Englisch für den Strategiedesigner einschließlich Standardsprache, Abgrenzung und offenem Folgepunkt zu Benutzerkonten festgelegt. |
 | 2026-10-12 | Einstellungsbereich mit der Sprachauswahl als eigener Menüpunkt festgelegt. |
 | 2026-10-12 | Objektverzeichnis als Einstellung im Einstellungsbereich. |
+| 2026-10-12 | Begriffe abgestimmt: Objekt statt fachliches Objekt oder fachliches Element, Element für alles auf der Zeichenfläche, Eigenschaft, Parameter und Ergebnis unterschieden. Auslöser als Elemente, mindestens einer je Strategie. |
+| 2026-10-12 | Arbeitsabläufe (Abschnitt 7), Parameter und Standardwerte gespeicherter Objekte, Pflicht- und optionale Parameter, Konsistenzprüfung. Grundausstattung an Objekten als offen aufgenommen. |
