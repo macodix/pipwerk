@@ -197,6 +197,18 @@ Konfiguration notwendigen Informationen maschinenlesbar bereitstellen.
 Die konkrete technische Umsetzung dieses Mechanismus ist noch nicht
 festgelegt.
 
+### req-param-005 -- Parameter und Standardwerte eines gespeicherten Objekts
+
+Ein gespeichertes Objekt legt seinen Objekttyp, seine Parameter und deren Standardwerte fest. Alles, was sich zwischen Strategien unterscheiden kann, ist ein Parameter des Objekts. Beim Trend ist auch das Berechnungsverfahren ein Parameter. Je nach gewähltem Verfahren zeigt die Eigenschaftenansicht die zugehörigen weiteren Parameter.
+
+Die Werte der Parameter legt jede Strategie an der Stelle fest, an der sie das Objekt verwendet. Beim Einfügen werden die Standardwerte übernommen. Eine Änderung eines Parameterwerts in einer Strategie betrifft nur diese Strategie.
+
+Das Bearbeiten eines gespeicherten Objekts beschränkt sich auf das Ergänzen von Parametern und das Ändern von Standardwerten.
+
+### req-param-006 -- Pflichtparameter und optionale Parameter
+
+Der Objekttyp legt fest, welche Parameter Pflichtparameter und welche optional sind. Ein Pflichtparameter ohne Wert, der auch nicht erst bei der Anwendung übergeben wird, ist bei der Konsistenzprüfung ein Fehler. Ein optionaler Parameter ohne Wert ist kein Befund.
+
 ## 5. Gemeinsamer Kern des Designers
 
 ### req-core-001 -- Ansatzunabhängige Objekte
@@ -258,7 +270,7 @@ Die Strategie muss als verständliche Gesamtübersicht darstellbar bleiben. Komp
 
 ### req-ui-007 -- Deutsch und Englisch als Oberflächensprachen
 
-Der Prototyp unterstützt Deutsch und Englisch als auswählbare Sprachen der Benutzeroberfläche. Dazu gehören insbesondere Menüs, Beschriftungen und Erläuterungen von Objekten, Eigenschaften und Ergebnissen sowie Meldungen zur Prüfung einer Strategie.
+Der Prototyp unterstützt Deutsch und Englisch als auswählbare Sprachen der Benutzeroberfläche. Dazu gehören insbesondere Menüs, Beschriftungen und Erläuterungen von Objekten, Eigenschaften und Ergebnissen sowie Meldungen zur Konsistenzprüfung einer Strategie.
 
 Ein Wechsel der Oberflächensprache darf die fachliche Bedeutung oder gespeicherte Konfiguration einer Strategie nicht verändern. Die Zuordnung von Objekten, Eigenschaften und Ergebnisse muss unabhängig vom angezeigten Sprachtext erfolgen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht automatisch übersetzt.
 
@@ -272,7 +284,50 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
-## 7. Dokumententrennung
+## 7. Arbeitsabläufe
+
+### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
+
+Der Strategiedesigner bietet folgende Arbeitsabläufe:
+
+1. Strategie anlegen, öffnen, bearbeiten, speichern, schließen, löschen
+2. Objekt anlegen, öffnen, bearbeiten, speichern, löschen (Indikator, Trend, Regel, Regelwerk)
+3. Konsistenzprüfung Strategie
+4. Einstellungen ändern
+
+### req-ablauf-002 -- Strategie anlegen
+
+Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenfläche mit einem Auslöser-Element, dessen Parameter noch zu setzen sind. Bezeichnung und Beschreibung gibt der Anwender in der Eigenschaftenansicht der Strategie ein. Beide sind jederzeit änderbar. Gespeichert wird erst, wenn der Anwender speichert.
+
+### req-ablauf-003 -- Objekte in einer Strategie verwenden
+
+Der Anwender zieht einen Objekttyp aus der Elementbibliothek auf die Zeichenfläche und setzt die Parameter in der Eigenschaftenansicht. Beim Speichern der Strategie wird das Objekt als eigenes Objekt mitgespeichert und steht danach in der Elementbibliothek für andere Strategien zur Verfügung.
+
+Alternativ zieht der Anwender ein bereits gespeichertes Objekt aus der Elementbibliothek auf die Zeichenfläche. Die Parameterwerte setzt die Strategie an der Verwendungsstelle (req-param-005).
+
+### req-ablauf-004 -- Objekt anlegen (vorläufig)
+
+Der Anwender wählt in der Elementbibliothek „Neues Objekt“ und einen Objekttyp. In der Eigenschaftenansicht gibt er Bezeichnung, Beschreibung und die Standardwerte der Parameter ein. Nach dem Speichern steht das Objekt in der Elementbibliothek.
+
+### req-ablauf-005 -- Strategie speichern und schließen (vorläufig)
+
+Beim Speichern läuft die Konsistenzprüfung. Befunde werden angezeigt. Gespeichert wird auch bei Befunden. Beim Schließen einer Strategie mit ungespeicherten Änderungen fragt der Designer: speichern, verwerfen oder abbrechen.
+
+### req-ablauf-006 -- Strategie und Objekt löschen
+
+Eine Strategie wird nach Rückfrage gelöscht. Ein Objekt, das noch in Strategien verwendet wird, kann nicht gelöscht werden. Der Designer zeigt, welche Strategien es verwenden.
+
+### req-ablauf-007 -- Konsistenzprüfung Strategie
+
+Die Konsistenzprüfung läuft beim Speichern und auf Anforderung. Sie findet mindestens:
+
+- Auslöser ohne Verbindung in den Ablauf (Fehler)
+- Element ohne Verbindung (Fehler)
+- Pflichtparameter ohne Wert, der auch nicht erst bei der Anwendung übergeben wird (Fehler)
+- Bedingung, die eine Eigenschaft verwendet, die das Objekt nicht hat (Fehler)
+- Kein Element „Order aufgeben“ erreichbar (Hinweis)
+
+## 8. Dokumententrennung
 
 ### req-doc-001 -- Strategiebeschreibung getrennt halten
 
@@ -300,7 +355,7 @@ nicht in fachliche Strategiebeschreibungen eingefügt werden.
 Brokerregeln werden außerhalb einzelner Strategiebeschreibungen
 gepflegt.
 
-## 8. Noch offene Punkte
+## 9. Noch offene Punkte
 
 
 Die folgenden Punkte sind noch nicht entschieden:
@@ -324,8 +379,9 @@ Die folgenden Punkte sind noch nicht entschieden:
 8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
+9.  Welche Objekte als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
 
-## 9. Änderungsnachweis
+## 10. Änderungsnachweis
 
 
   -----------------------------------------------------------------------
@@ -372,3 +428,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-12 | Einstellungsbereich mit der Sprachauswahl als eigener Menüpunkt festgelegt. |
 | 2026-10-12 | Objektverzeichnis als Einstellung im Einstellungsbereich. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt statt fachliches Objekt oder fachliches Element, Element für alles auf der Zeichenfläche, Eigenschaft, Parameter und Ergebnis unterschieden. Auslöser als Elemente, mindestens einer je Strategie. |
+| 2026-10-12 | Arbeitsabläufe (Abschnitt 7), Parameter und Standardwerte gespeicherter Objekte, Pflicht- und optionale Parameter, Konsistenzprüfung. Grundausstattung an Objekten als offen aufgenommen. |
