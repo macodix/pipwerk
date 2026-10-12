@@ -196,7 +196,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <tr><td>Tester</td><td>Entwickler, Softwarearchitekt</td><td>Testbericht</td></tr>
 <tr><td>Projektleiter</td><td>Softwarearchitekt</td><td>Abnahmebericht mit den Mängeln</td></tr>
 </table>
-<p class="note">Jedes Übergabedokument ist so vollständig, dass die empfangende Rolle ohne Rückgriff auf Gespräche arbeiten kann. Ablage im Repository: Aufträge, Test-, Prüf- und Abnahmeberichte in einem Verzeichnis je Arbeitspaket, Anforderungsdokument, Spezifikation und Arbeitspaketplan eine Ebene darüber. Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.</p>
+<p class="note">Jedes Übergabedokument ist so vollständig, dass die empfangende Rolle ohne Rückgriff auf Gespräche arbeiten kann. Ablage im Repository unter <code>development/</code>: je Vorhaben Spezifikation, Arbeitspaketplan, Prüfberichte und Präsentationen, darunter je Arbeitspaket Aufträge, Test-, Prüf- und Abnahmeberichte. Das Anforderungsdokument bleibt als lebendes Dokument unter <code>docs/design/requirements/</code>. Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.</p>
 <p class="num">11 / 14</p></section></div>
 
 <div class="frame"><section class="slide">
@@ -215,10 +215,10 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <h2>Technische Ausführung</h2>
 <table>
 <tr><th style="width:360px">Thema</th><th>Festlegung</th></tr>
-<tr><td>Start des Softwarearchitekten</td><td>Das Startprogramm <code>agentrun</code> erkennt ein neues Dokument im Eingangsverzeichnis des Softwarearchitekten und startet je Arbeitspaket höchstens eine Sitzung mit dem Pfad des Dokuments. Es überwacht sie mit dem Herzschlag, beendet sie nach dem Antwortdokument und meldet Absturz oder Stillstand dem Projektleiter.</td></tr>
+<tr><td>Start des Softwarearchitekten</td><td>Das Startprogramm <code>agentrun</code> erkennt eine neue Meldung an den Softwarearchitekten und startet je Arbeitspaket höchstens eine Sitzung mit dieser Meldung. Es überwacht sie mit dem Herzschlag, beendet sie nach seiner Antwortmeldung und meldet Absturz oder Stillstand dem Projektleiter.</td></tr>
 <tr><td>Start von Entwickler, Tester, QA</td><td>Der Softwarearchitekt startet sie mit dem Pfad ihres Übergabedokuments. Entwickler als Unteragenten seiner Sitzung. Tester und QA über ein Startskript je Rolle, dessen Programm einstellbar ist (Claude Code oder ein anderes Sprachmodell wie Codex). Keine Teamfunktion mit direkten Nachrichten.</td></tr>
-<tr><td>Weg der Dokumente</td><td>Alles im Repository. Zwischen Projektleiter und Softwarearchitekt auf <code>main</code>, getrennte Verzeichnisse je Richtung. Innerhalb des Teams auf dem Arbeitszweig des Pakets, mit der Übernahme in den Hauptstand auf <code>main</code>.</td></tr>
-<tr><td>Wegfall</td><td>Auftragsverwaltung <code>ordermgr</code> mit Statusmodell und Hilfswerkzeug <code>pipwerk-dev</code> entfallen. Arbeitsverzeichnisse legen die Rollen mit Git selbst an.</td></tr>
+<tr><td>Weg der Dokumente</td><td>Alles im Repository, Dokumente in der festen Ablage unter <code>development/</code> (Folie 11). Zwischen Projektleiter und Softwarearchitekt auf <code>main</code>, angestoßen durch kurze Meldungen mit Aufgabe und Pfad in <code>development/messages/architect/</code> und <code>development/messages/projectlead/</code>. Innerhalb des Teams auf dem Arbeitszweig des Pakets, mit der Übernahme in den Hauptstand auf <code>main</code>.</td></tr>
+<tr><td>Wegfall</td><td>Auftragsverwaltung <code>ordermgr</code> mit Statusmodell, Hilfswerkzeug <code>pipwerk-dev</code> und <code>work-orders/</code> entfallen. Arbeitsverzeichnisse legen die Rollen mit Git selbst an.</td></tr>
 <tr><td>Skripte je Komponente</td><td>Im Verzeichnis der Komponente: Prüfskript vom Tester, Testumgebungsskript vom Entwickler. Ports und Datenbank als Parameter oder Konfiguration. Kein übergreifendes Skript.</td></tr>
 </table>
 <p class="note">Vor der Festlegung zu prüfen: ob der Herzschlag bei Unteragenten das Arbeitsverzeichnis des Arbeitspakets meldet. Vergleich Claude und Codex als Tester mit gezielt eingebauten Fehlern, sobald der erste Durchlauf steht.</p>
