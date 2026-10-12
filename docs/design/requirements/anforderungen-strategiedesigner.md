@@ -273,7 +273,7 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 ### req-ui-009 -- Einstellungsbereich
 
-Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
+Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
 ## 7. Dokumententrennung
 
@@ -373,3 +373,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-09-25 | Veralteten Verweis auf `Signal` als fachliches Objekt entfernt und `Strategie` als fachliches Objekt berücksichtigt. |
 | 2026-10-04 | Dauerhafte, komponentenweite Auswahl von Deutsch oder Englisch für den Strategiedesigner einschließlich Standardsprache, Abgrenzung und offenem Folgepunkt zu Benutzerkonten festgelegt. |
 | 2026-10-12 | Einstellungsbereich mit der Sprachauswahl als eigener Menüpunkt festgelegt. |
+| 2026-10-12 | Objektverzeichnis als Einstellung im Einstellungsbereich. |

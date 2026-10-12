@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fortschreibbare Festlegungen für Entwicklung und Qualitätssicherung des Prototyps
-- stand: 2026-10-11
+- stand: 2026-10-12
 
 ## 1. Ziel und Gegenstand
 
@@ -61,7 +61,7 @@ Die deutschsprachigen Fachbegriffe der Konzeptdokumente werden bei der Umsetzung
 
 ## Ablage fachlicher Objekte
 
-Eine Strategie ist ein Objekt der gemeinsamen Python-Bibliothek `packages/domain-core`. Sie wird als JSON-Dokument serialisiert und als Datei im konfigurierten Strategieverzeichnis abgelegt. Das JSON-Schema des Dokuments wird aus den Modellen an der Schnittstelle erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API, als Export- und Importdatei und als Nachrichteninhalt verwendet.
+Eine Strategie ist ein Objekt der gemeinsamen Python-Bibliothek `packages/domain-core`. Sie wird als JSON-Dokument serialisiert und als Datei im Objektverzeichnis abgelegt. Das Objektverzeichnis ist eine über die Oberfläche änderbare Einstellung der Komponente. Sein Anfangswert folgt dem FHS (`/var/lib/pipwerk/<komponente>/`) beziehungsweise dem Datenverzeichnis des Benutzers. Das JSON-Schema des Dokuments wird aus den Modellen an der Schnittstelle erzeugt und versioniert unter `contracts/strategies/` bereitgestellt. Dasselbe Dokument wird über die Web-API, als Export- und Importdatei und als Nachrichteninhalt verwendet.
 
 Die Datenbank der Komponente führt einen Index der abgelegten Strategien mit Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiverweis und Zeitstempeln; weitere Eigenschaften kommen bei Bedarf hinzu. Die Datei ist maßgeblich; der Index ist aus den Dateien neu aufbaubar.
 
@@ -165,6 +165,7 @@ Konkrete Installations-, Start- und Betriebsverfahren werden am entstehenden, la
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | Objektverzeichnis als Einstellung mit Anfangswert nach FHS. |
 | 2026-10-11 | Ablage: Indikatoren, Trends, Regeln und RegelSets als eigenständige Objekte. Begriffe nach Glossar. |
 | 2026-10-10 | Verweis auf das Pflichtenheft für Schritt 1 ergänzt; Arbeitspakete AP2 bis AP9 als Entwurf angelegt. |
 | 2026-10-10 | Ablage fachlicher Objekte festgelegt: Strategie als serialisiertes Objekt in Datei, Index in der Datenbank, gleiches Muster für weitere Objekte, Ausnahme für schutzbedürftige Inhalte; Datenformat nicht mehr als offen geführt. |
