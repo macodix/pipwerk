@@ -3,7 +3,7 @@
 ## Status
 
 - id: `AP5`
-- status: `draft`
+- status: `accepted`
 - stand: 2026-10-12
 - komponenten: `components/pipwerk-studio` (Backend), `contracts/api`
 - pflichtenheft: PH-08, PH-09

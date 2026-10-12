@@ -58,7 +58,7 @@ Die Liste und die Akten in `work-orders/outgoing/` zeigen den gesamten Arbeitsst
 3. `agentrun` startet den Softwarearchitekten. Dieser lässt den Auftrag vom Entwickler im eigenen Branch umsetzen. Der Entwickler führt die vorgesehenen Prüfungen aus, aktualisiert die Dokumentation und erstellt einen Pull Request.
 4. Die QA prüft unabhängig Auftrag, Ausgangsstand, Pull Request und Commit, Code, Tests und Dokumentation. Befunde werden vollständig korrigiert und erneut geprüft. Eine Fertigmeldung ersetzt die QA nicht.
 5. Der Softwarearchitekt stellt genau den von der QA freigegebenen Commit als Testumgebung bereit, prüft Erreichbarkeit und Commit-Identität und trägt das Ergebnis `ready` in die Akte ein. Eine spätere Codeänderung erfordert erneute QA. `agentrun` beendet die Sitzung, `ordermgr` setzt `acceptance` und legt die Akte nach `work-orders/outgoing/`.
-6. Der Projektleiter prüft jedes Abnahmekriterium in der Testumgebung. Abweichungen gibt er mit einem Auftrag der Art `decision` und der Entscheidung `reject` weiter. Ist der Auftrag erfüllt, setzt er das Arbeitspaket auf `testing`.
+6. Der Projektleiter prüft jedes Abnahmekriterium in der Testumgebung. Bei einer Bibliothek ohne laufendes Programm prüft er die Abnahmekriterien an genau dem gemeldeten Commit am Code und mit den automatischen Prüfungen. Abweichungen gibt er mit einem Auftrag der Art `decision` und der Entscheidung `reject` weiter. Ist der Auftrag erfüllt, setzt er das Arbeitspaket auf `testing`.
 7. Der Nutzer erprobt die Testumgebung und trägt das Ergebnis in die Liste der Arbeitspakete ein. Bei Abnahme erteilt der Projektleiter einen Auftrag `decision` mit `accept`, bei Abweichungen mit `reject`. Nach `accept` lässt `ordermgr` den Softwarearchitekten mergen und setzt nach dessen Ergebnis `merged` den Status `closed`. Gemergt wird mit einem Merge-Commit, nicht durch Zusammenfassen (Squash), damit die Commits des Arbeitsbranches in `main` enthalten bleiben.
 
 Änderungen an Programmcode und wesentlicher Dokumentation erfolgen über Branch und Pull Request. Übergaben benennen Arbeitsauftrag, Branch, Pull Request, Commit und Prüfergebnis eindeutig. Der Nutzer muss weder Pull Requests technisch prüfen noch die Testumgebung selbst installieren und starten.
@@ -324,7 +324,7 @@ Eigene Fehler, unvollständige Änderungen und Testreste werden vor der Übergab
 
 ## Lokales Hilfswerkzeug pipwerk-dev
 
-`pipwerk-dev` erledigt auf dem Entwicklungsrechner die wiederkehrenden technischen Schritte rund um die Git-Arbeitsbereiche und Testumgebungen. Es bringt das Referenz-Repository auf den Stand von `origin/main`, richtet die Arbeitsbereiche eines Auftrags ein, bringt sie auf einen Stand und baut sie wieder ab, führt die automatischen Prüfungen einer Komponente aus und startet einen bestimmten Commit als Testumgebung einer Komponente. Derzeit unterstützt es die Komponente `pipwerk-studio`. `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
+`pipwerk-dev` erledigt auf dem Entwicklungsrechner die wiederkehrenden technischen Schritte rund um die Git-Arbeitsbereiche und Testumgebungen. Es bringt das Referenz-Repository auf den Stand von `origin/main`, richtet die Arbeitsbereiche eines Auftrags ein, bringt sie auf einen Stand und baut sie wieder ab, führt die automatischen Prüfungen einer Komponente aus und startet einen bestimmten Commit als Testumgebung einer Komponente. Derzeit unterstützt es die Komponenten `pipwerk-studio` und `domain-core`. `pipwerk-dev` startet keine Agenten und kennt keine Auftragsinhalte.
 
 Das Werkzeug ist nicht im Repository enthalten. Es wird nicht vom Agententeam geändert, sondern in einer eigenen Claude-Code-Sitzung auf Grundlage dieses Abschnitts. Seine Installation, Konfiguration und Sicherung sind lokal in `scripts/` dokumentiert. Zugangsdaten und lokale Zustandsdateien gehören nicht ins öffentliche Repository.
 
@@ -377,7 +377,7 @@ Endet `pipwerk-dev` mit einem Fehler, melden Entwickler und QA die Meldung dem S
 
 ### Automatische Prüfungen: test
 
-`test` führt im angegebenen Arbeitsbereich die für die Komponente vorgesehenen Prüfungen aus. Für Pipwerk Studio sind das für das Backend `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`, für die Oberfläche `npm ci`, `npm run typecheck`, `npm test` und `npm run e2e`. Für die Browser-End-to-End-Tests vergibt `pipwerk-dev` je Lauf freie Ports über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)), damit Prüfläufe mehrerer Aufträge gleichzeitig laufen können. Schlägt ein Schritt fehl, laufen die davon unabhängigen Schritte weiter; Schritte, die einen fehlgeschlagenen voraussetzen, werden übersprungen. Das Kommando endet dann mit Exitcode 1 und nennt die Datei mit der vollständigen Ausgabe.
+`test` führt im angegebenen Arbeitsbereich die für die Komponente vorgesehenen Prüfungen aus. Für Pipwerk Studio sind das für das Backend `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`, für die Oberfläche `npm ci`, `npm run typecheck`, `npm test` und `npm run e2e`. Für die Browser-End-to-End-Tests vergibt `pipwerk-dev` je Lauf freie Ports über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` (siehe [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)), damit Prüfläufe mehrerer Aufträge gleichzeitig laufen können. Für `domain-core` sind es im Verzeichnis `packages/domain-core` `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`. Schlägt ein Schritt fehl, laufen die davon unabhängigen Schritte weiter; Schritte, die einen fehlgeschlagenen voraussetzen, werden übersprungen. Das Kommando endet dann mit Exitcode 1 und nennt die Datei mit der vollständigen Ausgabe.
 
 ### Testumgebung bereitstellen und starten: start
 
@@ -390,7 +390,9 @@ Endet `pipwerk-dev` mit einem Fehler, melden Entwickler und QA die Meldung dem S
 5. Backend und Oberfläche werden gestartet: das Backend mit `pipwerk-studio -c <INI>`, die Oberfläche als Vite-Entwicklungsserver. Vite leitet Anfragen unter `/api` an das Backend weiter. Beide sind nur vom eigenen Rechner aus erreichbar.
 6. Innerhalb von 60 Sekunden müssen drei Adressen antworten: `/api/health` des Backends mit `{"status": "ok"}`, die Startseite der Oberfläche und `/api/health` über die Oberfläche. Antwortet etwas nicht, beendet `start` die gerade gestarteten Prozesse wieder und meldet einen Fehler.
 
-Jede Komponente hat eigene, konfigurierte Ports, sodass Testumgebungen verschiedener Komponenten gleichzeitig laufen. Für Pipwerk Studio sind das standardmäßig 8000 für das Backend und 5173 für die Oberfläche. Läuft die Komponente bereits aus demselben Commit und ist erreichbar, startet `start` nichts neu und meldet Erfolg. Läuft sie aus einem anderen Commit, bricht `start` ab; vorher ist `stop` nötig.
+`domain-core` ist eine Bibliothek ohne laufendes Programm. `start` prüft, dass der Commit `packages/domain-core` enthält, setzt `test/domain-core/` ohne Branch auf den Commit, führt dort `uv sync --frozen` aus und prüft statt der Erreichbarkeit, dass `uv run python -c "import pipwerk_domain"` gelingt. Es werden keine Prozesse gestartet und keine Ports belegt. `status` zeigt den bereitgestellten Commit, `stop` setzt die Bereitstellung zurück.
+
+Jede Komponente mit laufendem Programm hat eigene, konfigurierte Ports, sodass Testumgebungen verschiedener Komponenten gleichzeitig laufen. Für Pipwerk Studio sind das standardmäßig 8000 für das Backend und 5173 für die Oberfläche. Läuft die Komponente bereits aus demselben Commit und ist erreichbar, startet `start` nichts neu und meldet Erfolg. Läuft sie aus einem anderen Commit, bricht `start` ab; vorher ist `stop` nötig.
 
 ### Lokale Startkonfiguration und Testdatenbank
 
@@ -441,6 +443,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-12 | `pipwerk-dev` unterstützt `domain-core`: Prüfungen und Bereitstellung ohne laufendes Programm. Prüfung der Abnahmekriterien bei einer Bibliothek. |
 | 2026-10-10 | Beteiligte: Arbeitsteilung zwischen Nutzer und Projektleiter aufgenommen. |
 | 2026-10-10 | Startauftrag von `agentrun` mit Entwicklungsverzeichnis und Auftragskennung; Abschnitt zur Einführung entfernt. |
 | 2026-10-09 | `work-orders/` auf `incoming/` und `outgoing/` umgestellt, neue Vorlage mit Akte; Akte als letzter Abschnitt; `workpackage` `none` für Aufträge ohne Arbeitspaket. |

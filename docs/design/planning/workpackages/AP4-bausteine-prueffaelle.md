@@ -3,8 +3,8 @@
 ## Status
 
 - id: `AP4`
-- status: `draft`
-- stand: 2026-10-11
+- status: `accepted`
+- stand: 2026-10-12
 - komponenten: `packages/domain-core`
 - pflichtenheft: PH-04, PH-11
 

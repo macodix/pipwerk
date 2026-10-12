@@ -3,7 +3,7 @@
 ## Status
 
 - id: `AP9`
-- status: `draft`
+- status: `accepted`
 - stand: 2026-10-12
 - komponenten: `components/pipwerk-studio`, `contracts/strategies`
 - pflichtenheft: PH-12

@@ -3,8 +3,8 @@
 ## Status
 
 - id: `AP8`
-- status: `draft`
-- stand: 2026-10-11
+- status: `accepted`
+- stand: 2026-10-12
 - komponenten: `components/pipwerk-studio` (Oberfläche)
 - pflichtenheft: PH-04, PH-06, PH-10
 
