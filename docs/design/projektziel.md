@@ -38,6 +38,21 @@ Das Ziel ist erreicht, wenn:
 
 Einzelne Strategien, etwa der Punkt-2-Ausbruch oder die EMA-Trendfolge, sind Prüffälle für den jeweiligen Entwicklungsstand und nicht Bestandteil des Ziels.
 
+## Abgrenzung
+
+pipwerk ist eine reine Handelssoftware und bleibt es. Das Neue an pipwerk ist der Strategiedesigner.
+
+pipwerk ist nicht:
+
+- ein Anbieter von Kursdaten,
+- eine Depot- oder Steuerverwaltung,
+- eine Anlageberatung,
+- ein Broker.
+
+## Aufbau
+
+pipwerk ist, soweit technisch sinnvoll machbar, aus Modulen aufgebaut. Jedes Modul ist eigenständig lauffähig. Das dient der Stabilität und erlaubt, die Module auf verschiedenen Rechnern zu betreiben.
+
 ## Schreibweise
 
 Der Name des Systems wird klein geschrieben: pipwerk.
@@ -46,4 +61,4 @@ Der Name des Systems wird klein geschrieben: pipwerk.
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. |
+| 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. Abgrenzung und Aufbau ergänzt. |
