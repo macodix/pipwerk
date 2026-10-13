@@ -5,9 +5,8 @@
 - status: `draft`
 - stand: 2026-10-13
 - komponente: `pipwerk-studio`
-- grundlage: [scope.md](scope.md), req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), Antworten in [questions/ablauftest-01.md](questions/ablauftest-01.md)
-- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde S1 bis S6 eingearbeitet, S7 und S8 in Abschnitt 9. Durchlauf 2 [specification-2.md](reviews/specification-2.md) nicht bestanden, Befund N1 eingearbeitet und in Abschnitt 9 zur Bestätigung vorgelegt. Durchlauf 3 [specification-3.md](reviews/specification-3.md) nicht bestanden, D3 eingearbeitet.
-- offen: Frage [questions/ablauftest-02.md](questions/ablauftest-02.md) zu E9 nach drei Prüfdurchläufen. Von der Antwort hängen E9, der Absatz „Grenze im Entwicklungsbetrieb“, der Browsertest (Abschnitt 4.2), die Anwenderdokumentation (Abschnitt 7) und Abschnitt 9 ab (Befunde D1 und D2).
+- grundlage: [scope.md](scope.md), req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), Antworten in [questions/ablauftest-01.md](questions/ablauftest-01.md) und [questions/ablauftest-02.md](questions/ablauftest-02.md)
+- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde S1 bis S6 eingearbeitet, S7 und S8 in Abschnitt 9. Durchlauf 2 [specification-2.md](reviews/specification-2.md) nicht bestanden, Befund N1 eingearbeitet. Durchlauf 3 [specification-3.md](reviews/specification-3.md) nicht bestanden, Frage [questions/ablauftest-02.md](questions/ablauftest-02.md) an den Auftraggeber. Nach der Antwort D1, D2 und D3 eingearbeitet: E9, Absatz „Grenze im Entwicklungsbetrieb“, Abschnitte 3.1, 4.1, 4.2, 6.1, 7 und 9.
 
 ## 1. Gegenstand
 
@@ -27,15 +26,15 @@ Die Spezifikation beschreibt den technischen Aufbau. Bedienablauf und Inhalte st
 | E6 | Die Adresse des Repositorys steht genau einmal: im Feld `repository` der `package.json` der Oberfläche. | Kein fester Wert im Programmcode. Eine Änderung der Adresse ist eine Änderung an einer Stelle. |
 | E7 | Der Lizenztext ist die Datei `LICENSE` im Wurzelverzeichnis des Repositorys. Die Oberfläche bindet sie zur Bauzeit als Text ein. Fehlt die Datei, bricht der Bau mit einer Fehlermeldung ab. | Eine einzige Quelle. Keine Kopie, die vom Original abweichen kann. Der Dialog braucht für den Lizenztext keine Anfrage. Eine Oberfläche ohne den vollständigen Lizenztext erfüllt req-ui-010 nicht und wird deshalb nicht gebaut. Die gebaute Oberfläche enthält den Text selbst; installiert und gestartet wird sie ohne Zugriff auf das Repository (req-system-006, req-system-008). Gebaut wird sie aus dem Repository, nicht aus dem Verzeichnis der Komponente allein. |
 | E8 | Der Dialog ist das HTML-Element `<dialog>`, geöffnet mit `showModal()`. | Der Browser sperrt damit die übrige Oberfläche für Maus, Tastatur und Hilfstechnik, hält den Fokus im Dialog und schließt ihn mit der Escape-Taste. Ein Klick neben den Dialog schließt ihn nicht. Das entspricht req-ui-010 ohne eigene Sperrlogik. |
-| E9 | Der Commit, aus dem pipwerk studio läuft, ist der Commit, aus dem die bereitgestellte Software gebaut und gestartet wurde. Bereitgestellt wird pipwerk studio derzeit nur mit dem Testumgebungsskript (Abschnitt 6.1). Es baut die Oberfläche und startet das Backend aus demselben Arbeitsverzeichnis auf demselben Commit und liefert die gebaute Oberfläche aus. Dialog und Fußzeile nennen dann denselben Commit, und es ist der Commit, aus dem Oberfläche und Backend laufen. Der Browsertest weist die Gleichheit nach (Abschnitt 4.2). Ein Betrieb aus Oberfläche und Backend verschiedener Stände ist keine Bereitstellung. | req-ui-010 bezieht die Angaben auf die bereitgestellte Software („in der bereitgestellten Software selbst enthalten“). pipwerk studio ist eine Komponente aus einem Repository und wird als Ganzes bereitgestellt. Damit gibt es genau einen Commit, aus dem es läuft. |
+| E9 | Genau ist der Stand nach req-ui-010 in der Testumgebung und in jeder späteren Installation. Beide liefern eine gebaute Oberfläche aus, in die der Stand beim Bau geschrieben wurde (E3), und starten das Backend aus demselben Arbeitsverzeichnis. Die Testumgebung entsteht mit dem Testumgebungsskript (Abschnitt 6.1). Es startet nur aus einem Arbeitsverzeichnis von Git ohne nicht committete Änderungen, baut dort die Oberfläche und startet das Backend. Damit laufen Oberfläche und Backend aus genau dem Commit, den Dialog und Fußzeile nennen. Der Browsertest prüft das an der gebauten Oberfläche, die er wie die Testumgebung baut und ausliefert (Abschnitt 4.2). Eine spätere Installation muss Oberfläche und Backend ebenso aus einem Commit ohne nicht committete Änderungen bauen; ihre Spezifikation ist nicht Gegenstand dieses Vorhabens. | req-ui-010 in der Fassung nach der Antwort auf Frage [ablauftest-02](questions/ablauftest-02.md): genau in Testumgebung und Installation, im Entwicklungsbetrieb der Commit vom Start der Programme. Die Prüfung auf nicht committete Änderungen schließt den einzigen Fall aus, in dem der gebaute Code zu keinem Commit gehört. |
 
-Grenze im Entwicklungsbetrieb: Der Start im Entwicklungsbetrieb (technische Dokumentation Abschnitt 4.2) ist ein Werkzeug der Entwicklung und keine Bereitstellung im Sinne von E9. Der Entwicklungsserver liefert geänderte Dateien sofort aus, auch solche, die nicht committet sind. Damit läuft pipwerk studio dort nicht notwendig aus einem Commit. Backend und Entwicklungsserver ermitteln den Stand jeweils bei ihrem Start. Der Entwicklungsserver startet sich zusätzlich selbst neu, wenn sich `vite.config.ts` oder eine davon geladene Datei ändert (`buildinfo/gitRevision.ts`, `src/timestamp.ts`), und ermittelt den Stand dabei neu. Im Entwicklungsbetrieb gilt deshalb:
+Grenze im Entwicklungsbetrieb: Im Entwicklungsbetrieb (technische Dokumentation Abschnitt 4.2) nennt der Dialog nach req-ui-010 den Commit vom Start der Programme. Der Entwicklungsserver liefert geänderte Dateien sofort aus, auch solche, die nicht committet sind. Damit läuft pipwerk studio dort nicht notwendig aus einem Commit. Backend und Entwicklungsserver ermitteln den Stand jeweils bei ihrem Start. Der Entwicklungsserver ermittelt ihn außerdem jedes Mal neu, wenn Vite die Konfiguration neu lädt, weil `vite.config.ts` den Stand beim Laden der Konfiguration ermittelt (Abschnitt 3.4). Laut Dokumentation von Vite lädt der Entwicklungsserver die Konfiguration neu und startet neu, wenn sich `vite.config.ts` oder eine davon geladene Datei ändert (`buildinfo/gitRevision.ts`, `src/timestamp.ts`); dieses Verhalten von Vite ist nicht am Rechner geprüft. Ein solcher Neustart ist ein Start im Sinne von req-ui-010. Im Entwicklungsbetrieb gilt deshalb:
 
 - Der Dialog nennt den Commit beim letzten Start des Entwicklungsservers, die Fußzeile den Commit beim Start des Backends.
 - Nach einem Wechsel des Commits oder bei nicht committeten Änderungen können beide von dem Code abweichen, der tatsächlich läuft, und voneinander abweichen.
 - Nach einem Neustart beider Prozesse nennen beide den Commit, der dann ausgecheckt ist. Nicht committete Änderungen gehören zu keinem Commit. Der laufende Code weicht dann auch nach dem Neustart vom angezeigten Commit ab, bis die Änderungen committet oder verworfen sind und beide Prozesse erneut gestartet wurden.
 
-Für die Fußzeile gilt die Abweichung bereits heute (technische Dokumentation Abschnitt 2.6). Die Grenze wird in der technischen Dokumentation (Abschnitt 9) und in der Anwenderdokumentation beschrieben. Sie wird dem Auftraggeber in Abschnitt 9 zur Bestätigung vorgelegt.
+Für die Fußzeile gilt die Abweichung bereits heute (technische Dokumentation Abschnitt 2.6). Die Grenze wird in der technischen Dokumentation (Abschnitt 9) und in der Anwenderdokumentation beschrieben (Abschnitt 7).
 
 ## 3. Oberfläche
 
@@ -47,14 +46,16 @@ Die Tabelle nennt alle Dateien, die das Vorhaben anlegt oder ändert. Pfade, die
 |---|---|
 | `components/pipwerk-studio/scripts/testenv` | Testumgebungsskript (Abschnitt 6.1) |
 | `components/pipwerk-studio/scripts/check` | Prüfskript des Testers Funktion (Abschnitt 6.2) |
-| `components/pipwerk-studio/.gitignore` | Eintrag `.testenv/` (Abschnitt 6.1) |
+| `components/pipwerk-studio/.gitignore` | Einträge `.testenv/` (Abschnitt 6.1) und `frontend/dist-e2e/` (Abschnitt 4.2) |
 | `components/pipwerk-studio/README.md` | Satz zum Dialog (Abschnitt 7) |
 | `docs/technical/pipwerk-studio.md`, `docs/user/pipwerk-studio.md` | Dokumentation (Abschnitt 7) |
 | `src/test-setup.ts` | Ergänzung von `showModal()` und `close()` für jsdom (Abschnitt 4.1) |
 | `src/AboutDialog.test.tsx`, `src/buildRevision.test.ts`, `src/repository.test.ts`, `src/commitDate.test.ts`, `src/timestamp.test.ts` | neue Frontend-Tests (Abschnitt 4.1) |
 | `src/App.test.tsx` | Tests der Schaltfläche in der Kopfzeile (Abschnitt 4.1) |
 | `buildinfo/gitRevision.test.ts` | Tests der Ermittlung beim Bau (Abschnitt 4.1) |
+| `buildinfo/viteConfig.test.ts` | Test des Einsetzens in `vite.config.ts` für Bau und Entwicklungsserver (Abschnitt 4.1) |
 | `e2e/studio.spec.ts` oder eine neue Datei `e2e/about.spec.ts` | Browsertests (Abschnitt 4.2) |
+| `playwright.config.ts` | Browsertest gegen die gebaute Oberfläche mit `vite preview` statt gegen den Entwicklungsserver (Abschnitt 4.2) |
 | `buildinfo/gitRevision.ts` | Ermittlung von Kennung und Datum beim Bau (Abschnitt 3.4). Läuft nur in Node.js, nie im Browser. |
 | `src/AboutDialog.tsx` | Dialog „Über pipwerk studio“ mit den Eigenschaften `open` und `onClose` |
 | `src/buildRevision.ts` | Lesen und Prüfen des beim Bau eingesetzten Werts (Abschnitt 3.4) |
@@ -164,14 +165,17 @@ Geprüft wird mindestens:
 - `repository.ts`: Adresse aus `package.json` genau `https://github.com/macodix/pipwerk`; `parseRepositoryUrl` lehnt abweichende Formen ab (anderer Rechner, `http`, zusätzlicher Pfad, Abfrageteil, Leerzeichen, kein Text) ohne Ausnahme; Dialog zeigt bei `null` „unbekannt“ ohne Verweis
 - Vollständigkeit der Übersetzungen (bestehender Test)
 - Fußzeile und Tooltip unverändert (bestehende Tests bestehen ohne Änderung ihrer Erwartungen)
+- `vite.config.ts`: Die Konfiguration, geladen für den Bau (`command: 'build'`) und für den Entwicklungsserver (`command: 'serve'`), setzt `__PIPWERK_STUDIO_BUILD_REVISION__` jeweils auf `JSON.stringify` des Ergebnisses von `lookupGitRevision` für das Verzeichnis der Konfiguration. Der Erwartungswert ist das Ergebnis eines eigenen Aufrufs von `lookupGitRevision` für dieses Verzeichnis im Test. Damit ist nachgewiesen, dass Bau und Entwicklungsserver den Stand auf demselben Weg beim Laden der Konfiguration erhalten (E3, Grenze im Entwicklungsbetrieb).
 
 ### 4.2 Browsertest (Playwright)
+
+Der Browsertest läuft gegen die gebaute Oberfläche, so wie die Testumgebung sie ausliefert (E9, Abschnitt 6.1). `playwright.config.ts` startet dafür im `webServer` der Oberfläche statt des Entwicklungsservers nacheinander `vite build --outDir dist-e2e` und `vite preview --outDir dist-e2e --port <port>` mit `PIPWERK_STUDIO_BACKEND_URL` auf das Backend des Tests. Das Backend startet wie bisher `e2e/start-backend.mjs` aus demselben Arbeitsverzeichnis. Das eigene Ausgabeverzeichnis `frontend/dist-e2e/` lässt eine Oberfläche in `frontend/dist` unberührt und steht in `.gitignore`. Die Zeitbegrenzung des `webServer` deckt die Dauer des Baus ab. Ports bleiben wie bisher Parameter. Alle bestehenden Browsertests laufen damit ebenfalls gegen die gebaute Oberfläche.
 
 In Chromium, Firefox und WebKit:
 
 - Dialog öffnen über die Schaltfläche in der Kopfzeile mit Maus und mit Tastatur, Inhalte in beiden Sprachen
-- Stand gleich `git rev-parse HEAD` und dem Datum aus `git log -1 --format=%cI` in der fest eingestellten Zeitzone des Testbrowsers; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet. Ohne Git-Arbeitsbereich „unbekannt“ (übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist, wie beim bestehenden Test der Fußzeile).
-- Kennung im Dialog gleich der Kennung im Tooltip der Fußzeile, wenn Oberfläche und Backend wie in der Testumgebung aus demselben Arbeitsverzeichnis auf demselben Commit gestartet sind (E9). Der Browsertest startet beide so (`playwright.config.ts`, `webServer`).
+- Stand gleich `git rev-parse HEAD` und dem Datum aus `git log -1 --format=%cI` in der fest eingestellten Zeitzone des Testbrowsers; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet. Damit ist nachgewiesen, dass der Stand beim Bau in die ausgelieferten Dateien geschrieben wird und dem Commit entspricht, aus dem gebaut wurde. Ohne Git-Arbeitsbereich „unbekannt“ (übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist, wie beim bestehenden Test der Fußzeile).
+- Kennung im Dialog gleich der Kennung im Tooltip der Fußzeile. Gebaute Oberfläche und Backend stammen dabei wie in der Testumgebung aus demselben Arbeitsverzeichnis auf demselben Commit (E9).
 - Beim Öffnen und bei offenem Dialog entsteht keine Anfrage an eine andere Adresse als die der Testumgebung. Jede solche Anfrage lässt den Test scheitern.
 - Sperrung: Bei offenem Dialog lassen sich Sprachauswahl und Schaltfläche „Über pipwerk studio“ weder mit der Maus noch mit der Tabulatortaste erreichen; der Fokus bleibt im Dialog.
 - Schließen: Escape schließt, „Schließen“ schließt, ein Klick neben den Dialog schließt nicht. Danach liegt der Fokus auf der Schaltfläche „Über pipwerk studio“.
@@ -203,6 +207,7 @@ testenv status
 ```
 
 - Arbeitet auf dem Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt.
+- `start` prüft zuerst mit `git status --porcelain`, dass das Arbeitsverzeichnis ein Arbeitsverzeichnis von Git ohne nicht committete Änderungen und ohne nicht ignorierte neue Dateien ist. Sonst bricht es mit einer Fehlermeldung ab, bevor etwas installiert, gebaut oder gestartet wird (E9). Die Fehlermeldung nennt die Ursache.
 - `start` installiert die Abhängigkeiten nach den Lockdateien (`uv sync --frozen`, `npm ci`), baut die Oberfläche (`npm run build`), legt unter `components/pipwerk-studio/.testenv/` eine INI mit eigener SQLite-Datei an, startet das Backend mit `-c` auf `127.0.0.1:<backend-port>` und die gebaute Oberfläche mit `vite preview` auf `<host>:<frontend-port>`. `vite preview` leitet `/api` an das Backend weiter (`PIPWERK_STUDIO_BACKEND_URL`). `--host` ist ohne Angabe `127.0.0.1`.
 - Prozesskennungen und Protokolle liegen in `.testenv/`. `start` bricht ab, wenn dort schon eine laufende Testumgebung verzeichnet ist oder ein Port belegt ist. `start` endet erst, wenn `/api/health` über den Port der Oberfläche `{"status": "ok"}` liefert, sonst mit Fehler und beendeten Prozessen.
 - `stop` beendet beide Prozesse und entfernt `.testenv/`. `status` nennt, ob die Testumgebung läuft, und ihre Ports.
@@ -218,17 +223,18 @@ testenv status
 
 | Dokument | Änderung |
 |---|---|
-| `docs/technical/pipwerk-studio.md` | Abschnitt zum Dialog mit den Entscheidungen E1 bis E9, Ermittlung beim Bau, Bau bricht ohne `LICENSE` ab, neue Dateien in Abschnitt 2.3, Unterprozesse beim Bau in Abschnitt 8, Tests in Abschnitt 6, Skripte der Komponente, Grenze im Entwicklungsbetrieb in Abschnitt 9 |
+| `docs/technical/pipwerk-studio.md` | Abschnitt zum Dialog mit den Entscheidungen E1 bis E9, Ermittlung beim Bau, Bau bricht ohne `LICENSE` ab, neue Dateien in Abschnitt 2.3, Unterprozesse beim Bau in Abschnitt 8, Tests in Abschnitt 6 (Abschnitt 6.3: Browsertest gegen die gebaute Oberfläche mit `vite preview`), Skripte der Komponente mit einem neuen Abschnitt „Start als Testumgebung“ neben Abschnitt 4 „Einrichtung und Start im Entwicklungsbetrieb“, Grenze im Entwicklungsbetrieb in Abschnitt 9. In Abschnitt 9 wird der Punkt „Installation, Paketierung und Start außerhalb der Entwicklungsumgebung sind nicht festgelegt“ ersetzt: Außerhalb des Entwicklungsbetriebs startet pipwerk studio mit dem Testumgebungsskript; Installation und Paketierung sind nicht festgelegt. |
 | `docs/user/pipwerk-studio.md` | siehe unten |
 | `components/pipwerk-studio/README.md` | Satz zum Dialog in der Beschreibung des Stands |
 
 Die Anwenderdokumentation beschreibt in ganzen Sätzen nach req-system-021:
 
+- Pipwerk Studio öffnen (Abschnitt 2): zwei Wege, pipwerk studio zu starten, nach req-ui-010. Erstens die Testumgebung: was sie ist (pipwerk studio, gebaut und gestartet aus genau einem Commit), Voraussetzungen mit Verweis auf die technische Dokumentation, Start, Abfrage und Ende mit dem Testumgebungsskript (`start` mit den zwei Ports, `status`, `stop`), dass der Start bei nicht committeten Änderungen abbricht, und die Adresse im Browser mit dem gewählten Port der Oberfläche. Zweitens der Entwicklungsbetrieb wie bisher, mit dem Hinweis, dass Änderungen an den Dateien dort sofort wirken. Der bisherige Satz „Pipwerk Studio kann derzeit nur in einer Entwicklungsumgebung gestartet werden“ wird entsprechend ersetzt.
 - Aufbau der Oberfläche (Abschnitt 3): die neue Schaltfläche in der Kopfzeile
 - einen neuen Abschnitt zum Dialog „Über pipwerk studio“: Öffnen mit Maus und Tastatur, alle Inhalte, die zwei Anzeigen des Stands mit Beispiel und der Bedeutung von „unbekannt“, Anzeige „unbekannt“ beim Repository, gesperrte übrige Oberfläche, Schließen mit „Schließen“ und Escape, Rückkehr des Fokus auf die Schaltfläche, Sprachwechsel bei offenem Dialog
-- dass Dialog und Fußzeile in der Testumgebung denselben Stand nennen, der Dialog ihn aber vollständig mit Datum zeigt (E9), und die Grenze im Entwicklungsbetrieb aus Abschnitt 2 mit allen drei Punkten
+- dass der Stand im Dialog in der Testumgebung genau der Commit ist, aus dem pipwerk studio läuft, und dass Dialog und Fußzeile dort denselben Commit nennen, der Dialog ihn aber vollständig mit Datum zeigt (E9). Dazu die Abweichung im Entwicklungsbetrieb: der Dialog nennt den Commit vom Start der Programme, mit allen drei Punkten der Grenze aus Abschnitt 2, einschließlich dessen, dass bei nicht committeten Änderungen auch ein Neustart die Abweichung nicht beseitigt.
 - dass die Anzeige im Dialog keine Internetverbindung braucht, das Öffnen des Verweises auf das Repository aber schon
-- einen neuen Abschnitt „Glossar“ mit den Begriffen, die die Anwenderdokumentation verwendet und die ohne Vorwissen nicht verständlich sind, mindestens Commit, Kennung (eines Commits), Stand, Repository, Lizenz, Hintergrunddienst und Tooltip. Bestehende Erklärungen im Fließtext bleiben und verweisen auf das Glossar.
+- einen neuen Abschnitt „Glossar“ mit den Begriffen, die die Anwenderdokumentation verwendet und die ohne Vorwissen nicht verständlich sind, mindestens Commit, Kennung (eines Commits), Stand, Repository, Lizenz, Hintergrunddienst, Tooltip, Testumgebung, Testumgebungsskript, Entwicklungsbetrieb, Port und nicht committete Änderung. Bestehende Erklärungen im Fließtext bleiben und verweisen auf das Glossar.
 
 ## 8. Nicht Gegenstand
 
@@ -238,9 +244,7 @@ Die Anwenderdokumentation beschreibt in ganzen Sätzen nach req-system-021:
 
 ## 9. Hinweise für den Auftraggeber
 
-Zur Bestätigung mit der Spezifikation:
-
-- N1 aus [specification-2.md](reviews/specification-2.md): Die Spezifikation bezieht den Stand im Dialog auf die bereitgestellte Software, derzeit die Testumgebung (E9). Im Entwicklungsbetrieb kann der Dialog einen anderen Commit nennen als den, aus dem der Code tatsächlich läuft, oder als die Fußzeile (Abschnitt 2, „Grenze im Entwicklungsbetrieb“). Die Spezifikation nimmt das hin und dokumentiert es. Bestätigt der Auftraggeber das nicht, ist req-ui-010 für den Entwicklungsbetrieb zu ergänzen.
+Die Abweichung im Entwicklungsbetrieb (N1 aus [specification-2.md](reviews/specification-2.md), D1 aus [specification-3.md](reviews/specification-3.md)) hat der Auftraggeber mit der Antwort auf Frage [ablauftest-02](questions/ablauftest-02.md) entschieden. Sie steht jetzt in req-ui-010 und ist in E9, im Absatz „Grenze im Entwicklungsbetrieb“ und in Abschnitt 7 umgesetzt.
 
 Die QA hat im Prüfbericht [specification-1.md](reviews/specification-1.md) zwei Fragen genannt, die über req-ui-010 hinausgehen. Die Spezifikation hängt von keiner der beiden ab. Sie werden hier zur Vorlage beim Auftraggeber festgehalten:
 
