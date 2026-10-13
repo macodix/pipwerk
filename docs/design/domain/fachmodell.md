@@ -352,7 +352,7 @@ Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits
 
 `Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
 
-Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
+`Order aufgeben` liefert als Ergebnis die gestellte Order. `Order ändern` und `Order löschen` verwenden dieses Ergebnis. Auf der Zeichenfläche ist das eine Verbindung zum Element `Order aufgeben`. `Position ändern` und `Position schließen` verwenden die Position, die aus dieser Order entstanden ist. Eine Strategie wirkt damit nur auf ihre eigenen Orders und Positionen.
 
 
 ## 3. Änderungsnachweis
@@ -371,3 +371,4 @@ Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
 | 2026-10-13 | req-fach-029: Ausführungsbedingung bewusst nicht Teil der Strategie, Wahl durch die Anbindung. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: zulässige Kursabweichung nicht Teil der Strategie, möglicherweise später im Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Schließen gegen Gegenposition nicht vorgesehen. Erfassung der Ordertypen nach MetaTrader 5 abgeschlossen, Vermerk Entwurf entfernt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-049a: Bezug auf die eigene Order über das Ergebnis von Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
