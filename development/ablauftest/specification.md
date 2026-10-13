@@ -5,12 +5,11 @@
 - status: `draft`
 - stand: 2026-10-13
 - komponente: `pipwerk-studio`
-- grundlage: [scope.md](scope.md), req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md)
-- offen: zwei Fragen an den Auftraggeber in [questions/ablauftest-01.md](questions/ablauftest-01.md). Die betroffenen Stellen sind in Abschnitt 3.3 und 3.6 als offen gekennzeichnet.
+- grundlage: [scope.md](scope.md), req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), Antworten in [questions/ablauftest-01.md](questions/ablauftest-01.md)
 
 ## 1. Gegenstand
 
-pipwerk studio erhält den Dialog „Über pipwerk studio“ nach req-ui-010. Der Dialog zeigt Name, Stand, Lizenz und die Adresse des Repositorys. Die Standanzeige in der Fußzeile mit ihrem Tooltip bleibt unverändert.
+pipwerk studio erhält den Dialog „Über pipwerk studio“ nach req-ui-010. Der Dialog zeigt Name, Stand, Lizenz und die Adresse des Repositorys. Er wird über eine Schaltfläche in der Kopfzeile geöffnet. Die Standanzeige in der Fußzeile mit ihrem Tooltip bleibt unverändert.
 
 Die Spezifikation beschreibt den technischen Aufbau. Bedienablauf und Inhalte stehen in req-ui-010 und werden hier nicht wiederholt, sondern den technischen Bausteinen zugeordnet.
 
@@ -18,32 +17,39 @@ Die Spezifikation beschreibt den technischen Aufbau. Bedienablauf und Inhalte st
 
 | Nr. | Entscheidung | Begründung |
 |---|---|---|
-| E1 | Der Dialog ist ein reiner Bestandteil der Oberfläche. Das Backend und seine Schnittstellen bleiben unverändert. | Alle Angaben liegen der Oberfläche bereits vor oder lassen sich dort beschaffen: Stand über `GET /api/studio/revision`, Lizenztext und Adresse zur Bauzeit. |
-| E2 | Datum und Uhrzeit des Stands sind das Committer-Datum des Commits. | So ermittelt es das Backend bereits für den Tooltip (`git log -1 --format=%cI`, technische Dokumentation Abschnitt 2.6). GitHub liefert dasselbe Datum als `committer.date`. Beantwortet den Kritikpunkt aus B2 des Prüfberichts [requirements-1.md](reviews/requirements-1.md). |
-| E3 | „Lokal ermittelbar“ bedeutet: Das Backend liefert in `committed_at` ein gültiges Datum. Nur wenn `commit` gesetzt und `committed_at` `null` ist, fragt die Oberfläche das Datum bei GitHub ab. | Ohne Commit-Kennung gibt es nichts abzufragen. Dann gilt „unbekannt“. |
-| E4 | Die Abfrage bei GitHub stellt der Browser, nicht das Backend, und erst beim Öffnen des Dialogs. | Der Fall ist selten. Die Abfrage entsteht nur, wenn der Anwender den Dialog öffnet. Das Backend bleibt ohne Netzwerkzugriff nach außen. Die GitHub-API erlaubt Abfragen aus dem Browser (Antwortkopf `Access-Control-Allow-Origin: *`, geprüft am 13.10.2026). |
-| E5 | Abgefragt wird der Commit-Objekt-Endpunkt `GET https://api.github.com/repos/<eigentümer>/<repository>/git/commits/<commit>` ohne Anmeldung. | Die Antwort ist klein und enthält nur das Commit-Objekt. Der Endpunkt `…/commits/<commit>` liefert zusätzlich alle Dateiänderungen und kann groß werden. Ohne Anmeldung gilt laut Dokumentation von GitHub eine Grenze von 60 Abfragen je Stunde und Adresse (nicht selbst geprüft); für diesen Zweck genügt das. Antwort geprüft am 13.10.2026: `committer.date` in UTC mit `Z`, `sha` gleich der Kennung. |
-| E6 | Die Adresse des Repositorys steht genau einmal: im Feld `repository` der `package.json` der Oberfläche. Eigentümer und Name für die GitHub-Abfrage werden daraus abgeleitet. | Kein fester Wert im Programmcode. Eine Änderung der Adresse ist eine Änderung an einer Stelle. |
+| E1 | Der Dialog ist ein reiner Bestandteil der Oberfläche. Das Backend und seine Schnittstellen bleiben unverändert. | Alle Angaben des Dialogs entstehen beim Bau der Oberfläche (E3, E6, E7). Der Dialog braucht zur Anzeige keine Anfrage. |
+| E2 | Datum und Uhrzeit des Stands sind das Committer-Datum des Commits. | So ermittelt es das Backend bereits für den Tooltip (`git log -1 --format=%cI`, technische Dokumentation Abschnitt 2.6). Dialog und Tooltip nennen damit für denselben Commit dasselbe Datum. Beantwortet den Kritikpunkt aus B2 des Prüfberichts [requirements-1.md](reviews/requirements-1.md). |
+| E3 | Kennung und Datum des Commits werden beim Bau der Oberfläche aus Git ermittelt und als Wert in die ausgelieferten Dateien geschrieben (Vite-Option `define`). Der Entwicklungsserver ermittelt sie ebenso bei seinem Start. | req-ui-010: Die Angaben sind in der bereitgestellten Software selbst enthalten, für die Anzeige wird keine Internetverbindung genutzt. Die gebaute Oberfläche braucht zur Laufzeit weder Git noch Netz noch Backend. |
+| E4 | Der Dialog zeigt den Stand nur, wenn Kennung und Datum beide vorliegen und gültig sind. Sonst zeigt er „unbekannt“. Eine Abfrage bei GitHub oder einem anderen Dienst gibt es nicht. | Antwort auf Frage 2 in [questions/ablauftest-01.md](questions/ablauftest-01.md): Eine Kennung ohne Datum wird nicht angezeigt. |
+| E5 | Die Ermittlung beim Bau verwendet dieselben Git-Aufrufe und dieselben Prüfregeln wie das Backend (technische Dokumentation Abschnitt 2.6). Jeder Fehler ergibt „nicht ermittelbar“ und bricht den Bau nicht ab. | Gleiche Regeln an beiden Stellen. Ein Bau ohne Git, zum Beispiel aus einem entpackten Archiv, bleibt möglich und zeigt „unbekannt“. |
+| E6 | Die Adresse des Repositorys steht genau einmal: im Feld `repository` der `package.json` der Oberfläche. | Kein fester Wert im Programmcode. Eine Änderung der Adresse ist eine Änderung an einer Stelle. |
 | E7 | Der Lizenztext ist die Datei `LICENSE` im Wurzelverzeichnis des Repositorys. Die Oberfläche bindet sie zur Bauzeit als Text ein. | Eine einzige Quelle. Keine Kopie, die vom Original abweichen kann. Der Dialog braucht für den Lizenztext keine Anfrage. |
 | E8 | Der Dialog ist das HTML-Element `<dialog>`, geöffnet mit `showModal()`. | Der Browser sperrt damit die übrige Oberfläche für Maus, Tastatur und Hilfstechnik, hält den Fokus im Dialog und schließt ihn mit der Escape-Taste. Ein Klick neben den Dialog schließt ihn nicht. Das entspricht req-ui-010 ohne eigene Sperrlogik. |
+
+Folge von E3: Der Dialog nennt den Stand der ausgelieferten Oberfläche, die Fußzeile den Stand, aus dem das Backend gestartet wurde. Werden beide aus demselben Arbeitsverzeichnis gebaut und gestartet, wie im Testumgebungsskript (Abschnitt 6.1), sind beide gleich. Im Entwicklungsbetrieb gilt der Stand beim Start des Entwicklungsservers; ein späterer Commit erscheint erst nach dessen Neustart.
 
 ## 3. Oberfläche
 
 ### 3.1 Neue und geänderte Dateien
 
+Alle Pfade relativ zu `components/pipwerk-studio/frontend/`.
+
 | Datei | Aufgabe |
 |---|---|
+| `buildinfo/gitRevision.ts` | Ermittlung von Kennung und Datum beim Bau (Abschnitt 3.4). Läuft nur in Node.js, nie im Browser. |
 | `src/AboutDialog.tsx` | Dialog „Über pipwerk studio“ mit den Eigenschaften `open` und `onClose` |
-| `src/githubCommitApi.ts` | Abfrage und strenge Prüfung des Commit-Datums bei GitHub (Abschnitt 3.4) |
-| `src/repository.ts` | Adresse des Repositorys aus `package.json`, Prüfung und Ableitung von Eigentümer und Name (Abschnitt 3.5) |
-| `src/commitDate.ts` | Zerlegung eines Zeitstempels in Jahr, Monat, Tag, Stunde, Minute, in Ortszeit oder in UTC. Die Funktion `localParts` aus `RevisionDisplay.tsx` wird hierher verschoben und von beiden Stellen verwendet. |
-| `src/timestamp.ts` | Prüfung eines Zeitstempels auf echtes Kalenderdatum und gültige Uhrzeit. Die Prüfung aus `revisionApi.ts` wird hierher verschoben und von beiden Abfragen verwendet. |
+| `src/buildRevision.ts` | Lesen und Prüfen des beim Bau eingesetzten Werts (Abschnitt 3.4) |
+| `src/repository.ts` | Adresse des Repositorys aus `package.json` mit Prüfung (Abschnitt 3.5) |
+| `src/commitDate.ts` | Zerlegung eines Zeitstempels in Jahr, Monat, Tag, Stunde, Minute in Ortszeit. Die Funktion `localParts` aus `RevisionDisplay.tsx` wird hierher verschoben und von beiden Stellen verwendet. |
+| `src/timestamp.ts` | Prüfung eines Zeitstempels auf Muster, echtes Kalenderdatum und gültige Uhrzeit. Die Prüfung `isTimestamp` aus `revisionApi.ts` wird hierher verschoben und von `revisionApi.ts`, `src/buildRevision.ts` und `buildinfo/gitRevision.ts` verwendet. |
+| `src/vite-env.d.ts` | Typangabe des beim Bau eingesetzten Werts |
 | `src/RevisionDisplay.tsx`, `src/revisionApi.ts` | nur die Verschiebungen oben, Verhalten unverändert |
-| `src/locales/de.json`, `src/locales/en.json` | Texte des Dialogs unter dem Schlüssel `about` |
-| `src/styles.css` | Gestaltung des Dialogs |
-| `src/App.tsx` | Einbindung des Dialogs an der Aufrufstelle (Abschnitt 3.6) |
+| `src/locales/de.json`, `src/locales/en.json` | Texte des Dialogs und der Schaltfläche unter dem Schlüssel `about` |
+| `src/styles.css` | Gestaltung von Dialog und Schaltfläche |
+| `src/App.tsx` | Schaltfläche in der Kopfzeile und Einbindung des Dialogs (Abschnitt 3.6) |
 | `package.json` | Feld `repository` (Abschnitt 3.5) |
-| `vite.config.ts` | Zugriff des Entwicklungsservers auf `LICENSE` (Abschnitt 3.3) |
+| `vite.config.ts` | Einsetzen von Kennung und Datum (Abschnitt 3.4), Zugriff des Entwicklungsservers auf `LICENSE` (Abschnitt 3.6), Testdateien unter `buildinfo/` |
+| `tsconfig.json` | `buildinfo` in `include` |
 
 ### 3.2 Aufbau des Dialogs
 
@@ -70,29 +76,28 @@ Der Dialog passt sich der Fensterbreite an (höchstens 48rem breit, mindestens 1
 
 ### 3.3 Stand
 
-Der Dialog liest den Stand mit derselben Abfrage wie die Fußzeile (TanStack Query, Schlüssel `['revision']`, `fetchRevision`). Es entsteht keine zweite Anfrage an das Backend, solange das Ergebnis im Zwischenspeicher liegt.
+Der Dialog liest den Stand aus `src/buildRevision.ts` (Abschnitt 3.4). Er stellt dafür keine Anfrage.
 
 | Zustand | Anzeige Deutsch | Anzeige Englisch |
 |---|---|---|
-| Abfrage läuft, fehlgeschlagen, ungültige Antwort oder `commit` ist `null` | „unbekannt“ | „unknown“ |
-| `commit` und `committed_at` gesetzt | „<commit> vom TT.MM.JJJJ, hh:mm Uhr“ in Ortszeit des Browsers | „<commit> from YYYY-MM-DD hh:mm“ in Ortszeit des Browsers |
-| `commit` gesetzt, `committed_at` `null`, Abfrage bei GitHub erfolgreich | „<commit> vom TT.MM.JJJJ, hh:mm Uhr UTC“ in UTC | „<commit> from YYYY-MM-DD hh:mm UTC“ in UTC |
-| `commit` gesetzt, `committed_at` `null`, Abfrage bei GitHub läuft | „<commit>“ | „<commit>“ |
-| `commit` gesetzt, `committed_at` `null`, Abfrage bei GitHub fehlgeschlagen | **offen**, Frage 2 in [questions/ablauftest-01.md](questions/ablauftest-01.md). Vorschlag: „<commit>“ ohne Datum. | wie Deutsch |
+| Kennung und Datum gültig | „<commit> vom TT.MM.JJJJ, hh:mm Uhr“ | „<commit> from YYYY-MM-DD hh:mm“ |
+| sonst: kein Wert eingesetzt, Kennung oder Datum fehlt oder ist ungültig | „unbekannt“ | „unknown“ |
 
-`<commit>` ist die vollständige Kennung mit 40 Zeichen. Die Uhrzeit hat das 24-Stunden-Format. Die Formatierung erfolgt wie beim Tooltip mit eigenen, mit Nullen aufgefüllten Bestandteilen, nicht über `Intl` oder `toLocaleString` (technische Dokumentation Abschnitt 2.6). Für UTC werden die Bestandteile mit `getUTCFullYear`, `getUTCMonth`, `getUTCDate`, `getUTCHours` und `getUTCMinutes` gebildet. Die Angabe der Zeitzone ist die feste Zeichenfolge „UTC“, weil GitHub das Datum immer in UTC liefert (Abschnitt 3.4).
+`<commit>` ist die vollständige Kennung mit 40 Zeichen. Datum und Uhrzeit sind die Ortszeit des Browsers im 24-Stunden-Format. Die Formatierung erfolgt wie beim Tooltip mit eigenen, mit Nullen aufgefüllten Bestandteilen (`localParts` in `src/commitDate.ts`), nicht über `Intl` oder `toLocaleString` (technische Dokumentation Abschnitt 2.6).
 
-### 3.4 Abfrage des Commit-Datums bei GitHub
+### 3.4 Kennung und Datum beim Bau
 
-`fetchGithubCommitDate(commit, signal)` in `src/githubCommitApi.ts`:
+`lookupGitRevision(directory)` in `buildinfo/gitRevision.ts`:
 
-- Wird nur aufgerufen, wenn der Dialog offen ist, `commit` gesetzt ist und `committed_at` `null` ist (TanStack Query mit `enabled`). Schlüssel `['githubCommitDate', commit]`.
-- Vor der Abfrage wird `commit` erneut auf genau 40 Hexadezimalzeichen in Kleinbuchstaben geprüft. Eigentümer und Name stammen aus `src/repository.ts`. Die Adresse wird aus diesen geprüften Teilen zusammengesetzt; es gelangt kein anderer Text in die Adresse.
-- `fetch` mit `method: 'GET'`, `credentials: 'omit'`, `referrerPolicy: 'no-referrer'`, `redirect: 'error'`, `mode: 'cors'` und den Kopfzeilen `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28`. Keine Anmeldung, kein Schlüssel.
-- Zeitbegrenzung 10 Sekunden wie bei der Spracheinstellung, mit eigenem `AbortController`, der das Abbruchsignal von TanStack Query und das der Zeitbegrenzung verbindet. Die Abfrage wird unabhängig vom Online-Zustand des Browsers gesendet (`networkMode: 'always'`), damit die Zeitbegrenzung immer gilt.
-- Gültig ist nur eine Antwort mit HTTP 200, deren Inhalt ein JSON-Objekt ist, in dem `sha` gleich `commit` ist und `committer.date` eine Zeichenfolge im Muster `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$` mit echtem Kalenderdatum und gültiger Uhrzeit ist (`src/timestamp.ts`). Weitere Felder werden ignoriert. Jede andere Antwort, jeder Netzwerkfehler und das Ende der Zeitbegrenzung gelten als „fehlgeschlagen“.
-- Kein automatisches Wiederholen (`retry: false`). Ein Erfolg bleibt für die Laufzeit der Seite gültig (`staleTime: Infinity`), weil sich das Datum eines Commits nicht ändert. Ein Fehlschlag wird beim nächsten Öffnen des Dialogs erneut abgefragt.
-- Fehler werden nicht angezeigt und enthalten keine Antwortinhalte. Der Dialog zeigt dann den Zustand aus Abschnitt 3.3.
+- `directory` ist das Verzeichnis von `vite.config.ts`, dort aus `import.meta.url` berechnet. Kein fester Pfad.
+- Erster Aufruf: `git -C <directory> rev-parse HEAD`. Gültig ist nur eine Ausgabe, die nach Entfernen des abschließenden Zeilenumbruchs genau 40 Hexadezimalzeichen in Kleinbuchstaben ist.
+- Nur bei gültiger Kennung zweiter Aufruf: `git -C <directory> log -1 --no-show-signature --format=%cI <commit>`. Gültig ist nur eine Ausgabe, die nach Entfernen des abschließenden Zeilenumbruchs genau ein Zeitstempel mit Zeitzonenangabe ist und die Prüfung aus `src/timestamp.ts` besteht.
+- Beide Aufrufe mit `execFileSync`, fester Argumentliste, ohne Shell, Eingabe aus `ignore`, Zeitbegrenzung 5 Sekunden, Ausgabe als Text.
+- Ergebnis ist `{ commit, committedAt }`, wenn beide Aufrufe gültig sind, sonst `null`. Jeder Fehler (Git nicht ausführbar, kein Git-Arbeitsbereich, Zeitüberschreitung, Exitcode ungleich 0, ungültige Ausgabe, Ausnahme) ergibt `null` und genau eine Warnung auf der Fehlerausgabe mit festem Text, zum Beispiel `pipwerk studio: revision for the About dialog could not be determined`. Die Warnung enthält weder Git-Ausgabe noch Ausnahmetext noch Pfad noch Kennung. Der Bau läuft weiter.
+
+`vite.config.ts` ruft `lookupGitRevision` einmal beim Laden der Konfiguration auf und setzt das Ergebnis mit `define` als `__PIPWERK_STUDIO_BUILD_REVISION__` ein (`JSON.stringify` des Ergebnisses). Das gilt für `vite build`, `vite` und `vite preview` gleichermaßen; `vite preview` liefert die bereits gebauten Dateien mit dem beim Bau eingesetzten Wert aus.
+
+`src/buildRevision.ts` liest `__PIPWERK_STUDIO_BUILD_REVISION__` und prüft den Wert erneut: ein Objekt mit genau den Feldern `commit` (40 Hexadezimalzeichen in Kleinbuchstaben) und `committedAt` (Prüfung aus `src/timestamp.ts`), sonst `null`. Exportiert wird eine Funktion `parseBuildRevision(value: unknown)` und ihr Ergebnis für den eingesetzten Wert. Der Dialog verwendet nur dieses Ergebnis.
 
 ### 3.5 Adresse des Repositorys
 
@@ -105,13 +110,13 @@ Der Dialog liest den Stand mit derselben Abfrage wie die Fußzeile (TanStack Que
 }
 ```
 
-`src/repository.ts` liest `repository.url` über den JSON-Import von Vite und prüft sie beim Laden des Moduls gegen `^https://github\.com/([A-Za-z0-9-]+)/([A-Za-z0-9._-]+)$`. Exportiert werden die Adresse, der Eigentümer und der Name. Ein Frontend-Test prüft, dass die Adresse genau `https://github.com/macodix/pipwerk` lautet und die Prüfung eine abweichende Form ablehnt. Ein Wert, der nicht passt, ist ein Programmfehler und bricht den Bau über diesen Test ab.
+`src/repository.ts` liest `repository.url` über den JSON-Import von Vite und prüft sie gegen `^https://github\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+$`. Exportiert wird die Adresse. Ein Frontend-Test prüft, dass die Adresse genau `https://github.com/macodix/pipwerk` lautet und die Prüfung eine abweichende Form ablehnt. Ein Wert, der nicht passt, ist ein Programmfehler und bricht die Prüfung über diesen Test ab.
 
 ### 3.6 Lizenztext und Aufrufstelle
 
 Lizenztext: `AboutDialog.tsx` importiert `LICENSE` aus dem Wurzelverzeichnis des Repositorys mit dem Zusatz `?raw`. Vite schreibt den Text beim Bau in die ausgelieferten Dateien. Der Entwicklungsserver liefert Dateien außerhalb des Verzeichnisses `frontend` nur aus, wenn sie freigegeben sind. `vite.config.ts` ergänzt deshalb `server.fs.allow` um genau die Datei `LICENSE`, als Pfad relativ zur Konfigurationsdatei berechnet, und behält die Standardfreigabe des Projektverzeichnisses bei (`searchForWorkspaceRoot`). Ein Frontend-Test prüft, dass der angezeigte Text Zeichen für Zeichen mit `LICENSE` übereinstimmt.
 
-Aufrufstelle: **offen**, Frage 1 in [questions/ablauftest-01.md](questions/ablauftest-01.md). `AboutDialog` hat keine eigene Aufrufstelle. `App.tsx` hält den Zustand „offen“ und gibt ihn mit `onClose` an den Dialog. Wo das Bedienelement zum Öffnen sitzt und wie es beschriftet ist, wird nach der Antwort ergänzt.
+Aufrufstelle nach req-ui-010: eine Schaltfläche (`button`, `type="button"`) in der Kopfzeile rechts neben der Sprachauswahl, Beschriftung „Über pipwerk studio“ beziehungsweise „About pipwerk studio“ nach Oberflächensprache. Sie ist mit Maus und Tastatur bedienbar. `App.tsx` hält den Zustand „offen“, öffnet den Dialog mit der Schaltfläche und schließt ihn über `onClose`. Nach dem Schließen erhält die Schaltfläche wieder den Fokus; `App.tsx` setzt ihn ausdrücklich und verlässt sich nicht auf das Verhalten des Browsers.
 
 ## 4. Tests
 
@@ -119,38 +124,41 @@ Aufrufstelle: **offen**, Frage 1 in [questions/ablauftest-01.md](questions/ablau
 
 jsdom bildet `showModal()` und `close()` nicht vollständig nach. `src/test-setup.ts` ergänzt beide für `HTMLDialogElement` so, dass sie das Attribut `open` setzen beziehungsweise entfernen und `close` das Ereignis `close` auslöst. Die Sperrung der übrigen Oberfläche weist der Browsertest nach (Abschnitt 4.2).
 
+Die Include-Liste von Vitest wird um `buildinfo/**/*.test.ts` ergänzt. Diese Tests laufen in der Umgebung `node`.
+
 Geprüft wird mindestens:
 
-- Überschrift, Name, Bezeichnungen und Schaltfläche in Deutsch und Englisch; Name unübersetzt
-- Stand für jeden Zustand aus Abschnitt 3.3, Formatierung bei fest eingestellten Zeitzonen in Ortszeit und in UTC, Auffüllen mit Nullen, Tageswechsel durch die Zeitzone
-- keine Abfrage bei GitHub, wenn `committed_at` gesetzt oder `commit` `null` ist, und keine, solange der Dialog geschlossen ist
-- Abfrage bei GitHub: Adresse, Kopfzeilen und Optionen; gültige Antwort; jede Abweichung einzeln als fehlgeschlagen (HTTP-Fehler, kein JSON, kein Objekt, `sha` fehlt oder abweichend, `committer` fehlt, `date` fehlt, kein Text, Zeitstempel mit Offset statt `Z`, unmögliches Datum, Netzwerkfehler, Zeitbegrenzung mit künstlicher Uhr); erneute Abfrage nach Fehlschlag beim nächsten Öffnen; keine erneute Abfrage nach Erfolg
+- Schaltfläche in der Kopfzeile rechts neben der Sprachauswahl, Beschriftung in Deutsch und Englisch, Öffnen mit Maus und Tastatur, Fokus nach dem Schließen wieder auf der Schaltfläche
+- Überschrift, Name, Bezeichnungen und Schaltfläche „Schließen“ in Deutsch und Englisch; Name unübersetzt
+- Stand für beide Zustände aus Abschnitt 3.3: Formatierung bei fest eingestellten Zeitzonen, Auffüllen mit Nullen, Tageswechsel durch die Zeitzone, „unbekannt“ bei `null`
+- `parseBuildRevision`: gültiger Wert; jede Abweichung einzeln ergibt `null` (kein Objekt, Feld fehlt, zusätzliches Feld, Kennung falsch lang, Großbuchstaben, Datum fehlt, Datum kein Text, Datum ohne Zeitzone, unmögliches Datum, Kennung ohne Datum)
+- `lookupGitRevision`: echtes Git in einem temporären Repository mit festem Committer-Datum ergibt Kennung und Datum; kein Git-Arbeitsbereich (temporäres Verzeichnis außerhalb jedes Arbeitsbereichs, `GIT_DIR`, `GIT_WORK_TREE` und `GIT_CEILING_DIRECTORIES` kontrolliert; ohne installiertes Git übersprungen mit Begründung) ergibt `null`; Git nicht ausführbar, Zeitüberschreitung, Exitcode ungleich 0, ungültige Kennung, ungültiges Datum und Ausnahme ergeben je `null` und genau eine Warnung ohne Git-Ausgabe, Ausnahmetext, Pfad und Kennung (mit unverwechselbaren Markierungstexten belegt); kein zweiter Aufruf ohne gültige Kennung; Aufruf ohne Shell mit fester Argumentliste
 - Lizenzname, Lizenztext identisch mit `LICENSE`, `lang="en"`, Lizenzfeld mit der Tastatur erreichbar
 - Verweis mit `href`, `target="_blank"`, `rel="noopener noreferrer"` und der Adresse als Text
 - Schließen mit der Schaltfläche und mit dem Ereignis `cancel`; Fokus beim Öffnen auf „Schließen“
-- `repository.ts`: Adresse, Eigentümer, Name, Ablehnung abweichender Formen
+- Der Dialog stellt keine Netzwerkanfrage (`fetch` wird beim Öffnen nicht aufgerufen)
+- `repository.ts`: Adresse, Ablehnung abweichender Formen
 - Vollständigkeit der Übersetzungen (bestehender Test)
 - Fußzeile und Tooltip unverändert (bestehende Tests bestehen ohne Änderung ihrer Erwartungen)
-
-Kein Test spricht GitHub tatsächlich an; alle Antworten sind festgelegt.
 
 ### 4.2 Browsertest (Playwright)
 
 In Chromium, Firefox und WebKit:
 
-- Dialog öffnen über die Aufrufstelle (nach Antwort auf Frage 1), Inhalte in beiden Sprachen
-- Stand mit echtem Backend gleich `git rev-parse HEAD` und dem Datum aus `git log -1 --format=%cI` in der fest eingestellten Zeitzone des Testbrowsers
-- Fall „Datum lokal nicht ermittelbar“: Antwort von `/api/studio/revision` über `page.route` mit `committed_at: null` ersetzt, Antwort von GitHub über `page.route` festgelegt; Anzeige in UTC. Ebenso der Fall „GitHub fehlgeschlagen“.
-- Jede andere Anfrage an `api.github.com` wird im Test abgewiesen und lässt den Test scheitern. Der Test spricht GitHub nie an.
-- Sperrung: Bei offenem Dialog lässt sich die Sprachauswahl weder mit der Maus noch mit der Tabulatortaste erreichen; der Fokus bleibt im Dialog.
-- Schließen: Escape schließt, „Schließen“ schließt, ein Klick neben den Dialog schließt nicht.
+- Dialog öffnen über die Schaltfläche in der Kopfzeile mit Maus und mit Tastatur, Inhalte in beiden Sprachen
+- Stand gleich `git rev-parse HEAD` und dem Datum aus `git log -1 --format=%cI` in der fest eingestellten Zeitzone des Testbrowsers; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet. Ohne Git-Arbeitsbereich „unbekannt“ (übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist, wie beim bestehenden Test der Fußzeile).
+- Beim Öffnen und bei offenem Dialog entsteht keine Anfrage an eine andere Adresse als die der Testumgebung. Jede solche Anfrage lässt den Test scheitern.
+- Sperrung: Bei offenem Dialog lassen sich Sprachauswahl und Schaltfläche „Über pipwerk studio“ weder mit der Maus noch mit der Tabulatortaste erreichen; der Fokus bleibt im Dialog.
+- Schließen: Escape schließt, „Schließen“ schließt, ein Klick neben den Dialog schließt nicht. Danach liegt der Fokus auf der Schaltfläche „Über pipwerk studio“.
 - Verweis öffnet sich in einem neuen Tab mit der Adresse (neue Seite im Browserkontext; die Seite selbst wird über `page.route` abgefangen und nicht geladen).
 - Bestehende Prüfungen von Fußzeile und Tooltip bestehen unverändert.
 
 ## 5. Sicherheit
 
-- Einziger neuer Netzwerkzugriff ist die Abfrage aus Abschnitt 3.4: nur `GET` an `https://api.github.com`, nur zum festen Endpunkt mit geprüfter Kennung, ohne Anmeldedaten, ohne Cookies, ohne Referrer, ohne Weiterleitungen, mit Zeitbegrenzung. Sie entsteht nur bei offenem Dialog und fehlendem lokalem Datum. GitHub erfährt dabei die Adresse des Browsers und die Kennung des Commits. Die Kennung ist öffentlich, weil das Repository öffentlich ist (geprüft am 13.10.2026).
-- Antworten von GitHub werden streng geprüft; nur ein geprüfter Zeitstempel wird weiterverwendet. Inhalte der Antwort gelangen nie als HTML in die Seite, alle Texte werden von React als Text gesetzt.
+- Die Oberfläche erhält keinen neuen Netzwerkzugriff. Der Dialog stellt keine Anfrage, weder an das Backend noch nach außen.
+- Beim Bau startet `buildinfo/gitRevision.ts` bis zu zwei Git-Unterprozesse mit fester Argumentliste, ohne Shell, ohne Eingaben von außen (die Kennung stammt aus dem ersten Aufruf und wird zuvor geprüft) und mit Zeitbegrenzung. Warnungen enthalten keine Git-Ausgabe, keinen Ausnahmetext und keinen Pfad.
+- Der eingesetzte Wert wird im Browser erneut geprüft; nur ein geprüfter Wert wird angezeigt. Alle Texte setzt React als Text, nie als HTML.
+- Kennung und Datum des Commits stehen in den ausgelieferten Dateien. Beide sind öffentlich, weil das Repository öffentlich ist (geprüft am 13.10.2026).
 - Der Verweis öffnet den neuen Tab mit `noopener noreferrer`; die geöffnete Seite erhält keinen Zugriff auf pipwerk studio.
 - Der Lizenztext wird als Text gesetzt, nicht als HTML.
 - Das Backend bleibt unverändert. Die Freigabe in `server.fs.allow` gilt nur für die Datei `LICENSE`.
@@ -185,12 +193,12 @@ testenv status
 
 | Dokument | Änderung |
 |---|---|
-| `docs/technical/pipwerk-studio.md` | Abschnitt zum Dialog mit den Entscheidungen E1 bis E8, neue Dateien in Abschnitt 2.3, Netzwerkzugriff in Abschnitt 8, Tests in Abschnitt 6, Skripte der Komponente |
-| `docs/user/pipwerk-studio.md` | Dialog „Über pipwerk studio“: Aufruf, Inhalte, Zustände des Stands, Abfrage bei GitHub, Schließen |
+| `docs/technical/pipwerk-studio.md` | Abschnitt zum Dialog mit den Entscheidungen E1 bis E8, Ermittlung beim Bau, neue Dateien in Abschnitt 2.3, Unterprozesse beim Bau in Abschnitt 8, Tests in Abschnitt 6, Skripte der Komponente |
+| `docs/user/pipwerk-studio.md` | Dialog „Über pipwerk studio“: Aufruf über die Schaltfläche in der Kopfzeile, Inhalte, Stand und „unbekannt“, Schließen |
 | `components/pipwerk-studio/README.md` | Satz zum Dialog in der Beschreibung des Stands |
 
 ## 8. Nicht Gegenstand
 
-- Die Schreibweise „Pipwerk Studio“ in Kopfzeile, Fußzeilentexten und Dokumentation. Der Dialog verwendet „pipwerk studio“ nach req-ui-010 und Projektziel. Eine Angleichung der übrigen Stellen ist nicht Teil von req-ui-010.
-- Der Einstellungsbereich nach req-ui-009.
-- Änderungen am Backend und an `GET /api/studio/revision`.
+- Die Schreibweise „Pipwerk Studio“ in Kopfzeile, Fußzeilentexten und Dokumentation. Der Dialog und seine Schaltfläche verwenden „pipwerk studio“ nach req-ui-010 und Projektziel. Eine Angleichung der übrigen Stellen ist nicht Teil von req-ui-010.
+- Der Einstellungsbereich und der Menüpunkt „Einstellungen“ nach req-ui-009.
+- Änderungen am Backend und an `GET /api/studio/revision`. Die Fußzeile bezieht ihren Stand weiter vom Backend.
