@@ -175,7 +175,9 @@ Zusammen mit `MarketOrder` (Marktorder) gibt es damit vier Ordertypen zum Eröff
 
 Die Ausführungsbedingung, also das Verhalten, wenn zum gewünschten Preis nicht das ganze Volumen verfügbar ist, ist bewusst nicht Teil der Strategie. Die Anbindung an die Handelssoftware wählt einen Wert, den Konto und Instrument zulassen. Teilausführungen sind nach req-fach-016 berücksichtigt. Braucht eine Strategie später eine bestimmte Ausführungsbedingung, wird sie ergänzt.
 
-Offen: Die Ordertypen sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Noch abzustimmen ist insbesondere die zulässige Kursabweichung bei Marktorders. Bis dahin gilt die Tabelle als Entwurf.
+Ebenso ist die zulässige Kursabweichung einer Marktorder nicht Teil der Strategie. Sie wirkt bei MetaTrader 5 nur bei bestimmten Ausführungsarten des Kontos. Die Anbindung setzt sie, wo das Konto sie verlangt.
+
+Offen: ob das Handelssystem Ausführungsbedingung oder Kursabweichung später je Konto oder Strategieanwendung einstellbar macht. Ob das Schließen einer Position gegen eine Gegenposition unterstützt wird. Bis zur Klärung gilt die Tabelle als Entwurf.
 
 ### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
 
@@ -365,3 +367,4 @@ Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
 | 2026-10-13 | req-fach-029: Handelsrichtung als Eigenschaft bei allen Ordertypen, drei wartende Ordertypen Stop-Order, Limit-Order, Stop-Limit-Order. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Gültigkeit wartender Orders mit vier Werten statt Ablaufzeit. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Ausführungsbedingung bewusst nicht Teil der Strategie, Wahl durch die Anbindung. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: zulässige Kursabweichung nicht Teil der Strategie, möglicherweise später im Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
