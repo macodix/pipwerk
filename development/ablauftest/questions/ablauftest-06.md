@@ -24,3 +24,5 @@ Vorschlag des Softwarearchitekten: Durchlauf 13 freigeben, als Nachprüfung im s
 ## Hinweise außerhalb der Frage
 
 - Die Hinweise aus ablauftest-05 gelten weiter: `development/ablauftest/scope.md`, Zeile 3, schreibt noch „Pipwerk Studio“; die Fundstellen unter `docs/design/` nennt Abschnitt 9 der Spezifikation; den Programmnamen `pipwerk-studio` in Hilfetext und Fehlermeldungen behandelt E10 als technischen Namen und ändert ihn nicht. Die QA weist erneut darauf hin, dass der Auftraggeber das anders verstehen könnte.
+
+Antwort: Durchlauf 13 freigegeben, als Nachprüfung im Umfang wie Durchlauf 12: nur Q1 und die dafür geänderten Stellen. `scope.md` Zeile 3 ist korrigiert. Der Programmname `pipwerk-studio` bleibt als technischer Name unverändert. (Projektleiter, 13. Oktober 2026)

@@ -1,6 +1,6 @@
 # Vorhaben ablauftest
 
-Erster vollständiger Durchlauf des [Entwicklungsverfahrens](../../docs/technical/entwicklungsverfahren.md) nach dessen Neufassung vom 12. Oktober 2026. Gegenstand ist der Dialog „Über Pipwerk Studio“ in Pipwerk Studio. Das Vorhaben wird nach dem Verfahren bearbeitet wie jedes andere, bis zur Integration in `main`.
+Erster vollständiger Durchlauf des [Entwicklungsverfahrens](../../docs/technical/entwicklungsverfahren.md) nach dessen Neufassung vom 12. Oktober 2026. Gegenstand ist der Dialog „Über pipwerk Studio“ in Pipwerk Studio. Das Vorhaben wird nach dem Verfahren bearbeitet wie jedes andere, bis zur Integration in `main`.
 
 ## Geltende Anforderungsdokumente
 
