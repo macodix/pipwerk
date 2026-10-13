@@ -6,7 +6,7 @@
 - stand: 2026-10-13
 - komponente: `pipwerk-studio`
 - grundlage: [scope.md](scope.md), req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), Antworten in [questions/ablauftest-01.md](questions/ablauftest-01.md)
-- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde S1 bis S6 eingearbeitet, S7 und S8 in Abschnitt 9
+- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde S1 bis S6 eingearbeitet, S7 und S8 in Abschnitt 9. Durchlauf 2 [specification-2.md](reviews/specification-2.md) nicht bestanden, Befund N1 eingearbeitet und in Abschnitt 9 zur Bestätigung vorgelegt.
 
 ## 1. Gegenstand
 
@@ -26,9 +26,15 @@ Die Spezifikation beschreibt den technischen Aufbau. Bedienablauf und Inhalte st
 | E6 | Die Adresse des Repositorys steht genau einmal: im Feld `repository` der `package.json` der Oberfläche. | Kein fester Wert im Programmcode. Eine Änderung der Adresse ist eine Änderung an einer Stelle. |
 | E7 | Der Lizenztext ist die Datei `LICENSE` im Wurzelverzeichnis des Repositorys. Die Oberfläche bindet sie zur Bauzeit als Text ein. Fehlt die Datei, bricht der Bau mit einer Fehlermeldung ab. | Eine einzige Quelle. Keine Kopie, die vom Original abweichen kann. Der Dialog braucht für den Lizenztext keine Anfrage. Eine Oberfläche ohne den vollständigen Lizenztext erfüllt req-ui-010 nicht und wird deshalb nicht gebaut. Die gebaute Oberfläche enthält den Text selbst; installiert und gestartet wird sie ohne Zugriff auf das Repository (req-system-006, req-system-008). Gebaut wird sie aus dem Repository, nicht aus dem Verzeichnis der Komponente allein. |
 | E8 | Der Dialog ist das HTML-Element `<dialog>`, geöffnet mit `showModal()`. | Der Browser sperrt damit die übrige Oberfläche für Maus, Tastatur und Hilfstechnik, hält den Fokus im Dialog und schließt ihn mit der Escape-Taste. Ein Klick neben den Dialog schließt ihn nicht. Das entspricht req-ui-010 ohne eigene Sperrlogik. |
-| E9 | Der Commit, aus dem pipwerk studio läuft, ist der Commit des Arbeitsverzeichnisses, aus dem Oberfläche und Backend gemeinsam bereitgestellt werden. Jede vorgesehene Bereitstellung baut die Oberfläche und startet das Backend aus demselben Arbeitsverzeichnis auf demselben Commit: das Testumgebungsskript (Abschnitt 6.1), der Browsertest und der Start im Entwicklungsbetrieb (technische Dokumentation Abschnitt 4.2). Dialog und Fußzeile nennen dann denselben Commit; der Browsertest weist das nach (Abschnitt 4.2). Ein Betrieb aus Oberfläche und Backend verschiedener Stände ist keine vorgesehene Bereitstellung. | pipwerk studio ist eine Komponente aus einem Repository und wird als Ganzes bereitgestellt. Damit gibt es genau einen Commit, aus dem es läuft. |
+| E9 | Der Commit, aus dem pipwerk studio läuft, ist der Commit, aus dem die bereitgestellte Software gebaut und gestartet wurde. Bereitgestellt wird pipwerk studio derzeit nur mit dem Testumgebungsskript (Abschnitt 6.1). Es baut die Oberfläche und startet das Backend aus demselben Arbeitsverzeichnis auf demselben Commit und liefert die gebaute Oberfläche aus. Dialog und Fußzeile nennen dann denselben Commit, und es ist der Commit, aus dem Oberfläche und Backend laufen. Der Browsertest weist die Gleichheit nach (Abschnitt 4.2). Ein Betrieb aus Oberfläche und Backend verschiedener Stände ist keine Bereitstellung. | req-ui-010 bezieht die Angaben auf die bereitgestellte Software („in der bereitgestellten Software selbst enthalten“). pipwerk studio ist eine Komponente aus einem Repository und wird als Ganzes bereitgestellt. Damit gibt es genau einen Commit, aus dem es läuft. |
 
-Grenze im Entwicklungsbetrieb: Backend und Entwicklungsserver ermitteln den Stand bei ihrem Start. Wird das Arbeitsverzeichnis danach auf einen anderen Commit gesetzt, lädt der Entwicklungsserver den geänderten Code nach, Dialog und Fußzeile nennen aber beide weiter den Stand beim Start, bis beide neu gestartet sind. Für die Fußzeile gilt das bereits heute (technische Dokumentation Abschnitt 2.6). Die Grenze wird in der technischen Dokumentation (Abschnitt 9) und in der Anwenderdokumentation beschrieben. Das Testumgebungsskript ist davon nicht betroffen, weil es die gebaute Oberfläche ausliefert.
+Grenze im Entwicklungsbetrieb: Der Start im Entwicklungsbetrieb (technische Dokumentation Abschnitt 4.2) ist ein Werkzeug der Entwicklung und keine Bereitstellung im Sinne von E9. Der Entwicklungsserver liefert geänderte Dateien sofort aus, auch solche, die nicht committet sind. Damit läuft pipwerk studio dort nicht notwendig aus einem Commit. Backend und Entwicklungsserver ermitteln den Stand jeweils bei ihrem Start. Der Entwicklungsserver startet sich zusätzlich selbst neu, wenn sich `vite.config.ts` oder eine davon geladene Datei ändert (`buildinfo/gitRevision.ts`, `src/timestamp.ts`), und ermittelt den Stand dabei neu. Im Entwicklungsbetrieb gilt deshalb:
+
+- Der Dialog nennt den Commit beim letzten Start des Entwicklungsservers, die Fußzeile den Commit beim Start des Backends.
+- Nach einem Wechsel des Commits oder bei nicht committeten Änderungen können beide von dem Code abweichen, der tatsächlich läuft, und voneinander abweichen.
+- Nach einem Neustart beider Prozesse nennen beide wieder den aktuellen Commit.
+
+Für die Fußzeile gilt die Abweichung bereits heute (technische Dokumentation Abschnitt 2.6). Die Grenze wird in der technischen Dokumentation (Abschnitt 9) und in der Anwenderdokumentation beschrieben. Sie wird dem Auftraggeber in Abschnitt 9 zur Bestätigung vorgelegt.
 
 ## 3. Oberfläche
 
@@ -164,7 +170,7 @@ In Chromium, Firefox und WebKit:
 
 - Dialog öffnen über die Schaltfläche in der Kopfzeile mit Maus und mit Tastatur, Inhalte in beiden Sprachen
 - Stand gleich `git rev-parse HEAD` und dem Datum aus `git log -1 --format=%cI` in der fest eingestellten Zeitzone des Testbrowsers; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet. Ohne Git-Arbeitsbereich „unbekannt“ (übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist, wie beim bestehenden Test der Fußzeile).
-- Kennung im Dialog gleich der Kennung im Tooltip der Fußzeile (E9).
+- Kennung im Dialog gleich der Kennung im Tooltip der Fußzeile, wenn Oberfläche und Backend wie in der Testumgebung aus demselben Arbeitsverzeichnis auf demselben Commit gestartet sind (E9). Der Browsertest startet beide so (`playwright.config.ts`, `webServer`).
 - Beim Öffnen und bei offenem Dialog entsteht keine Anfrage an eine andere Adresse als die der Testumgebung. Jede solche Anfrage lässt den Test scheitern.
 - Sperrung: Bei offenem Dialog lassen sich Sprachauswahl und Schaltfläche „Über pipwerk studio“ weder mit der Maus noch mit der Tabulatortaste erreichen; der Fokus bleibt im Dialog.
 - Schließen: Escape schließt, „Schließen“ schließt, ein Klick neben den Dialog schließt nicht. Danach liegt der Fokus auf der Schaltfläche „Über pipwerk studio“.
@@ -219,7 +225,7 @@ Die Anwenderdokumentation beschreibt in ganzen Sätzen nach req-system-021:
 
 - Aufbau der Oberfläche (Abschnitt 3): die neue Schaltfläche in der Kopfzeile
 - einen neuen Abschnitt zum Dialog „Über pipwerk studio“: Öffnen mit Maus und Tastatur, alle Inhalte, die zwei Anzeigen des Stands mit Beispiel und der Bedeutung von „unbekannt“, Anzeige „unbekannt“ beim Repository, gesperrte übrige Oberfläche, Schließen mit „Schließen“ und Escape, Rückkehr des Fokus auf die Schaltfläche, Sprachwechsel bei offenem Dialog
-- dass Dialog und Fußzeile denselben Stand nennen, der Dialog ihn aber vollständig mit Datum zeigt, und dass beide nach einem Wechsel des Arbeitsbereichs bis zum Neustart den Stand beim Start nennen (E9)
+- dass Dialog und Fußzeile in der Testumgebung denselben Stand nennen, der Dialog ihn aber vollständig mit Datum zeigt (E9), und die Grenze im Entwicklungsbetrieb aus Abschnitt 2 mit allen drei Punkten
 - dass die Anzeige im Dialog keine Internetverbindung braucht, das Öffnen des Verweises auf das Repository aber schon
 - einen neuen Abschnitt „Glossar“ mit den Begriffen, die die Anwenderdokumentation verwendet und die ohne Vorwissen nicht verständlich sind, mindestens Commit, Kennung (eines Commits), Stand, Repository, Lizenz, Hintergrunddienst und Tooltip. Bestehende Erklärungen im Fließtext bleiben und verweisen auf das Glossar.
 
@@ -230,6 +236,10 @@ Die Anwenderdokumentation beschreibt in ganzen Sätzen nach req-system-021:
 - Änderungen am Backend und an `GET /api/studio/revision`. Die Fußzeile bezieht ihren Stand weiter vom Backend.
 
 ## 9. Hinweise für den Auftraggeber
+
+Zur Bestätigung mit der Spezifikation:
+
+- N1 aus [specification-2.md](reviews/specification-2.md): Die Spezifikation bezieht den Stand im Dialog auf die bereitgestellte Software, derzeit die Testumgebung (E9). Im Entwicklungsbetrieb kann der Dialog einen anderen Commit nennen als den, aus dem der Code tatsächlich läuft, oder als die Fußzeile (Abschnitt 2, „Grenze im Entwicklungsbetrieb“). Die Spezifikation nimmt das hin und dokumentiert es. Bestätigt der Auftraggeber das nicht, ist req-ui-010 für den Entwicklungsbetrieb zu ergänzen.
 
 Die QA hat im Prüfbericht [specification-1.md](reviews/specification-1.md) zwei Fragen genannt, die über req-ui-010 hinausgehen. Die Spezifikation hängt von keiner der beiden ab. Sie werden hier zur Vorlage beim Auftraggeber festgehalten:
 
