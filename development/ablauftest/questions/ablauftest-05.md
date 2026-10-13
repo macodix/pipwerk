@@ -27,3 +27,5 @@ Vorschlag des Softwarearchitekten: Durchlauf 12 freigeben. Nach positivem Prüfb
 - `development/ablauftest/scope.md`, Zeile 3, schreibt noch „Pipwerk Studio“. Das Dokument gehört dem Projektleiter.
 - Unter `docs/design/` steht der Name noch in anderer Schreibweise. Die Fundstellen nennt Abschnitt 9 der Spezifikation. Ob req-ui-010 mit „ebenso in der Dokumentation“ auch diese Dokumente meint, entscheidet der Auftraggeber.
 - Der Programmname `pipwerk-studio` steht in Fehlermeldungen und im Hilfetext der Kommandozeile, zum Beispiel `usage: pipwerk-studio`. E10 behandelt ihn als technischen Namen und ändert ihn nicht. Die QA hält das für nachvollziehbar und weist darauf hin, dass der Auftraggeber es anders verstehen könnte.
+
+Antwort: Durchlauf 12 freigegeben, als Nachprüfung: Die QA prüft nur, ob P1 und P2 behoben sind und ob die dafür geänderten Stellen neue Fehler enthalten. Neue Befunde an unveränderten Stellen meldet sie nur, wenn sie einer Anforderung widersprechen oder die Umsetzung verhindern. (Projektleiter, 13. Oktober 2026)
