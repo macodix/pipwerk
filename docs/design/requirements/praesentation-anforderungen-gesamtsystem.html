@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anforderungen Gesamtsystem</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Gestaltung wie die Präsentation zu den Anforderungen an den Strategiedesigner. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.tag{display:inline-block;font-size:20px;font-weight:600;padding:4px 12px;border-radius:8px;margin-right:10px}
+.err{background:#f6dede;color:#8a2d2d}
+.hint{background:var(--amberbg);color:var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Dokumente des Auftraggebers</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Anforderungen an das Gesamtsystem</h1>
+<p style="font-size:38px;width:1500px">Die wichtigsten Aussagen aus <code>docs/design/requirements/anforderungen-gesamtsystem.md</code>, Stand 13. Oktober 2026. Die QA prüft jedes andere Anforderungsdokument gegen dieses Dokument.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">13. Oktober 2026 · Projektleiter an Martin</p>
+<p class="num">1 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Vier Hauptkomponenten</h2>
+<div class="chain">
+<div class="node">Strategiedesigner<small>erstellt und bearbeitet Strategiedefinitionen</small></div><span class="arrow">→</span>
+<div class="node">Strategietester<small>führt Strategien gegen historische Marktdaten aus</small></div><span class="arrow">→</span>
+<div class="node">Handelssystem<small>wendet Strategien auf Handelskonten an</small></div>
+</div>
+<div class="chain" style="margin-top:-10px"><div class="node" style="border-color:var(--green);background:#e2efe9">Nachrichtensystem<small>Nachrichtenaustausch zwischen eigenständig arbeitenden Komponenten</small></div></div>
+<div class="row">
+<div class="card col"><h3>Eigenständig</h3><ul>
+<li>jede Komponente läuft in eigenem Prozess, auch auf getrennten Rechnern (req-system-002)</li>
+<li>unabhängig bereitstellbar: getrennte Umgebungen für Entwicklung, Test und Handel (003)</li>
+<li>eigenständig installierbar und startbar, Bibliotheken in fester Version mitgeliefert, kein zentraler Fachkern (006)</li></ul></div>
+<div class="card col"><h3>Gemeinsam</h3><ul>
+<li>Designer, Tester und Handelssystem verwenden dieselbe Strategiedefinition, keine Übertragung in ein anderes Modell (004)</li>
+<li>Zusammenarbeit über klar definierte Schnittstellen und das Nachrichtensystem (005)</li></ul></div>
+</div>
+<p class="num">2 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Schnittstellen nach außen</h2>
+<div class="row">
+<div class="card col"><h3>Web-API je Komponente (009)</h3><ul>
+<li>alle extern nutzbaren Funktionen über eine dokumentierte HTTP-Web-API</li>
+<li>andere Programme und alternative Oberflächen kommen ohne die mitgelieferte Oberfläche aus</li>
+<li>getrennt von internen GUI-Details; Webhooks für eingehende Ereignisse möglich</li></ul></div>
+<div class="card col"><h3>Austauschbarkeit (010)</h3>
+<p>Eine Komponente darf durch eine andere Implementierung ersetzt werden. Die Verträge dafür:</p><ul>
+<li>versionierte Web-API</li>
+<li>gemeinsames Format der Strategiedefinition</li>
+<li>festgelegte Nachrichtenformate</li>
+<li>gemeinsame fachliche Datenformate</li></ul>
+<p class="note">Die Programmiersprache einer Ersatzimplementierung ist nicht Teil der Verträge.</p></div>
+<div class="card col"><h3>Schutz (011)</h3><ul>
+<li>Erreichbarkeit und Berechtigungen konfigurierbar</li>
+<li>schreibende, ausführende und handelsbezogene Funktionen nur mit Authentifizierung und Autorisierung</li>
+<li>Webhooks prüfen den Absender; wiederholte Übermittlung ist eindeutig behandelbar</li></ul></div>
+</div>
+<p class="num">3 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Benutzeroberflächen in mehreren Sprachen</h2>
+<p class="rule">Neu (req-system-023): Jede Oberfläche wird von Beginn an mehrsprachig angelegt. Deutsch und Englisch sind die ersten Sprachen, weitere kommen ohne Änderung der fachlichen Logik hinzu.</p>
+<div class="row">
+<div class="card col"><h3>Wird übersetzt</h3><ul>
+<li>Menüs und Beschriftungen</li>
+<li>Erläuterungen von Objekten, Eigenschaften und Ergebnissen</li>
+<li>Meldungen</li></ul></div>
+<div class="card col"><h3>Wird nicht übersetzt</h3><ul>
+<li>fachliche Inhalte, insbesondere vom Nutzer vergebene Namen</li></ul></div>
+<div class="card col"><h3>Regelt die Komponente</h3><ul>
+<li>wie die Sprache ausgewählt und gespeichert wird</li>
+<li>für den Strategiedesigner bereits festgelegt: Standard Deutsch, Auswahl unter „Einstellungen“</li></ul></div>
+</div>
+<p class="num">4 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Datenspeicherung</h2>
+<div class="row">
+<div class="card col"><h3>Konfigurierbar (012)</h3><ul>
+<li>kein festes Speicher-Backend für das System oder eine Komponente</li>
+<li>jede speichernde Komponente legt ihre Speicheranbindung in ihrer Konfiguration fest</li></ul></div>
+<div class="card col"><h3>Unabhängig zugeordnet (013)</h3><ul>
+<li>verschiedene Komponenten dürfen verschiedene Speicher verwenden</li>
+<li>eine Komponente darf mehrere Speicher verwenden</li>
+<li>Speicher müssen nicht auf demselben Rechner liegen</li></ul></div>
+<div class="card col"><h3>Gemeinsam nutzbar (014)</h3><ul>
+<li>mehrere Komponenten dürfen denselben Speicher verwenden</li>
+<li>ihre Datenbestände müssen abgrenzbar bleiben</li>
+<li>die Art der Abgrenzung hängt vom Speicher ab und wird nicht allgemein festgelegt</li></ul></div>
+</div>
+<p class="num">5 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Dokumentation</h2>
+<div class="row">
+<div class="card col"><h3>Teil jeder Änderung (019)</h3><ul>
+<li>betroffene Dokumentation wird im selben Arbeitspaket aktualisiert</li>
+<li>eine Änderung ist erst fertig, wenn die Dokumentation den aktuellen Zustand vollständig beschreibt</li>
+<li>ein Änderungsnachweis ersetzt das nicht</li></ul></div>
+<div class="card col"><h3>Drei Bereiche (020)</h3><ul>
+<li><b>docs/design</b>: Anforderungen, Fachmodelle, Strategiemodelle, Konzepte</li>
+<li><b>docs/technical</b>: Komponenten-, Objekt- und Datenmodelle, Schnittstellen, Installation und Betrieb; vollständig genug für Diagramme</li>
+<li><b>docs/user</b>: alles, was ein Anwender für Konfiguration und Nutzung braucht, auch ohne technisches Vorwissen</li></ul></div>
+<div class="card col"><h3>Verständlich (021)</h3><ul>
+<li>aus sich heraus lesbar, kein Wissen aus Chats oder Pull Requests nötig</li>
+<li>vollständige Sätze; Aufzählungen nur, wenn der Inhalt eine ist</li>
+<li>keine Marketing-Sprache; nötige Fachbegriffe stehen im Glossar</li>
+<li>Vollständigkeit geht vor Kürze</li></ul></div>
+</div>
+<p class="num">6 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Technische Vorgaben des Auftraggebers</h2>
+<p class="rule">Diese Anforderungen legen technische Mittel fest. Sie sind bewusste Vorgaben und keine Entscheidungen des Softwarearchitekten. Die QA beanstandet sie nicht als Umsetzungsdetails.</p>
+<table>
+<tr><th style="width:300px">Vorgabe</th><th>Inhalt</th></tr>
+<tr><td><b>Fachkern (007)</b></td><td>Python. Designer, Tester und Handelssystem nutzen dieselbe versionierte Bibliothek für Objekttypen und Prüflogik; keine Nachimplementierung in Oberflächen. Das Nachrichtensystem ebenfalls in Python.</td></tr>
+<tr><td><b>Oberflächen (008)</b></td><td>Je eine Browseroberfläche auf Basis von TypeScript, React und CSS mit gemeinsamen Gestaltungsregeln und gemeinsam versionierten UI-Komponenten. Oberfläche des Nachrichtensystems offen.</td></tr>
+<tr><td><b>Speicherschnittstelle (015)</b></td><td>SQLAlchemy; das konkrete Backend bleibt Konfiguration.</td></tr>
+<tr><td><b>Konfiguration (016–018)</b></td><td>Startkonfiguration als INI-Datei nur mit dem, was zum Starten und Finden der Speicher nötig ist; alles Weitere im Speicher der Komponente. Suche über <code>-c &lt;PATH&gt;</code>, dann Nutzer- und Systempfade; genau eine Datei, kein Zusammenführen.</td></tr>
+<tr><td><b>Verträge (022)</b></td><td>Maschinenlesbare Verträge zentral unter <code>contracts</code>, vollständig gemeinsam bereitgestellt (unter Unix <code>/usr/share/pipwerk/contracts</code>) und unter <code>docs/technical</code> beschrieben.</td></tr>
+</table>
+<p class="num">7 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Abgrenzung</h2>
+<div class="row">
+<div class="card col"><h3>Was festgelegt ist</h3><ul>
+<li>die Systemstruktur aus eigenständig lauffähigen Hauptkomponenten</li>
+<li>die Verträge, über die sie zusammenarbeiten</li></ul></div>
+<div class="card col"><h3 style="color:var(--blue)">Was nicht festgelegt ist</h3><ul>
+<li>auf wie viele Rechner eine Installation verteilt wird; mehrere Komponenten dürfen auf einem Rechner laufen</li>
+<li>dass jede Komponente eine eigene Oberfläche braucht: eine Oberfläche darf Funktionen mehrerer Komponenten zugänglich machen</li>
+<li>die technische Umsetzung von Schnittstellen und Nachrichtentransport (005)</li>
+<li>eine eigene Oberfläche des Nachrichtensystems (008)</li></ul></div>
+</div>
+<p class="num">8 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Änderungen und Stand</h2>
+<div class="row">
+<div class="card col"><h3>Geändert am 13. Oktober 2026</h3><ul>
+<li>Mehrsprachigkeit aller Oberflächen als req-system-023 aufgenommen</li>
+<li>technische Vorgaben in einem eigenen Abschnitt zusammengefasst</li>
+<li>Abschnitte neu gegliedert: Systemaufteilung, Datenspeicherung, Dokumentation, Technische Vorgaben, Abgrenzung; Kennungen unverändert</li>
+<li>fehlerhaften Eintrag im Änderungsnachweis entfernt</li></ul></div>
+<div class="card col"><h3>Stand</h3><ul>
+<li>22 bestehende Anforderungen inhaltlich unverändert</li>
+<li>Dokumentstatus bleibt <code>draft</code></li>
+<li>Anforderungen an Strategietester, Handelssystem und Nachrichtensystem folgen in späteren Vorhaben</li></ul>
+<p class="label" style="margin-top:20px">Bestätigung</p>
+<p>noch nicht bestätigt</p></div>
+</div>
+<p class="num">9 / 9</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
