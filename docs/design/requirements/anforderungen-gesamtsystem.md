@@ -3,8 +3,9 @@
 ## Dokumentstatus
 
 - status: `draft`
+- abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-10-12`
+- zuletzt aktualisiert: `2026-10-13`
 
 ## 1. Systemaufteilung
 
@@ -43,25 +44,13 @@ Die konkrete technische Umsetzung der Schnittstellen und des Nachrichtentranspor
 
 Jede Hauptkomponente muss einschließlich ihrer benötigten Laufzeitbestandteile eigenständig installierbar und startbar sein. Gemeinsam verwendete Bibliotheken werden mit der jeweiligen Komponente in einer festgelegten Version bereitgestellt. Eine Hauptkomponente darf für ihre eigene Ausführung keinen zentral laufenden gemeinsamen Fachkern voraussetzen.
 
-### req-system-007 -- Gemeinsamer fachlicher Python-Kern
-
-Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe versionierte Python-Bibliothek für Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
-
-Das `Nachrichtensystem` wird ebenfalls in Python implementiert. Seine eigenständige Ausführbarkeit und die sprachunabhängige Definition seiner Schnittstellen bleiben davon unberührt.
-
-### req-system-008 -- Benutzeroberflächen
-
-`Strategiedesigner`, `Strategietester` und `Handelssystem` erhalten jeweils eine eigene Browseroberfläche auf Basis von TypeScript, React und CSS. Die Oberflächen verwenden gemeinsame Gestaltungsregeln und, soweit fachlich passend, gemeinsam entwickelte und versionierte UI-Komponenten. Jede Hauptkomponente liefert die von ihr benötigten UI-Bestandteile selbst mit und bleibt unabhängig installierbar und startbar.
-
-Eine eigene Benutzeroberfläche des `Nachrichtensystems` ist derzeit nicht festgelegt.
-
 ### req-system-009 -- Web-APIs der Hauptkomponenten
 
 Jede Hauptkomponente stellt die für eine externe Nutzung vorgesehenen Funktionen über eine dokumentierte HTTP-Web-API bereit. Dadurch müssen insbesondere andere Programme, Automatisierungswerkzeuge und alternative Benutzeroberflächen diese Funktionen ohne Bedienung der mitgelieferten Oberfläche verwenden können.
 
-Die Web-API muss von internen, nicht als stabiler Vertrag vorgesehenen GUI-Implementierungsdetails getrennt werden. Für eingehende Ereignisse können ausdrücklich definierte Webhook-Endpunkte bereitgestellt werden.
+Die Web-API muss von internen, nicht als stabile Definition der Schnittstelle vorgesehenen GUI-Implementierungsdetails getrennt werden. Für eingehende Ereignisse können ausdrücklich definierte Webhook-Endpunkte bereitgestellt werden.
 
-### req-system-010 -- Austauschbarkeit über definierte Verträge
+### req-system-010 -- Austauschbarkeit über die Definition der Schnittstellen
 
 Eine Hauptkomponente muss durch eine andere Implementierung ersetzt werden können, sofern diese die vereinbarten Schnittstellen und das vereinbarte fachliche Verhalten erfüllt. Die Austauschbarkeit stützt sich mindestens auf:
 
@@ -70,12 +59,19 @@ Eine Hauptkomponente muss durch eine andere Implementierung ersetzt werden könn
 - die festgelegten Nachrichtenformate,
 - die gemeinsam verwendeten fachlichen Datenformate.
 
-Die konkrete Programmiersprache einer Ersatzimplementierung ist nicht Bestandteil dieser Verträge.
+Die konkrete Programmiersprache einer Ersatzimplementierung ist nicht Bestandteil dieser Definitionen.
 
 ### req-system-011 -- Schutz externer Schnittstellen
 
 Die Erreichbarkeit und Berechtigungen der Web-APIs müssen konfigurierbar sein. Schreibende, ausführende oder den Handel betreffende Funktionen dürfen nicht ohne geeignete Authentifizierung und Autorisierung extern zugänglich sein. Webhooks müssen ihren Absender beziehungsweise ihre Berechtigung prüfen und wiederholte Übermittlung eindeutig behandelbar machen.
 
+### req-system-023 -- Mehrsprachige Benutzeroberflächen
+
+Jede Benutzeroberfläche einer Hauptkomponente wird von Beginn an so umgesetzt, dass sie in mehreren Sprachen verwendet werden kann. Dazu gehören insbesondere Menüs, Beschriftungen, Erläuterungen und Meldungen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht übersetzt. Ein Sprachwechsel verändert keine gespeicherten Inhalte.
+
+Deutsch und Englisch sind die ersten bereitgestellten Sprachen. Weitere Sprachen müssen ohne Änderung der fachlichen Logik ergänzt werden können. Die Auswahl und Speicherung der Sprache regelt das Anforderungsdokument der jeweiligen Komponente.
+
+## 2. Datenspeicherung
 
 ### req-system-012 -- Konfigurierbare Datenspeicherung
 
@@ -95,12 +91,53 @@ Mehrere Hauptkomponenten oder Komponenten dürfen denselben physischen Speicher 
 
 Wenn mehrere Komponenten einen Speicher gemeinsam verwenden, müssen ihre Datenbestände voneinander abgrenzbar sein. Die konkrete Art dieser Abgrenzung ist abhängig vom verwendeten Speicher-Backend und wird nicht allgemein festgelegt.
 
+## 3. Dokumentation
+
+### req-system-019 -- Dokumentation als Bestandteil jeder Änderung
+
+Bei jeder Änderung an Pipwerk muss geprüft werden, ob bestehende Dokumentation von der Änderung betroffen ist. Betroffene Dokumentation muss im selben Arbeitspaket aktualisiert werden. Dies gilt auch für Änderungen und Erkenntnisse, die erst während der Implementierung entstehen.
+
+Eine Änderung gilt nicht als vollständig, solange die betroffene Dokumentation den aktuellen gültigen Zustand nicht vollständig und widerspruchsfrei beschreibt. Ein Änderungsnachweis oder eine Änderungshistorie ersetzt die Dokumentation des aktuellen Zustands nicht.
+
+### req-system-020 -- Zuständigkeit der Dokumentationsbereiche
+
+Die Softwaredesign-Dokumentation unter `docs/design` beschreibt insbesondere Anforderungen, Fachmodelle, Strategiemodelle und Konzepte. Änderungen an diesen Inhalten müssen dort unmittelbar dokumentiert werden.
+
+Die technische Dokumentation unter `docs/technical` beschreibt die technische Umsetzung vollständig. Dazu gehören insbesondere Komponentenmodelle, Objektmodelle, Datenmodelle, Schnittstellen sowie die für Installation und Betrieb erforderlichen Informationen. Die Modelle müssen so vollständig und widerspruchsfrei beschrieben sein, dass daraus konsistente Diagramme erstellt werden können. Diagramme dürfen in einem getrennten Arbeitsschritt erstellt oder aktualisiert werden, sofern die zugrunde liegende Dokumentation bereits vollständig und konsistent ist.
+
+Die Anwenderdokumentation unter `docs/user` beschreibt alle Kenntnisse und Arbeitsschritte, die ein Anwender für die Konfiguration und Nutzung der Anwendung benötigt. Sie richtet sich auch an technisch nicht versierte Anwender. Konfigurationen, die über die Benutzeroberfläche vorgenommen werden können, und die Bedienung der Benutzeroberfläche müssen vollständig beschrieben werden. Soweit für das Verständnis erforderlich, gehören Schritt-für-Schritt-Anleitungen und Abbildungen dazu. Die Anwenderdokumentation muss so vollständig sein, dass sie als Grundlage für eine Veröffentlichung als HTML oder PDF und für die spätere Erstellung von Anleitungsvideos verwendet werden kann.
+
+### req-system-021 -- Verständlichkeit der Dokumentation
+
+Die Dokumentation muss für Menschen gut lesbar und aus sich heraus verständlich sein. Sie darf für ihr Verständnis kein Wissen aus Chatverläufen, Issues, Pull Requests oder der Entstehungsgeschichte einer Festlegung voraussetzen.
+
+Dokumentation wird grundsätzlich in vollständigen, grammatikalisch korrekten Sätzen geschrieben. Aufzählungen werden nur verwendet, wenn der dargestellte Inhalt seiner Art nach eine Aufzählung erfordert. Normaler erklärender Text darf nicht allein zur Verkürzung oder Gliederung in Stichpunkte zerlegt werden.
+
+Marketing-Sprache und vermeidbarer Fachjargon werden nicht verwendet. Fachbegriffe werden nur verwendet, wenn sie für eine eindeutige Beschreibung erforderlich sind. Jeder in der Dokumentation erforderliche Fachbegriff muss in einem Glossar so definiert werden, dass die Definition auch ohne spezielles Vorwissen verständlich ist.
+
+Verständlichkeit und Vollständigkeit haben Vorrang vor möglichst kurzer Formulierung. Kürzungen dürfen keine Informationen entfernen, die zum Verständnis des beschriebenen Sachverhalts erforderlich sind.
+
+## 4. Technische Vorgaben des Auftraggebers
+
+Die Anforderungen dieses Abschnitts legen technische Mittel fest. Sie sind bewusste Vorgaben des Auftraggebers und keine Entscheidungen des Softwarearchitekten. Sie gelten wie alle anderen Anforderungen dieses Dokuments und werden in der Prüfung der Anforderungsdokumente nicht als Umsetzungsdetails beanstandet.
+
+### req-system-007 -- Gemeinsamer fachlicher Python-Kern
+
+Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe Python-Bibliothek in einer festgelegten Version für Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
+
+Das `Nachrichtensystem` wird ebenfalls in Python implementiert. Seine eigenständige Ausführbarkeit und die sprachunabhängige Definition seiner Schnittstellen bleiben davon unberührt.
+
+### req-system-008 -- Benutzeroberflächen
+
+`Strategiedesigner`, `Strategietester` und `Handelssystem` erhalten jeweils eine eigene Browseroberfläche auf Basis von TypeScript, React und CSS. Die Oberflächen verwenden gemeinsame Gestaltungsregeln und, soweit fachlich passend, gemeinsam entwickelte UI-Komponenten in einer festgelegten Version. Jede Hauptkomponente liefert die von ihr benötigten UI-Bestandteile selbst mit und bleibt unabhängig installierbar und startbar.
+
+Eine eigene Benutzeroberfläche des `Nachrichtensystems` ist derzeit nicht festgelegt.
+
 ### req-system-015 -- SQLAlchemy als Speicherschnittstelle
 
 Für persistente Datenspeicherung wird SQLAlchemy als gemeinsame Speicherschnittstelle verwendet.
 
 Das über SQLAlchemy verwendete konkrete Speicher-Backend ist Bestandteil der Konfiguration und wird von Pipwerk nicht allgemein festgelegt.
-
 
 ### req-system-016 -- Zweistufige Konfiguration
 
@@ -136,59 +173,31 @@ Eine Komponente mit eigenem konfigurierbarem Speicher muss als eigenständiges P
 
 Sie besitzt dafür eine eigene Startkonfiguration und muss den Parameter `-c <PATH>` unterstützen.
 
+### req-system-022 -- Zentrale Bereitstellung der maschinenlesbaren Definition der Schnittstellen
 
+Die maschinenlesbare Definition der von Pipwerk verwendeten Schnittstellen wird im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere die formalen Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedefinitionen und Datenformate.
 
-### req-system-019 -- Dokumentation als Bestandteil jeder Änderung
+Der vollständige Bestand dieser Definitionen wird gemeinsam bereitgestellt. Eine Bereitstellung darf nicht davon abhängen, welche Hauptkomponente eine Definition derzeit verwendet. Dadurch muss eine Komponente bei einer späteren Nutzung einer bereits vorhandenen Definition nicht auf die Installation oder Dateien einer anderen Hauptkomponente zugreifen.
 
-Bei jeder Änderung an Pipwerk muss geprüft werden, ob bestehende Dokumentation von der Änderung betroffen ist. Betroffene Dokumentation muss im selben Arbeitspaket aktualisiert werden. Dies gilt auch für Änderungen und Erkenntnisse, die erst während der Implementierung entstehen.
+Bei einer systemweiten Installation unter Unix-artigen Betriebssystemen werden diese architekturunabhängigen Dateien unter `/usr/share/pipwerk/contracts` bereitgestellt. Abweichende Installationsformen müssen ebenfalls sicherstellen, dass die Definitionen unabhängig von der Installation einer bestimmten Hauptkomponente verfügbar sind.
 
-Eine Änderung gilt nicht als vollständig, solange die betroffene Dokumentation den aktuellen gültigen Zustand nicht vollständig und widerspruchsfrei beschreibt. Ein Änderungsnachweis oder eine Änderungshistorie ersetzt die Dokumentation des aktuellen Zustands nicht.
+Die maschinenlesbaren Definitionen ersetzen nicht ihre für Menschen bestimmte technische Dokumentation. Die Bedeutung, Verwendung und Inhalte der Definitionen werden vollständig unter `docs/technical` beschrieben.
 
-### req-system-020 -- Zuständigkeit der Dokumentationsbereiche
-
-Die Softwaredesign-Dokumentation unter `docs/design` beschreibt insbesondere Anforderungen, Fachmodelle, Strategiemodelle und Konzepte. Änderungen an diesen Inhalten müssen dort unmittelbar dokumentiert werden.
-
-Die technische Dokumentation unter `docs/technical` beschreibt die technische Umsetzung vollständig. Dazu gehören insbesondere Komponentenmodelle, Objektmodelle, Datenmodelle, Schnittstellen sowie die für Installation und Betrieb erforderlichen Informationen. Die Modelle müssen so vollständig und widerspruchsfrei beschrieben sein, dass daraus konsistente Diagramme erstellt werden können. Diagramme dürfen in einem getrennten Arbeitsschritt erstellt oder aktualisiert werden, sofern die zugrunde liegende Dokumentation bereits vollständig und konsistent ist.
-
-Die Anwenderdokumentation unter `docs/user` beschreibt alle Kenntnisse und Arbeitsschritte, die ein Anwender für die Konfiguration und Nutzung der Anwendung benötigt. Sie richtet sich auch an technisch nicht versierte Anwender. Konfigurationen, die über die Benutzeroberfläche vorgenommen werden können, und die Bedienung der Benutzeroberfläche müssen vollständig beschrieben werden. Soweit für das Verständnis erforderlich, gehören Schritt-für-Schritt-Anleitungen und Abbildungen dazu. Die Anwenderdokumentation muss so vollständig sein, dass sie als Grundlage für eine Veröffentlichung als HTML oder PDF und für die spätere Erstellung von Anleitungsvideos verwendet werden kann.
-
-### req-system-021 -- Verständlichkeit der Dokumentation
-
-Die Dokumentation muss für Menschen gut lesbar und aus sich heraus verständlich sein. Sie darf für ihr Verständnis kein Wissen aus Chatverläufen, Issues, Pull Requests oder der Entstehungsgeschichte einer Festlegung voraussetzen.
-
-Dokumentation wird grundsätzlich in vollständigen, grammatikalisch korrekten Sätzen geschrieben. Aufzählungen werden nur verwendet, wenn der dargestellte Inhalt seiner Art nach eine Aufzählung erfordert. Normaler erklärender Text darf nicht allein zur Verkürzung oder Gliederung in Stichpunkte zerlegt werden.
-
-Marketing-Sprache und vermeidbarer Fachjargon werden nicht verwendet. Fachbegriffe werden nur verwendet, wenn sie für eine eindeutige Beschreibung erforderlich sind. Jeder in der Dokumentation erforderliche Fachbegriff muss in einem Glossar so definiert werden, dass die Definition auch ohne spezielles Vorwissen verständlich ist.
-
-Verständlichkeit und Vollständigkeit haben Vorrang vor möglichst kurzer Formulierung. Kürzungen dürfen keine Informationen entfernen, die zum Verständnis des beschriebenen Sachverhalts erforderlich sind.
-
-
-### req-system-022 -- Zentrale Bereitstellung maschinenlesbarer Verträge
-
-Maschinenlesbare, von Pipwerk verwendete Verträge werden im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere formale Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedefinitionen und Datenformate.
-
-Der vollständige Bestand dieser Verträge wird gemeinsam bereitgestellt. Eine Bereitstellung darf nicht davon abhängen, welche Hauptkomponente einen Vertrag derzeit verwendet. Dadurch muss eine Komponente bei einer späteren Nutzung eines bereits vorhandenen Vertrags nicht auf die Installation oder Dateien einer anderen Hauptkomponente zugreifen.
-
-Bei einer systemweiten Installation unter Unix-artigen Betriebssystemen werden diese architekturunabhängigen Dateien unter `/usr/share/pipwerk/contracts` bereitgestellt. Abweichende Installationsformen müssen ebenfalls sicherstellen, dass die Verträge unabhängig von der Installation einer bestimmten Hauptkomponente verfügbar sind.
-
-Die maschinenlesbaren Verträge ersetzen nicht ihre für Menschen bestimmte technische Dokumentation. Die Bedeutung, Verwendung und Inhalte der Verträge werden vollständig unter `docs/technical` beschrieben.
-
-
-## 2. Abgrenzung
+## 5. Abgrenzung
 
 Die Festlegung eigenständig lauffähiger Hauptkomponenten bestimmt die Systemstruktur, aber nicht, auf wie viele Rechner die Komponenten in einer konkreten Installation verteilt werden. Mehrere Hauptkomponenten dürfen auf demselben Rechner betrieben werden.
 
 Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktionen mehrerer Hauptkomponenten zugänglich macht. Die fachlichen Verantwortlichkeiten und die eigenständige Ausführbarkeit der Komponenten bleiben davon unberührt.
 
-## 3. Änderungsnachweis
+## 6. Änderungsnachweis
 
 | Datum | Änderung |
 | --- | --- |
 | 2026-09-25 | Erstanlage; Hauptkomponenten und eigenständige Ausführbarkeit sowie gemeinsame Strategiedefinition und komponentenübergreifende Kommunikation festgelegt. |
 | 2026-09-25 | Python für Fachkern und Backends, TypeScript/React/CSS für die Oberflächen von Designer, Tester und Handelssystem sowie eigenständige Bereitstellung gemeinsamer Bibliotheken festgelegt. |
-| 2026-09-25 | Dokumentierte Web-APIs, Webhooks, Austauschbarkeit über versionierte Verträge und Schutz externer Schnittstellen ergänzt. |
+| 2026-09-25 | Dokumentierte Web-APIs, Webhooks, Austauschbarkeit über versionierte Schnittstellendefinitionen und Schutz externer Schnittstellen ergänzt. |
 | 2026-09-26 | Konfigurierbare Datenspeicherung, unabhängige und gemeinsame Speicherzuordnung sowie SQLAlchemy als gemeinsame Speicherschnittstelle festgelegt. |
 | 2026-09-26 | Zweistufige Konfiguration aus INI-Startkonfiguration und gespeicherter Betriebskonfiguration, Suchpfade und Zusammenhang zwischen eigenem Speicher und eigenständiger Startbarkeit festgelegt. |
 | 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
-| 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung maschinenlesbarer Verträge sowie deren menschenlesbare Dokumentation festgelegt. |
-| 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
+| 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung der maschinenlesbaren Definition der Schnittstellen sowie deren menschenlesbare Dokumentation festgelegt. |
+| 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst, Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
