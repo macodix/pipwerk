@@ -253,7 +253,7 @@ Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
 ### Entwicklungsverzeichnis
 
-Unter dem Pipwerk-Entwicklungsverzeichnis `$PIPWERK_DEV_ROOT` auf dem Entwicklungsrechner liegen:
+Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pipwerk`. Es gibt dafür keine Umgebungsvariable. Die Skripte in `scripts/` und `devteam/` ermitteln es aus ihrem eigenen Ort, der Workflow des Runners nennt den Pfad fest. Darin liegen:
 
 | Verzeichnis | Inhalt | verändert von |
 |---|---|---|
@@ -331,7 +331,7 @@ Ports und Datenbank sind Parameter oder Konfiguration, keine festen Werte. Name 
 
 Ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner hält `repo/` per Fast-Forward auf dem Stand von `origin/main`. Steht `repo/` nicht auf `main` oder hat es lokale Änderungen, bricht er ohne Änderung ab. Er startet bei jedem Push auf `main` und kann auf GitHub zusätzlich von Hand gestartet werden. Weitere Aufgaben hat er nicht.
 
-Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsverzeichnisse gehören. `PIPWERK_DEV_ROOT` steht in seiner Umgebungsdatei. Der Workflow hat keine Auslöser für Pull Requests. Das Repository verlangt für Workflows aus Pull Requests aller externen Beitragenden eine Freigabe durch den Auftraggeber. Ein solcher Workflow wird nicht freigegeben.
+Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsverzeichnisse gehören. Der Workflow hat keine Auslöser für Pull Requests. Das Repository verlangt für Workflows aus Pull Requests aller externen Beitragenden eine Freigabe durch den Auftraggeber. Ein solcher Workflow wird nicht freigegeben.
 
 ### Konfiguration der Rollen
 
@@ -356,7 +356,7 @@ Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenr
 
 Die Schritte führt der Auftraggeber aus oder lässt sie von einer Sitzung auf dem Entwicklungsrechner ausführen. Sie werden lokal dokumentiert.
 
-1. Runner als systemd-Dienst unter dem Benutzer der Arbeitsverzeichnisse betreiben, mit `PIPWERK_DEV_ROOT` in seiner Umgebungsdatei.
+1. Runner als systemd-Dienst unter dem Benutzer der Arbeitsverzeichnisse betreiben.
 2. Für diesen Benutzer `gh` mit Schreibrecht auf das Repository und Claude Code mit dem Claude-Abo anmelden. Claude Code einmal interaktiv im Entwicklungsverzeichnis starten, die Vertrauensabfrage bestätigen, die Sitzung beenden und das Verzeichnis verlassen. Das Vertrauen gilt für alle Unterverzeichnisse, auch für neu angelegte unter `work/`.
 3. Im Repository auf GitHub für Workflows aus Pull Requests die Freigabe für alle externen Beitragenden verlangen.
 4. `devteam/` anlegen.
@@ -379,6 +379,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow, Skripte ermitteln das Entwicklungsverzeichnis aus ihrem Ort. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |
 | 2026-10-12 | „Handelsobjekte“ durch „Objekte“ ersetzt (Glossar). |
 | 2026-10-12 | Einrichtung auf dem Entwicklungsrechner übernommen: Aufbau einer Meldung, Inhalt von `run/` und `devteam/`, Aufräumen der Arbeitsverzeichnisse, weitere Fälle von `failed`. |
 | 2026-10-12 | Runner aktualisiert `repo/` mit Git statt `pipwerk-dev`. |

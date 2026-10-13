@@ -23,8 +23,7 @@ jobs:
     steps:
       - name: Referenz-Repository aktualisieren
         run: |
-          test -n "$PIPWERK_DEV_ROOT"
-          repo="$PIPWERK_DEV_ROOT/repo"
+          repo=/srv/aixlab/dev/pipwerk/repo
           test "$(git -C "$repo" symbolic-ref --short HEAD)" = main
           test -z "$(git -C "$repo" status --porcelain)"
           git -C "$repo" fetch --prune origin
