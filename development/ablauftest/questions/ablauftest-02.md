@@ -24,4 +24,4 @@ Für welchen Weg muss der Dialog den Commit genau anzeigen?
 
 Vorschlag des Softwarearchitekten: Genau muss er in der Testumgebung sein und in jeder späteren Installation. Im Entwicklungsbetrieb nennt er den Commit vom Start der Programme; die Abweichung wird in der Anwenderdokumentation erklärt. Die Anwenderdokumentation beschreibt zusätzlich die Testumgebung als Weg, pipwerk studio zu starten.
 
-Antwort:
+Antwort: Vorschlag angenommen. Genau in der Testumgebung und in jeder späteren Installation. Im Entwicklungsbetrieb nennt der Dialog den Commit vom Start der Programme. Die Anwenderdokumentation erklärt die Abweichung und beschreibt die Testumgebung als Startweg. Eingetragen in req-ui-010. (Auftraggeber im Chat, 13. Oktober 2026)

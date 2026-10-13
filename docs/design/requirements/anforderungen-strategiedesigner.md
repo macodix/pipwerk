@@ -289,7 +289,7 @@ Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort 
 pipwerk studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md)), zeigt auf Anforderung des Anwenders einen Dialog „Über pipwerk studio“. Er enthält:
 
 - den Namen „pipwerk studio“
-- den Stand: die vollständige Kennung des Commits, aus dem pipwerk studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Kennung, Datum und Uhrzeit sind in der bereitgestellten Software selbst enthalten. Für die Anzeige wird keine Internetverbindung genutzt. Fehlen die Angaben, steht dort „unbekannt“.
+- den Stand: die vollständige Kennung des Commits, aus dem pipwerk studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Kennung, Datum und Uhrzeit sind in der bereitgestellten Software selbst enthalten. Für die Anzeige wird keine Internetverbindung genutzt. Fehlen die Angaben, steht dort „unbekannt“. Genau sein muss die Angabe in der Testumgebung und in jeder späteren Installation. Im Entwicklungsbetrieb, in dem Änderungen an den Dateien sofort wirken, nennt der Dialog den Commit vom Start der Programme. Die Anwenderdokumentation erklärt diese Abweichung und beschreibt die Testumgebung als Weg, pipwerk studio zu starten.
 - die Lizenz: Name und vollständiger Text der „GNU General Public License, Version 3“, immer im englischen Original
 - die Adresse https://github.com/macodix/pipwerk als Verweis, der sich in einem neuen Tab öffnet
 
@@ -444,3 +444,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-13 | Dialog „Über pipwerk studio“ (req-ui-010), Aufrufstelle offen. |
 | 2026-10-13 | req-ui-010 nach Prüfbericht präzisiert: Inhalt des Stands, Lizenztext im Original, Adresse als Verweis, gesperrte Oberfläche, Name laut Projektziel. Bestätigt vom Auftraggeber im Chat. |
 | 2026-10-13 | req-ui-010: Aufrufstelle festgelegt; Stand in der Software enthalten, keine Abfrage bei GitHub. Antwort des Auftraggebers auf Frage ablauftest-01. |
+| 2026-10-13 | req-ui-010: Stand genau in Testumgebung und Installation, im Entwicklungsbetrieb Commit vom Start, Abweichung in der Anwenderdokumentation erklärt. Antwort des Auftraggebers auf Frage ablauftest-02. |
