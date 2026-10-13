@@ -253,7 +253,7 @@ Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
 ### Entwicklungsverzeichnis
 
-Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pipwerk`. Es gibt dafür keine Umgebungsvariable. Die Skripte in `scripts/` und `devteam/` ermitteln es aus ihrem eigenen Ort, der Workflow des Runners nennt den Pfad fest. Darin liegen:
+Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pipwerk`. Es gibt dafür keine Umgebungsvariable. Jedes Skript in `scripts/` und `devteam/` und der Workflow des Runners nennen den Pfad fest, in Skripten als Variable `ROOT` direkt nach dem Kopfkommentar. Darin liegen:
 
 | Verzeichnis | Inhalt | verändert von |
 |---|---|---|
@@ -379,7 +379,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow, Skripte ermitteln das Entwicklungsverzeichnis aus ihrem Ort. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |
+| 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow und als Variable `ROOT` in jedem Skript. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |
 | 2026-10-12 | „Handelsobjekte“ durch „Objekte“ ersetzt (Glossar). |
 | 2026-10-12 | Einrichtung auf dem Entwicklungsrechner übernommen: Aufbau einer Meldung, Inhalt von `run/` und `devteam/`, Aufräumen der Arbeitsverzeichnisse, weitere Fälle von `failed`. |
 | 2026-10-12 | Runner aktualisiert `repo/` mit Git statt `pipwerk-dev`. |
