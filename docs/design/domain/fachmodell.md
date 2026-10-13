@@ -140,7 +140,7 @@ Anbindungen weiterer Handelssoftware sind nicht Bestandteil dieser ersten Entwic
 
 ### req-fach-028 -- MarketOrder
 
-`MarketOrder` ist ein spezialisierter Ordertyp für einen Auftrag zur Ausführung zum aktuell verfügbaren Marktpreis.
+`MarketOrder` (Marktorder) ist ein spezialisierter Ordertyp für einen Auftrag zur Ausführung zum aktuell verfügbaren Marktpreis.
 
 Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 
@@ -152,17 +152,19 @@ Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 
 Ein vorgegebener Orderpreis ist keine Eigenschaft der `MarketOrder`. Der tatsächliche Ausführungspreis entsteht bei der Ausführung.
 
-### req-fach-029 -- Pending-Ordertypen von MetaTrader 5 (Entwurf)
+### req-fach-029 -- Wartende Ordertypen (Entwurf)
 
-Als Spezialisierungen von `Order` werden die Pending-Ordertypen von MetaTrader 5 geführt. Die Handelsrichtung ist Bestandteil des Typs und keine eigene Eigenschaft.
+Als Spezialisierungen von `Order` werden drei wartende Ordertypen geführt. Ihre Bedeutung entspricht den Pending-Ordertypen von MetaTrader 5. Wie bei `MarketOrder` ist die Handelsrichtung eine Eigenschaft und nicht Bestandteil des Typs.
 
 | Ordertyp | Bedeutung | zusätzliche Eigenschaften |
 |---|---|---|
-| `BuyStopOrder`, `SellStopOrder` | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Ablaufzeit` -- KANN |
-| `BuyLimitOrder`, `SellLimitOrder` | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
-| `BuyStopLimitOrder`, `SellStopLimitOrder` | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
+| `StopOrder` (Stop-Order) | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Richtung` -- MUSS (`buy` oder `sell`), `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Ablaufzeit` -- KANN |
+| `LimitOrder` (Limit-Order) | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
+| `StopLimitOrder` (Stop-Limit-Order) | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
 
-Offen: Die Ordertypen von MetaTrader 5 sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Die Tabelle gilt bis zur Abstimmung dieser Erfassung als Entwurf. Die Namen in der Tabelle sind vorläufig. Pipwerk verwendet eigene Namen nach req-fach-030, sie sind noch nicht festgelegt.
+Zusammen mit `MarketOrder` (Marktorder) gibt es damit vier Ordertypen zum Eröffnen. Die Kompatibilitätsliste der Anbindung an MetaTrader 5 ordnet jede Kombination aus Ordertyp und Richtung dem dortigen Typ zu, zum Beispiel Stop-Order mit Richtung `buy` dem Typ Buy Stop.
+
+Offen: Die Ordertypen sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Noch abzustimmen sind insbesondere Gültigkeit, Ausführungsbedingung bei Teilausführung und zulässige Kursabweichung bei Marktorders. Bis dahin gilt die Tabelle als Entwurf.
 
 ### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
 
@@ -349,3 +351,4 @@ Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
 | 2026-10-13 | req-fach-045: fehlerhafte Reihenfolge im Regelwerk festgelegt (Vorwärtsbezug, Zirkelbezug, keine selbsttätige Umsortierung). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-030 geändert: eigene Ordertypen von Pipwerk mit Bedeutung nach MetaTrader 5, Kompatibilitätsliste je Anbindung, keine annähernde Übersetzung. req-fach-025 und req-fach-029 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-049a: Elemente Order ändern, Order löschen, Position ändern, Position schließen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Handelsrichtung als Eigenschaft bei allen Ordertypen, drei wartende Ordertypen Stop-Order, Limit-Order, Stop-Limit-Order. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
