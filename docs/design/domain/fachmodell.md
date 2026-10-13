@@ -173,7 +173,9 @@ Die Eigenschaft `Gültigkeit` legt fest, wann eine wartende Order ohne Ausführu
 
 Zusammen mit `MarketOrder` (Marktorder) gibt es damit vier Ordertypen zum Eröffnen. Die Kompatibilitätsliste der Anbindung an MetaTrader 5 ordnet jede Kombination aus Ordertyp und Richtung dem dortigen Typ zu, zum Beispiel Stop-Order mit Richtung `buy` dem Typ Buy Stop.
 
-Offen: Die Ordertypen sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Noch abzustimmen sind insbesondere Ausführungsbedingung bei Teilausführung und zulässige Kursabweichung bei Marktorders. Bis dahin gilt die Tabelle als Entwurf.
+Die Ausführungsbedingung, also das Verhalten, wenn zum gewünschten Preis nicht das ganze Volumen verfügbar ist, ist bewusst nicht Teil der Strategie. Die Anbindung an die Handelssoftware wählt einen Wert, den Konto und Instrument zulassen. Teilausführungen sind nach req-fach-016 berücksichtigt. Braucht eine Strategie später eine bestimmte Ausführungsbedingung, wird sie ergänzt.
+
+Offen: Die Ordertypen sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Noch abzustimmen ist insbesondere die zulässige Kursabweichung bei Marktorders. Bis dahin gilt die Tabelle als Entwurf.
 
 ### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
 
@@ -362,3 +364,4 @@ Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
 | 2026-10-13 | req-fach-049a: Elemente Order ändern, Order löschen, Position ändern, Position schließen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Handelsrichtung als Eigenschaft bei allen Ordertypen, drei wartende Ordertypen Stop-Order, Limit-Order, Stop-Limit-Order. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Gültigkeit wartender Orders mit vier Werten statt Ablaufzeit. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Ausführungsbedingung bewusst nicht Teil der Strategie, Wahl durch die Anbindung. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
