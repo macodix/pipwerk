@@ -24,3 +24,5 @@ Vorschlag des Softwarearchitekten: Durchlauf 14 freigeben, als Nachprüfung im s
 ## Hinweise außerhalb der Frage
 
 - Die QA fragt in R1, ob ein Umbruch des Namens beim Anwender gegen req-ui-010 verstößt („Überall, wo pipwerk Studio seinen Namen … ausgibt, lautet er ‚pipwerk Studio‘“). Mit der Änderung trennt pipwerk Studio den Namen in seiner Ausgabe nicht mehr. Ein Umbruch durch das Terminal bei der Anzeige ist keine Ausgabe von pipwerk Studio. Der Softwarearchitekt sieht deshalb keine Entscheidung des Auftraggebers als nötig an. Sieht der Auftraggeber das anders, ist es eine Frage zu req-ui-010.
+
+Antwort: Durchlauf 14 freigegeben, als Nachprüfung nur für R1 und die dafür geänderten Stellen. Findet die QA darin nur noch Befunde zur Ausgestaltung einzelner Tests, ist die Spezifikation bestanden; solche Befunde stehen im Prüfbericht als Hinweise für die Umsetzung und werden in Phase 4 von Entwickler und Tester gelöst. (Projektleiter, 13. Oktober 2026)
