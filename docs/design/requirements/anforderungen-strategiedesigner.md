@@ -284,16 +284,16 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
-### req-ui-010 -- Angaben zu pipwerk studio
+### req-ui-010 -- Angaben zu pipwerk Studio
 
-pipwerk studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md)), zeigt auf Anforderung des Anwenders einen Dialog „Über pipwerk studio“. Er enthält:
+pipwerk Studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md)), zeigt auf Anforderung des Anwenders einen Dialog „Über pipwerk Studio“. Er enthält:
 
-- den Namen „pipwerk studio“
-- den Stand: die vollständige Kennung des Commits, aus dem pipwerk studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Kennung, Datum und Uhrzeit sind in der bereitgestellten Software selbst enthalten. Für die Anzeige wird keine Internetverbindung genutzt. Fehlen die Angaben, steht dort „unbekannt“. Genau sein muss die Angabe in der Testumgebung und in jeder späteren Installation. Im Entwicklungsbetrieb, in dem Änderungen an den Dateien sofort wirken, nennt der Dialog den Commit vom Start der Programme. Die Anwenderdokumentation erklärt diese Abweichung und beschreibt die Testumgebung als Weg, pipwerk studio zu starten.
+- den Namen „pipwerk Studio“
+- den Stand: die vollständige Kennung des Commits, aus dem pipwerk Studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Kennung, Datum und Uhrzeit sind in der bereitgestellten Software selbst enthalten. Für die Anzeige wird keine Internetverbindung genutzt. Fehlen die Angaben, steht dort „unbekannt“. Genau sein muss die Angabe in der Testumgebung und in jeder späteren Installation. Im Entwicklungsbetrieb, in dem Änderungen an den Dateien sofort wirken, nennt der Dialog den Commit vom Start der Programme. Die Anwenderdokumentation erklärt diese Abweichung und beschreibt die Testumgebung als Weg, pipwerk Studio zu starten.
 - die Lizenz: Name und vollständiger Text der „GNU General Public License, Version 3“, immer im englischen Original
 - die Adresse https://github.com/macodix/pipwerk als Verweis, der sich in einem neuen Tab öffnet
 
-Der Dialog wird über die Schaltfläche „Über pipwerk studio“ (englisch „About pipwerk studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen.
+Der Dialog wird über die Schaltfläche „Über pipwerk Studio“ (englisch „About pipwerk Studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen.
 
 
 ## 7. Arbeitsabläufe
@@ -445,3 +445,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-13 | req-ui-010 nach Prüfbericht präzisiert: Inhalt des Stands, Lizenztext im Original, Adresse als Verweis, gesperrte Oberfläche, Name laut Projektziel. Bestätigt vom Auftraggeber im Chat. |
 | 2026-10-13 | req-ui-010: Aufrufstelle festgelegt; Stand in der Software enthalten, keine Abfrage bei GitHub. Antwort des Auftraggebers auf Frage ablauftest-01. |
 | 2026-10-13 | req-ui-010: Stand genau in Testumgebung und Installation, im Entwicklungsbetrieb Commit vom Start, Abweichung in der Anwenderdokumentation erklärt. Antwort des Auftraggebers auf Frage ablauftest-02. |
+| 2026-10-13 | Schreibweise des Namens in req-ui-010: „pipwerk Studio“ (Auftraggeber im Chat). |

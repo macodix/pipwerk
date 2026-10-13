@@ -4,7 +4,7 @@ Erster vollständiger Durchlauf des [Entwicklungsverfahrens](../../docs/technica
 
 ## Geltende Anforderungsdokumente
 
-- [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), nur req-ui-010 „Angaben zu pipwerk studio“
+- [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), nur req-ui-010 „Angaben zu pipwerk Studio“
 - [Anforderungen an das Gesamtsystem](../../docs/design/requirements/anforderungen-gesamtsystem.md), nur für die Prüfung der Widerspruchsfreiheit von req-ui-010
 
 Die übrigen Anforderungen dieser Dokumente gehören nicht zum Vorhaben und werden nicht geprüft.

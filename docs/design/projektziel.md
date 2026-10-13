@@ -55,7 +55,7 @@ pipwerk ist, soweit technisch sinnvoll machbar, aus Modulen aufgebaut. Jedes Mod
 
 | Modul | Name | Aufgabe |
 |---|---|---|
-| Strategiedesigner | pipwerk studio | Strategien gestalten und prüfen |
+| Strategiedesigner | pipwerk Studio | Strategien gestalten und prüfen |
 | Strategietester | pipwerk backtest | Strategien gegen historische Kursdaten testen, Ergebnis grafisch auswerten |
 | Handelssystem | pipwerk trader | Strategien auf Handelskonten anwenden, gehandelte Strategien grafisch auswerten |
 | Kontoverwaltung | pipwerk vault | Handelskonten mit Broker, Instrumenten und deren Eigenschaften, Kontostand, Positionen und Orders. Liefert diese Informationen an alle Module. |
@@ -73,3 +73,4 @@ Der Name des Systems wird klein geschrieben: pipwerk.
 | Datum | Änderung |
 |---|---|
 | 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. Abgrenzung, Aufbau und Module ergänzt. |
+| 2026-10-13 | Schreibweise „pipwerk Studio“ (Auftraggeber im Chat). |
