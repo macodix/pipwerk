@@ -3,6 +3,7 @@
 ## Dokumentstatus
 
 - status: `draft`
+- abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
 - zuletzt aktualisiert: `2026-10-13`
 
