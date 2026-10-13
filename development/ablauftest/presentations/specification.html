@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ablauftest Spezifikation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben ablauftest · Phase 2</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Spezifikation<br>„Über pipwerk studio“</h1>
+<p style="font-size:38px;width:1450px">Wie der Softwarearchitekt req-ui-010 umsetzen will. Von der QA im 7. Durchlauf geprüft und bestanden.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">13. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/ablauftest/specification.md</code></p>
+<p class="num">1 / 5</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Was gebaut wird</h2>
+<div class="row">
+<div class="card col"><h3>Schaltfläche</h3><p>„Über pipwerk studio“ in der Kopfzeile rechts neben der Sprachauswahl.</p></div>
+<div class="card col"><h3>Dialog</h3><ul>
+<li>Name „pipwerk studio“</li>
+<li>Stand: vollständige Kennung des Commits mit Datum und Uhrzeit in Ortszeit, sonst „unbekannt“</li>
+<li>Lizenz GPL Version 3, vollständiger englischer Text</li>
+<li>Adresse des Repositorys, öffnet in neuem Tab</li></ul></div>
+<div class="card col"><h3>Verhalten</h3><ul>
+<li>übrige Oberfläche gesperrt</li>
+<li>schließt nur mit „Schließen“ oder Escape, nicht mit Klick daneben</li>
+<li>Texte folgen der Oberflächensprache, Lizenztext bleibt englisch</li>
+<li>Standanzeige in der Fußzeile bleibt unverändert</li></ul></div>
+</div>
+<p class="note">Das Backend ändert sich nicht. Der Dialog braucht zur Anzeige keine Anfrage.</p>
+<p class="num">2 / 5</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Woher der Dialog seine Angaben hat</h2>
+<div class="chain">
+<div class="node">Repository<small>Commit, Datei LICENSE, Adresse in package.json</small></div><div class="arrow">→</div>
+<div class="node">Bau der Oberfläche<small>schreibt Kennung, Datum, Lizenztext und Adresse in die Dateien</small></div><div class="arrow">→</div>
+<div class="node">Browser<small>zeigt sie an, ohne Netz, ohne Git, ohne Backend</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Testumgebung und spätere Installation: genau</h3><p>Das Testumgebungsskript startet nur aus einem Stand ohne nicht gespeicherte Änderungen und baut Oberfläche und Backend aus demselben Commit. Der Dialog nennt genau diesen Commit.</p></div>
+<div class="card col"><h3 style="color:var(--amber)">Entwicklungsbetrieb: Commit vom Start</h3><p>Wie von dir entschieden. Nach Änderungen ohne Commit oder einem Wechsel des Commits kann die Anzeige vom laufenden Code abweichen. Die Anwenderdokumentation erklärt das.</p></div>
+</div>
+<p class="note">Fehlt die Lizenzdatei, wird die Oberfläche nicht gebaut. Fehlt Git, wird gebaut und „unbekannt“ angezeigt.</p>
+<p class="num">3 / 5</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Nachweis und Abnahme</h2>
+<table>
+<tr><th style="width:420px">Prüfung</th><th>Was sie nachweist</th></tr>
+<tr><td>Tests der Oberfläche</td><td>Inhalt des Dialogs in beiden Sprachen, „unbekannt“ ohne Stand, Sperre und Schließen</td></tr>
+<tr><td>Browsertest an der gebauten Oberfläche</td><td>Dialog und Fußzeile nennen den Commit, der beim Bau ausgecheckt war</td></tr>
+<tr><td>Test des Testumgebungsskripts</td><td>Abbruch bei nicht gespeicherten Änderungen</td></tr>
+<tr><td>Tester und QA</td><td>Funktion, Code, Sicherheit, Anwenderdokumentation aus Kundensicht</td></tr>
+<tr><td>Deine Abnahme</td><td>in der Testumgebung, mit kurzer Anleitung von mir</td></tr>
+</table>
+<p class="num">4 / 5</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Zur Bestätigung</h2>
+<div class="row">
+<div class="card col"><h3>Bitte bestätigen</h3><ul>
+<li>die Spezifikation wie auf den Folien 2 bis 4</li></ul>
+<p class="note">Bestätigung: offen</p></div>
+<div class="card col"><h3 style="color:var(--amber)">Hinweise der QA, für die Umsetzung ohne Bedeutung</h3><ul>
+<li>Kopfzeile schreibt heute „Pipwerk Studio“, Dialog und Schaltfläche „pipwerk studio“. Vorschlag: so lassen, Angleichung als eigene Anforderung.</li>
+<li>Wenn die Sprachauswahl in die Einstellungen wandert (req-ui-009), braucht die Schaltfläche einen neuen Platz. Vorschlag: mit dem Vorhaben zu den Einstellungen entscheiden.</li></ul></div>
+</div>
+<p class="num">5 / 5</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
