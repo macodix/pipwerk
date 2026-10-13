@@ -366,7 +366,7 @@ Die Schritte führt der Auftraggeber aus oder lässt sie von einer Sitzung auf d
 
 Die verbindlichen Prüfwerkzeuge und Qualitätsregeln stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md).
 
-Weitere Werkzeuge, insbesondere Vertrags-, Architektur-, Property-based- oder Mutationstests, werden bedarfsgerecht bewertet. Ein Werkzeug gilt erst dann als Qualitätsgewinn, wenn Aufgabe, Prüfkriterium und Wirkung nachgewiesen sind.
+Weitere Werkzeuge, insbesondere Schnittstellen-, Architektur-, Property-based- oder Mutationstests, werden bedarfsgerecht bewertet. Ein Werkzeug gilt erst dann als Qualitätsgewinn, wenn Aufgabe, Prüfkriterium und Wirkung nachgewiesen sind.
 
 Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben. Das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur. Die Modellzuordnung der Rollen ist änderbare Laufzeitkonfiguration.
 

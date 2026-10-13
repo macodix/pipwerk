@@ -19,8 +19,8 @@ Abhängigkeiten werden nur eingeführt, wenn sie einen konkreten Nutzen haben. E
 | Werkzeug | Status | Zweck in Pipwerk | Einsatzgrenze |
 | --- | --- | --- | --- |
 | FastAPI | verbindlich für Python-HTTP-APIs | dokumentierte HTTP-Web-APIs der Komponenten | nur API-/Transportadapter; keine Fachlogik im Framework-Layer |
-| Pydantic | verbindlich an externen Python-Datengrenzen | Validierung und Serialisierung von API-, Nachrichten-, Konfigurations- und Vertragsdaten | keine Pydantic-Abhängigkeit als Voraussetzung für fachliche Kernobjekte |
-| pytest | verbindlich | Unit-, Komponenten-, Vertrags- und Python-Integrationstests | Tests müssen Fachkern auch ohne gestarteten Webserver prüfen können |
+| Pydantic | verbindlich an externen Python-Datengrenzen | Validierung und Serialisierung von API-, Nachrichten-, Konfigurations- und Schnittstellendaten | keine Pydantic-Abhängigkeit als Voraussetzung für fachliche Kernobjekte |
+| pytest | verbindlich | Unit-, Komponenten-, Schnittstellen- und Python-Integrationstests | Tests müssen Fachkern auch ohne gestarteten Webserver prüfen können |
 | React | verbindlich für Browseroberflächen | komponentenbasierte Benutzeroberflächen | keine fachliche Ausführungslogik ausschließlich im UI |
 | Vite | verbindlich für React-Frontends | Entwicklungsserver und Frontend-Build | Build-Werkzeug, kein Bestandteil von Fachmodell oder Verträgen |
 | React Flow (`@xyflow/react`) | verbindlich für den grafischen Strategiedesigner | Darstellung und Bearbeitung des Strategiegraphen | UI-Modell ist nicht das maßgebliche Strategie- oder Ausführungsmodell |
@@ -40,7 +40,7 @@ Abhängigkeiten werden nur eingeführt, wenn sie einen konkreten Nutzen haben. E
 
 FastAPI ist für die HTTP-Schicht geeignet und verwendet Pydantic für typisierte Datenverarbeitung. FastAPI bleibt außerhalb des Fachkerns. HTTP-Handler übersetzen zwischen Transportmodellen und fachlichen Schnittstellen.
 
-Pydantic validiert Daten an Systemgrenzen. Pydantic kann Eingaben standardmäßig konvertieren. An sicherheits- oder handelsrelevanten Grenzen wird deshalb explizit geprüft, ob strikte Validierung erforderlich ist. Unbekannte Felder werden bei versionierten Verträgen nicht stillschweigend akzeptiert, wenn dadurch Fehlkonfigurationen oder Vertragsabweichungen verdeckt werden könnten.
+Pydantic validiert Daten an Systemgrenzen. Pydantic kann Eingaben standardmäßig konvertieren. An sicherheits- oder handelsrelevanten Grenzen wird deshalb explizit geprüft, ob strikte Validierung erforderlich ist. Unbekannte Felder werden bei versionierten Schnittstellendefinitionen nicht stillschweigend akzeptiert, wenn dadurch Fehlkonfigurationen oder Abweichungen von der Definition verdeckt werden könnten.
 
 Folge: FastAPI kann später ersetzt werden, ohne den Fachkern neu zu entwerfen. Pydantic-Modelle sind keine zwingende Repräsentation interner Fachobjekte.
 
@@ -89,7 +89,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 3. Fachkern, Transport, Persistenz und Benutzeroberfläche werden durch definierte Schnittstellen getrennt.
 4. Keine Frameworkklasse darf erforderlich sein, um eine fachliche Kernoperation auszuführen.
 5. Öffentliche API-, Nachrichten- und Strategieformate liegen versioniert unter `contracts/`.
-6. Vertragsänderungen benötigen Kompatibilitätsprüfung und zugehörige Tests.
+6. Änderungen an der Definition der Schnittstellen benötigen Kompatibilitätsprüfung und zugehörige Tests.
 7. Abhängigkeiten werden mit reproduzierbarer Versionsauflösung verwaltet. Aktualisierungen werden geprüft und nicht ungeprüft automatisch in produktive Builds übernommen.
 8. Python-Code muss Ruff-Prüfung und mypy-Typprüfung bestehen.
 9. TypeScript-Code muss die TypeScript-Prüfung mit `strict` und ohne Emit bestehen.
@@ -118,7 +118,7 @@ Es gelten mindestens vier Testebenen:
 
 - Unit-Tests prüfen Fachlogik isoliert und deterministisch.
 - Komponententests prüfen eine eigenständig lauffähige Pipwerk-Komponente einschließlich ihrer Adapter.
-- Vertrags- und Integrationstests prüfen versionierte Formate und die Zusammenarbeit zwischen Komponenten.
+- Schnittstellen- und Integrationstests prüfen versionierte Formate und die Zusammenarbeit zwischen Komponenten.
 - End-to-End-Tests prüfen wesentliche Benutzerabläufe im Browser.
 
 Für jede Fehlerbehebung wird ein Test ergänzt, der den Fehler vor der Korrektur nachweisen kann, soweit dies technisch sinnvoll reproduzierbar ist.
@@ -181,7 +181,7 @@ Für Entwicklung und Betrieb gelten mindestens folgende Grundsätze, soweit sie 
 
 | Werkzeug | Erforderliche Regeln |
 | --- | --- |
-| FastAPI | API-Vertragstests; Validierungsfehler testen; Authentisierung/Autorisierung serverseitig; keine Fachlogik nur im Handler |
+| FastAPI | Tests gegen die Definition der Schnittstellen; Validierungsfehler testen; Authentisierung/Autorisierung serverseitig; keine Fachlogik nur im Handler |
 | Pydantic | Grenzwerte, ungültige und zusätzliche Felder testen; bei kritischen Daten Konvertierungsverhalten bewusst festlegen; Validierung nicht mit fachlicher Korrektheit verwechseln |
 | pytest | isolierte, reproduzierbare Fixtures; keine unkontrollierten produktiven Seiteneffekte |
 | React | sicherheitskritische Entscheidungen nicht nur clientseitig; Verhalten statt interne Komponentenstruktur testen |

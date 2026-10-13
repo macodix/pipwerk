@@ -95,12 +95,12 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>andere Programme und alternative Oberflächen kommen ohne die mitgelieferte Oberfläche aus</li>
 <li>getrennt von internen GUI-Details; Webhooks für eingehende Ereignisse möglich</li></ul></div>
 <div class="card col"><h3>Austauschbarkeit (010)</h3>
-<p>Eine Komponente darf durch eine andere Implementierung ersetzt werden. Die Verträge dafür:</p><ul>
+<p>Eine Komponente darf durch eine andere Implementierung ersetzt werden. Die Definitionen der Schnittstellen dafür:</p><ul>
 <li>versionierte Web-API</li>
 <li>gemeinsames Format der Strategiedefinition</li>
 <li>festgelegte Nachrichtenformate</li>
 <li>gemeinsame fachliche Datenformate</li></ul>
-<p class="note">Die Programmiersprache einer Ersatzimplementierung ist nicht Teil der Verträge.</p></div>
+<p class="note">Die Programmiersprache einer Ersatzimplementierung ist nicht Teil dieser Definitionen.</p></div>
 <div class="card col"><h3>Schutz (011)</h3><ul>
 <li>Erreichbarkeit und Berechtigungen konfigurierbar</li>
 <li>schreibende, ausführende und handelsbezogene Funktionen nur mit Authentifizierung und Autorisierung</li>
@@ -169,7 +169,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <tr><td><b>Oberflächen (008)</b></td><td>Je eine Browseroberfläche auf Basis von TypeScript, React und CSS mit gemeinsamen Gestaltungsregeln und gemeinsam versionierten UI-Komponenten. Oberfläche des Nachrichtensystems offen.</td></tr>
 <tr><td><b>Speicherschnittstelle (015)</b></td><td>SQLAlchemy; das konkrete Backend bleibt Konfiguration.</td></tr>
 <tr><td><b>Konfiguration (016–018)</b></td><td>Startkonfiguration als INI-Datei nur mit dem, was zum Starten und Finden der Speicher nötig ist; alles Weitere im Speicher der Komponente. Suche über <code>-c &lt;PATH&gt;</code>, dann Nutzer- und Systempfade; genau eine Datei, kein Zusammenführen.</td></tr>
-<tr><td><b>Verträge (022)</b></td><td>Maschinenlesbare Verträge zentral unter <code>contracts</code>, vollständig gemeinsam bereitgestellt (unter Unix <code>/usr/share/pipwerk/contracts</code>) und unter <code>docs/technical</code> beschrieben.</td></tr>
+<tr><td><b>Definition der Schnittstellen (022)</b></td><td>Maschinenlesbar und zentral unter <code>contracts</code>, vollständig gemeinsam bereitgestellt (unter Unix <code>/usr/share/pipwerk/contracts</code>) und unter <code>docs/technical</code> beschrieben.</td></tr>
 </table>
 <p class="num">7 / 9</p></section></div>
 
@@ -178,7 +178,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="row">
 <div class="card col"><h3>Was festgelegt ist</h3><ul>
 <li>die Systemstruktur aus eigenständig lauffähigen Hauptkomponenten</li>
-<li>die Verträge, über die sie zusammenarbeiten</li></ul></div>
+<li>die Definition der Schnittstellen, über die sie zusammenarbeiten</li></ul></div>
 <div class="card col"><h3 style="color:var(--blue)">Was nicht festgelegt ist</h3><ul>
 <li>auf wie viele Rechner eine Installation verteilt wird; mehrere Komponenten dürfen auf einem Rechner laufen</li>
 <li>dass jede Komponente eine eigene Oberfläche braucht: eine Oberfläche darf Funktionen mehrerer Komponenten zugänglich machen</li>
@@ -194,7 +194,8 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>Mehrsprachigkeit aller Oberflächen als req-system-023 aufgenommen</li>
 <li>technische Vorgaben in einem eigenen Abschnitt zusammengefasst</li>
 <li>Abschnitte neu gegliedert: Systemaufteilung, Datenspeicherung, Dokumentation, Technische Vorgaben, Abgrenzung; Kennungen unverändert</li>
-<li>fehlerhaften Eintrag im Änderungsnachweis entfernt</li></ul></div>
+<li>fehlerhaften Eintrag im Änderungsnachweis entfernt</li>
+<li>Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt</li></ul></div>
 <div class="card col"><h3>Stand</h3><ul>
 <li>22 bestehende Anforderungen inhaltlich unverändert</li>
 <li>Dokumentstatus bleibt <code>draft</code></li>

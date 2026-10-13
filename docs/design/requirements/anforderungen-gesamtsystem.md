@@ -47,9 +47,9 @@ Jede Hauptkomponente muss einschließlich ihrer benötigten Laufzeitbestandteile
 
 Jede Hauptkomponente stellt die für eine externe Nutzung vorgesehenen Funktionen über eine dokumentierte HTTP-Web-API bereit. Dadurch müssen insbesondere andere Programme, Automatisierungswerkzeuge und alternative Benutzeroberflächen diese Funktionen ohne Bedienung der mitgelieferten Oberfläche verwenden können.
 
-Die Web-API muss von internen, nicht als stabiler Vertrag vorgesehenen GUI-Implementierungsdetails getrennt werden. Für eingehende Ereignisse können ausdrücklich definierte Webhook-Endpunkte bereitgestellt werden.
+Die Web-API muss von internen, nicht als stabile Definition der Schnittstelle vorgesehenen GUI-Implementierungsdetails getrennt werden. Für eingehende Ereignisse können ausdrücklich definierte Webhook-Endpunkte bereitgestellt werden.
 
-### req-system-010 -- Austauschbarkeit über definierte Verträge
+### req-system-010 -- Austauschbarkeit über die Definition der Schnittstellen
 
 Eine Hauptkomponente muss durch eine andere Implementierung ersetzt werden können, sofern diese die vereinbarten Schnittstellen und das vereinbarte fachliche Verhalten erfüllt. Die Austauschbarkeit stützt sich mindestens auf:
 
@@ -58,7 +58,7 @@ Eine Hauptkomponente muss durch eine andere Implementierung ersetzt werden könn
 - die festgelegten Nachrichtenformate,
 - die gemeinsam verwendeten fachlichen Datenformate.
 
-Die konkrete Programmiersprache einer Ersatzimplementierung ist nicht Bestandteil dieser Verträge.
+Die konkrete Programmiersprache einer Ersatzimplementierung ist nicht Bestandteil dieser Definitionen.
 
 ### req-system-011 -- Schutz externer Schnittstellen
 
@@ -172,15 +172,15 @@ Eine Komponente mit eigenem konfigurierbarem Speicher muss als eigenständiges P
 
 Sie besitzt dafür eine eigene Startkonfiguration und muss den Parameter `-c <PATH>` unterstützen.
 
-### req-system-022 -- Zentrale Bereitstellung maschinenlesbarer Verträge
+### req-system-022 -- Zentrale Bereitstellung der maschinenlesbaren Definition der Schnittstellen
 
-Maschinenlesbare, von Pipwerk verwendete Verträge werden im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere formale Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedefinitionen und Datenformate.
+Die maschinenlesbare Definition der von Pipwerk verwendeten Schnittstellen wird im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere die formalen Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedefinitionen und Datenformate.
 
-Der vollständige Bestand dieser Verträge wird gemeinsam bereitgestellt. Eine Bereitstellung darf nicht davon abhängen, welche Hauptkomponente einen Vertrag derzeit verwendet. Dadurch muss eine Komponente bei einer späteren Nutzung eines bereits vorhandenen Vertrags nicht auf die Installation oder Dateien einer anderen Hauptkomponente zugreifen.
+Der vollständige Bestand dieser Definitionen wird gemeinsam bereitgestellt. Eine Bereitstellung darf nicht davon abhängen, welche Hauptkomponente eine Definition derzeit verwendet. Dadurch muss eine Komponente bei einer späteren Nutzung einer bereits vorhandenen Definition nicht auf die Installation oder Dateien einer anderen Hauptkomponente zugreifen.
 
-Bei einer systemweiten Installation unter Unix-artigen Betriebssystemen werden diese architekturunabhängigen Dateien unter `/usr/share/pipwerk/contracts` bereitgestellt. Abweichende Installationsformen müssen ebenfalls sicherstellen, dass die Verträge unabhängig von der Installation einer bestimmten Hauptkomponente verfügbar sind.
+Bei einer systemweiten Installation unter Unix-artigen Betriebssystemen werden diese architekturunabhängigen Dateien unter `/usr/share/pipwerk/contracts` bereitgestellt. Abweichende Installationsformen müssen ebenfalls sicherstellen, dass die Definitionen unabhängig von der Installation einer bestimmten Hauptkomponente verfügbar sind.
 
-Die maschinenlesbaren Verträge ersetzen nicht ihre für Menschen bestimmte technische Dokumentation. Die Bedeutung, Verwendung und Inhalte der Verträge werden vollständig unter `docs/technical` beschrieben.
+Die maschinenlesbaren Definitionen ersetzen nicht ihre für Menschen bestimmte technische Dokumentation. Die Bedeutung, Verwendung und Inhalte der Definitionen werden vollständig unter `docs/technical` beschrieben.
 
 ## 5. Abgrenzung
 
@@ -194,9 +194,9 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | --- | --- |
 | 2026-09-25 | Erstanlage; Hauptkomponenten und eigenständige Ausführbarkeit sowie gemeinsame Strategiedefinition und komponentenübergreifende Kommunikation festgelegt. |
 | 2026-09-25 | Python für Fachkern und Backends, TypeScript/React/CSS für die Oberflächen von Designer, Tester und Handelssystem sowie eigenständige Bereitstellung gemeinsamer Bibliotheken festgelegt. |
-| 2026-09-25 | Dokumentierte Web-APIs, Webhooks, Austauschbarkeit über versionierte Verträge und Schutz externer Schnittstellen ergänzt. |
+| 2026-09-25 | Dokumentierte Web-APIs, Webhooks, Austauschbarkeit über versionierte Schnittstellendefinitionen und Schutz externer Schnittstellen ergänzt. |
 | 2026-09-26 | Konfigurierbare Datenspeicherung, unabhängige und gemeinsame Speicherzuordnung sowie SQLAlchemy als gemeinsame Speicherschnittstelle festgelegt. |
 | 2026-09-26 | Zweistufige Konfiguration aus INI-Startkonfiguration und gespeicherter Betriebskonfiguration, Suchpfade und Zusammenhang zwischen eigenem Speicher und eigenständiger Startbarkeit festgelegt. |
 | 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
-| 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung maschinenlesbarer Verträge sowie deren menschenlesbare Dokumentation festgelegt. |
-| 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst; Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. |
+| 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung der maschinenlesbaren Definition der Schnittstellen sowie deren menschenlesbare Dokumentation festgelegt. |
+| 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst; Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
