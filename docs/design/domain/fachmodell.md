@@ -322,6 +322,21 @@ Offen: ob das Handelssystem dafür einen eigenen OrderBuilder verwendet.
 
 Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
 
+### req-fach-049a -- Elemente für bestehende Orders und Positionen
+
+Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits bestehende Orders oder Positionen wirken:
+
+| Element | wirkt auf | Inhalt |
+|---|---|---|
+| `Order ändern` | wartende Order | Preis, Stop-Loss, Take-Profit, Gültigkeit |
+| `Order löschen` | wartende Order | -- |
+| `Position ändern` | offene Position | Stop-Loss, Take-Profit |
+| `Position schließen` | offene Position | ganz oder teilweise; Volumen KANN, ohne Volumen wird die Position ganz geschlossen |
+
+`Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
+
+Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
+
 
 ## 3. Änderungsnachweis
 
@@ -333,3 +348,4 @@ Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
 | 2026-10-13 | req-fach-045: fehlerhafte Reihenfolge im Regelwerk festgelegt (Vorwärtsbezug, Zirkelbezug, keine selbsttätige Umsortierung). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-030 geändert: eigene Ordertypen von Pipwerk mit Bedeutung nach MetaTrader 5, Kompatibilitätsliste je Anbindung, keine annähernde Übersetzung. req-fach-025 und req-fach-029 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-049a: Elemente Order ändern, Order löschen, Position ändern, Position schließen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |

@@ -20,11 +20,15 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | --- | --- |
 | Objekt | Etwas, mit dem ein Händler arbeitet, beschrieben im Fachmodell, zum Beispiel Strategie, Trend, Indikator, Regel, Regelwerk oder Order. Ein Objekt hat Eigenschaften, unabhängig davon, ob und wie es auf der Zeichenfläche dargestellt wird. Die Begriffe „Handelsobjekt“ und „fachliches Objekt“ werden nicht verwendet. |
 | Objekttyp | Die Art eines Objekts, zum Beispiel „gleitender Durchschnitt (EMA)“ oder „Markttechnik-Trend“. Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
-| Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Order aufgeben, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
+| Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
 | Elementbibliothek | Der Bereich der Oberfläche, der die verfügbaren Elementtypen und die bereits angelegten Objekte zur Auswahl anbietet. |
 | Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie ausgewertet wird, zum Beispiel der Schluss einer Kerze auf einer Zeiteinheit. Es steht am Anfang des Ablaufs. Jede Strategie hat mindestens einen Auslöser. |
 | Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. |
+| Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. |
+| Order löschen | Das Element, das eine wartende Order löscht. |
+| Position ändern | Das Element, das Stop-Loss oder Take-Profit einer offenen Position ändert. |
+| Position schließen | Das Element, das eine offene Position ganz oder teilweise schließt. |
 | Regelwerk | Eine benannte, geordnete Sammlung eigenständiger Regeln. Die Regeln behalten darin ihre Einzelergebnisse. |
 | Verbindung | Ein Element in Form einer Linie zwischen zwei Elementen auf der Zeichenfläche. Sie bedeutet entweder „danach folgt“ im Ablauf, den wahr- oder falsch-Pfad einer Bedingung oder die Verwendung einer Eigenschaft oder eines Ergebnisses durch ein anderes Element. Das Wort „Kante“ wird nicht verwendet. |
 | Verweis | Die Verwendung eines eigenständig gespeicherten Objekts (zum Beispiel einer Regel oder eines Indikators) in einer Strategie über seine Kennung, ohne das Objekt zu kopieren. |
@@ -85,3 +89,4 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |
+| 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |
