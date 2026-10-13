@@ -152,7 +152,7 @@ Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 
 Ein vorgegebener Orderpreis ist keine Eigenschaft der `MarketOrder`. Der tatsächliche Ausführungspreis entsteht bei der Ausführung.
 
-### req-fach-029 -- Wartende Ordertypen (Entwurf)
+### req-fach-029 -- Wartende Ordertypen
 
 Als Spezialisierungen von `Order` werden drei wartende Ordertypen geführt. Ihre Bedeutung entspricht den Pending-Ordertypen von MetaTrader 5. Wie bei `MarketOrder` ist die Handelsrichtung eine Eigenschaft und nicht Bestandteil des Typs.
 
@@ -177,7 +177,9 @@ Die Ausführungsbedingung, also das Verhalten, wenn zum gewünschten Preis nicht
 
 Ebenso ist die zulässige Kursabweichung einer Marktorder nicht Teil der Strategie. Sie wirkt bei MetaTrader 5 nur bei bestimmten Ausführungsarten des Kontos. Die Anbindung setzt sie, wo das Konto sie verlangt.
 
-Offen: ob das Handelssystem Ausführungsbedingung oder Kursabweichung später je Konto oder Strategieanwendung einstellbar macht. Ob das Schließen einer Position gegen eine Gegenposition unterstützt wird. Bis zur Klärung gilt die Tabelle als Entwurf.
+Das Schließen einer Position gegen eine Gegenposition (bei MetaTrader 5 möglich bei Konten, die gegenläufige Positionen im selben Instrument zulassen) ist in der ersten Fassung nicht vorgesehen. Es wird bei Bedarf ergänzt.
+
+Offen: ob das Handelssystem Ausführungsbedingung oder Kursabweichung später je Konto oder Strategieanwendung einstellbar macht.
 
 ### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
 
@@ -368,3 +370,4 @@ Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
 | 2026-10-13 | req-fach-029: Gültigkeit wartender Orders mit vier Werten statt Ablaufzeit. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Ausführungsbedingung bewusst nicht Teil der Strategie, Wahl durch die Anbindung. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: zulässige Kursabweichung nicht Teil der Strategie, möglicherweise später im Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Schließen gegen Gegenposition nicht vorgesehen. Erfassung der Ordertypen nach MetaTrader 5 abgeschlossen, Vermerk Entwurf entfernt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
