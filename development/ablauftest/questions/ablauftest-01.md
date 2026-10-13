@@ -18,7 +18,7 @@ Benötigt wird: An welcher Stelle steht das Bedienelement, mit dem der Anwender 
 
 Vorschlag des Softwarearchitekten: eine Schaltfläche „Über pipwerk studio“ (englisch „About pipwerk studio“) in der Kopfzeile rechts neben der Sprachauswahl.
 
-Antwort:
+Antwort: Vorschlag angenommen. Schaltfläche „Über pipwerk studio“ (englisch „About pipwerk studio“) in der Kopfzeile rechts neben der Sprachauswahl. Eingetragen in req-ui-010.
 
 ## Frage 2: Was zeigt der Dialog, wenn kein Datum zu finden ist?
 
@@ -30,4 +30,4 @@ Benötigt wird: Was steht in diesem Fall beim Stand?
 
 Vorschlag des Softwarearchitekten: die Kennung ohne Datum. Die Kennung allein bezeichnet den Stand eindeutig. „unbekannt“ würde eine bekannte Angabe verschweigen.
 
-Antwort:
+Antwort: Vorschlag abgelehnt, und auch die Abfrage bei GitHub entfällt. Kennung, Datum und Uhrzeit des Commits sind in der bereitgestellten Software selbst enthalten; für die Anzeige wird keine Internetverbindung genutzt. Fehlen die Angaben, steht dort „unbekannt“. Eingetragen in req-ui-010. (Auftraggeber im Chat, 13. Oktober 2026)

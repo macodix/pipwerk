@@ -289,13 +289,12 @@ Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort 
 pipwerk studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md)), zeigt auf Anforderung des Anwenders einen Dialog „Über pipwerk studio“. Er enthält:
 
 - den Namen „pipwerk studio“
-- den Stand: die vollständige Kennung des Commits, aus dem pipwerk studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Ist das Datum lokal nicht ermittelbar, werden Datum und Uhrzeit des Commits laut GitHub mit Angabe der Zeitzone angezeigt. Ist der Stand nicht ermittelbar, steht dort „unbekannt“.
+- den Stand: die vollständige Kennung des Commits, aus dem pipwerk studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Kennung, Datum und Uhrzeit sind in der bereitgestellten Software selbst enthalten. Für die Anzeige wird keine Internetverbindung genutzt. Fehlen die Angaben, steht dort „unbekannt“.
 - die Lizenz: Name und vollständiger Text der „GNU General Public License, Version 3“, immer im englischen Original
 - die Adresse https://github.com/macodix/pipwerk als Verweis, der sich in einem neuen Tab öffnet
 
-Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen.
+Der Dialog wird über die Schaltfläche „Über pipwerk studio“ (englisch „About pipwerk studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen.
 
-Offen: an welcher Stelle der Oberfläche der Dialog aufgerufen wird.
 
 ## 7. Arbeitsabläufe
 
@@ -393,7 +392,6 @@ Die folgenden Punkte sind noch nicht entschieden:
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
 9.  Welche Objekte als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
-10. An welcher Stelle der Oberfläche der Dialog „Über pipwerk studio“ aufgerufen wird (req-ui-010).
 
 ## 10. Änderungsnachweis
 
@@ -445,3 +443,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-12 | Arbeitsabläufe (Abschnitt 7), Parameter und Standardwerte gespeicherter Objekte, Pflicht- und optionale Parameter, Konsistenzprüfung. Grundausstattung an Objekten als offen aufgenommen. |
 | 2026-10-13 | Dialog „Über pipwerk studio“ (req-ui-010), Aufrufstelle offen. |
 | 2026-10-13 | req-ui-010 nach Prüfbericht präzisiert: Inhalt des Stands, Lizenztext im Original, Adresse als Verweis, gesperrte Oberfläche, Name laut Projektziel. Bestätigt vom Auftraggeber im Chat. |
+| 2026-10-13 | req-ui-010: Aufrufstelle festgelegt; Stand in der Software enthalten, keine Abfrage bei GitHub. Antwort des Auftraggebers auf Frage ablauftest-01. |

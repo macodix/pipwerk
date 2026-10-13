@@ -11,4 +11,4 @@ Die übrigen Anforderungen dieser Dokumente gehören nicht zum Vorhaben und werd
 
 ## Stand
 
-Phase 2. Prüfbericht der QA zu den Anforderungen, Durchlauf 1 ([requirements-1.md](reviews/requirements-1.md)): nicht bestanden. B5 und B7 vom Projektleiter korrigiert, B1 bis B4 und B6 vom Auftraggeber im Chat am 13. Oktober 2026 entschieden und in req-ui-010 eingearbeitet. Die Frage nach dem Autoren- oder Committer-Datum aus B2 beantwortet die Spezifikation. Offen: Aufrufstelle des Dialogs (in req-ui-010 gekennzeichnet).
+Phase 2. Prüfbericht der QA zu den Anforderungen, Durchlauf 1 ([requirements-1.md](reviews/requirements-1.md)): nicht bestanden. B5 und B7 vom Projektleiter korrigiert, B1 bis B4 und B6 vom Auftraggeber im Chat am 13. Oktober 2026 entschieden und in req-ui-010 eingearbeitet. Die Frage nach dem Autoren- oder Committer-Datum aus B2 beantwortet die Spezifikation. Frage ablauftest-01 beantwortet: Aufrufstelle festgelegt, Stand ohne Abfrage bei GitHub.
