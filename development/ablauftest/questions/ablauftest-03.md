@@ -25,4 +25,4 @@ Nach drei nicht bestandenen Durchläufen darf der Softwarearchitekt keinen weite
 
 Vorschlag des Softwarearchitekten: Weiteren Durchlauf freigeben. Nach positivem Prüfbericht geht die Spezifikation mit `present` an den Projektleiter. Findet die QA in Durchlauf 7 erneut einen Befund, kommt der Fall wieder an den Projektleiter.
 
-Antwort:
+Antwort: Weiterer Prüfdurchlauf (Durchlauf 7) freigegeben. Kein Streitpunkt, alle Befunde technisch; Entscheidung des Projektleiters ohne Vorlage beim Auftraggeber. (Projektleiter, 13. Oktober 2026)
