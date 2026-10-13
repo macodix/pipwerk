@@ -132,11 +132,11 @@ Ein zusätzlicher Ordertyp wird als zusätzliches spezialisiertes Orderobjekt er
 
 ### req-fach-025 -- Ordertypen der ersten Entwicklungsphase
 
-Die erste Entwicklungsphase beschränkt die unterstützten Ordertypen auf die Standard-Ordertypen von MetaTrader 5 (MT5).
+Die erste Entwicklungsphase beschränkt die unterstützten Ordertypen auf Ordertypen, deren Bedeutung den Standard-Ordertypen von MetaTrader 5 (MT5) entspricht.
 
-Ob ein konkreter MT5-Ordertyp für ein bestimmtes Handelskonto beziehungsweise Instrument tatsächlich verfügbar ist, muss bei seiner Verwendung berücksichtigt werden.
+Ob ein Ordertyp für ein bestimmtes Handelskonto beziehungsweise Instrument tatsächlich verfügbar ist, wird nach req-fach-030 geprüft.
 
-Die Unterstützung weiterer Broker- oder Plattform-Ordertypen ist nicht Bestandteil dieser ersten Entwicklungsphase.
+Anbindungen weiterer Handelssoftware sind nicht Bestandteil dieser ersten Entwicklungsphase.
 
 ### req-fach-028 -- MarketOrder
 
@@ -162,13 +162,15 @@ Als Spezialisierungen von `Order` werden die Pending-Ordertypen von MetaTrader 5
 | `BuyLimitOrder`, `SellLimitOrder` | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
 | `BuyStopLimitOrder`, `SellStopLimitOrder` | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
 
-Offen: Die Ordertypen von MetaTrader 5 sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Die Tabelle gilt bis zur Abstimmung dieser Erfassung als Entwurf.
+Offen: Die Ordertypen von MetaTrader 5 sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Die Tabelle gilt bis zur Abstimmung dieser Erfassung als Entwurf. Die Namen in der Tabelle sind vorläufig. Pipwerk verwendet eigene Namen nach req-fach-030, sie sind noch nicht festgelegt.
 
-### req-fach-030 -- Herkunft und Verfügbarkeit von Ordertypen
+### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
 
-Es gibt keine Ordertypen, deren Verfügbarkeit bei jeder Handelssoftware und jedem Broker gewährleistet ist. Jeder Ordertyp gehört zu der Handelssoftware, deren Anbindung ihn bereitstellt, und trägt deren Kennzeichnung. Eine Strategie darf jeden bereitgestellten Ordertyp verwenden.
+Ordertypen sind Objekte von Pipwerk mit eigenen Namen. Eine Strategie verwendet diese Ordertypen und ist damit unabhängig von Konto und Handelssoftware. Die Bedeutung jedes Ordertyps ist im Fachmodell so genau beschrieben, dass sich für jede Handelssoftware prüfen lässt, ob sie ihn mit genau dieser Bedeutung ausführen kann. Vorbild für Umfang und Bedeutung sind die Ordertypen von MetaTrader 5.
 
-Ob Handelssoftware, Broker und Instrument eines Kontos einen Ordertyp anbieten, wird bei der Zuordnung einer Strategie zu diesem Konto geprüft. Ist das nicht der Fall, wird die Zuordnung mit Angabe des Grundes abgelehnt. Ein Ordertyp einer Handelssoftware wird nicht in den einer anderen übersetzt.
+Es gibt keine Ordertypen, deren Verfügbarkeit bei jeder Handelssoftware und jedem Broker gewährleistet ist. Jede Anbindung an eine Handelssoftware führt eine Kompatibilitätsliste: Sie gibt an, welche Ordertypen und welche Aktionen von Pipwerk (zum Beispiel Order ändern) die Handelssoftware mit genau der beschriebenen Bedeutung ausführt und wie sie dort heißen. Weicht das Verhalten der Handelssoftware ab, gilt der Ordertyp beziehungsweise die Aktion dort als nicht verfügbar. Annähernde Übersetzungen gibt es nicht.
+
+Bei der Zuordnung einer Strategie zu einem Konto wird geprüft, ob Handelssoftware, Broker und Instrument des Kontos alle in der Strategie verwendeten Ordertypen und Aktionen anbieten. Grundlage ist die Kompatibilitätsliste der Anbindung. Ist das nicht der Fall, wird die Zuordnung mit Angabe des Grundes abgelehnt.
 
 ### req-fach-032 -- CloseOrder
 
@@ -330,3 +332,4 @@ Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
 | 2026-09-25 | `Strategie` als fachliches Objekt sowie Ablauf, Berechnung und Beauftragung des `OrderBuilder` konkretisiert; separates `Signal`-Objekt aus dem aktuellen Modell entfernt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
 | 2026-10-13 | req-fach-045: fehlerhafte Reihenfolge im Regelwerk festgelegt (Vorwärtsbezug, Zirkelbezug, keine selbsttätige Umsortierung). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-030 geändert: eigene Ordertypen von Pipwerk mit Bedeutung nach MetaTrader 5, Kompatibilitätsliste je Anbindung, keine annähernde Übersetzung. req-fach-025 und req-fach-029 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
