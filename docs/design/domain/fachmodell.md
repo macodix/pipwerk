@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
-- zuletzt aktualisiert: `2026-10-12`
+- zuletzt aktualisiert: `2026-10-13`
 
 ## 1. Zweck und Abgrenzung
 
@@ -267,9 +267,14 @@ Soll ein Regelwerk ein Gesamtergebnis liefern, muss dessen Bestimmung ausdrückl
 
 Die Reihenfolge der enthaltenen Regeln ist Bestandteil des Regelwerks. Die Regeln werden grundsätzlich in dieser Reihenfolge ausgewertet. Der Nutzer muss die Reihenfolge ändern können.
 
-### req-fach-045 -- Behandlung fehlerhafter Reihenfolgen offen
+### req-fach-045 -- Fehlerhafte Reihenfolge im Regelwerk
 
-Wie ungültige Reihenfolgen, nicht erfüllte Abhängigkeiten oder vergleichbare Konfigurationsfehler erkannt und behandelt werden, ist derzeit nicht festgelegt. Dies kann später im Zusammenhang mit der Validierung, dem Testen oder Debuggen von Strategien konkretisiert werden.
+Ein Regelwerk ist fehlerhaft, wenn es in seiner festgelegten Reihenfolge nicht auswertbar ist. Das ist insbesondere der Fall, wenn
+
+- eine Regel das Ergebnis einer Regel verwendet, die im selben Regelwerk erst später steht,
+- Regeln sich gegenseitig verwenden, direkt oder über Zwischenstufen (Zirkelbezug).
+
+Die Reihenfolge wird nicht selbsttätig geändert. Der Nutzer legt sie fest. Erkennung und Anzeige gehören zur Konsistenzprüfung des Strategiedesigners.
 
 
 ### req-fach-046 -- Objekt Strategie
@@ -324,3 +329,4 @@ Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. Bestehende fachliche Festlegungen und IDs wurden übernommen. |
 | 2026-09-25 | `Strategie` als fachliches Objekt sowie Ablauf, Berechnung und Beauftragung des `OrderBuilder` konkretisiert; separates `Signal`-Objekt aus dem aktuellen Modell entfernt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
+| 2026-10-13 | req-fach-045: fehlerhafte Reihenfolge im Regelwerk festgelegt (Vorwärtsbezug, Zirkelbezug, keine selbsttätige Umsortierung). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
