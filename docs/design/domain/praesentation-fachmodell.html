@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fachmodell Strategiedesigner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Gestaltung wie die übrigen Präsentationen der Dokumente des Auftraggebers. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.tag{display:inline-block;font-size:20px;font-weight:600;padding:4px 12px;border-radius:8px;margin-right:10px}
+.err{background:#f6dede;color:#8a2d2d}
+.hint{background:var(--amberbg);color:var(--amber)}
+.red{border:3px solid #b83a3a;background:#f6dede}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Dokumente des Auftraggebers</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Fachmodell: Änderungen für den Strategiedesigner</h1>
+<p style="font-size:38px;width:1500px">Die am 13. Oktober 2026 abgestimmten Änderungen an <code>docs/design/domain/fachmodell.md</code>, dazu die betroffenen Stellen in den Anforderungen an den Strategiedesigner und im Glossar.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">13. Oktober 2026 · Projektleiter an Martin</p>
+<p class="num">1 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Fehler im Regelwerk und Anzeige der Befunde</h2>
+<div class="row">
+<div class="card col"><h3>Fehlerhafte Reihenfolge (req-fach-045)</h3>
+<p>Ein Regelwerk ist fehlerhaft, wenn es in seiner Reihenfolge nicht auswertbar ist:</p><ul>
+<li>eine Regel verwendet das Ergebnis einer Regel, die erst später steht</li>
+<li>Regeln verwenden sich gegenseitig, direkt oder über Zwischenstufen</li></ul>
+<p>Der Designer sortiert nicht selbst um. Der Nutzer ändert die Reihenfolge. Die Konsistenzprüfung meldet einen <span class="tag err">Fehler</span> (req-ablauf-007).</p>
+<p class="note">Speichern ist immer möglich. Ausführen nur ohne Fehler.</p></div>
+<div class="card col"><h3>Anzeige der Befunde (req-ui-011)</h3>
+<div class="chain"><div class="node red">Element mit Fehler<small>rot umrandet oder hinterlegt</small></div><span class="arrow">→</span><div class="node">Eigenschaftenansicht<small>Befundtext neben den Eigenschaften</small></div></div>
+<ul><li>keine Meldung, die weggeklickt werden muss</li>
+<li>solche Meldungen nur bei kritischen Fehlern, etwa wenn das Speichern selbst fehlschlägt</li></ul>
+<p class="note">Offen: Befunde ohne einzelnes Element und Darstellung von Hinweisen. Klärung mit dem Oberflächenentwurf.</p></div>
+</div>
+<p class="num">2 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Eigene Ordertypen und Kompatibilitätsliste</h2>
+<p class="rule">Geändert (req-fach-030): Die Strategie verwendet Ordertypen von Pipwerk mit eigenen Namen. Ihre Bedeutung richtet sich nach MetaTrader 5. Etwas anders ist anders: Annähernde Übersetzungen gibt es nicht.</p>
+<div class="chain">
+<div class="node">Strategie<small>verwendet Ordertypen und Aktionen von Pipwerk</small></div><span class="arrow">→</span>
+<div class="node">Kompatibilitätsliste<small>je Anbindung: was die Handelssoftware genau so ausführt und wie es dort heißt</small></div><span class="arrow">→</span>
+<div class="node">Zuordnung zum Konto<small>Prüfung mit Broker und Instrument, Ablehnung mit Grund</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Bisher</h3><p>Jeder Ordertyp gehörte zu seiner Handelssoftware und trug deren Kennzeichnung. Eine Strategie war damit an eine Handelssoftware gebunden.</p></div>
+<div class="card col"><h3>Jetzt</h3><p>Die Strategie ist unabhängig von Konto und Handelssoftware. Weicht das Verhalten einer Handelssoftware ab, gilt der Ordertyp dort als nicht verfügbar.</p></div>
+</div>
+<p class="num">3 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Vier Ordertypen zum Eröffnen</h2>
+<div class="row">
+<div class="col" style="flex:1.2"><table>
+<tr><th>Ordertyp</th><th>Bedeutung</th></tr>
+<tr><td><b>Marktorder</b></td><td>sofort zum aktuellen Kurs</td></tr>
+<tr><td><b>Stop-Order</b></td><td>Ausführung, wenn der Kurs den Preis in Handelsrichtung erreicht</td></tr>
+<tr><td><b>Limit-Order</b></td><td>Ausführung, wenn der Kurs den Preis gegen die Handelsrichtung erreicht</td></tr>
+<tr><td><b>Stop-Limit-Order</b></td><td>beim Erreichen des Auslösepreises wird eine Limit-Order gestellt</td></tr>
+</table>
+<p class="note">Die Richtung (Kauf, Verkauf) ist bei allen eine Eigenschaft (req-fach-029). Die MetaTrader-Anbindung ordnet zu, zum Beispiel Stop-Order mit Kauf → Buy Stop.</p></div>
+<div class="col"><table>
+<tr><th>Gültigkeit wartender Orders</th><th>Zusatz</th></tr>
+<tr><td>bis auf Widerruf (Standardwert)</td><td>—</td></tr>
+<tr><td>bis Tagesende</td><td>—</td></tr>
+<tr><td>bis Zeitpunkt</td><td>Ablaufzeit</td></tr>
+<tr><td>bis Ende eines Tages</td><td>Datum</td></tr>
+</table>
+<p class="note">Ersetzt die bisherige optionale Ablaufzeit.</p></div>
+</div>
+<p class="num">4 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Bewusst nicht Teil der Strategie</h2>
+<div class="row">
+<div class="card col"><h3>Ausführungsbedingung</h3><p>Verhalten, wenn zum gewünschten Preis nicht das ganze Volumen verfügbar ist. Die zulässigen Werte legt der Handelsserver fest.</p><p>Die Anbindung wählt einen zulässigen Wert. Teilausführungen sind im Fachmodell berücksichtigt (req-fach-016).</p></div>
+<div class="card col"><h3>Zulässige Kursabweichung</h3><p>Wirkt bei MetaTrader nur bei bestimmten Ausführungsarten des Kontos, bei „Market Execution“ nicht.</p><p>Die Anbindung setzt sie, wo das Konto sie verlangt.</p></div>
+<div class="card col"><h3>Schließen gegen Gegenposition</h3><p>Nur bei Konten, die Kauf- und Verkaufsposition im selben Instrument zulassen.</p><p>In der ersten Fassung nicht vorgesehen, Ergänzung bei Bedarf.</p></div>
+</div>
+<p class="note">Offen: ob das Handelssystem Ausführungsbedingung oder Kursabweichung später je Konto oder Strategieanwendung einstellbar macht.</p>
+<p class="num">5 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Elemente für Orders und Positionen</h2>
+<table>
+<tr><th>Element</th><th>wirkt auf</th><th>Inhalt</th></tr>
+<tr><td><b>Order aufgeben</b></td><td>neue Order</td><td>Ordertyp und Parameter. Liefert die gestellte Order als Ergebnis</td></tr>
+<tr><td><b>Order ändern</b> <span class="tag hint">neu</span></td><td>wartende Order</td><td>Preis, Stop-Loss, Take-Profit, Gültigkeit</td></tr>
+<tr><td><b>Order löschen</b> <span class="tag hint">neu</span></td><td>wartende Order</td><td>—</td></tr>
+<tr><td><b>Position ändern</b> <span class="tag hint">neu</span></td><td>offene Position</td><td>Stop-Loss, Take-Profit</td></tr>
+<tr><td><b>Position schließen</b> <span class="tag hint">neu</span></td><td>offene Position</td><td>ganz oder teilweise. Ohne Volumen wird die Position ganz geschlossen</td></tr>
+</table>
+<div class="card"><h3>Welche Order, welche Position? (req-fach-049a)</h3><p>Die neuen Elemente sind mit „Order aufgeben“ verbunden und verwenden dessen Ergebnis: die Order selbst oder die daraus entstandene Position. Eine Strategie wirkt nur auf ihre eigenen Orders und Positionen. Die Namen folgen MetaTrader 5, die Elemente stehen auch im Glossar.</p></div>
+<p class="num">6 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Offen und Stand</h2>
+<div class="row">
+<div class="card col"><h3>Weiter offen</h3><ul>
+<li>ob es einen OrderBuilder gibt (req-fach-049). Betrifft das Handelssystem</li>
+<li>Befunde ohne einzelnes Element, Darstellung von Hinweisen (req-ui-011)</li>
+<li>Einstellbarkeit von Ausführungsbedingung und Kursabweichung im Handelssystem</li>
+<li>Funktionen in Regeln, etwa Abrunden auf die Volumenschrittweite (req-fach-036). Klärung mit den Prüffällen</li>
+<li>Zugriffsschreibweise auf Indikator-Eigenschaften (req-fach-012). Technische Frage für den Softwarearchitekten</li></ul></div>
+<div class="card col"><h3>Stand</h3><ul>
+<li>alle Änderungen in Pull Request #76</li>
+<li>Dokumentstatus des Fachmodells bleibt <code>draft</code></li>
+<li>Prüffall Punkt-2-Ausbruch unverändert: Anpassen von Stop-Loss und Take-Profit, solange die Order wartet</li></ul>
+<p class="label" style="margin-top:20px">Bestätigung</p>
+<p>Ausstehend</p></div>
+</div>
+<p class="num">7 / 7</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
