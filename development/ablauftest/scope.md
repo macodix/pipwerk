@@ -4,11 +4,11 @@ Erster vollständiger Durchlauf des [Entwicklungsverfahrens](../../docs/technica
 
 ## Geltende Anforderungsdokumente
 
-- [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), nur req-ui-010 „Angaben zu Pipwerk Studio“
+- [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), nur req-ui-010 „Angaben zu pipwerk studio“
 - [Anforderungen an das Gesamtsystem](../../docs/design/requirements/anforderungen-gesamtsystem.md), nur für die Prüfung der Widerspruchsfreiheit von req-ui-010
 
 Die übrigen Anforderungen dieser Dokumente gehören nicht zum Vorhaben und werden nicht geprüft.
 
 ## Stand
 
-Phase 1 abgeschlossen, Anforderung vom Auftraggeber im Chat am 13. Oktober 2026 bestätigt. Offen: Aufrufstelle des Dialogs (in req-ui-010 gekennzeichnet).
+Phase 2. Prüfbericht der QA zu den Anforderungen, Durchlauf 1 ([requirements-1.md](reviews/requirements-1.md)): nicht bestanden. B5 und B7 vom Projektleiter korrigiert, B1 bis B4 und B6 vom Auftraggeber im Chat am 13. Oktober 2026 entschieden und in req-ui-010 eingearbeitet. Die Frage nach dem Autoren- oder Committer-Datum aus B2 beantwortet die Spezifikation. Offen: Aufrufstelle des Dialogs (in req-ui-010 gekennzeichnet).

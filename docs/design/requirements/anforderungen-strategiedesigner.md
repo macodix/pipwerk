@@ -284,16 +284,16 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
-### req-ui-010 -- Angaben zu Pipwerk Studio
+### req-ui-010 -- Angaben zu pipwerk studio
 
-Der Strategiedesigner zeigt auf Anforderung des Anwenders einen Dialog „Über Pipwerk Studio“. Er enthält:
+pipwerk studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md)), zeigt auf Anforderung des Anwenders einen Dialog „Über pipwerk studio“. Er enthält:
 
-- den Namen „Pipwerk Studio“
-- den Stand wie in der bisherigen Anzeige, zusätzlich mit Datum und Uhrzeit des Commits
-- die Lizenz „GNU General Public License, Version 3“; der vollständige Lizenztext ist im Dialog lesbar
-- die Adresse des Repositorys
+- den Namen „pipwerk studio“
+- den Stand: die vollständige Kennung des Commits, aus dem pipwerk studio läuft, mit Datum und Uhrzeit dieses Commits in der Ortszeit des Browsers. Ist das Datum lokal nicht ermittelbar, werden Datum und Uhrzeit des Commits laut GitHub mit Angabe der Zeitzone angezeigt. Ist der Stand nicht ermittelbar, steht dort „unbekannt“.
+- die Lizenz: Name und vollständiger Text der „GNU General Public License, Version 3“, immer im englischen Original
+- die Adresse https://github.com/macodix/pipwerk als Verweis, der sich in einem neuen Tab öffnet
 
-Der Dialog wird mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Seine Texte folgen der Oberflächensprache (req-ui-007).
+Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen.
 
 Offen: an welcher Stelle der Oberfläche der Dialog aufgerufen wird.
 
@@ -393,7 +393,7 @@ Die folgenden Punkte sind noch nicht entschieden:
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
 9.  Welche Objekte als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
-10. An welcher Stelle der Oberfläche der Dialog „Über Pipwerk Studio“ aufgerufen wird (req-ui-010).
+10. An welcher Stelle der Oberfläche der Dialog „Über pipwerk studio“ aufgerufen wird (req-ui-010).
 
 ## 10. Änderungsnachweis
 
@@ -443,4 +443,5 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-12 | Objektverzeichnis als Einstellung im Einstellungsbereich. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt statt fachliches Objekt oder fachliches Element, Element für alles auf der Zeichenfläche, Eigenschaft, Parameter und Ergebnis unterschieden. Auslöser als Elemente, mindestens einer je Strategie. |
 | 2026-10-12 | Arbeitsabläufe (Abschnitt 7), Parameter und Standardwerte gespeicherter Objekte, Pflicht- und optionale Parameter, Konsistenzprüfung. Grundausstattung an Objekten als offen aufgenommen. |
-| 2026-10-13 | Dialog „Über Pipwerk Studio“ (req-ui-010), Aufrufstelle offen. Gegenstand des Vorhabens `ablauftest`. |
+| 2026-10-13 | Dialog „Über pipwerk studio“ (req-ui-010), Aufrufstelle offen. |
+| 2026-10-13 | req-ui-010 nach Prüfbericht präzisiert: Inhalt des Stands, Lizenztext im Original, Adresse als Verweis, gesperrte Oberfläche, Name laut Projektziel. Bestätigt vom Auftraggeber im Chat. |
