@@ -6,7 +6,8 @@
 - stand: 2026-10-13
 - komponente: `pipwerk-studio`
 - grundlage: [scope.md](scope.md), req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md), Antworten in [questions/ablauftest-01.md](questions/ablauftest-01.md)
-- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde S1 bis S6 eingearbeitet, S7 und S8 in Abschnitt 9. Durchlauf 2 [specification-2.md](reviews/specification-2.md) nicht bestanden, Befund N1 eingearbeitet und in Abschnitt 9 zur Bestätigung vorgelegt.
+- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde S1 bis S6 eingearbeitet, S7 und S8 in Abschnitt 9. Durchlauf 2 [specification-2.md](reviews/specification-2.md) nicht bestanden, Befund N1 eingearbeitet und in Abschnitt 9 zur Bestätigung vorgelegt. Durchlauf 3 [specification-3.md](reviews/specification-3.md) nicht bestanden, D3 eingearbeitet.
+- offen: Frage [questions/ablauftest-02.md](questions/ablauftest-02.md) zu E9 nach drei Prüfdurchläufen. Von der Antwort hängen E9, der Absatz „Grenze im Entwicklungsbetrieb“, der Browsertest (Abschnitt 4.2), die Anwenderdokumentation (Abschnitt 7) und Abschnitt 9 ab (Befunde D1 und D2).
 
 ## 1. Gegenstand
 
@@ -32,7 +33,7 @@ Grenze im Entwicklungsbetrieb: Der Start im Entwicklungsbetrieb (technische Doku
 
 - Der Dialog nennt den Commit beim letzten Start des Entwicklungsservers, die Fußzeile den Commit beim Start des Backends.
 - Nach einem Wechsel des Commits oder bei nicht committeten Änderungen können beide von dem Code abweichen, der tatsächlich läuft, und voneinander abweichen.
-- Nach einem Neustart beider Prozesse nennen beide wieder den aktuellen Commit.
+- Nach einem Neustart beider Prozesse nennen beide den Commit, der dann ausgecheckt ist. Nicht committete Änderungen gehören zu keinem Commit. Der laufende Code weicht dann auch nach dem Neustart vom angezeigten Commit ab, bis die Änderungen committet oder verworfen sind und beide Prozesse erneut gestartet wurden.
 
 Für die Fußzeile gilt die Abweichung bereits heute (technische Dokumentation Abschnitt 2.6). Die Grenze wird in der technischen Dokumentation (Abschnitt 9) und in der Anwenderdokumentation beschrieben. Sie wird dem Auftraggeber in Abschnitt 9 zur Bestätigung vorgelegt.
 
