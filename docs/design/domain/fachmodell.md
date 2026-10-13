@@ -158,13 +158,22 @@ Als Spezialisierungen von `Order` werden drei wartende Ordertypen geführt. Ihre
 
 | Ordertyp | Bedeutung | zusätzliche Eigenschaften |
 |---|---|---|
-| `StopOrder` (Stop-Order) | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Richtung` -- MUSS (`buy` oder `sell`), `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Ablaufzeit` -- KANN |
+| `StopOrder` (Stop-Order) | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Richtung` -- MUSS (`buy` oder `sell`), `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Gültigkeit` -- MUSS, Standardwert „bis auf Widerruf“ |
 | `LimitOrder` (Limit-Order) | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
 | `StopLimitOrder` (Stop-Limit-Order) | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
 
+Die Eigenschaft `Gültigkeit` legt fest, wann eine wartende Order ohne Ausführung endet:
+
+| Wert | Bedeutung | Zusatzangabe |
+|---|---|---|
+| bis auf Widerruf | gilt, bis sie ausgeführt oder gelöscht wird | -- |
+| bis Tagesende | endet mit dem aktuellen Handelstag | -- |
+| bis Zeitpunkt | endet zu einer festen Zeit | `Ablaufzeit` -- MUSS |
+| bis Ende eines Tages | endet am Ende eines bestimmten Tages | `Datum` -- MUSS |
+
 Zusammen mit `MarketOrder` (Marktorder) gibt es damit vier Ordertypen zum Eröffnen. Die Kompatibilitätsliste der Anbindung an MetaTrader 5 ordnet jede Kombination aus Ordertyp und Richtung dem dortigen Typ zu, zum Beispiel Stop-Order mit Richtung `buy` dem Typ Buy Stop.
 
-Offen: Die Ordertypen sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Noch abzustimmen sind insbesondere Gültigkeit, Ausführungsbedingung bei Teilausführung und zulässige Kursabweichung bei Marktorders. Bis dahin gilt die Tabelle als Entwurf.
+Offen: Die Ordertypen sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Noch abzustimmen sind insbesondere Ausführungsbedingung bei Teilausführung und zulässige Kursabweichung bei Marktorders. Bis dahin gilt die Tabelle als Entwurf.
 
 ### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
 
@@ -352,3 +361,4 @@ Offen: wie ein Element die betroffene Order beziehungsweise Position bestimmt.
 | 2026-10-13 | req-fach-030 geändert: eigene Ordertypen von Pipwerk mit Bedeutung nach MetaTrader 5, Kompatibilitätsliste je Anbindung, keine annähernde Übersetzung. req-fach-025 und req-fach-029 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-049a: Elemente Order ändern, Order löschen, Position ändern, Position schließen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Handelsrichtung als Eigenschaft bei allen Ordertypen, drei wartende Ordertypen Stop-Order, Limit-Order, Stop-Limit-Order. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Gültigkeit wartender Orders mit vier Werten statt Ablaufzeit. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
