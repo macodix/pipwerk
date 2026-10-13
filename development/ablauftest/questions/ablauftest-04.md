@@ -25,6 +25,8 @@ Nach drei nicht bestandenen Durchläufen darf der Softwarearchitekt keinen weite
 
 Vorschlag des Softwarearchitekten: Weiteren Durchlauf freigeben. Nach positivem Prüfbericht geht die Spezifikation mit `present` an den Projektleiter. Findet die QA in Durchlauf 11 erneut einen Befund, kommt der Fall wieder an den Projektleiter.
 
+Antwort: Durchlauf 11 freigegeben. Zugleich entfällt die Ursache der Schleife: req-ui-010 verlangt jetzt, dass pipwerk Studio seinen Namen überall einheitlich „pipwerk Studio“ schreibt, auch in Oberfläche, Ausgaben und Dokumentation. Das folgt aus der Festlegung des Namens durch den Auftraggeber. Die Abgrenzung in Abschnitt 8 zu Stellen mit „Pipwerk Studio“ entfällt damit, ebenso Frage S7. Die Präsentation zum Projektziel ist korrigiert. (Projektleiter, 13. Oktober 2026)
+
 ## Hinweis außerhalb der Frage
 
 Die QA meldet in allen drei Durchläufen: `docs/design/praesentation-projektziel.html` nennt in der Tabelle der Module noch „pipwerk studio“, `docs/design/projektziel.md` seit dem 13.10.2026 „pipwerk Studio“. Die Präsentation ist ein Dokument des Projektleiters.
