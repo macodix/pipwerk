@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-12`
+- zuletzt aktualisiert: `2026-10-13`
 
 ## 1. Zweck und Abgrenzung
 
@@ -284,6 +284,19 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
+### req-ui-010 -- Angaben zu Pipwerk Studio
+
+Der Strategiedesigner zeigt auf Anforderung des Anwenders einen Dialog „Über Pipwerk Studio“. Er enthält:
+
+- den Namen „Pipwerk Studio“
+- den Stand wie in der bisherigen Anzeige, zusätzlich mit Datum und Uhrzeit des Commits
+- die Lizenz „GNU General Public License, Version 3“; der vollständige Lizenztext ist im Dialog lesbar
+- die Adresse des Repositorys
+
+Der Dialog wird mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Seine Texte folgen der Oberflächensprache (req-ui-007).
+
+Offen: an welcher Stelle der Oberfläche der Dialog aufgerufen wird.
+
 ## 7. Arbeitsabläufe
 
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
@@ -380,6 +393,7 @@ Die folgenden Punkte sind noch nicht entschieden:
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
 9.  Welche Objekte als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
+10. An welcher Stelle der Oberfläche der Dialog „Über Pipwerk Studio“ aufgerufen wird (req-ui-010).
 
 ## 10. Änderungsnachweis
 
@@ -429,3 +443,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-12 | Objektverzeichnis als Einstellung im Einstellungsbereich. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt statt fachliches Objekt oder fachliches Element, Element für alles auf der Zeichenfläche, Eigenschaft, Parameter und Ergebnis unterschieden. Auslöser als Elemente, mindestens einer je Strategie. |
 | 2026-10-12 | Arbeitsabläufe (Abschnitt 7), Parameter und Standardwerte gespeicherter Objekte, Pflicht- und optionale Parameter, Konsistenzprüfung. Grundausstattung an Objekten als offen aufgenommen. |
+| 2026-10-13 | Dialog „Über Pipwerk Studio“ (req-ui-010), Aufrufstelle offen. Gegenstand des Vorhabens `ablauftest`. |
