@@ -66,7 +66,7 @@ Die Erreichbarkeit und Berechtigungen der Web-APIs müssen konfigurierbar sein. 
 
 ### req-system-023 -- Mehrsprachige Benutzeroberflächen
 
-Jede Benutzeroberfläche einer Hauptkomponente wird von Beginn an so umgesetzt, dass sie in mehreren Sprachen verwendet werden kann. Dazu gehören insbesondere Menüs, Beschriftungen, Erläuterungen und Meldungen. Fachliche Inhalte wie vom Nutzer vergebene Namen werden nicht übersetzt.
+Jede Benutzeroberfläche einer Hauptkomponente wird von Beginn an so umgesetzt, dass sie in mehreren Sprachen verwendet werden kann. Dazu gehören insbesondere Menüs, Beschriftungen, Erläuterungen und Meldungen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht übersetzt. Ein Sprachwechsel verändert keine gespeicherten Inhalte.
 
 Deutsch und Englisch sind die ersten bereitgestellten Sprachen. Weitere Sprachen müssen ohne Änderung der fachlichen Logik ergänzt werden können. Die Auswahl und Speicherung der Sprache regelt das Anforderungsdokument der jeweiligen Komponente.
 
@@ -122,13 +122,13 @@ Die Anforderungen dieses Abschnitts legen technische Mittel fest. Sie sind bewus
 
 ### req-system-007 -- Gemeinsamer fachlicher Python-Kern
 
-Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe versionierte Python-Bibliothek für Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
+Der gemeinsame fachliche Kern wird in Python implementiert. `Strategiedesigner`, `Strategietester` und `Handelssystem` verwenden dieselbe Python-Bibliothek in einer festgelegten Version für Objekttypen und deren Prüf- und Auswertungslogik. Diese Logik darf nicht unabhängig in den Benutzeroberflächen nachimplementiert werden.
 
 Das `Nachrichtensystem` wird ebenfalls in Python implementiert. Seine eigenständige Ausführbarkeit und die sprachunabhängige Definition seiner Schnittstellen bleiben davon unberührt.
 
 ### req-system-008 -- Benutzeroberflächen
 
-`Strategiedesigner`, `Strategietester` und `Handelssystem` erhalten jeweils eine eigene Browseroberfläche auf Basis von TypeScript, React und CSS. Die Oberflächen verwenden gemeinsame Gestaltungsregeln und, soweit fachlich passend, gemeinsam entwickelte und versionierte UI-Komponenten. Jede Hauptkomponente liefert die von ihr benötigten UI-Bestandteile selbst mit und bleibt unabhängig installierbar und startbar.
+`Strategiedesigner`, `Strategietester` und `Handelssystem` erhalten jeweils eine eigene Browseroberfläche auf Basis von TypeScript, React und CSS. Die Oberflächen verwenden gemeinsame Gestaltungsregeln und, soweit fachlich passend, gemeinsam entwickelte UI-Komponenten in einer festgelegten Version. Jede Hauptkomponente liefert die von ihr benötigten UI-Bestandteile selbst mit und bleibt unabhängig installierbar und startbar.
 
 Eine eigene Benutzeroberfläche des `Nachrichtensystems` ist derzeit nicht festgelegt.
 
@@ -199,4 +199,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-09-26 | Zweistufige Konfiguration aus INI-Startkonfiguration und gespeicherter Betriebskonfiguration, Suchpfade und Zusammenhang zwischen eigenem Speicher und eigenständiger Startbarkeit festgelegt. |
 | 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
 | 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung der maschinenlesbaren Definition der Schnittstellen sowie deren menschenlesbare Dokumentation festgelegt. |
-| 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst; Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
+| 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst, Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
