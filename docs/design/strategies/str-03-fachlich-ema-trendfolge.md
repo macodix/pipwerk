@@ -3,7 +3,7 @@
 ## Status
 
 - strategie-id: `str-03`
-- status: `draft`
+- status: `understood`
 - quelle: Entwurf „Trendfolge mit gleitenden Durchschnitten“ in `Teststrategien_fuer_den_grafischen_Strategiedesigner.md` und Abschnitt 2.1 „Moving-Average-Crossover“ in `trading-strategiesammlung_v0.5.md`. Ausgearbeitet vom Projektleiter als Testfall im Auftrag des Auftraggebers.
 - zuletzt geprüft: `2026-10-14`
 
@@ -65,6 +65,6 @@ Keine.
 
 ## Bestätigungsvermerk
 
-- fachlich geprüft durch: `offen`
-- Ergebnis: `offen`
-- Datum: `–`
+- fachlich geprüft durch: Auftraggeber
+- Ergebnis: bestätigt im Chat als zweiter Testfall
+- Datum: `2026-10-14`
