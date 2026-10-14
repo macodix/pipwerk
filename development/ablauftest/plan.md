@@ -12,7 +12,7 @@
 
 | Paket | Titel | hängt ab von | Stand |
 |---|---|---|---|
-| `wp01` | Testumgebung, Schreibweise „pipwerk Studio“ und Dialog „Über pipwerk Studio“ | – | `open` |
+| `wp01` | Testumgebung, Schreibweise „pipwerk Studio“ und Dialog „Über pipwerk Studio“ | – | `done` |
 
 Das Vorhaben ist nach dem Einwand des Auftraggebers ein einziges Arbeitspaket mit einer Abnahme. Es umfasst die bisherigen Pakete „Testumgebung und Schreibweise „pipwerk Studio““ und „Dialog „Über pipwerk Studio““ vollständig.
 
@@ -124,3 +124,4 @@ Technische Nachweise, die die QA in ihrem Prüfbericht nennt: Das Prüfskript `c
 | 2026-10-14 | Befund N1 und Hinweise H5 bis H7 aus [plan-2.md](reviews/plan-2.md) eingearbeitet: jede Datei außerhalb von `frontend/` mit vollem Pfad, Beschreibung des Prüfskripts in Abschnitt 6.4 mit Abgleich durch die QA, Hinweis zu `/docs` am Port der Oberfläche. |
 | 2026-10-14 | Befund N2 und Hinweise H8 und H9 aus [plan-3.md](reviews/plan-3.md) eingearbeitet: alle Dateien des Backends unter „Schreibweise im Backend“ einzeln mit vollem Pfad, `src/` bei `src/RevisionDisplay.tsx` und `src/revisionApi.ts`, Ergänzungen des Entwicklers in Abschnitt 6 nur in 6.1 bis 6.3. Satz zum Entwickler in der Zeile „Prüfskript“ ans Ende der Zelle gestellt und „Er schreibt die Beschreibung“ durch „Der Tester Funktion schreibt die Beschreibung“ ersetzt, damit sich die Begründung eindeutig auf den Tester Funktion bezieht (Ersetzung nachgetragen nach Hinweis H10 aus [plan-4.md](reviews/plan-4.md)). |
 | 2026-10-14 | Einwand des Auftraggebers ([Präsentation](presentations/plan.html), Folie 4) eingearbeitet: ein einziges Paket `wp01` mit einer Abnahme. Ziel, Umfang, Dokumentation, Nicht-Umfang, umgesetzte Teile der Spezifikation und Abnahmekriterien der bisherigen Pakete `wp01` und `wp02` zusammengeführt; das Testumgebungsskript entsteht im selben Paket. Verweise zwischen den Paketen und die Abhängigkeit entfallen. Reihenfolge innerhalb des Pakets und Pflege des Prüfskripts bei weiteren Aufträgen ergänzt. Abnahmekriterien 6 und 8 der bisherigen Pakete zur Dokumentation in Kriterium 13 zusammengefasst. Abdeckung von req-ui-010 auf `wp01` umgestellt. |
+| 2026-10-14 | `wp01` abgenommen ([Abnahmebericht](wp01/acceptance/1.md)) und mit dem Commit `e60fd1c2655e7ca9e5fe9d00ad871117dd94d11d` in `main` übernommen, Stand `done`. |
