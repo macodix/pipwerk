@@ -110,6 +110,6 @@ Keine.
 - Ergebnis: bestätigt im Chat
 - Datum: `2026-10-14`
 
-## Originalbeschreibung
+## Herkunft
 
-`scalping-punkt-2-ausbruch-einfach(1).md`
+Die Beschreibung geht auf die Datei `scalping-punkt-2-ausbruch-einfach(1).md` des Auftraggebers zurück. Diese Datei liegt nicht im Repository. Maßgeblich ist allein dieses Dokument.

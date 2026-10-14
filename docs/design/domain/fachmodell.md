@@ -322,7 +322,7 @@ Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzl
 
 Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (req-fach-049a). Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
 
-Eine eigene Versionsangabe der Strategie wird für den ersten Prototyp derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
+Eine eigene Versionsangabe der Strategie wird derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
 
 Eine gesonderte Sammlung von Strategieparametern wird derzeit nicht vorausgesetzt. Eigenschaften verwendeter Objekte können mit einem festen Wert, durch eine Berechnung beziehungsweise eine Regel oder erst bei der Anwendung der Strategie zur Laufzeit belegt werden. Eigene Parameter der Strategie können ergänzt werden, wenn dafür ein konkreter fachlicher Bedarf entsteht.
 
@@ -376,9 +376,9 @@ Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders u
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-11 | Aufbau und Wiederverwendung von Indikatoren und Trends festgelegt. Pending-Ordertypen von MetaTrader 5 als Entwurf ergänzt. Herkunft und Verfügbarkeit von Ordertypen festgelegt. Abgestimmt mit dem Nutzer am 2026-10-11. |
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. Bestehende fachliche Festlegungen und IDs wurden übernommen. |
 | 2026-09-25 | `Strategie` als fachliches Objekt sowie Ablauf, Berechnung und Beauftragung des `OrderBuilder` konkretisiert; separates `Signal`-Objekt aus dem aktuellen Modell entfernt. |
+| 2026-10-11 | Aufbau und Wiederverwendung von Indikatoren und Trends festgelegt. Pending-Ordertypen von MetaTrader 5 als Entwurf ergänzt. Herkunft und Verfügbarkeit von Ordertypen festgelegt. Abgestimmt mit dem Nutzer am 2026-10-11. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
 | 2026-10-13 | req-fach-045: fehlerhafte Reihenfolge im Regelwerk festgelegt (Vorwärtsbezug, Zirkelbezug, keine selbsttätige Umsortierung). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-030 geändert: eigene Ordertypen von Pipwerk mit Bedeutung nach MetaTrader 5, Kompatibilitätsliste je Anbindung, keine annähernde Übersetzung. req-fach-025 und req-fach-029 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
@@ -399,3 +399,4 @@ Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders u
 | 2026-10-14 | req-fach-046: Eigenschaften wartende Orders und offene Positionen der Strategie, vorläufig. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-049a: bei einem Auslöser zuerst die Verwaltungen, dann der Hauptablauf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |
+| 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Prototyp“ in req-fach-046 entfernt, Änderungsnachweis nach Datum geordnet. |

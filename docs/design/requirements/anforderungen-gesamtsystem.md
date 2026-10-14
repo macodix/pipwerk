@@ -5,7 +5,7 @@
 - status: `draft`
 - abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-10-13`
+- zuletzt aktualisiert: `2026-10-14`
 
 ## 1. Systemaufteilung
 
@@ -13,9 +13,9 @@
 
 Das Gesamtsystem besteht derzeit aus folgenden fachlich getrennten Hauptkomponenten:
 
-- `Strategiedesigner` -- erstellt und bearbeitet ausführbare Strategiedefinitionen.
-- `Strategietester` -- führt Strategiedefinitionen zu Testzwecken, insbesondere gegen historische oder aufgezeichnete Marktdaten, aus und stellt die Testergebnisse bereit.
-- `Handelssystem` -- wendet Strategiedefinitionen zur Laufzeit auf konkrete Handelskonten an und führt den daraus entstehenden Handelsablauf aus.
+- `Strategiedesigner` -- erstellt und bearbeitet ausführbare Strategien.
+- `Strategietester` -- führt Strategien zu Testzwecken, insbesondere gegen historische oder aufgezeichnete Marktdaten, aus und stellt die Testergebnisse bereit.
+- `Handelssystem` -- wendet Strategien zur Laufzeit auf konkrete Handelskonten an und führt den daraus entstehenden Handelsablauf aus.
 - `Nachrichtensystem` -- ermöglicht den Nachrichtenaustausch zwischen eigenständig arbeitenden Komponenten.
 
 Die weitere fachliche Ausgestaltung der einzelnen Komponenten erfolgt in den jeweils zuständigen Anforderungsdokumenten.
@@ -30,9 +30,9 @@ Die Komponenten müssen dadurch insbesondere in getrennten Prozessen und auf unt
 
 Die Hauptkomponenten müssen unabhängig voneinander bereitgestellt und eingesetzt werden können, soweit die jeweilige fachliche Aufgabe keine andere Komponente benötigt. Dadurch müssen insbesondere getrennte Umgebungen für Strategieentwicklung, Strategietest und produktiven Handel möglich sein.
 
-### req-system-004 -- Gemeinsame Strategiedefinition
+### req-system-004 -- Gemeinsame Strategie
 
-`Strategiedesigner`, `Strategietester` und `Handelssystem` müssen dieselbe fachliche Strategiedefinition verwenden können. Eine Strategiedefinition darf für Test oder produktive Ausführung nicht in ein anderes fachliches Strategiemodell übertragen werden müssen.
+`Strategiedesigner`, `Strategietester` und `Handelssystem` müssen dieselbe Strategie verwenden können. Eine Strategie darf für Test oder produktive Ausführung nicht in ein anderes fachliches Strategiemodell übertragen werden müssen.
 
 ### req-system-005 -- Kommunikation zwischen Komponenten
 
@@ -55,7 +55,7 @@ Die Web-API muss von internen, nicht als stabile Definition der Schnittstelle vo
 Eine Hauptkomponente muss durch eine andere Implementierung ersetzt werden können, sofern diese die vereinbarten Schnittstellen und das vereinbarte fachliche Verhalten erfüllt. Die Austauschbarkeit stützt sich mindestens auf:
 
 - die versionierte Web-API,
-- das gemeinsame Format der Strategiedefinition,
+- das gemeinsame Format der Strategie (Strategiedokument),
 - die festgelegten Nachrichtenformate,
 - die gemeinsam verwendeten fachlichen Datenformate.
 
@@ -159,13 +159,15 @@ Eine eigenständig startbare Komponente muss ihre INI-Startkonfiguration an den 
 Unter Windows gelten entsprechend:
 
 - `-c <PATH>`,
-- `%USERPROFILE%\\pipwerk\\etc`,
-- `%APPDATA%\\pipwerk`,
-- `%PROGRAMDATA%\\pipwerk`.
+- `%USERPROFILE%\pipwerk\etc`,
+- `%APPDATA%\pipwerk`,
+- `%PROGRAMDATA%\pipwerk`.
 
 Bei der automatischen Suche gilt die jeweils aufgeführte Reihenfolge als Priorität. Eine mit `-c <PATH>` ausdrücklich angegebene Startkonfiguration hat höchste Priorität.
 
 Es wird genau eine Startkonfiguration verwendet. Inhalte mehrerer INI-Dateien werden nicht zusammengeführt.
+
+Den Dateinamen der Startkonfiguration in diesen Verzeichnissen legt die technische Dokumentation der Komponente fest. Er unterscheidet sich je Komponente, damit mehrere Komponenten auf einem Rechner laufen können.
 
 ### req-system-018 -- Eigener Speicher und eigenständige Startbarkeit
 
@@ -175,7 +177,7 @@ Sie besitzt dafür eine eigene Startkonfiguration und muss den Parameter `-c <PA
 
 ### req-system-022 -- Zentrale Bereitstellung der maschinenlesbaren Definition der Schnittstellen
 
-Die maschinenlesbare Definition der von Pipwerk verwendeten Schnittstellen wird im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere die formalen Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedefinitionen und Datenformate.
+Die maschinenlesbare Definition der von Pipwerk verwendeten Schnittstellen wird im Repository zentral unter `contracts` verwaltet. Dazu gehören insbesondere die formalen Definitionen gemeinsam verwendeter Schnittstellen, Nachrichtenformate, Strategiedokumente und Datenformate.
 
 Der vollständige Bestand dieser Definitionen wird gemeinsam bereitgestellt. Eine Bereitstellung darf nicht davon abhängen, welche Hauptkomponente eine Definition derzeit verwendet. Dadurch muss eine Komponente bei einer späteren Nutzung einer bereits vorhandenen Definition nicht auf die Installation oder Dateien einer anderen Hauptkomponente zugreifen.
 
@@ -201,3 +203,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-09-26 | Verbindliche Anforderungen an unmittelbare Dokumentationspflege, Dokumentationsbereiche und menschenlesbaren Dokumentationsstil ergänzt. |
 | 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung der maschinenlesbaren Definition der Schnittstellen sowie deren menschenlesbare Dokumentation festgelegt. |
 | 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst, Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
+| 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, einfache Backslashes in den Windows-Pfaden, Dateiname der Startkonfiguration als Festlegung der technischen Dokumentation. |
