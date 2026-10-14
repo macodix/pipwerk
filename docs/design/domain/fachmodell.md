@@ -354,6 +354,8 @@ Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits
 
 `Order aufgeben` liefert als Ergebnis die gestellte Order. `Order ändern` und `Order löschen` verwenden dieses Ergebnis. Auf der Zeichenfläche ist das eine Verbindung zum Element `Order aufgeben`. `Position ändern` und `Position schließen` verwenden die Position, die aus dieser Order entstanden ist. Eine Strategie wirkt damit nur auf ihre eigenen Orders und Positionen.
 
+Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen der Strategie mehrere Orders gestellt hat.
+
 
 ## 3. Änderungsnachweis
 
@@ -372,3 +374,4 @@ Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits
 | 2026-10-13 | req-fach-029: zulässige Kursabweichung nicht Teil der Strategie, möglicherweise später im Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-029: Schließen gegen Gegenposition nicht vorgesehen. Erfassung der Ordertypen nach MetaTrader 5 abgeschlossen, Vermerk Entwurf entfernt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-049a: Bezug auf die eigene Order über das Ergebnis von Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-14 | req-fach-049a: offene Frage ergänzt, welche Order bei mehreren gestellten Orders gemeint ist. |
