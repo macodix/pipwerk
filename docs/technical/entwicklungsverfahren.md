@@ -182,7 +182,7 @@ Namen von Vorhaben bestehen aus Kleinbuchstaben und Ziffern. Arbeitspakete heiß
 
 Test- und Prüfberichte nennen den geprüften Commit vollständig. Abnahmeberichte schreibt der Projektleiter direkt auf `main`, alle anderen Dokumente eines Arbeitspakets liegen bis zur Integration auf seinem Arbeitszweig. Eine Frage nennt die unterbrochene Aufgabe und ihren Stand. Der Projektleiter trägt die Antwort des Auftraggebers in dasselbe Dokument ein.
 
-Tester und QA schreiben ihren Bericht unter dem Dateinamen, den der Softwarearchitekt in ihrem Übergabedokument nennt, in ihr eigenes Arbeitsverzeichnis, ohne ihn zu committen. Der Softwarearchitekt kopiert ihn in sein Arbeitsverzeichnis und bringt Aufträge und Berichte eines Arbeitspakets auf dessen Arbeitszweig, die Dokumente der Phasen 2 und 3 auf `main`.
+Tester und QA schreiben ihren Bericht unter dem Dateinamen, den der Softwarearchitekt in ihrem Übergabedokument nennt, in das Berichtsverzeichnis `work/<ref>/reports/`, also außerhalb jedes Git-Arbeitsverzeichnisses. Ihr eigenes Arbeitsverzeichnis bleibt dadurch frei von nicht committeten Dateien, sodass dort zum Beispiel eine Testumgebung startet. Der Softwarearchitekt kopiert den Bericht in sein Arbeitsverzeichnis und bringt Aufträge und Berichte eines Arbeitspakets auf dessen Arbeitszweig, die Dokumente der Phasen 2 und 3 auf `main`.
 
 ### Meldungen
 
@@ -270,6 +270,7 @@ Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pip
 | `repo/` | Klon des Repositorys auf dem Stand von `origin/main`, Träger der gemeinsamen Git-Daten | Stand von `main` nur der Runner |
 | `work/<vorhaben>/<rolle>/` | Arbeitsverzeichnisse der Phasen 2 und 3 | die jeweilige Rolle |
 | `work/<vorhaben>/<arbeitspaket>/<rolle>/` | Arbeitsverzeichnisse der Phase 4 | die jeweilige Rolle |
+| `work/<ref>/reports/` | Berichte von Tester und QA, kein Git-Arbeitsverzeichnis | Tester und QA |
 | `test/<vorhaben>-<arbeitspaket>/` | Testumgebung eines Arbeitspakets | Softwarearchitekt |
 | `scripts/` | `agentrun`, `heartbeat` und `pidcheck` mit Tests und Beschreibung, nicht Teil des Repositorys | nicht durch das Team |
 | `run/` | PID-Datei, Sperren und Protokoll von `agentrun`, Liste der gestarteten Meldungen, je laufender Sitzung Zustands- und Herzschlagdatei, noch nicht übertragene Meldungen `failed` | `agentrun`, `heartbeat`, `pidcheck` |
@@ -278,7 +279,7 @@ Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pip
 
 Die Rollennamen der Arbeitsverzeichnisse sind `architect`, `backend`, `frontend`, `functiontest`, `securitytest` und `qa`. In Phase 4 hat der Softwarearchitekt zusätzlich `architectmain` für seine Arbeit auf `main`. Ein weiterer Entwickler desselben Gebiets erhält eine Nummer, zum Beispiel `backend2`.
 
-Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis des Softwarearchitekten an, falls es fehlt, und startet die Sitzung darin. Die Rollen richten ihr Arbeitsverzeichnis selbst mit `git worktree add` aus `repo/` ein. Folgesitzungen desselben Arbeitspakets verwenden die bestehenden Arbeitsverzeichnisse weiter. Der Softwarearchitekt entfernt die Arbeitsverzeichnisse der Phasen 2 und 3 am Ende jeder Sitzung, die der Phase 4 bei der Integration, jeweils für alle Rollen und mit `git worktree remove`, sein eigenes als letzten Befehl. Leere Verzeichnisse unter `work/<ref>/` entfernt danach `agentrun`.
+Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis des Softwarearchitekten an, falls es fehlt, und startet die Sitzung darin. Die Rollen richten ihr Arbeitsverzeichnis selbst mit `git worktree add` aus `repo/` ein. Folgesitzungen desselben Arbeitspakets verwenden die bestehenden Arbeitsverzeichnisse weiter. Der Softwarearchitekt entfernt die Arbeitsverzeichnisse der Phasen 2 und 3 am Ende jeder Sitzung, die der Phase 4 bei der Integration, jeweils für alle Rollen und mit `git worktree remove`, dazu das Berichtsverzeichnis `work/<ref>/reports/`, sein eigenes Arbeitsverzeichnis als letzten Befehl. Leere Verzeichnisse unter `work/<ref>/` entfernt danach `agentrun`.
 
 ### Zweige
 
@@ -395,6 +396,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-14 | Berichte von Tester und QA im Berichtsverzeichnis `work/<ref>/reports/` statt ohne Commit im eigenen Arbeitsverzeichnis (Ablauftest, Hinweis H1 der QA). |
 | 2026-10-14 | Feste Ports der Testumgebung zur Abnahme, pipwerk Studio 5174 und 8001 (Auftraggeber im Chat). |
 | 2026-10-14 | Umfang der Prüfungen: Detailtiefe nach Umfang, erster Durchlauf vollständig, danach Nachprüfung, nur blockierende Befunde. Bestätigt vom Auftraggeber im Chat, gilt ab sofort auch für das laufende Vorhaben `ablauftest`. |
 | 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow und als Variable `ROOT` in jedem Skript. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |

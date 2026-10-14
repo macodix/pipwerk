@@ -37,6 +37,6 @@ Für eine kleine Anforderung ist das zu viel. Ursachen und Korrekturen siehe unt
 ## Offene Punkte
 
 - **B5:** Die Anwenderdokumentation sagt nicht, wie man die Netzwerkadresse des eigenen Rechners für den Zugriff von anderen Rechnern findet. Hinweis aus dem Prüfbericht der QA, kein Mangel.
-- **H1 der QA:** Tester und QA schreiben ihre Berichte ohne Commit in ihr Arbeitsverzeichnis. Das Testumgebungsskript startet nur aus einem Arbeitsverzeichnis ohne nicht committete Dateien. Die QA konnte deshalb in ihrem Arbeitsverzeichnis keine eigene Testumgebung starten. Korrektur nötig: Berichte außerhalb des Git-Arbeitsverzeichnisses ablegen, zum Beispiel `work/<ref>/<rolle>-berichte/`. Betrifft `entwicklungsverfahren.md`, Abschnitt „Ablage“, und die Startskripte in `devteam/`.
+- **H1 der QA (im Verfahren korrigiert, Umsetzung in `devteam/` ausstehend):** Tester und QA schreiben ihre Berichte ohne Commit in ihr Arbeitsverzeichnis. Das Testumgebungsskript startet nur aus einem Arbeitsverzeichnis ohne nicht committete Dateien. Die QA konnte deshalb in ihrem Arbeitsverzeichnis keine eigene Testumgebung starten. Korrektur nötig: Berichte außerhalb des Git-Arbeitsverzeichnisses ablegen, zum Beispiel `work/<ref>/<rolle>-berichte/`. Betrifft `entwicklungsverfahren.md`, Abschnitt „Ablage“, und die Startskripte in `devteam/`.
 - Tests in `scripts/tests/agentrun.bats` prüfen noch den Modus `default` (zwei Zeilen); für den Betrieb ohne Bedeutung.
 - Ob Cron `agentrun` nach einem Neustart des Rechners zuverlässig als `codesrv` startet, ist nicht geprüft.
