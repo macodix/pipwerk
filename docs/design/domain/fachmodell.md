@@ -310,6 +310,8 @@ Eine Strategie besitzt mindestens:
 - `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
 - strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten.
 
+Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
+
 Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs. Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
 
 Eine eigene Versionsangabe der Strategie wird für den ersten Prototyp derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
@@ -376,3 +378,4 @@ Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen
 | 2026-10-13 | req-fach-029: Schließen gegen Gegenposition nicht vorgesehen. Erfassung der Ordertypen nach MetaTrader 5 abgeschlossen, Vermerk Entwurf entfernt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-049a: Bezug auf die eigene Order über das Ergebnis von Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-14 | req-fach-049a: offene Frage ergänzt, welche Order bei mehreren gestellten Orders gemeint ist. |
+| 2026-10-14 | req-fach-046: Regeln der Strategie gelten für jede ihrer Orders, Elemente können eigene Regeln haben, Anwendung durch Strategietester und Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |

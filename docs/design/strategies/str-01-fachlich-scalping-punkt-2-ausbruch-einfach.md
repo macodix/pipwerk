@@ -50,7 +50,7 @@ Der Take-Profit wird vom Einstieg aus so festgelegt, dass unter Berücksichtigun
 
 ### 4. Risiko und Handelbarkeit prüfen
 
-Aus Einstieg, Stop-Loss, Pip- beziehungsweise Tickwert und einer Risikogrenze von maximal 1 % des Kapitals wird das Handelsvolumen berechnet. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen.
+Aus Einstieg, Stop-Loss, Pip- beziehungsweise Tickwert und einer Risikogrenze von maximal 1 % des Kapitals wird das Handelsvolumen berechnet. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen. Diese Risikoregel gilt für die ganze Strategie.
 
 Danach wird geprüft, ob dieses Volumen die Mindestlot- und Volumenschrittregeln des Brokers erfüllt und ob ausreichend freie Margin vorhanden ist.
 
