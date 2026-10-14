@@ -11,7 +11,7 @@
 
 Schritt 1 umfasst das Anlegen, Gestalten, Prüfen, Speichern und Laden von Strategien und der darin verwendeten wiederverwendbaren Objekte in Pipwerk Studio. Die Ausführung von Strategien (Schritt 2: Debuggen, Schritt 3: Testen) gehört nicht zu Schritt 1. Deren Anforderungen werden erst erhoben, wenn der Bedienablauf des Designers feststeht.
 
-Prüffälle für Schritt 1 sind die Trendfolge mit zwei exponentiellen gleitenden Durchschnitten (`str-03`) und der einfache Punkt-2-Ausbruch (`str-01`). Beide müssen sich vollständig im Designer gestalten, speichern und wieder laden lassen.
+Testfälle für Schritt 1 sind die Trendfolge mit zwei exponentiellen gleitenden Durchschnitten (`str-03`) und der einfache Punkt-2-Ausbruch (`str-01`). Beide müssen sich vollständig im Designer gestalten, speichern und wieder laden lassen.
 
 ## 2. Festlegungen
 
@@ -139,9 +139,9 @@ Ordertypen: Jeder Ordertyp ist ein Bausteintyp mit Typbeschreibung. Er wird vom 
 
 Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test-security-rules.md`. Der Nachweis von Schritt 1 besteht aus:
 
-1. Beide Prüffälle liegen als Dokumentdateien (Strategie und ihre eigenständigen Objekte) unter `contracts/strategies/v1/testcases/`. Automatische Tests laden sie, prüfen sie gegen die Schemata und die Prüfung aus PH-06, schreiben sie wieder und vergleichen das Ergebnis mit der Ausgangsdatei.
-2. Ein Browsertest mit Playwright baut jeden Prüffall in der Oberfläche aus der leeren Zeichenfläche auf, speichert, lädt neu und vergleicht die gespeicherten Dateien im Objektverzeichnis mit den Dateien aus Punkt 1.
-3. Der Nutzer erprobt beide Prüffälle in der Testumgebung mit der Anwenderdokumentation. Seine Abnahme schließt Schritt 1 ab.
+1. Beide Testfälle liegen als Dokumentdateien (Strategie und ihre eigenständigen Objekte) unter `contracts/strategies/v1/testcases/`. Automatische Tests laden sie, prüfen sie gegen die Schemata und die Prüfung aus PH-06, schreiben sie wieder und vergleichen das Ergebnis mit der Ausgangsdatei.
+2. Ein Browsertest mit Playwright baut jeden Testfall in der Oberfläche aus der leeren Zeichenfläche auf, speichert, lädt neu und vergleicht die gespeicherten Dateien im Objektverzeichnis mit den Dateien aus Punkt 1.
+3. Der Nutzer erprobt beide Testfälle in der Testumgebung mit der Anwenderdokumentation. Seine Abnahme schließt Schritt 1 ab.
 
 ## 3. Offene Punkte
 

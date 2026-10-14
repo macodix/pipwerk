@@ -316,7 +316,7 @@ Eine Strategie besitzt mindestens:
 - `Auslöser` -- ein oder mehrere Auslöser, die festlegen, bei welchem Ereignis die Strategie ausgewertet werden soll,
 - `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
 - strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten.
-- `wartende Orders` und `offene Positionen` -- Anzahl der Orders und Positionen, die diese Strategie auf dem Konto und Instrument gestellt beziehungsweise eröffnet hat, auf dem sie gerade läuft. Diese Eigenschaften sind nur bei der Ausführung belegt und dienen Bedingungen im Ablauf. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Sie wird mit den Prüffällen erprobt.
+- `wartende Orders` und `offene Positionen` -- Anzahl der Orders und Positionen, die diese Strategie auf dem Konto und Instrument gestellt beziehungsweise eröffnet hat, auf dem sie gerade läuft. Diese Eigenschaften sind nur bei der Ausführung belegt und dienen Bedingungen im Ablauf. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Sie wird mit den Testfällen erprobt.
 
 Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt der Wert der zuletzt angewendeten, gleich ob es dieselbe oder eine andere Regel ist. Angewendet werden zuerst die Regeln der Strategie, danach die Regeln der Elemente in der Reihenfolge des Ablaufs. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Prüfende Regeln ändern die Order nicht und heben einander daher nicht auf. Sie prüfen die Order, nachdem alle Eigenschaften bestimmt sind (req-fach-021). Die Order muss jede Prüfung bestehen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
 
@@ -398,3 +398,4 @@ Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders u
 | 2026-10-14 | req-fach-049a: eigene Verwaltung je gestellter Order mit eigenen Auslösern, ersetzt die offene Frage nach der gemeinten Order. req-fach-046 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-046: Eigenschaften wartende Orders und offene Positionen der Strategie, vorläufig. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-049a: bei einem Auslöser zuerst die Verwaltungen, dann der Hauptablauf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |

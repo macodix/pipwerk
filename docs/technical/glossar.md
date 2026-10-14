@@ -45,7 +45,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Pflichtparameter | Ein Parameter, der einen Wert haben muss, damit die Konsistenzprüfung keinen Fehler meldet. Welche Parameter Pflicht sind, legt der Objekttyp fest. Alle anderen Parameter sind optional. |
 | Standardwert | Der Wert eines Parameters, den ein gespeichertes Objekt vorgibt. Er wird beim Einfügen in eine Strategie übernommen und dort geändert. |
 | Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Beschreibung und dem betroffenen Element. |
-| Prüffall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
+| Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
 
 ## Technische Begriffe
 
@@ -88,6 +88,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |
 | 2026-10-14 | Anwendung einer Strategie, Auswertung und Verwaltung einer Order ergänzt. |
 | 2026-10-14 | Order aufgeben: Ausgänge gestellt und abgelehnt. |
 | 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |

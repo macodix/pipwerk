@@ -36,7 +36,7 @@ Das Ziel ist erreicht, wenn:
 3. Jede so gebaute Strategie lässt sich ohne weitere Bearbeitung automatisiert oder teilautomatisiert auf einem Handelskonto bei einem Broker handeln.
 4. Die gehandelten Strategien lassen sich grafisch auswerten.
 
-Einzelne Strategien, etwa der Punkt-2-Ausbruch oder die EMA-Trendfolge, sind Prüffälle für den jeweiligen Entwicklungsstand und nicht Bestandteil des Ziels.
+Einzelne Strategien, etwa der Punkt-2-Ausbruch oder die EMA-Trendfolge, sind Testfälle für den jeweiligen Entwicklungsstand und nicht Bestandteil des Ziels.
 
 ## Abgrenzung
 
@@ -74,3 +74,4 @@ Der Name des Systems wird klein geschrieben: pipwerk.
 |---|---|
 | 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. Abgrenzung, Aufbau und Module ergänzt. |
 | 2026-10-13 | Schreibweise „pipwerk Studio“ (Auftraggeber im Chat). |
+| 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |

@@ -4,12 +4,12 @@
 
 - strategie-id: `str-03`
 - status: `draft`
-- quelle: Entwurf „Trendfolge mit gleitenden Durchschnitten“ in `Teststrategien_fuer_den_grafischen_Strategiedesigner.md` und Abschnitt 2.1 „Moving-Average-Crossover“ in `trading-strategiesammlung_v0.5.md`. Ausgearbeitet vom Projektleiter als Prüffall im Auftrag des Auftraggebers.
+- quelle: Entwurf „Trendfolge mit gleitenden Durchschnitten“ in `Teststrategien_fuer_den_grafischen_Strategiedesigner.md` und Abschnitt 2.1 „Moving-Average-Crossover“ in `trading-strategiesammlung_v0.5.md`. Ausgearbeitet vom Projektleiter als Testfall im Auftrag des Auftraggebers.
 - zuletzt geprüft: `2026-10-14`
 
 ## Zweck
 
-Die Strategie ist ein Prüffall für den Strategiedesigner, keine Handelsempfehlung. Ihre Parameterwerte sind für den Prüffall festgelegt und nicht auf Ertrag geprüft. Gegenüber dem Punkt-2-Ausbruch enthält sie Kreuzungen zweier Indikatoren, die Marktorder, das laufende Nachziehen des Stop-Loss einer offenen Position und das Schließen einer Position.
+Die Strategie ist ein Testfall für den Strategiedesigner, keine Handelsempfehlung. Ihre Parameterwerte sind für den Testfall festgelegt und nicht auf Ertrag geprüft. Gegenüber dem Punkt-2-Ausbruch enthält sie Kreuzungen zweier Indikatoren, die Marktorder, das laufende Nachziehen des Stop-Loss einer offenen Position und das Schließen einer Position.
 
 ## Handelsidee
 
@@ -48,11 +48,11 @@ Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen
 
 | Parameter | Bedeutung | Wert oder Regel | Status |
 |---|---|---|---|
-| Zeiteinheit | Kerzen für EMA, ATR und Auslöser | H1 | für den Prüffall festgelegt |
-| Periode schneller EMA | Anzahl Kerzen | 20 | für den Prüffall festgelegt |
-| Periode langsamer EMA | Anzahl Kerzen | 50 | für den Prüffall festgelegt |
-| ATR-Periode | Anzahl Kerzen | 14 | für den Prüffall festgelegt |
-| Stop-Abstand | Vielfaches der ATR für ersten und nachgezogenen Stop-Loss | 2 | für den Prüffall festgelegt |
+| Zeiteinheit | Kerzen für EMA, ATR und Auslöser | H1 | für den Testfall festgelegt |
+| Periode schneller EMA | Anzahl Kerzen | 20 | für den Testfall festgelegt |
+| Periode langsamer EMA | Anzahl Kerzen | 50 | für den Testfall festgelegt |
+| ATR-Periode | Anzahl Kerzen | 14 | für den Testfall festgelegt |
+| Stop-Abstand | Vielfaches der ATR für ersten und nachgezogenen Stop-Loss | 2 | für den Testfall festgelegt |
 | Risikogrenze | maximaler Verlust je Position | 1 % des Kapitals | wie Punkt-2-Ausbruch |
 
 ## Abgrenzung
