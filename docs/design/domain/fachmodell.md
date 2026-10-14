@@ -222,12 +222,14 @@ Eine Regel besitzt mindestens folgende fachliche Eigenschaften:
 - `Regel-ID` -- eindeutige Identifikation der Regel.
 - `Bezeichnung` -- fachlich verständliche Benennung der Regel.
 - `fachlicher Ausdruck` -- Definition der fachlichen Berechnung beziehungsweise Prüfung der Regel.
+- `Parameter` -- 0..n; Werte, die bei jeder Verwendung der Regel belegt werden können, zum Beispiel ein Prozentsatz. Der fachliche Ausdruck verwendet sie wie konstante Werte.
 
 ### req-fach-036 -- Fachlicher Ausdruck einer Regel
 
 Der fachliche Ausdruck einer Regel kann verwenden:
 
 - konstante Werte,
+- Parameter der Regel,
 - Eigenschaften von Objekten,
 - Ergebnisse anderer Regeln,
 - arithmetische Operatoren,
@@ -310,7 +312,7 @@ Eine Strategie besitzt mindestens:
 - `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
 - strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten.
 
-Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt die zuletzt angewendete: zuerst die Regeln der Strategie, danach die Regeln der Elemente in der Reihenfolge des Ablaufs. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
+Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt die zuletzt angewendete: zuerst die Regeln der Strategie, danach die Regeln der Elemente in der Reihenfolge des Ablaufs. Dasselbe gilt für prüfende Regeln: Ist dieselbe Regel an der Strategie und an einem Element mit unterschiedlichen Parameterwerten verwendet, gilt die zuletzt angewendete. Verschiedene prüfende Regeln ersetzen einander nicht, die Order muss jede bestehen. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
 
 Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs. Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
 
@@ -380,3 +382,4 @@ Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen
 | 2026-10-14 | req-fach-049a: offene Frage ergänzt, welche Order bei mehreren gestellten Orders gemeint ist. |
 | 2026-10-14 | req-fach-046: Regeln der Strategie gelten für jede ihrer Orders, Elemente können eigene Regeln haben, Anwendung durch Strategietester und Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-046: bei mehreren Regeln für dieselbe Eigenschaft gilt die zuletzt angewendete. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-035, 036, 046: Regeln haben Parameter. Dieselbe prüfende Regel mit anderen Parameterwerten ersetzt die frühere. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
