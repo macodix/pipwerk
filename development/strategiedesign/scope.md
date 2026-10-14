@@ -37,4 +37,4 @@ Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Pha
 
 ## Stand
 
-Phase 2 angestoßen am 14. Oktober 2026 mit der Meldung `check` an den Softwarearchitekten.
+Phase 1 abgeschlossen, Dokumente abgestimmt. Phase 2 wird erst angestoßen, wenn das Vorhaben `ablauftest` bis zur Integration durchgelaufen ist.
