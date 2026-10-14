@@ -37,4 +37,4 @@ Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Pha
 
 ## Stand
 
-Phase 1. Die Dokumente waren vor der Prüfung durch die QA abgestimmt. Der Prüfbericht [requirements-1.md](reviews/requirements-1.md) ist nicht bestanden. Die eindeutigen Befunde sind korrigiert, die übrigen werden als 18 Fragen mit dem Auftraggeber geklärt. Stand der Bearbeitung: [requirements-1-response.md](reviews/requirements-1-response.md). Danach beginnt Phase 2 mit `specify` und einer Nachprüfung.
+Phase 1. Die Dokumente waren vor der Prüfung durch die QA abgestimmt. Der Prüfbericht [requirements-1.md](reviews/requirements-1.md) ist nicht bestanden. Nach dem geänderten Verfahren werden die Befunde in Phase 1 bearbeitet: eindeutige Korrekturen durch den Projektleiter, die übrigen Befunde als Fragen in einer Präsentation an den Auftraggeber. Danach beginnt Phase 2 mit `specify` und einer Nachprüfung.

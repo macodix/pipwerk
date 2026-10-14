@@ -4,8 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-14`
-- abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht
+- zuletzt aktualisiert: `2026-10-13`
 
 ## 1. Zweck und Abgrenzung
 
@@ -15,9 +14,9 @@ Dieses Dokument enthält ausschließlich Anforderungen an den `Strategiedesigner
 
 ### req-grund-001 -- Trennung von Strategiedesigner und Handelssystem
 
-Der `Strategiedesigner` dient der Gestaltung und Bearbeitung von Strategien, Regeln und den darin verwendeten Objekten. Sein Ergebnis ist eine ausführbare Strategie.
+Der `Strategiedesigner` dient der Gestaltung und Bearbeitung von Strategiedefinitionen, Regeln und den darin verwendeten Objekten. Sein Ergebnis ist eine ausführbare Strategiedefinition.
 
-Die Zuordnung einer Strategie zu einem konkreten Handelskonto und deren laufende Anwendung auf diesem Konto gehören nicht zum Strategiedesigner, sondern zum `Handelssystem`.
+Die Zuordnung einer Strategiedefinition zu einem konkreten Handelskonto und deren laufende Anwendung auf diesem Konto gehören nicht zum Strategiedesigner, sondern zum `Handelssystem`.
 
 Zum Handelssystem gehören insbesondere die zur Laufzeit entstehenden konkreten Orders und Positionen sowie deren Verwaltung und Überwachung. Der `OrderManager` ist Bestandteil des Handelssystems und kein Element, das im Strategiedesigner als Bestandteil einer Strategie platziert wird.
 
@@ -25,7 +24,7 @@ Die übergreifende technische Aufteilung und die eigenständige Ausführbarkeit 
 
 ### req-grund-002 -- Trennung von Definition und Laufzeitinstanz
 
-Eine Strategie kann Ordertypen, deren Eigenschaften und die Regeln zu ihrer Bestimmung und Prüfung festlegen, ohne einem konkreten Handelskonto zugeordnet zu sein.
+Eine Strategiedefinition kann Ordertypen und deren Eigenschaften, Bestimmungsverfahren und Regeln festlegen, ohne einem konkreten Handelskonto zugeordnet zu sein.
 
 Erst bei der Anwendung einer Strategie im Handelssystem erfolgt die Zuordnung zu einem konkreten Konto. Eine daraus erzeugte konkrete, ausführbare `Order` MUSS einem Konto zugeordnet sein.
 
@@ -39,10 +38,11 @@ Beispiele sind:
 
 -   Trend,
 -   Indikator,
+-   Marktphase,
+-   Bewegung,
+-   Korrektur,
 -   Order,
 -   Position.
-
-Marktphase, Bewegung und Korrektur sind keine eigenen Objekte, sondern Werte der Eigenschaft `Phase` eines Indikators, zum Beispiel des Indikators Markttechnik.
 
 Weitere Objekte können abhängig von der konkreten Strategie,
 dem verwendeten Berechnungsverfahren oder anderen fachlichen
@@ -82,7 +82,7 @@ Eigenschaften von Objekten und Ergebnisse von Regeln, Bedingungen und Berechnung
 Elementen einzeln verwendet werden können.
 
 Welche Eigenschaften verfügbar sind, wird durch das jeweilige
-Objekt beziehungsweise die darin verwendeten anderen Objekte und Berechnungsverfahren bestimmt.
+Objekt beziehungsweise die darin verwendeten Komponenten bestimmt.
 
 ### req-fach-006 -- Fachliche Objekte als Grundlage
 
@@ -92,11 +92,11 @@ Begriffe und Funktionen der Handelsdomäne.
 Der konkrete Inhalt und die Fähigkeiten eines Objekts dürfen
 nicht vollständig und unveränderlich in der Benutzeroberfläche
 festgelegt sein. Fachliche Objekte müssen erweiterbar beziehungsweise
-konfigurierbar sein und ihre verfügbaren Eigenschaften und Parameter dem Designer maschinenlesbar zur Verfügung stellen können.
+konfigurierbar sein und ihre verfügbaren Eigenschaften, Parameter, Eigenschaften und Ergebnisse dem Designer maschinenlesbar zur Verfügung stellen können.
 
 ### req-fach-007 -- Zusammensetzbare Objekte
 
-Objekte können andere Objekte oder Berechnungsverfahren verwenden oder enthalten. Dadurch muss ihre konkrete Ausprägung
+Objekte können andere Objekte oder technische Komponenten verwenden oder enthalten. Dadurch muss ihre konkrete Ausprägung
 konfigurierbar sein.
 
 Beispielsweise kann ein Objekt `Trend` ein oder mehrere
@@ -125,7 +125,7 @@ Der Strategiedesigner muss die Definition neuer Objekttypen ermöglichen, ohne d
 
 Benutzerdefinierte Objekttypen müssen hinsichtlich Konfiguration, Parametrisierung, Eigenschaften sowie Wiederverwendung grundsätzlich wie mitgelieferte Objekttypen behandelt werden können.
 
-Ein neuer Objekttyp kann insbesondere aus bereits vorhandenen Objekten, Indikatoren, Berechnungen oder Berechnungsverfahren zusammengesetzt werden.
+Ein neuer Objekttyp kann insbesondere aus bereits vorhandenen Objekten, Indikatoren, Berechnungen oder anderen verfügbaren Komponenten zusammengesetzt werden.
 
 Dadurch ist das fachliche Vokabular des Designers nicht auf die bei der Entwicklung bekannten Begriffe und Handelsansätze beschränkt. Wiederkehrende benutzerspezifische fachliche Konzepte können einmal definiert und anschließend in unterschiedlichen Strategien wiederverwendet werden.
 
@@ -139,25 +139,25 @@ Die Wiederholung einer Strategieauswertung ergibt sich aus erneut eintretenden A
 
 ### req-fach-027 -- Ordertyp und Parameter in der Strategie
 
-Eine Strategie muss den zu verwendenden Ordertyp festlegen können. Für den gewählten Ordertyp muss die Strategie dessen Eigenschaften mit direkten Werten und/oder Regeln mittels `bestimmen()` belegen können.
+Eine Strategie muss den zu verwendenden Ordertyp festlegen können. Für den gewählten Ordertyp muss die Strategie dessen verfügbare Parameter mit direkten Werten und/oder Regeln mittels `bestimmen()` belegen können.
 
-Welche Eigenschaften verfügbar beziehungsweise erforderlich sind, ergibt sich aus dem konkreten Ordertyp.
+Welche Parameter verfügbar beziehungsweise erforderlich sind, ergibt sich aus dem konkreten Ordertyp.
 
-Unter welchen Bedingungen eine gestellte, noch wartende Order bestehen bleibt, legt die Strategie in der Verwaltung dieser Order fest (Fachmodell, req-fach-049a), etwa wenn ein Setup nach dem Stellen einer wartenden Order entfällt.
+Die Strategie muss außerdem festlegen können, unter welchen fachlichen Bedingungen eine aus ihr hervorgehende noch aktive Order gültig bleibt. Dazu kann sie eine Bedingung oder Regel für die spätere Prüfung konfigurieren, etwa wenn ein Setup nach dem Stellen einer Pending Order entfällt. Diese Konfiguration wird bei der Ordererzeugung an die konkrete Order übergeben.
 
 ## 4. Konfiguration und Parameter
 
 ### req-param-001 -- Konfigurierbare Objekte
 
 Objekte müssen konfigurierbar sein. Zur Konfiguration kann
-insbesondere die Zuordnung anderer Objekte oder Berechnungsverfahren gehören.
+insbesondere die Zuordnung anderer Objekte oder Komponenten gehören.
 
 Beispielsweise kann einem Objekt ein bestimmter Indikator
 oder ein bestimmtes Berechnungsverfahren zugeordnet werden.
 
-### req-param-002 -- Parametrisierbare Objekte
+### req-param-002 -- Parametrisierbare Objekte und Komponenten
 
-Objekte und die von ihnen verwendeten Berechnungsverfahren müssen
+Objekte und die von ihnen verwendeten Komponenten müssen
 parametrisierbar sein.
 
 Parameter können beispielsweise sein:
@@ -169,7 +169,7 @@ Parameter können beispielsweise sein:
 -   Parameter eines verwendeten Indikators.
 
 Die verfügbaren Parameter sowie deren Datentypen, zulässige Werte und
-gegebenenfalls Standardwerte müssen durch den jeweiligen Objekttyp
+gegebenenfalls Standardwerte müssen durch die jeweilige Komponente
 beschrieben werden und durch den Designer auslesbar sein.
 
 ### req-param-003 -- Zeitpunkt der Parameterbindung
@@ -189,10 +189,10 @@ Zeiteinheit fest vorgeben oder diese Größen erst zur Laufzeit erhalten.
 ### req-param-004 -- Selbstbeschreibung für die Benutzeroberfläche
 
 Die Benutzeroberfläche darf die Eigenschaften und Parameter konkreter
-Objekte wie Indikatoren oder Strategien nicht fest
+von Objekten wie Indikatoren oder Strategien nicht fest
 einprogrammieren müssen.
 
-Die verwendeten Objekte und Berechnungsverfahren müssen die für Darstellung und
+Die verwendeten Objekte und Komponenten müssen die für Darstellung und
 Konfiguration notwendigen Informationen maschinenlesbar bereitstellen.
 Die konkrete technische Umsetzung dieses Mechanismus ist noch nicht
 festgelegt.
@@ -215,7 +215,7 @@ Der Objekttyp legt fest, welche Parameter Pflichtparameter und welche optional s
 
 Der Strategiedesigner stellt Objekte für die Gestaltung von Strategien bereit. Ihre Auswahl und Darstellung richten sich nach der fachlichen Bedeutung im Strategieablauf. Dazu gehören die bereits beschriebenen Objekte wie `Strategie`, `Regel` und konfigurierbare Ordertypen. Weitere Objekte können hinzukommen.
 
-Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständigen Objekttypen allein aufgrund ihrer Bezeichnung. Der Designer zeigt die jeweils tatsächlich verwendeten Objekte und Tätigkeiten. Ordertypen legt das Fachmodell fest. Das Schließen einer Position erfolgt mit dem Element `Position schließen` über eine `CloseOrder` (Fachmodell, req-fach-032 und req-fach-049a). Eine eigene `ExitOrder` gibt es nicht.
+Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständigen Objekttypen allein aufgrund ihrer Bezeichnung. Der Designer zeigt die jeweils tatsächlich verwendeten Objekte und Tätigkeiten. Welche zusätzlichen Ordertypen, etwa eine `ExitOrder`, benötigt und wie sie definiert werden, ist im Fachmodell festzulegen.
 
 ### req-core-002 -- Trennung von Strategie und allgemeinen Regeln
 
@@ -260,7 +260,7 @@ Auswahl und Konfiguration eines Objekts erfolgen über eine
 zugehörige Eigenschaftenansicht.
 
 Diese Eigenschaftenansicht muss soweit möglich dynamisch aus den vom
-konkreten Objekt und seinen verwendeten Berechnungsverfahren bereitgestellten
+konkreten Objekt und seinen verwendeten Komponenten bereitgestellten
 Metadaten aufgebaut werden. Sie darf keine Kenntnis einer konkreten
 Handelsstrategie voraussetzen.
 
@@ -270,9 +270,9 @@ Die Strategie muss als verständliche Gesamtübersicht darstellbar bleiben. Komp
 
 ### req-ui-007 -- Deutsch und Englisch als Oberflächensprachen
 
-Der Strategiedesigner unterstützt Deutsch und Englisch als auswählbare Sprachen der Benutzeroberfläche. Dazu gehören insbesondere Menüs, Beschriftungen und Erläuterungen von Objekten, Eigenschaften, Parametern und Ergebnissen sowie Meldungen zur Konsistenzprüfung einer Strategie.
+Der Prototyp unterstützt Deutsch und Englisch als auswählbare Sprachen der Benutzeroberfläche. Dazu gehören insbesondere Menüs, Beschriftungen und Erläuterungen von Objekten, Eigenschaften und Ergebnissen sowie Meldungen zur Konsistenzprüfung einer Strategie.
 
-Ein Wechsel der Oberflächensprache darf die fachliche Bedeutung oder gespeicherte Konfiguration einer Strategie nicht verändern. Die Zuordnung von Objekten, Eigenschaften und Ergebnissen muss unabhängig vom angezeigten Sprachtext erfolgen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht automatisch übersetzt.
+Ein Wechsel der Oberflächensprache darf die fachliche Bedeutung oder gespeicherte Konfiguration einer Strategie nicht verändern. Die Zuordnung von Objekten, Eigenschaften und Ergebnisse muss unabhängig vom angezeigten Sprachtext erfolgen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht automatisch übersetzt.
 
 ### req-ui-008 -- Dauerhafte Oberflächensprache des Strategiedesigners
 
@@ -282,7 +282,7 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 ### req-ui-009 -- Einstellungsbereich
 
-Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden (Objektverzeichnis), wird ebenfalls dort angezeigt und geändert. Die Einstellung selbst liegt im Speicher der Komponente (req-system-016). Die Dateien sind die verbindliche Fassung der Objekte, ein Verzeichnis der Objekte im Speicher der Komponente lässt sich aus ihnen neu erzeugen (req-system-015). Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
+Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Das Verzeichnis, in dem Strategien und die übrigen eigenständig gespeicherten Objekte als Dateien abgelegt werden, wird ebenfalls dort angezeigt und geändert. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
 ### req-ui-010 -- Angaben zu pipwerk Studio
 
@@ -293,7 +293,7 @@ pipwerk Studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md
 - die Lizenz: Name und vollständiger Text der „GNU General Public License, Version 3“, immer im englischen Original
 - die Adresse https://github.com/macodix/pipwerk als Verweis, der sich in einem neuen Tab öffnet
 
-Der Dialog wird über die Schaltfläche „Über pipwerk Studio“ (englisch „About pipwerk Studio“) rechts in der Kopfzeile geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Daneben zeigt die Fußzeile ständig den Stand in Kurzform (die ersten 7 Zeichen der Kennung des Commits, „unbekannt“, wenn er sich nicht ermitteln lässt). Überall, wo pipwerk Studio seinen Namen anzeigt oder ausgibt, lautet er „pipwerk Studio“, ebenso in der Dokumentation. Ein Zeilenumbruch zwischen „pipwerk“ und „Studio“ ist zulässig.
+Der Dialog wird über die Schaltfläche „Über pipwerk Studio“ (englisch „About pipwerk Studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen. Überall, wo pipwerk Studio seinen Namen anzeigt oder ausgibt, lautet er „pipwerk Studio“, ebenso in der Dokumentation. Ein Zeilenumbruch zwischen „pipwerk“ und „Studio“ ist zulässig.
 
 ### req-ui-011 -- Anzeige von Befunden der Konsistenzprüfung
 
@@ -334,7 +334,7 @@ Beim Speichern läuft die Konsistenzprüfung. Befunde werden angezeigt. Gespeich
 
 ### req-ablauf-006 -- Strategie und Objekt löschen
 
-Eine Strategie wird nach Rückfrage gelöscht. Ein Objekt, das noch in Strategien oder anderen Objekten verwendet wird, zum Beispiel eine Regel in einem Regelwerk oder ein Indikator in einem Trend, kann nicht gelöscht werden. Der Designer zeigt, welche Strategien und Objekte es verwenden.
+Eine Strategie wird nach Rückfrage gelöscht. Ein Objekt, das noch in Strategien verwendet wird, kann nicht gelöscht werden. Der Designer zeigt, welche Strategien es verwenden.
 
 ### req-ablauf-007 -- Konsistenzprüfung Strategie
 
@@ -396,7 +396,7 @@ Die folgenden Punkte sind noch nicht entschieden:
 6.  Wie Änderungen einer Fachdefinition bestehende Strategien und
     Backtests beeinflussen.
 7.  Mit welchem technischen Mechanismus Objekte ihre Eigenschaften,
-    und Parameter für Designer und Oberfläche maschinenlesbar
+    Parameter und Ergebnisse für Designer und GUI maschinenlesbar
     bereitstellen.
 8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
     eingeführt werden, ist gesondert zu entscheiden, ob die
@@ -405,20 +405,45 @@ Die folgenden Punkte sind noch nicht entschieden:
 
 ## 10. Änderungsnachweis
 
-| Datum | Änderung |
-|---|---|
-| 2026-09-18 | Erstanlage aus den bestätigten Diskussionsergebnissen |
-| 2026-09-20 | Festlegung „eigene Fachbibliothek je Handelsansatz“ entfernt. Anforderungen zu konfigurierbaren und parametrisierbaren Objekten, dynamisch bereitgestellten Eigenschaften und Ergebnissen, Parameterbindung zur Strategie oder Laufzeit und dynamischer Eigenschaftenansicht ergänzt. |
+
+  -----------------------------------------------------------------------
+  Datum                               Änderung
+  ----------------------------------- -----------------------------------
+  2026-09-18                          Erstanlage aus den bestätigten
+                                      Diskussionsergebnissen
+
+  2026-09-20                          Festlegung „eigene Fachbibliothek
+                                      je Handelsansatz" entfernt;
+                                      Anforderungen zu konfigurierbaren
+                                      und parametrisierbaren fachlichen
+                                      Objekten, dynamisch
+                                      bereitgestellten
+                                      Eigenschaften/Ergebnissen,
+                                      Parameterbindung zur
+                                      Strategiedefinition oder Laufzeit
+                                      und dynamischer
+                                      GUI-Eigenschaftenansicht ergänzt
+  -----------------------------------------------------------------------
 | 2026-09-20 | Benutzerdefinierte, wiederverwendbare fachliche Objekttypen als Erweiterungsmechanismus ergänzt |
+
 | 2026-09-22 | Fachliches Objekt `Trend` mit Richtung, Zeiteinheit, Betrachtungshorizont und Berechnungsverfahren sowie Zuordnung von Indikatoren und deren Ergebnissen konkretisiert |
+
 | 2026-09-22 | Festlegungen aus der GUI-/Ablaufdiskussion ergänzt: Indikatoren als Objekte, Zustandswechsel als Bedingungen, allgemeine Auslöser, Trennung Einstiegssignal/Order/Position, grober Orderablauf, Informationsquellen und hierarchische Darstellung; Betrachtungshorizont als allgemeine Trend-Eigenschaft korrigiert |
+
 | 2026-09-23 | Zwischenergebnis zum fachlichen Ordermodell ergänzt: allgemeines Orderobjekt, Regelverarbeitung, OrderManager, Spezialisierung und Erweiterbarkeit nach Ordertyp, MT5-Begrenzung der ersten Entwicklungsphase und Trennung der Kontoanbindung |
+
 | 2026-09-23 | Ordermodell ergänzt um Strategie-Konfiguration des Ordertyps, `MarketOrder`, Übergabe freigegebener Orders, getrennte Zustände, Überwachung der fortbestehenden Gültigkeit, `CloseOrder` und strategieunabhängige Nutzung von Orderobjekten |
+
 | 2026-09-24 | Fachliches Objekt `Regel` ergänzt: Eigenschaften, fachlicher Ausdruck, Prüfen/Bestimmen, Komposition und freie Granularität, Zugriff auf fachliche Informationen, Kontextbindung und Verfügbarkeit konkreter Regeln in der GUI |
+
 | 2026-09-24 | Konsistenzbereinigung: veralteten Orderablauf entfernt; Verantwortlichkeit des OrderManagers beim Anstoßen von Prüfungen präzisiert; einheitliches Regelobjekt mit `prüfen()`/`bestimmen()` durchgängig verwendet; Verhältnis von Bedingungen und Regeln klargestellt |
+
 | 2026-09-24 | Fachliches Objekt `RegelSet` ergänzt: benannte geordnete Sammlung eigenständiger Regeln, Erhalt der Einzelergebnisse, optionales explizit definiertes Gesamtergebnis, änderbare Auswertungsreihenfolge; Behandlung fehlerhafter Reihenfolgen bewusst offengelassen |
+
 | 2026-09-24 | Grundlegende Festlegungen zum fachlichen Nachrichtensystem ergänzt: vollständig adressierte Nachrichten mit ID, Absender, Adressat, Priorität, Nachrichtenart, Inhalt und optionalem Bezug; fachliche Objekte als Inhalt; gemeinsames Modell für Pull und Push; aktueller Kommunikationsbedarf des OrderManagers festgehalten |
+
 | 2026-09-24 | Bestehendes Gesamtdokument in `fachmodell.md`, `anforderungen-strategiedesigner.md` und `anforderungen-handelssystem.md` getrennt; bestehende Anforderungen inhaltlich erhalten und nach Zuständigkeit zugeordnet. |
+
 | 2026-09-25 | Übergreifende Festlegung zur technischen Aufteilung in `anforderungen-gesamtsystem.md` verlagert; bisherige Offenhaltung der technischen Aufteilung entfernt. |
 | 2026-09-25 | Veralteten Verweis auf `Signal` als fachliches Objekt entfernt und `Strategie` als fachliches Objekt berücksichtigt. |
 | 2026-10-04 | Dauerhafte, komponentenweite Auswahl von Deutsch oder Englisch für den Strategiedesigner einschließlich Standardsprache, Abgrenzung und offenem Folgepunkt zu Benutzerkonten festgelegt. |
@@ -432,7 +457,6 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-13 | req-ui-010: Stand genau in Testumgebung und Installation, im Entwicklungsbetrieb Commit vom Start, Abweichung in der Anwenderdokumentation erklärt. Antwort des Auftraggebers auf Frage ablauftest-02. |
 | 2026-10-13 | Schreibweise des Namens in req-ui-010: „pipwerk Studio“ (Auftraggeber im Chat). |
 | 2026-10-13 | req-ui-010: Name überall einheitlich „pipwerk Studio“, folgt aus der Festlegung des Namens durch den Auftraggeber. |
-| 2026-10-13 | Konsistenzprüfung um fehlerhafte Reihenfolge im Regelwerk ergänzt, Speichern immer möglich. Anzeige der Befunde am Element (req-ui-011). Abgestimmt mit dem Auftraggeber im Chat. |
 | 2026-10-14 | req-ui-010: Zeilenumbruch zwischen „pipwerk“ und „Studio“ zulässig (Auftraggeber im Chat). |
+| 2026-10-13 | Konsistenzprüfung um fehlerhafte Reihenfolge im Regelwerk ergänzt, Speichern immer möglich. Anzeige der Befunde am Element (req-ui-011). Abgestimmt mit dem Auftraggeber im Chat. |
 | 2026-10-14 | Auslöser auch am Anfang der Verwaltung einer Order. Abgestimmt mit dem Auftraggeber im Chat. |
-| 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, „Berechnungsverfahren“ statt „Komponente“ eines Objekts, „Eigenschaften“ statt „Parameter“ eines Ordertyps, Marktphase, Bewegung und Korrektur als Werte der Eigenschaft Phase, Objekte liefern keine Ergebnisse, Gültigkeit wartender Orders über die Verwaltung, keine ExitOrder, Objektverzeichnis und Speicher, Aufrufstelle des Dialogs „Über pipwerk Studio“ ohne Bezug auf die Sprachauswahl, Standanzeige beschrieben, Löschschutz auch bei Verwendung in Objekten, sprachliche Fehler, Änderungsnachweis als eine Tabelle. |
