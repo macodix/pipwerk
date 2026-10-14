@@ -319,6 +319,85 @@ describe('AboutDialog opening and closing', () => {
   });
 });
 
+describe('AboutDialog focus', () => {
+  it('goes from the last element to the first with Tab', async () => {
+    const user = userEvent.setup();
+    renderDialog('de');
+    const button = screen.getByRole('button', { name: 'Schließen' });
+    expect(button).toHaveFocus();
+
+    await user.tab();
+
+    expect(screen.getByText(/GNU GENERAL PUBLIC LICENSE/)).toHaveFocus();
+  });
+
+  it('goes from the first element to the last with Shift+Tab', async () => {
+    const user = userEvent.setup();
+    renderDialog('de');
+    screen.getByText(/GNU GENERAL PUBLIC LICENSE/).focus();
+
+    await user.tab({ shift: true });
+
+    expect(screen.getByRole('button', { name: 'Schließen' })).toHaveFocus();
+  });
+
+  it('moves through the elements in order and keeps the focus in the dialog', async () => {
+    const user = userEvent.setup();
+    renderDialog('de');
+    const dialog = screen.getByRole('dialog');
+
+    for (let step = 0; step < 7; step += 1) {
+      await user.tab();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+      expect(document.activeElement).not.toBe(document.body);
+    }
+    for (let step = 0; step < 7; step += 1) {
+      await user.tab({ shift: true });
+      expect(dialog.contains(document.activeElement)).toBe(true);
+      expect(document.activeElement).not.toBe(document.body);
+    }
+  });
+
+  it('goes through text, link and button with Tab', async () => {
+    const user = userEvent.setup();
+    renderDialog('de');
+    screen.getByText(/GNU GENERAL PUBLIC LICENSE/).focus();
+
+    await user.tab();
+    expect(screen.getByRole('link', { name: REPOSITORY })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Schließen' })).toHaveFocus();
+  });
+
+  it('leads the focus into the dialog if it is on the document or on the dialog itself', async () => {
+    const user = userEvent.setup();
+    renderDialog('de');
+    const dialog = screen.getByRole('dialog');
+
+    (document.activeElement as HTMLElement).blur();
+    await user.tab();
+    expect(screen.getByText(/GNU GENERAL PUBLIC LICENSE/)).toHaveFocus();
+
+    dialog.tabIndex = -1;
+    dialog.focus();
+    expect(dialog).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'Schließen' })).toHaveFocus();
+  });
+
+  it('does not use Tab after the dialog is closed', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderDialog('de');
+    await user.click(screen.getByRole('button', { name: 'Schließen' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    const event = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true, bubbles: true });
+
+    document.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+});
+
 describe('AboutDialog network', () => {
   it('does not call fetch when it opens', () => {
     const fetchSpy = vi.fn();

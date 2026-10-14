@@ -35,6 +35,45 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
     }
   }, [open]);
 
+  // The browser does not keep the focus in a modal dialog completely: with Tab
+  // from the last and Shift+Tab from the first element the focus can go to the
+  // document or the browser. While the dialog is open it therefore keeps the
+  // focus itself and continues at the other end.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function keepFocus(event: KeyboardEvent): void {
+      const dialog = dialogRef.current;
+      if (event.key !== 'Tab' || dialog === null || !dialog.open) {
+        return;
+      }
+      const items = Array.from(
+        dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex="0"]'),
+      );
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (first === undefined || last === undefined) {
+        return;
+      }
+      const active = document.activeElement;
+      const inside = active instanceof Node && active !== dialog && dialog.contains(active);
+      if (event.shiftKey) {
+        if (!inside || active === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (!inside || active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener('keydown', keepFocus);
+    return () => {
+      document.removeEventListener('keydown', keepFocus);
+    };
+  }, [open]);
+
   const revision =
     buildRevision === null
       ? t('about.unknown')

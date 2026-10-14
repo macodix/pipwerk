@@ -292,31 +292,36 @@ test('shows the commit and its date in the dialog as built, in the time zone of 
   page,
 }) => {
   const expected = expectedCommit();
+  test.skip(expected === null, 'The test workspace is not a Git working tree.');
+  const { commit, local } = expected!;
   await waitForLoadedPage(page);
 
   await openButton(page).click();
   let dialog = page.getByRole('dialog');
-  if (expected === null) {
-    await expect(revisionValue(dialog, 'Stand')).toHaveText('unbekannt');
-  } else {
-    const { commit, local } = expected;
-    await expect(revisionValue(dialog, 'Stand')).toHaveText(
-      `${commit} vom ${local.day}.${local.month}.${local.year}, ${local.hour}:${local.minute} Uhr`,
-    );
-  }
+  await expect(revisionValue(dialog, 'Stand')).toHaveText(
+    `${commit} vom ${local.day}.${local.month}.${local.year}, ${local.hour}:${local.minute} Uhr`,
+  );
   await dialog.getByRole('button', { name: 'Schließen' }).click();
 
   await page.getByLabel('Sprache').selectOption('en');
   await openButton(page, 'About pipwerk Studio').click();
   dialog = page.getByRole('dialog');
-  if (expected === null) {
-    await expect(revisionValue(dialog, 'Revision')).toHaveText('unknown');
-  } else {
-    const { commit, local } = expected;
-    await expect(revisionValue(dialog, 'Revision')).toHaveText(
-      `${commit} from ${local.year}-${local.month}-${local.day} ${local.hour}:${local.minute}`,
-    );
-  }
+  await expect(revisionValue(dialog, 'Revision')).toHaveText(
+    `${commit} from ${local.year}-${local.month}-${local.day} ${local.hour}:${local.minute}`,
+  );
+});
+
+test('shows unknown in the dialog without a Git working tree', async ({ page }) => {
+  test.skip(expectedShortRevision() !== null, 'The test workspace is a Git working tree.');
+  await waitForLoadedPage(page);
+
+  await openButton(page).click();
+  await expect(revisionValue(page.getByRole('dialog'), 'Stand')).toHaveText('unbekannt');
+  await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
+
+  await page.getByLabel('Sprache').selectOption('en');
+  await openButton(page, 'About pipwerk Studio').click();
+  await expect(revisionValue(page.getByRole('dialog'), 'Revision')).toHaveText('unknown');
 });
 
 test('shows the same commit in the dialog and in the tooltip of the footer', async ({ page }) => {
@@ -385,20 +390,40 @@ test('locks the rest of the page while the dialog is open', async ({ page }) => 
   }
   await expect(select).toHaveValue('de');
 
-  // Tab key: the focus never reaches the select or the button.
-  for (const key of ['Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab']) {
+  await expect(dialog).toBeVisible();
+});
+
+test('keeps the focus in the open dialog after every key press of Tab and Shift+Tab', async ({
+  page,
+}) => {
+  await waitForLoadedPage(page);
+  await openButton(page).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Schließen' })).toBeFocused();
+
+  // From the last element Tab continues at the first, Shift+Tab goes back.
+  await page.keyboard.press('Tab');
+  await expect(dialog.locator('pre')).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialog.getByRole('button', { name: 'Schließen' })).toBeFocused();
+
+  // After every key press the focus is on an element in the dialog: never on
+  // the document, never on the select or the button in the header.
+  const keys = [...Array<string>(8).fill('Tab'), ...Array<string>(8).fill('Shift+Tab')];
+  for (const key of keys) {
     await page.keyboard.press(key);
     const position = await page.evaluate(() => {
       const active = document.activeElement;
       const modal = document.querySelector('dialog');
       return {
         inHeader: active?.closest('.studio-header') != null,
-        inDialog: modal?.contains(active) === true,
+        inDialog: modal !== null && active !== modal && modal.contains(active),
         isDocument: active === document.body || active === document.documentElement,
       };
     });
-    expect(position.inHeader).toBe(false);
-    expect(position.inDialog || position.isDocument).toBe(true);
+    expect(position.isDocument, `after ${key}`).toBe(false);
+    expect(position.inHeader, `after ${key}`).toBe(false);
+    expect(position.inDialog, `after ${key}`).toBe(true);
   }
   await expect(dialog).toBeVisible();
 });
