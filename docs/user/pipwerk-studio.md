@@ -23,7 +23,7 @@ Die Testumgebung ist pipwerk Studio, gebaut und gestartet aus genau einem Commit
 Die Testumgebung wird mit dem Testumgebungsskript `components/pipwerk-studio/scripts/testenv` gestartet, abgefragt und beendet. Welche Programme dafür auf dem Rechner vorhanden sein müssen, steht in der technischen Dokumentation `docs/technical/pipwerk-studio.md` im Abschnitt „Start als Testumgebung“.
 
 1. Starten: `testenv start --frontend-port <Port der Oberfläche> --backend-port <Port des Hintergrunddienstes>`. Beide Ports wählen Sie selbst. Sie müssen frei sein und sich unterscheiden. Der Start dauert, weil das Skript die Programmteile installiert und die Oberfläche baut. Er endet erst, wenn pipwerk Studio antwortet.
-2. Öffnen: Rufen Sie im Webbrowser die Adresse `http://127.0.0.1:<Port der Oberfläche>/` auf. Nur wenn Sie beim Start mit `--host` eine andere Adresse des Rechners angegeben haben, gilt diese Adresse.
+2. Öffnen: Rufen Sie im Webbrowser die Adresse `http://127.0.0.1:<Port der Oberfläche>/` auf. Nur wenn Sie beim Start mit `--host` eine andere Adresse des Rechners angegeben haben, gilt diese Adresse. Achtung: Ohne `--host` ist pipwerk Studio nur von Ihrem eigenen Rechner aus erreichbar. Geben Sie mit `--host` eine andere Adresse an, zum Beispiel `0.0.0.0`, kann jeder, der Ihren Rechner im Netz erreicht, pipwerk Studio benutzen und dessen Einstellungen, zum Beispiel die Sprache, ändern. Es gibt keine Anmeldung. Verwenden Sie `--host` deshalb nur in einem Netz, dem Sie vertrauen.
 3. Abfragen: `testenv status` nennt, ob die Testumgebung läuft, und ihre Ports.
 4. Beenden: `testenv stop` beendet pipwerk Studio und entfernt die Dateien der Testumgebung.
 

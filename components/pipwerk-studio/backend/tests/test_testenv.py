@@ -288,6 +288,52 @@ def test_invalid_call_is_rejected_before_anything_happens(
     _assert_nothing_happened(replica)
 
 
+@pytest.mark.parametrize(
+    ("frontend_port", "backend_port", "message"),
+    [
+        ("99999999999999999999", "28200", "--frontend-port must be a number"),
+        ("28200", "99999999999999999999", "--backend-port must be a number"),
+        ("0099999999999999999999999999", "28200", "--frontend-port must be a number"),
+        ("9223372036854775808", "28200", "--frontend-port must be a number"),
+        ("65536", "28200", "--frontend-port must be a number"),
+        ("0", "28200", "--frontend-port must be a number"),
+        ("0000", "28200", "--frontend-port must be a number"),
+        ("28200", "-1", "--backend-port must be a number"),
+        ("028300", "28300", "must differ"),
+        ("28300", "0028300", "must differ"),
+        ("00028300", "028300", "must differ"),
+    ],
+)
+def test_port_boundaries_are_checked_before_anything_happens(
+    make_replica: Callable[..., Replica], frontend_port: str, backend_port: str, message: str
+) -> None:
+    replica = make_replica()
+
+    result = replica.run("start", "--frontend-port", frontend_port, "--backend-port", backend_port)
+
+    assert result.returncode == 1
+    assert message in result.stderr
+    assert "Illegal number" not in result.stderr
+    assert "Traceback" not in result.stderr
+    _assert_nothing_happened(replica)
+
+
+def test_ports_with_leading_zeros_and_the_limits_are_accepted(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica()
+    port = _free_port()
+
+    result = replica.run("start", "--frontend-port", "065535", "--backend-port", f"00{port}")
+
+    assert result.returncode != 0
+    assert "must be a number" not in result.stderr
+    assert "must differ" not in result.stderr
+    calls = replica.calls()
+    assert len(calls) == 1
+    assert calls[0].startswith("uv ")
+
+
 def test_status_and_stop_without_a_test_environment(
     make_replica: Callable[..., Replica],
 ) -> None:

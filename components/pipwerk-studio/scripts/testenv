@@ -94,11 +94,21 @@ stop_processes() {
 
 # --- checks ----------------------------------------------------------------
 
+# require_port <parameter> <value>: sets PORT_VALUE to the value without
+# leading zeros. Leading zeros are removed first, so that the length check
+# keeps numbers out of the shell's integer arithmetic that it cannot handle.
 require_port() {
-    case $2 in
+    PORT_VALUE=$2
+    case $PORT_VALUE in
     '' | *[!0-9]*) die "$1 must be a number between 1 and 65535" ;;
     esac
-    if [ "$2" -lt 1 ] || [ "$2" -gt 65535 ]; then
+    while [ "${PORT_VALUE#0}" != "$PORT_VALUE" ]; do
+        PORT_VALUE=${PORT_VALUE#0}
+    done
+    case $PORT_VALUE in
+    '' | ??????*) die "$1 must be a number between 1 and 65535" ;;
+    esac
+    if [ "$PORT_VALUE" -gt 65535 ]; then
         die "$1 must be a number between 1 and 65535"
     fi
 }
@@ -196,7 +206,9 @@ cmd_start() {
     [ -n "$frontend_port" ] || die "missing parameter --frontend-port"
     [ -n "$backend_port" ] || die "missing parameter --backend-port"
     require_port --frontend-port "$frontend_port"
+    frontend_port=$PORT_VALUE
     require_port --backend-port "$backend_port"
+    backend_port=$PORT_VALUE
     [ "$frontend_port" != "$backend_port" ] ||
         die "--frontend-port and --backend-port must differ"
     case $host in
