@@ -90,14 +90,15 @@ Der Trade endet, wenn der Stop-Loss oder der Take-Profit erreicht wird.
 | Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
 | Risikogrenze | maximaler Verlust je Trade | 1 % des Kapitals | bestätigt |
 | effektives CRV | Verhältnis von möglichem Gewinn zu möglichem Verlust | 1:1 einschließlich Spread und vorgesehenem Puffer | bestätigt |
-| ZigZag-Einstellung | Bestimmung der 1-2-3-Punkte | noch nicht festgelegt | offen |
+| ZigZag-Einstellung | Bestimmung der 1-2-3-Punkte | ZigZag nach dem Verfahren des in MetaTrader 5 mitgelieferten Indikators, Parameter Depth (Standard 12), Deviation (Standard 5), Backstep (Standard 3) | bestätigt |
 
 Entry-Puffer und Stop-Puffer werden in der Praxis nach Erfahrung gewählt, etwa größer bei hoher Volatilität ohne ausgeprägtes Trendverhalten. Diese Einschätzung ist nicht als Regel fassbar. Deshalb sind beide Puffer Parameter. Geeignete Werte werden im Backtesting ermittelt.
 
+Der ZigZag-Indikator ist ein Indikator von pipwerk. Er rechnet nach demselben Verfahren wie der in MetaTrader 5 mitgelieferte ZigZag-Indikator und liefert bei gleichen Kursdaten und Parametern dieselben Punkte. Er ist damit unabhängig von MetaTrader und auch im Backtesting verfügbar.
+
 ## Offene fachliche Fragen
 
-1. Welche ZigZag-Variante und welche Parameter werden verwendet?
-2. Was geschieht, wenn auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich ist?
+1. Was geschieht, wenn auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich ist?
 
 ## Bestätigungsvermerk
 
