@@ -369,6 +369,8 @@ Jede gestellte Order erhält ihre eigene Verwaltung. Die Verwaltung ist der Teil
 
 `Order ändern`, `Order löschen`, `Position ändern` und `Position schließen` stehen in der Verwaltung und wirken nur auf deren Order beziehungsweise Position. Stellt eine spätere Auswertung der Strategie eine weitere Order, erhält diese ihre eigene Verwaltung. Orders und Positionen verschiedener Verwaltungen beeinflussen sich nicht. Orders und Positionen, die nicht von der Strategie stammen, werden nie verändert.
 
+Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders und Positionen ausgewertet, danach der Hauptablauf der Strategie. Ein Signal in Gegenrichtung kann so die bestehende Position schließen, bevor der Hauptablauf eine neue eröffnet.
+
 
 ## 3. Änderungsnachweis
 
@@ -395,3 +397,4 @@ Jede gestellte Order erhält ihre eigene Verwaltung. Die Verwaltung ist der Teil
 | 2026-10-14 | req-fach-036: fachlicher Ausdruck in OpenFormula, Funktionen als Auswahl aus der Norm. req-fach-012 und 048 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-049a: eigene Verwaltung je gestellter Order mit eigenen Auslösern, ersetzt die offene Frage nach der gemeinten Order. req-fach-046 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-046: Eigenschaften wartende Orders und offene Positionen der Strategie, vorläufig. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-049a: bei einem Auslöser zuerst die Verwaltungen, dann der Hauptablauf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |

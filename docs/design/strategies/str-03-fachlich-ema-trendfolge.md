@@ -42,7 +42,7 @@ Jede eröffnete Position hat ihre eigene Verwaltung. Sie wird bei jedem Kerzensc
 
 ### 5. Position beenden
 
-Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen in Gegenrichtung geschlossen wird. Das Kreuzen in Gegenrichtung eröffnet zugleich nach Abschnitt 3 eine neue Position in die neue Richtung.
+Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen in Gegenrichtung geschlossen wird. Das Kreuzen in Gegenrichtung ist zugleich das Signal für eine neue Position in die neue Richtung. Beim selben Kerzenschluss wird zuerst die Verwaltung ausgewertet, die die alte Position schließt, danach der Hauptablauf, der nach Abschnitt 3 die neue eröffnet.
 
 ## Parameter
 
