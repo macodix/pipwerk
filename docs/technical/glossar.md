@@ -24,6 +24,9 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
 | Elementbibliothek | Der Bereich der Oberfläche, der die verfügbaren Elementtypen und die bereits angelegten Objekte zur Auswahl anbietet. |
 | Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie ausgewertet wird, zum Beispiel der Schluss einer Kerze auf einer Zeiteinheit. Es steht am Anfang des Ablaufs. Jede Strategie hat mindestens einen Auslöser. |
+| Anwendung einer Strategie | Die Zuordnung einer Strategie zu einem Konto und einem Instrument. Sie besteht, bis der Nutzer sie aufhebt. Dieselbe Strategie auf zwei Instrumenten sind zwei Anwendungen. |
+| Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, ausgelöst durch einen Auslöser, zum Beispiel jeden Kerzenschluss. |
+| Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er läuft mit eigenen Auslösern für genau diese Order und die daraus entstehende Position, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
 | Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „abgelehnt“. |
 | Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. |
 | Order löschen | Das Element, das eine wartende Order löscht. |
@@ -85,6 +88,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-14 | Anwendung einer Strategie, Auswertung und Verwaltung einer Order ergänzt. |
 | 2026-10-14 | Order aufgeben: Ausgänge gestellt und abgelehnt. |
 | 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |
 | 2026-10-12 | Konsistenzprüfung statt Prüfung, Pflichtparameter und Standardwert ergänzt. |

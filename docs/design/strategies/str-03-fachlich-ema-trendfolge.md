@@ -27,23 +27,22 @@ Die Strategie wird bei jedem Kerzenschluss der Zeiteinheit ausgewertet.
 
 ### 2. Kreuzen prüfen
 
-Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreuzt hat. Ein Kreuzen nach oben liegt vor, wenn der schnelle EMA beim vorherigen Kerzenschluss unter oder auf dem langsamen lag und jetzt darüber liegt. Ein Kreuzen nach unten gilt spiegelbildlich.
+Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreuzt hat. Ein Kreuzen nach oben liegt vor, wenn der schnelle EMA beim vorherigen Kerzenschluss unter oder auf dem langsamen lag und jetzt darüber liegt. Ein Kreuzen nach unten gilt spiegelbildlich. Ohne Kreuzen endet die Auswertung.
 
-### 3. Bestehende Position schließen
-
-Hat ein Kreuzen stattgefunden und besteht eine Position dieser Strategie in der Gegenrichtung, wird sie ganz geschlossen.
-
-### 4. Neue Position eröffnen
+### 3. Position eröffnen
 
 Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Das Volumen bestimmt die Risikoregel: Der Verlust bis zum Stop-Loss beträgt höchstens 1 % des Kapitals. Das Volumen wird auf die Volumenschrittweite abgerundet. Liegt es unter dem Mindestvolumen, wird die Order abgelehnt und es wird keine Position eröffnet.
 
-### 5. Stop-Loss nachziehen
+### 4. Position verwalten
 
-Hat kein Kreuzen stattgefunden und besteht eine Position dieser Strategie, wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird nur übernommen, wenn er den bisherigen Stop-Loss in Richtung der Position verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
+Jede eröffnete Position hat ihre eigene Verwaltung. Sie wird bei jedem Kerzenschluss der Zeiteinheit ausgewertet:
 
-### 6. Position beenden
+- Hat der schnelle EMA den langsamen entgegen der Richtung der Position gekreuzt, wird die Position ganz geschlossen.
+- Andernfalls wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird nur übernommen, wenn er den bisherigen Stop-Loss in Richtung der Position verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
 
-Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen in Gegenrichtung geschlossen wird.
+### 5. Position beenden
+
+Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen in Gegenrichtung geschlossen wird. Das Kreuzen in Gegenrichtung eröffnet zugleich nach Abschnitt 3 eine neue Position in die neue Richtung.
 
 ## Parameter
 

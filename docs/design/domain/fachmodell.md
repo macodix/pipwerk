@@ -319,7 +319,7 @@ Eine Strategie besitzt mindestens:
 
 Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt der Wert der zuletzt angewendeten, gleich ob es dieselbe oder eine andere Regel ist. Angewendet werden zuerst die Regeln der Strategie, danach die Regeln der Elemente in der Reihenfolge des Ablaufs. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Prüfende Regeln ändern die Order nicht und heben einander daher nicht auf. Sie prüfen die Order, nachdem alle Eigenschaften bestimmt sind (req-fach-021). Die Order muss jede Prüfung bestehen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
 
-Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs. Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
+Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (req-fach-049a). Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
 
 Eine eigene Versionsangabe der Strategie wird für den ersten Prototyp derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
 
@@ -364,9 +364,9 @@ Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits
 
 `Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
 
-`Order aufgeben` liefert als Ergebnis die gestellte Order. `Order ändern` und `Order löschen` verwenden dieses Ergebnis. Auf der Zeichenfläche ist das eine Verbindung zum Element `Order aufgeben`. `Position ändern` und `Position schließen` verwenden die Position, die aus dieser Order entstanden ist. Eine Strategie wirkt damit nur auf ihre eigenen Orders und Positionen.
+Jede gestellte Order erhält ihre eigene Verwaltung. Die Verwaltung ist der Teil des Ablaufs, der am Ausgang `gestellt` von `Order aufgeben` folgt. Sie läuft für genau diese Order und die Position, die durch ihre Ausführung entsteht. Sie hat eigene Auslöser, zum Beispiel jeden Tick oder jeden Kerzenschluss, und endet, wenn die Order gelöscht oder abgelaufen oder die Position geschlossen ist.
 
-Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen der Strategie mehrere Orders gestellt hat.
+`Order ändern`, `Order löschen`, `Position ändern` und `Position schließen` stehen in der Verwaltung und wirken nur auf deren Order beziehungsweise Position. Stellt eine spätere Auswertung der Strategie eine weitere Order, erhält diese ihre eigene Verwaltung. Orders und Positionen verschiedener Verwaltungen beeinflussen sich nicht. Orders und Positionen, die nicht von der Strategie stammen, werden nie verändert.
 
 
 ## 3. Änderungsnachweis
@@ -392,3 +392,4 @@ Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen
 | 2026-10-14 | req-fach-035, 036, 046: Regeln haben Parameter. Bei bestimmenden Regeln gilt der zuletzt bestimmte Wert einer Eigenschaft, prüfende Regeln heben einander nicht auf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-049: Ausgänge gestellt und abgelehnt bei Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-036: fachlicher Ausdruck in OpenFormula, Funktionen als Auswahl aus der Norm. req-fach-012 und 048 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-049a: eigene Verwaltung je gestellter Order mit eigenen Auslösern, ersetzt die offene Frage nach der gemeinten Order. req-fach-046 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |

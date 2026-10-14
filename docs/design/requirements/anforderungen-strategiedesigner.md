@@ -133,7 +133,7 @@ Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als 
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie hat mindestens einen Auslöser. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs. Auslöser sind nicht auf periodische Prüfungen beschränkt. Ein zeitbasierter Auslöser kann beispielsweise ein Kerzenschluss sein. Andere ereignisbasierte Auslöser müssen grundsätzlich möglich sein.
+Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie hat mindestens einen Auslöser. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Auslöser sind nicht auf periodische Prüfungen beschränkt. Ein zeitbasierter Auslöser kann beispielsweise ein Kerzenschluss sein. Andere ereignisbasierte Auslöser müssen grundsätzlich möglich sein.
 
 Die Wiederholung einer Strategieauswertung ergibt sich aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -459,3 +459,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-13 | req-ui-010: Name überall einheitlich „pipwerk Studio“, folgt aus der Festlegung des Namens durch den Auftraggeber. |
 | 2026-10-14 | req-ui-010: Zeilenumbruch zwischen „pipwerk“ und „Studio“ zulässig (Auftraggeber im Chat). |
 | 2026-10-13 | Konsistenzprüfung um fehlerhafte Reihenfolge im Regelwerk ergänzt, Speichern immer möglich. Anzeige der Befunde am Element (req-ui-011). Abgestimmt mit dem Auftraggeber im Chat. |
+| 2026-10-14 | Auslöser auch am Anfang der Verwaltung einer Order. Abgestimmt mit dem Auftraggeber im Chat. |
