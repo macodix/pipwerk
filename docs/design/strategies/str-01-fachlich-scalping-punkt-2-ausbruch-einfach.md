@@ -86,17 +86,18 @@ Der Trade endet, wenn der Stop-Loss oder der Take-Profit erreicht wird.
 |---|---|---|---|
 | größere Zeiteinheit | Zeiteinheit für Trend und Marktphase | M15, H1, H4 oder D1 | bestätigt |
 | Handelszeiteinheit | Zeiteinheit für Punkt 2, Punkt 1/3 und Tradeplanung | gemäß festgelegter Paarung | bestätigt |
-| Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | ungefähr 3–5 Pips, instrumentabhängig | teilweise offen |
-| Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | ungefähr 3–5 Pips, instrumentabhängig | teilweise offen |
+| Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
+| Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
 | Risikogrenze | maximaler Verlust je Trade | 1 % des Kapitals | bestätigt |
 | effektives CRV | Verhältnis von möglichem Gewinn zu möglichem Verlust | 1:1 einschließlich Spread und vorgesehenem Puffer | bestätigt |
 | ZigZag-Einstellung | Bestimmung der 1-2-3-Punkte | noch nicht festgelegt | offen |
 
+Entry-Puffer und Stop-Puffer werden in der Praxis nach Erfahrung gewählt, etwa größer bei hoher Volatilität ohne ausgeprägtes Trendverhalten. Diese Einschätzung ist nicht als Regel fassbar. Deshalb sind beide Puffer Parameter. Geeignete Werte werden im Backtesting ermittelt.
+
 ## Offene fachliche Fragen
 
-1. Nach welcher Regel wird innerhalb der Spanne von 3 bis 5 Pips der konkrete Puffer bestimmt?
-2. Welche ZigZag-Variante und welche Parameter werden verwendet?
-3. Was geschieht, wenn auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich ist?
+1. Welche ZigZag-Variante und welche Parameter werden verwendet?
+2. Was geschieht, wenn auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich ist?
 
 ## Bestätigungsvermerk
 
