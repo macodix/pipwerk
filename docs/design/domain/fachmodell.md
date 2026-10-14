@@ -39,7 +39,7 @@ Die Zeiteinheit ist eine Vorgabe des Trends und kann die Auswahl beziehungsweise
 
 Indikatoren eines Trend-Berechnungsverfahrens können neben den für die Trendrichtung benötigten Eigenschaften weitere Eigenschaften bereitstellen. Diese Eigenschaften bleiben dem jeweiligen Indikator zugeordnet und werden nicht zu Eigenschaften des Trends.
 
-Sie müssen jedoch über die Struktur des Trendobjekts für andere Elemente referenzierbar sein. Die konkrete Darstellung und Zugriffssyntax ist noch nicht festgelegt.
+Sie müssen jedoch über die Struktur des Trendobjekts für andere Elemente referenzierbar sein. In Ausdrücken werden Eigenschaften nach req-fach-036 angesprochen. Wie eine Eigenschaft eines Indikators über den Trend angesprochen wird, ist noch nicht festgelegt.
 
 ### req-fach-013 -- Indikatoren als Objekte
 
@@ -222,19 +222,26 @@ Eine Regel besitzt mindestens folgende fachliche Eigenschaften:
 - `Regel-ID` -- eindeutige Identifikation der Regel.
 - `Bezeichnung` -- fachlich verständliche Benennung der Regel.
 - `fachlicher Ausdruck` -- Definition der fachlichen Berechnung beziehungsweise Prüfung der Regel.
+- `Parameter` -- 0..n; Werte, die bei jeder Verwendung der Regel belegt werden können, zum Beispiel ein Prozentsatz. Der fachliche Ausdruck verwendet sie wie konstante Werte.
 
 ### req-fach-036 -- Fachlicher Ausdruck einer Regel
 
 Der fachliche Ausdruck einer Regel kann verwenden:
 
 - konstante Werte,
+- Parameter der Regel,
 - Eigenschaften von Objekten,
 - Ergebnisse anderer Regeln,
 - arithmetische Operatoren,
 - Vergleichsoperatoren,
-- logische Operatoren.
+- logische Operatoren,
+- Funktionen.
 
-Für die erste Fassung wird der Ausdruck auf diese Operatorarten begrenzt. Funktionen innerhalb des fachlichen Ausdrucks sind derzeit nicht festgelegt.
+Der fachliche Ausdruck wird in der Formelsprache OpenFormula geschrieben. OpenFormula ist die genormte Formelsprache für Tabellenkalkulationen (ISO/IEC 26300, Teil 2) und entspricht weitgehend der Schreibweise von Excel und LibreOffice. An die Stelle von Zellbezügen treten Eigenschaften von Objekten und Parameter der Regel, zum Beispiel `Konto.Kapital`.
+
+Die verfügbaren Funktionen sind eine Auswahl aus OpenFormula. Ihre Bedeutung richtet sich nach der Norm. Die Auswahl wird bei Bedarf erweitert. Eigene Funktionen werden nur ergänzt, wenn OpenFormula keine passende enthält. Gespeichert werden Funktionen mit ihrem Namen aus der Norm.
+
+Offen: welche Funktionen die erste Auswahl umfasst. Benötigt werden mindestens Abrunden und Aufrunden auf eine Schrittweite, Minimum, Maximum und Betrag. Offen ist außerdem, ob die Oberfläche Funktionsnamen in der gewählten Sprache anzeigt, zum Beispiel `ABRUNDEN` statt `ROUNDDOWN`.
 
 ### req-fach-037 -- Prüfen und Bestimmen durch Regeln
 
@@ -309,8 +316,11 @@ Eine Strategie besitzt mindestens:
 - `Auslöser` -- ein oder mehrere Auslöser, die festlegen, bei welchem Ereignis die Strategie ausgewertet werden soll,
 - `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
 - strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten.
+- `wartende Orders` und `offene Positionen` -- Anzahl der Orders und Positionen, die diese Strategie auf dem Konto und Instrument gestellt beziehungsweise eröffnet hat, auf dem sie gerade läuft. Diese Eigenschaften sind nur bei der Ausführung belegt und dienen Bedingungen im Ablauf. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Sie wird mit den Testfällen erprobt.
 
-Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs. Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
+Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt der Wert der zuletzt angewendeten, gleich ob es dieselbe oder eine andere Regel ist. Angewendet werden zuerst die Regeln der Strategie, danach die Regeln der Elemente in der Reihenfolge des Ablaufs. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Prüfende Regeln ändern die Order nicht und heben einander daher nicht auf. Sie prüfen die Order, nachdem alle Eigenschaften bestimmt sind (req-fach-021). Die Order muss jede Prüfung bestehen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
+
+Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (req-fach-049a). Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
 
 Eine eigene Versionsangabe der Strategie wird für den ersten Prototyp derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
 
@@ -328,13 +338,15 @@ Ein eigenes Start- oder Endelement wird nicht vorausgesetzt. Die Auswertung begi
 
 Eine `Berechnung` ist ein Element und derzeit kein eigenständiges Objekt.
 
-Sie wertet einen fachlichen Ausdruck aus und liefert ein Ergebnis. Als Eingaben können insbesondere konstante Werte, Eigenschaften von Objekten sowie Ergebnisse von Regeln und anderen Berechnungen verwendet werden.
+Sie wertet einen fachlichen Ausdruck aus und liefert ein Ergebnis. Der Ausdruck wird wie bei Regeln in OpenFormula geschrieben (req-fach-036). Als Eingaben können insbesondere konstante Werte, Eigenschaften von Objekten sowie Ergebnisse von Regeln und anderen Berechnungen verwendet werden.
 
 Eine Berechnung muss nicht als `Regel` definiert werden. Die technische Auswertung von Berechnungen, Regeln und Bedingungen darf gemeinsame Mechanismen verwenden. Ihre unterschiedliche fachliche Bedeutung bleibt erhalten.
 
 ### req-fach-049 -- Order aufgeben im Strategieablauf
 
 `Order aufgeben` ist das Element im Strategieablauf, das eine Order veranlasst. Es legt Ordertyp und Parameter der Order fest und übergibt die Order an das Handelssystem. Es wird nur erreicht, wenn eine vorherige Bedingung auf den entsprechenden Ablaufpfad verzweigt. Ist die Bedingung nicht erfüllt und besitzt der andere Pfad keine Fortsetzung, endet dieser Ablaufpfad.
+
+`Order aufgeben` hat zwei Ausgänge: `gestellt` und `abgelehnt`. Der Ausgang `abgelehnt` wird genommen, wenn eine Eigenschaft der Order nicht bestimmt werden kann oder eine prüfende Regel der Strategie oder des Elements nicht erfüllt ist. An beiden Ausgängen kann der Ablauf weitergehen. Ist an einem Ausgang nichts verbunden, endet dort der Ablaufpfad.
 
 Offen: ob das Handelssystem dafür einen eigenen OrderBuilder verwendet.
 
@@ -353,9 +365,11 @@ Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits
 
 `Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
 
-`Order aufgeben` liefert als Ergebnis die gestellte Order. `Order ändern` und `Order löschen` verwenden dieses Ergebnis. Auf der Zeichenfläche ist das eine Verbindung zum Element `Order aufgeben`. `Position ändern` und `Position schließen` verwenden die Position, die aus dieser Order entstanden ist. Eine Strategie wirkt damit nur auf ihre eigenen Orders und Positionen.
+Jede gestellte Order erhält ihre eigene Verwaltung. Die Verwaltung ist der Teil des Ablaufs, der am Ausgang `gestellt` von `Order aufgeben` folgt. Sie läuft für genau diese Order und die Position, die durch ihre Ausführung entsteht. Sie hat eigene Auslöser, zum Beispiel jeden Tick oder jeden Kerzenschluss, und endet, wenn die Order gelöscht oder abgelaufen oder die Position geschlossen ist.
 
-Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen der Strategie mehrere Orders gestellt hat.
+`Order ändern`, `Order löschen`, `Position ändern` und `Position schließen` stehen in der Verwaltung und wirken nur auf deren Order beziehungsweise Position. Stellt eine spätere Auswertung der Strategie eine weitere Order, erhält diese ihre eigene Verwaltung. Orders und Positionen verschiedener Verwaltungen beeinflussen sich nicht. Orders und Positionen, die nicht von der Strategie stammen, werden nie verändert.
+
+Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders und Positionen ausgewertet, danach der Hauptablauf der Strategie. Ein Signal in Gegenrichtung kann so die bestehende Position schließen, bevor der Hauptablauf eine neue eröffnet.
 
 
 ## 3. Änderungsnachweis
@@ -376,3 +390,12 @@ Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen
 | 2026-10-13 | req-fach-029: Schließen gegen Gegenposition nicht vorgesehen. Erfassung der Ordertypen nach MetaTrader 5 abgeschlossen, Vermerk Entwurf entfernt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-13 | req-fach-049a: Bezug auf die eigene Order über das Ergebnis von Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
 | 2026-10-14 | req-fach-049a: offene Frage ergänzt, welche Order bei mehreren gestellten Orders gemeint ist. |
+| 2026-10-14 | req-fach-046: Regeln der Strategie gelten für jede ihrer Orders, Elemente können eigene Regeln haben, Anwendung durch Strategietester und Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-046: bei mehreren Regeln für dieselbe Eigenschaft gilt die zuletzt angewendete. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-035, 036, 046: Regeln haben Parameter. Bei bestimmenden Regeln gilt der zuletzt bestimmte Wert einer Eigenschaft, prüfende Regeln heben einander nicht auf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-049: Ausgänge gestellt und abgelehnt bei Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-036: fachlicher Ausdruck in OpenFormula, Funktionen als Auswahl aus der Norm. req-fach-012 und 048 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-049a: eigene Verwaltung je gestellter Order mit eigenen Auslösern, ersetzt die offene Frage nach der gemeinten Order. req-fach-046 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-046: Eigenschaften wartende Orders und offene Positionen der Strategie, vorläufig. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-049a: bei einem Auslöser zuerst die Verwaltungen, dann der Hauptablauf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |

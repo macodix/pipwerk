@@ -3,9 +3,9 @@
 ## Status
 
 - strategie-id: `str-01`
-- status: `draft`
+- status: `understood`
 - quelle: `scalping-punkt-2-ausbruch-einfach(1).md` und bestätigte Klärungen im Projektchat
-- zuletzt geprüft: `2026-09-16`
+- zuletzt geprüft: `2026-10-14`
 
 ## Handelsidee
 
@@ -15,13 +15,15 @@ Die größere Zeiteinheit bestimmt, ob ein intakter Trend vorliegt und sich der 
 
 ## Voraussetzungen
 
-Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und mindestens einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie der Trend werden nach der Markttechnik von Michael Voigt auf Grundlage eines ZigZag-EA beziehungsweise ZigZag-Indikators bestimmt.
+Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und mindestens einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie Trend und Phase werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Trend intakt, Phase, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
 
 Für die Tradeplanung werden außerdem der aktuelle Spread, die Pip- oder Tickgröße des Instruments, die Risikogrenze des Kontos, die freie Margin sowie Mindestlot und Volumenschritte des Brokers benötigt.
 
 ## Ablauf
 
-### 1. Markt beobachten
+### 1. Auslöser und Markt beobachten
+
+Die Strategie wird bei jedem Kerzenschluss der kleinsten zulässigen Handelszeiteinheit ausgewertet. Dort ändern sich die ZigZag-Punkte beider Handelszeiteinheiten.
 
 Auf einer größeren Zeiteinheit wird geprüft, ob ein intakter markttechnischer Trend vorliegt. Diese größere Zeiteinheit dient als Signalzeiteinheit. Dafür kommen M15, H1, H4 oder D1 infrage.
 
@@ -40,6 +42,8 @@ Ausgehend von der Signalzeiteinheit wird eine kleinere Handelszeiteinheit gewäh
 
 Auf der Handelszeiteinheit werden der letzte Punkt 2 und der letzte Punkt 1/3 bestimmt. Der Punkt 2 bildet den Bezug für den Einstieg. Der Punkt 1/3 bildet den Bezug für den Stop-Loss.
 
+Besteht aus dieser Strategie auf diesem Konto und Instrument bereits eine wartende Order oder eine offene Position, endet die Auswertung. Andernfalls würde jeder Kerzenschluss eine weitere Order am selben Punkt 2 stellen.
+
 ### 3. Trade planen
 
 Der Einstieg wird in Trendrichtung kurz hinter dem letzten Punkt 2 der Handelszeiteinheit festgelegt. Bei einem Long-Trade liegt er über Punkt 2. Bei einem Short-Trade gilt die Regel spiegelbildlich. Zum Punkt 2 werden der Spread und ein Puffer von ungefähr 3 bis 5 Pips berücksichtigt.
@@ -50,27 +54,27 @@ Der Take-Profit wird vom Einstieg aus so festgelegt, dass unter Berücksichtigun
 
 ### 4. Risiko und Handelbarkeit prüfen
 
-Aus Einstieg, Stop-Loss, Pip- beziehungsweise Tickwert und einer Risikogrenze von maximal 1 % wird das Handelsvolumen berechnet.
+Aus Einstieg, Stop-Loss, Pip- beziehungsweise Tickwert und einer Risikogrenze von maximal 1 % des Kapitals wird das Handelsvolumen berechnet. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen. Diese Risikoregel gilt für die ganze Strategie.
 
 Danach wird geprüft, ob dieses Volumen die Mindestlot- und Volumenschrittregeln des Brokers erfüllt und ob ausreichend freie Margin vorhanden ist.
 
-Ist der Trade auf der gewählten Handelszeiteinheit nicht handelbar, wird eine kleinere, für die größere Zeiteinheit zulässige Handelszeiteinheit geprüft. Auf ihr muss der Trade vollständig neu geplant werden.
+Ist der Trade auf der gewählten Handelszeiteinheit nicht handelbar, wird eine kleinere, für die größere Zeiteinheit zulässige Handelszeiteinheit geprüft. Auf ihr muss der Trade vollständig neu geplant werden. Ist auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich, wird keine Order gestellt.
 
 ### 5. Order stellen
 
-Ist der Trade handelbar, wird eine Pending Order mit dem berechneten Einstieg, Stop-Loss, Take-Profit und Volumen gestellt.
+Ist der Trade handelbar, wird eine Stop-Order in Trendrichtung mit dem berechneten Einstieg als Preis sowie Stop-Loss, Take-Profit und Volumen gestellt.
 
 ### 6. Ausstehende Order überwachen
 
 Bis zur Ausführung werden der Kurs, die Order und die relevanten ZigZag-Punkte überwacht.
 
-Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Pending Order wird storniert. Der Durchbruch wird auf Tick-Ebene erkannt.
+Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Order wird gelöscht. Der Durchbruch wird auf Tick-Ebene erkannt.
 
-Verändert der ZigZag-Indikator den noch nicht endgültigen Punkt 1/3, werden Stop-Loss und Take-Profit angepasst. Anschließend werden Risiko, Volumen und Margin erneut geprüft. Ist der Trade danach nicht mehr regelgerecht handelbar, wird die Order storniert.
+Verändert der ZigZag-Indikator den noch nicht endgültigen Punkt 1/3, werden Stop-Loss und Take-Profit angepasst. Anschließend werden Risiko, Volumen und Margin erneut geprüft. Das Volumen einer wartenden Order kann nicht geändert werden. Passt das bestehende Volumen nicht mehr zur Risikogrenze oder ist der Trade nicht mehr regelgerecht handelbar, wird die Order gelöscht. Der nächste Auslöser plant den Trade neu.
 
 ### 7. Ausführung verarbeiten
 
-Erreicht der Kurs den Einstieg, wird die Pending Order ausgeführt und der Trade ist aktiv. Für diese einfache Strategie ist unmittelbar nach der Ausführung keine Veränderung von Stop-Loss oder Take-Profit vorgesehen.
+Erreicht der Kurs den Einstieg, wird die Order ausgeführt und der Trade ist aktiv. Für diese einfache Strategie ist unmittelbar nach der Ausführung keine Veränderung von Stop-Loss oder Take-Profit vorgesehen.
 
 ### 8. Aktiven Trade verwalten
 
@@ -86,24 +90,25 @@ Der Trade endet, wenn der Stop-Loss oder der Take-Profit erreicht wird.
 |---|---|---|---|
 | größere Zeiteinheit | Zeiteinheit für Trend und Marktphase | M15, H1, H4 oder D1 | bestätigt |
 | Handelszeiteinheit | Zeiteinheit für Punkt 2, Punkt 1/3 und Tradeplanung | gemäß festgelegter Paarung | bestätigt |
-| Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | ungefähr 3–5 Pips, instrumentabhängig | teilweise offen |
-| Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | ungefähr 3–5 Pips, instrumentabhängig | teilweise offen |
-| Risikogrenze | maximaler Verlust je Trade | 1 % | bestätigt |
+| Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
+| Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
+| Risikogrenze | maximaler Verlust je Trade | 1 % des Kapitals | bestätigt |
 | effektives CRV | Verhältnis von möglichem Gewinn zu möglichem Verlust | 1:1 einschließlich Spread und vorgesehenem Puffer | bestätigt |
-| ZigZag-Einstellung | Bestimmung der 1-2-3-Punkte | noch nicht festgelegt | offen |
+| ZigZag-Einstellung | Bestimmung der 1-2-3-Punkte | ZigZag nach dem Verfahren des in MetaTrader 5 mitgelieferten Indikators, Parameter Depth (Standard 12), Deviation (Standard 5), Backstep (Standard 3) | bestätigt |
+
+Entry-Puffer und Stop-Puffer werden in der Praxis nach Erfahrung gewählt, etwa größer bei hoher Volatilität ohne ausgeprägtes Trendverhalten. Diese Einschätzung ist nicht als Regel fassbar. Deshalb sind beide Puffer Parameter. Geeignete Werte werden im Backtesting ermittelt.
+
+Der ZigZag-Indikator ist ein Indikator von pipwerk. Er rechnet nach demselben Verfahren wie der in MetaTrader 5 mitgelieferte ZigZag-Indikator und liefert bei gleichen Kursdaten und Parametern dieselben Punkte. Er ist damit unabhängig von MetaTrader und auch im Backtesting verfügbar.
 
 ## Offene fachliche Fragen
 
-1. Auf welche Kapitalbasis beziehen sich die 1 % Risiko?
-2. Nach welcher Regel wird innerhalb der Spanne von 3 bis 5 Pips der konkrete Puffer bestimmt?
-3. Welche ZigZag-Variante und welche Parameter werden verwendet?
-4. Was geschieht, wenn auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich ist?
+Keine.
 
 ## Bestätigungsvermerk
 
-- fachlich geprüft durch: `offen`
-- Ergebnis: `offen`
-- Datum: `–`
+- fachlich geprüft durch: Auftraggeber
+- Ergebnis: bestätigt im Chat
+- Datum: `2026-10-14`
 
 ## Originalbeschreibung
 

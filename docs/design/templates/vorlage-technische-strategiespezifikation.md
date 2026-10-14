@@ -98,7 +98,7 @@ Die Regeln stehen in zeitlicher Reihenfolge. Jede Regel besitzt genau einen Ausl
 
 [Daten-, Ereignis-, Zustands- und Orderverbindungen mit Datentypen.]
 
-## Prüffälle
+## Testfälle
 
 ### `[test-id]` – [Bezeichnung]
 

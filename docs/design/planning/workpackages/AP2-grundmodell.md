@@ -24,7 +24,7 @@ Die gemeinsame Python-Bibliothek `pipwerk_domain` mit Typbeschreibung, Bausteinr
 
 ## Nicht Umfang
 
-- konkrete Bausteintypen der Prüffälle (AP4)
+- konkrete Bausteintypen der Testfälle (AP4)
 - JSON-Dokumente und Schemata (AP3)
 - Ausführung von Strategien
 
