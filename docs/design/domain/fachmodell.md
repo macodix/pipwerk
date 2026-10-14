@@ -39,7 +39,7 @@ Die Zeiteinheit ist eine Vorgabe des Trends und kann die Auswahl beziehungsweise
 
 Indikatoren eines Trend-Berechnungsverfahrens können neben den für die Trendrichtung benötigten Eigenschaften weitere Eigenschaften bereitstellen. Diese Eigenschaften bleiben dem jeweiligen Indikator zugeordnet und werden nicht zu Eigenschaften des Trends.
 
-Sie müssen jedoch über die Struktur des Trendobjekts für andere Elemente referenzierbar sein. Die konkrete Darstellung und Zugriffssyntax ist noch nicht festgelegt.
+Sie müssen jedoch über die Struktur des Trendobjekts für andere Elemente referenzierbar sein. In Ausdrücken werden Eigenschaften nach req-fach-036 angesprochen. Wie eine Eigenschaft eines Indikators über den Trend angesprochen wird, ist noch nicht festgelegt.
 
 ### req-fach-013 -- Indikatoren als Objekte
 
@@ -234,9 +234,14 @@ Der fachliche Ausdruck einer Regel kann verwenden:
 - Ergebnisse anderer Regeln,
 - arithmetische Operatoren,
 - Vergleichsoperatoren,
-- logische Operatoren.
+- logische Operatoren,
+- Funktionen.
 
-Für die erste Fassung wird der Ausdruck auf diese Operatorarten begrenzt. Funktionen innerhalb des fachlichen Ausdrucks sind derzeit nicht festgelegt.
+Der fachliche Ausdruck wird in der Formelsprache OpenFormula geschrieben. OpenFormula ist die genormte Formelsprache für Tabellenkalkulationen (ISO/IEC 26300, Teil 2) und entspricht weitgehend der Schreibweise von Excel und LibreOffice. An die Stelle von Zellbezügen treten Eigenschaften von Objekten und Parameter der Regel, zum Beispiel `Konto.Kapital`.
+
+Die verfügbaren Funktionen sind eine Auswahl aus OpenFormula. Ihre Bedeutung richtet sich nach der Norm. Die Auswahl wird bei Bedarf erweitert. Eigene Funktionen werden nur ergänzt, wenn OpenFormula keine passende enthält. Gespeichert werden Funktionen mit ihrem Namen aus der Norm.
+
+Offen: welche Funktionen die erste Auswahl umfasst. Benötigt werden mindestens Abrunden und Aufrunden auf eine Schrittweite, Minimum, Maximum und Betrag. Offen ist außerdem, ob die Oberfläche Funktionsnamen in der gewählten Sprache anzeigt, zum Beispiel `ABRUNDEN` statt `ROUNDDOWN`.
 
 ### req-fach-037 -- Prüfen und Bestimmen durch Regeln
 
@@ -332,7 +337,7 @@ Ein eigenes Start- oder Endelement wird nicht vorausgesetzt. Die Auswertung begi
 
 Eine `Berechnung` ist ein Element und derzeit kein eigenständiges Objekt.
 
-Sie wertet einen fachlichen Ausdruck aus und liefert ein Ergebnis. Als Eingaben können insbesondere konstante Werte, Eigenschaften von Objekten sowie Ergebnisse von Regeln und anderen Berechnungen verwendet werden.
+Sie wertet einen fachlichen Ausdruck aus und liefert ein Ergebnis. Der Ausdruck wird wie bei Regeln in OpenFormula geschrieben (req-fach-036). Als Eingaben können insbesondere konstante Werte, Eigenschaften von Objekten sowie Ergebnisse von Regeln und anderen Berechnungen verwendet werden.
 
 Eine Berechnung muss nicht als `Regel` definiert werden. Die technische Auswertung von Berechnungen, Regeln und Bedingungen darf gemeinsame Mechanismen verwenden. Ihre unterschiedliche fachliche Bedeutung bleibt erhalten.
 
@@ -386,3 +391,4 @@ Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen
 | 2026-10-14 | req-fach-046: bei mehreren Regeln für dieselbe Eigenschaft gilt die zuletzt angewendete. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-035, 036, 046: Regeln haben Parameter. Bei bestimmenden Regeln gilt der zuletzt bestimmte Wert einer Eigenschaft, prüfende Regeln heben einander nicht auf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-049: Ausgänge gestellt und abgelehnt bei Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-036: fachlicher Ausdruck in OpenFormula, Funktionen als Auswahl aus der Norm. req-fach-012 und 048 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
