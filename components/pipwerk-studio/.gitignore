@@ -8,6 +8,7 @@ __pycache__/
 # Node
 frontend/node_modules/
 frontend/dist/
+frontend/dist-e2e/
 frontend/test-results/
 frontend/playwright-report/
 
@@ -18,3 +19,7 @@ backend/pipwerk-studio.db
 backend/pipwerk-studio.db-journal
 backend/pipwerk-studio.db-wal
 backend/pipwerk-studio.db-shm
+
+# Locally created test environment (state, logs, startup configuration and
+# database of scripts/testenv)
+.testenv/

@@ -1,1 +1,1 @@
-"""Pipwerk Studio backend."""
+"""pipwerk Studio backend."""

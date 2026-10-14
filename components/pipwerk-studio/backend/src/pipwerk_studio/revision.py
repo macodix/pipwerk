@@ -1,4 +1,4 @@
-"""Determination of the revision Pipwerk Studio runs from.
+"""Determination of the revision pipwerk Studio runs from.
 
 The revision is the Git commit of the working tree the ``pipwerk_studio``
 package is loaded from, together with its committer date. It is determined
@@ -82,7 +82,7 @@ def lookup_git_revision(directory: Path | None = None) -> str | None:
 
 
 def _warn_not_determinable(reason: str) -> None:
-    logger.warning("The Studio revision is not determinable: %s.", reason)
+    logger.warning("The pipwerk Studio revision is not determinable: %s.", reason)
 
 
 def lookup_git_commit_date(commit: str, directory: Path | None = None) -> str | None:
@@ -162,5 +162,5 @@ def determine_revision(
     except Exception:
         committed_at = None
     if committed_at is None:
-        logger.warning("The Studio commit date is not determinable.")
+        logger.warning("The pipwerk Studio commit date is not determinable.")
     return Revision(commit=full_hash, committed_at=committed_at)

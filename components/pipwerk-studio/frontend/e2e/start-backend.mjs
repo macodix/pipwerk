@@ -1,4 +1,4 @@
-// Starts an isolated Pipwerk Studio backend for the Playwright end-to-end
+// Starts an isolated pipwerk Studio backend for the Playwright end-to-end
 // tests and removes everything it created when the backend ends.
 //
 // Only the documented startup configuration mechanism is used

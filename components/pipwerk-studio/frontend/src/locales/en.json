@@ -5,6 +5,16 @@
     "languageSaveError": "The language could not be saved. The last confirmed language stays active.",
     "languageSaveUnconfirmedError": "The language could not be saved. The default language German is shown because the stored language could not be read."
   },
+  "about": {
+    "open": "About pipwerk Studio",
+    "title": "About pipwerk Studio",
+    "revision": "Revision",
+    "revisionValue": "{{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}",
+    "license": "License",
+    "repository": "Repository",
+    "unknown": "unknown",
+    "close": "Close"
+  },
   "canvas": {
     "label": "Designer canvas",
     "empty": "The canvas is empty."
