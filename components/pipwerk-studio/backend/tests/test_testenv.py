@@ -8,7 +8,9 @@ placeholder programs that note every call and end at once with exit code 1.
 Covered: the start aborts with a message on every uncommitted change and every
 new file that is not ignored in the whole repository and without Git, before
 anything is installed, built or started. Without changes, and with ignored new
-files only, the check lets the start pass.
+files only, the check lets the start pass. The script is called with an absolute
+path from a directory outside of the repository and with a relative path from the
+root of the repository (the call of the user documentation).
 
 The tests are skipped without an installed Git and in a working directory that
 is not a Git working directory (for example an unpacked archive).
@@ -137,8 +139,29 @@ class Replica:
             cwd=self.base,
         )
 
+    def run_relative(self, *args: str) -> subprocess.CompletedProcess[str]:
+        """Call the script with a relative path from the root of the replica."""
+        return subprocess.run(  # noqa: S603
+            ["sh", SCRIPT, *args],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+            env=self.environment,
+            cwd=self.root,
+        )
+
     def start(self) -> subprocess.CompletedProcess[str]:
         return self.run(
+            "start",
+            "--frontend-port",
+            str(_free_port()),
+            "--backend-port",
+            str(_free_port()),
+        )
+
+    def start_relative(self) -> subprocess.CompletedProcess[str]:
+        return self.run_relative(
             "start",
             "--frontend-port",
             str(_free_port()),
@@ -259,6 +282,52 @@ def test_check_lets_a_clean_working_directory_with_ignored_new_files_pass(
     assert not (replica.component / ".testenv").exists()
     assert not (replica.component / "frontend" / "dist").exists()
     assert replica.started_processes() == []
+
+
+def test_relative_path_from_the_root_works_on_that_working_directory(
+    make_replica: Callable[..., Replica],
+) -> None:
+    """The call used in the user documentation: relative path, run in the root."""
+    replica = make_replica()
+    _new_file_in_root(replica)
+
+    result = replica.start_relative()
+
+    assert result.returncode != 0
+    assert "uncommitted changes" in result.stderr
+    assert "new-file.txt" in result.stderr
+    _assert_nothing_happened(replica)
+
+
+def test_relative_path_from_the_root_passes_the_check_on_a_clean_working_directory(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica()
+
+    result = replica.start_relative()
+
+    assert result.returncode != 0
+    assert "uncommitted changes" not in result.stderr
+    calls = replica.calls()
+    assert len(calls) == 1
+    # The first call works on the backend of this working directory.
+    expected = f"uv --directory {(replica.component / 'backend').resolve()} sync --frozen"
+    assert calls[0] == expected
+    assert not (replica.component / ".testenv").exists()
+    assert not (replica.component / "frontend" / "dist").exists()
+    assert replica.started_processes() == []
+
+
+def test_relative_path_from_the_root_reports_status_of_that_working_directory(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica()
+
+    result = replica.run_relative("status")
+
+    assert result.returncode == 1
+    assert "not running" in result.stdout + result.stderr
+    _assert_nothing_happened(replica)
 
 
 @pytest.mark.parametrize(
