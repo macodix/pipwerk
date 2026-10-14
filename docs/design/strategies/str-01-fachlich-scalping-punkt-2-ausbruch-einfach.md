@@ -54,23 +54,23 @@ Aus Einstieg, Stop-Loss, Pip- beziehungsweise Tickwert und einer Risikogrenze vo
 
 Danach wird geprüft, ob dieses Volumen die Mindestlot- und Volumenschrittregeln des Brokers erfüllt und ob ausreichend freie Margin vorhanden ist.
 
-Ist der Trade auf der gewählten Handelszeiteinheit nicht handelbar, wird eine kleinere, für die größere Zeiteinheit zulässige Handelszeiteinheit geprüft. Auf ihr muss der Trade vollständig neu geplant werden.
+Ist der Trade auf der gewählten Handelszeiteinheit nicht handelbar, wird eine kleinere, für die größere Zeiteinheit zulässige Handelszeiteinheit geprüft. Auf ihr muss der Trade vollständig neu geplant werden. Ist auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich, wird keine Order gestellt.
 
 ### 5. Order stellen
 
-Ist der Trade handelbar, wird eine Pending Order mit dem berechneten Einstieg, Stop-Loss, Take-Profit und Volumen gestellt.
+Ist der Trade handelbar, wird eine Stop-Order in Trendrichtung mit dem berechneten Einstieg als Preis sowie Stop-Loss, Take-Profit und Volumen gestellt.
 
 ### 6. Ausstehende Order überwachen
 
 Bis zur Ausführung werden der Kurs, die Order und die relevanten ZigZag-Punkte überwacht.
 
-Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Pending Order wird storniert. Der Durchbruch wird auf Tick-Ebene erkannt.
+Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Order wird gelöscht. Der Durchbruch wird auf Tick-Ebene erkannt.
 
-Verändert der ZigZag-Indikator den noch nicht endgültigen Punkt 1/3, werden Stop-Loss und Take-Profit angepasst. Anschließend werden Risiko, Volumen und Margin erneut geprüft. Ist der Trade danach nicht mehr regelgerecht handelbar, wird die Order storniert.
+Verändert der ZigZag-Indikator den noch nicht endgültigen Punkt 1/3, werden Stop-Loss und Take-Profit angepasst. Anschließend werden Risiko, Volumen und Margin erneut geprüft. Ist der Trade danach nicht mehr regelgerecht handelbar, wird die Order gelöscht.
 
 ### 7. Ausführung verarbeiten
 
-Erreicht der Kurs den Einstieg, wird die Pending Order ausgeführt und der Trade ist aktiv. Für diese einfache Strategie ist unmittelbar nach der Ausführung keine Veränderung von Stop-Loss oder Take-Profit vorgesehen.
+Erreicht der Kurs den Einstieg, wird die Order ausgeführt und der Trade ist aktiv. Für diese einfache Strategie ist unmittelbar nach der Ausführung keine Veränderung von Stop-Loss oder Take-Profit vorgesehen.
 
 ### 8. Aktiven Trade verwalten
 
@@ -98,7 +98,7 @@ Der ZigZag-Indikator ist ein Indikator von pipwerk. Er rechnet nach demselben Ve
 
 ## Offene fachliche Fragen
 
-1. Was geschieht, wenn auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich ist?
+Keine.
 
 ## Bestätigungsvermerk
 
