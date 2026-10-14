@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ablauftest Arbeitspaketplan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben ablauftest · Phase 3</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Arbeitspaketplan</h1>
+<p style="font-size:38px;width:1450px">Zwei Arbeitspakete, nacheinander. Jedes endet mit einem Stand, den du in der Testumgebung selbst prüfst. Von der QA im 4. Durchlauf geprüft und bestanden.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">14. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/ablauftest/plan.md</code></p>
+<p class="num">1 / 4</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Reihenfolge</h2>
+<div class="chain">
+<div class="node">wp01<small>Testumgebung und Schreibweise „pipwerk Studio“</small></div><div class="arrow">→</div>
+<div class="node">Abnahme wp01<small>durch dich</small></div><div class="arrow">→</div>
+<div class="node">wp02<small>Dialog „Über pipwerk Studio“</small></div><div class="arrow">→</div>
+<div class="node">Abnahme wp02<small>durch dich</small></div>
+</div>
+<p>wp02 beginnt erst, wenn wp01 abgenommen und in den Hauptstand übernommen ist. Beide Pakete ändern teilweise dieselben Dateien; nacheinander gibt es keine Überschneidungen.</p>
+<p class="num">2 / 4</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>wp01 – Testumgebung und Schreibweise</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><ul>
+<li>Skript <code>testenv</code> mit <code>start</code>, <code>stop</code>, <code>status</code>: baut und startet pipwerk Studio aus genau einem Commit</li>
+<li>Browsertests laufen gegen die gebaute Oberfläche</li>
+<li>Name „pipwerk Studio“ in Oberfläche, Kommandozeile, Schnittstellenbeschreibung und Dokumentation</li>
+<li>Anwenderdokumentation mit beiden Startwegen und Glossar</li></ul></div>
+<div class="card col"><h3>Du prüfst</h3><ul>
+<li><code>testenv start</code> startet, pipwerk Studio arbeitet wie bisher</li>
+<li><code>status</code> zeigt die Ports, <code>stop</code> beendet</li>
+<li>Bei nicht gespeicherten Änderungen bricht <code>start</code> mit Begründung ab</li>
+<li>Kopfzeile, Browsertitel, Hilfetext und Schnittstellenbeschreibung zeigen „pipwerk Studio“</li>
+<li>Dokumentation verständlich und vollständig</li></ul></div>
+</div>
+<p class="num">3 / 4</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>wp02 – Dialog und Bestätigung</h2>
+<div class="row">
+<div class="card col"><h3>Du prüfst</h3><ul>
+<li>Schaltfläche „Über pipwerk Studio“ öffnet den Dialog mit Maus und Tastatur</li>
+<li>Name, Stand mit Datum, Lizenztext, Adresse als Verweis</li>
+<li>Kennung gleich Fußzeile und bereitgestelltem Commit</li>
+<li>Übrige Oberfläche gesperrt, Schließen nur mit „Schließen“ oder Escape</li>
+<li>Texte folgen der Sprache, keine Internetverbindung nötig</li></ul></div>
+<div class="card col"><h3>Zur Bestätigung</h3><ul>
+<li>Aufteilung in wp01 und wp02</li>
+<li>Abnahmekriterien wie auf Folie 3 und 4</li></ul>
+<p class="note">Bestätigung: offen</p></div>
+</div>
+<p class="num">4 / 4</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
