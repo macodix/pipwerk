@@ -1,0 +1,174 @@
+# Arbeitspaketplan Vorhaben ablauftest
+
+## Status
+
+- status: `draft`
+- stand: 2026-10-14
+- komponente: `pipwerk-studio`
+- grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber am 14.10.2026 ([Präsentation](presentations/specification.html), Folie 5), Stand `main` Commit `b2398e2f57e9e3bef1537f5b473a06df4ec933fa`; req-ui-010 in [Anforderungen an den Trading-Strategiedesigner](../../docs/design/requirements/anforderungen-strategiedesigner.md) in der Fassung dieses Commits
+- prüfung: ausstehend
+
+## Übersicht
+
+| Paket | Titel | hängt ab von | Stand |
+|---|---|---|---|
+| `wp01` | Testumgebung und Schreibweise „pipwerk Studio“ | – | `open` |
+| `wp02` | Dialog „Über pipwerk Studio“ | `wp01` | `open` |
+
+Das Vorhaben wird in zwei Pakete geteilt. `wp01` schafft das Testumgebungsskript, ohne das keine Abnahme in einer Testumgebung möglich ist, stellt den Browsertest auf die gebaute Oberfläche um und setzt die Schreibweise nach E10 um. `wp02` baut darauf den Dialog. Beide Pakete ändern `src/App.tsx`, `src/App.test.tsx`, die Dokumentation und die Browsertests; nacheinander umgesetzt entstehen dort keine gleichzeitigen Änderungen.
+
+Abschnittsangaben wie „Abschnitt 4.4“ oder „E10“ beziehen sich auf die [Spezifikation](specification.md). Pfade in den Tabellen gelten wie in Abschnitt 3.1 der Spezifikation: Pfade, die mit `components/`, `docs/` oder `README.md` beginnen, ab dem Wurzelverzeichnis des Repositorys, alle anderen ab `components/pipwerk-studio/frontend/`.
+
+## wp01 – Testumgebung und Schreibweise „pipwerk Studio“
+
+### Ziel
+
+pipwerk Studio lässt sich mit einem Skript als Testumgebung aus genau einem Commit bauen und starten. pipwerk Studio schreibt seinen Namen in Oberfläche, Ausgaben des Backends und Dokumentation einheitlich „pipwerk Studio“.
+
+### Umfang
+
+| Teil | Inhalt |
+|---|---|
+| Testumgebungsskript | `components/pipwerk-studio/scripts/testenv` mit `start`, `stop`, `status` nach Abschnitt 6.1, einschließlich Abbruch bei nicht committeten Änderungen oder nicht ignorierten neuen Dateien im ganzen Repository (E9, Teil Testumgebung). Eintrag `.testenv/` in `components/pipwerk-studio/.gitignore`. |
+| Test des Testumgebungsskripts | `components/pipwerk-studio/backend/tests/test_testenv.py` nach Abschnitt 4.3 |
+| Prüfskript | `components/pipwerk-studio/scripts/check` nach Abschnitt 6.2, angelegt vom Tester Funktion in seinem Zweig, einschließlich der Suche im Repository nach Abschnitt 4.4 |
+| Browsertest gegen die gebaute Oberfläche | `playwright.config.ts` startet `vite build --outDir dist-e2e` und `vite preview` statt des Entwicklungsservers (Abschnitt 4.2, erster Absatz). Eintrag `frontend/dist-e2e/` in `components/pipwerk-studio/.gitignore`. Alle bestehenden Browsertests laufen damit gegen die gebaute Oberfläche. |
+| Schreibweise in der Oberfläche | Überschrift der Kopfzeile in `src/App.tsx` und Titel der Seite in `index.html` (E10 a) mit den Erwartungen in `src/App.test.tsx` (Abschnitt 4.1, Punkt „Überschrift der Kopfzeile“) und im Browsertest (Abschnitt 4.2, Punkt „Überschrift der Kopfzeile und Titel der Seite“) |
+| Schreibweise im Backend | `config.py`, `cli.py`, `app.py`, `revision.py`, `__init__.py`, `settings_service.py`, `storage.py`, `pyproject.toml`, `pipwerk-studio.example.ini`, `tests/test_cli.py`, `tests/test_studio_language.py` nach E10 b und d und Abschnitt 3.1. Hilfetext nach dem Absatz „Umbruch des Hilfetexts“ in Abschnitt 4.4. Verhalten, Endpunkte und Datenformate unverändert (E1, Abschnitt 5, letzter Punkt). |
+| Tests der Schreibweise | `components/pipwerk-studio/backend/tests/test_name.py` nach Abschnitt 4.4 |
+| Schreibweise in Kommentaren der Oberfläche | `vite.config.ts` und `e2e/start-backend.mjs`, nur Kommentar (E10 d) |
+| Dokumentation | siehe unten |
+
+Dokumentation in `wp01` (Abschnitt 7, soweit dieses Paket sie betrifft):
+
+- `docs/technical/pipwerk-studio.md`: Schreibweise nach E10 im ganzen Dokument einschließlich Titel, Überschriften und wiedergegebener Ausgaben; der Satz „Der Produktname … wird nicht übersetzt“ nennt „pipwerk Studio“; neuer Abschnitt „Start als Testumgebung“ neben Abschnitt 4 mit dem Testumgebungsskript; Abschnitt 6 mit dem Test des Testumgebungsskripts, den Tests der Schreibweise, der Suche im Repository und Abschnitt 6.3 „Browsertest gegen die gebaute Oberfläche mit `vite preview`“; in Abschnitt 9 der Ersatz des Punkts „Installation, Paketierung und Start außerhalb der Entwicklungsumgebung sind nicht festgelegt“ nach Abschnitt 7 der Spezifikation; neue Dateien dieses Pakets in Abschnitt 2.3, soweit sie die Oberfläche betreffen.
+- `docs/user/pipwerk-studio.md`: Schreibweise nach E10 im ganzen Dokument; Abschnitt 2 „pipwerk Studio öffnen“ mit den zwei Wegen Testumgebung und Entwicklungsbetrieb nach Abschnitt 7 der Spezifikation, der bisherige Satz zum Start nur in einer Entwicklungsumgebung wird ersetzt; Abschnitt 3: der Name in der Kopfzeile lautet „pipwerk Studio“; neuer Abschnitt „Glossar“ mit mindestens den Begriffen, die dieses Paket in der Anwenderdokumentation verwendet: Commit, Testumgebung, Testumgebungsskript, Entwicklungsbetrieb, Port, nicht committete Änderung, außerdem Kennung (eines Commits), Stand, Repository, Hintergrunddienst und Tooltip, soweit das Dokument sie verwendet.
+- `components/pipwerk-studio/README.md`, `README.md`, `components/pipwerk-backtest/README.md`, `docs/user/README.md`, `docs/technical/README.md`, `docs/technical/glossar.md`: Schreibweise nach E10, auch in Überschriften und Verweistexten.
+
+### Nicht-Umfang
+
+- Dialog „Über pipwerk Studio“, Schaltfläche in der Kopfzeile und alles aus E2 bis E8, Abschnitt 3.2 bis 3.6 und dem Absatz „Grenze im Entwicklungsbetrieb“ (`wp02`)
+- Ermittlung von Kennung und Datum beim Bau (`buildinfo/`, `define` in `vite.config.ts`, `server.fs.allow`) (`wp02`)
+- Alles aus Abschnitt 8 der Spezifikation: Dokumente unter `docs/design/` und `development/`, Bezeichner, Namen anderer Komponenten, Einstellungsbereich, Verhalten des Backends
+- Die Hinweise an den Auftraggeber in Abschnitt 9 der Spezifikation; sie verlangen keine Umsetzung
+
+### Umgesetzte Teile der Spezifikation
+
+- Abschnitt 1: Schreibweise des Namens
+- E1: nur der Satz „Im Backend ändern sich nur Texte nach E10“
+- E9: Bedingungen der Testumgebung und Nachweis durch den Test des Testumgebungsskripts
+- E10 vollständig
+- Abschnitt 3.1: Zeilen `scripts/testenv`, `scripts/check`, `tests/test_testenv.py`, `.gitignore`, `README.md` der Komponente (nur Schreibweise), Dokumentation, „nur Schreibweise“, Backend-Dateien, `pyproject.toml` und Beispielkonfiguration, `test_cli.py` und `test_studio_language.py`, `test_name.py`, `index.html`, `e2e/start-backend.mjs`, `src/App.test.tsx` und `src/App.tsx` (nur Überschrift), `e2e/studio.spec.ts` (nur Überschrift und Titel), `playwright.config.ts`, `vite.config.ts` (nur Kommentar)
+- Abschnitt 4.1: Punkt „Überschrift der Kopfzeile“
+- Abschnitt 4.2: erster Absatz (gebaute Oberfläche, `dist-e2e`), Punkte „Bestehende Prüfungen von Fußzeile und Tooltip“ und „Überschrift der Kopfzeile und Titel der Seite“
+- Abschnitt 4.3 vollständig
+- Abschnitt 4.4 vollständig; die Hinweise W1 und W2 aus [specification-16.md](reviews/specification-16.md) werden hier in Auftrag und Test gelöst
+- Abschnitt 5: letzter Punkt, soweit er das Backend betrifft
+- Abschnitt 6.1 und 6.2 vollständig
+- Abschnitt 7: die oben unter „Dokumentation in `wp01`“ genannten Teile
+
+### Abhängigkeiten
+
+keine
+
+### Abnahmekriterien
+
+Der Auftraggeber kann selbst prüfen:
+
+1. Die Testumgebung startet mit `testenv start` und den zwei Ports aus einem Arbeitsverzeichnis ohne nicht committete Änderungen. Im Browser ist pipwerk Studio unter dem Port der Oberfläche erreichbar und arbeitet wie bisher: Sprachwechsel, Fußzeile mit Stand und Tooltip.
+2. `testenv status` nennt die laufende Testumgebung und ihre Ports, `testenv stop` beendet sie.
+3. Nach einer Änderung an einer versionierten Datei bricht `testenv start` mit einer Fehlermeldung zur Ursache ab und startet nichts.
+4. Überschrift der Kopfzeile und Titel der Seite im Browser lauten „pipwerk Studio“, in Deutsch und Englisch.
+5. Der Hilfetext der Kommandozeile (`pipwerk-studio --help`) und die Fehlermeldung beim Start ohne Startkonfiguration schreiben den Namen „pipwerk Studio“. Die Schnittstellenbeschreibung unter `/docs` trägt den Titel „pipwerk Studio“.
+6. Die Anwenderdokumentation beschreibt in ganzen Sätzen, wie pipwerk Studio als Testumgebung und im Entwicklungsbetrieb gestartet wird, und erklärt die verwendeten Begriffe im Glossar. Anwender- und technische Dokumentation schreiben den Namen „pipwerk Studio“.
+
+Technische Nachweise, die die QA in ihrem Prüfbericht nennt: Das Prüfskript `scripts/check` endet mit Exitcode 0 auf dem bereitgestellten Commit; darin bestehen alle Backend-, Frontend- und Browsertests, der Test des Testumgebungsskripts, die Tests der Schreibweise und die Suche im Repository. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
+
+## wp02 – Dialog „Über pipwerk Studio“
+
+### Ziel
+
+pipwerk Studio zeigt auf Anforderung den Dialog „Über pipwerk Studio“ mit Name, Stand, Lizenz und Adresse des Repositorys nach req-ui-010.
+
+### Umfang
+
+| Teil | Inhalt |
+|---|---|
+| Ermittlung des Stands beim Bau | `buildinfo/gitRevision.ts` mit `lookupGitRevision` (Abschnitt 3.4), `define` in `vite.config.ts`, `src/buildRevision.ts` mit `parseBuildRevision`, `src/vite-env.d.ts`, `buildinfo` in `tsconfig.json` und in der Include-Liste von Vitest (Abschnitt 4.1) |
+| Gemeinsame Hilfsfunktionen | `src/commitDate.ts` mit `localParts` aus `RevisionDisplay.tsx`, `src/timestamp.ts` mit `isTimestamp` aus `revisionApi.ts`; `RevisionDisplay.tsx` und `revisionApi.ts` nur verschoben, Verhalten unverändert |
+| Adresse des Repositorys | Feld `repository` in `package.json`, `src/repository.ts` mit `parseRepositoryUrl` (Abschnitt 3.5) |
+| Dialog | `src/AboutDialog.tsx` nach Abschnitt 3.2, 3.3 und 3.6 (Lizenztext aus `LICENSE` mit `?raw`, E7, E8), Texte unter `about` in `src/locales/de.json` und `src/locales/en.json`, Gestaltung in `src/styles.css` |
+| Aufrufstelle | Schaltfläche in der Kopfzeile rechts neben der Sprachauswahl und Einbindung in `src/App.tsx` (Abschnitt 3.6) |
+| Entwicklungsserver | `server.fs.allow` für genau `LICENSE` in `vite.config.ts` (Abschnitt 3.6) |
+| Frontend-Tests | `src/test-setup.ts`, `src/AboutDialog.test.tsx`, `src/buildRevision.test.ts`, `src/repository.test.ts`, `src/commitDate.test.ts`, `src/timestamp.test.ts`, Tests der Schaltfläche in `src/App.test.tsx`, `buildinfo/gitRevision.test.ts`, `buildinfo/viteConfig.test.ts` nach Abschnitt 4.1 |
+| Browsertests | Punkte zum Dialog aus Abschnitt 4.2 in `e2e/studio.spec.ts` oder `e2e/about.spec.ts` |
+| Prüfskript | Der Tester Funktion hält `scripts/check` aktuell, falls die neuen Tests es verlangen. |
+| Dokumentation | siehe unten |
+
+Dokumentation in `wp02` (Abschnitt 7, soweit dieses Paket sie betrifft):
+
+- `docs/technical/pipwerk-studio.md`: Abschnitt zum Dialog mit E1 bis E9, Ermittlung beim Bau, Abbruch des Baus ohne `LICENSE`, neue Dateien in Abschnitt 2.3, Unterprozesse beim Bau in Abschnitt 8, Tests des Dialogs in Abschnitt 6, Grenze im Entwicklungsbetrieb in Abschnitt 9.
+- `docs/user/pipwerk-studio.md`: in Abschnitt 3 die neue Schaltfläche in der Kopfzeile; neuer Abschnitt zum Dialog mit allen Punkten aus Abschnitt 7 der Spezifikation (Öffnen, Inhalte, Anzeigen des Stands, „unbekannt“ beim Repository, gesperrte Oberfläche, Schließen, Fokus, Sprachwechsel); Stand in der Testumgebung und Abweichung im Entwicklungsbetrieb mit allen drei Punkten der Grenze; Internetverbindung nur für den Verweis; Glossar ergänzt, sodass es mindestens alle in Abschnitt 7 der Spezifikation genannten Begriffe enthält, einschließlich Lizenz.
+- `components/pipwerk-studio/README.md`: Satz zum Dialog in der Beschreibung des Stands.
+
+### Nicht-Umfang
+
+- Alles, was `wp01` umsetzt, insbesondere Testumgebungsskript, Prüfskript, Umstellung des Browsertests auf die gebaute Oberfläche und die Schreibweise nach E10; neue Texte dieses Pakets folgen E10 und werden von der Suche aus `wp01` erfasst
+- Alles aus Abschnitt 8 der Spezifikation, insbesondere Änderungen am Backend und an `GET /api/studio/revision`
+- Die Hinweise an den Auftraggeber in Abschnitt 9 der Spezifikation
+
+### Umgesetzte Teile der Spezifikation
+
+- Abschnitt 1: Dialog
+- E1 bis E8 vollständig; E9: Dialog nennt den Commit vom Bau der ausgelieferten Oberfläche, Nachweis durch den Browsertest
+- Absatz „Grenze im Entwicklungsbetrieb“
+- Abschnitt 3.1: alle Zeilen, die nicht unter `wp01` stehen, sowie in `src/App.tsx`, `src/App.test.tsx`, `vite.config.ts`, `components/pipwerk-studio/README.md` und den beiden Dokumenten unter `docs/` die Teile zum Dialog
+- Abschnitt 3.2 bis 3.6 vollständig
+- Abschnitt 4.1: alle Punkte außer „Überschrift der Kopfzeile“
+- Abschnitt 4.2: alle Punkte zum Dialog (Öffnen, Stand, Kennung gleich Tooltip, keine fremden Anfragen, Sperrung, Schließen, Verweis)
+- Abschnitt 5: alle Punkte zum Dialog, zum Bau und zu `server.fs.allow`
+- Abschnitt 7: die oben unter „Dokumentation in `wp02`“ genannten Teile
+
+### Abhängigkeiten
+
+`wp01`: Die Abnahme braucht das Testumgebungsskript, der Nachweis zu E9 den Browsertest gegen die gebaute Oberfläche.
+
+### Abnahmekriterien
+
+Der Auftraggeber kann in der Testumgebung selbst prüfen:
+
+1. In der Kopfzeile steht rechts neben der Sprachauswahl die Schaltfläche „Über pipwerk Studio“ („About pipwerk Studio“); sie öffnet den Dialog mit der Maus und mit der Tastatur.
+2. Der Dialog zeigt Name „pipwerk Studio“, den Stand als vollständige Kennung des Commits mit Datum und Uhrzeit in Ortszeit, Name und vollständigen Text der GNU General Public License, Version 3, im englischen Original und die Adresse https://github.com/macodix/pipwerk als Verweis.
+3. Die Kennung im Dialog ist dieselbe wie im Tooltip der Fußzeile und gleich dem bereitgestellten Commit.
+4. Der Verweis öffnet sich in einem neuen Tab.
+5. Bei offenem Dialog ist die übrige Oberfläche gesperrt. Der Dialog schließt nur mit „Schließen“ oder der Escape-Taste, nicht mit einem Klick daneben. Danach liegt der Fokus auf der Schaltfläche.
+6. Die übrigen Texte des Dialogs folgen der Oberflächensprache.
+7. Die Anzeige im Dialog braucht keine Internetverbindung.
+8. Die Anwenderdokumentation beschreibt den Dialog, den Stand in der Testumgebung und die Abweichung im Entwicklungsbetrieb verständlich und vollständig.
+
+Technische Nachweise, die die QA in ihrem Prüfbericht nennt: Das Prüfskript `scripts/check` endet mit Exitcode 0 auf dem bereitgestellten Commit; darin bestehen alle Tests einschließlich der neuen Frontend- und Browsertests in Chromium, Firefox und WebKit und der Suche nach Abschnitt 4.4. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
+
+## Abdeckung von req-ui-010
+
+| Aussage in req-ui-010 | Spezifikation | Paket |
+|---|---|---|
+| Dialog „Über pipwerk Studio“ auf Anforderung | Abschnitt 1, 3.2, 3.6 | `wp02` |
+| Name „pipwerk Studio“ im Dialog | Abschnitt 3.2 | `wp02` |
+| Stand mit Kennung, Datum und Uhrzeit in Ortszeit, in der Software enthalten, ohne Internet, „unbekannt“ | E2 bis E5, Abschnitt 3.3, 3.4 | `wp02` |
+| Stand genau in Testumgebung und Installation | E9 | `wp01` (Testumgebungsskript), `wp02` (Dialog) |
+| Entwicklungsbetrieb: Commit vom Start, Erklärung in der Anwenderdokumentation | Grenze im Entwicklungsbetrieb, Abschnitt 7 | `wp02` |
+| Anwenderdokumentation beschreibt die Testumgebung als Weg zum Start | Abschnitt 6.1, 7 | `wp01` |
+| Lizenz mit Name und vollständigem Text im Original | E7, Abschnitt 3.2, 3.6 | `wp02` |
+| Adresse als Verweis in neuem Tab | E6, Abschnitt 3.2, 3.5 | `wp02` |
+| Schaltfläche in der Kopfzeile rechts neben der Sprachauswahl | Abschnitt 3.6 | `wp02` |
+| Übrige Oberfläche gesperrt, Schließen nur mit „Schließen“ oder Escape | E8, Abschnitt 3.2 | `wp02` |
+| Texte folgen der Oberflächensprache | Abschnitt 3.2 | `wp02` |
+| Standanzeige in der Fußzeile bleibt | Abschnitt 1, 4.1, 4.2 | `wp01` und `wp02` (bestehende Tests unverändert) |
+| Name überall „pipwerk Studio“, auch in der Dokumentation | E10, Abschnitt 4.4, 7 | `wp01`; neue Texte in `wp02` folgen E10 |
+| Zeilenumbruch zwischen „pipwerk“ und „Studio“ zulässig | Abschnitt 4.4 | `wp01` |
+
+## Änderungsnachweis
+
+| Datum | Änderung |
+|---|---|
+| 2026-10-14 | Plan angelegt: zwei Pakete, `wp02` hängt von `wp01` ab. |
