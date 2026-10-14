@@ -322,9 +322,17 @@ def test_ports_with_leading_zeros_and_the_limits_are_accepted(
     make_replica: Callable[..., Replica],
 ) -> None:
     replica = make_replica()
-    port = _free_port()
+    # The check for free ports is replaced by a placeholder for python3 that
+    # reports every port as free. The result then does not depend on whether a
+    # port such as 65535 is free on the machine that runs the test.
+    port_check = replica.base / "port-check"
+    port_check.mkdir()
+    python = port_check / "python3"
+    python.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    python.chmod(0o755)
+    replica.environment["PATH"] = f"{port_check}{os.pathsep}{replica.environment['PATH']}"
 
-    result = replica.run("start", "--frontend-port", "065535", "--backend-port", f"00{port}")
+    result = replica.run("start", "--frontend-port", "065535", "--backend-port", "00001")
 
     assert result.returncode != 0
     assert "must be a number" not in result.stderr
