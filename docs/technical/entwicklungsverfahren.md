@@ -3,9 +3,9 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-12
+- stand: 2026-10-14
 - bereich: Entwicklungsprozess (keine Produktkomponente)
-- abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026
+- abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
 
 ## Geltungsbereich und Dokumentationsorte
 
@@ -52,7 +52,7 @@ Bestätigungen des Auftraggebers erfolgen formlos im Chat. Der Projektleiter ver
 
 | Phase | Ergebnis |
 |---|---|
-| 1 Anforderung | fortgeschriebenes Anforderungsdokument und abgestimmte Präsentation |
+| 1 Anforderung | fortgeschriebene und von der QA geprüfte Dokumente des Auftraggebers, abgestimmte Präsentation |
 | 2 Konzeption | technische Spezifikation, bei Bedarf Prototypen |
 | 3 Planung | Arbeitspaketplan |
 | 4 Umsetzung | je Arbeitspaket: Aufträge, Code, Tests, QA |
@@ -70,23 +70,27 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 
 ### Phase 1 – Anforderung
 
-- Rollen: Auftraggeber, Projektleiter
+- Rollen: Auftraggeber, Projektleiter, Softwarearchitekt und QA für die Prüfung
 - Eingabe: Vorhaben des Auftraggebers, Rückmeldungen aus allen späteren Phasen
-- Tätigkeit: Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleiter fragt nach, schreibt das Anforderungsdokument fort und erstellt eine Präsentation der wichtigsten Aussagen. Beide stimmen die Präsentation ab. Der Projektleiter legt für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führt dort die geltenden Anforderungsdokumente.
-- Ergebnis: fortgeschriebenes Anforderungsdokument und abgestimmte Präsentation, beide im Repository, Bestätigung in der Präsentation vermerkt
-- Rückkopplung: Das Anforderungsdokument ist ein lebendes Dokument. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück.
+- Tätigkeit:
+  1. Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleiter fragt nach und schreibt die Dokumente des Auftraggebers fort: Anforderungsdokumente, Fachmodell, Strategiebeschreibungen. Für ein neues Vorhaben legt er dessen Verzeichnis mit `scope.md` an und führt dort die geltenden Dokumente des Auftraggebers.
+  2. Der Projektleiter stößt mit der Meldung `check` die Prüfung an. Die QA prüft jedes Dokument laut `scope.md` und seine Widerspruchsfreiheit zum Anforderungsdokument des Gesamtsystems. Sie sucht Widersprüche, Lücken, mehrdeutige Begriffe, nicht gekennzeichnete offene Fragen und Umsetzungsdetails. Nennt `scope.md` Testfälle, prüft sie außerdem, ob sich jeder Testfall mit den beschriebenen Objekten und Arbeitsabläufen vollständig abbilden lässt.
+  3. Der Prüfbericht geht über den Softwarearchitekten an den Projektleiter. Was sich anhand bestehender Festlegungen eindeutig korrigieren lässt, korrigiert er ohne den Auftraggeber.
+  4. Der Projektleiter erstellt eine Präsentation der wichtigsten Aussagen. Sie enthält die Befunde, die nur der Auftraggeber entscheiden kann, als Fragen mit Vorschlag. Beide stimmen die Präsentation ab. Der Projektleiter arbeitet die Entscheidungen in die Dokumente ein.
+- Ergebnis: fortgeschriebene Dokumente des Auftraggebers, Prüfbericht der QA, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
+- Schleifen: Prüfung durch die QA und Korrektur durch den Projektleiter höchstens drei Durchläufe, dann entscheidet der Auftraggeber über die verbleibenden Befunde. Die Nachprüfung nach der Abstimmung ist der erste Schritt von Phase 2.
+- Rückkopplung: Die Dokumente des Auftraggebers sind lebende Dokumente. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück und wird vor der Präsentation erneut von der QA geprüft, beschränkt auf die geänderten Stellen.
 
 ### Phase 2 – Konzeption
 
 - Rollen: Softwarearchitekt, Entwickler, QA, Projektleiter, Auftraggeber
-- Eingabe: Anforderungsdokumente laut `scope.md`
+- Eingabe: abgestimmte Dokumente des Auftraggebers laut `scope.md`, Prüfbericht der QA aus Phase 1
 - Tätigkeit:
-  1. Die QA prüft jedes Anforderungsdokument laut `scope.md` und seine Widerspruchsfreiheit zum Anforderungsdokument des Gesamtsystems. Sie sucht Widersprüche, Lücken, mehrdeutige Begriffe, nicht gekennzeichnete offene Fragen und Umsetzungsdetails.
-  2. Der Prüfbericht geht über den Softwarearchitekten an den Projektleiter. Was nur der Auftraggeber entscheiden kann, geht in Phase 1. Den Rest korrigiert der Projektleiter ohne den Auftraggeber.
-  3. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen.
-  4. Die QA prüft die Spezifikation gegen die Anforderungen.
-  5. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
-- Ergebnis: Prüfbericht der QA zu den Anforderungsdokumenten, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
+  1. Die QA prüft nach, ob die Befunde aus Phase 1 erledigt sind und ob die dafür geänderten Stellen neue Fehler enthalten. Ist die Nachprüfung nicht bestanden, geht der Prüfbericht über den Softwarearchitekten an den Projektleiter zurück in Phase 1.
+  2. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen.
+  3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers.
+  4. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
+- Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
 - Schleifen: QA und Softwarearchitekt höchstens drei Durchläufe, dann Eskalation. Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.
 
 ### Phase 3 – Planung
@@ -137,7 +141,7 @@ Ergebnis: Arbeitspaket im Hauptstand, keine Reste aus der Umsetzung. Danach begi
 
 | von | an | Dokument |
 |---|---|---|
-| Auftraggeber, Projektleiter | Softwarearchitekt | Anforderungsdokument |
+| Auftraggeber, Projektleiter | Softwarearchitekt | Dokumente des Auftraggebers laut `scope.md` |
 | Softwarearchitekt | QA, Projektleiter | Spezifikation, Arbeitspaketplan |
 | QA | Softwarearchitekt | Prüfbericht |
 | Softwarearchitekt | Entwickler | Auftrag |
@@ -157,10 +161,10 @@ development/
     architect/            Meldungen an den Softwarearchitekten
     projectlead/          Meldungen an den Projektleiter
   <vorhaben>/
-    scope.md              geltende Anforderungsdokumente (Projektleiter)
+    scope.md              geltende Dokumente des Auftraggebers (Projektleiter)
     specification.md      technische Spezifikation (Softwarearchitekt)
     plan.md               Arbeitspaketplan (Softwarearchitekt)
-    reviews/              Prüfberichte der QA zu Anforderungen, Spezifikation und Plan
+    reviews/              Prüfberichte der QA zu den Dokumenten des Auftraggebers, Spezifikation und Plan
     presentations/        Präsentationen mit Vermerk der Bestätigung (Projektleiter)
     questions/            Fragen an den Auftraggeber mit Antwort
     <arbeitspaket>/
@@ -174,7 +178,7 @@ Namen von Vorhaben bestehen aus Kleinbuchstaben und Ziffern. Arbeitspakete heiß
 
 | Bericht | Datei |
 |---|---|
-| Prüfbericht der QA in den Phasen 2 und 3 | `reviews/requirements-<n>.md`, `reviews/specification-<n>.md`, `reviews/plan-<n>.md` |
+| Prüfbericht der QA in den Phasen 1 bis 3 | `reviews/requirements-<n>.md`, `reviews/specification-<n>.md`, `reviews/plan-<n>.md` |
 | Testbericht | `<arbeitspaket>/tests/<auftrag>-<prüfgebiet>-<n>.md` mit Prüfgebiet `functiontest` oder `securitytest` |
 | Prüfbericht der QA in Phase 4 | `<arbeitspaket>/reviews/<n>.md` |
 | Abnahmebericht | `<arbeitspaket>/acceptance/<n>.md` |
@@ -212,15 +216,15 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 
 | Empfänger | `task` | Anlass | `document` |
 |---|---|---|---|
-| Softwarearchitekt | `check` | Phase 2 beginnen: Prüfung der Anforderungsdokumente durch die QA | `scope.md` |
-| Softwarearchitekt | `specify` | Spezifikation erstellen oder nach einer Lücke ergänzen | `scope.md` |
+| Softwarearchitekt | `check` | Phase 1: Prüfung der Dokumente des Auftraggebers durch die QA vor der Präsentation | `scope.md` |
+| Softwarearchitekt | `specify` | Phase 2 beginnen: Nachprüfung der Dokumente des Auftraggebers, dann Spezifikation erstellen oder nach einer Lücke ergänzen | `scope.md` |
 | Softwarearchitekt | `revise` | Einwände des Auftraggebers zu Spezifikation oder Plan einarbeiten | Präsentation mit den Einwänden |
 | Softwarearchitekt | `plan` | Phase 3 beginnen oder Plan ändern | `specification.md` |
 | Softwarearchitekt | `implement` | Phase 4 eines Arbeitspakets beginnen oder fortsetzen | `plan.md` |
 | Softwarearchitekt | `fix` | Mängel aus der Abnahme beheben | Abnahmebericht |
 | Softwarearchitekt | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
 | Softwarearchitekt | `answer` | Antwort auf eine Frage, unterbrochene Aufgabe fortsetzen | Frage mit Antwort |
-| Projektleiter | `review` | Prüfbericht der QA zu den Anforderungsdokumenten | Prüfbericht |
+| Projektleiter | `review` | Prüfbericht der QA zu den Dokumenten des Auftraggebers, auch eine nicht bestandene Nachprüfung | Prüfbericht |
 | Projektleiter | `present` | Spezifikation oder Plan zur Präsentation und Abstimmung | `specification.md` oder `plan.md` |
 | Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
 | Projektleiter | `question` | Frage an den Auftraggeber oder Eskalation | Frage |
@@ -398,6 +402,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 |---|---|
 | 2026-10-14 | Berichte von Tester und QA im Berichtsverzeichnis `work/<ref>/reports/` statt ohne Commit im eigenen Arbeitsverzeichnis (Ablauftest, Hinweis H1 der QA). |
 | 2026-10-14 | Feste Ports der Testumgebung zur Abnahme, pipwerk Studio 5174 und 8001 (Auftraggeber im Chat). |
+| 2026-10-14 | Prüfung der Dokumente des Auftraggebers durch die QA in Phase 1 vor der Präsentation statt zu Beginn von Phase 2. Geprüft werden alle Dokumente des Auftraggebers laut `scope.md`, also auch Fachmodell und Strategiebeschreibungen, bei Testfällen auch deren Abbildbarkeit. Phase 2 beginnt mit `specify` und einer Nachprüfung. Anlass: Befunde der QA zu bereits bestätigten Dokumenten erzwangen eine zweite Entscheidungsrunde. Bestätigt vom Auftraggeber im Chat. |
 | 2026-10-14 | Umfang der Prüfungen: Detailtiefe nach Umfang, erster Durchlauf vollständig, danach Nachprüfung, nur blockierende Befunde. Bestätigt vom Auftraggeber im Chat, gilt ab sofort auch für das laufende Vorhaben `ablauftest`. |
 | 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow und als Variable `ROOT` in jedem Skript. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |
 | 2026-10-12 | „Handelsobjekte“ durch „Objekte“ ersetzt (Glossar). |
