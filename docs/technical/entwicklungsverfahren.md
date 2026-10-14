@@ -335,7 +335,13 @@ Im Verzeichnis jeder Komponente liegen:
 - ein Prüfskript vom Tester, das die automatischen Prüfungen der Komponente ausführt
 - ein Testumgebungsskript vom Entwickler, das die Komponente aus einem Arbeitsverzeichnis als Testumgebung startet und beendet
 
-Ports und Datenbank sind Parameter oder Konfiguration, keine festen Werte. Name und Aufruf der Skripte stehen in der technischen Dokumentation der Komponente. Ein übergreifendes Skript für mehrere Komponenten gibt es nicht. Bei `fix` startet der Softwarearchitekt die Testumgebung mit dem neuen Commit neu.
+Ports und Datenbank sind Parameter oder Konfiguration, keine festen Werte. Die Testumgebung zur Abnahme verwendet feste Ports, damit der Auftraggeber seinen Tunnel nicht anpassen muss:
+
+| Komponente | Oberfläche | Hintergrunddienst |
+|---|---|---|
+| pipwerk Studio | 5174 | 8001 |
+
+Laufen ausnahmsweise mehrere Testumgebungen derselben Komponente gleichzeitig, nennt die Meldung `acceptance` die abweichenden Ports. Die Ports des Entwicklungsbetriebs (pipwerk Studio: 5173 und 8000) und der Browsertests bleiben davon unberührt. Name und Aufruf der Skripte stehen in der technischen Dokumentation der Komponente. Ein übergreifendes Skript für mehrere Komponenten gibt es nicht. Bei `fix` startet der Softwarearchitekt die Testumgebung mit dem neuen Commit neu.
 
 ### Runner
 
@@ -389,6 +395,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-14 | Feste Ports der Testumgebung zur Abnahme, pipwerk Studio 5174 und 8001 (Auftraggeber im Chat). |
 | 2026-10-14 | Umfang der Prüfungen: Detailtiefe nach Umfang, erster Durchlauf vollständig, danach Nachprüfung, nur blockierende Befunde. Bestätigt vom Auftraggeber im Chat, gilt ab sofort auch für das laufende Vorhaben `ablauftest`. |
 | 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow und als Variable `ROOT` in jedem Skript. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |
 | 2026-10-12 | „Handelsobjekte“ durch „Objekte“ ersetzt (Glossar). |
