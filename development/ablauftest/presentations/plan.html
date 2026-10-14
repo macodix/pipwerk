@@ -59,7 +59,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben ablauftest · Phase 3</p>
 <div class="col" style="flex:0;gap:32px">
 <h1>Arbeitspaketplan</h1>
-<p style="font-size:38px;width:1450px">Zwei Arbeitspakete, nacheinander. Jedes endet mit einem Stand, den du in der Testumgebung selbst prüfst. Von der QA im 4. Durchlauf geprüft und bestanden.</p>
+<p style="font-size:38px;width:1450px">Ein Arbeitspaket ist ein Teil des Vorhabens, der mit einem Stand endet, den du in der Testumgebung selbst ausprobierst und abnimmst. Der Softwarearchitekt schlägt zwei Arbeitspakete vor.</p>
 </div>
 <p style="font-size:26px;color:var(--coveraccent)">14. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/ablauftest/plan.md</code></p>
 <p class="num">1 / 4</p></section></div>
@@ -67,16 +67,16 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="frame"><section class="slide">
 <h2>Reihenfolge</h2>
 <div class="chain">
-<div class="node">wp01<small>Testumgebung und Schreibweise „pipwerk Studio“</small></div><div class="arrow">→</div>
-<div class="node">Abnahme wp01<small>durch dich</small></div><div class="arrow">→</div>
-<div class="node">wp02<small>Dialog „Über pipwerk Studio“</small></div><div class="arrow">→</div>
-<div class="node">Abnahme wp02<small>durch dich</small></div>
+<div class="node">Paket 1: Testumgebung und Name<small>Startskript für die Testumgebung, überall „pipwerk Studio“</small></div><div class="arrow">→</div>
+<div class="node">Abnahme Paket 1<small>durch dich</small></div><div class="arrow">→</div>
+<div class="node">Paket 2: Dialog<small>Schaltfläche und Dialog „Über pipwerk Studio“</small></div><div class="arrow">→</div>
+<div class="node">Abnahme Paket 2<small>durch dich</small></div>
 </div>
-<p>wp02 beginnt erst, wenn wp01 abgenommen und in den Hauptstand übernommen ist. Beide Pakete ändern teilweise dieselben Dateien; nacheinander gibt es keine Überschneidungen.</p>
+<p>Paket 2 beginnt erst, wenn Paket 1 abgenommen und übernommen ist. Begründung des Softwarearchitekten: Ohne das Startskript aus Paket 1 gibt es keine Testumgebung, in der du den Dialog abnehmen kannst. Im Plan heißen die Pakete <code>wp01</code> und <code>wp02</code>.</p>
 <p class="num">2 / 4</p></section></div>
 
 <div class="frame"><section class="slide">
-<h2>wp01 – Testumgebung und Schreibweise</h2>
+<h2>Paket 1 – Testumgebung und Name „pipwerk Studio“</h2>
 <div class="row">
 <div class="card col"><h3>Inhalt</h3><ul>
 <li>Skript <code>testenv</code> mit <code>start</code>, <code>stop</code>, <code>status</code>: baut und startet pipwerk Studio aus genau einem Commit</li>
@@ -93,7 +93,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p class="num">3 / 4</p></section></div>
 
 <div class="frame"><section class="slide">
-<h2>wp02 – Dialog und Bestätigung</h2>
+<h2>Paket 2 – Dialog „Über pipwerk Studio“</h2>
 <div class="row">
 <div class="card col"><h3>Du prüfst</h3><ul>
 <li>Schaltfläche „Über pipwerk Studio“ öffnet den Dialog mit Maus und Tastatur</li>
@@ -102,9 +102,9 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>Übrige Oberfläche gesperrt, Schließen nur mit „Schließen“ oder Escape</li>
 <li>Texte folgen der Sprache, keine Internetverbindung nötig</li></ul></div>
 <div class="card col"><h3>Zur Bestätigung</h3><ul>
-<li>Aufteilung in wp01 und wp02</li>
+<li>Aufteilung in Paket 1 und Paket 2</li>
 <li>Abnahmekriterien wie auf Folie 3 und 4</li></ul>
-<p class="note">Bestätigung: offen</p></div>
+<p class="note">Einwand des Auftraggebers im Chat am 14. Oktober 2026: ein einziges Arbeitspaket mit einer Abnahme statt zwei. Inhalt und Abnahmekriterien beider Pakete bleiben und werden zusammengeführt. Bestätigung: offen bis zur geänderten Fassung.</p></div>
 </div>
 <p class="num">4 / 4</p></section></div>
 
