@@ -21,7 +21,9 @@ Für die Tradeplanung werden außerdem der aktuelle Spread, die Pip- oder Tickgr
 
 ## Ablauf
 
-### 1. Markt beobachten
+### 1. Auslöser und Markt beobachten
+
+Die Strategie wird bei jedem Kerzenschluss der kleinsten zulässigen Handelszeiteinheit ausgewertet. Dort ändern sich die ZigZag-Punkte beider Handelszeiteinheiten.
 
 Auf einer größeren Zeiteinheit wird geprüft, ob ein intakter markttechnischer Trend vorliegt. Diese größere Zeiteinheit dient als Signalzeiteinheit. Dafür kommen M15, H1, H4 oder D1 infrage.
 
@@ -66,7 +68,7 @@ Bis zur Ausführung werden der Kurs, die Order und die relevanten ZigZag-Punkte 
 
 Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Order wird gelöscht. Der Durchbruch wird auf Tick-Ebene erkannt.
 
-Verändert der ZigZag-Indikator den noch nicht endgültigen Punkt 1/3, werden Stop-Loss und Take-Profit angepasst. Anschließend werden Risiko, Volumen und Margin erneut geprüft. Ist der Trade danach nicht mehr regelgerecht handelbar, wird die Order gelöscht.
+Verändert der ZigZag-Indikator den noch nicht endgültigen Punkt 1/3, werden Stop-Loss und Take-Profit angepasst. Anschließend werden Risiko, Volumen und Margin erneut geprüft. Das Volumen einer wartenden Order kann nicht geändert werden. Passt das bestehende Volumen nicht mehr zur Risikogrenze oder ist der Trade nicht mehr regelgerecht handelbar, wird die Order gelöscht. Der nächste Auslöser plant den Trade neu.
 
 ### 7. Ausführung verarbeiten
 
