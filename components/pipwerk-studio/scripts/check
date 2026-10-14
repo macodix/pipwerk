@@ -47,11 +47,21 @@ component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
 backend_dir="$component_dir/backend"
 frontend_dir="$component_dir/frontend"
 
+# require_port <parameter> <value>: sets PORT_VALUE to the value without
+# leading zeros. The length check keeps numbers out of the shell's integer
+# arithmetic that it cannot handle.
 require_port() {
-    case $2 in
+    PORT_VALUE=$2
+    case $PORT_VALUE in
     '' | *[!0-9]*) die "$1 must be a number between 1 and 65535" ;;
     esac
-    if [ "$2" -lt 1 ] || [ "$2" -gt 65535 ]; then
+    while [ "${PORT_VALUE#0}" != "$PORT_VALUE" ]; do
+        PORT_VALUE=${PORT_VALUE#0}
+    done
+    case $PORT_VALUE in
+    '' | ??????*) die "$1 must be a number between 1 and 65535" ;;
+    esac
+    if [ "$PORT_VALUE" -gt 65535 ]; then
         die "$1 must be a number between 1 and 65535"
     fi
 }
@@ -84,7 +94,9 @@ done
 [ -n "$backend_port" ] || die "missing parameter --backend-port"
 [ -n "$frontend_port" ] || die "missing parameter --frontend-port"
 require_port --backend-port "$backend_port"
+backend_port=$PORT_VALUE
 require_port --frontend-port "$frontend_port"
+frontend_port=$PORT_VALUE
 [ "$backend_port" != "$frontend_port" ] ||
     die "--backend-port and --frontend-port must differ"
 
