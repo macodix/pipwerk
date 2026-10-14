@@ -293,7 +293,7 @@ pipwerk Studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md
 - die Lizenz: Name und vollständiger Text der „GNU General Public License, Version 3“, immer im englischen Original
 - die Adresse https://github.com/macodix/pipwerk als Verweis, der sich in einem neuen Tab öffnet
 
-Der Dialog wird über die Schaltfläche „Über pipwerk Studio“ (englisch „About pipwerk Studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen. Überall, wo pipwerk Studio seinen Namen anzeigt oder ausgibt, lautet er „pipwerk Studio“, ebenso in der Dokumentation.
+Der Dialog wird über die Schaltfläche „Über pipwerk Studio“ (englisch „About pipwerk Studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen. Überall, wo pipwerk Studio seinen Namen anzeigt oder ausgibt, lautet er „pipwerk Studio“, ebenso in der Dokumentation. Ein Zeilenumbruch zwischen „pipwerk“ und „Studio“ ist zulässig.
 
 
 ## 7. Arbeitsabläufe
@@ -447,3 +447,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-13 | req-ui-010: Stand genau in Testumgebung und Installation, im Entwicklungsbetrieb Commit vom Start, Abweichung in der Anwenderdokumentation erklärt. Antwort des Auftraggebers auf Frage ablauftest-02. |
 | 2026-10-13 | Schreibweise des Namens in req-ui-010: „pipwerk Studio“ (Auftraggeber im Chat). |
 | 2026-10-13 | req-ui-010: Name überall einheitlich „pipwerk Studio“, folgt aus der Festlegung des Namens durch den Auftraggeber. |
+| 2026-10-14 | req-ui-010: Zeilenumbruch zwischen „pipwerk“ und „Studio“ zulässig (Auftraggeber im Chat). |
