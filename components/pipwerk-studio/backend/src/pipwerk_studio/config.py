@@ -1,4 +1,4 @@
-"""Startup configuration of Pipwerk Studio.
+"""Startup configuration of pipwerk Studio.
 
 The startup configuration contains only the information needed to start the
 Studio backend and let it find and use its configured storage
@@ -15,7 +15,7 @@ import configparser
 import os
 from pathlib import Path
 
-#: File name of the Pipwerk Studio startup configuration at every searched
+#: File name of the pipwerk Studio startup configuration at every searched
 #: location.
 CONFIG_FILE_NAME = "pipwerk-studio.ini"
 
@@ -23,7 +23,7 @@ CONFIG_FILE_NAME = "pipwerk-studio.ini"
 class StartupConfigError(Exception):
     """Raised when no valid startup configuration is available.
 
-    Pipwerk Studio does not start without a valid INI startup configuration
+    pipwerk Studio does not start without a valid INI startup configuration
     that defines the database connection; there is no implicit replacement
     database.
     """
@@ -96,7 +96,7 @@ def resolve_config_path(explicit_path: str | Path | None) -> Path:
             return candidate
     searched = ", ".join(str(location) for location in default_search_locations())
     raise StartupConfigError(
-        "No startup configuration found. Pipwerk Studio does not start without one. "
+        "No startup configuration found. pipwerk Studio does not start without one. "
         f"Searched: {searched or '(no search location available)'}. "
         "Provide a startup configuration file with -c <PATH>."
     )

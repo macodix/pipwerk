@@ -1,20 +1,20 @@
-# Pipwerk Studio – technische Dokumentation
+# pipwerk Studio – technische Dokumentation
 
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-10
+- stand: 2026-10-14
 - komponente: `pipwerk-studio`
 
 ## 1. Gegenstand
 
-Dieses Dokument beschreibt den technischen Aufbau von Pipwerk Studio, die Einrichtung einer Entwicklungsumgebung, den Start im Entwicklungsbetrieb und die vorgeschriebenen Prüfungen.
+Dieses Dokument beschreibt den technischen Aufbau von pipwerk Studio, die Einrichtung einer Entwicklungsumgebung, den Start im Entwicklungsbetrieb und als Testumgebung und die vorgeschriebenen Prüfungen.
 
-Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1, erweitert um die dauerhafte Oberflächensprache (WO-2026-10-04-001), die Anzeige des Stands (WO-2026-10-08-001) und den Tooltip der Standanzeige mit Commit und Commit-Datum (WO-2026-10-09-004). Pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln, speichert die gewählte Sprache dauerhaft im Backend, prüft, ob das Backend erreichbar ist, und zeigt in der Fußzeile den Stand (Kurzform des Commits), aus dem es läuft; ein Tooltip nennt den vollständigen Commit und dessen Datum. Fachliche Objekte, Strategien und Ausführung sind noch nicht enthalten.
+Der beschriebene Stand ist das technische Grundgerüst aus dem Arbeitspaket AP1, erweitert um die dauerhafte Oberflächensprache (WO-2026-10-04-001), die Anzeige des Stands (WO-2026-10-08-001) und den Tooltip der Standanzeige mit Commit und Commit-Datum (WO-2026-10-09-004). Hinzu kommen das Testumgebungsskript, das pipwerk Studio aus genau einem Commit baut und startet (Abschnitt 4a), und die einheitliche Schreibweise des Namens „pipwerk Studio“ in Oberfläche, Ausgaben des Backends und Dokumentation, mit Tests (Abschnitt 6.1). pipwerk Studio zeigt eine leere Designer-Arbeitsfläche, kann die Oberflächensprache zwischen Deutsch und Englisch wechseln, speichert die gewählte Sprache dauerhaft im Backend, prüft, ob das Backend erreichbar ist, und zeigt in der Fußzeile den Stand (Kurzform des Commits), aus dem es läuft; ein Tooltip nennt den vollständigen Commit und dessen Datum. Fachliche Objekte, Strategien und Ausführung sind noch nicht enthalten.
 
 ## 2. Aufbau der Komponente
 
-Pipwerk Studio liegt im Verzeichnis `components/pipwerk-studio/` und besteht aus zwei Teilen.
+pipwerk Studio liegt im Verzeichnis `components/pipwerk-studio/` und besteht aus zwei Teilen.
 
 | Verzeichnis | Inhalt |
 | --- | --- |
@@ -27,7 +27,7 @@ Das Backend ist eine FastAPI-Anwendung. Die Funktion `create_app()` in `backend/
 
 Die Oberflächensprache ist eine einzige betriebliche Einstellung der Komponente, nicht benutzerbezogen und kein Bestandteil von Strategiedaten. Der Browser ist nicht autoritativ und verwendet dafür weder Local Storage noch Session Storage noch Cookies. Ohne gespeicherten Wert liefert der Service Deutsch (`de`). Die Datenbank enthält höchstens einen zentralen Datensatz in `studio_settings`.
 
-Enthält der gespeicherte Wert keine unterstützte Sprache (technisch fehlerhafter Speicherinhalt, zum Beispiel nach händischer Änderung der Datenbank), wird keine Ersatzsprache angenommen. Der Lesezugriff schlägt mit HTTP 503 und der Meldung `The stored Studio language is invalid.` fehl und der Fehler wird im Backend protokolliert; die Oberfläche zeigt dann die Meldung zum fehlgeschlagenen Lesen (Abschnitt 2.4). Ein gültiger Schreibzugriff ersetzt den fehlerhaften Wert und behebt den Zustand.
+Enthält der gespeicherte Wert keine unterstützte Sprache (technisch fehlerhafter Speicherinhalt, zum Beispiel nach händischer Änderung der Datenbank), wird keine Ersatzsprache angenommen. Der Lesezugriff schlägt mit HTTP 503 und der Meldung `The stored pipwerk Studio language is invalid.` fehl und der Fehler wird im Backend protokolliert; die Oberfläche zeigt dann die Meldung zum fehlgeschlagenen Lesen (Abschnitt 2.4). Ein gültiger Schreibzugriff ersetzt den fehlerhaften Wert und behebt den Zustand.
 
 SQLAlchemy bleibt hinter der Service-/Infrastrukturgrenze; ORM-Objekte werden nicht als API-Modelle verwendet. Das kleine initiale Schema wird beim Start angelegt. Da für dieses neue, einzeilige Schema noch keine Schemaänderung oder Bestandsmigration existiert, wird Alembic derzeit nicht eingesetzt. Vor einer späteren Schemaänderung ist eine versionierte Migration einzuführen.
 
@@ -40,10 +40,10 @@ Die INI-Startkonfiguration enthält ausschließlich die SQLAlchemy-Datenbank-URL
 url = sqlite:///./pipwerk-studio.db
 ```
 
-Pipwerk Studio startet nicht ohne gültige INI-Startkonfiguration (Nutzerentscheidung vom 2026-10-06, gilt für Pipwerk Studio). Die INI gehört zur Installation und muss mindestens die für den Start erforderliche Datenbankverbindung definieren. Eine implizite Ersatzdatenbank bei fehlender INI gibt es nicht. Ohne `-c` und ohne Datei an allen Suchorten endet der Start mit Exitcode 1 und einer Meldung, die die durchsuchten Orte und den Parameter `-c <PATH>` nennt:
+pipwerk Studio startet nicht ohne gültige INI-Startkonfiguration (Nutzerentscheidung vom 2026-10-06, gilt für pipwerk Studio). Die INI gehört zur Installation und muss mindestens die für den Start erforderliche Datenbankverbindung definieren. Eine implizite Ersatzdatenbank bei fehlender INI gibt es nicht. Ohne `-c` und ohne Datei an allen Suchorten endet der Start mit Exitcode 1 und einer Meldung, die die durchsuchten Orte und den Parameter `-c <PATH>` nennt:
 
 ```text
-pipwerk-studio: No startup configuration found. Pipwerk Studio does not start without one. Searched: <Suchorte>. Provide a startup configuration file with -c <PATH>.
+pipwerk-studio: No startup configuration found. pipwerk Studio does not start without one. Searched: <Suchorte>. Provide a startup configuration file with -c <PATH>.
 ```
 
 Als ungültig gelten außerdem eine fehlende Datei bei `-c`, eine nicht lesbare oder nicht auswertbare Datei, ein fehlender Abschnitt `[database]`, ein fehlender oder leerer (auch nur aus Leerzeichen bestehender) Eintrag `url` und eine `url`, mit der keine Datenbank-Engine erzeugt werden kann oder die Datenbank nicht erreichbar ist. Der Start über `create_app()` ohne Argument (zum Beispiel `uvicorn --factory`) verwendet dieselbe Suche und bricht bei fehlender Konfiguration mit `StartupConfigError` ab.
@@ -86,7 +86,7 @@ Die Arbeitsfläche enthält keine Knoten und keine Verbindungen. React-Flow-Obje
 
 Alle sichtbaren Texte der Oberfläche werden über Übersetzungsschlüssel aus den Dateien in `src/locales/` geladen. Beide Dateien müssen dieselben Schlüssel enthalten; ein Frontend-Test prüft das.
 
-Der Produktname „Pipwerk Studio“ wird nicht übersetzt. Die Sprachnamen im Auswahlfeld werden in ihrer eigenen Sprache angezeigt, also „Deutsch“ und „English“.
+Der Produktname „pipwerk Studio“ wird nicht übersetzt. Die Sprachnamen im Auswahlfeld werden in ihrer eigenen Sprache angezeigt, also „Deutsch“ und „English“.
 
 Die Oberflächensprache wird vom Backend gelesen und dort dauerhaft gespeichert (Abschnitt 2.1). Ist noch nichts gespeichert, ist Deutsch eingestellt. Der Hook `useStudioLanguage` leitet die angezeigte Sprache, den Zustand der Auswahl und die Meldung an einer Stelle aus dem Lesezustand (TanStack Query) und dem Speicherzustand (Mutation) ab. Die Auswahl und die Texte zeigen immer dieselbe Sprache. Eine „bestätigte“ Sprache ist die zuletzt vom Backend gelesene oder nach dem Speichern zurückgegebene Sprache.
 
@@ -125,7 +125,7 @@ Im Entwicklungsbetrieb ruft der Browser nur den Vite-Entwicklungsserver auf. Vit
 
 ### 2.6 Anzeige des Stands
 
-Die Fußzeile zeigt rechts neben dem Backend-Status den Stand, aus dem Pipwerk Studio läuft: die ersten 7 Zeichen des Git-Commits. Auf Deutsch lautet die Anzeige „Stand: <kurzform>“, auf Englisch „Revision: <kurzform>“; ein Sprachwechsel schaltet die Bezeichnung um. Die Texte stehen unter dem Schlüssel `revision` in `de.json` und `en.json`. Lässt sich der Stand nicht ermitteln, erscheint „Stand: unbekannt“ beziehungsweise „Revision: unknown“ ohne Tooltip.
+Die Fußzeile zeigt rechts neben dem Backend-Status den Stand, aus dem pipwerk Studio läuft: die ersten 7 Zeichen des Git-Commits. Auf Deutsch lautet die Anzeige „Stand: <kurzform>“, auf Englisch „Revision: <kurzform>“; ein Sprachwechsel schaltet die Bezeichnung um. Die Texte stehen unter dem Schlüssel `revision` in `de.json` und `en.json`. Lässt sich der Stand nicht ermitteln, erscheint „Stand: unbekannt“ beziehungsweise „Revision: unknown“ ohne Tooltip.
 
 Fährt man mit dem Mauszeiger über die Standanzeige, erscheint ein Tooltip mit dem vollständigen Commit (40 Zeichen) und dem Committer-Datum dieses Commits. Auf Deutsch lautet er „Commit <hash> vom TT.MM.JJJJ, hh:mm Uhr“, auf Englisch „Commit <hash> from YYYY-MM-DD hh:mm“; die Uhrzeit hat das 24-Stunden-Format und ist die Ortszeit des Browsers. Ist das Datum nicht ermittelbar, lautet er „Commit <hash>“. Ein Sprachwechsel schaltet den Tooltip um. Die Texte stehen unter den Schlüsseln `revision.commit` und `revision.commitAt` in `de.json` und `en.json`.
 
@@ -196,7 +196,7 @@ Die Oberfläche wird im Verzeichnis `components/pipwerk-studio/frontend` gestart
 npm run dev
 ```
 
-Danach ist Pipwerk Studio im Browser unter `http://127.0.0.1:5173/` erreichbar.
+Danach ist pipwerk Studio im Browser unter `http://127.0.0.1:5173/` erreichbar.
 
 Die lokal erzeugten Dateien `backend/pipwerk-studio.ini` und `backend/pipwerk-studio.db` (einschließlich `-journal`, `-wal`, `-shm`) werden von `components/pipwerk-studio/.gitignore` ausgeschlossen und können nicht versehentlich committet werden. Versioniert bleibt nur `backend/pipwerk-studio.example.ini`.
 
@@ -212,6 +212,53 @@ Beide Server nehmen standardmäßig nur Verbindungen vom eigenen Rechner an. Der
 
 Der Befehl `npm run build` im Verzeichnis `frontend` prüft zuerst die Typen und schreibt anschließend die auslieferbaren Oberflächendateien nach `frontend/dist`. Dieses Verzeichnis wird nicht versioniert. Ein Start, bei dem das Backend diese Dateien selbst ausliefert, ist noch nicht vorhanden.
 
+## 4a. Start als Testumgebung
+
+Die Testumgebung ist pipwerk Studio, gebaut und gestartet aus genau einem Commit. Das Testumgebungsskript `components/pipwerk-studio/scripts/testenv` (POSIX-Shell) baut die Oberfläche aus dem Arbeitsverzeichnis, in dem das Skript liegt, und startet das Backend aus demselben Arbeitsverzeichnis. Oberfläche und Backend stammen damit aus demselben Commit, den Fußzeile und später der Dialog nennen. Das Arbeitsverzeichnis wird aus dem Pfad des Skripts bestimmt; das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen. Es enthält keine festen Ports, Pfade oder Rechnernamen.
+
+```sh
+<Arbeitsverzeichnis>/components/pipwerk-studio/scripts/testenv start --frontend-port <port> --backend-port <port> [--host <adresse>]
+<Arbeitsverzeichnis>/components/pipwerk-studio/scripts/testenv status
+<Arbeitsverzeichnis>/components/pipwerk-studio/scripts/testenv stop
+```
+
+Voraussetzungen: Git, Python 3 (Prüfung der Ports und der Erreichbarkeit), `ps`, uv und Node.js mit npm in den Versionen aus Abschnitt 3, ein Zugriff auf die Paketquellen für `uv sync --frozen` und `npm ci`, und zwei freie Ports. Das Arbeitsverzeichnis muss ein Arbeitsverzeichnis von Git sein.
+
+`start`:
+
+1. Prüft die Parameter. `--frontend-port` und `--backend-port` sind Pflicht, ganze Zahlen von 1 bis 65535 und verschieden. `--host` ist die Adresse, an die sich die Oberfläche bindet; ohne Angabe `127.0.0.1`. Das Backend bindet sich immer an `127.0.0.1`.
+2. Prüft, dass das Verzeichnis des Skripts in einem Arbeitsverzeichnis von Git liegt, ermittelt dessen Wurzel (`git rev-parse --show-toplevel`) und prüft mit `git status --porcelain` für die ganze Wurzel, also das ganze Repository einschließlich `LICENSE` und der Dateien außerhalb der Komponente, dass es keine nicht committeten Änderungen und keine nicht ignorierten neuen Dateien gibt. Ignorierte Dateien wie `backend/.venv/`, `frontend/node_modules/`, `frontend/dist/` und `.testenv/` sind zulässig.
+3. Prüft, dass die benötigten Programme vorhanden sind, dass keine laufende Testumgebung verzeichnet ist und dass beide Ports frei sind.
+4. Installiert die Abhängigkeiten nach den Lockdateien (`uv sync --frozen`, `npm ci`) und baut die Oberfläche (`npm run build`).
+5. Legt unter `components/pipwerk-studio/.testenv/` eine INI-Startkonfiguration mit einer eigenen SQLite-Datei an und startet das Backend mit `-c` auf `127.0.0.1:<backend-port>` sowie die gebaute Oberfläche mit `vite preview` auf `<host>:<frontend-port>`. `vite preview` leitet Anfragen unter `/api` an das Backend weiter (`PIPWERK_STUDIO_BACKEND_URL`).
+6. Wartet, bis `/api/health` über den Port der Oberfläche `{"status": "ok"}` liefert (Zeitbegrenzung 120 Sekunden), und meldet dann die Adresse der Oberfläche.
+
+Abbruchfälle von `start`, jeweils mit Exitcode ungleich 0 und einer Fehlermeldung auf der Fehlerausgabe, die die Ursache nennt:
+
+- ungültige oder fehlende Parameter
+- das Verzeichnis des Skripts liegt nicht in einem Arbeitsverzeichnis von Git
+- eine nicht committete Änderung oder eine nicht ignorierte neue Datei irgendwo im Repository; die Meldung nennt die ersten betroffenen Dateien. Bei den drei Abbruchfällen bis hierher wurde nichts angelegt, installiert, gebaut oder gestartet.
+- ein benötigtes Programm fehlt, es läuft schon eine Testumgebung oder ein Port ist belegt
+- die Installation oder der Bau scheitert, ein Prozess endet beim Start oder `/api/health` antwortet nicht rechtzeitig. Das Skript gibt die letzten Zeilen der Protokolle aus, beendet die gestarteten Prozesse und entfernt `.testenv/`.
+
+`status` nennt, ob die Testumgebung läuft, und ihre Ports (Exitcode 0 bei laufender, 1 bei nicht oder nur teilweise laufender Testumgebung). `stop` beendet beide Prozesse (zuerst mit SIGTERM, nach 10 Sekunden mit SIGKILL) und entfernt `.testenv/`, also auch die Datenbank der Testumgebung. Prozesskennungen, Ports, Protokolle (`backend.log`, `frontend.log`), die INI und die Datenbank liegen in `components/pipwerk-studio/.testenv/`; das Verzeichnis steht in `components/pipwerk-studio/.gitignore`.
+
+Adressen in der Testumgebung:
+
+- Oberfläche: `http://<host>:<frontend-port>/`
+- Schnittstellenbeschreibung des Backends: `http://127.0.0.1:<backend-port>/docs` und `http://127.0.0.1:<backend-port>/openapi.json`. Sie ist nur auf `127.0.0.1` des Rechners der Testumgebung erreichbar. Derselbe Pfad `/docs` am Port der Oberfläche zeigt die Schnittstellenbeschreibung nicht, weil `vite preview` nur Anfragen unter `/api` an das Backend weiterleitet.
+
+Risiko bei `--host` außerhalb der Loopback-Adresse: Ohne Angabe bindet sich die Oberfläche an `127.0.0.1` und ist nur vom eigenen Rechner erreichbar. Gibt `--host` eine andere Adresse an, zum Beispiel `0.0.0.0` oder die Adresse einer Netzwerkschnittstelle, ist die Oberfläche aus dem Netz erreichbar. Weil `vite preview` alle Anfragen unter `/api` an das Backend weiterleitet, sind dann auch alle Endpunkte des Backends über `http://<host>:<frontend-port>/api/…` aus dem Netz erreichbar, darunter das schreibende `PUT /api/studio/settings/language`. Eine Authentisierung gibt es nicht. Dass das Backend selbst nur an `127.0.0.1` gebunden ist, ändert daran nichts. `vite preview` ist keine Sicherheitsgrenze. Eine Adresse außerhalb der Loopback-Adresse ist deshalb nur in einem Netz zu verwenden, dem alle Teilnehmer vertraut werden; ein Schutz davor (Firewall oder anderer Zugriffsschutz) liegt außerhalb des Skripts und ist nicht eingerichtet.
+
+Die Kommandozeile `pipwerk-studio` (Hilfetext, Fehlermeldung beim Start ohne Startkonfiguration) wird aus der Umgebung des Backends im Arbeitsverzeichnis der Testumgebung aufgerufen:
+
+```sh
+uv --directory <Arbeitsverzeichnis>/components/pipwerk-studio/backend run --frozen pipwerk-studio --help
+uv --directory <Arbeitsverzeichnis>/components/pipwerk-studio/backend run --frozen pipwerk-studio
+```
+
+Der zweite Aufruf endet ohne `-c` und ohne INI-Startkonfiguration an den Suchorten aus Abschnitt 2.2 mit der dort gezeigten Fehlermeldung. Er setzt voraus, dass `testenv start` die Umgebung des Backends (`backend/.venv`) schon angelegt hat; sonst legt `uv run` sie an.
+
 ## 5. HTTP-Schnittstelle
 
 Das Backend stellt derzeit vier Endpunkte bereit.
@@ -225,7 +272,7 @@ Das Backend stellt derzeit vier Endpunkte bereit.
 
 Andere Methoden auf diesen Pfaden werden mit HTTP 405 abgelehnt. Die Antworten werden mit den Pydantic-Modellen `HealthStatus`, `StudioLanguage` und `StudioRevision` erzeugt, die keine zusätzlichen Felder zulassen. Der Schreibzugriff verwendet das getrennte Modell `StudioLanguageUpdate`: Der Body enthält ausschließlich `{"language": "de"}` oder `{"language": "en"}`; andere Werte, andere Typen, fehlende oder zusätzliche Felder und ein Body, der kein JSON ist, werden mit HTTP 422 abgelehnt. Ist der gespeicherte Wert ungültig, antwortet das Lesen mit HTTP 503 (Abschnitt 2.1). Das Frontend akzeptiert seinerseits nur eine Antwort mit genau einem gültigen `language`-Feld beziehungsweise bei der Stand-Schnittstelle genau den drei Feldern `revision` (7 Hexadezimalzeichen in Kleinbuchstaben oder `null`), `commit` (40 Hexadezimalzeichen in Kleinbuchstaben oder `null`) und `committed_at` (ISO-8601-Zeitstempel mit Zeitzonenangabe, der ein echtes Kalenderdatum mit gültiger Uhrzeit ist, oder `null`) unter Einhaltung der Invarianten aus Abschnitt 2.6.
 
-Die Endpunkte sind interne Verbindungen innerhalb von Pipwerk Studio (auch `/api/studio/revision`). Sie sind kein Bestandteil der öffentlichen Web-API und keine versionierte Definition der Schnittstellen unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar.
+Die Endpunkte sind interne Verbindungen innerhalb von pipwerk Studio (auch `/api/studio/revision`). Sie sind kein Bestandteil der öffentlichen Web-API und keine versionierte Definition der Schnittstellen unter `contracts/`. Die von FastAPI erzeugte Schnittstellenbeschreibung ist im Entwicklungsbetrieb unter `http://127.0.0.1:8000/docs` und `http://127.0.0.1:8000/openapi.json` abrufbar, in der Testumgebung am Port des Backends (Abschnitt 4a). Ihr Titel lautet „pipwerk Studio“; Titel, Zusammenfassungen und Beschreibungen schreiben den Namen einheitlich so (Abschnitt 6.1).
 
 ## 6. Prüfungen
 
@@ -244,6 +291,16 @@ uv run --frozen mypy
 ```
 
 pytest prüft die HTTP-Anwendung ohne gestarteten Server mit dem Testclient von FastAPI sowie die Konfiguration. Die Tests decken Konfigurationspriorität, Suchpfade (POSIX und Windows, auch bei leerem `HOME`; vom Rechner unabhängig), Fehlerfälle, API-Validierung, Start ohne gültige INI (kein Ersatzwert, Exitcode, Meldung, leere `url`, nicht nutzbare Datenbank-URL, `create_app()` ohne Konfiguration), falsche Methoden, ungültigen gespeicherten Wert, den Ausweg bei gleichzeitigem ersten Schreiben, Standardwert, Umschalten, Trennung verschiedener Datenbanken, den Stand und sein Datum (`tests/test_revision.py`, jeder Fall getrennt: gültiger Hash ergibt 7 Zeichen und den vollständigen Commit, gültiges Datum wird unverändert weitergegeben, kein Aufruf der Datumsermittlung ohne gültigen Hash und dann keine zusätzliche Warnung; Git nicht ausführbar, Zeitüberschreitung, Exitcode ungleich 0 bei vorhandenem Arbeitsbereich (gemockt, mit Ausgabe auf stderr) und ungültige Ausgabe ergeben je `null`; kein Arbeitsbereich mit echtem Git in einem temporären Verzeichnis außerhalb jedes Git-Arbeitsbereichs (`GIT_DIR`, `GIT_WORK_TREE` und `GIT_CEILING_DIRECTORIES` werden kontrolliert; ohne installiertes Git wird der Test mit Begründung übersprungen) ergibt `null` und genau eine Warnung; die Anwendung startet bei nicht ermittelbarem Stand normal, `/api/health` liefert `{"status": "ok"}` und `/api/studio/revision` liefert alle drei Felder als `null`; für jeden Fehlerweg (Git nicht ausführbar, Exitcode ungleich 0, Zeitüberschreitung, ungültige Ausgabe, Ausnahme der Ermittlung) genau eine Warnung, die mit unverwechselbaren Markierungstexten in stdout, stderr und Ausnahme belegt weder Git-Ausgabe noch Ausnahmetext noch Pfad enthält; einmalige Ermittlung; für jeden Fehlerweg der Datumsermittlung getrennt (Git nicht ausführbar, Zeitüberschreitung, Exitcode ungleich 0, ungültige und leere Ausgabe, Zeitstempel ohne Offset, mehrere Zeilen, unmögliches Datum, anderes Format, Ausnahme der Ermittlung): Hash bleibt, Datum `null`, Anwendung startet, genau eine Warnung ohne Git-Ausgabe, Ausnahmetext, Pfad und Hash; echtes Git in einem temporären Repository mit festem Committer-Datum; Antwortmodell mit seinen Invarianten; falsche Methoden; Aufruf ohne Shell mit fester Argumentliste, bei beiden Unterprozessen) und die Wiederherstellung von Englisch und Deutsch nach echten Stop-/Startzyklen separater Backendprozesse mit derselben temporären INI und SQLite-Datei ab. Ruff prüft Programmierstil und typische Fehler; `ruff format --check` meldet Formatabweichungen, ohne Dateien zu ändern. mypy prüft die Typen im strengen Modus.
+
+Zu den Prüfungen im Backend gehören außerdem drei Punkte:
+
+- Test des Testumgebungsskripts (`tests/test_testenv.py`, läuft mit den übrigen Backend-Tests). Er ruft `testenv start` in einem Nachbau des Repositorys in einem temporären Verzeichnis auf, je Fall frisch angelegt. Der Nachbau enthält genau die versionierten Dateien `LICENSE` und `components/pipwerk-studio/**` in derselben Verzeichnisstruktur; ignorierte Inhalte wie `.testenv/`, `backend/.venv/`, `frontend/node_modules/` und `frontend/dist/` werden nicht übernommen. In den Fällen mit Git ist das Verzeichnis die Wurzel eines frisch angelegten Repositorys mit einem Commit dieses Inhalts; Git wird über `GIT_CEILING_DIRECTORIES` und ohne geerbte `GIT_DIR` und `GIT_WORK_TREE` von umgebenden Arbeitsbereichen getrennt. `uv`, `npm` und `npx` sind im Suchpfad durch Platzhalterprogramme ersetzt, die jeden Aufruf vermerken und mit Exitcode 1 enden. Geprüft wird: Der Start bricht mit Exitcode ungleich 0 und einer Fehlermeldung zur Ursache ab bei einer geänderten versionierten Datei in der Komponente, bei einer geänderten `LICENSE` außerhalb der Komponente, bei einer nicht ignorierten neuen Datei in der Komponente, bei einer nicht ignorierten neuen Datei im Wurzelverzeichnis und ohne Git. In allen fünf Fällen wurde kein Platzhalterprogramm aufgerufen, `.testenv/` und `frontend/dist/` sind nicht vorhanden und es läuft kein vom Skript gestarteter Prozess. Die Gegenprobe ohne Änderungen und mit einer ignorierten neuen Datei (unter `frontend/node_modules/`) lässt den Start zu: Das erste Platzhalterprogramm (`uv sync --frozen`) wird aufgerufen, der Start endet danach wegen des Platzhalters mit Fehler und hinterlässt weder Prozesse noch `.testenv/`. Außerdem weist er ungültige Aufrufe (fehlende, ungültige oder gleiche Ports, ungültiger Host, unbekannter Parameter oder Befehl) vor jeder Wirkung ab und prüft `status` und `stop` ohne Testumgebung. Der Test wird mit Begründung übersprungen, wenn Git nicht installiert ist oder der Arbeitsbereich, in dem er läuft, kein Git-Arbeitsbereich ist (zum Beispiel ein entpacktes Archiv des Repositorys). Das Skript wird mit `sh` aufgerufen. Ein vollständiger Start mit Installation, Bau und laufenden Prozessen ist nicht Gegenstand dieses Tests.
+- Tests der Schreibweise (`tests/test_name.py`). Jede Zeichenfolge aus „pipwerk“, einem Leerzeichen oder Bindestrich und dem Wort „studio“ in beliebiger Groß- und Kleinschreibung muss genau „pipwerk Studio“ oder genau der Bezeichner `pipwerk-studio` in Kleinbuchstaben sein, und jedes Vorkommen des zweiten Wortes des Namens als ganzes Wort mit großem Anfangsbuchstaben muss unmittelbar nach „pipwerk “ stehen. Geprüft werden die vollständige Fehlerausgabe beim Start ohne Startkonfiguration, der Hilfetext der Kommandozeile bei den Breiten 40, 80 und 200 Zeichen (die Ausgabe wird vor der Prüfung zusammengefasst, sodass ein Zeilenumbruch zwischen den beiden Wörtern des Namens nicht als Fehler zählt; die farbige Ausgabe von argparse ist abgeschaltet), der Detailtext der HTTP-Antwort bei ungültiger gespeicherter Sprache, die Protokolleinträge bei nicht ermittelbarem Stand oder Datum und beim Lesen einer ungültigen gespeicherten Sprache und die Schnittstellenbeschreibung (`/openapi.json`: Titel genau „pipwerk Studio“, `summary` und `description` unter `paths`, `description` unter `components.schemas`). Zusätzlich prüft der Test an den unformatierten Texten des Parsers, dass Beschreibung und Hilfetext jedes Parameters den Bezeichner `pipwerk-studio` nicht enthalten und keine eigenen Zeilenumbrüche haben, und dass der Parser den Standardformatierer von argparse verwendet.
+- Suche im Repository. Eine Suche mit `git grep` ohne Beachtung der Groß- und Kleinschreibung nach dem Namen mit Leerzeichen oder Bindestrich zwischen den beiden Wörtern über alle versionierten Dateien, außer unter `docs/design/` und `development/` und außer den beiden Dateien, die unzulässige Schreibweisen als Prüfwert enthalten dürfen (`components/pipwerk-studio/backend/tests/test_name.py` und `components/pipwerk-studio/scripts/check`). Zulässig sind nur Treffer, die genau „pipwerk Studio“ oder genau den Bezeichner `pipwerk-studio` in Kleinbuchstaben lauten; jeder andere Treffer lässt die Prüfung scheitern. Die Kurzform des Namens ohne „pipwerk“ ist mit einer Suche nicht sicher von Bezeichnern zu trennen; sie prüfen die Tests der Schreibweise für die Ausgaben und der Tester Funktion für die Dokumentation.
+
+```sh
+git grep -n -i -E 'pipwerk[ -]studio' -- . ':!docs/design' ':!development' ':!components/pipwerk-studio/backend/tests/test_name.py' ':!components/pipwerk-studio/scripts/check'
+```
 
 Die Prüfung der Python-Abhängigkeiten auf bekannte Sicherheitslücken erfolgt mit `pip-audit`, das über `uvx` ohne Installation in die Projektumgebung ausgeführt wird. Die Anforderungsliste wird aus der Lockdatei erzeugt:
 
@@ -288,7 +345,7 @@ npm run e2e
 
 Playwright startet ein isoliertes Backend auf Port 18000 und Vite auf Port 15173. Andere Ports können über `PIPWERK_STUDIO_E2E_BACKEND_PORT` und `PIPWERK_STUDIO_E2E_FRONTEND_PORT` gewählt werden. `e2e/start-backend.mjs` erzeugt je Lauf ein temporäres Verzeichnis mit INI und SQLite-Datei, startet das Backend ausschließlich über die dokumentierte Option `-c` und entfernt das Verzeichnis, wenn Playwright das Backend beendet (`gracefulShutdown` mit SIGTERM). Es gibt keine zusätzliche Datenbank-Umgebungsvariable.
 
-Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass der Sprachwechsel die sichtbaren Texte umschaltet, dass die Fußzeile rechts neben dem Backend-Status den Stand zeigt (7 Hexadezimalzeichen, gleich den ersten 7 Zeichen von `git rev-parse HEAD` des Arbeitsbereichs, in dem der Test läuft; ohne Git-Arbeitsbereich „unbekannt“) und beim Sprachwechsel die Bezeichnung umschaltet, dass `title` und zugängliche Beschreibung der Standanzeige genau den vollständigen Commit aus `git rev-parse HEAD` und das Datum aus `git log -1 --format=%cI` in der Zeitzone des Testbrowsers enthalten (fest eingestellte `timezoneId`; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet) und beim Sprachwechsel umschalten, dass es ohne Git-Arbeitsbereich keinen Tooltip gibt (dieser Test wird übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist), und dass die gewählte Sprache nach einem Neuladen der Seite erhalten bleibt. Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen (Abschnitt 6.1).
+Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass Titel der Seite und Überschrift der Kopfzeile „pipwerk Studio“ lauten, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass der Sprachwechsel die sichtbaren Texte umschaltet, dass die Fußzeile rechts neben dem Backend-Status den Stand zeigt (7 Hexadezimalzeichen, gleich den ersten 7 Zeichen von `git rev-parse HEAD` des Arbeitsbereichs, in dem der Test läuft; ohne Git-Arbeitsbereich „unbekannt“) und beim Sprachwechsel die Bezeichnung umschaltet, dass `title` und zugängliche Beschreibung der Standanzeige genau den vollständigen Commit aus `git rev-parse HEAD` und das Datum aus `git log -1 --format=%cI` in der Zeitzone des Testbrowsers enthalten (fest eingestellte `timezoneId`; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet) und beim Sprachwechsel umschalten, dass es ohne Git-Arbeitsbereich keinen Tooltip gibt (dieser Test wird übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist), und dass die gewählte Sprache nach einem Neuladen der Seite erhalten bleibt. Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen (Abschnitt 6.1).
 
 ## 7. Abhängigkeiten
 
@@ -332,7 +389,7 @@ Für das Backend-Testwerkzeug wird `httpx2` statt `httpx` verwendet, weil Starle
 
 ## 8. Sicherheit
 
-Backend und Entwicklungsserver sind im Entwicklungsbetrieb nur an die Adresse `127.0.0.1` gebunden. Das Backend enthält eine schreibende Funktion: das Speichern der Oberflächensprache. Es nimmt dafür nur die Werte `de` und `en` an; andere Werte, Typen und zusätzliche Felder werden abgelehnt. Es startet beim Erzeugen der Anwendung bis zu zwei Unterprozesse, `git rev-parse HEAD` und, nur bei gültigem Hash, `git log -1 --no-show-signature --format=%cI <hash>` (Abschnitt 2.6), jeweils mit fester Argumentliste, ohne Shell, ohne Eingaben von außen (der Hash stammt aus dem ersten Aufruf und wird zuvor auf 40 Hexadezimalzeichen geprüft) und mit Zeitbegrenzung. Es enthält keine ausführenden oder handelsbezogenen Funktionen und verwendet keine Zugangsdaten. Eine Authentifizierung ist in diesem Stand nicht eingerichtet; sie ist nicht Bestandteil von AP1 und von WO-2026-10-04-001.
+Backend und Entwicklungsserver sind im Entwicklungsbetrieb nur an die Adresse `127.0.0.1` gebunden. In der Testumgebung (Abschnitt 4a) bindet sich das Backend ebenfalls nur an `127.0.0.1`; die Oberfläche (`vite preview`) bindet sich an `--host`, ohne Angabe an `127.0.0.1`. Das Testumgebungsskript startet Unterprozesse nur mit fester Argumentliste und ohne Shell-Auswertung von Eingaben; die Parameter werden zuvor geprüft (Ports als Zahlen, Host nur aus Buchstaben, Ziffern und `.:_-`). Die Schnittstellenbeschreibung des Backends ist nur auf `127.0.0.1` erreichbar. Das gilt nicht für die Endpunkte unter `/api`: Gibt `--host` eine Adresse außerhalb der Loopback-Adresse an, leitet `vite preview` alle Anfragen unter `/api` an das Backend weiter, und alle Endpunkte des Backends sind ohne Authentisierung über den Port der Oberfläche aus dem Netz erreichbar, auch das Schreiben der Oberflächensprache. Die Bindung des Backends an `127.0.0.1` schützt davor nicht. Das Risiko ist nicht durch eine Maßnahme im Skript gemindert; die Voreinstellung `127.0.0.1` ist die sichere Wahl, und eine andere Adresse gehört nur in ein vertrauenswürdiges Netz (Abschnitt 4a). Das Backend enthält eine schreibende Funktion: das Speichern der Oberflächensprache. Es nimmt dafür nur die Werte `de` und `en` an; andere Werte, Typen und zusätzliche Felder werden abgelehnt. Es startet beim Erzeugen der Anwendung bis zu zwei Unterprozesse, `git rev-parse HEAD` und, nur bei gültigem Hash, `git log -1 --no-show-signature --format=%cI <hash>` (Abschnitt 2.6), jeweils mit fester Argumentliste, ohne Shell, ohne Eingaben von außen (der Hash stammt aus dem ersten Aufruf und wird zuvor auf 40 Hexadezimalzeichen geprüft) und mit Zeitbegrenzung. Es enthält keine ausführenden oder handelsbezogenen Funktionen und verwendet keine Zugangsdaten. Eine Authentifizierung ist in diesem Stand nicht eingerichtet; sie ist nicht Bestandteil von AP1 und von WO-2026-10-04-001.
 
 Die Datenbank-URL der INI-Startkonfiguration kann Zugangsdaten enthalten. Die INI gehört deshalb in einen administrativ geschützten Ort und nicht in das Repository. Die Tests verwenden ausschließlich temporäre lokale SQLite-Dateien.
 
@@ -343,7 +400,7 @@ Die Oberfläche übernimmt Antworten des Backends nur, wenn sie genau dem erwart
 Die folgenden Punkte sind bewusst noch nicht umgesetzt oder noch nicht festgelegt:
 
 - Das Backend liefert die Oberflächendateien nicht selbst aus. Im Entwicklungsbetrieb laufen deshalb zwei Prozesse.
-- Installation, Paketierung und Start außerhalb der Entwicklungsumgebung sind nicht festgelegt.
+- Außerhalb des Entwicklungsbetriebs startet pipwerk Studio mit dem Testumgebungsskript (Abschnitt 4a). Installation und Paketierung sind nicht festgelegt.
 - Die öffentliche Web-API und ihre Versionierung sind nicht festgelegt.
 - Eine Erkennung der Browsersprache gibt es nicht. Die Oberflächensprache gilt komponentenweit und nicht benutzerbezogen; Benutzerkonten sind nicht Bestandteil von WO-2026-10-04-001.
 - Alembic wird nicht eingesetzt, da das Schema aus einer einzigen Tabelle mit einer Zeile besteht. Vor einer Schemaänderung ist eine versionierte Migration einzuführen.
@@ -363,8 +420,10 @@ Die folgenden Punkte sind bewusst noch nicht umgesetzt oder noch nicht festgeleg
 | End-to-End-Test | Ein Test, der die Anwendung in einem echten Browser bedient und dabei alle beteiligten Teile gemeinsam prüft. |
 | Entwicklungsserver | Ein Programm, das die Oberfläche während der Entwicklung im Browser bereitstellt und Änderungen sofort sichtbar macht. |
 | Lockdatei | Datei, in der die genauen Versionen aller installierten Pakete festgehalten sind, damit jede Installation dieselben Versionen erhält. |
-| Oberfläche | Der im Browser angezeigte und bedienbare Teil von Pipwerk Studio. |
+| Oberfläche | Der im Browser angezeigte und bedienbare Teil von pipwerk Studio. |
 | SQLAlchemy-URL | Zeichenfolge, die Art und Adresse eines Datenbankspeichers beschreibt. |
 | Startkonfiguration | Administrativ verwaltete INI-Datei mit den Angaben, die zum Start und zum Auffinden des Speichers nötig sind. |
+| Testumgebung | pipwerk Studio, gebaut und gestartet aus genau einem Commit eines Arbeitsverzeichnisses ohne nicht committete Änderungen (Abschnitt 4a). |
+| Testumgebungsskript | Das Skript `components/pipwerk-studio/scripts/testenv`, das die Testumgebung startet, abfragt und beendet. |
 | Übersetzungsschlüssel | Ein sprachneutraler Name für einen sichtbaren Text. Zu jedem Schlüssel gibt es einen Text je Sprache. |
 | Virtuelle Umgebung | Ein eigenes Verzeichnis mit Python-Paketen für ein Projekt, getrennt von den Paketen des Betriebssystems. |

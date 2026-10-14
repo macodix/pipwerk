@@ -2,6 +2,6 @@
 
 User documentation is created together with the corresponding usable components.
 
-## Pipwerk Studio
+## pipwerk Studio
 
-- [Pipwerk Studio – Anwenderdokumentation](pipwerk-studio.md)
+- [pipwerk Studio – Anwenderdokumentation](pipwerk-studio.md)

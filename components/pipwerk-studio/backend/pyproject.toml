@@ -1,7 +1,7 @@
 [project]
 name = "pipwerk-studio"
 version = "0.1.0.dev0"
-description = "Pipwerk Studio backend: HTTP API of the graphical strategy designer"
+description = "pipwerk Studio backend: HTTP API of the graphical strategy designer"
 license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [

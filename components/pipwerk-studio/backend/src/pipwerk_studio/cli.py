@@ -1,7 +1,7 @@
-"""Command line entry point of the Pipwerk Studio backend.
+"""Command line entry point of the pipwerk Studio backend.
 
 Supports the documented ``-c <PATH>`` startup configuration parameter
-(req-system-017, req-system-018) so Pipwerk Studio can be started as an
+(req-system-017, req-system-018) so pipwerk Studio can be started as an
 standalone program with an explicit startup configuration. When
 ``-c`` is omitted, the documented automatic search locations are used.
 """
@@ -21,7 +21,7 @@ from pipwerk_studio.config import StartupConfigError, load_database_url
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pipwerk-studio",
-        description="Start the Pipwerk Studio backend.",
+        description="Start the pipwerk Studio backend.",
     )
     parser.add_argument(
         "-c",
@@ -31,8 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Path to the INI startup configuration. If omitted, the documented "
             "automatic search locations ($HOME/pipwerk/etc, $HOME/.config/pipwerk, "
-            "/etc/pipwerk, or their Windows equivalents) are searched. Pipwerk "
-            "Studio does not start without a valid startup configuration."
+            "/etc/pipwerk, or their Windows equivalents) are searched. "
+            "pipwerk Studio does not start without a valid startup configuration."
         ),
     )
     parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1).")
