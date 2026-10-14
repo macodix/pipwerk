@@ -347,6 +347,33 @@ Playwright startet ein isoliertes Backend auf Port 18000 und Vite auf Port 15173
 
 Der Test läuft in Chromium, Firefox und WebKit. Er prüft, dass die Seite ohne Fehlermeldungen im Browser erscheint, dass Titel der Seite und Überschrift der Kopfzeile „pipwerk Studio“ lauten, dass die leere Arbeitsfläche sichtbar ist, dass die Oberfläche eine erfolgreiche Antwort des echten Backends erhält und anzeigt, dass der Sprachwechsel die sichtbaren Texte umschaltet, dass die Fußzeile rechts neben dem Backend-Status den Stand zeigt (7 Hexadezimalzeichen, gleich den ersten 7 Zeichen von `git rev-parse HEAD` des Arbeitsbereichs, in dem der Test läuft; ohne Git-Arbeitsbereich „unbekannt“) und beim Sprachwechsel die Bezeichnung umschaltet, dass `title` und zugängliche Beschreibung der Standanzeige genau den vollständigen Commit aus `git rev-parse HEAD` und das Datum aus `git log -1 --format=%cI` in der Zeitzone des Testbrowsers enthalten (fest eingestellte `timezoneId`; der Erwartungswert wird im Test unabhängig vom Produktionscode berechnet) und beim Sprachwechsel umschalten, dass es ohne Git-Arbeitsbereich keinen Tooltip gibt (dieser Test wird übersprungen, wenn der Arbeitsbereich ein Git-Arbeitsbereich ist), und dass die gewählte Sprache nach einem Neuladen der Seite erhalten bleibt. Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-Komponententest durch echte Prozessneustarts nachgewiesen (Abschnitt 6.1).
 
+### 6.4 Prüfskript
+
+Das Prüfskript `components/pipwerk-studio/scripts/check` (POSIX-Shell) führt die Prüfungen aus den Abschnitten 6.1 bis 6.3 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
+
+```sh
+<Arbeitsverzeichnis>/components/pipwerk-studio/scripts/check --backend-port <port> --frontend-port <port> [--with-audit]
+```
+
+| Parameter | Bedeutung |
+| --- | --- |
+| `--backend-port <port>` | Pflicht. Port des Backends im Browsertest (`PIPWERK_STUDIO_E2E_BACKEND_PORT`, Abschnitt 6.3), ganze Zahl von 1 bis 65535 |
+| `--frontend-port <port>` | Pflicht. Port der Oberfläche im Browsertest (`PIPWERK_STUDIO_E2E_FRONTEND_PORT`, Abschnitt 6.3), ganze Zahl von 1 bis 65535, verschieden vom Port des Backends |
+| `--with-audit` | Optional. Führt zusätzlich `pip-audit` (Abschnitt 6.1) und `npm audit` (Abschnitt 6.2) aus. Ohne diesen Parameter entfallen beide Prüfungen auf bekannte Sicherheitslücken, weil `npm audit` wegen des bekannten Befunds aus Abschnitt 7 mit einem Fehler endet und `pip-audit` einen Zugriff auf das Internet braucht. |
+
+Reihenfolge der Prüfungen:
+
+1. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
+2. Suche im Repository nach der Schreibweise des Namens (Abschnitt 6.1, dritter Punkt). Das Skript wertet jeden Treffer aus; die Prüfung scheitert, sobald ein Treffer nicht genau „pipwerk Studio“ oder der Bezeichner `pipwerk-studio` ist, und nennt Datei, Zeile und Treffer.
+3. mit `--with-audit`: `pip-audit`
+4. Oberfläche im Verzeichnis `frontend`: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`
+5. mit `--with-audit`: `npm audit`
+6. Browsertest `npm run e2e` mit den beiden Ports
+
+Eine gescheiterte Prüfung bricht die übrigen nicht ab. Am Ende nennt das Skript die bestandenen und die gescheiterten Prüfungen. Exitcodes: 0, wenn alle Prüfungen bestehen; 1, wenn mindestens eine scheitert; 2 bei ungültigem Aufruf, fehlendem Programm oder wenn das Verzeichnis des Skripts nicht in einem Arbeitsverzeichnis von Git liegt.
+
+Voraussetzungen: Git, uv, Node.js mit npm und `npx` in den Versionen aus Abschnitt 3, die Testbrowser von Playwright (Abschnitt 6.3), Zugriff auf die Paketquellen für `uv sync --frozen` und `npm ci` und zwei freie Ports. `npm ci` ersetzt `frontend/node_modules`; das Skript darf deshalb nicht gleichzeitig mit einer Testumgebung oder einem Entwicklungsserver im selben Arbeitsverzeichnis laufen.
+
 ## 7. Abhängigkeiten
 
 Alle direkten und indirekten Abhängigkeiten sind in `backend/uv.lock` und `frontend/package-lock.json` festgeschrieben. Die direkten npm-Abhängigkeiten sind in `package.json` zusätzlich mit exakter Version angegeben.
