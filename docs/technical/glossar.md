@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-12
+- stand: 2026-10-14
 
 ## Regeln
 
@@ -51,7 +51,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Elementtypen. pipwerk Studio, Pipwerk Backtest und Pipwerk Trader binden es ein. |
+| Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Elementtypen. pipwerk Studio, pipwerk backtest und pipwerk trader binden es ein. |
 | Typbeschreibung | Die maschinenlesbare Beschreibung eines Elementtyps: Kennung, Beschriftungen in Deutsch und Englisch, Parameter mit Datentyp und erlaubten Bindungsarten, Eingaben, Eigenschaften und Ergebnisse. Die Oberfläche baut daraus Elementbibliothek, Elemente und Eigenschaftenansicht auf. |
 | Elementregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Elementtypen angemeldet sind und von der sie abgefragt werden. |
 | Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API und Nachrichten verwendet. |
@@ -92,6 +92,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | 2026-10-14 | Anwendung einer Strategie, Auswertung und Verwaltung einer Order ergänzt. |
 | 2026-10-14 | Order aufgeben: Ausgänge gestellt und abgelehnt. |
 | 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |
+| 2026-10-14 | Schreibweise „pipwerk Studio“ nach req-ui-010 im Eintrag „Gemeinsame Python-Bibliothek“. |
 | 2026-10-12 | Konsistenzprüfung statt Prüfung, Pflichtparameter und Standardwert ergänzt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
