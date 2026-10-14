@@ -4,7 +4,8 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
-- zuletzt aktualisiert: `2026-10-12`
+- zuletzt aktualisiert: `2026-10-14`
+- abgestimmt: [Präsentation Fachmodell: Orders und Regelwerke](praesentation-fachmodell.html), bestätigt vom Auftraggeber im Chat am 14. Oktober 2026
 
 ## 1. Zweck und Abgrenzung
 
@@ -132,15 +133,15 @@ Ein zusätzlicher Ordertyp wird als zusätzliches spezialisiertes Orderobjekt er
 
 ### req-fach-025 -- Ordertypen der ersten Entwicklungsphase
 
-Die erste Entwicklungsphase beschränkt die unterstützten Ordertypen auf die Standard-Ordertypen von MetaTrader 5 (MT5).
+Die erste Entwicklungsphase beschränkt die unterstützten Ordertypen auf Ordertypen, deren Bedeutung den Standard-Ordertypen von MetaTrader 5 (MT5) entspricht.
 
-Ob ein konkreter MT5-Ordertyp für ein bestimmtes Handelskonto beziehungsweise Instrument tatsächlich verfügbar ist, muss bei seiner Verwendung berücksichtigt werden.
+Ob ein Ordertyp für ein bestimmtes Handelskonto beziehungsweise Instrument tatsächlich verfügbar ist, wird nach req-fach-030 geprüft.
 
-Die Unterstützung weiterer Broker- oder Plattform-Ordertypen ist nicht Bestandteil dieser ersten Entwicklungsphase.
+Anbindungen weiterer Handelssoftware sind nicht Bestandteil dieser ersten Entwicklungsphase.
 
 ### req-fach-028 -- MarketOrder
 
-`MarketOrder` ist ein spezialisierter Ordertyp für einen Auftrag zur Ausführung zum aktuell verfügbaren Marktpreis.
+`MarketOrder` (Marktorder) ist ein spezialisierter Ordertyp für einen Auftrag zur Ausführung zum aktuell verfügbaren Marktpreis.
 
 Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 
@@ -152,23 +153,42 @@ Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 
 Ein vorgegebener Orderpreis ist keine Eigenschaft der `MarketOrder`. Der tatsächliche Ausführungspreis entsteht bei der Ausführung.
 
-### req-fach-029 -- Pending-Ordertypen von MetaTrader 5 (Entwurf)
+### req-fach-029 -- Wartende Ordertypen
 
-Als Spezialisierungen von `Order` werden die Pending-Ordertypen von MetaTrader 5 geführt. Die Handelsrichtung ist Bestandteil des Typs und keine eigene Eigenschaft.
+Als Spezialisierungen von `Order` werden drei wartende Ordertypen geführt. Ihre Bedeutung entspricht den Pending-Ordertypen von MetaTrader 5. Wie bei `MarketOrder` ist die Handelsrichtung eine Eigenschaft und nicht Bestandteil des Typs.
 
 | Ordertyp | Bedeutung | zusätzliche Eigenschaften |
 |---|---|---|
-| `BuyStopOrder`, `SellStopOrder` | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Ablaufzeit` -- KANN |
-| `BuyLimitOrder`, `SellLimitOrder` | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
-| `BuyStopLimitOrder`, `SellStopLimitOrder` | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
+| `StopOrder` (Stop-Order) | Ausführung, sobald der Kurs den Preis in Handelsrichtung erreicht: Kauf über, Verkauf unter dem aktuellen Kurs | `Instrument` -- MUSS, `Richtung` -- MUSS (`buy` oder `sell`), `Volumen` -- MUSS, `Preis` -- MUSS, `Stop-Loss` -- KANN, `Take-Profit` -- KANN, `Gültigkeit` -- MUSS, Standardwert „bis auf Widerruf“ |
+| `LimitOrder` (Limit-Order) | Ausführung, sobald der Kurs den Preis gegen die Handelsrichtung erreicht: Kauf unter, Verkauf über dem aktuellen Kurs | wie Stop-Order |
+| `StopLimitOrder` (Stop-Limit-Order) | Beim Erreichen des Auslösepreises wird eine Limit-Order zum Limitpreis gestellt | wie Stop-Order, zusätzlich `Limitpreis` -- MUSS |
 
-Offen: Die Ordertypen von MetaTrader 5 sind mit allen Eigenschaften, Ausführungs- und Ablaufvarianten noch nicht vollständig erfasst. Die Tabelle gilt bis zur Abstimmung dieser Erfassung als Entwurf.
+Die Eigenschaft `Gültigkeit` legt fest, wann eine wartende Order ohne Ausführung endet:
 
-### req-fach-030 -- Herkunft und Verfügbarkeit von Ordertypen
+| Wert | Bedeutung | Zusatzangabe |
+|---|---|---|
+| bis auf Widerruf | gilt, bis sie ausgeführt oder gelöscht wird | -- |
+| bis Tagesende | endet mit dem aktuellen Handelstag | -- |
+| bis Zeitpunkt | endet zu einer festen Zeit | `Ablaufzeit` -- MUSS |
+| bis Ende eines Tages | endet am Ende eines bestimmten Tages | `Datum` -- MUSS |
 
-Es gibt keine Ordertypen, deren Verfügbarkeit bei jeder Handelssoftware und jedem Broker gewährleistet ist. Jeder Ordertyp gehört zu der Handelssoftware, deren Anbindung ihn bereitstellt, und trägt deren Kennzeichnung. Eine Strategie darf jeden bereitgestellten Ordertyp verwenden.
+Zusammen mit `MarketOrder` (Marktorder) gibt es damit vier Ordertypen zum Eröffnen. Die Kompatibilitätsliste der Anbindung an MetaTrader 5 ordnet jede Kombination aus Ordertyp und Richtung dem dortigen Typ zu, zum Beispiel Stop-Order mit Richtung `buy` dem Typ Buy Stop.
 
-Ob Handelssoftware, Broker und Instrument eines Kontos einen Ordertyp anbieten, wird bei der Zuordnung einer Strategie zu diesem Konto geprüft. Ist das nicht der Fall, wird die Zuordnung mit Angabe des Grundes abgelehnt. Ein Ordertyp einer Handelssoftware wird nicht in den einer anderen übersetzt.
+Die Ausführungsbedingung, also das Verhalten, wenn zum gewünschten Preis nicht das ganze Volumen verfügbar ist, ist bewusst nicht Teil der Strategie. Die Anbindung an die Handelssoftware wählt einen Wert, den Konto und Instrument zulassen. Teilausführungen sind nach req-fach-016 berücksichtigt. Braucht eine Strategie später eine bestimmte Ausführungsbedingung, wird sie ergänzt.
+
+Ebenso ist die zulässige Kursabweichung einer Marktorder nicht Teil der Strategie. Sie wirkt bei MetaTrader 5 nur bei bestimmten Ausführungsarten des Kontos. Die Anbindung setzt sie, wo das Konto sie verlangt.
+
+Das Schließen einer Position gegen eine Gegenposition (bei MetaTrader 5 möglich bei Konten, die gegenläufige Positionen im selben Instrument zulassen) ist in der ersten Fassung nicht vorgesehen. Es wird bei Bedarf ergänzt.
+
+Offen: ob das Handelssystem Ausführungsbedingung oder Kursabweichung später je Konto oder Strategieanwendung einstellbar macht.
+
+### req-fach-030 -- Ordertypen und Kompatibilitätsliste der Anbindungen
+
+Ordertypen sind Objekte von Pipwerk mit eigenen Namen. Eine Strategie verwendet diese Ordertypen und ist damit unabhängig von Konto und Handelssoftware. Die Bedeutung jedes Ordertyps ist im Fachmodell so genau beschrieben, dass sich für jede Handelssoftware prüfen lässt, ob sie ihn mit genau dieser Bedeutung ausführen kann. Vorbild für Umfang und Bedeutung sind die Ordertypen von MetaTrader 5.
+
+Es gibt keine Ordertypen, deren Verfügbarkeit bei jeder Handelssoftware und jedem Broker gewährleistet ist. Jede Anbindung an eine Handelssoftware führt eine Kompatibilitätsliste: Sie gibt an, welche Ordertypen und welche Aktionen von Pipwerk (zum Beispiel Order ändern) die Handelssoftware mit genau der beschriebenen Bedeutung ausführt und wie sie dort heißen. Weicht das Verhalten der Handelssoftware ab, gilt der Ordertyp beziehungsweise die Aktion dort als nicht verfügbar. Annähernde Übersetzungen gibt es nicht.
+
+Bei der Zuordnung einer Strategie zu einem Konto wird geprüft, ob Handelssoftware, Broker und Instrument des Kontos alle in der Strategie verwendeten Ordertypen und Aktionen anbieten. Grundlage ist die Kompatibilitätsliste der Anbindung. Ist das nicht der Fall, wird die Zuordnung mit Angabe des Grundes abgelehnt.
 
 ### req-fach-032 -- CloseOrder
 
@@ -267,9 +287,14 @@ Soll ein Regelwerk ein Gesamtergebnis liefern, muss dessen Bestimmung ausdrückl
 
 Die Reihenfolge der enthaltenen Regeln ist Bestandteil des Regelwerks. Die Regeln werden grundsätzlich in dieser Reihenfolge ausgewertet. Der Nutzer muss die Reihenfolge ändern können.
 
-### req-fach-045 -- Behandlung fehlerhafter Reihenfolgen offen
+### req-fach-045 -- Fehlerhafte Reihenfolge im Regelwerk
 
-Wie ungültige Reihenfolgen, nicht erfüllte Abhängigkeiten oder vergleichbare Konfigurationsfehler erkannt und behandelt werden, ist derzeit nicht festgelegt. Dies kann später im Zusammenhang mit der Validierung, dem Testen oder Debuggen von Strategien konkretisiert werden.
+Ein Regelwerk ist fehlerhaft, wenn es in seiner festgelegten Reihenfolge nicht auswertbar ist. Das ist insbesondere der Fall, wenn
+
+- eine Regel das Ergebnis einer Regel verwendet, die im selben Regelwerk erst später steht,
+- Regeln sich gegenseitig verwenden, direkt oder über Zwischenstufen (Zirkelbezug).
+
+Die Reihenfolge wird nicht selbsttätig geändert. Der Nutzer legt sie fest. Erkennung und Anzeige gehören zur Konsistenzprüfung des Strategiedesigners.
 
 
 ### req-fach-046 -- Objekt Strategie
@@ -315,6 +340,23 @@ Offen: ob das Handelssystem dafür einen eigenen OrderBuilder verwendet.
 
 Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
 
+### req-fach-049a -- Elemente für bestehende Orders und Positionen
+
+Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits bestehende Orders oder Positionen wirken:
+
+| Element | wirkt auf | Inhalt |
+|---|---|---|
+| `Order ändern` | wartende Order | Preis, Stop-Loss, Take-Profit, Gültigkeit |
+| `Order löschen` | wartende Order | -- |
+| `Position ändern` | offene Position | Stop-Loss, Take-Profit |
+| `Position schließen` | offene Position | ganz oder teilweise; Volumen KANN, ohne Volumen wird die Position ganz geschlossen |
+
+`Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
+
+`Order aufgeben` liefert als Ergebnis die gestellte Order. `Order ändern` und `Order löschen` verwenden dieses Ergebnis. Auf der Zeichenfläche ist das eine Verbindung zum Element `Order aufgeben`. `Position ändern` und `Position schließen` verwenden die Position, die aus dieser Order entstanden ist. Eine Strategie wirkt damit nur auf ihre eigenen Orders und Positionen.
+
+Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen der Strategie mehrere Orders gestellt hat.
+
 
 ## 3. Änderungsnachweis
 
@@ -324,3 +366,13 @@ Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
 | 2026-09-24 | Aus dem bisherigen gemeinsamen Anforderungsdokument ausgegliedert. Bestehende fachliche Festlegungen und IDs wurden übernommen. |
 | 2026-09-25 | `Strategie` als fachliches Objekt sowie Ablauf, Berechnung und Beauftragung des `OrderBuilder` konkretisiert; separates `Signal`-Objekt aus dem aktuellen Modell entfernt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
+| 2026-10-13 | req-fach-045: fehlerhafte Reihenfolge im Regelwerk festgelegt (Vorwärtsbezug, Zirkelbezug, keine selbsttätige Umsortierung). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-030 geändert: eigene Ordertypen von Pipwerk mit Bedeutung nach MetaTrader 5, Kompatibilitätsliste je Anbindung, keine annähernde Übersetzung. req-fach-025 und req-fach-029 angeglichen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-049a: Elemente Order ändern, Order löschen, Position ändern, Position schließen. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Handelsrichtung als Eigenschaft bei allen Ordertypen, drei wartende Ordertypen Stop-Order, Limit-Order, Stop-Limit-Order. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Gültigkeit wartender Orders mit vier Werten statt Ablaufzeit. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Ausführungsbedingung bewusst nicht Teil der Strategie, Wahl durch die Anbindung. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: zulässige Kursabweichung nicht Teil der Strategie, möglicherweise später im Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-029: Schließen gegen Gegenposition nicht vorgesehen. Erfassung der Ordertypen nach MetaTrader 5 abgeschlossen, Vermerk Entwurf entfernt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-13 | req-fach-049a: Bezug auf die eigene Order über das Ergebnis von Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-13. |
+| 2026-10-14 | req-fach-049a: offene Frage ergänzt, welche Order bei mehreren gestellten Orders gemeint ist. |

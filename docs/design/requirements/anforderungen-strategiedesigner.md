@@ -295,6 +295,13 @@ pipwerk Studio, der Strategiedesigner (Name laut [Projektziel](../projektziel.md
 
 Der Dialog wird über die Schaltfläche „Über pipwerk Studio“ (englisch „About pipwerk Studio“) in der Kopfzeile rechts neben der Sprachauswahl geöffnet. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt. Der Dialog wird nur mit der Schaltfläche „Schließen“ oder der Escape-Taste geschlossen. Alle übrigen Texte des Dialogs folgen der Oberflächensprache (req-ui-007). Die Standanzeige in der Fußzeile bleibt bestehen. Überall, wo pipwerk Studio seinen Namen anzeigt oder ausgibt, lautet er „pipwerk Studio“, ebenso in der Dokumentation. Ein Zeilenumbruch zwischen „pipwerk“ und „Studio“ ist zulässig.
 
+### req-ui-011 -- Anzeige von Befunden der Konsistenzprüfung
+
+Befunde der Konsistenzprüfung erscheinen nicht als Meldung, die weggeklickt werden muss. Soweit möglich wird das betroffene Element auf der Zeichenfläche rot umrandet oder rot hinterlegt. Wählt der Nutzer das Element aus, steht der Befundtext in der Eigenschaftenansicht (req-ui-005) neben den Eigenschaften des Elements.
+
+Meldungen, die bestätigt werden müssen, sind kritischen Fehlern vorbehalten, etwa wenn das Speichern selbst fehlschlägt.
+
+Offen: Anzeige von Befunden, die keinem einzelnen Element zugeordnet sind, und Darstellung von Hinweisen.
 
 ## 7. Arbeitsabläufe
 
@@ -337,7 +344,10 @@ Die Konsistenzprüfung läuft beim Speichern und auf Anforderung. Sie findet min
 - Element ohne Verbindung (Fehler)
 - Pflichtparameter ohne Wert, der auch nicht erst bei der Anwendung übergeben wird (Fehler)
 - Bedingung, die eine Eigenschaft verwendet, die das Objekt nicht hat (Fehler)
+- Regelwerk, dessen Reihenfolge nicht auswertbar ist: Vorwärtsbezug oder Zirkelbezug nach req-fach-045 (Fehler)
 - Kein Element „Order aufgeben“ erreichbar (Hinweis)
+
+Speichern ist immer möglich, auch bei Fehlern. Eine Strategie mit Fehlern kann nicht ausgeführt werden. Die Anzeige der Befunde regelt req-ui-011.
 
 ## 8. Dokumententrennung
 
@@ -448,3 +458,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-13 | Schreibweise des Namens in req-ui-010: „pipwerk Studio“ (Auftraggeber im Chat). |
 | 2026-10-13 | req-ui-010: Name überall einheitlich „pipwerk Studio“, folgt aus der Festlegung des Namens durch den Auftraggeber. |
 | 2026-10-14 | req-ui-010: Zeilenumbruch zwischen „pipwerk“ und „Studio“ zulässig (Auftraggeber im Chat). |
+| 2026-10-13 | Konsistenzprüfung um fehlerhafte Reihenfolge im Regelwerk ergänzt, Speichern immer möglich. Anzeige der Befunde am Element (req-ui-011). Abgestimmt mit dem Auftraggeber im Chat. |

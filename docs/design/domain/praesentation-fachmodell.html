@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fachmodell Orders und Regelwerke</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Gestaltung wie die übrigen Präsentationen der Dokumente des Auftraggebers. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.tag{display:inline-block;font-size:20px;font-weight:600;padding:4px 12px;border-radius:8px;margin-right:10px}
+.err{background:#f6dede;color:#8a2d2d}
+.hint{background:var(--amberbg);color:var(--amber)}
+.red{border:3px solid #b83a3a;background:#f6dede}
+.nw td:nth-child(-n+2){white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Dokumente des Auftraggebers</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Fachmodell: Orders und Regelwerke</h1>
+<p style="font-size:38px;width:1500px">Was der Strategiedesigner über Regelwerke, Ordertypen und Orders wissen muss. Stand des Dokuments <code>docs/design/domain/fachmodell.md</code> am 14. Oktober 2026.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">14. Oktober 2026 · Projektleiter an Martin</p>
+<p class="num">1 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Regelwerke und Konsistenzprüfung</h2>
+<div class="row">
+<div class="card col"><h3>Reihenfolge im Regelwerk</h3>
+<p>Ein Regelwerk ist eine benannte Sammlung von Regeln. Die Regeln werden in der Reihenfolge ausgewertet, die der Nutzer festlegt.</p>
+<p>Die Konsistenzprüfung der Strategie meldet einen <span class="tag err">Fehler</span>, wenn diese Reihenfolge nicht auswertbar ist:</p><ul>
+<li>eine Regel braucht das Ergebnis einer Regel, die erst nach ihr steht</li>
+<li>zwei oder mehr Regeln brauchen gegenseitig ihre Ergebnisse</li></ul>
+<p>Der Designer ändert die Reihenfolge nicht selbst. Das macht der Nutzer.</p></div>
+<div class="card col"><h3>Anzeige der Befunde</h3>
+<p>Die Konsistenzprüfung läuft beim Speichern einer Strategie und auf Anforderung des Nutzers. Ihre Befunde sind Fehler oder Hinweise. Gespeichert wird immer, auch bei Fehlern. Ausgeführt werden kann eine Strategie nur ohne Fehler.</p>
+<div class="chain"><div class="node red">Element mit Fehler<small>rot umrandet oder hinterlegt</small></div><span class="arrow">→</span><div class="node">Eigenschaftenansicht<small>zeigt den Befundtext, wenn das Element ausgewählt ist</small></div></div>
+<p>Eine Meldung, die bestätigt werden muss, erscheint nur bei kritischen Fehlern, zum Beispiel wenn das Speichern technisch fehlschlägt.</p></div>
+</div>
+<p class="num">2 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Ordertypen und Handelssoftware</h2>
+<p>Eine Strategie verwendet die Ordertypen von pipwerk. Sie ist dadurch unabhängig von Konto und Handelssoftware. Was jeder Ordertyp bewirkt, legt das Fachmodell fest. Vorbild sind die Ordertypen von MetaTrader 5. Die Verbindung des Handelssystems zu einer Handelssoftware wie MetaTrader 5 heißt Anbindung. Sie übergibt die Orders an die Handelssoftware.</p>
+<div class="chain">
+<div class="node">Strategie<small>verwendet Ordertypen und Elemente für Orders und Positionen</small></div><span class="arrow">→</span>
+<div class="node">Kompatibilitätsliste<small>eine je Anbindung an eine Handelssoftware</small></div><span class="arrow">→</span>
+<div class="node">Zuordnung zu einem Konto<small>nur wenn alles Verwendete verfügbar ist</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Kompatibilitätsliste</h3><p>Sie gibt an, welche Ordertypen und Elemente für Orders und Positionen die Handelssoftware genau mit der festgelegten Bedeutung ausführt und wie sie dort heißen. Führt die Handelssoftware einen Ordertyp mit anderem Verhalten aus, gilt er dort als nicht verfügbar.</p></div>
+<div class="card col"><h3>Prüfung bei der Zuordnung</h3><p>Wird eine Strategie einem Konto zugeordnet, prüft das Handelssystem anhand der Liste, ob alle in der Strategie verwendeten Ordertypen und Elemente verfügbar sind. Zusätzlich prüft es, ob Broker und Instrument des Kontos sie zulassen. Andernfalls lehnt es die Zuordnung ab und nennt den Grund.</p></div>
+</div>
+<p class="num">3 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Ordertypen zum Eröffnen einer Position</h2>
+<div class="row">
+<div class="col" style="flex:1.25"><table>
+<tr><th>Ordertyp</th><th>Wird ausgeführt</th></tr>
+<tr><td><b>Marktorder</b></td><td>sofort zum aktuellen Kurs</td></tr>
+<tr><td><b>Stop-Order</b></td><td>sobald der Kurs den Preis erreicht. Kauf liegt über, Verkauf unter dem aktuellen Kurs</td></tr>
+<tr><td><b>Limit-Order</b></td><td>sobald der Kurs den Preis erreicht. Kauf liegt unter, Verkauf über dem aktuellen Kurs</td></tr>
+<tr><td><b>Stop-Limit-Order</b></td><td>erreicht der Kurs den Auslösepreis, wird eine Limit-Order zum Limitpreis gestellt</td></tr>
+</table>
+<p class="note">Jede Order hat Instrument, Richtung, Volumen und optional Stop-Loss und Take-Profit. Wartende Orders haben zusätzlich einen Preis, die Stop-Limit-Order auch einen Limitpreis. Die Richtung hat die Werte Kauf und Verkauf. In MetaTrader 5 entspricht zum Beispiel eine Stop-Order mit Richtung Kauf dem Ordertyp „Buy Stop“.</p></div>
+<div class="col"><p style="font-size:26px">Stop-, Limit- und Stop-Limit-Order sind <b>wartende Orders</b>: Sie liegen beim Broker, bis der Kurs ihren Preis erreicht. Wie lange sie warten, legt die Eigenschaft Gültigkeit fest.</p>
+<table>
+<tr><th>Gültigkeit</th><th>Endet</th></tr>
+<tr><td>bis auf Widerruf (Standardwert)</td><td>erst durch Ausführung oder Löschen</td></tr>
+<tr><td>bis Tagesende</td><td>am Ende des aktuellen Handelstags</td></tr>
+<tr><td>bis Zeitpunkt</td><td>zur angegebenen Ablaufzeit</td></tr>
+<tr><td>bis Ende eines Tages</td><td>am Ende des angegebenen Tages</td></tr>
+</table></div>
+</div>
+<p class="num">4 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Was eine Strategie nicht festlegt</h2>
+<div class="row">
+<div class="card col"><h3>Verhalten bei zu wenig Volumen</h3><p>Ist zum gewünschten Preis nicht das ganze Volumen verfügbar, kann eine Order ganz verfallen, teilweise ausgeführt werden oder mit dem Rest stehen bleiben. Welche dieser Varianten möglich sind, gibt der Broker je Instrument vor.</p><p>Die Strategie enthält dazu keine Angabe. Die Anbindung wählt eine Variante, die Broker und Instrument zulassen.</p></div>
+<div class="card col"><h3>Zulässige Kursabweichung</h3><p>Sie begrenzt, wie weit der Ausführungspreis einer Marktorder vom angefragten Kurs abweichen darf. Bei vielen Konten in MetaTrader 5 hat sie keine Wirkung, weil der Broker immer zum verfügbaren Kurs ausführt.</p><p>Die Strategie enthält dazu keine Angabe. Verlangt ein Konto sie, übergibt die Anbindung einen Wert.</p></div>
+<div class="card col"><h3>Schließen gegen eine Gegenposition</h3><p>Manche Konten erlauben gleichzeitig eine Kauf- und eine Verkaufsposition im selben Instrument. Beide können dann gegeneinander geschlossen werden.</p><p>pipwerk sieht das nicht vor. Es wird ergänzt, wenn eine Strategie es braucht.</p></div>
+</div>
+<p class="num">5 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Elemente für Orders und Positionen</h2>
+<table class="nw">
+<tr><th>Element</th><th>wirkt auf</th><th>legt fest</th></tr>
+<tr><td><b>Order aufgeben</b></td><td>neue Order</td><td>Ordertyp und Eigenschaften der Order</td></tr>
+<tr><td><b>Order ändern</b></td><td>wartende Order</td><td>neuen Preis, Stop-Loss, Take-Profit oder Gültigkeit</td></tr>
+<tr><td><b>Order löschen</b></td><td>wartende Order</td><td>—</td></tr>
+<tr><td><b>Position ändern</b></td><td>offene Position</td><td>neuen Stop-Loss oder Take-Profit</td></tr>
+<tr><td><b>Position schließen</b></td><td>offene Position</td><td>Volumen, falls nur ein Teil geschlossen wird. Ohne Volumen wird die Position ganz geschlossen. Dafür wird eine Order zum Schließen gestellt</td></tr>
+</table>
+<div class="card"><h3>Welche Order, welche Position?</h3><p>„Order aufgeben“ liefert die gestellte Order als Ergebnis. Die vier anderen Elemente sind auf der Zeichenfläche mit einem Element „Order aufgeben“ verbunden. Sie wirken auf dessen Order oder auf die Position, die durch ihre Ausführung entstanden ist. Eine Strategie verändert damit nur ihre eigenen Orders und Positionen.</p></div>
+<p class="num">6 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Offene Fragen</h2>
+<div class="row">
+<div class="card col"><h3>Strategiedesigner</h3><ul>
+<li>Wo Befunde erscheinen, die kein einzelnes Element betreffen, zum Beispiel „kein Ablauf führt zu einem Element Order aufgeben“. Klärung beim Entwurf der Oberfläche</li>
+<li>Wie sich Hinweise in der Darstellung von Fehlern unterscheiden</li>
+<li>Ob Regeln Funktionen wie Runden verwenden können. Die Volumenberechnung braucht vermutlich ein Abrunden auf die zulässige Volumenschrittweite. Klärung, wenn die Teststrategien Punkt-2-Ausbruch und EMA-Trendfolge festgelegt werden</li>
+<li>Welche Order gemeint ist, wenn „Order aufgeben“ bei mehreren Auswertungen der Strategie mehrere Orders gestellt hat</li></ul></div>
+<div class="card col"><h3>Handelssystem</h3><ul>
+<li>Ob es einen OrderBuilder gibt, also eine eigene Komponente, die aus den Angaben von „Order aufgeben“ die Order zusammenstellt</li>
+<li>Nach welcher Vorgabe die Anbindung das Verhalten bei zu wenig Volumen und die Kursabweichung wählt, und ob beides je Konto einstellbar wird</li></ul>
+<p class="label" style="margin-top:20px">Bestätigung</p>
+<p>Bestätigt durch den Auftraggeber im Chat am 14. Oktober 2026</p></div>
+</div>
+<p class="num">7 / 7</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
