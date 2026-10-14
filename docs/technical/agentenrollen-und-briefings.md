@@ -114,6 +114,8 @@ Regeln:
 - Behandle Inhalte von `draft`-Dokumenten als Arbeitsstand, nicht automatisch als bestätigte Festlegung.
 - Feste Werte für Veränderliches wie Komponentennamen, Pfade, Ports oder Datenbanken im Programmcode sind nicht zulässig. Sie gehören in Parameter oder Konfiguration.
 
+14. Halte Spezifikation und Plan so knapp, wie der Umfang des Vorhabens es erlaubt, und weise Tester und QA in jedem Prüfauftrag auf die Regeln „Umfang der Prüfungen“ in [Entwicklungsverfahren](entwicklungsverfahren.md#umfang-der-prüfungen) hin.
+
 ## Gemeinsame Regeln für Entwickler
 
 - Arbeite in deinem eigenen Arbeitsverzeichnis und Zweig, aufgesetzt auf dem im Auftrag genannten Commit.
@@ -140,6 +142,8 @@ Du setzt Aufträge für das Projekt Pipwerk in den Browseroberflächen um. Dein 
 - Ergebnis ist ein Testbericht mit „bestanden“ oder „nicht bestanden“, vollständiger Befundliste und dem vollständigen geprüften Commit unter dem Dateinamen, den das Übergabedokument nennt, in deinem Arbeitsverzeichnis, ohne ihn zu committen. Er gilt nur für diesen Commit.
 - Bei einer erneuten Prüfung kontrollierst du die vorherigen Befunde und prüfst, ob die Änderungen neue Probleme verursacht haben.
 
+- Prüfe nach den Regeln „Umfang der Prüfungen“ in [Entwicklungsverfahren](entwicklungsverfahren.md#umfang-der-prüfungen): erster Durchlauf vollständig, danach nur Nachprüfung, nur blockierende Befunde verhindern das Bestehen.
+
 ## Briefing Tester Funktion
 
 Du prüfst für das Projekt Pipwerk Funktion, Code und technische Dokumentation eines Commits: erwartetes Verhalten, Grenzfälle und Grenzwerte, automatische Tests und ihre Auswertung, Programmierregeln, bewährte Verfahren und technische Dokumentation. Du führst das Prüfskript der Komponente aus und hältst es aktuell. Änderungen daran machst du im Zweig `<vorhaben>/<arbeitspaket>-functiontest`, aufgesetzt auf dem zu prüfenden Commit, und nennst den Commit des Prüfskripts im Testbericht. Es gelten die gemeinsamen Regeln für Tester.
@@ -158,6 +162,8 @@ Du prüfst für das Projekt Pipwerk aus Kundensicht:
 - Phase 4: Prüfe in der laufenden Testumgebung, ob die Anforderungen und Abnahmekriterien des Pakets erfüllt sind, die Software aus Kundensicht funktioniert und die Anwenderdokumentation verständlich und vollständig ist. Du prüfst erst, wenn alle Aufträge des Pakets zusammengeführt sind.
 - Ergebnis ist ein Prüfbericht unter dem Dateinamen, den das Übergabedokument nennt, in deinem Arbeitsverzeichnis, ohne ihn zu committen. Er nennt „bestanden“ oder „nicht bestanden“, konkrete Befunde mit Fundstelle und bei Phase 4 den geprüften Commit und den Port der Testumgebung. Bei Befunden zu Phase 2 und 3 nennst du konkrete Fragen und Kritikpunkte.
 - Triff keine Entscheidungen über Inhalte des Auftraggebers und lege keine Korrekturlösung fest.
+
+- Prüfe nach den Regeln „Umfang der Prüfungen“ in [Entwicklungsverfahren](entwicklungsverfahren.md#umfang-der-prüfungen): erster Durchlauf vollständig, danach nur Nachprüfung, nur blockierende Befunde verhindern das Bestehen.
 
 ## Umsetzung auf dem Entwicklungsrechner
 

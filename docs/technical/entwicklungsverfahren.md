@@ -239,6 +239,16 @@ Wer ein Dokument auf `main` bringt, arbeitet in einem eigenen Arbeitsverzeichnis
 
 ## Schleifen und Eskalation
 
+### Umfang der Prüfungen
+
+Diese Regeln gelten für jede Prüfung durch QA und Tester, in allen Phasen:
+
+- **Detailtiefe nach Umfang.** Spezifikation und Plan legen nur Bausteine, Entscheidungen und Abnahmekriterien fest, so knapp, wie der Umfang des Vorhabens es erlaubt. Testdetails, Formulierungen und Schreibweisen von Pfaden gehören in die Aufträge, nicht in Spezifikation oder Plan.
+- **Erster Durchlauf vollständig.** Der erste Durchlauf meldet alle Befunde auf einmal. Jeder weitere Durchlauf ist eine Nachprüfung: Er prüft nur, ob die Befunde behoben sind und ob die dafür geänderten Stellen neue Fehler enthalten.
+- **Nur blockierende Befunde.** Ein Befund verhindert das Bestehen nur, wenn er einer Anforderung oder einem Abnahmekriterium widerspricht, die Funktion beeinträchtigt oder eine Sicherheitslücke ist. Alles andere steht im Bericht als Hinweis. Hinweise verhindern das Bestehen nicht und werden bei der nächsten passenden Gelegenheit erledigt oder verworfen.
+
+### Grenze der Durchläufe
+
 Jede Prüfschleife hat höchstens drei Durchläufe. Danach geht der Fall eine Ebene höher: Entwickler → Softwarearchitekt → Projektleiter → Auftraggeber.
 
 | Schleife nach drei erfolglosen Durchläufen | Weiter an |
@@ -379,6 +389,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-14 | Umfang der Prüfungen: Detailtiefe nach Umfang, erster Durchlauf vollständig, danach Nachprüfung, nur blockierende Befunde. Bestätigt vom Auftraggeber im Chat, gilt ab sofort auch für das laufende Vorhaben `ablauftest`. |
 | 2026-10-13 | Umgebungsvariable `PIPWERK_DEV_ROOT` abgeschafft: fester Pfad im Workflow und als Variable `ROOT` in jedem Skript. Ursache des Abbruchs im ersten Ablauftest: `heartbeat` schrieb ohne die Variable keinen Herzschlag. |
 | 2026-10-12 | „Handelsobjekte“ durch „Objekte“ ersetzt (Glossar). |
 | 2026-10-12 | Einrichtung auf dem Entwicklungsrechner übernommen: Aufbau einer Meldung, Inhalt von `run/` und `devteam/`, Aufräumen der Arbeitsverzeichnisse, weitere Fälle von `failed`. |
