@@ -35,10 +35,10 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
     }
   }, [open]);
 
-  // The browser does not keep the focus in a modal dialog completely: with Tab
-  // from the last and Shift+Tab from the first element the focus can go to the
-  // document or the browser. While the dialog is open it therefore keeps the
-  // focus itself and continues at the other end.
+  // Without its own code the focus leaves the dialog or lands on the dialog
+  // element itself. The measurement in Chromium, Firefox and WebKit showed this.
+  // While the dialog is open it therefore keeps the focus itself: Tab from the
+  // last and Shift+Tab from the first element continue at the other end.
   useEffect(() => {
     if (!open) {
       return;
