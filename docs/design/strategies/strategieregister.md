@@ -19,7 +19,7 @@ Das Register verwaltet die acht Teststrategien getrennt voneinander. Gemeinsamke
 
 | strategie-id | Strategie | Quelle | aktueller Stand | nächster Schritt |
 |---|---|---|---|---|
-| str-01 | Punkt-2-Ausbruch, einfach | Nutzerdatei `scalping-punkt-2-ausbruch-einfach(1).md` | separates Strategiedokument `str-01-fachlich-scalping-punkt-2-ausbruch-einfach.md` vorhanden | fachlichen Stand des Strategiedokuments weiter prüfen und klären |
+| str-01 | Punkt-2-Ausbruch, einfach | Nutzerdatei `scalping-punkt-2-ausbruch-einfach(1).md` | Strategiedokument `str-01-fachlich-scalping-punkt-2-ausbruch-einfach.md`, Status `understood`, vom Auftraggeber bestätigt am 2026-10-14 | Prüffall des Vorhabens „Strategien gestalten und speichern“ |
 | str-02 | Punkt-2-Ausbruch mit Signal- und Handelszeiteinheit | Nutzerdatei `scalping-punkt-2-ausbruch(1).md` | Original und mehrere Klärungen vorhanden; bisherige Modellierung verworfen | separates Strategiedokument aus Original und bestätigten Klärungen erstellen |
 | str-03 | Trendfolge mit gleitenden Durchschnitten | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |
 | str-04 | Mean Reversion mit Bollinger-Bändern und RSI | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |

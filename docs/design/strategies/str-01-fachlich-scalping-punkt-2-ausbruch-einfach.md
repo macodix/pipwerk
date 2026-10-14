@@ -3,7 +3,7 @@
 ## Status
 
 - strategie-id: `str-01`
-- status: `draft`
+- status: `understood`
 - quelle: `scalping-punkt-2-ausbruch-einfach(1).md` und bestätigte Klärungen im Projektchat
 - zuletzt geprüft: `2026-10-14`
 
@@ -102,9 +102,9 @@ Keine.
 
 ## Bestätigungsvermerk
 
-- fachlich geprüft durch: `offen`
-- Ergebnis: `offen`
-- Datum: `–`
+- fachlich geprüft durch: Auftraggeber
+- Ergebnis: bestätigt im Chat
+- Datum: `2026-10-14`
 
 ## Originalbeschreibung
 
