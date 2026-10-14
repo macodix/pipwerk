@@ -59,54 +59,39 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben ablauftest · Phase 3</p>
 <div class="col" style="flex:0;gap:32px">
 <h1>Arbeitspaketplan</h1>
-<p style="font-size:38px;width:1450px">Ein Arbeitspaket ist ein Teil des Vorhabens, der mit einem Stand endet, den du in der Testumgebung selbst ausprobierst und abnimmst. Der Softwarearchitekt schlägt zwei Arbeitspakete vor.</p>
+<p style="font-size:38px;width:1450px">Ein Arbeitspaket ist ein Teil des Vorhabens, der mit einem Stand endet, den du in der Testumgebung selbst ausprobierst und abnimmst. Dieses Vorhaben ist ein einziges Arbeitspaket mit einer Abnahme.</p>
 </div>
 <p style="font-size:26px;color:var(--coveraccent)">14. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/ablauftest/plan.md</code></p>
-<p class="num">1 / 4</p></section></div>
+<p class="num">1 / 3</p></section></div>
 
 <div class="frame"><section class="slide">
-<h2>Reihenfolge</h2>
-<div class="chain">
-<div class="node">Paket 1: Testumgebung und Name<small>Startskript für die Testumgebung, überall „pipwerk Studio“</small></div><div class="arrow">→</div>
-<div class="node">Abnahme Paket 1<small>durch dich</small></div><div class="arrow">→</div>
-<div class="node">Paket 2: Dialog<small>Schaltfläche und Dialog „Über pipwerk Studio“</small></div><div class="arrow">→</div>
-<div class="node">Abnahme Paket 2<small>durch dich</small></div>
-</div>
-<p>Paket 2 beginnt erst, wenn Paket 1 abgenommen und übernommen ist. Begründung des Softwarearchitekten: Ohne das Startskript aus Paket 1 gibt es keine Testumgebung, in der du den Dialog abnehmen kannst. Im Plan heißen die Pakete <code>wp01</code> und <code>wp02</code>.</p>
-<p class="num">2 / 4</p></section></div>
-
-<div class="frame"><section class="slide">
-<h2>Paket 1 – Testumgebung und Name „pipwerk Studio“</h2>
+<h2>Was das Arbeitspaket liefert</h2>
 <div class="row">
-<div class="card col"><h3>Inhalt</h3><ul>
-<li>Skript <code>testenv</code> mit <code>start</code>, <code>stop</code>, <code>status</code>: baut und startet pipwerk Studio aus genau einem Commit</li>
-<li>Browsertests laufen gegen die gebaute Oberfläche</li>
-<li>Name „pipwerk Studio“ in Oberfläche, Kommandozeile, Schnittstellenbeschreibung und Dokumentation</li>
-<li>Anwenderdokumentation mit beiden Startwegen und Glossar</li></ul></div>
-<div class="card col"><h3>Du prüfst</h3><ul>
-<li><code>testenv start</code> startet, pipwerk Studio arbeitet wie bisher</li>
-<li><code>status</code> zeigt die Ports, <code>stop</code> beendet</li>
-<li>Bei nicht gespeicherten Änderungen bricht <code>start</code> mit Begründung ab</li>
-<li>Kopfzeile, Browsertitel, Hilfetext und Schnittstellenbeschreibung zeigen „pipwerk Studio“</li>
-<li>Dokumentation verständlich und vollständig</li></ul></div>
+<div class="card col"><h3>Testumgebung</h3><p>Ein Startskript baut pipwerk Studio aus genau einem gespeicherten Stand und startet es. Es weigert sich, wenn nicht gespeicherte Änderungen vorliegen. Über diese Testumgebung nimmst du künftig jedes Arbeitspaket ab.</p></div>
+<div class="card col"><h3>Name</h3><p>pipwerk Studio schreibt seinen Namen überall „pipwerk Studio“: Kopfzeile, Browsertitel, Kommandozeile, Schnittstellenbeschreibung, Dokumentation.</p></div>
+<div class="card col"><h3>Dialog</h3><p>Schaltfläche „Über pipwerk Studio“ in der Kopfzeile. Der Dialog zeigt Name, Stand mit Datum, Lizenztext und Adresse des Repositorys.</p></div>
 </div>
-<p class="num">3 / 4</p></section></div>
+<p class="note">Reihenfolge innerhalb des Pakets: zuerst Startskript und Browsertests, dann der Dialog. Die QA prüft erst, wenn alles zusammengeführt ist.</p>
+<p class="num">2 / 3</p></section></div>
 
 <div class="frame"><section class="slide">
-<h2>Paket 2 – Dialog „Über pipwerk Studio“</h2>
+<h2>Was du bei der Abnahme prüfst</h2>
 <div class="row">
-<div class="card col"><h3>Du prüfst</h3><ul>
-<li>Schaltfläche „Über pipwerk Studio“ öffnet den Dialog mit Maus und Tastatur</li>
-<li>Name, Stand mit Datum, Lizenztext, Adresse als Verweis</li>
-<li>Kennung gleich Fußzeile und bereitgestelltem Commit</li>
+<div class="card col"><h3>Testumgebung und Name</h3><ul>
+<li>Startskript startet, pipwerk Studio arbeitet wie bisher</li>
+<li>Status zeigt die Ports, Stopp beendet</li>
+<li>Bei nicht gespeicherten Änderungen bricht der Start mit Begründung ab</li>
+<li>Kopfzeile, Browsertitel, Hilfetext und Schnittstellenbeschreibung zeigen „pipwerk Studio“</li></ul></div>
+<div class="card col"><h3>Dialog und Dokumentation</h3><ul>
+<li>Schaltfläche öffnet den Dialog mit Maus und Tastatur</li>
+<li>Name, Stand mit Datum, Lizenztext, Adresse als Verweis in neuem Tab</li>
+<li>Kennung gleich Fußzeile und bereitgestelltem Stand</li>
 <li>Übrige Oberfläche gesperrt, Schließen nur mit „Schließen“ oder Escape</li>
-<li>Texte folgen der Sprache, keine Internetverbindung nötig</li></ul></div>
-<div class="card col"><h3>Zur Bestätigung</h3><ul>
-<li>Aufteilung in Paket 1 und Paket 2</li>
-<li>Abnahmekriterien wie auf Folie 3 und 4</li></ul>
-<p class="note">Einwand des Auftraggebers im Chat am 14. Oktober 2026: ein einziges Arbeitspaket mit einer Abnahme statt zwei. Inhalt und Abnahmekriterien beider Pakete bleiben und werden zusammengeführt. Bestätigung: offen bis zur geänderten Fassung.</p></div>
+<li>Texte in der gewählten Sprache, keine Internetverbindung nötig</li>
+<li>Anwenderdokumentation verständlich, mit Glossar</li></ul></div>
 </div>
-<p class="num">4 / 4</p></section></div>
+<p class="note">Bestätigt durch den Auftraggeber im Chat am 14. Oktober 2026: ein Arbeitspaket mit einer Abnahme. Nachprüfung der QA bestanden (reviews/plan-5.md).</p>
+<p class="num">3 / 3</p></section></div>
 
 </div>
 <script>
