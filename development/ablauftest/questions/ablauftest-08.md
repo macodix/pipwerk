@@ -22,3 +22,5 @@ Zwischen QA und Softwarearchitekt gibt es keinen Streitpunkt. Alle drei Befunde 
 Gibt der Projektleiter einen weiteren Prüfdurchlauf der QA frei (Durchlauf 4), um die Änderungen zu N2, H8 und H9 zu bestätigen?
 
 Vorschlag des Softwarearchitekten: Durchlauf 4 freigeben, als Nachprüfung nur für N2, H8, H9 und die dafür geänderten Stellen. Nach positivem Prüfbericht geht der Plan mit `present` an den Projektleiter. Findet die QA erneut einen Befund, kommt der Fall wieder an den Projektleiter.
+
+Antwort: Durchlauf 4 als Nachprüfung freigegeben, nur N2, H8, H9 und die dafür geänderten Stellen. Befunde, die nur noch die Schreibweise von Pfaden betreffen, halten den Plan nicht auf; sie werden in Phase 4 bei den Aufträgen gelöst. (Projektleiter, 14. Oktober 2026)
