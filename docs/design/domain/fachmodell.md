@@ -340,6 +340,8 @@ Eine Berechnung muss nicht als `Regel` definiert werden. Die technische Auswertu
 
 `Order aufgeben` ist das Element im Strategieablauf, das eine Order veranlasst. Es legt Ordertyp und Parameter der Order fest und übergibt die Order an das Handelssystem. Es wird nur erreicht, wenn eine vorherige Bedingung auf den entsprechenden Ablaufpfad verzweigt. Ist die Bedingung nicht erfüllt und besitzt der andere Pfad keine Fortsetzung, endet dieser Ablaufpfad.
 
+`Order aufgeben` hat zwei Ausgänge: `gestellt` und `abgelehnt`. Der Ausgang `abgelehnt` wird genommen, wenn eine Eigenschaft der Order nicht bestimmt werden kann oder eine prüfende Regel der Strategie oder des Elements nicht erfüllt ist. An beiden Ausgängen kann der Ablauf weitergehen. Ist an einem Ausgang nichts verbunden, endet dort der Ablaufpfad.
+
 Offen: ob das Handelssystem dafür einen eigenen OrderBuilder verwendet.
 
 Ein allgemeiner Objekttyp `Aktion` wird daraus derzeit nicht abgeleitet.
@@ -383,3 +385,4 @@ Offen: welche Order gemeint ist, wenn `Order aufgeben` bei mehreren Auswertungen
 | 2026-10-14 | req-fach-046: Regeln der Strategie gelten für jede ihrer Orders, Elemente können eigene Regeln haben, Anwendung durch Strategietester und Handelssystem. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-046: bei mehreren Regeln für dieselbe Eigenschaft gilt die zuletzt angewendete. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | req-fach-035, 036, 046: Regeln haben Parameter. Bei bestimmenden Regeln gilt der zuletzt bestimmte Wert einer Eigenschaft, prüfende Regeln heben einander nicht auf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
+| 2026-10-14 | req-fach-049: Ausgänge gestellt und abgelehnt bei Order aufgeben. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |

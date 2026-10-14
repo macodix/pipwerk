@@ -24,7 +24,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
 | Elementbibliothek | Der Bereich der Oberfläche, der die verfügbaren Elementtypen und die bereits angelegten Objekte zur Auswahl anbietet. |
 | Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie ausgewertet wird, zum Beispiel der Schluss einer Kerze auf einer Zeiteinheit. Es steht am Anfang des Ablaufs. Jede Strategie hat mindestens einen Auslöser. |
-| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. |
+| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „abgelehnt“. |
 | Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. |
 | Order löschen | Das Element, das eine wartende Order löscht. |
 | Position ändern | Das Element, das Stop-Loss oder Take-Profit einer offenen Position ändert. |
@@ -85,6 +85,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-14 | Order aufgeben: Ausgänge gestellt und abgelehnt. |
 | 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |
 | 2026-10-12 | Konsistenzprüfung statt Prüfung, Pflichtparameter und Standardwert ergänzt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
