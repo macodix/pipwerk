@@ -1,8 +1,8 @@
-"""HTTP application of Pipwerk Studio.
+"""HTTP application of pipwerk Studio.
 
-The application provides a technical health check, the internal Studio
-settings endpoints and the internal Studio revision endpoint. The only
-operational setting kept today is the Studio user interface language
+The application provides a technical health check, the internal pipwerk Studio
+settings endpoints and the internal pipwerk Studio revision endpoint. The only
+operational setting kept today is the pipwerk Studio user interface language
 (req-ui-008): a component-wide, backend-authoritative setting that
 is never stored in the browser and never part of strategy data.
 No other domain logic lives in this module.
@@ -43,7 +43,7 @@ class HealthStatus(BaseModel):
 
 
 class StudioLanguage(BaseModel):
-    """Read model of the current Studio user interface language.
+    """Read model of the current pipwerk Studio user interface language.
 
     Returned by the read endpoint. Read and write models are separate and strictly
     validated; unknown fields are rejected.
@@ -55,7 +55,7 @@ class StudioLanguage(BaseModel):
 
 
 class StudioLanguageUpdate(BaseModel):
-    """Write model to change the Studio user interface language.
+    """Write model to change the pipwerk Studio user interface language.
 
     Only the supported languages German and English are accepted; unknown fields are
     rejected rather than silently ignored.
@@ -67,7 +67,7 @@ class StudioLanguageUpdate(BaseModel):
 
 
 class StudioRevision(BaseModel):
-    """Read model of the revision Studio runs from.
+    """Read model of the revision pipwerk Studio runs from.
 
     ``revision`` is the 7-character short form of the Git commit, ``commit`` the
     full 40-character hash and ``committed_at`` the committer date as ISO 8601
@@ -98,7 +98,7 @@ def create_app(
     revision_lookup: RevisionLookup = lookup_git_revision,
     commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
 ) -> FastAPI:
-    """Create the Pipwerk Studio HTTP application.
+    """Create the pipwerk Studio HTTP application.
 
     ``database_url`` lets callers (notably the CLI entry point and tests)
     provide an explicit SQLAlchemy database URL. When omitted, the
@@ -117,7 +117,7 @@ def create_app(
     settings_service = SettingsService(session_factory)
     studio_revision = determine_revision(revision_lookup, commit_date_lookup)
 
-    app = FastAPI(title="Pipwerk Studio")
+    app = FastAPI(title="pipwerk Studio")
 
     @app.get("/api/health")
     def read_health() -> HealthStatus:
@@ -125,10 +125,11 @@ def create_app(
 
     @app.get(
         "/api/studio/settings/language",
-        summary="Read the current Studio user interface language",
+        summary="Read the current pipwerk Studio user interface language",
         description=(
-            "Internal Studio settings endpoint used by the Studio user "
-            "interface. Returns the single, backend-authoritative Studio "
+            "Internal pipwerk Studio settings endpoint used by the "
+            "pipwerk Studio user interface. Returns the single, "
+            "backend-authoritative pipwerk Studio "
             "language. Defaults to German when no language has been "
             "stored yet. Responds with HTTP 503 if the stored value is not "
             "a supported language; a valid write repairs it."
@@ -141,15 +142,16 @@ def create_app(
             logger.error("%s", error)
             raise HTTPException(
                 status_code=503,
-                detail="The stored Studio language is invalid.",
+                detail="The stored pipwerk Studio language is invalid.",
             ) from error
 
     @app.put(
         "/api/studio/settings/language",
-        summary="Change the current Studio user interface language",
+        summary="Change the current pipwerk Studio user interface language",
         description=(
-            "Internal Studio settings endpoint used by the Studio user "
-            "interface. Persists the single, backend-authoritative Studio "
+            "Internal pipwerk Studio settings endpoint used by the "
+            "pipwerk Studio user interface. Persists the single, "
+            "backend-authoritative pipwerk Studio "
             "language. Only 'de' and 'en' are accepted; unknown fields are "
             "rejected. Changing the language never changes strategy "
             "content or other domain configuration."
@@ -161,9 +163,10 @@ def create_app(
 
     @app.get(
         "/api/studio/revision",
-        summary="Read the revision Studio runs from",
+        summary="Read the revision pipwerk Studio runs from",
         description=(
-            "Internal Studio endpoint used by the Studio user interface. "
+            "Internal pipwerk Studio endpoint used by the pipwerk Studio "
+            "user interface. "
             "Returns the 7-character short form, the full hash and the committer "
             "date (ISO 8601 with offset) of the Git commit determined once at "
             "startup. The revision and commit are null if the revision is not "

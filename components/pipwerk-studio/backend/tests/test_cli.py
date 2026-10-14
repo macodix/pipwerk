@@ -1,6 +1,6 @@
-"""Tests for the command line start of Pipwerk Studio (req-system-016/017/018).
+"""Tests for the command line start of pipwerk Studio (req-system-016/017/018).
 
-Pipwerk Studio must not start without a valid startup configuration.
+pipwerk Studio must not start without a valid startup configuration.
 """
 
 from pathlib import Path

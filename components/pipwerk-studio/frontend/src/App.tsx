@@ -18,7 +18,7 @@ export function App() {
   return (
     <div className="studio">
       <header className="studio-header">
-        <h1>Pipwerk Studio</h1>
+        <h1>pipwerk Studio</h1>
         <LanguageSelect />
       </header>
       <main className="studio-main">

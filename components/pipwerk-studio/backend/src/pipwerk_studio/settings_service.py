@@ -1,4 +1,4 @@
-"""Application-level settings service of Pipwerk Studio.
+"""Application-level settings service of pipwerk Studio.
 
 This module is the repository/service boundary in front of the SQLAlchemy
 persistence. It exposes a framework-independent
@@ -56,7 +56,7 @@ class SettingsService:
                 if stored == language:
                     return language
             raise StoredLanguageInvalidError(
-                f"Stored Studio language is not a supported language: {stored!r}"
+                f"Stored pipwerk Studio language is not a supported language: {stored!r}"
             )
 
     def set_language(self, language: Language) -> Language:

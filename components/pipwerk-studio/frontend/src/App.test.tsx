@@ -13,7 +13,7 @@ describe('App', () => {
   it('shows the product name', () => {
     renderWithProviders(<App />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Pipwerk Studio' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'pipwerk Studio' })).toBeInTheDocument();
   });
 
   it('shows an empty designer canvas', () => {
@@ -55,6 +55,6 @@ describe('App', () => {
 
     await user.selectOptions(screen.getByLabelText('Sprache'), 'English');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Pipwerk Studio' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'pipwerk Studio' })).toBeInTheDocument();
   });
 });

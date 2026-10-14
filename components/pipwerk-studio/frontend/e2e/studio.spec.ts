@@ -81,7 +81,8 @@ test('starts with an empty canvas, reaches the backend and switches the language
 
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Pipwerk Studio' })).toBeVisible();
+  await expect(page).toHaveTitle('pipwerk Studio');
+  await expect(page.getByRole('heading', { level: 1, name: 'pipwerk Studio' })).toBeVisible();
   const canvas = page.getByRole('region', { name: 'Designer-Arbeitsfläche' });
   await expect(canvas).toBeVisible();
   await expect(canvas.locator('.react-flow__pane')).toBeVisible();

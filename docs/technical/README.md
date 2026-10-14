@@ -15,4 +15,4 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 ## Komponenten
 
-- [Pipwerk Studio – technische Dokumentation](pipwerk-studio.md)
+- [pipwerk Studio – technische Dokumentation](pipwerk-studio.md)

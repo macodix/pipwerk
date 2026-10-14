@@ -62,7 +62,7 @@ def running_backend(config_path: Path, port: int) -> Iterator[str]:
     try:
         while time.monotonic() < deadline:
             if process.poll() is not None:
-                raise RuntimeError("Pipwerk Studio backend exited during startup")
+                raise RuntimeError("pipwerk Studio backend exited during startup")
             try:
                 with urlopen(f"{base_url}/api/health", timeout=0.2) as response:  # noqa: S310
                     if response.status == 200:
@@ -70,7 +70,7 @@ def running_backend(config_path: Path, port: int) -> Iterator[str]:
             except URLError, TimeoutError:
                 time.sleep(0.05)
         else:
-            raise RuntimeError("Pipwerk Studio backend did not become ready")
+            raise RuntimeError("pipwerk Studio backend did not become ready")
         yield base_url
     finally:
         process.terminate()
@@ -195,7 +195,7 @@ def test_invalid_stored_value_is_reported_as_503_not_500(tmp_path: Path) -> None
     response = client.get("/api/studio/settings/language")
 
     assert response.status_code == 503
-    assert response.json() == {"detail": "The stored Studio language is invalid."}
+    assert response.json() == {"detail": "The stored pipwerk Studio language is invalid."}
 
 
 def test_writing_a_valid_language_repairs_an_invalid_stored_value(tmp_path: Path) -> None:

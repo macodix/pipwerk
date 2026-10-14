@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-// Address of the Pipwerk Studio backend that receives the /api requests of the
+// Address of the pipwerk Studio backend that receives the /api requests of the
 // development server. It can be changed without editing this file.
 const backendUrl = process.env.PIPWERK_STUDIO_BACKEND_URL ?? 'http://127.0.0.1:8000';
 

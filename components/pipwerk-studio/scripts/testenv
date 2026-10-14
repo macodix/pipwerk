@@ -1,0 +1,337 @@
+#!/bin/sh
+# Test environment script of the component pipwerk Studio.
+#
+# Builds and starts pipwerk Studio from exactly one commit of the working
+# directory this script belongs to, reports its state and stops it again:
+#
+#   testenv start --frontend-port <port> --backend-port <port> [--host <address>]
+#   testenv stop
+#   testenv status
+#
+# The working directory is derived from the path of this script. The script
+# can be called from any directory. Ports and host are parameters; the script
+# contains no fixed ports, paths or machine names. State, logs, the
+# startup configuration and the database of the test environment live in
+# components/pipwerk-studio/.testenv/ (ignored by Git).
+#
+# Documentation: docs/technical/pipwerk-studio.md, section "Start als
+# Testumgebung".
+
+set -eu
+
+# A Git environment inherited from the caller must not redirect the checks.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
+PROG=testenv
+STARTUP_TIMEOUT=120
+STOP_TIMEOUT=10
+
+die() {
+    printf '%s: %s\n' "$PROG" "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat >&2 <<EOF
+Usage:
+  $PROG start --frontend-port <port> --backend-port <port> [--host <address>]
+  $PROG stop
+  $PROG status
+EOF
+    exit 2
+}
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    die "cannot determine the directory of the script"
+component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    die "cannot determine the directory of the component"
+backend_dir="$component_dir/backend"
+frontend_dir="$component_dir/frontend"
+env_dir="$component_dir/.testenv"
+state_file="$env_dir/state"
+
+# --- state -----------------------------------------------------------------
+
+state_get() {
+    [ -f "$state_file" ] || return 0
+    sed -n "s/^$1=//p" "$state_file" | head -n 1
+}
+
+state_set() {
+    printf '%s=%s\n' "$1" "$2" >>"$state_file"
+}
+
+# pid_matches <pid> <marker>: the process exists and its command line
+# contains the marker (protects against a reused process number).
+pid_matches() {
+    [ -n "$1" ] || return 1
+    kill -0 "$1" 2>/dev/null || return 1
+    pid_args=$(ps -o args= -p "$1" 2>/dev/null) || return 1
+    case $pid_args in
+    *"$2"*) return 0 ;;
+    esac
+    return 1
+}
+
+# stop_pid <pid> <marker>: ends the process if it is the recorded one.
+stop_pid() {
+    pid_matches "$1" "$2" || return 0
+    kill "$1" 2>/dev/null || true
+    stop_waited=0
+    while pid_matches "$1" "$2" && [ "$stop_waited" -lt "$STOP_TIMEOUT" ]; do
+        sleep 1
+        stop_waited=$((stop_waited + 1))
+    done
+    if pid_matches "$1" "$2"; then
+        kill -9 "$1" 2>/dev/null || true
+    fi
+}
+
+stop_processes() {
+    stop_pid "$(state_get frontend_pid)" vite
+    stop_pid "$(state_get backend_pid)" pipwerk-studio
+}
+
+# --- checks ----------------------------------------------------------------
+
+require_port() {
+    case $2 in
+    '' | *[!0-9]*) die "$1 must be a number between 1 and 65535" ;;
+    esac
+    if [ "$2" -lt 1 ] || [ "$2" -gt 65535 ]; then
+        die "$1 must be a number between 1 and 65535"
+    fi
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "required program not found: $1"
+}
+
+# port_free <address> <port>
+port_free() {
+    python3 -c '
+import socket
+import sys
+
+host, port = sys.argv[1], int(sys.argv[2])
+family = socket.AF_INET6 if ":" in host else socket.AF_INET
+sock = socket.socket(family, socket.SOCK_STREAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+try:
+    sock.bind((host, port))
+except OSError:
+    sys.exit(1)
+finally:
+    sock.close()
+' "$1" "$2"
+}
+
+# probe_health <url>: the answer is HTTP 200 with {"status": "ok"}.
+probe_health() {
+    python3 -c '
+import json
+import sys
+import urllib.request
+
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+try:
+    with opener.open(sys.argv[1], timeout=3) as response:
+        ok = response.status == 200 and json.load(response) == {"status": "ok"}
+except Exception:
+    ok = False
+sys.exit(0 if ok else 1)
+' "$1"
+}
+
+# url_host <address>: address usable in a URL on this machine.
+url_host() {
+    case $1 in
+    0.0.0.0) printf '127.0.0.1' ;;
+    '::') printf '[::1]' ;;
+    *:*) printf '[%s]' "$1" ;;
+    *) printf '%s' "$1" ;;
+    esac
+}
+
+# --- start -----------------------------------------------------------------
+
+cleanup_needed=0
+
+on_exit() {
+    exit_code=$?
+    trap - EXIT
+    if [ "$cleanup_needed" = 1 ]; then
+        if [ "$exit_code" -ne 0 ]; then
+            for log in backend frontend; do
+                if [ -s "$env_dir/$log.log" ]; then
+                    printf '%s: last lines of the %s log:\n' "$PROG" "$log" >&2
+                    tail -n 20 "$env_dir/$log.log" >&2 || true
+                fi
+            done
+        fi
+        stop_processes
+        rm -rf "$env_dir"
+    fi
+    exit "$exit_code"
+}
+
+cmd_start() {
+    frontend_port=''
+    backend_port=''
+    host=127.0.0.1
+    while [ $# -gt 0 ]; do
+        case $1 in
+        --frontend-port | --backend-port | --host)
+            [ $# -ge 2 ] || die "missing value for $1"
+            case $1 in
+            --frontend-port) frontend_port=$2 ;;
+            --backend-port) backend_port=$2 ;;
+            --host) host=$2 ;;
+            esac
+            shift 2
+            ;;
+        *) die "unknown parameter: $1" ;;
+        esac
+    done
+    [ -n "$frontend_port" ] || die "missing parameter --frontend-port"
+    [ -n "$backend_port" ] || die "missing parameter --backend-port"
+    require_port --frontend-port "$frontend_port"
+    require_port --backend-port "$backend_port"
+    [ "$frontend_port" != "$backend_port" ] ||
+        die "--frontend-port and --backend-port must differ"
+    case $host in
+    '' | *[!A-Za-z0-9.:_-]*) die "--host must be an address or a host name" ;;
+    esac
+
+    # The working directory must be a Git working directory and the whole
+    # repository must be free of uncommitted changes and of new files that
+    # are not ignored. Nothing is installed, built or started before.
+    require_command git
+    repo_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null) ||
+        die "$script_dir is not in a Git working directory; the test environment starts only from exactly one commit"
+    changes=$(git -C "$repo_root" status --porcelain 2>&1) ||
+        die "cannot determine the state of the Git working directory"
+    if [ -n "$changes" ]; then
+        printf '%s: the working directory has uncommitted changes or new files that are not ignored; the test environment starts only from exactly one commit.\n' "$PROG" >&2
+        printf '%s\n' "$changes" | head -n 20 >&2
+        exit 1
+    fi
+
+    require_command python3
+    require_command uv
+    require_command npm
+    case $env_dir in
+    *%* | *'
+'*) die "the path of the working directory must not contain % or a line break" ;;
+    esac
+
+    if [ -f "$state_file" ]; then
+        if pid_matches "$(state_get backend_pid)" pipwerk-studio ||
+            pid_matches "$(state_get frontend_pid)" vite; then
+            die "a test environment is already running (see: $PROG status)"
+        fi
+        rm -rf "$env_dir"
+    fi
+    port_free 127.0.0.1 "$backend_port" ||
+        die "backend port $backend_port is in use or not available on 127.0.0.1"
+    port_free "$host" "$frontend_port" ||
+        die "frontend port $frontend_port is in use or not available on $host"
+
+    trap on_exit EXIT
+    trap 'exit 130' INT TERM HUP
+    mkdir -p "$env_dir"
+    chmod 700 "$env_dir"
+    cleanup_needed=1
+    : >"$state_file"
+
+    printf '%s: installing the dependencies\n' "$PROG"
+    uv --directory "$backend_dir" sync --frozen
+    (cd "$frontend_dir" && npm ci)
+    printf '%s: building the user interface\n' "$PROG"
+    (cd "$frontend_dir" && npm run build)
+
+    cat >"$env_dir/pipwerk-studio.ini" <<EOF
+[database]
+url = sqlite:///$env_dir/pipwerk-studio.db
+EOF
+
+    nohup "$backend_dir/.venv/bin/pipwerk-studio" \
+        -c "$env_dir/pipwerk-studio.ini" --host 127.0.0.1 --port "$backend_port" \
+        >"$env_dir/backend.log" 2>&1 </dev/null &
+    state_set backend_pid $!
+    state_set backend_port "$backend_port"
+
+    (
+        cd "$frontend_dir"
+        PIPWERK_STUDIO_BACKEND_URL="http://127.0.0.1:$backend_port"
+        export PIPWERK_STUDIO_BACKEND_URL
+        exec nohup "$frontend_dir/node_modules/.bin/vite" preview \
+            --host "$host" --port "$frontend_port" --strictPort \
+            >"$env_dir/frontend.log" 2>&1 </dev/null
+    ) &
+    state_set frontend_pid $!
+    state_set frontend_port "$frontend_port"
+    state_set host "$host"
+
+    health_url="http://$(url_host "$host"):$frontend_port/api/health"
+    waited=0
+    until probe_health "$health_url"; do
+        pid_matches "$(state_get backend_pid)" pipwerk-studio ||
+            die "the backend exited during start"
+        pid_matches "$(state_get frontend_pid)" vite ||
+            die "the user interface server exited during start"
+        [ "$waited" -lt "$STARTUP_TIMEOUT" ] ||
+            die "no answer from $health_url within $STARTUP_TIMEOUT seconds"
+        sleep 1
+        waited=$((waited + 1))
+    done
+
+    cleanup_needed=0
+    trap - EXIT INT TERM HUP
+    printf '%s: pipwerk Studio is running: http://%s:%s/ (backend on 127.0.0.1:%s)\n' \
+        "$PROG" "$(url_host "$host")" "$frontend_port" "$backend_port"
+}
+
+# --- stop and status -------------------------------------------------------
+
+cmd_stop() {
+    [ $# -eq 0 ] || usage
+    if [ ! -d "$env_dir" ]; then
+        printf '%s: no test environment is running\n' "$PROG"
+        return 0
+    fi
+    stop_processes
+    rm -rf "$env_dir"
+    printf '%s: test environment stopped\n' "$PROG"
+}
+
+cmd_status() {
+    [ $# -eq 0 ] || usage
+    backend_running=0
+    frontend_running=0
+    pid_matches "$(state_get backend_pid)" pipwerk-studio && backend_running=1
+    pid_matches "$(state_get frontend_pid)" vite && frontend_running=1
+    if [ "$backend_running" = 1 ] && [ "$frontend_running" = 1 ]; then
+        printf '%s: running\n' "$PROG"
+        printf '  user interface: http://%s:%s/\n' \
+            "$(url_host "$(state_get host)")" "$(state_get frontend_port)"
+        printf '  backend: http://127.0.0.1:%s/\n' "$(state_get backend_port)"
+        return 0
+    fi
+    if [ "$backend_running" = 1 ] || [ "$frontend_running" = 1 ]; then
+        printf '%s: not running completely; stop it with: %s stop\n' "$PROG" "$PROG"
+        return 1
+    fi
+    printf '%s: not running\n' "$PROG"
+    return 1
+}
+
+[ $# -ge 1 ] || usage
+command_name=$1
+shift
+case $command_name in
+start) cmd_start "$@" ;;
+stop) cmd_stop "$@" ;;
+status) cmd_status "$@" ;;
+*) usage ;;
+esac

@@ -1,4 +1,4 @@
-"""Persistence infrastructure of Pipwerk Studio.
+"""Persistence infrastructure of pipwerk Studio.
 
 SQLAlchemy is used as the shared storage interface (req-system-015) behind a
 small application-level repository/service boundary.
@@ -14,7 +14,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sess
 
 
 class Base(DeclarativeBase):
-    """Declarative base of the Pipwerk Studio persistence schema."""
+    """Declarative base of the pipwerk Studio persistence schema."""
 
 
 #: Fixed primary key of the single Studio settings row. Studio settings are
@@ -24,7 +24,7 @@ SETTINGS_SINGLETON_ID = 1
 
 
 class StudioSettingsRecord(Base):
-    """ORM row holding the operational settings of Pipwerk Studio.
+    """ORM row holding the operational settings of pipwerk Studio.
 
     Only the backend-authoritative language setting is modelled here. The UI
     language is never stored in the browser (localStorage, sessionStorage,
