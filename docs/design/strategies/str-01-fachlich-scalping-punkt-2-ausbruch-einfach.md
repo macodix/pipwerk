@@ -15,7 +15,7 @@ Die größere Zeiteinheit bestimmt, ob ein intakter Trend vorliegt und sich der 
 
 ## Voraussetzungen
 
-Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und mindestens einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie der Trend werden nach der Markttechnik von Michael Voigt auf Grundlage eines ZigZag-EA beziehungsweise ZigZag-Indikators bestimmt.
+Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und mindestens einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie Trend und Phase werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Trend intakt, Phase, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
 
 Für die Tradeplanung werden außerdem der aktuelle Spread, die Pip- oder Tickgröße des Instruments, die Risikogrenze des Kontos, die freie Margin sowie Mindestlot und Volumenschritte des Brokers benötigt.
 
