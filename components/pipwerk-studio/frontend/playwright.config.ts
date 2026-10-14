@@ -33,9 +33,14 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `npx vite --port ${frontendPort}`,
+      // The tests run against the built user interface, as the test environment
+      // delivers it: first the build into its own directory (a user interface in
+      // `dist` stays untouched), then `vite preview` for that directory.
+      command: `npx vite build --outDir dist-e2e && npx vite preview --outDir dist-e2e --port ${frontendPort}`,
       url: frontendUrl,
       reuseExistingServer: false,
+      // The time limit covers the build.
+      timeout: 180_000,
       env: { PIPWERK_STUDIO_BACKEND_URL: backendUrl },
     },
   ],

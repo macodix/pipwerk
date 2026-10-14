@@ -2,7 +2,7 @@
 
 Graphical strategy designer of Pipwerk.
 
-The component consists of a Python backend (FastAPI, SQLAlchemy) in `backend/` and a browser user interface (React, TypeScript, Vite, React Flow) in `frontend/`. The current state provides an empty designer canvas, German and English as user interface languages, persistent component-wide language selection and a connection check between user interface and backend.
+The component consists of a Python backend (FastAPI, SQLAlchemy) in `backend/` and a browser user interface (React, TypeScript, Vite, React Flow) in `frontend/`. The current state provides an empty designer canvas, German and English as user interface languages, persistent component-wide language selection and a connection check between user interface and backend. The footer shows the revision (commit) pipwerk Studio runs from; the dialog "About pipwerk Studio", opened from the header, shows name, the full revision with date, the license text and the address of the repository.
 
 Development setup, start and checks are described in [docs/technical/pipwerk-studio.md](../../docs/technical/pipwerk-studio.md). Usage is described in [docs/user/pipwerk-studio.md](../../docs/user/pipwerk-studio.md).
 
