@@ -4,7 +4,7 @@
 
 - id: `AP4`
 - status: `accepted`
-- stand: 2026-10-12
+- stand: 2026-10-14
 - komponenten: `packages/domain-core`
 - pflichtenheft: PH-04, PH-11
 
@@ -15,7 +15,7 @@ Alle in PH-11 genannten Bausteintypen sind in der gemeinsamen Python-Bibliothek 
 ## Umfang
 
 1. Auslöser, Indikatoren mit Berechnung (EMA, ATR, ZigZag), Trendverfahren (EMA-Kreuzung, Markttechnik), Bedingung, Berechnung, Regel, RegelSet, Order-Aktion (PH-11)
-2. Ordertypen von MetaTrader 5 nach Fachmodell, im Namensraum `order.mt5.*`, angemeldet über den Einstiegspunkt
+2. Ordertypen von Pipwerk nach req-fach-030 des Fachmodells (`MarketOrder`, `StopOrder`, `LimitOrder`, `StopLimitOrder`, `CloseOrder`), angemeldet über den Einstiegspunkt
 3. Beide Testfälle als Objekte in Tests aufgebaut und fehlerfrei geprüft
 
 ## Nicht Umfang

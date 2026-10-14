@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Technische Festlegungen für die Umsetzung von Schritt 1 des Strategiedesigner-Prototyps. Grundlage der Arbeitspakete AP2 bis AP9.
-- stand: 2026-10-12
+- stand: 2026-10-14
 - abstimmung: erste Abstimmungsrunde mit dem Nutzer am 2026-10-10/11 durchgeführt, Plan mit AP2 bis AP9 am 2026-10-12 vom Nutzer freigegeben. Die Begriffe folgen dem [Glossar](../../technical/glossar.md).
 
 ## 1. Gegenstand
@@ -25,7 +25,7 @@ Jeder Bausteintyp liefert eine Typbeschreibung (`NodeTypeDescriptor`):
 
 | Feld | Inhalt |
 |---|---|
-| `type_id` | eindeutige, sprachneutrale Kennung, z. B. `indicator.ema`, `order.mt5.buy_stop` |
+| `type_id` | eindeutige, sprachneutrale Kennung, z. B. `indicator.ema`, `order.stop` |
 | `category` | `trigger`, `indicator`, `trend`, `condition`, `calculation`, `rule`, `ruleset`, `action` |
 | `labels` | Bezeichnung und Beschreibung in `de` und `en` |
 | `parameters` | je Parameter: Kennung, Datentyp, Pflicht, Standardwert, Wertebereich, erlaubte Bindungsarten, Beschriftungen |
@@ -133,7 +133,7 @@ Die mitgelieferten Indikatoren bringen ihre Berechnung mit (Python-Funktion übe
 
 Ausdrücke (`expression`) verwenden Konstanten, Verweise auf Ausgaben (`baustein.ausgabe`), Ergebnisse von Regeln sowie arithmetische, Vergleichs- und logische Operatoren. Keine Funktionen. Der Ausdruck wird in der gemeinsamen Python-Bibliothek geparst und typgeprüft, in Schritt 1 nicht ausgewertet.
 
-Ordertypen: Jeder Ordertyp ist ein Bausteintyp mit Typbeschreibung. Er wird vom Paket angemeldet, das die jeweilige Handelssoftware anbindet, und trägt deren Namensraum (`order.mt5.*`). Eine Strategie darf jeden angemeldeten Ordertyp verwenden. Ob Handelssoftware, Broker und Instrument eines Kontos den Typ anbieten, prüft das Handelssystem bei der Zuordnung der Strategie zu einem Konto. Pipwerk übersetzt keinen Ordertyp einer Handelssoftware in den einer anderen. In Schritt 1 werden die Ordertypen von MetaTrader 5 angemeldet, wie im Fachmodell beschrieben.
+Ordertypen: Jeder Ordertyp ist ein Bausteintyp mit Typbeschreibung. Ordertypen sind Objekte von Pipwerk mit eigenen Namen nach req-fach-030 des Fachmodells (`MarketOrder`, `StopOrder`, `LimitOrder`, `StopLimitOrder`, `CloseOrder`), unabhängig von Konto und Handelssoftware. Jede Anbindung an eine Handelssoftware führt eine Kompatibilitätsliste, die angibt, welche Ordertypen und Aktionen sie mit genau der beschriebenen Bedeutung ausführt. Ob Handelssoftware, Broker und Instrument eines Kontos alle verwendeten Ordertypen anbieten, prüft das Handelssystem anhand dieser Liste bei der Zuordnung der Strategie zu einem Konto. Annähernde Übersetzungen gibt es nicht. In Schritt 1 gibt es noch keine Anbindung und keine Kompatibilitätsliste, die Ordertypen stammen aus dem Fachmodell.
 
 ### PH-12 Prüfungen und Nachweis
 
@@ -145,14 +145,14 @@ Jedes Arbeitspaket erfüllt die Prüfregeln aus `docs/technical/development-test
 
 ## 3. Offene Punkte
 
-1. Die Ordertypen von MetaTrader 5 mit allen Eigenschaften, Ausführungs- und Ablaufvarianten sind noch nicht vollständig erfasst. Die Erfassung aus der MetaTrader-Dokumentation legt der Projektleiter dem Nutzer vor AP4 zur Abstimmung vor.
-2. Der Entwurf der Oberfläche (PH-10) steht aus und wird vor AP6 abgestimmt.
-3. PostgreSQL und MariaDB sollen zu gegebener Zeit in die Tests aufgenommen werden.
+1. Der Entwurf der Oberfläche (PH-10) steht aus und wird vor AP6 abgestimmt.
+2. PostgreSQL und MariaDB sollen zu gegebener Zeit in die Tests aufgenommen werden.
 
 ## 4. Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-14 | PH-02 und PH-11 an req-fach-030 des Fachmodells (Stand 2026-10-13) angeglichen: Ordertypen sind Objekte von Pipwerk mit eigenen Namen, kein Namensraum einer Handelssoftware, Verfügbarkeit über die Kompatibilitätsliste der Anbindung. Offener Punkt zur Erfassung der MetaTrader-5-Ordertypen entfernt, die Erfassung ist im Fachmodell abgeschlossen. Dieses Dokument dient nur noch als Vorlage für die Spezifikation des Vorhabens `strategiedesign`. |
 | 2026-10-12 | Plan freigegeben, Status `accepted`. Offen bleiben die Abstimmung der MetaTrader-5-Ordertypen vor AP4 und der Oberflächenentwurf vor AP6. |
 | 2026-10-12 | Import und Export aus Schritt 1 gestrichen (kein Bedarf, die Dateien im Objektverzeichnis sind bereits JSON). PH-08: Löschschutz für verwendete Objekte über `object_reference` mit Fremdschlüsseln. |
 | 2026-10-12 | PH-10: Menüpunkt „Einstellungen“ mit Sprachauswahl. PH-08: Objektverzeichnis als Einstellung in der Datenbank mit Anfangswerten nach FHS und Benutzerverzeichnis statt Eintrag in der Startkonfiguration. |

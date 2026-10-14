@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an Anwendung und Ausführung von Strategien auf konkreten Handelskonten
-- zuletzt aktualisiert: `2026-10-12`
+- zuletzt aktualisiert: `2026-10-14`
 
 ## 1. Zweck und Abgrenzung
 
@@ -95,7 +95,7 @@ Der `OrderManager` übermittelt die Order über das `Nachrichtensystem` an das d
 
 Das Orderobjekt selbst muss die konkrete Konto- oder MT5-Anbindung nicht kennen.
 
-### req-fach-030 -- Getrennte Zustände von Order und OrderManager
+### req-fach-050 -- Getrennte Zustände von Order und OrderManager
 
 Der fachliche Zustand einer Order und der Verarbeitungszustand der Order im `OrderManager` sind getrennt zu behandeln.
 
@@ -124,3 +124,4 @@ Eine Order kann damit einen endgültigen Zustand erreichen, ohne jemals eine Pos
 | 2026-09-24 | `OrderBuilder` zwischen Signal und OrderManager ergänzt; Übergabe und Stornierung auf das `Nachrichtensystem` korrigiert; Auslösung von Orderprüfungen auf periodische Prüfung oder auslösende Nachricht präzisiert. |
 | 2026-09-25 | Separates `Signal`-Objekt aus dem aktuellen Ablaufmodell entfernt; `OrderBuilder` wird bei entsprechendem Ergebnis der Strategieauswertung direkt aus dem Strategieablauf beauftragt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
+| 2026-10-14 | Kennung req-fach-030 („Getrennte Zustände von Order und OrderManager“) in req-fach-050 umbenannt, weil req-fach-030 im Fachmodell für „Ordertypen und Kompatibilitätsliste der Anbindungen“ vergeben ist. Inhalt unverändert. |
