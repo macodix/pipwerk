@@ -42,6 +42,8 @@ Ausgehend von der Signalzeiteinheit wird eine kleinere Handelszeiteinheit gewäh
 
 Auf der Handelszeiteinheit werden der letzte Punkt 2 und der letzte Punkt 1/3 bestimmt. Der Punkt 2 bildet den Bezug für den Einstieg. Der Punkt 1/3 bildet den Bezug für den Stop-Loss.
 
+Besteht aus dieser Strategie auf diesem Konto und Instrument bereits eine wartende Order oder eine offene Position, endet die Auswertung. Andernfalls würde jeder Kerzenschluss eine weitere Order am selben Punkt 2 stellen.
+
 ### 3. Trade planen
 
 Der Einstieg wird in Trendrichtung kurz hinter dem letzten Punkt 2 der Handelszeiteinheit festgelegt. Bei einem Long-Trade liegt er über Punkt 2. Bei einem Short-Trade gilt die Regel spiegelbildlich. Zum Punkt 2 werden der Spread und ein Puffer von ungefähr 3 bis 5 Pips berücksichtigt.
