@@ -17,7 +17,7 @@ Korrekturen, die sich aus bestehenden Festlegungen eindeutig ergeben:
 | B5 | req-fach-001: Marktphase, Bewegung und Korrektur sind Werte der Eigenschaft `Phase` (Indikator Markttechnik). Position bleibt Objekt (Frage 4). |
 | B6 | req-fach-006, req-ui-007 und Abschnitt 9 Punkt 7 ohne „Ergebnisse“ von Objekten (Glossar). |
 | B7 | req-core-001: keine `ExitOrder`, Schließen über `Position schließen` und `CloseOrder` (Fachmodell vom 2026-10-14). |
-| C6 | req-ablauf-006: Löschschutz auch bei Verwendung in anderen Objekten (Zweck des Löschschutzes, Entscheidung vom 2026-10-12). |
+| C6 | req-ablauf-006: zunächst Löschschutz bei Verwendung in anderen Objekten; durch Entscheidung 12 (Instanzmodell) überholt, eine Vorlage kann gelöscht werden, ihre Instanzen bleiben bestehen. |
 | C9 | req-system-017: Dateiname der Startkonfiguration legt die technische Dokumentation der Komponente fest (Umsetzungsdetail, Zuständigkeit des Softwarearchitekten). |
 | C10 | req-ui-010: Standanzeige in der Fußzeile beschrieben, wie sie seit dem Vorhaben `ablauftest` besteht. |
 | D1 | „Komponente“ eines Objekts durch „Berechnungsverfahren“ beziehungsweise „Objekttyp“ ersetzt. „Komponente“ bezeichnet nur noch Teile des Systems. |

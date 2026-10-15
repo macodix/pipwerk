@@ -15,17 +15,17 @@ Die größere Zeiteinheit bestimmt, ob ein intakter Trend vorliegt und sich der 
 
 ## Voraussetzungen
 
-Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und mindestens einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie Trend und Phase werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Trend intakt, Phase, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
+Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie Trend und Phase werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Trend intakt, Phase, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
 
-Für die Tradeplanung werden außerdem der aktuelle Spread, die Pip- oder Tickgröße des Instruments, die freie Margin sowie Mindestlot und Volumenschritte des Brokers benötigt (Objekte der Anwendung `Konto` und `Instrument`, Fachmodell req-fach-051) sowie die Risikoregel der Strategie (Abschnitt 4).
+Für die Tradeplanung werden außerdem vom Instrument Spread, Pip, Tickwert, Mindestvolumen und Volumenschritt und vom Konto Kapital und freie Margin benötigt (Objekte der Anwendung `Konto` und `Instrument`, Fachmodell req-fach-051) sowie die Risikoregel der Strategie (Abschnitt 4).
 
-Signalzeiteinheit und Handelszeiteinheit sind Strategieparameter (Fachmodell req-fach-046). Der Indikator `Markttechnik` wird zweimal als Instanz verwendet: einmal auf der Signalzeiteinheit, einmal auf der Handelszeiteinheit.
+Signalzeiteinheit, Handelszeiteinheit, Entry-Puffer und Stop-Puffer sind Strategieparameter (Fachmodell req-fach-046). Der Indikator `Markttechnik` wird zweimal als Instanz verwendet: einmal auf der Signalzeiteinheit, einmal auf der Handelszeiteinheit.
 
 ## Ablauf
 
 ### 1. Auslöser und Markt beobachten
 
-Die Strategie wird bei jedem Kerzenschluss der kleinsten zulässigen Handelszeiteinheit ausgewertet (Auslöser `Kerzenschluss`). Dort ändern sich die ZigZag-Punkte beider Handelszeiteinheiten.
+Die Strategie wird bei jedem Kerzenschluss der Handelszeiteinheit ausgewertet (Auslöser `Kerzenschluss` mit der Zeiteinheit aus dem Strategieparameter Handelszeiteinheit). Dort ändern sich die ZigZag-Punkte der Handelszeiteinheit.
 
 Auf einer größeren Zeiteinheit wird geprüft, ob ein intakter markttechnischer Trend vorliegt. Diese größere Zeiteinheit dient als Signalzeiteinheit. Dafür kommen M15, H1, H4 oder D1 infrage.
 
@@ -33,7 +33,7 @@ Liegt kein intakter Trend vor, wird kein Trade geplant. Liegt ein intakter Trend
 
 ### 2. Handelsmöglichkeit erkennen
 
-Ausgehend von der Signalzeiteinheit wird eine kleinere Handelszeiteinheit gewählt. Zuerst gilt die größere der beiden zulässigen, bei Bedarf die kleinere (Abschnitt 4):
+Die Handelszeiteinheit ist kleiner als die Signalzeiteinheit. Welche Paarungen sich bewährt haben, zeigt die Tabelle; sie ist eine Empfehlung für die Werte der beiden Strategieparameter, nicht Teil des Ablaufs:
 
 | Signalzeiteinheit | mögliche Handelszeiteinheiten |
 |---|---|
@@ -60,11 +60,11 @@ Entry-Puffer und Stop-Puffer sind Parameter von ungefähr 3 bis 5 Pips. Der Take
 
 ### 4. Risiko und Handelbarkeit prüfen
 
-Aus Einstieg, Stop-Loss, Tickwert und einer Risikogrenze von maximal 1 % des Kapitals wird das Handelsvolumen berechnet. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen. Die Risikoregel ist eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %) und gilt als Regel der Strategie für jede Order.
+Das Handelsvolumen bestimmt die Risikoregel der Strategie: eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002), die als Regel der Strategie für jede Order gilt. Sie berechnet das Volumen aus Einstieg, Stop-Loss, Tickwert und einer Risikogrenze von maximal 1 % des Kapitals und rundet es auf den Volumenschritt ab. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen.
 
-Danach wird geprüft, ob dieses Volumen die Mindestlot- und Volumenschrittregeln des Brokers erfüllt und ob ausreichend freie Margin vorhanden ist.
+Danach wird geprüft, ob dieses Volumen das Mindestvolumen des Instruments erreicht und ob ausreichend freie Margin vorhanden ist.
 
-Ist der Trade auf der gewählten Handelszeiteinheit nicht handelbar, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“. Dort setzt der Ablauf den Strategieparameter Handelszeiteinheit auf die kleinere zulässige Handelszeiteinheit und beginnt die Prüfung ab Abschnitt 2 von vorn: Trend, Punkte, Planung, Risiko. Ist auch auf der kleinsten zulässigen Handelszeiteinheit kein handelbares Volumen möglich, wird keine Order gestellt.
+Ist der Trade nicht handelbar, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Order gestellt. Die Strategie wechselt nicht selbst auf eine kleinere Handelszeiteinheit. Ob die Strategie in einem solchen Fall mit dem nächstkleineren Zeiteinheitenpaar (zum Beispiel M15/M5 statt H1/M15) erneut gestartet wird, kann bei ihrer Anwendung festgelegt werden; das ist ein Neustart mit anderen Parametern und nicht Teil dieses Testfalls.
 
 ### 5. Order stellen
 
@@ -76,7 +76,7 @@ Die Verwaltung der Order hat zwei Auslöser: `Tick` und `Kerzenschluss` der Hand
 
 Bei jedem Tick: Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Order wird gelöscht.
 
-Bei jedem Kerzenschluss der Handelszeiteinheit: Weicht der noch nicht endgültige Punkt 1/3 vom Stop-Loss-Bezug der Order ab (Vergleich mit `Order.Stop-Loss`), werden Stop-Loss und Take-Profit mit „Order ändern“ angepasst. Die prüfenden Regeln der Strategie (Risiko, Volumen, Margin) gelten dabei erneut. Das Volumen einer wartenden Order kann nicht geändert werden. Nimmt „Order ändern“ den Ausgang „nicht geändert“, weil das bestehende Volumen nicht mehr zur Risikogrenze passt oder der Trade nicht mehr regelgerecht handelbar ist, wird die Order gelöscht. Der nächste Auslöser des Hauptablaufs plant den Trade neu.
+Bei jedem Kerzenschluss der Handelszeiteinheit: Weicht der noch nicht endgültige Punkt 1/3 vom Stop-Loss-Bezug der Order ab (Vergleich des neu berechneten Stop-Loss mit `Order.Stop-Loss`), werden Stop-Loss und Take-Profit mit „Order ändern“ angepasst. Die Regeln der Strategie gelten dabei erneut, die Risikoregel jetzt prüfend, weil das Volumen einer wartenden Order nicht geändert werden kann. Nimmt „Order ändern“ den Ausgang „nicht geändert“, weil das bestehende Volumen die Risikogrenze nicht mehr einhält oder der Trade nicht mehr regelgerecht handelbar ist, wird die Order gelöscht. Der nächste Auslöser des Hauptablaufs plant den Trade neu.
 
 ### 7. Ausführung verarbeiten
 
@@ -95,9 +95,9 @@ Der Trade endet, wenn der Stop-Loss oder der Take-Profit erreicht wird.
 | Parameter | Bedeutung | Wert oder Regel | Status |
 |---|---|---|---|
 | Signalzeiteinheit | Strategieparameter, Zeiteinheit für Trend und Marktphase | M15, H1, H4 oder D1 | bestätigt |
-| Handelszeiteinheit | Strategieparameter, Zeiteinheit für Punkt 2, Punkt 1/3 und Tradeplanung | gemäß festgelegter Paarung, im Ablauf auf die kleinere umschaltbar | bestätigt |
-| Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
-| Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | Parameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
+| Handelszeiteinheit | Strategieparameter, Zeiteinheit für Auslöser, Punkt 2, Punkt 1/3, Tradeplanung und Verwaltung der Order | kleiner als die Signalzeiteinheit, Empfehlung nach der Paarungstabelle in Abschnitt 2 | bestätigt |
+| Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | Strategieparameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
+| Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | Strategieparameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
 | Risikogrenze | maximaler Verlust je Trade, Regelvorlage „Risiko je Trade“ | 1 % des Kapitals | bestätigt |
 | effektives CRV | Verhältnis von möglichem Gewinn zu möglichem Verlust | 1:1 einschließlich Spread und vorgesehenem Puffer | bestätigt |
 | ZigZag-Einstellung | Bestimmung der 1-2-3-Punkte | ZigZag nach dem Verfahren des in MetaTrader 5 mitgelieferten Indikators, Parameter Depth (Standard 12), Deviation (Standard 5), Backstep (Standard 3) | bestätigt |
@@ -108,12 +108,12 @@ Der ZigZag-Indikator ist ein Indikator von pipwerk. Er rechnet nach demselben Ve
 
 ## Offene fachliche Fragen
 
-Keine.
+- Beim Short-Trade enthält der Stop-Loss den Spread zum Zeitpunkt der Planung. Ändert sich nur der Spread, weicht der in Abschnitt 6 neu berechnete Stop-Loss von `Order.Stop-Loss` ab, obwohl Punkt 1/3 gleich geblieben ist. Ob die Order dann angepasst werden soll, ist offen. Für die Gestaltung im Strategiedesigner ohne Bedeutung.
 
 ## Bestätigungsvermerk
 
 - fachlich geprüft durch: Auftraggeber
-- Ergebnis: bestätigt im Chat am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15
+- Ergebnis: bestätigt im Chat am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15, Klarstellung zur Handelszeiteinheit (kein Wechsel im Ablauf) im Chat am 2026-10-15
 - Datum: `2026-10-15`
 
 ## Herkunft

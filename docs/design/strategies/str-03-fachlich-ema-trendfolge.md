@@ -31,7 +31,7 @@ Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreu
 
 ### 3. Position eröffnen
 
-Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %): Der Verlust bis zum Stop-Loss beträgt höchstens 1 % des Kapitals. Stop-Loss und Volumen werden als Berechnungen im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung. Das Volumen wird auf die Volumenschrittweite abgerundet. Liegt es unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
+Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Der Stop-Loss wird als Berechnung im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung, und der Order direkt übergeben. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002): Der Verlust bis zum Stop-Loss beträgt höchstens 1 % des Kapitals, das Volumen wird auf den Volumenschritt abgerundet. Liegt es unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
 
 ### 4. Position verwalten
 

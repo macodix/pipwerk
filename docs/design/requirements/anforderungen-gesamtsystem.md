@@ -79,6 +79,8 @@ Deutsch und Englisch sind die ersten bereitgestellten Sprachen. Weitere Sprachen
 
 Das konkrete Speicher-Backend ist konfigurierbar. Pipwerk schreibt kein bestimmtes Speicher-Backend für das Gesamtsystem oder eine Komponente fest.
 
+Persistente Daten werden in zwei Bereiche getrennt: den Objektspeicher für die vom Anwender gestalteten Objekte (Strategien und Vorlagen) und die übrigen Daten (req-system-015).
+
 Jede Komponente, die Daten persistent speichert, muss ihre Speicheranbindung über ihre Konfiguration festlegen können.
 
 ### req-system-013 -- Unabhängige Speicherzuordnung
@@ -140,6 +142,8 @@ Eine eigene Benutzeroberfläche des `Nachrichtensystems` ist derzeit nicht festg
 Für persistente Datenspeicherung wird SQLAlchemy als gemeinsame Speicherschnittstelle verwendet.
 
 Das über SQLAlchemy verwendete konkrete Speicher-Backend ist Bestandteil der Konfiguration und wird von Pipwerk nicht allgemein festgelegt.
+
+Der Objektspeicher (req-system-012) ist davon getrennt. Wo er liegt, ist eine Einstellung der Komponente: ein Verzeichnis, in dem jedes Objekt eine Datei ist, oder eine Datenbank über SQLAlchemy. In der ersten Ausbaustufe gibt es nur das Verzeichnis; die Dateien sind dort die verbindliche Fassung der Objekte. Alle übrigen persistenten Daten werden über SQLAlchemy gespeichert.
 
 ### req-system-016 -- Zweistufige Konfiguration
 
@@ -207,3 +211,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst, Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
 | 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, einfache Backslashes in den Windows-Pfaden, Dateiname der Startkonfiguration als Festlegung der technischen Dokumentation. |
 | 2026-10-15 | req-system-011: „extern zugänglich“ festgelegt, Anmeldung grundsätzlich vorgesehen, Zeitpunkt offen. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
+| 2026-10-15 | req-system-012 und req-system-015: Objektspeicher für Strategien und Vorlagen getrennt von den übrigen Daten, Ablage als Einstellung wahlfrei (Verzeichnis oder Datenbank), erste Ausbaustufe Verzeichnis. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`, Nachprüfung der QA). |

@@ -22,7 +22,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Objekttyp | Die Art eines Objekts, zum Beispiel „gleitender Durchschnitt (EMA)“ oder „Markttechnik-Trend“. Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
 | Vorlage | Ein gespeichertes Objekt (Indikator, Trend, Regel, Regelwerk) mit Standardwerten. Beim Einfügen in eine Strategie entsteht daraus eine Instanz. |
 | Instanz | Das Objekt, das beim Einfügen einer Vorlage oder eines Objekttyps in eine Strategie entsteht. Es übernimmt die Standardwerte, trägt einen in der Strategie vergebenen Namen (zum Beispiel EMA21), gehört nur dieser Strategie und nennt seine Herkunft. |
-| Objekte der Anwendung | Konto, Instrument, Kerze, Tick, Order, Position und Strategie: je Anwendung einer Strategie einmal vorhanden, ohne Parameter, nicht gespeichert, in Ausdrücken immer verfügbar. Ihre Werte stellt das Handelssystem beziehungsweise der Strategietester bereit. |
+| Objekte der Anwendung | Konto, Instrument, Kerze, Tick, Order, Position und Strategie: Objekte, deren Werte das Handelssystem beziehungsweise der Strategietester bereitstellt. Ihr Objekttyp wird nicht vom Anwender gestaltet und nicht als Vorlage gespeichert. Sie können Parameter haben und mehrfach als Instanz verwendet werden, in Ausdrücken sind sie immer verfügbar. |
 | Strategieparameter | Ein Wert, der an einer Stelle der Strategie festgelegt und überall in ihr verwendet wird, zum Beispiel die Handelszeiteinheit. Er kann im Ablauf mit dem Element „Parameter setzen“ geändert werden. |
 | Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
@@ -31,7 +31,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Anwendung einer Strategie | Die Zuordnung einer Strategie zu einem Konto und einem Instrument. Sie besteht, bis der Nutzer sie aufhebt. Dieselbe Strategie auf zwei Instrumenten sind zwei Anwendungen. |
 | Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, ausgelöst durch einen Auslöser, zum Beispiel jeden Kerzenschluss. |
 | Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er läuft mit eigenen Auslösern für genau diese Order und die daraus entstehende Position, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
-| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „nicht gestellt“. |
+| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „nicht gestellt“. |
 | Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. Es hat die Ausgänge „geändert“ und „nicht geändert“. |
 | Order löschen | Das Element, das eine wartende Order löscht. |
 | Position ändern | Das Element, das Stop-Loss oder Take-Profit einer offenen Position ändert. Es hat die Ausgänge „geändert“ und „nicht geändert“. |
@@ -89,16 +89,16 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | tmux | Programm, das Terminalsitzungen im Hintergrund weiterlaufen lässt. Jede Sitzung des Softwarearchitekten läuft in einer eigenen tmux-Sitzung. |
 
 ## Änderungsnachweis
-
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-15 | Vorlage, Instanz, Objekte der Anwendung, Strategieparameter, Parameter setzen ergänzt. Verweis entfernt. Auslöser, Regelwerk, Verbindung, Standardwert und Ausgänge der Elemente angepasst. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
+| 2026-10-15 | Objekte der Anwendung: mit Parametern und mehreren Instanzen. Order aufgeben: Eigenschaften statt Parameter. Änderungsnachweis nach Datum geordnet. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`, Nachprüfung der QA). |
 | 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |
 | 2026-10-14 | Anwendung einer Strategie, Auswertung und Verwaltung einer Order ergänzt. |
 | 2026-10-14 | Order aufgeben: Ausgänge gestellt und abgelehnt. |
-| 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |
 | 2026-10-14 | Schreibweise „pipwerk Studio“ nach req-ui-010 im Eintrag „Gemeinsame Python-Bibliothek“. |
+| 2026-10-13 | Elemente Order ändern, Order löschen, Position ändern, Position schließen ergänzt. |
 | 2026-10-12 | Konsistenzprüfung statt Prüfung, Pflichtparameter und Standardwert ergänzt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |
-| 2026-10-15 | Vorlage, Instanz, Objekte der Anwendung, Strategieparameter, Parameter setzen ergänzt. Verweis entfernt. Auslöser, Regelwerk, Verbindung, Standardwert und Ausgänge der Elemente angepasst. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
