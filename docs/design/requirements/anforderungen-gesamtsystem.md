@@ -5,7 +5,7 @@
 - status: `draft`
 - abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-10-14`
+- zuletzt aktualisiert: `2026-10-15`
 
 ## 1. Systemaufteilung
 
@@ -64,6 +64,8 @@ Die konkrete Programmiersprache einer Ersatzimplementierung ist nicht Bestandtei
 ### req-system-011 -- Schutz externer Schnittstellen
 
 Die Erreichbarkeit und Berechtigungen der Web-APIs müssen konfigurierbar sein. Schreibende, ausführende oder den Handel betreffende Funktionen dürfen nicht ohne geeignete Authentifizierung und Autorisierung extern zugänglich sein. Webhooks müssen ihren Absender beziehungsweise ihre Berechtigung prüfen und wiederholte Übermittlung eindeutig behandelbar machen.
+
+„Extern zugänglich“ bedeutet erreichbar von außerhalb des Netzes, das der Betreiber kontrolliert. Eine Anmeldung mit Berechtigungen ist für alle Komponenten grundsätzlich vorgesehen. Offen: ab welchem Vorhaben sie umgesetzt wird. Bis dahin dürfen Komponenten nur innerhalb des vom Betreiber kontrollierten Netzes erreichbar sein.
 
 ### req-system-023 -- Mehrsprachige Benutzeroberflächen
 
@@ -204,3 +206,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-09-26 | Zentrale Verwaltung und vollständige gemeinsame Bereitstellung der maschinenlesbaren Definition der Schnittstellen sowie deren menschenlesbare Dokumentation festgelegt. |
 | 2026-10-13 | Mehrsprachige Benutzeroberflächen mit Deutsch und Englisch als ersten Sprachen festgelegt. Technische Vorgaben des Auftraggebers in einen eigenen Abschnitt zusammengefasst, Abschnitte neu gegliedert, Kennungen unverändert. Fehlerhaften Eintrag des Änderungsnachweises vom 2026-10-12 entfernt. Begriff „Vertrag“ durch „Definition der Schnittstellen“ ersetzt. |
 | 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, einfache Backslashes in den Windows-Pfaden, Dateiname der Startkonfiguration als Festlegung der technischen Dokumentation. |
+| 2026-10-15 | req-system-011: „extern zugänglich“ festgelegt, Anmeldung grundsätzlich vorgesehen, Zeitpunkt offen. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |

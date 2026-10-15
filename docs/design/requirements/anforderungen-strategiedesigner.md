@@ -4,8 +4,8 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-14`
-- abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht
+- zuletzt aktualisiert: `2026-10-15`
+- abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
 
@@ -40,7 +40,8 @@ Beispiele sind:
 -   Trend,
 -   Indikator,
 -   Order,
--   Position.
+-   Position,
+-   Konto, Instrument, Kerze, Tick (Objekte der Anwendung, Fachmodell req-fach-051).
 
 Marktphase, Bewegung und Korrektur sind keine eigenen Objekte, sondern Werte der Eigenschaft `Phase` eines Indikators, zum Beispiel des Indikators Markttechnik.
 
@@ -133,7 +134,7 @@ Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als 
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie hat mindestens einen Auslöser. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Auslöser sind nicht auf periodische Prüfungen beschränkt. Ein zeitbasierter Auslöser kann beispielsweise ein Kerzenschluss sein. Andere ereignisbasierte Auslöser müssen grundsätzlich möglich sein.
+Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie hat mindestens einen Auslöser. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen legt das Fachmodell fest (req-fach-053): Kerzenschluss mit Zeiteinheit, Tick und externes Ereignis. Die Verwaltung einer Order hat eigene Auslöser-Elemente innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
 
 Die Wiederholung einer Strategieauswertung ergibt sich aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -199,11 +200,9 @@ festgelegt.
 
 ### req-param-005 -- Parameter und Standardwerte eines gespeicherten Objekts
 
-Ein gespeichertes Objekt legt seinen Objekttyp, seine Parameter und deren Standardwerte fest. Alles, was sich zwischen Strategien unterscheiden kann, ist ein Parameter des Objekts. Beim Trend ist auch das Berechnungsverfahren ein Parameter. Je nach gewähltem Verfahren zeigt die Eigenschaftenansicht die zugehörigen weiteren Parameter.
+Ein gespeichertes Objekt ist eine Vorlage (Fachmodell req-fach-013a). Es legt seinen Objekttyp und die Standardwerte seiner Parameter fest. Beim Trend ist auch das Berechnungsverfahren ein Parameter. Je nach gewähltem Verfahren zeigt die Eigenschaftenansicht die zugehörigen weiteren Parameter.
 
-Die Werte der Parameter legt jede Strategie an der Stelle fest, an der sie das Objekt verwendet. Beim Einfügen werden die Standardwerte übernommen. Eine Änderung eines Parameterwerts in einer Strategie betrifft nur diese Strategie.
-
-Das Bearbeiten eines gespeicherten Objekts beschränkt sich auf das Ergänzen von Parametern und das Ändern von Standardwerten.
+Beim Einfügen in eine Strategie entsteht eine Instanz, die die Standardwerte der Vorlage übernimmt und in der Strategie einen eigenen Namen erhält. Alle Parameter der Instanz sind in der Strategie änderbar, auch nach dem Speichern. Eine Änderung betrifft nur diese Strategie. Eine Vorlage kann in Bezeichnung, Beschreibung, Standardwerten und, bei Regeln, im fachlichen Ausdruck geändert werden, bestehende Instanzen bleiben davon unberührt. Eine Instanz kann als neue Vorlage gespeichert werden.
 
 ### req-param-006 -- Pflichtparameter und optionale Parameter
 
@@ -219,9 +218,7 @@ Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständ
 
 ### req-core-002 -- Trennung von Strategie und allgemeinen Regeln
 
-Allgemeine Risiko-, Konto-, Instrument- und Brokerregeln dürfen nicht
-als Eigenschaften einer einzelnen Strategie dupliziert werden. Eine
-Strategie muss diese Regeln bei Bedarf referenzieren können.
+Allgemeine Risiko-, Konto-, Instrument- und Brokerregeln werden als Vorlagen von Regeln und Regelwerken außerhalb der einzelnen Strategie gepflegt. Eine Strategie übernimmt sie als Instanz mit den Standardwerten der Vorlage (req-param-005), zum Beispiel die Regel „Risiko je Trade“ mit dem Standardwert 1 % des Kapitals.
 
 ## 6. Darstellung und Detaillierung
 
@@ -237,9 +234,9 @@ bestehen können. Der Nutzer muss diese Details bei Bedarf öffnen können.
 
 ### req-ui-003 -- Tätigkeiten und Prüfungen im Ablauf
 
-Elemente des Ablaufs müssen eine Tätigkeit oder eine konkrete Prüfung
+Elemente des Ablaufs (Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen) müssen eine Tätigkeit oder eine konkrete Prüfung
 ausdrücken. Reine Substantive wie „Marktstruktur", „Handelsplanung" oder
-„Pending Order" genügen nicht als Ablaufschritt.
+„Pending Order" genügen nicht als Ablaufschritt. Jedes Ablaufelement trägt die Bezeichnung seines Elementtyps als Tätigkeit, der Anwender kann sie ändern. Elemente, die ein Objekt zeigen, tragen den Namen des Objekts.
 
 Geeignete Beispiele sind:
 
@@ -251,8 +248,7 @@ Geeignete Beispiele sind:
 
 ### req-ui-004 -- Fachlicher und technischer Detailgrad getrennt
 
-Die fachliche Darstellung und die technische Ausführungsspezifikation
-müssen getrennte, miteinander verknüpfte Ebenen bilden.
+Die fachliche Darstellung ist die Zeichenfläche mit ihren Elementen. Die technische Ebene ist das gespeicherte Strategiedokument. Beide bilden getrennte, miteinander verknüpfte Ebenen: Jedes Element der Zeichenfläche entspricht einem Teil des Strategiedokuments.
 
 ### req-ui-005 -- Dynamische Eigenschaftenansicht
 
@@ -263,6 +259,8 @@ Diese Eigenschaftenansicht muss soweit möglich dynamisch aus den vom
 konkreten Objekt und seinen verwendeten Berechnungsverfahren bereitgestellten
 Metadaten aufgebaut werden. Sie darf keine Kenntnis einer konkreten
 Handelsstrategie voraussetzen.
+
+Die Eigenschaftenansicht einer Instanz zeigt deren Herkunft: die Vorlage, aus der sie entstanden ist, und ihren Objekttyp, zum Beispiel „markttechnik_trend, aus Vorlage Markttechnik-Trend, Objekttyp Trend“. Die Eigenschaftenansicht der Strategie selbst (Bezeichnung, Beschreibung, Strategieparameter, Regeln und Regelwerke der Strategie) öffnet ein Klick auf die leere Zeichenfläche.
 
 ### req-ui-006 -- Hierarchische Darstellung komplexer Abläufe
 
@@ -303,6 +301,14 @@ Meldungen, die bestätigt werden müssen, sind kritischen Fehlern vorbehalten, e
 
 Offen: Anzeige von Befunden, die keinem einzelnen Element zugeordnet sind, und Darstellung von Hinweisen.
 
+### req-ui-012 -- Regeln und Regelwerke zuordnen (vorläufig)
+
+Regeln und Regelwerke stehen nicht als Elemente auf der Zeichenfläche. Der Anwender ordnet sie in der Eigenschaftenansicht der Strategie oder eines Elements („Order aufgeben“, „Order ändern“, „Position ändern“) aus der Elementbibliothek zu, einzeln oder als Regelwerk. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Ob Regeln als eigene Elemente auf der Zeichenfläche gebraucht werden, wird mit den Testfällen erprobt.
+
+### req-ui-013 -- Eingabehilfe für Ausdrücke
+
+Bei der Eingabe eines Ausdrucks zeigt der Designer nach einem Objektnamen und einem Punkt die verfügbaren Eigenschaften dieses Objekts zur Auswahl an, einschließlich der Eigenschaften der Objekte der Anwendung (Fachmodell req-fach-051).
+
 ## 7. Arbeitsabläufe
 
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
@@ -310,8 +316,8 @@ Offen: Anzeige von Befunden, die keinem einzelnen Element zugeordnet sind, und D
 Der Strategiedesigner bietet folgende Arbeitsabläufe:
 
 1. Strategie anlegen, öffnen, bearbeiten, speichern, schließen, löschen
-2. Objekt anlegen, öffnen, bearbeiten, speichern, löschen (Indikator, Trend, Regel, Regelwerk)
-3. Konsistenzprüfung Strategie
+2. Objekt (Vorlage) anlegen, öffnen, bearbeiten, speichern, löschen (Indikator, Trend, Regel, Regelwerk)
+3. Konsistenzprüfung Strategie und Objekt
 4. Einstellungen ändern
 
 ### req-ablauf-002 -- Strategie anlegen
@@ -320,9 +326,9 @@ Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenflä
 
 ### req-ablauf-003 -- Objekte in einer Strategie verwenden
 
-Der Anwender zieht einen Objekttyp aus der Elementbibliothek auf die Zeichenfläche und setzt die Parameter in der Eigenschaftenansicht. Beim Speichern der Strategie wird das Objekt als eigenes Objekt mitgespeichert und steht danach in der Elementbibliothek für andere Strategien zur Verfügung.
+Der Anwender zieht einen Objekttyp oder eine gespeicherte Vorlage aus der Elementbibliothek auf die Zeichenfläche. Es entsteht eine Instanz mit den Standardwerten des Objekttyps beziehungsweise der Vorlage. In der Eigenschaftenansicht gibt der Anwender der Instanz einen Namen (zum Beispiel `EMA21`), unter dem sie in Ausdrücken dieser Strategie angesprochen wird, und setzt ihre Parameter. Zwei Instanzen aus derselben Vorlage sind zwei Objekte der Strategie. Die Instanz wird mit der Strategie gespeichert. Auf Wunsch speichert der Anwender sie als neue Vorlage, die danach in der Elementbibliothek für andere Strategien zur Verfügung steht.
 
-Alternativ zieht der Anwender ein bereits gespeichertes Objekt aus der Elementbibliothek auf die Zeichenfläche. Die Parameterwerte setzt die Strategie an der Verwendungsstelle (req-param-005).
+Konto, Instrument, Kerze und Tick (Objekte der Anwendung) sind in Ausdrücken immer verfügbar. Sie stehen zusätzlich in der Elementbibliothek und können auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und bei der Kerze die Zeiteinheit zu setzen. Sie brauchen keine Ablaufverbindung, ebenso wenig wie Indikatoren und Trends.
 
 ### req-ablauf-004 -- Objekt anlegen (vorläufig)
 
@@ -334,20 +340,31 @@ Beim Speichern läuft die Konsistenzprüfung. Befunde werden angezeigt. Gespeich
 
 ### req-ablauf-006 -- Strategie und Objekt löschen
 
-Eine Strategie wird nach Rückfrage gelöscht. Ein Objekt, das noch in Strategien oder anderen Objekten verwendet wird, zum Beispiel eine Regel in einem Regelwerk oder ein Indikator in einem Trend, kann nicht gelöscht werden. Der Designer zeigt, welche Strategien und Objekte es verwenden.
+Eine Strategie wird nach Rückfrage gelöscht. Eine Vorlage wird nach Rückfrage gelöscht, bestehende Instanzen in Strategien und anderen Vorlagen bleiben unverändert, weil sie die Werte der Vorlage übernommen haben. Der Designer zeigt vor dem Löschen, welche Strategien und Vorlagen Instanzen aus dieser Vorlage enthalten.
 
 ### req-ablauf-007 -- Konsistenzprüfung Strategie
 
-Die Konsistenzprüfung läuft beim Speichern und auf Anforderung. Sie findet mindestens:
+Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage (Regel, Regelwerk, Indikator, Trend) und auf Anforderung. Sie findet mindestens:
 
 - Auslöser ohne Verbindung in den Ablauf (Fehler)
-- Element ohne Verbindung (Fehler)
+- Ablaufelement ohne Verbindung (Fehler). Für Objekte auf der Zeichenfläche (Indikatoren, Trends, Objekte der Anwendung) gilt das nicht, sie werden über Ausdrücke verwendet.
+- Fehlerhafter Ausdruck, zum Beispiel Schreibfehler, unbekannte Funktion oder unbekannte Eigenschaft (Fehler)
+- Ergebnis einer bestimmenden Regel passt nicht zur Eigenschaft, die sie bestimmt (Fehler)
+- Rückführung im Ablauf ohne Bedingung, die sie beendet (Fehler)
 - Pflichtparameter ohne Wert, der auch nicht erst bei der Anwendung übergeben wird (Fehler)
 - Bedingung, die eine Eigenschaft verwendet, die das Objekt nicht hat (Fehler)
 - Regelwerk, dessen Reihenfolge nicht auswertbar ist: Vorwärtsbezug oder Zirkelbezug nach req-fach-045 (Fehler)
 - Kein Element „Order aufgeben“ erreichbar (Hinweis)
 
 Speichern ist immer möglich, auch bei Fehlern. Eine Strategie mit Fehlern kann nicht ausgeführt werden. Die Anzeige der Befunde regelt req-ui-011.
+
+### req-ablauf-008 -- Strategie und Objekt öffnen
+
+Der Menüpunkt „Öffnen“ zeigt eine Liste der gespeicherten Strategien mit Bezeichnung, Beschreibung und Zeitpunkt der letzten Änderung. Die Auswahl lädt die Strategie auf die Zeichenfläche. Eine gespeicherte Vorlage öffnet der Anwender aus der Elementbibliothek in ihrer Eigenschaftenansicht. Enthält eine Strategiedatei einen Verweis, der sich nicht auflösen lässt, wird die Strategie trotzdem geöffnet und das betroffene Element mit einem Befund der Konsistenzprüfung markiert.
+
+### req-ablauf-009 -- Objektverzeichnis ändern
+
+Ändert der Anwender in den Einstellungen das Objektverzeichnis (req-ui-009), fragt der Designer, ob die vorhandenen Dateien in das neue Verzeichnis verschoben werden sollen. Bei „Ja“ verschiebt er sie. Bei „Nein“ bleibt das alte Verzeichnis unverändert, und der Designer zeigt ab jetzt den Inhalt des neuen.
 
 ## 8. Dokumententrennung
 
@@ -401,7 +418,8 @@ Die folgenden Punkte sind noch nicht entschieden:
 8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
-9.  Welche Objekte als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
+9.  Welche Objekte über EMA, ATR und Markttechnik hinaus (Fachmodell req-fach-054) als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
+10. Anmeldung und Berechtigung für die Web-API (Gesamtsystem req-system-011). Im Vorhaben `strategiedesign` ohne Anmeldung, pipwerk Studio ist dort nur im eigenen Netz des Anwenders erreichbar.
 
 ## 10. Änderungsnachweis
 
@@ -436,3 +454,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-14 | req-ui-010: Zeilenumbruch zwischen „pipwerk“ und „Studio“ zulässig (Auftraggeber im Chat). |
 | 2026-10-14 | Auslöser auch am Anfang der Verwaltung einer Order. Abgestimmt mit dem Auftraggeber im Chat. |
 | 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, „Berechnungsverfahren“ statt „Komponente“ eines Objekts, „Eigenschaften“ statt „Parameter“ eines Ordertyps, Marktphase, Bewegung und Korrektur als Werte der Eigenschaft Phase, Objekte liefern keine Ergebnisse, Gültigkeit wartender Orders über die Verwaltung, keine ExitOrder, Objektverzeichnis und Speicher, Aufrufstelle des Dialogs „Über pipwerk Studio“ ohne Bezug auf die Sprachauswahl, Standanzeige beschrieben, Löschschutz auch bei Verwendung in Objekten, sprachliche Fehler, Änderungsnachweis als eine Tabelle. |
+| 2026-10-15 | Entscheidungen des Auftraggebers zu den Befunden der QA (`strategiedesign`, Durchlauf 1): Objekte der Anwendung (req-fach-001, req-ablauf-003), Auslösertypen (req-fach-015), Vorlage und Instanz (req-param-005, req-core-002, req-ablauf-003, req-ablauf-006), Benennung von Ablaufelementen (req-ui-003), fachliche und technische Ebene (req-ui-004), Herkunft und Eigenschaftenansicht der Strategie (req-ui-005), Regeln zuordnen vorläufig (req-ui-012), Eingabehilfe (req-ui-013), Konsistenzprüfung erweitert (req-ablauf-007), Öffnen (req-ablauf-008), Objektverzeichnis ändern (req-ablauf-009), Anmeldung als offener Punkt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-15. |

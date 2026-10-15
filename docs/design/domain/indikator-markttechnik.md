@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Fachliche Beschreibung des Indikators, der Trend, Phase und Punkte nach der Markttechnik von Michael Voigt aus ZigZag-Wendepunkten bestimmt
-- zuletzt aktualisiert: `2026-10-14`
+- zuletzt aktualisiert: `2026-10-15`
 
 ## 1. Zweck
 
@@ -14,6 +14,7 @@ Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er
 
 | Parameter | Bedeutung | Standardwert |
 |---|---|---|
+| Zeiteinheit | Zeiteinheit der Kerzen, auf denen der Indikator rechnet (Fachmodell req-fach-054) | -- |
 | Depth | Mindestanzahl Kerzen zwischen zwei Wendepunkten | 12 |
 | Deviation | Mindestbewegung in Punkten für einen neuen Wendepunkt | 5 |
 | Backstep | Mindestabstand in Kerzen zwischen einem Hoch und einem Tief | 3 |
@@ -61,7 +62,7 @@ Der Aufwärtstrend ist intakt, solange der Kurs nicht unter `Punkt 1/3` gefallen
 
 ## 5. Verwendung im Punkt-2-Ausbruch
 
-Auf der Signalzeiteinheit werden `Trend intakt` und `Phase` verwendet. Auf der Handelszeiteinheit werden `Punkt 2`, `Punkt 1/3` und `Punkt 1/3 endgültig` verwendet.
+Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit werden `Trendrichtung` (sie bestimmt die Handelsrichtung), `Trend intakt` und `Phase` verwendet. Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, `Punkt 1/3` und `Punkt 1/3 endgültig` verwendet.
 
 ## 6. Offen
 
@@ -72,3 +73,4 @@ Die Bestimmung in Abschnitt 4 ist vom Projektleiter aus der Markttechnik nach Vo
 | Datum | Änderung |
 |---|---|
 | 2026-10-14 | Erstfassung. Eigenschaften mit dem Auftraggeber im Chat abgestimmt, Bestimmung als Entwurf. |
+| 2026-10-15 | Parameter Zeiteinheit, Trendrichtung auf beiden Zeiteinheiten im Punkt-2-Ausbruch. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |

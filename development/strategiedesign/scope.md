@@ -31,10 +31,12 @@ Aus der Zeit vor dem Entwicklungsverfahren liegen ein Pflichtenheft und Arbeitsp
 
 Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Phase 2:
 
-- Fachmodell: OrderBuilder, erste Auswahl der OpenFormula-Funktionen.
+- Fachmodell: OrderBuilder, weitere Funktionen der ersten Auswahl und deutsche Funktionsnamen (req-fach-036), Objekt Kurs für Strategien ohne Kerzen (req-fach-051), externes Ereignis als Auslöser (req-fach-053), weitere mitgelieferte Indikatoren und Expert Advisors (req-fach-054).
 - Indikator Markttechnik: Bestimmung von Trend und Phase, erst für die Berechnung im Strategietester nötig.
-- Strategiedesigner: Grundausstattung an mitgelieferten Objekten.
+- Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR und Markttechnik hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
+
+Vormerkung außerhalb des Vorhabens, für die Anforderungen an den Strategietester, sobald sie angelegt werden: Die Objekte der Anwendung erhalten im Strategietester einstellbare Werte je Testlauf (angenommenes Kapital, Spread, Brokerbedingungen), damit der Test eine Kontoentwicklung zeigt und verschiedene Broker verglichen werden können.
 
 ## Stand
 
-Phase 1. Die Dokumente waren vor der Prüfung durch die QA abgestimmt. Prüfbericht [requirements-1.md](reviews/requirements-1.md): nicht bestanden, 43 Befunde. 18 Befunde vom Projektleiter anhand bestehender Festlegungen korrigiert ([requirements-1-response.md](reviews/requirements-1-response.md)). Die übrigen 20 liegen dem Auftraggeber als Fragen mit Vorschlag in der Präsentation [requirements-1.html](presentations/requirements-1.html) vor. Nach der Abstimmung werden die Entscheidungen eingearbeitet, danach beginnt Phase 2 mit `specify` und der Nachprüfung durch die QA.
+Phase 2. Prüfbericht [requirements-1.md](reviews/requirements-1.md) aus Phase 1: nicht bestanden, 43 Befunde. 18 vom Projektleiter korrigiert, 20 vom Auftraggeber am 15. Oktober 2026 entschieden ([requirements-1-response.md](reviews/requirements-1-response.md), Präsentation [requirements-1.html](presentations/requirements-1.html) mit Vermerk der Bestätigung). Entscheidungen in die Dokumente eingearbeitet. Phase 2 mit `specify` angestoßen: Nachprüfung durch die QA, danach Spezifikation.

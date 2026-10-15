@@ -5,7 +5,7 @@
 - strategie-id: `str-03`
 - status: `understood`
 - quelle: Entwurf „Trendfolge mit gleitenden Durchschnitten“ in `Teststrategien_fuer_den_grafischen_Strategiedesigner.md` und Abschnitt 2.1 „Moving-Average-Crossover“ in `trading-strategiesammlung_v0.5.md`. Ausgearbeitet vom Projektleiter als Testfall im Auftrag des Auftraggebers.
-- zuletzt geprüft: `2026-10-14`
+- zuletzt geprüft: `2026-10-15`
 
 ## Zweck
 
@@ -17,7 +17,7 @@ Ein schneller und ein langsamer exponentieller gleitender Durchschnitt (EMA) wer
 
 ## Voraussetzungen
 
-Benötigt werden die Kerzen einer Zeiteinheit, der EMA-Indikator, der ATR-Indikator (Average True Range, durchschnittliche Schwankungsbreite einer Kerze) sowie Kapital des Kontos und Tickwert, Mindestvolumen und Volumenschrittweite des Instruments.
+Benötigt werden die Kerzen einer Zeiteinheit (Objekt `Kerze`), zwei Instanzen des mitgelieferten EMA-Indikators (`EMA20`, `EMA50`), eine Instanz des ATR-Indikators (Average True Range, durchschnittliche Schwankungsbreite einer Kerze, `ATR14`) sowie Kapital des Kontos und Tickgröße, Tickwert, Mindestvolumen und Volumenschritt des Instruments (Objekte der Anwendung, Fachmodell req-fach-051).
 
 ## Ablauf
 
@@ -27,18 +27,18 @@ Die Strategie wird bei jedem Kerzenschluss der Zeiteinheit ausgewertet.
 
 ### 2. Kreuzen prüfen
 
-Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreuzt hat. Ein Kreuzen nach oben liegt vor, wenn der schnelle EMA beim vorherigen Kerzenschluss unter oder auf dem langsamen lag und jetzt darüber liegt. Ein Kreuzen nach unten gilt spiegelbildlich. Ohne Kreuzen endet die Auswertung.
+Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreuzt hat. Ein Kreuzen nach oben liegt vor, wenn der schnelle EMA beim vorherigen Kerzenschluss unter oder auf dem langsamen lag (`VORHER(EMA20.Wert) <= VORHER(EMA50.Wert)`) und jetzt darüber liegt (`EMA20.Wert > EMA50.Wert`). Ein Kreuzen nach unten gilt spiegelbildlich. Ohne Kreuzen endet die Auswertung.
 
 ### 3. Position eröffnen
 
-Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Das Volumen bestimmt die Risikoregel: Der Verlust bis zum Stop-Loss beträgt höchstens 1 % des Kapitals. Das Volumen wird auf die Volumenschrittweite abgerundet. Liegt es unter dem Mindestvolumen, wird die Order abgelehnt und es wird keine Position eröffnet.
+Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %): Der Verlust bis zum Stop-Loss beträgt höchstens 1 % des Kapitals. Stop-Loss und Volumen werden als Berechnungen im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung. Das Volumen wird auf die Volumenschrittweite abgerundet. Liegt es unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
 
 ### 4. Position verwalten
 
-Jede eröffnete Position hat ihre eigene Verwaltung. Sie wird bei jedem Kerzenschluss der Zeiteinheit ausgewertet:
+Jede eröffnete Position hat ihre eigene Verwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Sie wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
 
 - Hat der schnelle EMA den langsamen entgegen der Richtung der Position gekreuzt, wird die Position ganz geschlossen.
-- Andernfalls wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird nur übernommen, wenn er den bisherigen Stop-Loss in Richtung der Position verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
+- Andernfalls wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird mit „Position ändern“ nur übernommen, wenn er den bisherigen Stop-Loss (`Position.Stop-Loss`) in Richtung der Position (`Position.Richtung`) verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
 
 ### 5. Position beenden
 
@@ -53,7 +53,7 @@ Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen
 | Periode langsamer EMA | Anzahl Kerzen | 50 | für den Testfall festgelegt |
 | ATR-Periode | Anzahl Kerzen | 14 | für den Testfall festgelegt |
 | Stop-Abstand | Vielfaches der ATR für ersten und nachgezogenen Stop-Loss | 2 | für den Testfall festgelegt |
-| Risikogrenze | maximaler Verlust je Position | 1 % des Kapitals | wie Punkt-2-Ausbruch |
+| Risikogrenze | maximaler Verlust je Position, Regelvorlage „Risiko je Trade“ | 1 % des Kapitals | wie Punkt-2-Ausbruch |
 
 ## Abgrenzung
 
@@ -66,5 +66,5 @@ Keine.
 ## Bestätigungsvermerk
 
 - fachlich geprüft durch: Auftraggeber
-- Ergebnis: bestätigt im Chat als zweiter Testfall
-- Datum: `2026-10-14`
+- Ergebnis: bestätigt im Chat als zweiter Testfall am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15
+- Datum: `2026-10-15`

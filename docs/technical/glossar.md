@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-14
+- stand: 2026-10-15
 
 ## Regeln
 
@@ -20,21 +20,25 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | --- | --- |
 | Objekt | Etwas, mit dem ein Händler arbeitet, beschrieben im Fachmodell, zum Beispiel Strategie, Trend, Indikator, Regel, Regelwerk oder Order. Ein Objekt hat Eigenschaften, unabhängig davon, ob und wie es auf der Zeichenfläche dargestellt wird. Die Begriffe „Handelsobjekt“ und „fachliches Objekt“ werden nicht verwendet. |
 | Objekttyp | Die Art eines Objekts, zum Beispiel „gleitender Durchschnitt (EMA)“ oder „Markttechnik-Trend“. Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
-| Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
+| Vorlage | Ein gespeichertes Objekt (Indikator, Trend, Regel, Regelwerk) mit Standardwerten. Beim Einfügen in eine Strategie entsteht daraus eine Instanz. |
+| Instanz | Das Objekt, das beim Einfügen einer Vorlage oder eines Objekttyps in eine Strategie entsteht. Es übernimmt die Standardwerte, trägt einen in der Strategie vergebenen Namen (zum Beispiel EMA21), gehört nur dieser Strategie und nennt seine Herkunft. |
+| Objekte der Anwendung | Konto, Instrument, Kerze, Tick, Order, Position und Strategie: je Anwendung einer Strategie einmal vorhanden, ohne Parameter, nicht gespeichert, in Ausdrücken immer verfügbar. Ihre Werte stellt das Handelssystem beziehungsweise der Strategietester bereit. |
+| Strategieparameter | Ein Wert, der an einer Stelle der Strategie festgelegt und überall in ihr verwendet wird, zum Beispiel die Handelszeiteinheit. Er kann im Ablauf mit dem Element „Parameter setzen“ geändert werden. |
+| Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
 | Elementbibliothek | Der Bereich der Oberfläche, der die verfügbaren Elementtypen und die bereits angelegten Objekte zur Auswahl anbietet. |
-| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie ausgewertet wird, zum Beispiel der Schluss einer Kerze auf einer Zeiteinheit. Es steht am Anfang des Ablaufs. Jede Strategie hat mindestens einen Auslöser. |
+| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie oder die Verwaltung einer Order ausgewertet wird: Kerzenschluss einer Zeiteinheit, Tick oder externes Ereignis. Es steht am Anfang des Ablaufs oder der Verwaltung. Jede Strategie hat mindestens einen Auslöser. |
 | Anwendung einer Strategie | Die Zuordnung einer Strategie zu einem Konto und einem Instrument. Sie besteht, bis der Nutzer sie aufhebt. Dieselbe Strategie auf zwei Instrumenten sind zwei Anwendungen. |
 | Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, ausgelöst durch einen Auslöser, zum Beispiel jeden Kerzenschluss. |
 | Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er läuft mit eigenen Auslösern für genau diese Order und die daraus entstehende Position, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
-| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „abgelehnt“. |
-| Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. |
+| Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Parameter fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „nicht gestellt“. |
+| Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. Es hat die Ausgänge „geändert“ und „nicht geändert“. |
 | Order löschen | Das Element, das eine wartende Order löscht. |
-| Position ändern | Das Element, das Stop-Loss oder Take-Profit einer offenen Position ändert. |
+| Position ändern | Das Element, das Stop-Loss oder Take-Profit einer offenen Position ändert. Es hat die Ausgänge „geändert“ und „nicht geändert“. |
+| Parameter setzen | Das Element, das einem Strategieparameter im Ablauf einen Wert zuweist. |
 | Position schließen | Das Element, das eine offene Position ganz oder teilweise schließt. |
-| Regelwerk | Eine benannte, geordnete Sammlung eigenständiger Regeln. Die Regeln behalten darin ihre Einzelergebnisse. |
-| Verbindung | Ein Element in Form einer Linie zwischen zwei Elementen auf der Zeichenfläche. Sie bedeutet entweder „danach folgt“ im Ablauf, den wahr- oder falsch-Pfad einer Bedingung oder die Verwendung einer Eigenschaft oder eines Ergebnisses durch ein anderes Element. Das Wort „Kante“ wird nicht verwendet. |
-| Verweis | Die Verwendung eines eigenständig gespeicherten Objekts (zum Beispiel einer Regel oder eines Indikators) in einer Strategie über seine Kennung, ohne das Objekt zu kopieren. |
+| Regelwerk | Eine benannte, geordnete Sammlung konfigurierter Regeln mit festgelegten Werten. Die Regeln behalten darin ihre Einzelergebnisse. |
+| Verbindung | Ein Element in Form einer Linie zwischen zwei Elementen auf der Zeichenfläche. Sie bedeutet „danach folgt“ im Ablauf, den wahr- oder falsch-Pfad einer Bedingung oder einen Ausgang eines Elements. Eigenschaften werden nicht über Verbindungen, sondern in Ausdrücken verwendet. Das Wort „Kante“ wird nicht verwendet. |
 | Eigenschaft | Alles, was ein Objekt beschreibt, ob vom Anwender eingestellt oder vom Objekt ermittelt. Die Richtung eines Trends ist eine Eigenschaft, auch wenn sie berechnet wird. |
 | Parameter | Eine Eigenschaft, die der Anwender einstellt, zum Beispiel die Zeiteinheit eines Trends oder die Periode eines gleitenden Durchschnitts. |
 | Ergebnis | Das, was eine Regel, eine Bedingung oder eine Berechnung liefert. Objekte liefern keine Ergebnisse, sondern haben Eigenschaften. Der Begriff „Ausgabe“ wird nicht verwendet. |
@@ -43,7 +47,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Eigenschaftenansicht | Der Bereich der Oberfläche, in dem die Eigenschaften des ausgewählten Elements angezeigt und seine Parameter geändert werden. |
 | Konsistenzprüfung | Die Kontrolle einer Strategie auf Vollständigkeit und Widerspruchsfreiheit, ohne sie auszuführen. Sie läuft beim Speichern und auf Anforderung. Nicht zu verwechseln mit dem Prüfen durch eine Regel. |
 | Pflichtparameter | Ein Parameter, der einen Wert haben muss, damit die Konsistenzprüfung keinen Fehler meldet. Welche Parameter Pflicht sind, legt der Objekttyp fest. Alle anderen Parameter sind optional. |
-| Standardwert | Der Wert eines Parameters, den ein gespeichertes Objekt vorgibt. Er wird beim Einfügen in eine Strategie übernommen und dort geändert. |
+| Standardwert | Der Wert eines Parameters, den eine Vorlage vorgibt. Er wird beim Einfügen in eine Strategie von der Instanz übernommen und dort geändert. |
 | Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Beschreibung und dem betroffenen Element. |
 | Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
 
@@ -97,3 +101,4 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |
+| 2026-10-15 | Vorlage, Instanz, Objekte der Anwendung, Strategieparameter, Parameter setzen ergänzt. Verweis entfernt. Auslöser, Regelwerk, Verbindung, Standardwert und Ausgänge der Elemente angepasst. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |

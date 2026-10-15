@@ -4,8 +4,8 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
-- zuletzt aktualisiert: `2026-10-14`
-- abgestimmt: [Präsentation Fachmodell: Orders und Regelwerke](praesentation-fachmodell.html), bestätigt vom Auftraggeber im Chat am 14. Oktober 2026
+- zuletzt aktualisiert: `2026-10-15`
+- abgestimmt: [Präsentation Fachmodell: Orders und Regelwerke](praesentation-fachmodell.html), bestätigt vom Auftraggeber im Chat am 14. Oktober 2026. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
 
@@ -51,11 +51,13 @@ Bedingungen vergleichen konkrete Eigenschaften von Objekten. Ein Indikator mit n
 
 Ein Indikator kann aus fest programmierten Einheiten, aus Regeln oder aus einer Kombination von beidem bestehen. Für die Verwendung in Strategien ist das nicht unterscheidbar: Jeder Indikator beschreibt seine Parameter und berechneten Eigenschaften auf dieselbe Weise.
 
-Ein konfigurierter Indikator und ein konfigurierter Trend sind eigenständige Objekte. Sie werden einmal angelegt und können in beliebig vielen Strategien verwendet werden. Eine Strategie verweist auf sie und enthält sie nicht als Kopie.
+Ein gespeicherter Indikator, Trend, eine gespeicherte Regel oder ein gespeichertes Regelwerk ist eine `Vorlage`. Fügt der Anwender eine Vorlage in eine Strategie ein, entsteht in der Strategie eine `Instanz`: ein eigenes Objekt mit einem in der Strategie vergebenen Namen (zum Beispiel `EMA21`), das die Werte der Vorlage übernimmt und danach nur dieser Strategie gehört. Änderungen an der Instanz wirken nur in dieser Strategie, Änderungen an der Vorlage wirken nicht auf bestehende Instanzen. Eine Instanz kann als neue Vorlage gespeichert werden. Jede Instanz nennt ihre Herkunft: die Vorlage, aus der sie entstanden ist, und ihren Objekttyp.
+
+Mitgelieferte Objekttypen (req-fach-054) verhalten sich wie Vorlagen.
 
 ### req-fach-014 -- Zustandswechsel als Bedingung
 
-Ein Zustandswechsel wie „Trendrichtung wechselt zu Aufwärts“ ist kein eigenes Objekt, sondern eine Bedingung auf dem Zustand beziehungsweise einer Eigenschaft eines Objekts. Zur Auswertung eines Zustandswechsels müssen vorheriger und aktueller Zustand über Auswertungszyklen hinweg verfügbar sein.
+Ein Zustandswechsel wie „Trendrichtung wechselt zu Aufwärts“ ist kein eigenes Objekt, sondern eine Bedingung auf dem Zustand beziehungsweise einer Eigenschaft eines Objekts. Zur Auswertung eines Zustandswechsels müssen vorheriger und aktueller Zustand über Auswertungszyklen hinweg verfügbar sein. In Ausdrücken liefert die Funktion `VORHER` (gespeichert `PREVIOUS`) den Wert einer Eigenschaft bei einer früheren Auswertung: `VORHER(EMA_schnell.Wert)` ist der Wert bei der vorherigen Auswertung, `VORHER(EMA_schnell.Wert; 2)` der Wert zwei Auswertungen zurück (req-fach-036).
 
 ### req-fach-016 -- Strategieentscheidung und Order getrennt
 
@@ -63,13 +65,13 @@ Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ab
 
 Erstellung, Bestimmung und Prüfung einer konkreten Order richten sich nach dem fachlichen Ordermodell. Freigegebene Orders werden anschließend zur weiteren Verwaltung an den `OrderManager` übergeben.
 
-Eine aktive beziehungsweise beim Broker angenommene Order bedeutet noch nicht, dass eine Position besteht. Eine Position entsteht durch Ausführung. Bei Teilausführung können gleichzeitig eine Position und ein noch offener Rest der Order bestehen.
+Eine aktive beziehungsweise beim Broker angenommene Order bedeutet noch nicht, dass eine Position besteht. Eine Position entsteht durch Ausführung. Die Ausführung einer Order erzeugt eine `Position` (req-fach-052) als eigenes Objekt, die Order wird nicht zur Position und behält ihren Status. Bei Teilausführung können gleichzeitig eine Position und ein noch offener Rest der Order bestehen.
 
 ### req-fach-017 -- Informationsquellen des Orderablaufs
 
 Die für Handelbarkeitsprüfung und Orderbestimmung benötigten Informationen stammen aus unterschiedlichen fachlichen Quellen und sind nicht pauschal Eigenschaften des Orderablaufs. Dazu gehören insbesondere die im Strategieablauf bestimmte Order-Konfiguration, Strategie beziehungsweise Strategieanwendung, Marktdaten, Konto, Risiko- und Orderregeln, Instrument sowie Broker- beziehungsweise Marginbedingungen.
 
-Der Orderablauf muss diese Informationen verwenden beziehungsweise zusammenführen können. Die genaue Zuordnung und das fachliche Modell des Orderobjekts werden gesondert festgelegt.
+Der Orderablauf muss diese Informationen verwenden beziehungsweise zusammenführen können. Konto, Instrument, Kerze und Tick sind Objekte der Anwendung nach req-fach-051.
 
 ### req-fach-018 -- Allgemeines Objekt Order
 
@@ -84,7 +86,7 @@ Das allgemeine Objekt `Order` enthält nur Eigenschaften und Verhalten, die für
 Das allgemeine Objekt `Order` besitzt folgende Eigenschaften:
 
 - `Order-ID` -- MUSS; interne eindeutige Identifikation unabhängig von einer gegebenenfalls durch Broker oder Handelskonto vergebenen ID.
-- `Status` -- MUSS; aktueller Zustand der Order.
+- `Status` -- MUSS; aktueller Zustand der Order mit den Werten `wartend`, `teilausgeführt`, `ausgeführt`, `gelöscht`, `abgelaufen`, `abgelehnt`.
 - `Konto` -- MUSS; das Handelskonto, an das die konkrete Order gerichtet ist. Eine konkrete Order kann nicht ohne Kontozuordnung zur Ausführung freigegeben werden.
 - `Strategie-ID` -- KANN; Zuordnung zur verursachenden Strategie.
 - `Bemerkung` -- KANN; freie zusätzliche Information.
@@ -241,7 +243,9 @@ Der fachliche Ausdruck wird in der Formelsprache OpenFormula geschrieben. OpenFo
 
 Die verfügbaren Funktionen sind eine Auswahl aus OpenFormula. Ihre Bedeutung richtet sich nach der Norm. Die Auswahl wird bei Bedarf erweitert. Eigene Funktionen werden nur ergänzt, wenn OpenFormula keine passende enthält. Gespeichert werden Funktionen mit ihrem Namen aus der Norm.
 
-Offen: welche Funktionen die erste Auswahl umfasst. Benötigt werden mindestens Abrunden und Aufrunden auf eine Schrittweite, Minimum, Maximum und Betrag. Offen ist außerdem, ob die Oberfläche Funktionsnamen in der gewählten Sprache anzeigt, zum Beispiel `ABRUNDEN` statt `ROUNDDOWN`.
+Die erste Auswahl umfasst mindestens Abrunden und Aufrunden auf eine Schrittweite, Minimum, Maximum, Betrag und die Fallunterscheidung (`IF`). Dazu kommt die eigene Funktion `PREVIOUS` für frühere Werte (req-fach-014), weil OpenFormula keine entsprechende Funktion enthält. Offen: welche weiteren Funktionen die erste Auswahl umfasst und ob die Oberfläche Funktionsnamen in der gewählten Sprache anzeigt, zum Beispiel `ABRUNDEN` statt `ROUNDDOWN` oder `WENN` statt `IF`.
+
+Objekte und Eigenschaften werden in der Punkt-Schreibweise angesprochen: `Objekt.Eigenschaft`. Objekte der Anwendung (req-fach-051) heißen im Ausdruck wie sie heißen: `Konto`, `Instrument`, `Kerze`, `Tick`, `Order`, `Position`, `Strategie`. Instanzen in einer Strategie tragen den vom Anwender vergebenen Namen ohne Leerzeichen, zum Beispiel `markttechnik_trend.intakt`. Jede Eigenschaft hat eine sprachneutrale Kennung ohne Leerzeichen und Sonderzeichen, zum Beispiel `trend_intakt`, `punkt_13`. Gespeichert wird die Kennung, die Oberfläche zeigt den Namen in der gewählten Sprache. Die in diesem Dokument verwendeten Namen mit Leerzeichen (`Trend intakt`, `Punkt 1/3`) sind die Anzeigenamen.
 
 ### req-fach-037 -- Prüfen und Bestimmen durch Regeln
 
@@ -276,7 +280,7 @@ Die Zuordnung zu den konkreten Objektinstanzen erfolgt bei der Anwendung beziehu
 
 ### req-fach-041 -- Regelwerk als geordnete Regelsammlung
 
-`Regelwerk` ist eine benannte, geordnete Sammlung eigenständiger Regeln. Es dient dazu, mehrere Regeln gemeinsam zu verwenden beziehungsweise auszuwerten, ohne sie dadurch zu einer einzelnen Regel zusammenzufassen.
+`Regelwerk` ist eine benannte, geordnete Sammlung konfigurierter Regeln, also von Regeln mit festgelegten Parameterwerten, zum Beispiel „Risikoregeln“: Risiko je Trade höchstens 1 % des Kapitals, keine Order ohne Stop-Loss. Es dient dazu, mehrere Regeln gemeinsam zu verwenden beziehungsweise auszuwerten, ohne sie dadurch zu einer einzelnen Regel zusammenzufassen. Ein Regelwerk wird einer Strategie oder einem Element als Ganzes zugeordnet. Gespeicherte Regelwerke sind Vorlagen nach req-fach-013a.
 
 Dieselbe Regel kann in mehreren Regelwerken verwendet werden. Die Mitgliedschaft in einem Regelwerk verändert die Regel selbst nicht.
 
@@ -315,16 +319,17 @@ Eine Strategie besitzt mindestens:
 - `Beschreibung` -- freie Beschreibung beziehungsweise Anmerkung,
 - `Auslöser` -- ein oder mehrere Auslöser, die festlegen, bei welchem Ereignis die Strategie ausgewertet werden soll,
 - `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
-- strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten.
+- strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten, einzeln oder als Regelwerk.
+- `Strategieparameter` -- 0..n; Werte, die an einer Stelle festgelegt werden und überall in der Strategie verwendbar sind, zum Beispiel `Strategie.Handelszeiteinheit`. Ein Strategieparameter kann im Ablauf mit dem Element `Parameter setzen` geändert werden (req-fach-047). Sein Wert kann in der Strategie festgelegt oder erst bei der Anwendung übergeben werden.
 - `wartende Orders` und `offene Positionen` -- Anzahl der Orders und Positionen, die diese Strategie auf dem Konto und Instrument gestellt beziehungsweise eröffnet hat, auf dem sie gerade läuft. Diese Eigenschaften sind nur bei der Ausführung belegt und dienen Bedingungen im Ablauf. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Sie wird mit den Testfällen erprobt.
 
-Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt der Wert der zuletzt angewendeten, gleich ob es dieselbe oder eine andere Regel ist. Angewendet werden zuerst die Regeln der Strategie, danach die Regeln der Elemente in der Reihenfolge des Ablaufs. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Prüfende Regeln ändern die Order nicht und heben einander daher nicht auf. Sie prüfen die Order, nachdem alle Eigenschaften bestimmt sind (req-fach-021). Die Order muss jede Prüfung bestehen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
+Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt der Wert der zuletzt angewendeten, gleich ob es dieselbe oder eine andere Regel ist. Zuerst übernimmt die Order die Werte, die ihr direkt übergeben werden, zum Beispiel Ergebnisse von Berechnungen im Ablauf (req-fach-021). Danach werden die Regeln der Strategie angewendet, dann die Regeln der Elemente in der Reihenfolge des Ablaufs. Eine bestimmende Regel der Strategie kann daher direkt übergebene Werte verwenden, aber keine Werte, die erst eine Regel eines Elements bestimmt. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Prüfende Regeln ändern die Order nicht und heben einander daher nicht auf. Sie prüfen die Order, nachdem alle Eigenschaften bestimmt sind (req-fach-021). Die Order muss jede Prüfung bestehen. Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
 
 Eine Strategie hat mindestens einen Auslöser. Eine Obergrenze besteht nicht. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (req-fach-049a). Er besitzt eine eigene Verbindung in den Ablauf. Mehrere Auslöser können auf denselben oder auf verschiedene Teile des Ablaufs führen.
 
 Eine eigene Versionsangabe der Strategie wird derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
 
-Eine gesonderte Sammlung von Strategieparametern wird derzeit nicht vorausgesetzt. Eigenschaften verwendeter Objekte können mit einem festen Wert, durch eine Berechnung beziehungsweise eine Regel oder erst bei der Anwendung der Strategie zur Laufzeit belegt werden. Eigene Parameter der Strategie können ergänzt werden, wenn dafür ein konkreter fachlicher Bedarf entsteht.
+Eigenschaften verwendeter Objekte können mit einem festen Wert, mit einem Strategieparameter, durch eine Berechnung beziehungsweise eine Regel oder erst bei der Anwendung der Strategie zur Laufzeit belegt werden.
 
 ### req-fach-047 -- Ablauf einer Strategie
 
@@ -333,6 +338,8 @@ Der `Ablauf` ist Bestandteil einer Strategie und derzeit kein eigenständiges Ob
 Die Ablaufverbindung ist sequenziell und legt fest, welches Element als Nächstes ausgeführt wird. Eine Bedingung kann den Ablauf anhand ihres Ergebnisses verzweigen. Der `wahr`-Pfad führt zu einem nachfolgenden Element. Ein `falsch`-Pfad kann zu einem anderen Element führen oder ohne Fortsetzung enden.
 
 Ein eigenes Start- oder Endelement wird nicht vorausgesetzt. Die Auswertung beginnt bei dem Auslöser-Element, das eingetreten ist, und folgt dessen Verbindung. Ein Ablaufpfad endet, wenn kein weiteres Element folgt.
+
+Das Element `Parameter setzen` weist einem Strategieparameter einen Wert zu. Eine Verbindung darf zu einem früheren Element des Ablaufs zurückführen, damit eine Prüfung mit geänderten Strategieparametern innerhalb derselben Auswertung erneut durchlaufen wird. Beispiel: Kommt die Order auf der gewählten Handelszeiteinheit nicht zustande, setzt der Ablauf die Handelszeiteinheit auf die nächstkleinere und beginnt die Prüfung von vorn. Eine solche Rückführung muss durch eine Bedingung enden, die Konsistenzprüfung meldet Rückführungen ohne Ende.
 
 ### req-fach-048 -- Berechnung im Strategieablauf
 
@@ -344,9 +351,9 @@ Eine Berechnung muss nicht als `Regel` definiert werden. Die technische Auswertu
 
 ### req-fach-049 -- Order aufgeben im Strategieablauf
 
-`Order aufgeben` ist das Element im Strategieablauf, das eine Order veranlasst. Es legt Ordertyp und Parameter der Order fest und übergibt die Order an das Handelssystem. Es wird nur erreicht, wenn eine vorherige Bedingung auf den entsprechenden Ablaufpfad verzweigt. Ist die Bedingung nicht erfüllt und besitzt der andere Pfad keine Fortsetzung, endet dieser Ablaufpfad.
+`Order aufgeben` ist das Element im Strategieablauf, das eine Order veranlasst. Es legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem. Es wird über den Ablauf erreicht, in der Regel über den Pfad einer Bedingung, es darf aber auch unmittelbar an einem Ausgang eines anderen Elements folgen, zum Beispiel am Ausgang `nicht gestellt` eines anderen `Order aufgeben`.
 
-`Order aufgeben` hat zwei Ausgänge: `gestellt` und `abgelehnt`. Der Ausgang `abgelehnt` wird genommen, wenn eine Eigenschaft der Order nicht bestimmt werden kann oder eine prüfende Regel der Strategie oder des Elements nicht erfüllt ist. An beiden Ausgängen kann der Ablauf weitergehen. Ist an einem Ausgang nichts verbunden, endet dort der Ablaufpfad.
+`Order aufgeben` hat zwei Ausgänge: `gestellt` und `nicht gestellt`. Der Ausgang `nicht gestellt` wird genommen, wenn eine Eigenschaft der Order nicht bestimmt werden kann oder eine prüfende Regel der Strategie oder des Elements nicht erfüllt ist, zum Beispiel weil das Volumen unter dem Mindestvolumen liegt oder die freie Margin nicht reicht. An beiden Ausgängen kann der Ablauf weitergehen, auch mit einer erneuten Prüfung von vorn mit geänderten Strategieparametern (req-fach-047). Ist an einem Ausgang nichts verbunden, endet dort der Ablaufpfad.
 
 Offen: ob das Handelssystem dafür einen eigenen OrderBuilder verwendet.
 
@@ -358,19 +365,71 @@ Neben `Order aufgeben` gibt es im Strategieablauf vier Elemente, die auf bereits
 
 | Element | wirkt auf | Inhalt |
 |---|---|---|
-| `Order ändern` | wartende Order | Preis, Stop-Loss, Take-Profit, Gültigkeit |
+| `Order ändern` | wartende Order | Preis, Stop-Loss, Take-Profit, Gültigkeit. Ausgänge `geändert` und `nicht geändert`. |
 | `Order löschen` | wartende Order | -- |
-| `Position ändern` | offene Position | Stop-Loss, Take-Profit |
+| `Position ändern` | offene Position | Stop-Loss, Take-Profit. Ausgänge `geändert` und `nicht geändert`. |
 | `Position schließen` | offene Position | ganz oder teilweise; Volumen KANN, ohne Volumen wird die Position ganz geschlossen |
 
-`Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
+`Position schließen` veranlasst eine `CloseOrder` nach req-fach-032. Die Namen folgen den Aktionen von MetaTrader 5. Die prüfenden Regeln der Strategie und des Elements gelten auch bei `Order ändern` und `Position ändern`: Sie werden auf die geänderte Order beziehungsweise Position angewendet. Ist eine Regel nicht erfüllt, bleibt die Order beziehungsweise Position unverändert und der Ausgang `nicht geändert` wird genommen. Eine Risikoregel kann durch eine Änderung nicht umgangen werden. Ob eine Handelssoftware diese Aktionen anbietet, ergibt sich aus der Kompatibilitätsliste nach req-fach-030.
 
-Jede gestellte Order erhält ihre eigene Verwaltung. Die Verwaltung ist der Teil des Ablaufs, der am Ausgang `gestellt` von `Order aufgeben` folgt. Sie läuft für genau diese Order und die Position, die durch ihre Ausführung entsteht. Sie hat eigene Auslöser, zum Beispiel jeden Tick oder jeden Kerzenschluss, und endet, wenn die Order gelöscht oder abgelaufen oder die Position geschlossen ist.
+Jede gestellte Order erhält ihre eigene Verwaltung. Die Verwaltung ist der Teil des Ablaufs, der am Ausgang `gestellt` von `Order aufgeben` folgt. Sie läuft für genau diese Order und die Position, die durch ihre Ausführung entsteht: zuerst für die wartende Order (ändern, löschen), nach der Ausführung für die Position (ändern, schließen). Welche Elemente gerade anwendbar sind, steuert der Anwender über Bedingungen auf `Order.Status`. Die Verwaltung hat eigene Auslöser-Elemente (req-fach-053), zum Beispiel jeden Tick oder jeden Kerzenschluss. Beim Stellen der Order wird sie nicht durchlaufen, sondern erst bei ihren Auslösern. Sie endet, wenn die Order gelöscht oder abgelaufen oder die Position geschlossen ist. In Ausdrücken der Verwaltung bezeichnen `Order` und `Position` die eigene Order und die daraus entstandene Position.
 
 `Order ändern`, `Order löschen`, `Position ändern` und `Position schließen` stehen in der Verwaltung und wirken nur auf deren Order beziehungsweise Position. Stellt eine spätere Auswertung der Strategie eine weitere Order, erhält diese ihre eigene Verwaltung. Orders und Positionen verschiedener Verwaltungen beeinflussen sich nicht. Orders und Positionen, die nicht von der Strategie stammen, werden nie verändert.
 
 Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders und Positionen ausgewertet, danach der Hauptablauf der Strategie. Ein Signal in Gegenrichtung kann so die bestehende Position schließen, bevor der Hauptablauf eine neue eröffnet.
 
+
+### req-fach-051 -- Objekte der Anwendung
+
+Objekte der Anwendung sind je Anwendung einer Strategie genau einmal vorhanden. Sie haben keine Parameter, werden nicht gespeichert und nicht vom Anwender gestaltet. Ihre Werte stellt das Handelssystem aus Broker und Konto bereit, der Strategietester aus den Einstellungen des Testlaufs, zum Beispiel angenommenes Kapital, Spread und Brokerbedingungen. Im Strategiedesigner existieren sie als Typbeschreibung, damit Ausdrücke ihre Eigenschaften verwenden und die Konsistenzprüfung sie kennt. Sie sind in Ausdrücken immer verfügbar, ohne auf der Zeichenfläche zu liegen, können aber als Elemente auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen.
+
+| Objekt | Eigenschaften |
+|---|---|
+| `Konto` | `Kapital` (Kontostand einschließlich der Gewinne und Verluste offener Positionen), `freie Margin`, `Währung` |
+| `Instrument` | `Bezeichnung`, `Tickgröße`, `Tickwert`, `Punkt`, `Pip`, `Spread`, `Mindestvolumen`, `Volumenschritt` |
+| `Kerze` | je Zeiteinheit, die die Strategie verwendet: `Zeiteinheit`, `Eröffnung`, `Hoch`, `Tief`, `Schluss`, `Volumen`, `Zeitpunkt` der jeweils letzten abgeschlossenen Kerze |
+| `Tick` | `Geld`, `Brief`, `Zeitpunkt` des jeweils letzten Ticks |
+| `Order`, `Position` | in der Verwaltung die eigene Order und Position (req-fach-019, req-fach-052, req-fach-049a) |
+| `Strategie` | die eigene Strategie mit ihren Strategieparametern und Eigenschaften (req-fach-046) |
+
+Pip und Punkt sind Vielfache der Tickgröße des Instruments. Die Umrechnung zwischen Pip, Punkt und Tickgröße ergibt sich aus den Eigenschaften des Instruments, ein Ausdruck rechnet mit ihnen wie mit anderen Werten.
+
+Offen: ein Objekt `Kurs` für Strategien, die nicht mit Kerzen arbeiten.
+
+### req-fach-052 -- Position
+
+`Position` ist das Objekt, das durch die Ausführung einer Order entsteht (req-fach-016). Es besitzt mindestens:
+
+- `Richtung` -- `buy` oder `sell`,
+- `Volumen`,
+- `Einstiegspreis`,
+- `Stop-Loss` -- KANN,
+- `Take-Profit` -- KANN,
+- `offener Gewinn oder Verlust`.
+
+### req-fach-053 -- Auslösertypen
+
+Ein Auslöser ist das Ereignis, bei dem der Ablauf einer Strategie oder die Verwaltung einer Order ausgewertet wird. Auslösertypen:
+
+| Auslösertyp | Parameter | liefert |
+|---|---|---|
+| `Kerzenschluss` | `Zeiteinheit` | die abgeschlossene `Kerze` dieser Zeiteinheit |
+| `Tick` | -- | den neuen `Tick` |
+| `externes Ereignis` | offen | offen |
+
+Das Instrument kommt aus der Anwendung der Strategie. Ein externes Ereignis kommt von außerhalb der Anwendung über eine Schnittstelle, zum Beispiel als Nachricht oder Aufruf eines externen Programms, eines externen Indikators oder eines Agenten, der Nachrichten auswertet. Offen: welche Daten ein externes Ereignis mitbringt und wie es die Strategie erreicht. Für das Vorhaben `strategiedesign` werden `Kerzenschluss` und `Tick` umgesetzt.
+
+### req-fach-054 -- Mitgelieferte Indikatoren
+
+Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR` und `Markttechnik`. Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat den Parameter `Zeiteinheit`, das Instrument kommt aus der Anwendung der Strategie.
+
+| Indikator | Parameter | Eigenschaften |
+|---|---|---|
+| `EMA` (exponentieller gleitender Durchschnitt) | `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Kursquelle` (Standard Schlusskurs) | `Wert` |
+| `ATR` (Average True Range) | `Zeiteinheit`, `Periode` | `Wert` |
+| `Markttechnik` | siehe [Indikator Markttechnik](indikator-markttechnik.md) | siehe dort |
+
+Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors als Objekte.
 
 ## 3. Änderungsnachweis
 
@@ -400,3 +459,4 @@ Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders u
 | 2026-10-14 | req-fach-049a: bei einem Auslöser zuerst die Verwaltungen, dann der Hauptablauf. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-14. |
 | 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |
 | 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Prototyp“ in req-fach-046 entfernt, Änderungsnachweis nach Datum geordnet. |
+| 2026-10-15 | Entscheidungen des Auftraggebers zu den Befunden der QA (`strategiedesign`, Durchlauf 1): Objekte der Anwendung (req-fach-051), Position (req-fach-052), Auslösertypen (req-fach-053), mitgelieferte Indikatoren (req-fach-054), Vorlage und Instanz statt Verweis (req-fach-013a), Funktion VORHER (req-fach-014, req-fach-036), Statuswerte der Order (req-fach-019), Fallunterscheidung und Schreibweise von Namen (req-fach-036), Regelwerk als Sammlung konfigurierter Regeln (req-fach-041), Strategieparameter und Reihenfolge von Werten und Regeln (req-fach-046), Parameter setzen und Rückführung (req-fach-047), Ausgang „nicht gestellt“ (req-fach-049), prüfende Regeln und Ausgänge bei Ändern, Auslöser der Verwaltung, Order und Position (req-fach-016, req-fach-049a). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-15. |

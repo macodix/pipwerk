@@ -3,7 +3,7 @@
 - Vorhaben: `strategiedesign`
 - Prüfbericht: [requirements-1.md](requirements-1.md)
 - Rolle: Projektleiter
-- Stand: 2026-10-14
+- Stand: 2026-10-15
 
 ## Vom Projektleiter korrigiert
 
@@ -32,27 +32,27 @@ Korrekturen, die sich aus bestehenden Festlegungen eindeutig ergeben:
 
 ## Fragen an den Auftraggeber
 
-Vorgelegt in der Präsentation [requirements-1.html](../presentations/requirements-1.html). Die Entscheidungen werden in die Dokumente eingearbeitet und hier vermerkt.
+Vorgelegt in der Präsentation [requirements-1.html](../presentations/requirements-1.html), vom Auftraggeber im Chat am 15. Oktober 2026 entschieden und in die Dokumente eingearbeitet. Die Spalte „Entscheidung“ nennt die Abweichung vom Vorschlag, „wie Vorschlag“ bedeutet Bestätigung.
 
 | Nr. | Befunde | Gegenstand | Entscheidung |
 |---|---|---|---|
-| 1 | A1, A12 (Einheiten) | Objekte Konto, Instrument und Kurs mit ihren Eigenschaften | offen |
-| 2 | A2, A7 | Indikatoren EMA und ATR, Zeiteinheit und Instrument eines Indikators, mitgelieferte Indikatoren | offen |
-| 3 | A3 | Zugriff auf frühere Werte einer Eigenschaft | offen |
-| 4 | A4, A15 | Objekt Position, Status einer Order, Bezug auf Order, Position und Strategie in Ausdrücken | offen |
-| 5 | A5, C4 | Auslösertypen und ihre Parameter, Auslöser der Verwaltung | offen |
-| 6 | A6, A8, A9 | `str-01`: Zeiteinheiten, Handelsrichtung, Ausweichen auf die kleinere Handelszeiteinheit | offen |
-| 7 | A10 | Reihenfolge von direkten Werten und Regeln | offen |
-| 8 | A11 | Regeln und Ausgänge bei `Order ändern` | offen |
-| 9 | A12 | `str-01`: Berechnung von Einstieg, Stop-Loss und Take-Profit | offen |
-| 10 | A13 | Fallunterscheidung in Ausdrücken | offen |
-| 11 | A14 | Schreibweise von Objekten und Eigenschaften in Ausdrücken | offen |
-| 12 | B4, C5 | Bearbeiten gespeicherter Objekte, neues Objekt aus einem Objekttyp in einer Strategie | offen |
-| 13 | B2, zweiter Teil | Ändern des Objektverzeichnisses mit vorhandenen Dateien | offen |
-| 14 | B8 | Risikoregel: Konto, allgemeine Regel oder Regel der Strategie | offen |
-| 15 | C1 | Öffnen einer Strategie und eines Objekts | offen |
-| 16 | C2 | Regeln und Regelwerke zuordnen, Eigenschaftenansicht der Strategie | offen |
-| 17 | C3 | Verbindung oder Ausdruck bei der Verwendung einer Eigenschaft | offen |
-| 18 | C7 | Konsistenzprüfung eigenständiger Objekte und von Ausdrücken | offen |
-| 19 | C8 | Schutz der Web-API in diesem Vorhaben | offen |
-| 20 | D4 | Technische Ebene nach req-ui-004, Benennung von Ablaufschritten | offen |
+| 1 | A1, A12 (Einheiten) | Objekte Konto, Instrument und Kurs mit ihren Eigenschaften | Objekte der Anwendung Konto, Instrument, Kerze (je Zeiteinheit) und Tick statt „Kurs“, ohne Parameter, nicht gespeichert, Werte vom Handelssystem oder vom Strategietester (dort einstellbar je Testlauf). Offen: Objekt Kurs für Strategien ohne Kerzen. Fachmodell req-fach-051. |
+| 2 | A2, A7 | Indikatoren EMA und ATR, Zeiteinheit und Instrument eines Indikators, mitgelieferte Indikatoren | wie Vorschlag, Parameter nach dem Muster der MetaTrader-5-Indikatoren. Offen: weitere Indikatoren, Expert Advisors als Objekte. Fachmodell req-fach-054. |
+| 3 | A3 | Zugriff auf frühere Werte einer Eigenschaft | Funktion VORHER (gespeichert PREVIOUS) statt Klammerschreibweise. Auswahlliste der Eigenschaften als Anforderung req-ui-013. Fachmodell req-fach-014, req-fach-036. |
+| 4 | A4, A15 | Objekt Position, Status einer Order, Bezug auf Order, Position und Strategie in Ausdrücken | wie Vorschlag, mit der Klarstellung: die Ausführung einer Order erzeugt eine Position, die Order wird nicht zur Position. Fachmodell req-fach-016, req-fach-019, req-fach-052, req-fach-049a. |
+| 5 | A5, C4 | Auslösertypen und ihre Parameter, Auslöser der Verwaltung | wie Vorschlag, zusätzlich dritter Auslösertyp „externes Ereignis“ (Nachricht, Aufruf, externer Indikator, Agent), Daten und Weg offen. Fachmodell req-fach-053. |
+| 6 | A6, A8, A9 | `str-01`: Zeiteinheiten, Handelsrichtung, Ausweichen auf die kleinere Handelszeiteinheit | Strategieparameter eingeführt (Signalzeiteinheit, Handelszeiteinheit). Am Ausgang „nicht gestellt“ (vorher „abgelehnt“) setzt der Ablauf die Handelszeiteinheit um und durchläuft die gesamte Prüfung erneut, Element „Parameter setzen“ und Rückführung. Handelsrichtung ist die Trendrichtung der Signalzeiteinheit, Markttechnik Abschnitt 5 ergänzt. Fachmodell req-fach-046, req-fach-047, req-fach-049. |
+| 7 | A10 | Reihenfolge von direkten Werten und Regeln | wie Vorschlag. Fachmodell req-fach-046. |
+| 8 | A11 | Regeln und Ausgänge bei `Order ändern` | wie Vorschlag, Ausgänge „geändert“ und „nicht geändert“, auch bei Position ändern. Eine Risikoregel kann durch eine Änderung nie umgangen werden. Fachmodell req-fach-049a. |
+| 9 | A12 | `str-01`: Berechnung von Einstieg, Stop-Loss und Take-Profit | wie Vorschlag. Einheiten wählt der Anwender in der Berechnung, das Instrument stellt Pip, Punkt, Tickgröße bereit. str-01 Abschnitt 3. |
+| 10 | A13 | Fallunterscheidung in Ausdrücken | wie Vorschlag, beides zulässig: Fallunterscheidung im Ausdruck oder wiederverwendbare Regel. Fachmodell req-fach-036. |
+| 11 | A14 | Schreibweise von Objekten und Eigenschaften in Ausdrücken | Objekte der Anwendung heißen in Ausdrücken wie sie heißen, Instanzen tragen den vom Anwender vergebenen Namen ohne Leerzeichen, Punkt-Schreibweise. Eingabehilfe nach Objektname und Punkt (req-ui-013). Fachmodell req-fach-036. |
+| 12 | B4, C5 | Bearbeiten gespeicherter Objekte, neues Objekt aus einem Objekttyp in einer Strategie | Instanzmodell statt Verweis: Alle Objekte (auch Regeln und Regelwerke) werden beim Einfügen als Instanz angelegt, erben die Standardwerte der Vorlage, erhalten einen Namen in der Strategie und sind dort in vollem Umfang änderbar. Vorlagen bleiben unberührt. Regelwerke sind Sammlungen konfigurierter Regeln mit Werten. Fachmodell req-fach-013a, req-fach-041, Anforderungen req-param-005, req-core-002, req-ablauf-003, req-ablauf-006. |
+| 13 | B2, zweiter Teil | Ändern des Objektverzeichnisses mit vorhandenen Dateien | Abfrage, ob vorhandene Dateien verschoben werden sollen. req-ablauf-009. |
+| 14 | B8 | Risikoregel: Konto, allgemeine Regel oder Regel der Strategie | Regelvorlage „Risiko je Trade“ mit Standardwert 1 %, in beiden Testfällen als Instanz der Strategie. Folgt aus Frage 12. |
+| 15 | C1 | Öffnen einer Strategie und eines Objekts | wie Vorschlag. req-ablauf-008. |
+| 16 | C2 | Regeln und Regelwerke zuordnen, Eigenschaftenansicht der Strategie | wie Vorschlag, als vorläufig gekennzeichnet, mit den Testfällen zu erproben. req-ui-012. |
+| 17 | C3 | Verbindung oder Ausdruck bei der Verwendung einer Eigenschaft | Objekte der Anwendung sind in Ausdrücken immer verfügbar und stehen zusätzlich als Elemente in der Elementbibliothek. Keine Ablaufverbindung, „Element ohne Verbindung“ nur für Ablaufelemente. req-ablauf-003, req-ablauf-007. |
+| 18 | C7 | Konsistenzprüfung eigenständiger Objekte und von Ausdrücken | wie Vorschlag. req-ablauf-007. |
+| 19 | C8 | Schutz der Web-API in diesem Vorhaben | Anmeldung grundsätzlich vorgesehen, Zeitpunkt offen, nicht in diesem Vorhaben. pipwerk Studio nur im eigenen Netz des Anwenders. Gesamtsystem req-system-011, Anforderungen Abschnitt 9 Punkt 10. |
+| 20 | D4 | Technische Ebene nach req-ui-004, Benennung von Ablaufschritten | wie Vorschlag, zusätzlich zeigt jede Instanz ihre Herkunft (Vorlage und Objekttyp) in der Eigenschaftenansicht. req-ui-003, req-ui-004, req-ui-005. |
