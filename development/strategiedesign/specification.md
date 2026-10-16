@@ -6,7 +6,7 @@
 - stand: 2026-10-16
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek), `components/pipwerk-studio` (Backend und Oberfläche), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers; Nachprüfung der Dokumente bestanden in [requirements-7.md](reviews/requirements-7.md). Vorlagen: [Pflichtenheft](../../docs/design/planning/pflichtenheft-strategiedesigner.md) und Arbeitspakete AP2 bis AP9. Wo sie den geltenden Dokumenten widersprechen, folgt diese Spezifikation den geltenden Dokumenten (Abschnitt 1).
-- prüfung: noch nicht geprüft
+- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde B1 bis B4 und Hinweise S1 bis S15 eingearbeitet: B1 Abschnitt 3.5, B2 Abschnitt 3.4 und Abschnitt 10 Punkt 8, B3 Abschnitt 3.3 und Abschnitt 10 Punkt 7, B4 Abschnitt 3.3; S1 Abschnitt 3.4, S2 bis S4 und S8 Abschnitte 3.1 und 3.3, S5 und S6 Abschnitte 5.1 und 5.2, S7 und S9 Abschnitt 3.1, S10 Abschnitt 3.6, S11 Abschnitt 4.1, S12 Abschnitt 3.1, S13 Abschnitt 9, S14 Abschnitt 10, S15 Abschnitt 3.7
 
 ## 1. Gegenstand
 
@@ -46,17 +46,19 @@ Jeder Elementtyp und jeder Objekttyp liefert eine Typbeschreibung. Die Oberfläc
 | Kennung | sprachneutral, zum Beispiel für Elementtypen `flow.condition`, für Objekttypen der Name aus dem Fachmodell |
 | Art | Auslöser, Element des Ablaufs, Objekttyp (Indikator, Trend, Regel, Regelwerk), Objekt der Anwendung, Ordertyp |
 | Beschriftung | Name und Beschreibung in Deutsch und Englisch |
-| Parameter | Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung |
-| Eigenschaften | Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen zusätzlich, ob der Anwender sie belegt |
+| Parameter | Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung; optional die Angabe, bei welchem Wert eines anderen Parameters er gilt (zum Beispiel die Parameter eines Berechnungsverfahrens des Trends, req-param-005) |
+| Eigenschaften | Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen zusätzlich, ob der Anwender sie belegt. `Instrument`, `Konto`, `Order-ID`, `Status` und `Strategie-ID` belegt die Anwendung, nicht der Anwender (req-fach-019, req-fach-053). |
 | Ausgänge | Kennungen und Beschriftungen der Ausgänge eines Elements des Ablaufs, zum Beispiel `wahr` und `falsch` |
 | Regeln zulässig | ob dem Element Regeln und Regelwerke zugeordnet werden können (req-ui-012) |
 | auf Zeichenfläche | ob der Typ als Element auf die Zeichenfläche gelegt werden kann (req-fach-051) |
 
-Kennungen von Eigenschaften, Parametern und festgelegten Werten werden aus dem deutschen Namen gebildet: Kleinbuchstaben, ä, ö, ü als ae, oe, ue, ß als ss, jedes andere Zeichen außer Buchstaben und Ziffern als `_` (req-fach-036, zum Beispiel `trend_intakt`, `punkt_13`, `aufwaerts`, `stop_loss`). Objekte der Anwendung tragen als Kennung ihren Namen aus dem Fachmodell (`Konto`, `Order`). Die vollständigen Listen der Kennungen legen die Aufträge fest.
+Kennungen von Eigenschaften, Parametern und festgelegten Werten werden aus dem deutschen Namen gebildet: Kleinbuchstaben, ä, ö, ü als ae, oe, ue, ß als ss, Leerzeichen und Bindestrich als `_`, andere Zeichen entfallen (req-fach-036, zum Beispiel `trend_intakt`, `punkt_13` aus „Punkt 1/3“, `aufwaerts`, `stop_loss`). Objekte der Anwendung tragen als Kennung ihren Namen aus dem Fachmodell (`Konto`, `Order`). Die vollständigen Listen der Kennungen legen die Aufträge fest.
 
 Datentypen: Zahl, Ganzzahl, Prozent (im Ausdruck als Anteil, 1 % ist 0,01), Wahrheitswert, Text, Auswahl (feste Werte mit Kennungen), Zeiteinheit (alle Zeiteinheiten von MetaTrader 5 von M1 bis MN1), Zeitpunkt, Datum, Ausdruck.
 
-Bindungsarten eines Parameters oder einer Eigenschaft (Glossar „Bindungsart“, req-fach-046, req-param-003): fester Wert, Strategieparameter, Ausdruck (darin auch Ergebnisse von Berechnungen und Eigenschaften anderer Objekte), Regel (`bestimmen()`), bei der Anwendung übergeben.
+Bindungsarten eines Parameters oder einer Eigenschaft (Glossar „Bindungsart“, req-fach-046, req-param-003): fester Wert, Parameter (ein Strategieparameter oder, innerhalb einer Vorlage, ein Parameter der Vorlage, zum Beispiel die Zeiteinheit des Trends für seine Indikatoren, req-fach-011), Ausdruck (darin auch Ergebnisse von Berechnungen und Regeln und Eigenschaften anderer Objekte), bei der Anwendung übergeben. Eine Eigenschaft der Order, die eine Regel mit `bestimmen()` erhält, hat keine eigene Bindungsart: Die Regel ist der Strategie oder dem Element zugeordnet und nennt die Eigenschaft selbst (Abschnitt 3.5). Damit gibt es genau einen Weg und die Reihenfolge nach req-fach-046.
+
+Ein Text, der die Kennung eines Werts einer Auswahl ist, belegt eine Eigenschaft dieser Auswahl, etwa `"buy"` die Richtung. Die Typprüfung prüft feste Texte gegen die Werte der Auswahl. Ein Text, der erst bei der Ausführung entsteht, wird dort geprüft; ist er kein Wert der Auswahl, ist die Eigenschaft nicht bestimmbar.
 
 ### 3.2 Mitgelieferte Typen
 
@@ -78,7 +80,7 @@ Strategie (req-fach-046): Kennung (UUID), Bezeichnung, Beschreibung, Strategiepa
 
 Element: Kennung, Elementtyp, Bezeichnung beziehungsweise Name, Lage auf der Zeichenfläche, Belegung der Parameter und Eigenschaften mit Bindungsart, zugeordnete Regeln und Regelwerke, und die Kennung des Elements „Order aufgeben“, zu dessen Verwaltung es gehört (leer im Hauptablauf). Ein Element, das ein Objekt zeigt, enthält die Instanz.
 
-Instanz (req-fach-013a, req-param-005): Name (ohne Leerzeichen, eindeutig in der Strategie), Herkunft (Objekttyp, Kennung und Bezeichnung der Vorlage oder leer bei Einfügen eines Objekttyps), Parameterwerte und bei Regel und Regelwerk den Inhalt nach den Absätzen unten. Eine Instanz ist in der Strategie in vollem Umfang änderbar.
+Instanz (req-fach-013a, req-param-005): Name (ohne Leerzeichen), Herkunft (Objekttyp, Kennung und Bezeichnung der Vorlage oder leer bei Einfügen eines Objekttyps), Parameterwerte und den gesamten übrigen Inhalt der Vorlage nach der Tabelle unten: eigene Parameter, eigene Eigenschaften mit ihren Ausdrücken, enthaltene Instanzen, Regeln, Ausdrücke. Zur Ausführung braucht eine Instanz ihre Vorlage nicht (E4). Eine Instanz ist in der Strategie in vollem Umfang änderbar.
 
 Verbindung: Quelle (Element und Ausgang), Ziel (Element). Eine Verbindung darf zurückführen (req-fach-047). Die Verwaltung einer Order ist der Bereich der Zeichenfläche, der am Ausgang `gestellt` eines Elements „Order aufgeben“ hängt; ihre Elemente, darunter eigene Auslöser, tragen dessen Kennung (req-fach-049a, req-fach-015). Eine Verwaltung kann wieder ein Element „Order aufgeben“ mit eigener Verwaltung enthalten.
 
@@ -87,12 +89,14 @@ Vorlagen (req-fach-013a): Kennung, Bezeichnung, Beschreibung, Objekttyp, Standar
 | Objekttyp | Inhalt |
 |---|---|
 | mitgelieferter Indikator (EMA, ATR, Markttechnik) | nur Standardwerte der Parameter |
-| `Indikator` | eigene Parameter (Name, Datentyp, Pflicht, Standardwert), enthaltene Instanzen von Indikatoren, eigene Eigenschaften, jede mit Name, Datentyp und Ausdruck (req-fach-013a, req-fach-009) |
-| `Trend` | Parameter Zeiteinheit und Berechnungsverfahren (req-fach-010, req-param-005). Mitgeliefert ist das Verfahren „Ausdruck“: enthaltene Instanzen von Indikatoren und je ein Ausdruck für die Eigenschaft `Richtung` und für weitere eigene Eigenschaften. Weitere Verfahren melden sich im Elementregister an. |
+| `Indikator` | eigene Parameter (Name, Datentyp, Pflicht, Standardwert), enthaltene Instanzen von Indikatoren, enthaltene Regeln und Regelwerke (Instanzen), eigene Eigenschaften, jede mit Name, Datentyp und Ausdruck. Ein Ausdruck kann das Ergebnis einer enthaltenen Regel verwenden (`regel.Ergebnis`); so besteht ein Indikator aus Regeln, aus mitgelieferten Indikatoren als fest programmierten Einheiten oder aus beidem (req-fach-013a, req-fach-009) |
+| `Trend` | Parameter Zeiteinheit und Berechnungsverfahren (req-fach-010, req-param-005). Ein Berechnungsverfahren ist im Elementregister mit eigener Typbeschreibung seiner Parameter angemeldet; die Eigenschaftenansicht zeigt nach der Wahl dessen Parameter (Abschnitt 3.1). Mitgeliefert ist das Verfahren „Ausdruck“: enthaltene Instanzen von Indikatoren, Regeln und Regelwerke wie beim `Indikator`, je ein Ausdruck für die Eigenschaft `Richtung` und für weitere eigene Eigenschaften. |
 | `Regel` | Parameter, fachlicher Ausdruck, bestimmte Eigenschaft und Vergleich beim Prüfen (Abschnitt 3.5) |
 | `Regelwerk` | Regeln als Instanzen in festgelegter Reihenfolge, optional ein Ausdruck für das Gesamtergebnis (req-fach-041 bis req-fach-045) |
 
-Eine Eigenschaft eines in einem Indikator oder Trend enthaltenen Indikators wird von außen nicht angesprochen, solange req-fach-012 das offen lässt.
+Eigenschaften enthaltener Indikatoren bleiben deren Eigenschaften und sind über die Struktur des umgebenden Objekts ansprechbar (req-fach-012): `trend_h1.ema20.Wert` ist die Eigenschaft `Wert` der Instanz `ema20` im Trend `trend_h1`. Diese Schreibweise füllt den in req-fach-012 offenen Punkt vorläufig (Abschnitt 10, Punkt 7).
+
+Namensräume: Innerhalb einer Vorlage sind ihre eigenen Parameter ohne Punkt und ihre enthaltenen Instanzen und Regeln mit ihrem Namen ansprechbar. In der Strategie sind Instanzen, Bedingungen, Berechnungen, Strategieparameter und die Regeln der Strategie ansprechbar; die Regeln eines Elements nur in den Ausdrücken der Regeln dieses Elements. Eine Regel in einem Regelwerk heißt innerhalb des Regelwerks `regel`, außerhalb `regelwerk.regel`. Namen müssen innerhalb ihres Namensraums eindeutig sein. Dieselbe Vorlage an der Strategie und an einem Element ergibt zwei Instanzen in zwei Namensräumen und ist kein Fehler (req-fach-041, req-fach-046).
 
 ### 3.4 Ausdrücke
 
@@ -101,14 +105,28 @@ Ausdrücke von Regeln, Bedingungen, Berechnungen, Belegungen und eigenen Eigensc
 - Werte: Zahlen mit Dezimalpunkt, Texte in doppelten Anführungszeichen, `TRUE()` und `FALSE()`, Prozentzeichen nach einer Zahl.
 - Operatoren: `+ - * / ^ &`, Vergleich `= <> < <= > >=`, Vorzeichen, Klammern. Die logischen Operatoren sind in OpenFormula die Funktionen `AND`, `OR`, `NOT`.
 - Funktionen der ersten Auswahl: `IF`, `AND`, `OR`, `NOT`, `MIN`, `MAX`, `ABS`, `FLOOR` (abrunden auf eine Schrittweite), `CEILING` (aufrunden auf eine Schrittweite), `ISNA`, `IFNA`, `ISBLANK` und die eigene Funktion `PREVIOUS` (req-fach-014). Argumente werden mit `;` getrennt. Gespeichert und eingegeben werden die Namen aus der Norm.
-- Namen: `Objekt.Eigenschaft` in Punkt-Schreibweise. Objekt ist ein Objekt der Anwendung, eine Instanz der Strategie, der Name einer Bedingung oder Berechnung mit `.Ergebnis`, der Name einer Regel mit `.Ergebnis`, oder `Strategie` mit einem Strategieparameter. Parameter einer Regel stehen ohne Punkt. Groß- und Kleinschreibung von Namen und Funktionen wird nicht unterschieden. Gespeichert wird die Schreibweise der Kennung.
+- Namen: `Objekt.Eigenschaft` in Punkt-Schreibweise, bei enthaltenen Objekten mehrstufig (Abschnitt 3.3). Objekt ist ein Objekt der Anwendung, eine Instanz, der Name einer Bedingung oder Berechnung mit `.Ergebnis`, der Name einer Regel mit `.Ergebnis`, oder `Strategie` mit einem Strategieparameter. Parameter einer Regel und eigene Parameter einer Vorlage stehen ohne Punkt. Welche Namen ein Ausdruck sieht, legen die Namensräume in Abschnitt 3.3 fest. Groß- und Kleinschreibung von Namen und Funktionen wird nicht unterschieden. Gespeichert wird die Schreibweise der Kennung.
 - Festgelegte Werte einer Auswahl stehen als Text mit ihrer Kennung, zum Beispiel `markttechnik_h1.phase = "bewegung"`. Der Vergleich mit einem Text, der kein Wert dieser Auswahl ist, ist ein Fehler.
 
 Werte, die fehlen, sind für die spätere Ausführung so festgelegt:
 
-- Spricht ein Ausdruck eine Eigenschaft an, die das Objekt im Zusammenhang der Auswertung nicht hat, ist der Wert „nicht verfügbar“ (`#N/A` nach OpenFormula). Das gilt für eine Eigenschaft, die der Ordertyp nicht hat (`Order.Limitpreis` bei einer Stop-Order), und für `Position` in einer Regel, die auf eine Order angewendet wird (Hinweis H23). Jede Rechnung mit „nicht verfügbar“ ergibt „nicht verfügbar“; `ISNA` und `IFNA` prüfen und ersetzen ihn. `IF` wertet nur den gewählten Zweig aus.
-- Eine Regel, deren Ergebnis „nicht verfügbar“ ist, setzt eine Eigenschaft voraus, die nicht vorhanden ist, und wird nicht angewendet, ohne Fehler oder Meldung (req-fach-046).
-- Eine vorhandene KANN-Eigenschaft ohne Wert ist „leer“. Rechnung und Vergleich mit „leer“ sind ein Fehler: Eine bestimmende Regel kann die Eigenschaft dann nicht bestimmen, eine prüfende Regel ist nicht erfüllt (req-fach-021). `ISBLANK` prüft auf „leer“.
+- Spricht ein Ausdruck eine Eigenschaft an, die das Objekt im Zusammenhang der Auswertung nicht hat, ist der Wert „nicht verfügbar“ (`#N/A` nach OpenFormula). Das gilt für eine Eigenschaft, die der Ordertyp nicht hat (`Order.Limitpreis` bei einer Stop-Order), für `Position` in einer Regel, die auf eine Order angewendet wird (Hinweis H23), und für `Position` in der Verwaltung, solange die Order noch keine Position hat. Jede Rechnung mit „nicht verfügbar“ ergibt „nicht verfügbar“, auch eine Bedingung von `IF`; `ISNA` und `IFNA` prüfen und ersetzen ihn. `IF` wertet nur den gewählten Zweig aus.
+- Eine Eigenschaft ohne Wert ist „leer“: eine KANN-Eigenschaft ohne Wert oder eine Eigenschaft, die das Objekt gerade nicht belegt, etwa `Punkt 2` der Markttechnik ohne Trend. Rechnung und Vergleich mit „leer“ sind ein Fehler, ebenso eine Division durch null und die übrigen Fehlerwerte von OpenFormula. `ISBLANK` prüft auf „leer“.
+
+Wirkung bei der Ausführung, wenn das Ergebnis eines Ausdrucks ein Fehler, „leer“ oder „nicht verfügbar“ ist:
+
+| Stelle | Wirkung | Grundlage |
+|---|---|---|
+| Regel, Ergebnis „nicht verfügbar“ | sie setzt eine Eigenschaft voraus, die nicht vorhanden ist, und wird nicht angewendet, ohne Fehler oder Meldung | req-fach-046 |
+| bestimmende Regel, Fehler oder „leer“ | die Eigenschaft ist nicht bestimmbar | req-fach-021 |
+| prüfende Regel, Fehler oder „leer“ | die Prüfung ist nicht erfüllt | req-fach-021 |
+| Bedingung | jedes Ergebnis außer „wahr“ nimmt den Ausgang `falsch` (Abschnitt 10, Punkt 8) | req-fach-047 |
+| Berechnung | das Ergebnis ist dieser Wert; wer es verwendet, verhält sich nach dieser Tabelle | req-fach-048 |
+| Belegung einer Eigenschaft bei „Order aufgeben“, „Order ändern“, „Position ändern“, „Position schließen“ | die Eigenschaft ist nicht bestimmbar: Ausgang `nicht gestellt` beziehungsweise `nicht geändert`, bei „Position schließen“ wird nichts geschlossen und der Ablauf geht weiter | req-fach-049, req-fach-049a |
+| Parameter setzen | der Strategieparameter bleibt unverändert, der Ablauf geht weiter | req-fach-047 |
+| eigene Eigenschaft eines Indikators oder Trends | die Eigenschaft ist „leer“ | req-fach-013a |
+
+Strategietester und Handelssystem protokollieren jeden Fehler einer Auswertung mit Element und Ausdruck; das legt ihre Spezifikation fest.
 
 Die Typprüfung kennt zu jedem Ausdruck seinen Zusammenhang:
 
@@ -118,7 +136,7 @@ Die Typprüfung kennt zu jedem Ausdruck seinen Zusammenhang:
 | Ausdruck in der Verwaltung | Eigenschaften des Ordertyps dieses „Order aufgeben“ | Eigenschaften der Position |
 | Ausdruck im Hauptablauf, Indikator, Trend | Fehler (req-fach-051) | Fehler (req-fach-051) |
 
-Eine Eigenschaft ist in einer Regel bekannt, wenn mindestens ein Ordertyp sie hat. Eine Regel kann unabhängig von Instanzen definiert werden (req-fach-040): Spricht der Ausdruck einer Vorlage einen Namen an, der weder Objekt der Anwendung noch Parameter der Regel ist, meldet die Prüfung der Vorlage einen Hinweis; geprüft wird der Name in jeder Strategie, die die Regel enthält. Verwendet ein Ausdruck im Hauptablauf das Ergebnis einer Regel, die `Order` oder `Position` anspricht, gilt das als Verwendung im Ablauf außerhalb einer Verwaltung und ist ein Fehler (Hinweis H24).
+Eine Eigenschaft ist in einer Regel bekannt, wenn mindestens ein Ordertyp sie hat. Eine Regel kann unabhängig von Instanzen definiert werden (req-fach-040): Spricht der Ausdruck einer Vorlage einen Namen an, der weder Objekt der Anwendung noch Parameter der Regel ist, meldet die Prüfung der Vorlage einen Hinweis; geprüft wird der Name in jeder Strategie, die die Regel enthält. Eine Regel, deren Ergebnis ein anderer Ausdruck verwendet, wird im Zusammenhang dieses Ausdrucks ausgewertet; das gilt auch für eine Regel im Ausdruck einer anderen Regel (req-fach-038). Verwendet ein Ausdruck im Hauptablauf, in einem Indikator oder einem Trend das Ergebnis einer Regel, die `Order` oder `Position` anspricht, ist das ein Fehler, im Hauptablauf als Verwendung im Ablauf außerhalb einer Verwaltung (req-fach-051, Hinweis H24). In der Verwaltung sieht die Regel die Order und Position der Verwaltung.
 
 ### 3.5 Regeln: bestimmen und prüfen, Regelvorlage „Risiko je Trade“
 
@@ -133,27 +151,38 @@ Regelvorlage „Risiko je Trade“ (req-core-002):
 
 - Parameter `Risikogrenze`, Datentyp Prozent, Pflicht, Standardwert 1 %.
 - bestimmte Eigenschaft `Volumen`, Vergleich beim Prüfen `höchstens`.
-- Ausdruck:
+- Ausdruck, hier mit Zeilenumbrüchen; `A` steht für den Abstand vom Preis bis zum Stop-Loss in Verlustrichtung und ist im gespeicherten Ausdruck an beiden Stellen ausgeschrieben:
 
 ```text
-FLOOR(
-  Risikogrenze * Konto.Kapital
-    / (ABS(IF(ISNA(Position.Volumen);
-              IFNA(Order.Limitpreis; Order.Preis) - Order.Stop_Loss;
-              Position.Einstiegspreis - Position.Stop_Loss))
-       / Instrument.Tickgroesse * Instrument.Tickwert);
-  Instrument.Volumenschritt)
+IF(ISNA(Position.Volumen);
+   IF(A_Order <= 0;
+      Order.Volumen;
+      FLOOR(Risikogrenze * Konto.Kapital
+              / (A_Order / Instrument.Tickgroesse * Instrument.Tickwert);
+            Instrument.Volumenschritt));
+   IF(A_Position <= 0;
+      Position.Volumen;
+      FLOOR(Risikogrenze * Konto.Kapital
+              / (A_Position / Instrument.Tickgroesse * Instrument.Tickwert);
+            Instrument.Volumenschritt)))
+
+A_Order    = IF(Order.Richtung = "buy";
+                IFNA(Order.Limitpreis; Order.Preis) - Order.Stop_Loss;
+                Order.Stop_Loss - IFNA(Order.Limitpreis; Order.Preis))
+A_Position = IF(Position.Richtung = "buy";
+                Position.Einstiegspreis - Position.Stop_Loss;
+                Position.Stop_Loss - Position.Einstiegspreis)
 ```
 
-Der Ausdruck liefert das größte Volumen, abgerundet auf den Volumenschritt, bei dem der Verlust vom Preis bis zum Stop-Loss die Risikogrenze nicht übersteigt. So bildet er die Fälle ab:
+Der Ausdruck liefert das größte Volumen, abgerundet auf den Volumenschritt, bei dem der Verlust vom Preis bis zum Stop-Loss die Risikogrenze nicht übersteigt. Liegt der Stop-Loss auf oder hinter dem Preis, ist kein Verlust möglich: Der Ausdruck liefert dann das vorhandene Volumen, die Prüfung ist erfüllt, und es wird nicht durch null geteilt. Bei „Order aufgeben“ ist das Volumen in diesem Fall noch „leer“, die Regel kann es nicht bestimmen. So bildet er die Fälle ab:
 
 | Fall | Preis | Stop-Loss | Wirkung |
 |---|---|---|---|
 | „Order aufgeben“ mit Markt-, Stop- oder Limit-Order | `Order.Preis` (bei der Marktorder der angenommene Preis, req-fach-019) | `Order.Stop_Loss` | bestimmt das Volumen |
 | „Order aufgeben“ mit Stop-Limit-Order | `Order.Limitpreis`, der Preis, zu dem die Position entsteht | `Order.Stop_Loss` | bestimmt das Volumen |
 | „Order ändern“ | wie bei „Order aufgeben“, mit den geänderten Werten | geänderter Stop-Loss | prüft das bestehende Volumen; bestimmen und prüfen rechnen bei derselben Order mit demselben Preis (N10) |
-| „Position ändern“, Prüfung nach der Ausführung | `Position.Einstiegspreis` | `Position.Stop_Loss`, bei „Position ändern“ der neue | prüft das Volumen der Position |
-| Schließorder | `CloseOrder` hat keinen Stop-Loss, das Ergebnis ist „nicht verfügbar“ | – | wird nicht angewendet (req-fach-046) |
+| „Position ändern“, Prüfung nach der Ausführung | `Position.Einstiegspreis` | `Position.Stop_Loss`, bei „Position ändern“ der neue | prüft das Volumen der Position; ein Stop-Loss auf oder hinter dem Einstiegspreis, etwa nachgezogen in `str-03`, erfüllt die Prüfung |
+| Schließorder | `CloseOrder` hat weder Richtung noch Stop-Loss, das Ergebnis ist „nicht verfügbar“ | – | wird nicht angewendet (req-fach-046) |
 | Order oder Position ohne Stop-Loss | Stop-Loss ist „leer“ | – | Fehler: Volumen nicht bestimmbar beziehungsweise Prüfung nicht erfüllt, weil der Verlust unbegrenzt ist |
 
 ### 3.6 Konsistenzprüfung
@@ -167,14 +196,14 @@ Die Konsistenzprüfung läuft beim Speichern, auf Anforderung und für Vorlagen 
 | Element des Ablaufs ohne eingehende Verbindung | Fehler | req-ablauf-007 |
 | fehlerhafter Ausdruck: Schreibfehler, unbekannte Funktion, unbekannter Name, unbekannte Eigenschaft, unpassender Typ, unbekannter Wert einer Auswahl | Fehler | req-ablauf-007, Abschnitt 3.4 |
 | Ergebnis einer bestimmenden Regel passt nicht zur bestimmten Eigenschaft | Fehler | req-ablauf-007 |
-| Rückführung, auf deren Weg keine Bedingung liegt | Fehler | req-fach-047 |
+| Rückführung ohne Bedingung, die sie beendet: ein Kreis im Ablauf, auf dem keine Bedingung liegt, von der ein Ausgang aus dem Kreis hinausführt oder ohne Fortsetzung endet | Fehler | req-ablauf-007, req-fach-047 |
 | Pflichtparameter ohne Wert und nicht „bei der Anwendung“ | Fehler | req-param-006 |
 | MUSS-Eigenschaft der Order, die der Anwender belegt, ohne Belegung und ohne bestimmende Regel der Strategie oder des Elements | Fehler | req-fach-021 |
 | Regelwerk mit Vorwärtsbezug oder Zirkelbezug | Fehler | req-fach-045 |
 | `Order` oder `Position` im Ablauf außerhalb einer Verwaltung | Fehler | req-fach-051 |
 | `Kerze` ohne Instanz, wenn ein Auslöser außer `Kerzenschluss` die Auswertung startet | Fehler | req-fach-051 |
 | Order ändern, Order löschen, Position ändern oder Position schließen außerhalb einer Verwaltung | Fehler | req-fach-049a |
-| Name doppelt vergeben (Instanz, Bedingung, Berechnung, Strategieparameter, Regel) | Fehler | eindeutige Namen für Ausdrücke, req-fach-036 |
+| Name doppelt vergeben innerhalb eines Namensraums (Abschnitt 3.3) | Fehler | eindeutige Namen für Ausdrücke, req-fach-036 |
 | unbekannter Elementtyp oder Objekttyp | Fehler | req-ablauf-008 |
 | kein Element „Order aufgeben“ erreichbar | Hinweis | req-ablauf-007 |
 
@@ -182,7 +211,7 @@ Die Konsistenzprüfung läuft beim Speichern, auf Anforderung und für Vorlagen 
 
 Strategie und jede Vorlage werden als JSON-Dokument geschrieben und gelesen. Kopffelder: `format` (`pipwerk.strategy`, `pipwerk.indicator`, `pipwerk.trend`, `pipwerk.rule`, `pipwerk.ruleset`) und `format_version` `1.0`. Die Pydantic-Modelle in `pipwerk_domain.documents` lehnen zusätzliche Felder ab. Aus ihnen werden die JSON-Schemata erzeugt und unter `contracts/strategies/v1/` abgelegt (req-system-022). Ein Dokument mit höherer Hauptversion wird abgelehnt.
 
-Ein Elementtyp oder Objekttyp ist im Dokument eine Zeichenkette. Ein Dokument mit unbekanntem Typ ist deshalb gültig und wird geladen; die Konsistenzprüfung meldet den Typ (req-ablauf-008). Gespeichert werden nur Kennungen, keine übersetzten Texte (req-ui-007). Schreiben und erneutes Lesen ergeben dasselbe Objekt.
+Ein Elementtyp oder Objekttyp ist im Dokument eine Zeichenkette. Ein Dokument mit unbekanntem Typ ist deshalb gültig und wird geladen; die Konsistenzprüfung meldet den Typ (req-ablauf-008). Ein solches Element erscheint auf der Zeichenfläche mit der Kennung seines Typs und rot umrandet; es lässt sich verschieben, verbinden und löschen, seine Belegungen zeigt die Eigenschaftenansicht nur lesend und sie bleiben beim Speichern unverändert erhalten. Gespeichert werden nur Kennungen, keine übersetzten Texte (req-ui-007). Schreiben und erneutes Lesen ergeben dasselbe Objekt.
 
 ## 4. Backend von pipwerk Studio
 
@@ -192,7 +221,7 @@ Ein Elementtyp oder Objekttyp ist im Dokument eine Zeichenkette. Ein Dokument mi
 - Die Tabelle `studio_settings` erhält dafür eine Spalte. Mit dieser Schemaänderung wird Alembic eingeführt; eine bestehende Datenbank des bisherigen Schemas wird beim Start auf den neuen Stand gebracht.
 - Je Objekt eine Datei `<uuid>.<art>.json` mit `<art>` aus `strategy`, `indicator`, `trend`, `rule`, `ruleset`. Der Dateiname entsteht nur im Backend aus einer geprüften UUID. Geschrieben wird über eine temporäre Datei im selben Verzeichnis und Umbenennen.
 - Eine Datei, die sich nicht lesen lässt oder dem Schema nicht entspricht, erscheint in der Liste mit Kennzeichen „nicht lesbar“ und wird nicht verändert.
-- Ändern des Objektverzeichnisses (req-ablauf-009): Mit „verschieben“ verschiebt das Backend alle Dateien nach dem Muster oben in das neue Verzeichnis und speichert erst danach die Einstellung. Liegt dort schon eine Datei gleichen Namens, wird nichts verschoben und die Änderung mit Fehler abgelehnt. Ohne „verschieben“ wird nur die Einstellung gespeichert.
+- Ändern des Objektverzeichnisses (req-ablauf-009): Mit „verschieben“ verschiebt das Backend alle Dateien nach dem Muster oben in das neue Verzeichnis und speichert erst danach die Einstellung. Liegt dort schon eine Datei gleichen Namens, wird nichts verschoben und die Änderung mit Fehler abgelehnt. Scheitert das Verschieben unterwegs, holt das Backend die schon verschobenen Dateien zurück, behält die alte Einstellung und meldet den Fehler; gelingt auch das nicht, nennt die Meldung beide Verzeichnisse und die betroffenen Dateien. Ohne „verschieben“ wird nur die Einstellung gespeichert. Eine geöffnete Strategie bleibt geöffnet und wird beim nächsten Speichern in das neue Verzeichnis geschrieben.
 
 ### 4.2 Web-API
 
@@ -218,7 +247,7 @@ Ein Dokument, das dem Schema nicht entspricht, wird mit HTTP 422 abgelehnt; Befu
 | Bereich | Inhalt |
 |---|---|
 | Kopfzeile | Menü mit „Neue Strategie“, „Öffnen“, „Speichern“, „Prüfen“, „Schließen“, „Löschen“ und „Einstellungen“; rechts „Über pipwerk Studio“. Die Sprachauswahl wandert in die Einstellungen (req-ui-009). |
-| links | Elementbibliothek: Elemente des Ablaufs, Objekttypen, mitgelieferte und gespeicherte Vorlagen, Schaltfläche „Neues Objekt“ (req-ablauf-004) |
+| links | Elementbibliothek: Auslöser, Elemente des Ablaufs, Objekte der Anwendung, die auf die Zeichenfläche gelegt werden können (`Konto`, `Instrument`, `Kerze`, `Tick`), Objekttypen, mitgelieferte und gespeicherte Vorlagen, Schaltfläche „Neues Objekt“ (req-fach-015, req-ablauf-003, req-ablauf-004) |
 | Mitte | Zeichenfläche mit React Flow |
 | rechts | Eigenschaftenansicht des ausgewählten Elements, der ausgewählten Regel oder, nach Klick auf die leere Zeichenfläche, der Strategie (req-ui-005) |
 | Fußzeile | Backend-Status und Stand, unverändert |
@@ -232,11 +261,11 @@ Alle Texte in Deutsch und Englisch, Beschriftungen der Typen aus den Typbeschrei
 | Strategie anlegen | „Neue Strategie“ öffnet eine leere Zeichenfläche mit einem Auslöser `Kerzenschluss` ohne Zeiteinheit; gespeichert wird erst mit „Speichern“ | req-ablauf-002 |
 | Objekt verwenden | Objekttyp oder Vorlage auf die Zeichenfläche ziehen; Name und Parameter in der Eigenschaftenansicht; „Als Vorlage speichern“ in der Eigenschaftenansicht der Instanz | req-ablauf-003 |
 | Regeln zuordnen | in der Eigenschaftenansicht der Strategie oder eines Elements mit Regeln: Regel, Vorlage einer Regel oder eines Regelwerks aus der Elementbibliothek hinzufügen, Reihenfolge ändern, entfernen; eine Regel kann auch neu in der Strategie entstehen (Objekttyp `Regel`) | req-ui-012, req-fach-044 |
-| Objekt anlegen, öffnen, ändern | „Neues Objekt“ mit Objekttyp, oder Vorlage in der Elementbibliothek öffnen; Bearbeitung in der Eigenschaftenansicht; Speichern mit Konsistenzprüfung | req-ablauf-004, req-ablauf-008 |
+| Objekt anlegen, öffnen, ändern | „Neues Objekt“ mit Objekttyp, oder Vorlage in der Elementbibliothek öffnen. Die Vorlage erscheint in der Eigenschaftenansicht als eigene Ansicht mit den Schaltflächen „Speichern“, „Prüfen“, „Schließen“ und „Löschen“; die geöffnete Strategie bleibt dahinter unverändert offen. Enthaltene Instanzen, Regeln und Regelwerke fügt der Anwender dort aus der Elementbibliothek hinzu, ändert ihre Reihenfolge oder entfernt sie. Befunde der Vorlage stehen in dieser Ansicht bei dem betroffenen Teil. Beim Schließen mit ungespeicherten Änderungen gilt dieselbe Rückfrage wie bei einer Strategie. | req-ablauf-004, req-ablauf-007, req-ablauf-008, req-ui-011 |
 | Speichern | speichert immer, zeigt danach die Befunde | req-ablauf-005 |
 | Schließen | bei ungespeicherten Änderungen Rückfrage „Speichern“, „Verwerfen“, „Abbrechen“; ebenso vor „Neue Strategie“ und „Öffnen“ | req-ablauf-005 |
 | Öffnen | Liste der Strategien mit Bezeichnung, Beschreibung, letzter Änderung | req-ablauf-008 |
-| Löschen | Rückfrage; bei einer Vorlage zeigt sie die Strategien und Vorlagen mit Instanzen daraus | req-ablauf-006 |
+| Löschen | Strategie über „Löschen“ in der Kopfzeile, Vorlage in ihrer Ansicht oder im Kontextmenü der Elementbibliothek; Rückfrage, bei einer Vorlage mit den Strategien und Vorlagen, die Instanzen daraus enthalten | req-ablauf-006 |
 | Einstellungen | Sprache, Objektverzeichnis mit Rückfrage „Dateien verschieben?“ | req-ui-009, req-ablauf-009 |
 
 ### 5.3 Zeichenfläche und Eigenschaftenansicht
@@ -286,10 +315,10 @@ Die Regel `mindestvolumen` ist Regel des Elements „Order aufgeben“, nicht de
 
 ## 9. Dokumentation
 
-- `docs/technical/pipwerk-studio.md`: Aufbau, Objektverzeichnis, Web-API, Alembic, Prüfungen, Sicherheit.
+- `docs/technical/pipwerk-studio.md`: Aufbau, Objektverzeichnis, Web-API, Einführung von Alembic (ersetzt die bisherige Aussage in Abschnitt 2.1, dass Alembic nicht eingesetzt wird), Prüfungen, Sicherheit.
 - neue technische Dokumentation der Bibliothek unter `docs/technical/` mit Objektmodell, Ausdrücken, Konsistenzprüfung und Dokumentformat, mit Verweis aus `contracts/strategies/README.md`.
-- `docs/user/pipwerk-studio.md`: alle Arbeitsabläufe aus Abschnitt 5.2 Schritt für Schritt, beide Testfälle als Anleitung.
-- Glossar: neue Begriffe der Spezifikation, zum Beispiel „nicht verfügbar“ und „leer“ bei Ausdrücken.
+- `docs/user/pipwerk-studio.md`: alle Arbeitsabläufe aus Abschnitt 5.2 Schritt für Schritt; die Schreibweise von Ausdrücken mit Namen, Kennungen, Werten einer Auswahl, Funktionen, Trennzeichen `;` und der Bedeutung von „leer“ und „nicht verfügbar“; die Befunde der Konsistenzprüfung und ihre Behebung; beide Testfälle als Anleitung.
+- Glossar: neue Begriffe der Spezifikation, zum Beispiel „nicht verfügbar“ und „leer“ bei Ausdrücken, und Berichtigung der Einträge, die dieser Spezifikation widersprechen: „Pydantic“ (wird im Teilpaket für Dokumente der Bibliothek verwendet, E1), „Index“ (keine Tabelle in der Datenbank, E5), „Strategiedatei“ (Objektverzeichnis statt Strategieverzeichnis), „Typbeschreibung“ (Felder nach Abschnitt 3.1).
 
 ## 10. Vorschläge zu offenen Punkten, Hinweise für den Auftraggeber
 
@@ -298,6 +327,13 @@ Die Spezifikation braucht keine Entscheidung des Auftraggebers, bevor sie umgese
 1. Befunde ohne Element stehen in der Eigenschaftenansicht der Strategie, Hinweise sind orange markiert (req-ui-011, dort offen).
 2. Mitgelieferte Objekttypen und die Regelvorlage „Risiko je Trade“ lassen sich nicht ändern oder löschen; eine Abwandlung entsteht als neue Vorlage aus einer Instanz (E6). Grund: Sie sind Teil der Software und in jeder Installation gleich.
 3. Funktionen der ersten Auswahl ergänzt um `FLOOR`, `CEILING`, `AND`, `OR`, `NOT`, `ISNA`, `IFNA`, `ISBLANK` aus der Norm (req-fach-036, Auswahl „bei Bedarf“ erweiterbar). Funktionsnamen stehen in der Norm-Schreibweise; deutsche Namen bleiben offen.
-4. Bedeutung von `Order` und `Position` in Regeln ohne zugehöriges Objekt: „nicht verfügbar“; eine Regel, deren Ergebnis dadurch nicht verfügbar ist, wird nicht angewendet; Verwendung über ein Regelergebnis im Hauptablauf ist ein Fehler (Abschnitt 3.4, Hinweise H23 und H24 aus [requirements-7.md](reviews/requirements-7.md)).
+4. Bedeutung von `Order` und `Position` in Regeln ohne zugehöriges Objekt: „nicht verfügbar“; eine Regel, deren Ergebnis dadurch nicht verfügbar ist, wird nicht angewendet; Verwendung über ein Regelergebnis im Hauptablauf, in einem Indikator oder einem Trend ist ein Fehler, in der Verwaltung sieht die Regel deren Order und Position (Abschnitt 3.4, Hinweise H23 und H24 aus [requirements-7.md](reviews/requirements-7.md)).
 5. Eine Order oder Position ohne Stop-Loss erfüllt die Regel „Risiko je Trade“ nicht (Abschnitt 3.5).
 6. Trend: Mitgeliefert ist nur das Berechnungsverfahren „Ausdruck“. Die Werte der Trendrichtung legt der Ausdruck fest, weil das Fachmodell sie nicht festlegt (Abschnitt 9 Punkt 9 der Anforderungen).
+7. Eigenschaften eines in einem Trend oder Indikator enthaltenen Indikators werden mehrstufig angesprochen, zum Beispiel `trend_h1.ema20.Wert` (Abschnitt 3.3; req-fach-012 lässt offen, wie).
+8. Eine Bedingung, deren Ausdruck bei der Ausführung keinen Wert ergibt, etwa weil die Markttechnik ohne Trend keinen Punkt 2 hat, nimmt den Ausgang `falsch` (Abschnitt 3.4). In `str-01` wird dann kein Trade geplant, und eine wartende Order wird beim Tick nicht gelöscht, solange Punkt 1/3 nicht belegt ist.
+
+Folgen der fachlichen Festlegungen, die erst mit der Abbildung sichtbar werden (sie ergeben sich aus req-core-002, req-fach-046 und req-fach-049a, nicht aus einer Entscheidung der Spezifikation):
+
+- Die Regel „Risiko je Trade“ prüft bei „Order ändern“ und „Position ändern“ mit dem aktuellen Kapital. Ist das Kapital gesunken, lehnt sie auch eine Änderung ab, die das Risiko verringert, solange der Stop-Loss noch auf der Verlustseite liegt.
+- Legt eine Regel des Elements „Order aufgeben“ eine höhere Risikogrenze fest als die Regel der Strategie, prüft bei „Order ändern“ nur die Regel der Strategie mit der niedrigeren Grenze; die Order lässt sich dann nicht ändern.
