@@ -53,7 +53,7 @@ Ein Indikator kann aus fest programmierten Einheiten, aus Regeln oder aus einer 
 
 Ein gespeicherter Indikator, Trend, eine gespeicherte Regel oder ein gespeichertes Regelwerk ist eine `Vorlage`. Fügt der Anwender eine Vorlage in eine Strategie ein, entsteht in der Strategie eine `Instanz`: ein eigenes Objekt mit einem in der Strategie vergebenen Namen (zum Beispiel `EMA21`), das die Werte der Vorlage übernimmt und danach nur dieser Strategie gehört. Änderungen an der Instanz wirken nur in dieser Strategie, Änderungen an der Vorlage wirken nicht auf bestehende Instanzen. Eine Instanz kann als neue Vorlage gespeichert werden. Jede Instanz nennt ihre Herkunft: die Vorlage, aus der sie entstanden ist, und ihren Objekttyp.
 
-Mitgelieferte Objekttypen (req-fach-054) verhalten sich wie Vorlagen.
+Mitgelieferte Objekttypen (req-fach-054) verhalten sich wie Vorlagen. Ein vom Anwender angelegter Indikator hat den Objekttyp `Indikator`, ein vom Anwender angelegter Trend den Objekttyp `Trend`.
 
 ### req-fach-014 -- Zustandswechsel als Bedingung
 
@@ -91,7 +91,7 @@ Das allgemeine Objekt `Order` besitzt folgende Eigenschaften:
 - `Strategie-ID` -- KANN; Zuordnung zur verursachenden Strategie.
 - `Bemerkung` -- KANN; freie zusätzliche Information.
 - `geltende Regeln` -- 0..n; die für die Order geltenden Regeln werden der Order übergeben.
-- `Preis` -- MUSS; der Preis, zu dem die Order ausgeführt werden soll. Bei Ordertypen mit vorgegebenem Preis ist es dieser (bei der `StopLimitOrder` der `Limitpreis`), sonst bis zur Ausführung der angenommene Preis und ab der Ausführung der Ausführungspreis (req-fach-028). Bei einer `CloseOrder` ist es der aktuelle Kurs, zu dem die Position geschlossen wird.
+- `Preis` -- MUSS; bei den wartenden Ordertypen der vorgegebene Preis nach req-fach-029 (bei der `StopLimitOrder` der Auslösepreis, der `Limitpreis` ist dort eine zusätzliche Eigenschaft). Bei `MarketOrder` und `CloseOrder` wird er nicht vorgegeben: bis zur Ausführung der angenommene Preis, das ist der aktuelle Kurs (`Tick.Brief` für einen Kauf, `Tick.Geld` für einen Verkauf), ab der Ausführung der Ausführungspreis (req-fach-028).
 
 Weitere Eigenschaften werden nur dann in `Order` aufgenommen, wenn sie tatsächlich für alle spezialisierten Ordertypen gemeinsam benötigt werden.
 
@@ -120,7 +120,7 @@ Dabei muss es:
 
 Kann eine erforderliche Eigenschaft nicht bestimmt werden oder ergibt eine erforderliche Prüfung mittels `prüfen()` kein positives Ergebnis, wird die Order nicht zur Ausführung freigegeben.
 
-Wurde eine Order mit einem angenommenen Preis freigegeben (req-fach-028), werden die prüfenden Regeln nach der Ausführung mit dem Ausführungspreis erneut angewendet. Offen: welche Maßnahme bei einem negativen Ergebnis folgt. Betrifft die Ausführung.
+Wurde eine `MarketOrder` mit einem angenommenen Preis freigegeben (req-fach-028), werden die prüfenden Regeln nach der Ausführung erneut angewendet, auf die entstandene Position (req-fach-052) mit ihrem Einstiegspreis. Offen: welche Maßnahme bei einem negativen Ergebnis folgt. Betrifft die Ausführung.
 
 ### req-fach-023 -- Spezialisierung nach Ordertyp
 
@@ -156,7 +156,7 @@ Zusätzlich zu den allgemeinen Eigenschaften von `Order` besitzt `MarketOrder`:
 - `Stop-Loss` -- KANN.
 - `Take-Profit` -- KANN.
 
-Der `Preis` (req-fach-019) wird bei der `MarketOrder` nicht vorgegeben: Bis zur Ausführung ist er der angenommene Preis, der aktuelle Kurs (`Tick.Brief` bei `buy`, `Tick.Geld` bei `sell`), ab der Ausführung der tatsächliche Ausführungspreis. Regeln rechnen mit diesem Preis (Anforderungen Strategiedesigner req-core-002).
+Der `Preis` (req-fach-019) wird bei der `MarketOrder` nicht vorgegeben: bis zur Ausführung der angenommene Preis, ab der Ausführung der Ausführungspreis. Regeln rechnen mit diesem Preis (Anforderungen Strategiedesigner req-core-002).
 
 ### req-fach-029 -- Wartende Ordertypen
 
@@ -386,7 +386,7 @@ Tritt ein Auslöser ein, werden zuerst die Verwaltungen der bestehenden Orders u
 
 ### req-fach-051 -- Objekte der Anwendung
 
-Objekte der Anwendung sind Objekte wie alle anderen: Sie können Parameter haben, und eine Strategie kann beliebig viele Instanzen davon verwenden, jede mit eigenem Namen (zum Beispiel `KerzeH1` und `KerzeM15`). Der Unterschied zu den übrigen Objekten: Ihre Werte stellt die Anwendung bereit, das Handelssystem aus Broker und Konto, der Strategietester aus den Einstellungen des Testlaufs, zum Beispiel angenommenes Kapital, Spread und Brokerbedingungen. Der Anwender gestaltet ihren Objekttyp nicht, und sie werden nicht als Vorlage gespeichert. Im Strategiedesigner existieren sie als Typbeschreibung, damit Ausdrücke ihre Eigenschaften verwenden und die Konsistenzprüfung sie kennt. Sie sind in Ausdrücken immer verfügbar, ohne auf der Zeichenfläche zu liegen, können aber, mit Ausnahme von `Order`, `Position` und `Strategie`, als Elemente auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen. Liegt keine Instanz eines Objekts der Anwendung auf der Zeichenfläche, spricht ein Ausdruck es unter dem Namen seines Objekttyps an (`Kerze.Schluss`); die Kerze hat dann die Zeiteinheit des Auslösers `Kerzenschluss`, der die Auswertung gestartet hat. Startet ein anderer Auslöser die Auswertung, muss eine Kerze mit gesetzter Zeiteinheit auf der Zeichenfläche liegen, sonst meldet die Konsistenzprüfung einen Fehler. Liegen Instanzen auf der Zeichenfläche, gelten ihre gesetzten Parameter, und Ausdrücke sprechen sie über ihren Namen an (req-fach-036). `Order`, `Position` und `Strategie` werden nicht als Instanz auf die Zeichenfläche gelegt; welche Order und Position gemeint sind, ergibt sich aus dem Zusammenhang: In Ausdrücken einer Regel sind es die Order beziehungsweise die Position, auf die die Regel angewendet wird (req-fach-040), auch bei `Order aufgeben` im Hauptablauf. In Ausdrücken des Ablaufs sind sie in der Verwaltung einer Order verfügbar (req-fach-049a); die Konsistenzprüfung meldet ihre Verwendung im Ablauf außerhalb einer Verwaltung als Fehler.
+Objekte der Anwendung sind Objekte wie alle anderen: Sie können Parameter haben, und von `Konto`, `Instrument`, `Kerze` und `Tick` kann eine Strategie beliebig viele Instanzen verwenden, jede mit eigenem Namen (zum Beispiel `KerzeH1` und `KerzeM15`). Der Unterschied zu den übrigen Objekten: Ihre Werte stellt die Anwendung bereit, das Handelssystem aus Broker und Konto, der Strategietester aus den Einstellungen des Testlaufs, zum Beispiel angenommenes Kapital, Spread und Brokerbedingungen. Der Anwender gestaltet ihren Objekttyp nicht, und sie werden nicht als Vorlage gespeichert. Im Strategiedesigner existieren sie als Typbeschreibung, damit Ausdrücke ihre Eigenschaften verwenden und die Konsistenzprüfung sie kennt. Sie sind in Ausdrücken verfügbar, ohne auf der Zeichenfläche zu liegen (`Order` und `Position` nur dort, wo sie bestimmt sind, siehe unten), und können, mit Ausnahme von `Order`, `Position` und `Strategie`, als Elemente auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen. Liegt keine Instanz eines Objekts der Anwendung auf der Zeichenfläche, spricht ein Ausdruck es unter dem Namen seines Objekttyps an (`Kerze.Schluss`); die Kerze hat dann die Zeiteinheit des Auslösers `Kerzenschluss`, der die Auswertung gestartet hat. Startet ein anderer Auslöser die Auswertung, muss eine Kerze mit gesetzter Zeiteinheit auf der Zeichenfläche liegen, sonst meldet die Konsistenzprüfung einen Fehler. Liegen Instanzen auf der Zeichenfläche, gelten ihre gesetzten Parameter, und Ausdrücke sprechen sie über ihren Namen an (req-fach-036). `Order`, `Position` und `Strategie` werden nicht als Instanz auf die Zeichenfläche gelegt; welche Order und Position gemeint sind, ergibt sich aus dem Zusammenhang (req-fach-040): In einer Regel, die auf eine Order angewendet wird (`Order aufgeben`, `Order ändern`), ist `Order` diese Order, `Position` ist nicht verfügbar. In einer Regel, die auf eine Position angewendet wird (`Position ändern`, Prüfung nach der Ausführung), ist `Position` diese Position und `Order` die Order, aus der sie entstanden ist. In Ausdrücken des Ablaufs sind beide in der Verwaltung einer Order verfügbar (req-fach-049a). Die Konsistenzprüfung meldet eine Verwendung außerhalb dieser Fälle als Fehler.
 
 | Objekt | Parameter und Eigenschaften |
 |---|---|
@@ -394,7 +394,7 @@ Objekte der Anwendung sind Objekte wie alle anderen: Sie können Parameter haben
 | `Instrument` | `Bezeichnung`, `Tickgröße`, `Tickwert`, `Punkt`, `Pip`, `Spread`, `Mindestvolumen`, `Volumenschritt` |
 | `Kerze` | Parameter `Zeiteinheit`; Eigenschaften `Eröffnung`, `Hoch`, `Tief`, `Schluss`, `Volumen`, `Zeitpunkt` der jeweils letzten abgeschlossenen Kerze dieser Zeiteinheit |
 | `Tick` | `Geld`, `Brief`, `Zeitpunkt` des jeweils letzten Ticks |
-| `Order`, `Position` | in der Verwaltung einer Order die eigene Order und die daraus entstandene Position (req-fach-019, req-fach-052, req-fach-049a); jede Verwaltung hat ihre eigene |
+| `Order`, `Position` | in einer Regel die Order beziehungsweise Position, auf die die Regel angewendet wird; in der Verwaltung einer Order die eigene Order und die daraus entstandene Position (req-fach-019, req-fach-052, req-fach-049a), jede Verwaltung hat ihre eigene |
 | `Strategie` | die eigene Strategie mit ihren Strategieparametern und Eigenschaften (req-fach-046) |
 
 Spread, Pip und Punkt liefert das Instrument als Kursdifferenz. Pip und Punkt sind Vielfache der Tickgröße des Instruments. Die Umrechnung zwischen Pip, Punkt und Tickgröße ergibt sich aus den Eigenschaften des Instruments, ein Ausdruck rechnet mit ihnen wie mit anderen Werten.
@@ -469,3 +469,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-15 | Entscheidungen des Auftraggebers zur Nachprüfung der QA (`strategiedesign`, Durchlauf 2): Objekte der Anwendung mit Parametern und mehreren Instanzen (req-fach-051), Regel kann bestimmen und prüfen (req-fach-020), Belegung von Parametern der Elemente (req-fach-046), Geltungsdauer von Parameter setzen und Bezug von VORHER als offen gekennzeichnet (req-fach-047, req-fach-014), Verwaltung am Ausgang gestellt (req-fach-049), Instrument der Position (req-fach-052), Einheit von Spread, Pip und Punkt (req-fach-051), Kennungen für Werte (req-fach-036), Begriffe Indikator statt Komponente (req-fach-010, req-fach-011) und Eigenschaften statt Parameter (req-fach-016). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-15. |
 | 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 3). Entscheidungen des Auftraggebers im Chat am 2026-10-16: Preis der Marktorder (req-fach-028), Regel nur bei vorhandenen Eigenschaften, keine Risikoregel für CloseOrder (req-fach-046). Vom Projektleiter nach Hinweisen der QA: Zeiteinheit der einzeln verwendeten Kerze (req-fach-051). |
 | 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 4), vom Projektleiter: Order und Position in Regeln aus dem Zusammenhang, nicht auf der Zeichenfläche (req-fach-051), Preis als allgemeine Eigenschaft (req-fach-019, req-fach-028), Prüfung nach Ausführung mit offener Maßnahme (req-fach-021), Grundsatz für alle Regeln (req-fach-046), Margin-Regel offen (req-fach-049). |
+| 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 5), vom Projektleiter: Preis der StopLimitOrder ist der Auslösepreis, Preis der CloseOrder (req-fach-019, req-fach-028), Prüfung nach Ausführung auf der Position (req-fach-021), Bedeutung von Order und Position in Regeln (req-fach-051), Objekttyp angelegter Indikatoren und Trends (req-fach-013a). |
