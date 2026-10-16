@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>strategiedesign Arbeitspaketplan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentationen zuvor. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:100px 128px;display:flex;flex-direction:column;gap:36px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:62px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:30px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:26px;line-height:1.42;color:var(--text)}
+code{font-size:.92em;background:#eef2ef;padding:1px 6px;border-radius:5px}
+.note{font-size:23px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:30px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 32px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 14px;font-size:29px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:12px 20px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:24px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:24px 32px;font-size:28px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:112px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:26px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+.layer{display:grid;grid-template-columns:1fr;gap:16px}
+.layer > div{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:18px 28px;display:flex;gap:28px;align-items:baseline}
+.layer b{font-size:28px;min-width:420px;color:var(--green)}
+.dense p,.dense li{font-size:23px!important;line-height:1.36}
+.layer span{font-size:24px;color:var(--text);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben strategiedesign (Strategien gestalten und speichern) · Phase 3 Planung</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Arbeitspaketplan des Strategiedesigners</h1>
+<p style="font-size:36px;width:1560px">Der Softwarearchitekt hat die bestätigte Spezifikation in drei Arbeitspakete geteilt. Die Qualitätssicherung (QA) hat geprüft, dass jeder Teil der Spezifikation genau einem Paket zugeordnet ist und dass jedes Paket mit einem Ergebnis endet, das du selbst ausprobieren kannst. Was sich so nicht prüfen lässt, belegen Tests im Prüfbericht der QA. Ergebnis: bestanden. Diese Präsentation zeigt die Pakete, ihre Reihenfolge und wie du jedes abnimmst.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">16. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/strategiedesign/plan.md</code></p>
+<p class="num">1 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Drei Pakete, nacheinander</h2>
+<div class="chain">
+<div class="node">Paket 1<small>Bibliothek und Web-Schnittstelle: Strategien speichern, laden, prüfen</small></div><span class="arrow">→</span>
+<div class="node">Paket 2<small>Strategien gestalten in der Oberfläche, Nachweis mit beiden Testfällen</small></div><span class="arrow">→</span>
+<div class="node">Paket 3<small>eigene Vorlagen anlegen, ändern, löschen</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Warum diese Reihenfolge</h3><p>In der Oberfläche ist kein Element- oder Objekttyp fest einprogrammiert. Was sie anzeigt, beschreibt die Python-Bibliothek: Name, Parameter, Eigenschaften, Ein- und Ausgänge jedes Typs. Diese Typbeschreibungen holt die Oberfläche über die Web-Schnittstelle. Deshalb muss Paket 1 fertig sein, bevor die Oberfläche entsteht.</p></div>
+<div class="card col"><h3>Warum Vorlagen zuletzt</h3><p>Beide Testfälle kommen ohne eigene Vorlagen aus. Sie brauchen nur die mitgelieferten Indikatoren, die Regelvorlage „Risiko je Trade“ und Regeln, die direkt in der Strategie entstehen. Mit Paket 2 ist das Ziel des Vorhabens erreicht: Beide Testfälle lassen sich in der Oberfläche gestalten, speichern und wieder öffnen.</p></div>
+<div class="card col"><h3>Ablauf je Paket</h3><p>Ein Paket beginnt, wenn das vorige abgenommen und in den Hauptzweig <code>main</code> übernommen ist. Jedes Paket endet in der Testumgebung, die du selbst ausprobierst. Mängel gehen zurück an das Team, nicht in das nächste Paket.</p></div>
+</div>
+<p class="note">Begriffe: Die <b>Web-Schnittstelle</b> ist der Zugang, über den die Oberfläche und später andere Programme Strategien lesen, schreiben und prüfen lassen. Die <b>Schnittstellenbeschreibung</b> ist eine Seite im Browser, die alle Aufrufe der Web-Schnittstelle auflistet und sie mit eigenen Eingaben ausführen lässt. Die <b>Elementbibliothek</b> ist die Auswahlliste der Oberfläche, aus der Elemente auf die Zeichenfläche gezogen werden, nicht die Python-Bibliothek. Eine <b>Vorlage</b> ist ein gespeichertes Objekt (Indikator, Trend, Regel, Regelwerk), aus dem in einer Strategie eine <b>Instanz</b> als vollständige Kopie entsteht.</p>
+<p class="num">2 / 7</p></section></div>
+
+<div class="frame"><section class="slide" style="gap:28px">
+<h2>Paket 1: Bibliothek und Web-Schnittstelle</h2>
+<div class="row">
+<div class="card col dense"><h3>Inhalt</h3><ul><li>Gemeinsame Python-Bibliothek: alle Element- und Objekttypen, mitgelieferte Indikatoren und „Risiko je Trade“, Formelprüfung, Konsistenzprüfung, Dateiformat mit Schemadateien</li><li>Beide Testfälle als fertige Strategiedateien</li><li>Backend von pipwerk Studio: Ablage der Strategien und Vorlagen als Dateien im Objektverzeichnis, Wechsel des Verzeichnisses mit oder ohne Verschieben der Dateien, Web-Schnittstelle. Einstellungen wie Sprache und Objektverzeichnis stehen in der Datenbank von pipwerk Studio.</li><li>Technische Dokumentation, zwei Ergänzungen der Anwenderdokumentation</li></ul><p>Die Oberfläche bleibt unverändert.</p></div>
+<div class="card col dense"><h3>So nimmst du ab</h3><p>In der Testumgebung über die Schnittstellenbeschreibung im Browser:</p><ul><li>Die Typen erscheinen mit deutschen und englischen Beschriftungen.</li><li>Beide Testfälle lassen sich speichern, auflisten und unverändert wieder laden, ohne Fehler der Konsistenzprüfung. Im Objektverzeichnis liegt je eine Datei.</li><li>Abgewandelte Testfälle erzeugen die passenden Befunde, zum Beispiel ein fehlender Auslöser oder ein Schreibfehler in einer Formel mit Angabe der Stelle. Gespeichert wird trotzdem.</li><li>Ein Strategiedokument mit einem Feld, das das Dateiformat nicht kennt, wird beim Speichern abgelehnt. Unbekannte Elementtypen sind dagegen zulässig (Folie 4), damit Strategien mit Typen aus neueren Versionen erhalten bleiben.</li><li>Über die Web-Schnittstelle lässt sich eine Regel-Vorlage anlegen, ändern und löschen. Speicherst du eine Strategie mit einer Instanz daraus, nennt die Liste der Verwendungen diese Strategie. Nach dem Löschen der Vorlage bleibt die Strategie unverändert. In der Oberfläche folgen Vorlagen erst mit Paket 3.</li></ul></div>
+</div>
+<p class="note">Den Wechsel des Objektverzeichnisses prüfst du erst in Paket 2 in der Oberfläche. In Paket 1 belegen ihn die Tests im Prüfbericht der QA.</p>
+<p class="num">3 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Paket 2: Strategien gestalten in der Oberfläche</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><ul><li>Kopfzeile mit Menü, Elementbibliothek, Zeichenfläche, Eigenschaftenansicht</li><li>Strategie anlegen, öffnen, speichern, schließen, löschen, prüfen</li><li>Elemente verbinden, Verwaltung einer Order als einklappbarer Rahmen</li><li>Regeln zuordnen, neu anlegen, ordnen, entfernen</li><li>Formeleingabe mit Vorschlägen. Namen in Formeln erscheinen in der gewählten Sprache.</li><li>Befunde: Element mit Fehler rot umrandet, mit Hinweis orange umrandet, Text in der Eigenschaftenansicht</li><li>Sprache und Objektverzeichnis in den Einstellungen</li><li>Anwenderdokumentation mit beiden Testfällen als Anleitung</li></ul></div>
+<div class="card col"><h3>So nimmst du ab</h3><ul><li>Du baust die EMA-Trendfolge und den Punkt-2-Ausbruch nach der Anleitung auf einer leeren Zeichenfläche auf. Die Konsistenzprüfung meldet keinen Fehler. Nach Neuladen der Seite öffnet sich jede Strategie unverändert.</li><li>Ungespeicherte Änderungen lösen beim Schließen, Öffnen und bei „Neue Strategie“ die Rückfrage „Speichern, Verwerfen, Abbrechen“ aus.</li><li>Du wechselst das Objektverzeichnis mit und ohne Verschieben der Dateien.</li><li>Eine Strategie mit unbekanntem Elementtyp öffnet sich. Das Element ist rot umrandet und bleibt beim Speichern erhalten.</li><li>Alle Texte erscheinen in Deutsch und Englisch.</li></ul></div>
+</div>
+<p class="num">4 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Paket 3: eigene Vorlagen</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><ul><li>Schaltfläche „Neues Objekt“ für Indikator, Trend, Regel, Regelwerk</li><li>Eigene Ansicht der Vorlage mit Speichern, Prüfen, Schließen, Löschen</li><li>„Als Vorlage speichern“ aus einer Instanz in einer Strategie</li><li>Löschen einer Vorlage mit Anzeige, wo Instanzen daraus stehen</li><li>Mitgelieferte Typen und „Risiko je Trade“ lassen sich weder ändern noch löschen.</li></ul><p class="ref">Nicht enthalten: weitere Berechnungsverfahren des Trends außer „Ausdruck“.</p></div>
+<div class="card col"><h3>So nimmst du ab</h3><ul><li>Du legst je eine Vorlage jedes Objekttyps an. Eine gerade geöffnete Strategie bleibt dabei unverändert.</li><li>„Prüfen“ zeigt Befunde beim betroffenen Teil der Vorlage.</li><li>Du fügst eine eigene Vorlage in eine Strategie ein, änderst danach die Vorlage. Die Instanz in der Strategie bleibt unverändert.</li><li>Beim Löschen einer Vorlage nennt die Rückfrage die Strategien und Vorlagen mit Instanzen daraus. Diese Instanzen bleiben erhalten.</li></ul></div>
+</div>
+<p class="num">5 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Zu bestätigen</h2>
+<div class="row">
+<div class="card col ask"><h3>1 · Pakete und Reihenfolge</h3><p>Drei Pakete in der Reihenfolge Bibliothek und Web-Schnittstelle, Strategien in der Oberfläche, eigene Vorlagen.</p></div>
+<div class="card col ask"><h3>2 · Abnahme von Paket 1 im Browser</h3><p>Paket 1 hat noch keine Oberfläche. Du nimmst es über die Schnittstellenbeschreibung ab, mit den Testfalldateien als Eingabe.</p></div>
+<div class="card col ask"><h3>3 · Sprache nach Neustart</h3><p>Die gewählte Sprache muss auch nach einem Neustart von pipwerk Studio erhalten bleiben. In der Testumgebung kannst du das nicht prüfen, weil sie beim Stoppen ihre Datenbank mit den Einstellungen entfernt. Vorschlag: Ein Test im Prüfbericht der QA belegt es, du prüfst nur das Neuladen der Seite.</p></div>
+</div>
+<p class="note">Drei weitere Hinweise der QA betreffen nur die Wortwahl des Plans und eine Ergänzung der Anleitung zur Testumgebung. Der Softwarearchitekt erledigt sie in den Aufträgen an die Entwickler. Umfang und Abnahme ändern sie nicht.</p>
+<p class="num">6 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Bestätigung und nächster Schritt</h2>
+<div class="chain">
+<div class="node" style="border-width:4px">Bestätigung<small>du bestätigst Plan, Abnahme von Paket 1 und den Vorschlag zur Sprache</small></div><span class="arrow">→</span>
+<div class="node">Umsetzung Paket 1<small>Aufträge an Entwickler, Prüfung durch Tester und QA</small></div><span class="arrow">→</span>
+<div class="node">Abnahme Paket 1<small>du probierst in der Testumgebung aus</small></div><span class="arrow">→</span>
+<div class="node">Paket 2, dann 3<small>gleicher Ablauf</small></div>
+</div>
+<div class="card"><h3>Wenn du anders entscheidest</h3><p>Einwände gehen mit einer Meldung an den Softwarearchitekten, der den Plan überarbeitet und erneut von der QA prüfen lässt.</p></div>
+<p class="rule">Vermerk der Bestätigung: offen.</p>
+<p class="num">7 / 7</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
