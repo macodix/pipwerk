@@ -11,8 +11,8 @@
 # The working directory is derived from the path of this script. The script
 # can be called from any directory. Ports and host are parameters; the script
 # contains no fixed ports, paths or machine names. State, logs, the
-# startup configuration and the database of the test environment live in
-# components/pipwerk-studio/.testenv/ (ignored by Git).
+# startup configuration, the database and the object directory of the test
+# environment live in components/pipwerk-studio/.testenv/ (ignored by Git).
 #
 # Documentation: docs/technical/pipwerk-studio.md, section "Start als
 # Testumgebung".
@@ -266,6 +266,21 @@ cmd_start() {
 [database]
 url = sqlite:///$env_dir/pipwerk-studio.db
 EOF
+
+    # The object directory of the test environment lies below .testenv/. It is
+    # stored in the database of the test environment before the backend starts
+    # (the setting "object directory"); stop removes it with .testenv/.
+    "$backend_dir/.venv/bin/python" -c '
+import sys
+
+from pipwerk_studio.settings_service import SettingsService
+from pipwerk_studio.storage import create_session_factory, create_studio_engine
+
+engine = create_studio_engine(sys.argv[1])
+SettingsService(create_session_factory(engine)).set_object_directory(sys.argv[2], move=False)
+engine.dispose()
+' "sqlite:///$env_dir/pipwerk-studio.db" "$env_dir/objects" ||
+        die "the object directory of the test environment could not be set"
 
     nohup "$backend_dir/.venv/bin/pipwerk-studio" \
         -c "$env_dir/pipwerk-studio.ini" --host 127.0.0.1 --port "$backend_port" \

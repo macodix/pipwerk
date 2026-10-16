@@ -12,6 +12,8 @@ from sqlalchemy import Integer, String, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
+from pipwerk_studio.migrate import migrate_database
+
 
 class Base(DeclarativeBase):
     """Declarative base of the pipwerk Studio persistence schema."""
@@ -26,19 +28,26 @@ SETTINGS_SINGLETON_ID = 1
 class StudioSettingsRecord(Base):
     """ORM row holding the operational settings of pipwerk Studio.
 
-    Only the backend-authoritative language setting is modelled here. The UI
-    language is never stored in the browser (localStorage, sessionStorage,
-    cookies) and never as part of strategy data.
+    The backend-authoritative language setting and the object directory are
+    modelled here. The UI language is never stored in the browser
+    (localStorage, sessionStorage, cookies) and never as part of strategy
+    data. ``object_directory`` is ``NULL`` as long as the default applies. The
+    schema is created and changed by the Alembic migrations in
+    ``pipwerk_studio.migrations``, not by this class.
     """
 
     __tablename__ = "studio_settings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     language: Mapped[str] = mapped_column(String(8), nullable=False)
+    object_directory: Mapped[str | None] = mapped_column(String(4096), nullable=True)
 
 
 def create_studio_engine(database_url: str) -> Engine:
-    """Create the SQLAlchemy engine for the given database URL and ensure schema."""
+    """Create the SQLAlchemy engine and bring the database to the newest schema.
+
+    The schema is migrated with Alembic (``pipwerk_studio.migrate``).
+    """
     connect_args: dict[str, object] = {}
     if database_url.startswith("sqlite"):
         # check_same_thread=False allows the engine to serve FastAPI's worker
@@ -46,7 +55,7 @@ def create_studio_engine(database_url: str) -> Engine:
         # the SQLite file lock instead of failing immediately.
         connect_args = {"check_same_thread": False, "timeout": 30}
     engine = create_engine(database_url, connect_args=connect_args)
-    Base.metadata.create_all(engine)
+    migrate_database(engine)
     return engine
 
 
