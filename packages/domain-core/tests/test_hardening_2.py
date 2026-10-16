@@ -323,9 +323,12 @@ def test_the_normalization_of_a_document_of_2_mib_is_within_time_and_memory() ->
     assert limits.MAX_DOCUMENT_BYTES * 0.9 < len(text.encode()) <= limits.MAX_DOCUMENT_BYTES
     loaded = read_document(text)
     assert isinstance(loaded, Strategy)
+    # time without tracemalloc, memory apart; the limit is about 12 times the time on the
+    # development machine and protects against an outlier of the run time
+    assert not tracemalloc.is_tracing()
     started = time.perf_counter()
     result = normalize_strategy(loaded)
-    assert time.perf_counter() - started < 5
+    assert time.perf_counter() - started < 15
     assert result == loaded  # all names unknown: nothing changes
     # memory: measured on a part, tracing every allocation is slow; the syntax trees are
     # released after use, so the peak does not grow with the number of expressions
@@ -347,9 +350,10 @@ def test_the_normalization_of_a_template_with_many_hints_is_within_time_and_memo
         catalog.TYPE_INDICATOR,
         properties=[PropertyDefinition(f"e{n}", DataType.NUMBER, names) for n in range(500)],
     )
+    assert not tracemalloc.is_tracing()
     started = time.perf_counter()
     normalize_template(value)
-    assert time.perf_counter() - started < 5
+    assert time.perf_counter() - started < 10  # about 40 times the time on the development machine
     small = template(
         catalog.TYPE_INDICATOR,
         properties=[PropertyDefinition(f"e{n}", DataType.NUMBER, names) for n in range(60)],

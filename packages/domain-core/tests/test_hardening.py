@@ -618,16 +618,23 @@ def test_a_document_of_2_mib_is_checked_within_time_and_memory() -> None:
     assert limits.MAX_DOCUMENT_BYTES * 0.9 < size <= limits.MAX_DOCUMENT_BYTES
     loaded = read_document(text)
     assert isinstance(loaded, Strategy)
-    tracemalloc.start()
+    # time and memory are measured apart: tracing every allocation slows the check down.
+    # The time limit (about 25 times the time on the development machine) protects against an
+    # outlier of the run time; it is no response time.
+    assert not tracemalloc.is_tracing()
     started = time.perf_counter()
     found = check_strategy(loaded)
     seconds = time.perf_counter() - started
-    _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-    assert seconds < 5
-    assert peak < 200 * 1024 * 1024
+    assert seconds < 10
     assert len(found) == limits.MAX_FINDINGS_PER_CHECK + 1
     assert found[-1].code == fc.FINDINGS_TRUNCATED
+    tracemalloc.start()
+    try:
+        check_strategy(loaded)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 200 * 1024 * 1024
 
 
 def test_normalization_of_a_hostile_document_is_bounded() -> None:

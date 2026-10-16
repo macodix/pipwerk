@@ -29,6 +29,7 @@ _ADAPTER: TypeAdapter[AnyDocument] = TypeAdapter(
 )
 
 _SURROGATE = re.compile("[\ud800-\udfff]")
+_LEAVE = object()  # marks, on the stack of the walk, that all parts of a container are done
 _BYTE_ORDER_MARKS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
 
 _HEAD = ("format", "format_version", "id", "title", "description", "object_type")
@@ -47,18 +48,36 @@ def parse_document(data: str | bytes | dict[str, object]) -> AnyDocument:
 
 def _reject_lone_surrogates(data: object) -> None:
     """A text with a single surrogate (U+D800 to U+DFFF without a partner, also written as
-    an escape) is no text; it could not be written as UTF-8."""
+    an escape) is no text; it could not be written as UTF-8.
+
+    The walk ends for every input: a part that is attached more than once is walked once, and
+    an object that contains itself (a cycle) is no document."""
     stack: list[object] = [data]
+    visited: set[int] = set()  # containers seen; the objects stay alive through ``data``
+    on_path: set[int] = set()
     while stack:
         item = stack.pop()
+        if item is _LEAVE:
+            on_path.discard(stack.pop())
+            continue
         if isinstance(item, str):
             if _SURROGATE.search(item) is not None:
                 raise _error("a text with a single surrogate character")
-        elif isinstance(item, dict):
-            stack.extend(item.keys())
-            stack.extend(item.values())
-        elif isinstance(item, list):
-            stack.extend(item)
+        elif isinstance(item, dict | list):
+            identity = id(item)
+            if identity in on_path:
+                raise _error("an object that contains itself")
+            if identity in visited:
+                continue
+            visited.add(identity)
+            on_path.add(identity)
+            stack.append(identity)
+            stack.append(_LEAVE)
+            if isinstance(item, dict):
+                stack.extend(item.keys())
+                stack.extend(item.values())
+            else:
+                stack.extend(item)
 
 
 def _error(message: str) -> ValidationError:

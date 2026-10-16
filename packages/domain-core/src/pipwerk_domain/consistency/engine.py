@@ -231,6 +231,8 @@ class Checker:
         self._analyses: dict[tuple[int, str], Analysis] = {}
         self._owners: dict[tuple[int, str], object] = {}
         self._reported: set[tuple[int, str]] = set()
+        # per expression: [findings reported, 1 once `findings.truncated` was reported]
+        self._budgets: dict[tuple[int, str], list[int]] = {}
         self._items: dict[int, _RuleItem] = {}
         self._rule_symbols: dict[int, Symbol] = {}
         self._closed = application_scope(registry)
@@ -487,21 +489,21 @@ class Checker:
                 **issue.details,
             }
             if ctx.rule_template and issue.kind is IssueKind.UNKNOWN_NAME:
-                self._add(Level.HINT, fc.RULE_UNRESOLVED_NAME, ctx.element_id, subject, **data)
+                self._expression_finding(
+                    key, Level.HINT, fc.RULE_UNRESOLVED_NAME, ctx.element_id, subject, **data
+                )
             else:
-                self._add(Level.ERROR, fc.EXPRESSION_INVALID, ctx.element_id, subject, **data)
-        reported = len(analysis.issues)
-        truncated = analysis.truncated
+                self._expression_finding(
+                    key, Level.ERROR, fc.EXPRESSION_INVALID, ctx.element_id, subject, **data
+                )
+        if analysis.truncated:  # the analysis dropped findings of its own
+            self._expression_overflow(key, ctx.element_id, subject)
         for name in analysis.names:
             if ctx.in_template and any(
                 symbol.kind is SymbolKind.UNRESOLVED for symbol in name.symbols
             ):
-                # the limit for one expression counts all its findings, hints too
-                if reported >= MAX_FINDINGS_PER_EXPRESSION:
-                    truncated = True
-                    continue
-                reported += 1
-                self._add(
+                self._expression_finding(
+                    key,
                     Level.HINT,
                     fc.RULE_UNRESOLVED_NAME,
                     ctx.element_id,
@@ -518,20 +520,9 @@ class Checker:
                 and name.symbols[0].object_type == catalog.OBJECT_CANDLE
             ):
                 self._candle_uses[(ctx.element_id, subject)] = None
-        if truncated:
-            self._add(
-                Level.ERROR,
-                fc.FINDINGS_TRUNCATED,
-                None,
-                None,
-                limit=MAX_FINDINGS_PER_EXPRESSION,
-                scope="expression",
-                field=field,
-                element_id=ctx.element_id,
-                instance=subject,
-            )
         if ctx.order_error and self.analysis_uses_order(analysis):
-            self._add(
+            self._expression_finding(
+                key,
                 Level.ERROR,
                 fc.EXPRESSION_ORDER_OUTSIDE_MANAGEMENT,
                 ctx.element_id,
@@ -539,6 +530,47 @@ class Checker:
                 field=field,
                 context=ctx.order_context,
             )
+
+    def _expression_finding(
+        self,
+        key: tuple[int, str],
+        level: Level,
+        code: str,
+        element: str | None,
+        subject: str | None,
+        **details: object,
+    ) -> None:
+        """The one place that counts the findings of an expression (the owner and the field
+        of ``key``): at most ``MAX_FINDINGS_PER_EXPRESSION`` of them, then exactly one
+        ``findings.truncated`` and no further finding of this expression."""
+        state = self._budgets.setdefault(key, [0, 0])
+        if state[1]:
+            return
+        if state[0] >= MAX_FINDINGS_PER_EXPRESSION:
+            self._expression_overflow(key, element, subject)
+            return
+        state[0] += 1
+        self._add(level, code, element, subject, **details)
+
+    def _expression_overflow(
+        self, key: tuple[int, str], element: str | None, subject: str | None
+    ) -> None:
+        """Report that findings of the expression were dropped, once, as its last finding."""
+        state = self._budgets.setdefault(key, [0, 0])
+        if state[1]:
+            return
+        state[1] = 1
+        self._add(
+            Level.ERROR,
+            fc.FINDINGS_TRUNCATED,
+            None,
+            None,
+            limit=MAX_FINDINGS_PER_EXPRESSION,
+            scope="expression",
+            field=key[1],
+            element_id=element,
+            instance=subject,
+        )
 
     # ------------------------------------------------------------------------------
     # symbols of rules
@@ -1177,7 +1209,8 @@ class Checker:
         if rule.determined_property:
             found = self._order_property(rule.determined_property)
             if found is None:
-                self._add(
+                self._expression_finding(
+                    (id(rule), "expression"),
                     Level.ERROR,
                     fc.RULE_RESULT_MISMATCH,
                     ctx.element_id,
@@ -1193,7 +1226,8 @@ class Checker:
             return
         mismatch = et.mismatch_with(expected, analysis.result_type)
         if mismatch is not None:
-            self._add(
+            self._expression_finding(
+                (id(rule), "expression"),
                 Level.ERROR,
                 fc.RULE_RESULT_MISMATCH,
                 ctx.element_id,
