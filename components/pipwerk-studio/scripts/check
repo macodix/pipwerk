@@ -175,12 +175,17 @@ search_name() {
     printf '%s: %s mentions checked, all spelled correctly\n' "$PROG" "$search_count"
 }
 
-# pip_audit <in_library|in_backend>: checks the packages locked in uv.lock of
-# that directory for known vulnerabilities.
+# pip_audit <in_library|in_backend> [<option of uv export>...]: checks the
+# packages locked in uv.lock of that directory for known vulnerabilities. The
+# further options go to uv export; the backend leaves out the library of the
+# repository with --no-emit-package pipwerk-domain (section 6.1): it is a path
+# dependency, not a published package, and is checked with its own uv.lock.
 pip_audit() {
+    audit_in=$1
+    shift
     audit_requirements=$(mktemp) || return 1
     audit_status=0
-    "$1" export --frozen --no-hashes --no-emit-project -o "$audit_requirements" &&
+    "$audit_in" export --frozen --no-hashes --no-emit-project "$@" -o "$audit_requirements" &&
         uvx pip-audit -r "$audit_requirements" --no-deps --disable-pip || audit_status=1
     rm -f "$audit_requirements"
     return "$audit_status"
@@ -218,7 +223,7 @@ step "backend: ruff format --check" in_backend run --frozen ruff format --check
 step "backend: mypy" in_backend run --frozen mypy
 step "search in the repository for the spelling of the name" search_name
 if [ "$with_audit" = 1 ]; then
-    step "backend: pip-audit" pip_audit in_backend
+    step "backend: pip-audit" pip_audit in_backend --no-emit-package pipwerk-domain
 fi
 
 # Frontend (section 6.2)

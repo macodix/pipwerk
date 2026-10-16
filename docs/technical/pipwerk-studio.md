@@ -642,7 +642,7 @@ Reihenfolge der Prüfungen:
 2. mit `--with-audit`: `pip-audit` für die Bibliothek, Anforderungsliste aus `packages/domain-core/uv.lock` (Aufruf wie in Abschnitt 6.1)
 3. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
 4. Suche im Repository nach der Schreibweise des Namens (Abschnitt 6.1, dritter Punkt). Das Skript wertet jeden Treffer aus; die Prüfung scheitert, sobald ein Treffer nicht genau „pipwerk Studio“ oder der Bezeichner `pipwerk-studio` ist, und nennt Datei, Zeile und Treffer.
-5. mit `--with-audit`: `pip-audit` für das Backend, Anforderungsliste aus `backend/uv.lock`
+5. mit `--with-audit`: `pip-audit` für das Backend, Anforderungsliste aus `backend/uv.lock` ohne die Bibliothek des Repositorys (`--no-emit-package pipwerk-domain`, Aufruf wie in Abschnitt 6.1); die Bibliothek prüft Schritt 2
 6. Oberfläche im Verzeichnis `frontend`: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`
 7. mit `--with-audit`: `npm audit`
 8. Browsertest `npm run e2e` mit den beiden Ports
