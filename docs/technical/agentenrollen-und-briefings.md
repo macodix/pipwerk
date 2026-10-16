@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-14
+- stand: 2026-10-17
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026
 
@@ -44,6 +44,7 @@ Der Auftraggeber entscheidet den Inhalt von Anforderungsdokumenten (Arbeitsablä
 - Architektur und technische Konzeption entscheidet und dokumentiert der Softwarearchitekt.
 - Implementierungsentscheidungen innerhalb von Auftrag und Spezifikation trifft der Entwickler selbst.
 - Braucht die Umsetzung eine Aussage, die in ein Dokument des Auftraggebers gehört und dort fehlt, wird sie nicht selbst getroffen. Sie geht als Frage über die Kette an den Auftraggeber: Team → Softwarearchitekt → Meldung `question` → Projektleiter → Auftraggeber. Die Antwort kommt auf demselben Weg zurück und wird in das zuständige Dokument eingetragen.
+- Einen rein technischen Streitpunkt aus einer Schleife ohne Fortschritt entscheidet der Softwarearchitekt abschließend ([Rein technische Streitpunkte](entwicklungsverfahren.md#rein-technische-streitpunkte)).
 - Ist die Zuordnung nicht eindeutig, wird nach oben gegeben und nicht geraten.
 
 ## Verbindliche Anweisungen
@@ -179,6 +180,8 @@ Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Pro
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-17 | Entscheidungsrechte: rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
+| 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl, Briefings von Softwarearchitekt, Projektleiter und Verhaltensregel 11 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
 | 2026-10-14 | Fragen gesammelt: Der Softwarearchitekt stellt alle offenen Fragen einer Aufgabe in einem Dokument, nachdem er alles Unabhängige erledigt hat. Der Projektleiter legt sie einzeln vor und meldet `answer` nach der letzten Antwort. Bestätigt vom Auftraggeber im Chat. |
 | 2026-10-14 | Prüfung der Dokumente des Auftraggebers durch die QA in Phase 1 vor der Präsentation, Nachprüfung zu Beginn von Phase 2 mit `specify`. Briefings Projektleiter, Softwarearchitekt und QA angepasst. Bestätigt vom Auftraggeber im Chat. |
 | 2026-10-14 | Briefing Projektleiter: Präsentationen beschreiben den Ist-Stand. Leseprüfung des Folientexts durch eine Instanz ohne Kontext vor der Vorlage. Bestätigt vom Auftraggeber im Chat. |
@@ -187,4 +190,3 @@ Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Pro
 | 2026-10-09 | Agentendefinitionen, Skills und Teamfunktion aus dem Repository nach `devteam/` verlegt. |
 | 2026-10-09 | Auftragsverwaltung als Programm `ordermgr`, Start des Softwarearchitekten durch `agentrun`. |
 | 2026-10-07 | Transportunabhängige Rollen, Briefings, Qualitäts- und Entscheidungsregeln erhalten. Frühere Fassungen sind in Git nachvollziehbar. |
-| 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl, Briefings von Softwarearchitekt, Projektleiter und Verhaltensregel 11 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |

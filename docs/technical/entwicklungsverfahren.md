@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-16
+- stand: 2026-10-17
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
 
@@ -261,10 +261,16 @@ Die Grenze einer Prüfschleife richtet sich nach ihrem Fortschritt, nicht nach e
 
 | Schleife ohne Fortschritt | Weiter an |
 |---|---|
-| Tester und Entwickler | Softwarearchitekt, der die Aufträge anpasst. Bleibt der Fortschritt weiter aus, an den Projektleiter. |
+| Tester und Entwickler | Softwarearchitekt, der die Aufträge anpasst. Bleibt der Fortschritt weiter aus, entscheidet er nach [Rein technische Streitpunkte](#rein-technische-streitpunkte) oder gibt den Fall an den Projektleiter. |
 | QA und Softwarearchitekt | Projektleiter. Er übersetzt den Streitpunkt verständlich und legt ihn dem Auftraggeber zur Entscheidung vor. Fehlt eine Anforderung, geht sie in Phase 1. |
 | QA und Projektleiter | Auftraggeber. Der Projektleiter legt ihm die verbleibenden Befunde gesammelt vor. |
 | Mangel in der Abnahme | Projektleiter und Softwarearchitekt erklären ihn als nicht lösbar. Der Auftraggeber entscheidet. |
+
+### Rein technische Streitpunkte
+
+Betrifft eine Schleife ohne Fortschritt nur die technische Umsetzung, entscheidet der Softwarearchitekt abschließend. Er schreibt die Entscheidung mit Begründung in den Auftrag oder die Spezifikation und setzt die Arbeit fort. Bei einer Schleife zwischen QA und Softwarearchitekt gilt seine Entscheidung ebenso, die QA vermerkt den Streitpunkt im Prüfbericht als entschieden.
+
+Nur technisch ist ein Streitpunkt, wenn seine Entscheidung keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert. Berührt sie einen dieser Punkte oder ist die Zuordnung nicht eindeutig, geht der Fall nach der Tabelle oben an den Projektleiter und von ihm an den Auftraggeber.
 
 Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
@@ -405,6 +411,8 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-17 | Rein technische Streitpunkte: Eine Schleife ohne Fortschritt, deren Entscheidung weder Dokumente des Auftraggebers noch bestätigte Festlegungen, Abnahmekriterien oder Umfang ändert, entscheidet der Softwarearchitekt abschließend. Anlass: Frage `strategiedesign/questions/wp01-01.md`. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
+| 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl: weiter, solange die blockierenden Befunde weniger werden; eine Ebene höher bei unverändert wiederkehrendem Befund oder gleichbleibender Zahl; Befunde für eine höhere Ebene sofort dorthin. Phasen 1, 2, 3 und 5 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
 | 2026-10-14 | Berichte von Tester und QA im Berichtsverzeichnis `work/<ref>/reports/` statt ohne Commit im eigenen Arbeitsverzeichnis (Ablauftest, Hinweis H1 der QA). |
 | 2026-10-14 | Feste Ports der Testumgebung zur Abnahme, pipwerk Studio 5174 und 8001 (Auftraggeber im Chat). |
 | 2026-10-14 | Fragen gesammelt: Ein Fragedokument enthält alle offenen Fragen einer Aufgabe. Der Softwarearchitekt stellt sie erst, wenn die Aufgabe ohne Antwort nicht weiterkommt, der Projektleiter meldet `answer` erst nach der letzten Antwort. Anlass: neun einzelne Fragen im Ablauftest, jede mit Wartezeit und neuer Sitzung. Bestätigt vom Auftraggeber im Chat. |
@@ -424,4 +432,3 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 | 2026-10-09 | Claude-Code-Konfiguration aus dem Repository nach `devteam/` verlegt. |
 | 2026-10-09 | Auftragsverwaltung als Skript `ordermgr`, Läufe des Softwarearchitekten mit `agentrun` und Herzschlag. |
 | 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt. Frühere Fassungen sind in Git nachvollziehbar. |
-| 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl: weiter, solange die blockierenden Befunde weniger werden; eine Ebene höher bei unverändert wiederkehrendem Befund oder gleichbleibender Zahl; Befunde für eine höhere Ebene sofort dorthin. Phasen 1, 2, 3 und 5 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
