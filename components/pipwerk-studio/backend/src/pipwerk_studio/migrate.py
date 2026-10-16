@@ -15,18 +15,20 @@ Three starting points are handled:
 
 All migrations of one start, including the version table, run in one
 transaction. If one fails, the transaction is rolled back and the database is as
-it was before; the next start begins again. On SQLite this needs the explicit
-transactions set up in ``pipwerk_studio.storage``.
+it was before; the next start begins again. On SQLite this needs explicit
+transactions, which only the migration uses (own engine, see
+``_sqlite_migration_engine``); the engine of the operation is not changed.
 """
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
 from alembic.util.exc import CommandError
-from sqlalchemy import inspect
+from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.engine import Connection, Engine
 
 MIGRATIONS_DIRECTORY = Path(__file__).resolve().parent / "migrations"
@@ -72,13 +74,51 @@ def _is_unversioned_initial_schema(connection: Connection) -> bool:
     return True
 
 
+def _sqlite_migration_engine(engine: Engine) -> Engine | None:
+    """Return a separate engine with explicit transactions for a SQLite file.
+
+    The driver ``sqlite3`` commits a DDL statement at once, outside the
+    transaction of the connection, so a migration that failed half way would
+    stay half done. This engine (used for the migration only, then discarded)
+    turns off the implicit transaction control of the driver and begins each
+    transaction with ``BEGIN IMMEDIATE``: the write lock is taken first, so a
+    second process that starts at the same time waits (busy timeout) instead of
+    failing. ``None`` for every other database and for an in-memory database,
+    which exists only per connection.
+    """
+    if engine.dialect.name != "sqlite" or engine.url.database in (None, "", ":memory:"):
+        return None
+    migration_engine = create_engine(engine.url, connect_args={"timeout": 30})
+
+    @event.listens_for(migration_engine, "connect")
+    def disable_implicit_transactions(
+        dbapi_connection: sqlite3.Connection, _record: object
+    ) -> None:
+        dbapi_connection.isolation_level = None
+
+    @event.listens_for(migration_engine, "begin")
+    def begin_immediately(connection: Connection) -> None:
+        connection.exec_driver_sql("BEGIN IMMEDIATE")
+
+    return migration_engine
+
+
 def migrate_database(engine: Engine) -> None:
     """Bring the database of ``engine`` to the newest schema, all or nothing.
 
     A database that cannot be reached raises the error of SQLAlchemy as before.
     A failure of the migrations themselves raises ``DatabaseMigrationError``
-    after the transaction was rolled back.
+    after the transaction was rolled back. ``engine`` itself is not changed.
     """
+    migration_engine = _sqlite_migration_engine(engine)
+    try:
+        _migrate(engine if migration_engine is None else migration_engine)
+    finally:
+        if migration_engine is not None:
+            migration_engine.dispose()
+
+
+def _migrate(engine: Engine) -> None:
     with engine.connect() as connection:
         try:
             with connection.begin():

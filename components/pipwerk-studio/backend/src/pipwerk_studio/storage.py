@@ -8,10 +8,8 @@ the public domain or API representation of Studio settings.
 
 from __future__ import annotations
 
-import sqlite3
-
-from sqlalchemy import Integer, String, create_engine, event
-from sqlalchemy.engine import Connection, Engine
+from sqlalchemy import Integer, String, create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from pipwerk_studio.migrate import migrate_database
@@ -57,31 +55,11 @@ def create_studio_engine(database_url: str) -> Engine:
         # the SQLite file lock instead of failing immediately.
         connect_args = {"check_same_thread": False, "timeout": 30}
     engine = create_engine(database_url, connect_args=connect_args)
-    if database_url.startswith("sqlite"):
-        _make_sqlite_transactions_explicit(engine)
+    # The engine of the operation keeps the default transaction behaviour of
+    # the driver. The migration at startup uses its own connection with
+    # explicit transactions (pipwerk_studio.migrate).
     migrate_database(engine)
     return engine
-
-
-def _make_sqlite_transactions_explicit(engine: Engine) -> None:
-    """Let SQLite run schema changes inside the transaction of the connection.
-
-    The driver ``sqlite3`` does not open a transaction before a DDL statement
-    and commits such a statement at once. A migration that failed half way would
-    then stay half done. With the documented SQLAlchemy recipe the driver does
-    not start transactions itself and SQLAlchemy begins each one explicitly, so
-    a failed migration is rolled back as a whole.
-    """
-
-    @event.listens_for(engine, "connect")
-    def disable_implicit_transactions(
-        dbapi_connection: sqlite3.Connection, _record: object
-    ) -> None:
-        dbapi_connection.isolation_level = None
-
-    @event.listens_for(engine, "begin")
-    def begin_explicitly(connection: Connection) -> None:
-        connection.exec_driver_sql("BEGIN")
 
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:
