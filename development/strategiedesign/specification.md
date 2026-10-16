@@ -7,6 +7,7 @@
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek), `components/pipwerk-studio` (Backend und Oberfläche), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers; Nachprüfung der Dokumente bestanden in [requirements-7.md](reviews/requirements-7.md). Vorlagen: [Pflichtenheft](../../docs/design/planning/pflichtenheft-strategiedesigner.md) und Arbeitspakete AP2 bis AP9. Wo sie den geltenden Dokumenten widersprechen, folgt diese Spezifikation den geltenden Dokumenten (Abschnitt 1).
 - prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde B1 bis B4 und Hinweise S1 bis S15 eingearbeitet: B1 Abschnitt 3.5, B2 Abschnitt 3.4 und Abschnitt 10 Punkt 8, B3 Abschnitt 3.3 und Abschnitt 10 Punkt 7, B4 Abschnitt 3.3; S1 Abschnitt 3.4, S2 bis S4 und S8 Abschnitte 3.1 und 3.3, S5 und S6 Abschnitte 5.1 und 5.2, S7 und S9 Abschnitt 3.1, S10 Abschnitt 3.6, S11 Abschnitt 4.1, S12 Abschnitt 3.1, S13 Abschnitt 9, S14 Abschnitt 10, S15 Abschnitt 3.7. Durchlauf 2 [specification-2.md](reviews/specification-2.md) bestanden; die Hinweise S16 bis S22 werden in den Aufträgen der Phase 4 erledigt.
+- abstimmung: [specification-1.html](presentations/specification-1.html), Festlegungen 1 bis 3 und 5 bis 8 am 2026-10-16 bestätigt. Einwand zu Festlegung 4 eingearbeitet in Abschnitt 3.4, Abschnitt 3.6 und Abschnitt 10 Punkt 4, Nachprüfung in [specification-3.md](reviews/specification-3.md).
 
 ## 1. Gegenstand
 
@@ -110,16 +111,16 @@ Ausdrücke von Regeln, Bedingungen, Berechnungen, Belegungen und eigenen Eigensc
 
 Werte, die fehlen, sind für die spätere Ausführung so festgelegt:
 
-- Spricht ein Ausdruck eine Eigenschaft an, die das Objekt im Zusammenhang der Auswertung nicht hat, ist der Wert „nicht verfügbar“ (`#N/A` nach OpenFormula). Das gilt für eine Eigenschaft, die der Ordertyp nicht hat (`Order.Limitpreis` bei einer Stop-Order), für `Position` in einer Regel, die auf eine Order angewendet wird (Hinweis H23), und für `Position` in der Verwaltung, solange die Order noch keine Position hat. Jede Rechnung mit „nicht verfügbar“ ergibt „nicht verfügbar“, auch eine Bedingung von `IF`; `ISNA` und `IFNA` prüfen und ersetzen ihn. `IF` wertet nur den gewählten Zweig aus.
+- Spricht ein Ausdruck eine Eigenschaft an, die das Objekt im Zusammenhang der Auswertung nicht hat, ist der Wert „nicht verfügbar“ (`#N/A` nach OpenFormula). Das gilt für eine Eigenschaft, die der Ordertyp nicht hat (`Order.Limitpreis` bei einer Stop-Order), für `Position` in einer Regel, die auf eine Order angewendet wird (Hinweis H23), und für `Position` in der Verwaltung, solange die Order noch keine Position hat. Jede Rechnung mit „nicht verfügbar“ ergibt „nicht verfügbar“, auch eine Bedingung von `IF`; `ISNA` und `IFNA` prüfen und ersetzen ihn. `IF` wertet nur den gewählten Zweig aus. Die Auswertung vermerkt bei „nicht verfügbar“, ob er von einer Eigenschaft stammt, die der Ordertyp nicht hat.
 - Eine Eigenschaft ohne Wert ist „leer“: eine KANN-Eigenschaft ohne Wert oder eine Eigenschaft, die das Objekt gerade nicht belegt, etwa `Punkt 2` der Markttechnik ohne Trend. Rechnung und Vergleich mit „leer“ sind ein Fehler, ebenso eine Division durch null und die übrigen Fehlerwerte von OpenFormula. `ISBLANK` prüft auf „leer“.
 
 Wirkung bei der Ausführung, wenn das Ergebnis eines Ausdrucks ein Fehler, „leer“ oder „nicht verfügbar“ ist:
 
 | Stelle | Wirkung | Grundlage |
 |---|---|---|
-| Regel, Ergebnis „nicht verfügbar“ | sie setzt eine Eigenschaft voraus, die nicht vorhanden ist, und wird nicht angewendet, ohne Fehler oder Meldung | req-fach-046 |
-| bestimmende Regel, Fehler oder „leer“ | die Eigenschaft ist nicht bestimmbar | req-fach-021 |
-| prüfende Regel, Fehler oder „leer“ | die Prüfung ist nicht erfüllt | req-fach-021 |
+| Regel, Ergebnis „nicht verfügbar“ von einer Eigenschaft, die der Ordertyp nicht hat | sie wird auf diese Order nicht angewendet, ohne Fehler oder Meldung | req-fach-046 |
+| bestimmende Regel, Fehler, „leer“ oder sonst „nicht verfügbar“ | die Eigenschaft ist nicht bestimmbar | req-fach-021 |
+| prüfende Regel, Fehler, „leer“ oder sonst „nicht verfügbar“ | die Prüfung ist nicht erfüllt | req-fach-021 |
 | Bedingung | jedes Ergebnis außer „wahr“ nimmt den Ausgang `falsch` (Abschnitt 10, Punkt 8) | req-fach-047 |
 | Berechnung | das Ergebnis ist dieser Wert; wer es verwendet, verhält sich nach dieser Tabelle | req-fach-048 |
 | Belegung einer Eigenschaft bei „Order aufgeben“, „Order ändern“, „Position ändern“, „Position schließen“ | die Eigenschaft ist nicht bestimmbar: Ausgang `nicht gestellt` beziehungsweise `nicht geändert`, bei „Position schließen“ wird nichts geschlossen und der Ablauf geht weiter | req-fach-049, req-fach-049a |
@@ -135,8 +136,17 @@ Die Typprüfung kennt zu jedem Ausdruck seinen Zusammenhang:
 | Regel der Strategie oder eines Elements | Eigenschaften aller Ordertypen | Eigenschaften der Position |
 | Ausdruck in der Verwaltung | Eigenschaften des Ordertyps dieses „Order aufgeben“ | Eigenschaften der Position |
 | Ausdruck im Hauptablauf, Indikator, Trend | Fehler (req-fach-051) | Fehler (req-fach-051) |
+| Regel in einem Indikator oder Trend, auch in einem Regelwerk darin | Fehler | Fehler |
 
-Eine Eigenschaft ist in einer Regel bekannt, wenn mindestens ein Ordertyp sie hat. Eine Regel kann unabhängig von Instanzen definiert werden (req-fach-040): Spricht der Ausdruck einer Vorlage einen Namen an, der weder Objekt der Anwendung noch Parameter der Regel ist, meldet die Prüfung der Vorlage einen Hinweis; geprüft wird der Name in jeder Strategie, die die Regel enthält. Eine Regel, deren Ergebnis ein anderer Ausdruck verwendet, wird im Zusammenhang dieses Ausdrucks ausgewertet; das gilt auch für eine Regel im Ausdruck einer anderen Regel (req-fach-038). Verwendet ein Ausdruck im Hauptablauf, in einem Indikator oder einem Trend das Ergebnis einer Regel, die `Order` oder `Position` anspricht, ist das ein Fehler, im Hauptablauf als Verwendung im Ablauf außerhalb einer Verwaltung (req-fach-051, Hinweis H24). In der Verwaltung sieht die Regel die Order und Position der Verwaltung.
+Eine Eigenschaft ist in einer Regel bekannt, wenn mindestens ein Ordertyp sie hat. Eine Regel kann unabhängig von Instanzen definiert werden (req-fach-040): Spricht der Ausdruck einer Vorlage einen Namen an, der weder Objekt der Anwendung noch Parameter der Regel ist, meldet die Prüfung der Vorlage einen Hinweis; geprüft wird der Name in jeder Strategie, die die Regel enthält. Die Vorlage einer Regel oder eines Regelwerks darf `Order` und `Position` ansprechen. Eine Regel, deren Ergebnis ein anderer Ausdruck verwendet, wird im Zusammenhang dieses Ausdrucks ausgewertet; das gilt auch für eine Regel im Ausdruck einer anderen Regel (req-fach-038).
+
+Eine Regel, die `Order` oder `Position` anspricht, selbst oder über das Ergebnis einer anderen Regel, steht nur dort, wo eine Order vorhanden ist: als Regel der Strategie, am Element „Order aufgeben“ und in dessen Verwaltung (Entscheidung des Auftraggebers am 2026-10-16, Hinweis H24):
+
+- Enthält ein Indikator oder Trend eine solche Regel, auch in einem Regelwerk, ist schon das Einfügen ein Fehler, gleich ob ein Ausdruck ihr Ergebnis verwendet. Das gilt für die Vorlage und für jede Instanz davon.
+- Im Hauptablauf steht eine Regel nur an „Order aufgeben“ (req-ui-012; die übrigen Elemente mit Regeln sind außerhalb einer Verwaltung ein Fehler, Abschnitt 3.6). Verwendet ein Ausdruck im Hauptablauf das Ergebnis einer solchen Regel, ist das ein Fehler als Verwendung im Ablauf außerhalb einer Verwaltung (req-fach-051).
+- In der Verwaltung sieht die Regel die Order und Position der Verwaltung.
+
+Damit gibt es keine Regel, die nur deshalb nicht angewendet wird, weil es keine Order gibt. Nicht angewendet wird eine Regel nur nach req-fach-046, wenn der Ordertyp eine angesprochene Eigenschaft nicht hat. `Position` in einer Regel, die auf eine Order angewendet wird, fängt der Ausdruck mit `ISNA` oder `IFNA` ab, wie „Risiko je Trade“ (Abschnitt 3.5); sonst gilt die Tabelle oben.
 
 ### 3.5 Regeln: bestimmen und prüfen, Regelvorlage „Risiko je Trade“
 
@@ -200,7 +210,8 @@ Die Konsistenzprüfung läuft beim Speichern, auf Anforderung und für Vorlagen 
 | Pflichtparameter ohne Wert und nicht „bei der Anwendung“ | Fehler | req-param-006 |
 | MUSS-Eigenschaft der Order, die der Anwender belegt, ohne Belegung und ohne bestimmende Regel der Strategie oder des Elements | Fehler | req-fach-021 |
 | Regelwerk mit Vorwärtsbezug oder Zirkelbezug | Fehler | req-fach-045 |
-| `Order` oder `Position` im Ablauf außerhalb einer Verwaltung | Fehler | req-fach-051 |
+| `Order` oder `Position` im Ablauf außerhalb einer Verwaltung, auch über das Ergebnis einer Regel | Fehler | req-fach-051 |
+| Regel, die `Order` oder `Position` anspricht, in einem Indikator oder Trend, auch in einem Regelwerk darin (Abschnitt 3.4) | Fehler | req-fach-051, Entscheidung des Auftraggebers am 2026-10-16 |
 | `Kerze` ohne Instanz, wenn ein Auslöser außer `Kerzenschluss` die Auswertung startet | Fehler | req-fach-051 |
 | Order ändern, Order löschen, Position ändern oder Position schließen außerhalb einer Verwaltung | Fehler | req-fach-049a |
 | Name doppelt vergeben innerhalb eines Namensraums (Abschnitt 3.3) | Fehler | eindeutige Namen für Ausdrücke, req-fach-036 |
@@ -327,7 +338,7 @@ Die Spezifikation braucht keine Entscheidung des Auftraggebers, bevor sie umgese
 1. Befunde ohne Element stehen in der Eigenschaftenansicht der Strategie, Hinweise sind orange markiert (req-ui-011, dort offen).
 2. Mitgelieferte Objekttypen und die Regelvorlage „Risiko je Trade“ lassen sich nicht ändern oder löschen; eine Abwandlung entsteht als neue Vorlage aus einer Instanz (E6). Grund: Sie sind Teil der Software und in jeder Installation gleich.
 3. Funktionen der ersten Auswahl ergänzt um `FLOOR`, `CEILING`, `AND`, `OR`, `NOT`, `ISNA`, `IFNA`, `ISBLANK` aus der Norm (req-fach-036, Auswahl „bei Bedarf“ erweiterbar). Funktionsnamen stehen in der Norm-Schreibweise; deutsche Namen bleiben offen.
-4. Bedeutung von `Order` und `Position` in Regeln ohne zugehöriges Objekt: „nicht verfügbar“; eine Regel, deren Ergebnis dadurch nicht verfügbar ist, wird nicht angewendet; Verwendung über ein Regelergebnis im Hauptablauf, in einem Indikator oder einem Trend ist ein Fehler, in der Verwaltung sieht die Regel deren Order und Position (Abschnitt 3.4, Hinweise H23 und H24 aus [requirements-7.md](reviews/requirements-7.md)).
+4. `Order` und `Position` in Regeln: Eine Regel, die `Order` oder `Position` anspricht, steht nur als Regel der Strategie, am Element „Order aufgeben“ oder in dessen Verwaltung. In einem Indikator oder Trend ist schon das Einfügen einer solchen Regel ein Fehler der Konsistenzprüfung; im Hauptablauf, wo eine Regel sonst nur an „Order aufgeben“ steht, ist es die Verwendung ihres Ergebnisses in einem Ausdruck. In der Verwaltung sieht die Regel deren Order und Position. Den Fall, dass eine Regel nicht angewendet wird, weil es keine Order gibt, gibt es nicht. Eine Regel, die auf eine Order angewendet wird, findet dort keine Position vor: `Position` ist „nicht verfügbar“, der Ausdruck fängt das mit `ISNA` oder `IFNA` ab wie „Risiko je Trade“; fängt er es nicht ab, ist die Eigenschaft nicht bestimmbar beziehungsweise die Prüfung nicht erfüllt. Nicht angewendet wird eine Regel nur nach req-fach-046, wenn der Ordertyp eine angesprochene Eigenschaft nicht hat (Abschnitt 3.4, Abschnitt 3.6, Hinweise H23 und H24 aus [requirements-7.md](reviews/requirements-7.md)).
 5. Eine Order oder Position ohne Stop-Loss erfüllt die Regel „Risiko je Trade“ nicht (Abschnitt 3.5).
 6. Trend: Mitgeliefert ist nur das Berechnungsverfahren „Ausdruck“. Die Werte der Trendrichtung legt der Ausdruck fest, weil das Fachmodell sie nicht festlegt (Abschnitt 9 Punkt 9 der Anforderungen).
 7. Eigenschaften eines in einem Trend oder Indikator enthaltenen Indikators werden mehrstufig angesprochen, zum Beispiel `trend_h1.ema20.Wert` (Abschnitt 3.3; req-fach-012 lässt offen, wie).
