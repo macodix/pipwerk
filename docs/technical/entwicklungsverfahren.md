@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-14
+- stand: 2026-10-16
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
 
@@ -78,7 +78,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
   3. Der Prüfbericht geht über den Softwarearchitekten an den Projektleiter. Was sich anhand bestehender Festlegungen eindeutig korrigieren lässt, korrigiert er ohne den Auftraggeber.
   4. Der Projektleiter erstellt eine Präsentation der wichtigsten Aussagen. Sie enthält die Befunde, die nur der Auftraggeber entscheiden kann, als Fragen mit Vorschlag. Beide stimmen die Präsentation ab. Der Projektleiter arbeitet die Entscheidungen in die Dokumente ein.
 - Ergebnis: fortgeschriebene Dokumente des Auftraggebers, Prüfbericht der QA, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
-- Schleifen: Prüfung durch die QA und Korrektur durch den Projektleiter höchstens drei Durchläufe, dann entscheidet der Auftraggeber über die verbleibenden Befunde. Die Nachprüfung nach der Abstimmung ist der erste Schritt von Phase 2.
+- Schleifen: Prüfung durch die QA und Korrektur durch den Projektleiter nach [Grenze der Durchläufe](#grenze-der-durchläufe). Befunde, die nur der Auftraggeber entscheiden kann, gehen sofort an ihn. Die Nachprüfung nach der Abstimmung ist der erste Schritt von Phase 2.
 - Rückkopplung: Die Dokumente des Auftraggebers sind lebende Dokumente. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück und wird vor der Präsentation erneut von der QA geprüft, beschränkt auf die geänderten Stellen.
 
 ### Phase 2 – Konzeption
@@ -91,7 +91,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
   3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers.
   4. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
 - Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
-- Schleifen: QA und Softwarearchitekt höchstens drei Durchläufe, dann Eskalation. Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.
+- Schleifen: QA und Softwarearchitekt nach [Grenze der Durchläufe](#grenze-der-durchläufe). Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.
 
 ### Phase 3 – Planung
 
@@ -99,7 +99,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Eingabe: abgestimmte technische Spezifikation, Anforderungsdokumente
 - Tätigkeit: Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete. Die QA prüft, ob jede Anforderung durch die Spezifikation und jeder Teil der Spezifikation durch ein Arbeitspaket abgedeckt ist, und schreibt einen Prüfbericht. Ein Plan mit positivem Prüfbericht geht an den Projektleiter, der ihn präsentiert und abstimmt.
 - Ergebnis: Arbeitspaketplan, positiver Prüfbericht, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
-- Schleifen: Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, höchstens drei Durchläufe, dann Eskalation. Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
+- Schleifen: Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, nach [Grenze der Durchläufe](#grenze-der-durchläufe). Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
 Ein Arbeitspaket enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der Spezifikation, Abhängigkeiten und Abnahmekriterien. Der Plan führt je Paket den Stand `open` oder `done`.
 
@@ -127,7 +127,7 @@ Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit des Arbe
 1. Der Projektleiter übergibt dem Auftraggeber die Testumgebung mit einer kurzen Anleitung: was neu ist und wie es ausprobiert wird.
 2. Der Auftraggeber erprobt und nimmt formlos ab oder nennt Mängel.
 3. Der Projektleiter schreibt den Abnahmebericht mit der Abnahme oder den Mängeln. Projektleiter und Softwarearchitekt klären jeden Mangel. Der Softwarearchitekt lässt ihn über sein Team in Phase 4 beheben.
-4. Nach drei erfolglosen Versuchen gilt ein Mangel als nicht lösbar. Der Projektleiter legt vor, was geht und was nicht. Der Auftraggeber entscheidet.
+4. Kommt ein Mangel nach einer Behebung unverändert zurück oder wird die Zahl der Mängel nicht kleiner, gilt er als nicht lösbar ([Grenze der Durchläufe](#grenze-der-durchläufe)). Der Projektleiter legt vor, was geht und was nicht. Der Auftraggeber entscheidet.
 
 Ergebnis: abgenommenes Arbeitspaket, Abnahme im Abnahmebericht vermerkt.
 
@@ -253,12 +253,17 @@ Diese Regeln gelten für jede Prüfung durch QA und Tester, in allen Phasen:
 
 ### Grenze der Durchläufe
 
-Jede Prüfschleife hat höchstens drei Durchläufe. Danach geht der Fall eine Ebene höher: Entwickler → Softwarearchitekt → Projektleiter → Auftraggeber.
+Die Grenze einer Prüfschleife richtet sich nach ihrem Fortschritt, nicht nach einer festen Zahl von Durchläufen:
 
-| Schleife nach drei erfolglosen Durchläufen | Weiter an |
+- Eine Schleife läuft weiter, solange jeder Durchlauf weniger blockierende Befunde hat als der vorige. Neue Befunde an korrigierten Stellen zählen mit.
+- Sie geht eine Ebene höher (Entwickler → Softwarearchitekt → Projektleiter → Auftraggeber), wenn ein blockierender Befund nach einer Korrektur unverändert wiederkommt oder wenn die Zahl der blockierenden Befunde nicht sinkt.
+- Ein Befund, den nur eine höhere Ebene entscheiden kann, geht sofort dorthin, ohne das Ende der Schleife abzuwarten. Die übrigen Befunde werden währenddessen weiter bearbeitet.
+
+| Schleife ohne Fortschritt | Weiter an |
 |---|---|
-| Tester und Entwickler | Softwarearchitekt, der die Aufträge anpasst. Nach drei weiteren Durchläufen an den Projektleiter. |
+| Tester und Entwickler | Softwarearchitekt, der die Aufträge anpasst. Bleibt der Fortschritt weiter aus, an den Projektleiter. |
 | QA und Softwarearchitekt | Projektleiter. Er übersetzt den Streitpunkt verständlich und legt ihn dem Auftraggeber zur Entscheidung vor. Fehlt eine Anforderung, geht sie in Phase 1. |
+| QA und Projektleiter | Auftraggeber. Der Projektleiter legt ihm die verbleibenden Befunde gesammelt vor. |
 | Mangel in der Abnahme | Projektleiter und Softwarearchitekt erklären ihn als nicht lösbar. Der Auftraggeber entscheidet. |
 
 Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
@@ -419,3 +424,4 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 | 2026-10-09 | Claude-Code-Konfiguration aus dem Repository nach `devteam/` verlegt. |
 | 2026-10-09 | Auftragsverwaltung als Skript `ordermgr`, Läufe des Softwarearchitekten mit `agentrun` und Herzschlag. |
 | 2026-10-08 | Prozess mit Auftragsverwaltung, Runner und paralleler Bearbeitung eingeführt. Frühere Fassungen sind in Git nachvollziehbar. |
+| 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl: weiter, solange die blockierenden Befunde weniger werden; eine Ebene höher bei unverändert wiederkehrendem Befund oder gleichbleibender Zahl; Befunde für eine höhere Ebene sofort dorthin. Phasen 1, 2, 3 und 5 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
