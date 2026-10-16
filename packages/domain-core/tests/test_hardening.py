@@ -446,10 +446,10 @@ def test_faulty_metadata_of_the_entry_points_leave_the_delivered_types(
 ) -> None:
     leak = "/hidden/dist-info/entry_points.txt"
 
-    def broken(**_: object) -> list[object]:
+    def broken() -> list[object]:
         raise TypeError(leak)
 
-    monkeypatch.setattr("pipwerk_domain.registry.entry_points", broken)
+    monkeypatch.setattr("pipwerk_domain.registry.distributions", broken)
     with caplog.at_level(logging.WARNING, logger="pipwerk_domain.registry"):
         registry = create_registry()
     assert registry.get(catalog.TRIGGER_TICK) is not None

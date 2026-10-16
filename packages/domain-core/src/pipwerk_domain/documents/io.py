@@ -1,6 +1,7 @@
 """Reading and writing documents as JSON text."""
 
 import json
+import re
 from typing import Annotated
 
 from pydantic import Field, TypeAdapter, ValidationError
@@ -27,6 +28,9 @@ _ADAPTER: TypeAdapter[AnyDocument] = TypeAdapter(
     ]
 )
 
+_SURROGATE = re.compile("[\ud800-\udfff]")
+_BYTE_ORDER_MARKS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
+
 _HEAD = ("format", "format_version", "id", "title", "description", "object_type")
 
 
@@ -37,7 +41,24 @@ def parse_document(data: str | bytes | dict[str, object]) -> AnyDocument:
     """
     if isinstance(data, str | bytes):
         data = _load_json(data)  # type: ignore[assignment]
+    _reject_lone_surrogates(data)
     return _ADAPTER.validate_python(data, strict=True)
+
+
+def _reject_lone_surrogates(data: object) -> None:
+    """A text with a single surrogate (U+D800 to U+DFFF without a partner, also written as
+    an escape) is no text; it could not be written as UTF-8."""
+    stack: list[object] = [data]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            if _SURROGATE.search(item) is not None:
+                raise _error("a text with a single surrogate character")
+        elif isinstance(item, dict):
+            stack.extend(item.keys())
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
 
 
 def _error(message: str) -> ValidationError:
@@ -64,6 +85,11 @@ def _load_json(data: str | bytes) -> object:
     """Parse JSON text strictly: no ``NaN``, ``Infinity`` or ``-Infinity``, no key twice in
     an object. Any problem is a validation error."""
     try:
+        if isinstance(data, bytes):
+            # UTF-8 without a byte order mark; other encodings are no documents
+            if data.startswith(_BYTE_ORDER_MARKS):
+                raise ValueError("a byte order mark is not allowed")
+            data = data.decode("utf-8")
         return json.loads(data, object_pairs_hook=_object, parse_constant=_constant)
     except (ValueError, RecursionError) as error:
         raise _error(str(error) if isinstance(error, ValueError) else "nested too deep") from None
@@ -81,7 +107,10 @@ def document_to_json(document: AnyDocument) -> str:
     data = document.model_dump(mode="json")
     ordered = {key: data[key] for key in _HEAD if key in data}
     ordered.update({key: value for key, value in data.items() if key not in _HEAD})
-    return json.dumps(ordered, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    text = json.dumps(ordered, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    if _SURROGATE.search(text) is not None:
+        raise _error("a text with a single surrogate character")
+    return text
 
 
 def write_document(value: Strategy | Template) -> str:

@@ -6,6 +6,7 @@ identifier (what the check endpoint of the web API needs) and the normalized spe
 Nothing is evaluated.
 """
 
+import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -21,6 +22,7 @@ from pipwerk_domain.expressions.nodes import (
     Number,
     String,
     Unary,
+    names_and_calls,
     postorder,
 )
 from pipwerk_domain.expressions.parser import ParseResult, parse
@@ -99,6 +101,9 @@ class RecognizedName:
     segments: tuple[RecognizedSegment, ...]
     resolved: bool
     symbols: tuple[Symbol, ...]
+    previous: bool = False
+    """True for the name in ``PREVIOUS(name)``: it stands for the value of an earlier
+    evaluation and is no dependency on the result of the current one."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,6 +177,95 @@ def analyze(
     return checker.run(parsed.tree, expected)
 
 
+def analyze_spelling(source: str, environment: Environment) -> Analysis:
+    """Parse an expression and find the spelling of its names and functions, without the type
+    check and without findings (only a syntax problem is reported). It is much cheaper than
+    :func:`analyze`; the result has no names and no functions, only ``normalized``, and
+    ``parsed_ok`` tells whether the expression has no syntax problem."""
+    spelled: dict[str, list[str]] = {}  # the same name is resolved once for an expression
+    if not _would_change(source, environment, spelled):
+        # nothing to rewrite: the syntax does not matter, the text stays as it is
+        unchanged = Analysis(source, None, [], [], [], et.UNKNOWN, source)
+        unchanged.parsed_ok = True
+        return unchanged
+    parsed = parse(source)
+    if parsed.tree is None or parsed.issue is not None:
+        issue = parsed.issue
+        assert issue is not None  # noqa: S101 - parse returns either a tree or an issue
+        return Analysis(
+            source,
+            None,
+            [ExpressionIssue(IssueKind.SYNTAX, issue.start, issue.end, issue.reason)],
+            [],
+            [],
+            et.UNKNOWN,
+            source,
+        )
+    replacements: list[tuple[int, int, str]] = []
+    names, calls = names_and_calls(parsed.tree)
+    for node in names:
+        written = source[node.start : node.end]
+        for segment, name in zip(
+            node.segments, _canonical_spelling(written, environment, spelled), strict=False
+        ):
+            if segment.text != name:
+                replacements.append((segment.start, segment.end, name))
+    for call in calls:
+        signature = find_function(call.name)
+        if signature is not None and call.name != signature.name:
+            replacements.append((call.name_start, call.name_end, signature.name))
+    text = source
+    for start, end, replacement in sorted(replacements, reverse=True):
+        text = text[:start] + replacement + text[end:]
+    result = Analysis(source, parsed.tree, [], [], [], et.UNKNOWN, text)
+    result.release()
+    return result
+
+
+_STRING_TEXT = re.compile(r'"(?:[^"]|"")*"')
+_NAME_TEXT = re.compile(
+    r"(?<![A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)(\s*\()?"
+)
+
+
+def _canonical_spelling(
+    written: str, environment: Environment, cache: dict[str, list[str]]
+) -> list[str]:
+    """The spelling of the recognized parts of a name; the parts after the first one that is
+    not recognized are left out."""
+    found = cache.get(written)
+    if found is None:
+        found = []
+        parts = written.split(".")
+        current = environment.resolve(parts[0])
+        if current is not None:
+            found.append(current.name)
+            for part in parts[1:]:
+                member = current.member(part)
+                if member is None:
+                    break
+                found.append(member.name)
+                current = member
+        cache[written] = found
+    return found
+
+
+def _would_change(source: str, environment: Environment, cache: dict[str, list[str]]) -> bool:
+    """Whether a name or function in the text, found without parsing it, is written
+    differently from its spelling. A cheap scan; it may say yes for a text that cannot be
+    parsed, never no for one that can."""
+    for found in _NAME_TEXT.finditer(_STRING_TEXT.sub('""', source)):
+        written = found.group(1)
+        if found.group(2) is not None and "." not in written:
+            signature = find_function(written)
+            if signature is not None and signature.name != written:
+                return True
+        spelling = _canonical_spelling(written, environment, cache)
+        if any(part != name for part, name in zip(written.split("."), spelling, strict=False)):
+            return True
+    return False
+
+
 def normalize_expression(source: str, environment: Environment) -> str:
     """Write an expression with names in the spelling of their identifiers and functions
     in the spelling of the norm. Only recognized names and function names change; every
@@ -189,9 +283,19 @@ class _Checker:
         self.replacements: list[tuple[int, int, str]] = []
         self.types: dict[int, ExprType] = {}
         self.truncated = False
+        self.previous_names: set[int] = set()
 
     def run(self, tree: Node, expected: ExprType | None) -> Analysis:
-        for node in postorder(tree):
+        nodes = postorder(tree)
+        for node in nodes:
+            if (
+                isinstance(node, Call)
+                and node.name.upper() == "PREVIOUS"
+                and node.args
+                and isinstance(node.args[0], Name)
+            ):
+                self.previous_names.add(id(node.args[0]))
+        for node in nodes:
             self.types[id(node)] = self._type_of(node)
         result = self.types[id(tree)]
         if expected is not None:
@@ -330,6 +434,7 @@ class _Checker:
                 tuple(recognized),
                 resolved,
                 tuple(path),
+                id(node) in self.previous_names,
             )
         )
 

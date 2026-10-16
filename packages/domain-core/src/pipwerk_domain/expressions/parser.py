@@ -67,10 +67,7 @@ class _Pending:
     start: int
     end: int
     unary: bool
-
-    @property
-    def precedence(self) -> int:
-        return _UNARY_PRECEDENCE if self.unary else _BINARY_PRECEDENCE[self.op]
+    precedence: int
 
 
 @dataclass(slots=True)
@@ -130,58 +127,74 @@ def _unexpected(token: Token) -> SyntaxProblem:
     return SyntaxProblem("unexpected_token", token.start, token.end, found=shown)
 
 
+_NUMBER = TokenKind.NUMBER
+_STRING = TokenKind.STRING
+_NAME = TokenKind.NAME
+_OPERATOR = TokenKind.OPERATOR
+_LEFT = TokenKind.LEFT_PAREN
+_RIGHT = TokenKind.RIGHT_PAREN
+_PERCENT = TokenKind.PERCENT
+
+
 def _parse_tokens(tokens: list[Token]) -> Node:
     frames: list[_Frame] = [_Frame("root", 0, [], [])]
     index = 0
     expecting_operand = True
+    frame = frames[0]
     while True:
         token = tokens[index]
-        frame = frames[-1]
+        kind = token.kind
         if expecting_operand:
-            if token.kind is TokenKind.NUMBER:
+            if kind is _NAME:
+                index += 1
+                if tokens[index].kind is _LEFT:
+                    index = _open_call(frames, token, tokens, index)
+                    # a call without arguments is complete at once, else arguments follow
+                    frame_before = frame
+                    frame = frames[-1]
+                    expecting_operand = frame is not frame_before
+                    continue
+                frame.operands.append(_name_node(token))
+                expecting_operand = False
+            elif kind is _NUMBER:
                 index += 1
                 text = token.text
                 value: int | float = float(text) if "." in text else int(text)
                 end = token.end
-                percent = tokens[index].kind is TokenKind.PERCENT
+                percent = tokens[index].kind is _PERCENT
                 if percent:
                     end = tokens[index].end
                     index += 1
                 frame.operands.append(Number(token.start, end, value, percent))
                 expecting_operand = False
-            elif token.kind is TokenKind.STRING:
+            elif kind is _STRING:
                 index += 1
                 frame.operands.append(String(token.start, token.end, token.text))
                 expecting_operand = False
-            elif token.kind is TokenKind.NAME:
-                index += 1
-                if tokens[index].kind is TokenKind.LEFT_PAREN:
-                    index = _open_call(frames, token, tokens, index)
-                    # a call without arguments is complete at once, else arguments follow
-                    expecting_operand = frames[-1] is not frame
-                    continue
-                frame.operands.append(_name_node(token))
-                expecting_operand = False
-            elif token.kind is TokenKind.LEFT_PAREN:
+            elif kind is _LEFT:
                 if len(frames) > MAX_EXPRESSION_NESTING:
                     raise SyntaxProblem(
                         "too_deep", token.start, token.end, maximum=MAX_EXPRESSION_NESTING
                     )
                 index += 1
-                frames.append(_Frame("group", token.start, [], []))
-            elif token.kind is TokenKind.OPERATOR and token.text in ("+", "-"):
+                frame = _Frame("group", token.start, [], [])
+                frames.append(frame)
+            elif kind is _OPERATOR and token.text in ("+", "-"):
                 index += 1
-                frame.operators.append(_Pending(token.text, token.start, token.end, True))
+                frame.operators.append(
+                    _Pending(token.text, token.start, token.end, True, _UNARY_PRECEDENCE)
+                )
             else:
                 raise _unexpected(token)
             continue
         # an operand is complete; an operator, a separator or a closing parenthesis follows
-        if token.kind is TokenKind.OPERATOR:
+        if kind is _OPERATOR:
             index += 1
             precedence = _BINARY_PRECEDENCE[token.text]
-            while frame.operators and frame.operators[-1].precedence >= precedence:
+            operators = frame.operators
+            while operators and operators[-1].precedence >= precedence:
                 _reduce_one(frame)
-            frame.operators.append(_Pending(token.text, token.start, token.end, False))
+            operators.append(_Pending(token.text, token.start, token.end, False, precedence))
             expecting_operand = True
         elif token.kind is TokenKind.SEMICOLON and frame.kind == "call":
             index += 1
@@ -195,19 +208,20 @@ def _parse_tokens(tokens: list[Token]) -> Node:
             frames.pop()
             result = frame.operands.pop()
             parent = frames[-1]
-            if frame.kind == "group":
-                parent.operands.append(Group(frame.start, token.end, result))
+            closed, frame = frame, parent
+            if closed.kind == "group":
+                parent.operands.append(Group(closed.start, token.end, result))
             else:
-                assert frame.arguments is not None  # noqa: S101 - set when the call was opened
-                frame.arguments.append(result)
+                assert closed.arguments is not None  # noqa: S101 - set when the call was opened
+                closed.arguments.append(result)
                 parent.operands.append(
                     Call(
-                        frame.start,
+                        closed.start,
                         token.end,
-                        frame.name,
-                        frame.name_start,
-                        frame.name_end,
-                        tuple(frame.arguments),
+                        closed.name,
+                        closed.name_start,
+                        closed.name_end,
+                        tuple(closed.arguments),
                     )
                 )
         elif token.kind is TokenKind.END and frame.kind == "root":
@@ -218,6 +232,9 @@ def _parse_tokens(tokens: list[Token]) -> Node:
 
 
 def _name_node(token: Token) -> Name:
+    text = token.text
+    if "." not in text:
+        return Name(token.start, token.end, (NameSegment(text, token.start, token.end),))
     segments: list[NameSegment] = []
     offset = token.start
     for part in token.text.split("."):

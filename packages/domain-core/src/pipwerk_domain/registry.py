@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
-from importlib.metadata import entry_points
+from importlib.metadata import distributions
 from typing import Any, Protocol
 
 from pipwerk_domain.typedesc import (
@@ -109,15 +109,7 @@ class ElementRegistry:
         text of the exception and without paths.
         """
         if entry_point_list is None:
-            try:
-                entry_point_list = list(entry_points(group=ENTRY_POINT_GROUP))
-            except Exception as error:  # faulty metadata of any installed package
-                _logger.warning(
-                    "The entry points of the group %s could not be read (%s)",
-                    ENTRY_POINT_GROUP,
-                    type(error).__name__,
-                )
-                return LoadReport((), ())
+            entry_point_list = _installed_entry_points()
         loaded: list[str] = []
         failed: list[str] = []
         for entry_point in entry_point_list:
@@ -194,6 +186,47 @@ class ElementRegistry:
                     )
                 )
         return replace(trend, parameters=tuple(parameters))
+
+
+def _installed_entry_points() -> list[EntryPointLike]:
+    """The entry points of the group of all installed packages, read for each package on its
+    own: faulty metadata of a package (in any group) exclude only this package. The excluded
+    package is logged with its name and the class of the exception."""
+    found: list[EntryPointLike] = []
+    seen: set[str] = set()
+    try:
+        distribution_iterator = iter(distributions())
+    except Exception as error:  # the list of installed packages cannot be read at all
+        _logger.warning("The installed packages could not be listed (%s)", type(error).__name__)
+        return found
+    while True:
+        try:
+            distribution = next(distribution_iterator)
+        except StopIteration:
+            break
+        except Exception as error:  # reading the list stops here
+            _logger.warning(
+                "The installed packages could not be listed completely (%s)",
+                type(error).__name__,
+            )
+            break
+        package = "?"
+        try:
+            package = str(distribution.metadata.get("Name") or "?")
+            key = package.lower().replace("_", "-")
+            if key in seen and package != "?":
+                continue  # a package that is installed twice counts once, as in importlib
+            seen.add(key)
+            found.extend(
+                item for item in distribution.entry_points if item.group == ENTRY_POINT_GROUP
+            )
+        except Exception as error:  # faulty metadata of this package
+            _logger.warning(
+                "The entry points of the package %r are ignored, its metadata cannot be read (%s)",
+                package,
+                type(error).__name__,
+            )
+    return found
 
 
 def _safe_name(entry_point: EntryPointLike) -> str:

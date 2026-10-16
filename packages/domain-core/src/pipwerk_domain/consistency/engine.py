@@ -17,7 +17,7 @@ from pipwerk_domain.consistency.graph import (
 )
 from pipwerk_domain.expressions import Analysis, analyze
 from pipwerk_domain.expressions import exprtypes as et
-from pipwerk_domain.expressions.checker import IssueKind
+from pipwerk_domain.expressions.checker import IssueKind, analyze_spelling
 from pipwerk_domain.expressions.exprtypes import ExprType, type_of
 from pipwerk_domain.expressions.symbols import Environment, Scope, Symbol, SymbolKind
 from pipwerk_domain.limits import MAX_FINDINGS_PER_CHECK, MAX_FINDINGS_PER_EXPRESSION
@@ -58,6 +58,7 @@ from pipwerk_domain.typedesc import (
 )
 
 _TEXTS = re.compile(r'"(?:[^"]|"")*"')
+_PREVIOUS_NAME = re.compile(r"(?<![A-Za-z0-9_.])PREVIOUS\s*\(\s*[A-Za-z_][A-Za-z0-9_.]*", re.I)
 _NAME_BEFORE_POINT = re.compile(r"(?<![A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*)\.")
 _MAIN_FLOW = "main_flow"
 _INDICATOR = "indicator"
@@ -215,10 +216,17 @@ class Checker:
     """Runs the consistency check. One object checks one strategy or one template."""
 
     def __init__(
-        self, registry: ElementRegistry, max_findings: int | None = MAX_FINDINGS_PER_CHECK
+        self,
+        registry: ElementRegistry,
+        max_findings: int | None = MAX_FINDINGS_PER_CHECK,
+        *,
+        spelling_only: bool = False,
     ) -> None:
+        """``spelling_only`` is for the normalization: the expressions are only parsed and
+        their names and functions spelled, nothing is checked and no finding is kept."""
         self.registry = registry
         self.max_findings = max_findings
+        self.spelling_only = spelling_only
         self.findings: list[Finding] = []
         self._analyses: dict[tuple[int, str], Analysis] = {}
         self._owners: dict[tuple[int, str], object] = {}
@@ -372,7 +380,9 @@ class Checker:
         if binding is None or not isinstance(binding.value, str):
             return []
         used: list[str] = []
-        for match in _NAME_BEFORE_POINT.finditer(_TEXTS.sub('""', binding.value)):
+        # the name in `PREVIOUS(name)` is the value of an earlier evaluation: no dependency
+        text = _PREVIOUS_NAME.sub("", _TEXTS.sub('""', binding.value))
+        for match in _NAME_BEFORE_POINT.finditer(text):
             key = match.group(1).lower()
             if key in calculations and key not in used:
                 used.append(key)
@@ -389,6 +399,8 @@ class Checker:
         subject: str | None = None,
         **details: object,
     ) -> None:
+        if self.spelling_only:
+            return  # the normalization needs no findings and collects none
         if self.max_findings is not None and len(self.findings) >= self.max_findings:
             raise _FindingLimit
         self.findings.append(Finding(level, code, element, subject, dict(details)))
@@ -421,7 +433,9 @@ class Checker:
         key = (id(owner), field)
         found = self._analyses.get(key)
         if found is None:
-            found = analyze(text, env, expected)
+            found = (
+                analyze_spelling(text, env) if self.spelling_only else analyze(text, env, expected)
+            )
             self._analyses[key] = found
             self._owners[key] = owner
         return found
@@ -476,22 +490,17 @@ class Checker:
                 self._add(Level.HINT, fc.RULE_UNRESOLVED_NAME, ctx.element_id, subject, **data)
             else:
                 self._add(Level.ERROR, fc.EXPRESSION_INVALID, ctx.element_id, subject, **data)
-        if analysis.truncated:
-            self._add(
-                Level.ERROR,
-                fc.FINDINGS_TRUNCATED,
-                None,
-                None,
-                limit=MAX_FINDINGS_PER_EXPRESSION,
-                scope="expression",
-                field=field,
-                element_id=ctx.element_id,
-                instance=subject,
-            )
+        reported = len(analysis.issues)
+        truncated = analysis.truncated
         for name in analysis.names:
             if ctx.in_template and any(
                 symbol.kind is SymbolKind.UNRESOLVED for symbol in name.symbols
             ):
+                # the limit for one expression counts all its findings, hints too
+                if reported >= MAX_FINDINGS_PER_EXPRESSION:
+                    truncated = True
+                    continue
+                reported += 1
                 self._add(
                     Level.HINT,
                     fc.RULE_UNRESOLVED_NAME,
@@ -509,6 +518,18 @@ class Checker:
                 and name.symbols[0].object_type == catalog.OBJECT_CANDLE
             ):
                 self._candle_uses[(ctx.element_id, subject)] = None
+        if truncated:
+            self._add(
+                Level.ERROR,
+                fc.FINDINGS_TRUNCATED,
+                None,
+                None,
+                limit=MAX_FINDINGS_PER_EXPRESSION,
+                scope="expression",
+                field=field,
+                element_id=ctx.element_id,
+                instance=subject,
+            )
         if ctx.order_error and self.analysis_uses_order(analysis):
             self._add(
                 Level.ERROR,
@@ -1226,6 +1247,8 @@ class Checker:
             if analysis is None:
                 continue
             for name in analysis.names:
+                if name.previous:
+                    continue  # `PREVIOUS(r.ergebnis)` is the value of an earlier evaluation
                 payload = name.symbols[0].payload if name.symbols else None
                 if isinstance(payload, _RuleItem) and id(payload) in position_of:
                     target_key = str(position_of[id(payload)])

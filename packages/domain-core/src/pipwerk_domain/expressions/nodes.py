@@ -1,57 +1,62 @@
 """Syntax tree of an expression. Positions are character offsets into the source text;
-``start`` is the first character, ``end`` the position after the last character."""
+``start`` is the first character, ``end`` the position after the last character.
+
+The nodes are not compared by value (``eq=False``): a comparison of two deep trees would
+recurse. They are not changed after the parser has built them; they are plain classes
+because creating them is much faster than creating frozen ones.
+"""
 
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Node:
     start: int
     end: int
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Number(Node):
     value: int | float
     percent: bool = False
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class String(Node):
     value: str
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class NameSegment:
     text: str
     start: int
     end: int
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Name(Node):
     segments: tuple[NameSegment, ...]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Group(Node):
     inner: Node
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Unary(Node):
     op: str
     operand: Node
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Binary(Node):
     op: str
     left: Node
     right: Node
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, eq=False)
 class Call(Node):
     name: str
     name_start: int
@@ -72,6 +77,30 @@ def children(node: Node) -> tuple[Node, ...]:
             return args
         case _:
             return ()
+
+
+def names_and_calls(root: Node) -> tuple[list[Name], list[Call]]:
+    """All names and function calls of a tree, without recursion and without building the
+    list of all nodes."""
+    names: list[Name] = []
+    calls: list[Call] = []
+    stack: list[Node] = [root]
+    while stack:
+        node = stack.pop()
+        kind = type(node)
+        if kind is Name:
+            names.append(node)  # type: ignore[arg-type]
+        elif kind is Binary:
+            stack.append(node.left)  # type: ignore[attr-defined]
+            stack.append(node.right)  # type: ignore[attr-defined]
+        elif kind is Call:
+            calls.append(node)  # type: ignore[arg-type]
+            stack.extend(node.args)  # type: ignore[attr-defined]
+        elif kind is Group:
+            stack.append(node.inner)  # type: ignore[attr-defined]
+        elif kind is Unary:
+            stack.append(node.operand)  # type: ignore[attr-defined]
+    return names, calls
 
 
 def postorder(root: Node) -> list[Node]:

@@ -1,8 +1,8 @@
 """Splitting an expression into tokens (hand written, no parser generator)."""
 
 import re
-from dataclasses import dataclass
 from enum import StrEnum
+from typing import NamedTuple
 
 
 class TokenKind(StrEnum):
@@ -17,8 +17,7 @@ class TokenKind(StrEnum):
     END = "end"
 
 
-@dataclass(frozen=True, slots=True)
-class Token:
+class Token(NamedTuple):
     kind: TokenKind
     text: str
     start: int
@@ -62,36 +61,38 @@ def tokenize(source: str) -> list[Token]:
     followed by letters and a string without closing quotation mark.
     """
     tokens: list[Token] = []
+    append = tokens.append
     position = 0
     length = len(source)
     match_at = _TOKEN.match
+    kind_number = TokenKind.NUMBER
+    kind_name = TokenKind.NAME
+    kind_operator = TokenKind.OPERATOR
     while position < length:
         found = match_at(source, position)
         if found is None:
             raise SyntaxProblem("invalid_character", position, position + 1, found=source[position])
         group = found.lastgroup
         end = found.end()
-        if group == "space":
-            position = end
-            continue
-        if group == "string":
-            position = _string(source, position, tokens)
-            continue
-        if group == "number":
-            if end < length and (source[end].isalnum() or source[end] in "_."):
-                raise SyntaxProblem("invalid_number", position, end + 1, found=source[end])
-            tokens.append(Token(TokenKind.NUMBER, found.group(), position, end))
+        if group == "operator":
+            append(Token(kind_operator, source[position:end], position, end))
         elif group == "name":
             if end < length and source[end] == ".":
                 raise SyntaxProblem("invalid_character", end, end + 1, found=".")
-            tokens.append(Token(TokenKind.NAME, found.group(), position, end))
-        elif group == "operator":
-            tokens.append(Token(TokenKind.OPERATOR, found.group(), position, end))
-        else:
-            text = found.group()
-            tokens.append(Token(_SINGLE[text], text, position, end))
+            append(Token(kind_name, source[position:end], position, end))
+        elif group == "single":
+            text = source[position:end]
+            append(Token(_SINGLE[text], text, position, end))
+        elif group == "space":
+            pass
+        elif group == "number":
+            if end < length and (source[end].isalnum() or source[end] in "_."):
+                raise SyntaxProblem("invalid_number", position, end + 1, found=source[end])
+            append(Token(kind_number, source[position:end], position, end))
+        else:  # "string"
+            end = _string(source, position, tokens)
         position = end
-    tokens.append(Token(TokenKind.END, "", length, length))
+    append(Token(TokenKind.END, "", length, length))
     return tokens
 
 
