@@ -176,15 +176,24 @@ def _scan(directory: Path) -> Iterator[tuple[str, ObjectKind, os.stat_result]]:
             yield entry.name, check_object_kind(match["kind"]), status
 
 
-def _read_file(path: Path) -> ReadResult[bytes]:
-    """Read a regular file without following a symbolic link."""
+def _read_file(path: Path, max_bytes: int | None = None) -> ReadResult[bytes]:
+    """Read a regular file without following a symbolic link.
+
+    A file larger than ``max_bytes`` (if given) is ``unreadable``; at most
+    ``max_bytes`` plus one byte are read from it.
+    """
     if not _is_regular_file(path):
         return ReadResult("missing")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
     try:
         descriptor = os.open(path, flags)
         with os.fdopen(descriptor, "rb") as file:
-            return ReadResult("ok", file.read())
+            if max_bytes is None:
+                return ReadResult("ok", file.read())
+            content = file.read(max_bytes + 1)
+            if len(content) > max_bytes:
+                return ReadResult("unreadable")
+            return ReadResult("ok", content)
     except FileNotFoundError:
         return ReadResult("missing")
     except OSError:
@@ -414,18 +423,21 @@ class ObjectStore:
         except OSError as error:
             raise ObjectWriteError("The object file cannot be written.") from error
 
-    def read_bytes(self, kind: str, object_id: str) -> ReadResult[bytes]:
-        """Return the content of an object as bytes."""
+    def read_bytes(
+        self, kind: str, object_id: str, max_bytes: int | None = None
+    ) -> ReadResult[bytes]:
+        """Return the content of an object as bytes. A file larger than ``max_bytes``
+        (if given) is ``unreadable``."""
         name = object_file_name(kind, object_id)
         with self.lock:
             directory = self._directory()
             if directory is None:
                 return ReadResult("missing")
-            return _read_file(directory / name)
+            return _read_file(directory / name, max_bytes)
 
-    def read_text(self, kind: str, object_id: str) -> ReadResult[str]:
+    def read_text(self, kind: str, object_id: str, max_bytes: int | None = None) -> ReadResult[str]:
         """Return the content of an object as UTF-8 text."""
-        result = self.read_bytes(kind, object_id)
+        result = self.read_bytes(kind, object_id, max_bytes)
         if result.value is None:
             return ReadResult(result.status)
         try:

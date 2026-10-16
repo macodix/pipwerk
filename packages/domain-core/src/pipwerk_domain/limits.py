@@ -31,3 +31,7 @@ the finding ``findings.truncated`` is added."""
 MAX_FINDINGS_PER_CHECK = 1000
 """Findings of one check of a strategy or template. At the limit the check ends and adds the
 finding ``findings.truncated``."""
+
+MAX_NAMES_PER_CHECK = 20000
+"""Recognized names that one check hands back when it is asked for them (web API
+``/api/v1/check``). Further names are dropped and the result says so."""

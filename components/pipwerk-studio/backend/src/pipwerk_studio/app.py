@@ -17,9 +17,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
+from pipwerk_domain.defaults import default_registry
+from pipwerk_domain.registry import ElementRegistry
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from pipwerk_studio.config import ConfigOrigin, load_startup_config
+from pipwerk_studio.object_service import ObjectService
 from pipwerk_studio.object_store import (
     ObjectConflictError,
     ObjectMoveError,
@@ -43,6 +46,11 @@ from pipwerk_studio.settings_service import (
     StoredObjectDirectoryInvalidError,
 )
 from pipwerk_studio.storage import create_session_factory, create_studio_engine
+from pipwerk_studio.web_api import (
+    install_public_api,
+    is_public_path,
+    request_validation_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -196,6 +204,7 @@ def create_app(
     revision_lookup: RevisionLookup = lookup_git_revision,
     commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
     config_origin: ConfigOrigin | None = None,
+    registry: ElementRegistry | None = None,
 ) -> FastAPI:
     """Create the pipwerk Studio HTTP application.
 
@@ -215,6 +224,10 @@ def create_app(
     ``revision_lookup`` determines the full commit hash and ``commit_date_lookup``
     its committer date, once at creation; tests replace them to stay independent
     of a real Git working tree.
+
+    ``registry`` is the element register of the shared library that the public
+    web API uses; by default the register of the process with the delivered
+    types and the types of the entry points.
     """
     if database_url is None:
         startup_config = load_startup_config()
@@ -227,8 +240,16 @@ def create_app(
     session_factory = create_session_factory(engine)
     settings_service = SettingsService(session_factory, resolved_origin)
     studio_revision = determine_revision(revision_lookup, commit_date_lookup)
+    element_registry = default_registry() if registry is None else registry
 
-    app = FastAPI(title="pipwerk Studio")
+    # One schema per model for requests and responses together: the documents of the public
+    # web API have fields with defaults that a request may omit.
+    app = FastAPI(title="pipwerk Studio", separate_input_output_schemas=False)
+    install_public_api(
+        app,
+        ObjectService(settings_service.object_store, element_registry),
+        element_registry,
+    )
 
     @app.get("/api/health")
     def read_health() -> HealthStatus:
@@ -279,6 +300,8 @@ def create_app(
         if request.url.path == OBJECT_DIRECTORY_PATH:
             body = ObjectDirectoryError(detail=INVALID_OBJECT_DIRECTORY_BODY_TEXT)
             return JSONResponse(status_code=422, content=body.model_dump())
+        if is_public_path(request.url.path):
+            return request_validation_response(error)
         return await request_validation_exception_handler(request, error)
 
     @app.exception_handler(ObjectMoveRollbackError)

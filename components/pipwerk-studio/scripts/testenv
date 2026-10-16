@@ -229,6 +229,11 @@ cmd_start() {
         exit 1
     fi
 
+    # The backend needs the shared library of the repository (path dependency in
+    # the lock file of the backend): the working directory must contain it.
+    [ -f "$repo_root/packages/domain-core/pyproject.toml" ] ||
+        die "packages/domain-core is missing in the working directory; the backend needs the shared library"
+
     require_command python3
     require_command uv
     require_command npm

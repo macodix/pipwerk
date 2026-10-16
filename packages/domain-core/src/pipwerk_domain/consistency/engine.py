@@ -9,7 +9,13 @@ from math import isfinite
 
 from pipwerk_domain import catalog
 from pipwerk_domain.consistency import findings as fc
-from pipwerk_domain.consistency.findings import Finding, Level
+from pipwerk_domain.consistency.findings import (
+    ExpressionNames,
+    Finding,
+    Level,
+    NameOccurrence,
+    NameSegment,
+)
 from pipwerk_domain.consistency.graph import (
     reachable,
     strongly_connected_components,
@@ -20,7 +26,11 @@ from pipwerk_domain.expressions import exprtypes as et
 from pipwerk_domain.expressions.checker import IssueKind, analyze_spelling
 from pipwerk_domain.expressions.exprtypes import ExprType, type_of
 from pipwerk_domain.expressions.symbols import Environment, Scope, Symbol, SymbolKind
-from pipwerk_domain.limits import MAX_FINDINGS_PER_CHECK, MAX_FINDINGS_PER_EXPRESSION
+from pipwerk_domain.limits import (
+    MAX_FINDINGS_PER_CHECK,
+    MAX_FINDINGS_PER_EXPRESSION,
+    MAX_NAMES_PER_CHECK,
+)
 from pipwerk_domain.model import (
     Binding,
     Connection,
@@ -221,13 +231,20 @@ class Checker:
         max_findings: int | None = MAX_FINDINGS_PER_CHECK,
         *,
         spelling_only: bool = False,
+        collect_names: bool = False,
     ) -> None:
         """``spelling_only`` is for the normalization: the expressions are only parsed and
-        their names and functions spelled, nothing is checked and no finding is kept."""
+        their names and functions spelled, nothing is checked and no finding is kept.
+        ``collect_names`` keeps the recognized names of every expression (``expression_names``,
+        at most ``MAX_NAMES_PER_CHECK`` of them) for the check endpoint of the web API."""
         self.registry = registry
         self.max_findings = max_findings
         self.spelling_only = spelling_only
+        self.collect_names = collect_names
         self.findings: list[Finding] = []
+        self.expression_names: list[ExpressionNames] = []
+        self.names_truncated = False
+        self._name_count = 0
         self._analyses: dict[tuple[int, str], Analysis] = {}
         self._owners: dict[tuple[int, str], object] = {}
         self._reported: set[tuple[int, str]] = set()
@@ -479,6 +496,8 @@ class Checker:
             return
         self._reported.add(key)
         subject = ctx.subject or None
+        if self.collect_names:
+            self._collect_names(field, analysis, ctx.element_id, subject)
         for issue in analysis.issues:
             data: dict[str, object] = {
                 "field": field,
@@ -530,6 +549,42 @@ class Checker:
                 field=field,
                 context=ctx.order_context,
             )
+
+    def _collect_names(
+        self, field: str, analysis: Analysis, element: str | None, subject: str | None
+    ) -> None:
+        """Keep the recognized names of an expression in a light form (without the symbols,
+        which hold on to the rules), up to the limit of names of the check."""
+        if not analysis.names:
+            return
+        room = MAX_NAMES_PER_CHECK - self._name_count
+        names = analysis.names[: max(room, 0)]
+        if len(names) < len(analysis.names):
+            self.names_truncated = True
+        if not names:
+            return
+        self._name_count += len(names)
+        self.expression_names.append(
+            ExpressionNames(
+                element,
+                subject,
+                field,
+                tuple(
+                    NameOccurrence(
+                        name.start,
+                        name.end,
+                        name.identifier,
+                        name.resolved,
+                        name.previous,
+                        tuple(
+                            NameSegment(part.identifier, part.start, part.end)
+                            for part in name.segments
+                        ),
+                    )
+                    for name in names
+                ),
+            )
+        )
 
     def _expression_finding(
         self,

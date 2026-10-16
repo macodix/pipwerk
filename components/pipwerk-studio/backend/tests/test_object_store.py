@@ -5,7 +5,8 @@ invalid UUID or kind, writing through a temporary file (an aborted write leaves
 the old file unchanged), the directory being created at the first write with
 permissions for the user only, listing per kind with the time of the last
 change, foreign files and symbolic links being neither listed nor changed, and
-reading a file that cannot be read without an exception.
+reading a file that cannot be read without an exception, and the limit of the size
+of a file that is read.
 """
 
 import os
@@ -406,6 +407,24 @@ def test_delete_removes_only_the_object(store: ObjectStore, directory: Path) -> 
     assert sorted(item.name for item in directory.iterdir()) == sorted(
         [f"{OTHER_ID}.strategy.json", f"{SOME_ID}.rule.json"]
     )
+
+
+def test_a_file_larger_than_the_given_limit_is_unreadable_and_not_read_whole(
+    store: ObjectStore, directory: Path
+) -> None:
+    store.write("rule", SOME_ID, b"x" * 100)
+
+    assert store.read_bytes("rule", SOME_ID, 100).value == b"x" * 100
+    assert store.read_bytes("rule", SOME_ID, 100).status == "ok"
+    assert store.read_bytes("rule", SOME_ID, 99).status == "unreadable"
+    assert store.read_bytes("rule", SOME_ID, 99).value is None
+    assert store.read_bytes("rule", SOME_ID, 0).status == "unreadable"
+    assert store.read_bytes("rule", SOME_ID).status == "ok"  # no limit, as before
+    assert store.read_text("rule", SOME_ID, 99).status == "unreadable"
+    assert store.read_text("rule", SOME_ID, 100).value == "x" * 100
+    assert store.read_bytes("rule", OTHER_ID, 5).status == "missing"
+    store.write("rule", OTHER_ID, b"")
+    assert store.read_bytes("rule", OTHER_ID, 0).status == "ok"
 
 
 def test_the_store_follows_a_change_of_the_directory(tmp_path: Path) -> None:
