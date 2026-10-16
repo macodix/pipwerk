@@ -8,7 +8,10 @@ placeholder programs that note every call and end at once with exit code 1.
 Covered: the start aborts with a message on every uncommitted change and every
 new file that is not ignored in the whole repository and without Git, before
 anything is installed, built or started. Without changes, and with ignored new
-files only, the check lets the start pass. The script is called with an absolute
+files only, the check lets the start pass. With working installation programs
+and a recorder in place of the backend, the object directory of the test
+environment is stored in its database below ``.testenv/`` before the backend
+starts (a complete start is not part of the test). The script is called with an absolute
 path from a directory outside of the repository and with a relative path from the
 root of the repository (the call of the user documentation).
 
@@ -19,8 +22,10 @@ is not a Git working directory (for example an unpacked archive).
 import os
 import shutil
 import socket
+import sqlite3
 import stat
 import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -171,6 +176,36 @@ class Replica:
 
     def calls(self) -> list[str]:
         return self.call_log.read_text(encoding="utf-8").splitlines()
+
+    def install_working_programs(self, record: Path) -> None:
+        """Let installation and build pass and replace the backend by a recorder.
+
+        ``uv``, ``npm`` and ``npx`` end with exit code 0. ``.venv/bin/python`` of
+        the backend runs the Python of these tests (with pipwerk Studio installed).
+        ``.venv/bin/pipwerk-studio`` copies the startup configuration it is given
+        with ``-c`` and the database named in it to ``record`` and ends with exit
+        code 1, so the start ends before any server runs.
+        """
+        for program in ("uv", "npm", "npx"):
+            (self.base / "placeholders" / program).write_text(
+                "#!/bin/sh\nexit 0\n", encoding="utf-8"
+            )
+        binaries = self.component / "backend" / ".venv" / "bin"
+        binaries.mkdir(parents=True)
+        python = binaries / "python"
+        python.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n', encoding="utf-8")
+        recorder = binaries / "pipwerk-studio"
+        recorder.write_text(
+            "#!/bin/sh\n"
+            'cp "$2" "$TESTENV_RECORD_DIR/pipwerk-studio.ini"\n'
+            "database=$(sed -n 's|^url = sqlite:///||p' \"$2\")\n"
+            'cp "$database" "$TESTENV_RECORD_DIR/studio.db"\n'
+            "exit 1\n",
+            encoding="utf-8",
+        )
+        for path in (python, recorder):
+            path.chmod(0o755)
+        self.environment["TESTENV_RECORD_DIR"] = str(record)
 
     def started_processes(self) -> list[str]:
         """Command lines of all processes that were started from the replica."""
@@ -409,6 +444,49 @@ def test_ports_with_leading_zeros_and_the_limits_are_accepted(
     calls = replica.calls()
     assert len(calls) == 1
     assert calls[0].startswith("uv ")
+
+
+def test_start_stores_the_object_directory_below_testenv_before_the_backend_starts(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica()
+    record = replica.base / "record"
+    record.mkdir()
+    replica.install_working_programs(record)
+    # Modules in the directory the script is called from must not be loaded: the
+    # Python of the script runs in isolated mode.
+    for module in ("sqlalchemy.py", "pipwerk_studio.py"):
+        (replica.base / module).write_text("raise RuntimeError('loaded')\n", encoding="utf-8")
+
+    result = replica.start()
+
+    # The recorder stands in for the backend and ends at once: the start fails
+    # after the backend was called, and the failed start removes .testenv/.
+    assert result.returncode != 0
+    assert "the backend exited during start" in result.stderr
+    assert not (replica.component / ".testenv").exists()
+    expected = str((replica.component / ".testenv" / "objects").resolve())
+    with sqlite3.connect(record / "studio.db") as connection:
+        stored = connection.execute("SELECT object_directory FROM studio_settings").fetchall()
+        version = connection.execute("SELECT version_num FROM alembic_version").fetchall()
+    assert stored == [(expected,)]
+    assert version == [("0002",)]
+    # The startup configuration holds only the database URL, as before.
+    lines = (record / "pipwerk-studio.ini").read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "[database]"
+    assert len(lines) == 2
+    assert lines[1].startswith("url = sqlite:///")
+    assert "objects" not in lines[1]
+
+
+def test_the_script_sets_the_object_directory_through_the_database_not_the_environment() -> None:
+    assert SOURCE_ROOT is not None
+    script = (SOURCE_ROOT / SCRIPT).read_text(encoding="utf-8")
+
+    assert "set_object_directory" in script
+    assert '"$env_dir/objects"' in script
+    assert "PIPWERK_STUDIO_OBJECT" not in script
+    assert 'bin/python" -I -c' in script
 
 
 def test_status_and_stop_without_a_test_environment(

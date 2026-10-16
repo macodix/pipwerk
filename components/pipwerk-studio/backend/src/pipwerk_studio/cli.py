@@ -15,7 +15,8 @@ import uvicorn
 from sqlalchemy.exc import SQLAlchemyError
 
 from pipwerk_studio.app import create_app
-from pipwerk_studio.config import StartupConfigError, load_database_url
+from pipwerk_studio.config import StartupConfigError, load_startup_config
+from pipwerk_studio.migrate import DatabaseMigrationError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,19 +46,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        database_url = load_database_url(args.config_path)
+        startup_config = load_startup_config(args.config_path)
     except StartupConfigError as error:
         print(f"pipwerk-studio: {error}", file=sys.stderr)
         return 1
 
     try:
-        app = create_app(database_url)
+        app = create_app(startup_config.database_url, config_origin=startup_config.origin)
     except SQLAlchemyError as error:
         print(
             f"pipwerk-studio: the database connection of the startup configuration "
             f"cannot be used: {error}",
             file=sys.stderr,
         )
+        return 1
+    except DatabaseMigrationError as error:
+        print(f"pipwerk-studio: {error}", file=sys.stderr)
         return 1
     uvicorn.run(app, host=args.host, port=args.port)
     return 0

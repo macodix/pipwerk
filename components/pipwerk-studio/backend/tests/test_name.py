@@ -165,7 +165,7 @@ def _failing_lookup() -> str | None:
 def test_log_entries_if_the_revision_is_not_determinable(
     lookup: Callable[[], str | None], caplog: pytest.LogCaptureFixture
 ) -> None:
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.DEBUG, logger="pipwerk_studio"):
         _app_with_lookups(lookup, lambda commit: DATE)
 
     messages = [record.getMessage() for record in caplog.records]
@@ -178,7 +178,7 @@ def test_log_entries_if_the_revision_is_not_determinable(
 def test_log_entries_if_the_commit_date_is_not_determinable(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.DEBUG, logger="pipwerk_studio"):
         _app_with_lookups(lambda: FULL_HASH, lambda commit: None)
 
     messages = [record.getMessage() for record in caplog.records]
