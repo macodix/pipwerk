@@ -60,7 +60,7 @@ Entry-Puffer und Stop-Puffer sind Parameter von ungefähr 3 bis 5 Pips. Der Take
 
 ### 4. Risiko und Handelbarkeit prüfen
 
-Das Handelsvolumen bestimmt die Risikoregel der Strategie: eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002), die als Regel der Strategie für jede Order gilt. Sie berechnet das Volumen aus Einstieg, Stop-Loss, Tickwert und einer Risikogrenze von maximal 1 % des Kapitals und rundet es auf den Volumenschritt ab. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen.
+Das Handelsvolumen bestimmt die Risikoregel der Strategie: eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002), die als Regel der Strategie für jede Order gilt. Sie berechnet das Volumen aus Einstieg, Stop-Loss, Tickgröße, Tickwert und einer Risikogrenze von maximal 1 % des Kapitals und rundet es auf den Volumenschritt ab. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen.
 
 Danach wird geprüft, ob dieses Volumen das Mindestvolumen des Instruments erreicht. Eine Prüfung der freien Margin ist nicht Teil dieses Testfalls.
 

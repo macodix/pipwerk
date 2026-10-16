@@ -31,11 +31,11 @@ Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreu
 
 ### 3. Position eröffnen
 
-Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Der Stop-Loss wird als Berechnung im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung, und der Order direkt übergeben. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002): Der Verlust vom Preis der Order bis zum Stop-Loss beträgt höchstens 1 % des Kapitals, das Volumen wird auf den Volumenschritt abgerundet. Preis der Marktorder ist bis zur Ausführung der aktuelle Kurs (Fachmodell req-fach-028). Liegt es unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
+Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Der Stop-Loss wird als Berechnung im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung, und der Order direkt übergeben. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002): Der Verlust vom Preis der Order bis zum Stop-Loss beträgt höchstens 1 % des Kapitals, das Volumen wird auf den Volumenschritt abgerundet. Preis der Marktorder ist bis zur Ausführung der aktuelle Kurs (Fachmodell req-fach-028). Liegt das Volumen unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
 
 ### 4. Position verwalten
 
-Jede eröffnete Position hat ihre eigene Verwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Nach der Ausführung prüft die Risikoregel mit dem Ausführungspreis erneut, ob die Risikogrenze eingehalten ist (req-core-002). Die Verwaltung wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
+Jede eröffnete Position hat ihre eigene Verwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Die Verwaltung wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
 
 - Hat der schnelle EMA den langsamen entgegen der Richtung der Position gekreuzt, wird die Position mit „Position schließen“ ohne Volumenangabe ganz geschlossen. Die Risikoregel gilt für die Schließorder nicht (Fachmodell req-fach-046).
 - Andernfalls wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird mit „Position ändern“ nur übernommen, wenn er den bisherigen Stop-Loss (`Position.Stop-Loss`) in Richtung der Position (`Position.Richtung`) verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
@@ -61,7 +61,7 @@ Der im Entwurf genannte optionale Trendfilter entfällt. Die Strategie bleibt da
 
 ## Offene fachliche Fragen
 
-- Ergibt die Prüfung nach der Ausführung, dass die Risikogrenze mit dem Ausführungspreis überschritten ist, legt dieser Testfall keine Maßnahme fest. Für die Gestaltung im Strategiedesigner ohne Bedeutung.
+- Die Prüfung der Risikoregel nach der Ausführung mit dem Ausführungspreis macht die Ausführung, nicht der Ablauf der Strategie (Fachmodell req-fach-021). Welche Maßnahme bei Überschreitung folgt, ist dort offen. Für die Gestaltung im Strategiedesigner ohne Bedeutung.
 
 ## Bestätigungsvermerk
 
