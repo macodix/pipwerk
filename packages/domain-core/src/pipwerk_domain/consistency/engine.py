@@ -1183,7 +1183,13 @@ class Checker:
             self._check_name(name, ctx.element_id, subject, "rule")
         if description.category is ObjectCategory.RULE:
             if ctx.rule_order_error and item.uses_order():
-                self._add(Level.ERROR, fc.RULE_ORDER_IN_INDICATOR, ctx.element_id, subject)
+                self._expression_finding(
+                    (id(rule), "expression"),
+                    Level.ERROR,
+                    fc.RULE_ORDER_IN_INDICATOR,
+                    ctx.element_id,
+                    subject,
+                )
             self._check_regel(rule, item, rule_ctx)
         else:
             self._check_regelwerk(rule, item, rule_ctx)
@@ -1256,8 +1262,12 @@ class Checker:
             assert analysis is not None  # noqa: S101 - the inner namespace exists
             self._report(rule, "result_expression", analysis, inner_ctx)
             if ctx.rule_order_error and self._names_order_directly(analysis):
-                self._add(
-                    Level.ERROR, fc.RULE_ORDER_IN_INDICATOR, ctx.element_id, ctx.subject or None
+                self._expression_finding(
+                    (id(rule), "result_expression"),
+                    Level.ERROR,
+                    fc.RULE_ORDER_IN_INDICATOR,
+                    ctx.element_id,
+                    ctx.subject or None,
                 )
 
     def _check_cycles(

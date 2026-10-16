@@ -20,6 +20,7 @@ from tests.helpers import (
     connect,
     only,
     rule,
+    ruleset,
     template,
     trigger,
     uid,
@@ -131,6 +132,57 @@ def test_a_template_with_49_findings_and_a_hint_is_not_cut() -> None:
     found = check_template(template(catalog.TYPE_RULE, expression=expression))
     assert len(found) == LIMIT
     assert only(found, fc.FINDINGS_TRUNCATED) == []
+
+
+# Durchlauf 4: `rule.order_in_indicator` counts like the other four findings of an expression
+
+
+def indicator_rule_findings(count: int) -> list[Finding]:
+    expression = names(count, "Strategie.x") + "+Order.volumen > 0"
+    return check_template(template(catalog.TYPE_INDICATOR, rules=[rule("r", expression)]))
+
+
+def indicator_ruleset_findings(count: int) -> list[Finding]:
+    result = names(count, "Strategie.x") + "+Order.volumen > 0"
+    inner = rule("a", "Konto.kapital > 0")
+    value = template(
+        catalog.TYPE_INDICATOR, rules=[ruleset("werk", [inner], result_expression=result)]
+    )
+    return check_template(value)
+
+
+def assert_order_cut(found: list[Finding], field: str) -> None:
+    own = [item for item in found if item.details.get("field") in (field, None)]
+    assert len(own) == LIMIT + 1
+    assert own[-1].code == fc.FINDINGS_TRUNCATED
+    assert own[-1].details["scope"] == "expression"
+    assert own[-1].details["field"] == field
+    assert len(only(found, fc.FINDINGS_TRUNCATED)) == 1
+    assert found[-1] is own[-1]
+
+
+def test_50_findings_and_the_order_of_a_rule_in_an_indicator_are_cut() -> None:
+    found = indicator_rule_findings(60)
+    assert_order_cut(found, "expression")
+
+
+def test_49_findings_and_the_order_of_a_rule_in_an_indicator_are_not_cut() -> None:
+    found = indicator_rule_findings(49)
+    assert len(only(found, fc.RULE_ORDER_IN_INDICATOR)) == 1
+    assert only(found, fc.FINDINGS_TRUNCATED) == []
+    assert len(found) == LIMIT
+
+
+def test_50_findings_and_the_order_of_a_ruleset_in_an_indicator_are_cut() -> None:
+    found = indicator_ruleset_findings(60)
+    assert_order_cut(found, "result_expression")
+
+
+def test_49_findings_and_the_order_of_a_ruleset_in_an_indicator_are_not_cut() -> None:
+    found = indicator_ruleset_findings(49)
+    assert len(only(found, fc.RULE_ORDER_IN_INDICATOR)) == 1
+    assert only(found, fc.FINDINGS_TRUNCATED) == []
+    assert len(found) == LIMIT
 
 
 def test_the_limit_counts_each_expression_on_its_own() -> None:
