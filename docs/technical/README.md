@@ -16,3 +16,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 ## Komponenten
 
 - [pipwerk Studio – technische Dokumentation](pipwerk-studio.md)
+
+## Gemeinsame Bibliotheken
+
+- [Gemeinsame Python-Bibliothek `pipwerk_domain` – technische Dokumentation](pipwerk-domain.md) – Typbeschreibungen, Objektmodell, Ausdrücke, Konsistenzprüfung, Dokumentformat und Schemata

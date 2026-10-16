@@ -1,3 +1,5 @@
 # Strategy Contracts
 
-Versioned schemas for stored and exchanged strategy definitions.
+Versioned schemas and test case documents for stored and exchanged strategy definitions.
+
+Documentation: [docs/technical/pipwerk-domain.md](../../docs/technical/pipwerk-domain.md)

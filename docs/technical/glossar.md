@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-15
+- stand: 2026-10-16
 
 ## Regeln
 
@@ -21,7 +21,14 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Objekt | Etwas, mit dem ein Händler arbeitet, beschrieben im Fachmodell, zum Beispiel Strategie, Trend, Indikator, Regel, Regelwerk oder Order. Ein Objekt hat Eigenschaften, unabhängig davon, ob und wie es auf der Zeichenfläche dargestellt wird. Die Begriffe „Handelsobjekt“ und „fachliches Objekt“ werden nicht verwendet. |
 | Objekttyp | Die Art eines Objekts, zum Beispiel „Regel“, „Trend“, „Indikator“ oder ein mitgelieferter Indikator wie „EMA“ oder „Markttechnik“ (Fachmodell req-fach-013a, req-fach-054). Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
 | Vorlage | Ein gespeichertes Objekt (Indikator, Trend, Regel, Regelwerk) mit Standardwerten. Beim Einfügen in eine Strategie entsteht daraus eine Instanz. |
-| Instanz | Das Objekt, das beim Einfügen einer Vorlage oder eines Objekttyps in eine Strategie entsteht. Es übernimmt die Standardwerte, trägt einen in der Strategie vergebenen Namen (zum Beispiel EMA21), gehört nur dieser Strategie und nennt seine Herkunft. |
+| Instanz | Das Objekt, das beim Einfügen einer Vorlage oder eines Objekttyps in eine Strategie entsteht. Es ist eine vollständige Kopie: Es übernimmt die Standardwerte und den übrigen Inhalt der Vorlage, trägt einen in der Strategie vergebenen Namen (zum Beispiel EMA21), gehört nur dieser Strategie und nennt seine Herkunft. Eine Instanz kann auch in einer anderen Instanz oder in einer Vorlage enthalten sein (ein Indikator in einem Trend, eine Regel in einem Regelwerk). Zur Ausführung braucht sie ihre Vorlage nicht. |
+| Herkunft | Die Angabe einer Instanz, woraus sie entstanden ist: der Objekttyp und, wenn sie aus einer Vorlage entstand, Kennung und Bezeichnung der Vorlage zum Zeitpunkt des Einfügens. Bei einem eingefügten Objekttyp (zum Beispiel `EMA`) fehlen Kennung und Bezeichnung. Spätere Änderungen oder das Löschen der Vorlage ändern die Herkunft nicht. |
+| Kennung | Der sprachneutrale Name eines Typs, einer Eigenschaft, eines Parameters, eines Ausgangs oder eines festgelegten Werts, in Dokumenten und Ausdrücken gespeichert (zum Beispiel `trend_intakt`, `stop_loss`, `flow.condition`). Kennungen von Eigenschaften, Parametern und Werten werden nach einer festen Regel aus dem deutschen Namen gebildet; die Oberfläche zeigt den Namen in der gewählten Sprache. Objekte und Elemente der Strategie tragen eine UUID als Kennung. |
+| Namensraum | Die Menge der Namen, die ein Ausdruck an einer Stelle ansprechen kann: von innen nach außen die Parameter einer Regel, die Regeln derselben Liste, der umgebende Namensraum (Strategie oder Vorlage) und die Objekte der Anwendung. Ein innerer Name verdeckt einen äußeren; zwei Namen derselben Ebene sind ein Fehler (Spezifikation 3.3). |
+| Ausdruck | Text in der Formelsprache OpenFormula (eine Auswahl), der einen Wert berechnet: in einer Bedingung, Berechnung, Regel, Belegung oder eigenen Eigenschaft. Die Bibliothek zerlegt und prüft ihn, wertet ihn aber nicht aus. Namen stehen in Punkt-Schreibweise (`ema20.wert`), Argumente werden mit `;` getrennt. |
+| Normalisierte Schreibweise | Die Schreibweise eines Ausdrucks, in der Namen die Schreibweise ihrer Kennung und Funktionen die Schreibweise der Norm haben (`order.VOLUMEN` wird zu `Order.volumen`, `if(…)` zu `IF(…)`). Alles andere bleibt Zeichen für Zeichen erhalten. Gespeichert wird sie. |
+| nicht verfügbar | Der Wert eines Ausdrucks, wenn er eine Eigenschaft ansprechen würde, die das Objekt im Zusammenhang der Auswertung nicht hat, zum Beispiel `Order.limitpreis` bei einer Stop-Order oder `Position`, solange die Order noch keine Position hat (`#N/A` nach OpenFormula). Jede Rechnung damit ergibt „nicht verfügbar“; `ISNA` und `IFNA` fangen ihn ab. Die Wirkung bei der Ausführung steht in der technischen Dokumentation der gemeinsamen Python-Bibliothek. |
+| leer | Der Wert einer Eigenschaft ohne Wert: eine Eigenschaft, die der Anwender nicht belegt hat (KANN), oder eine, die das Objekt gerade nicht belegt, zum Beispiel `punkt_2` der Markttechnik ohne Trend. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung; `ISBLANK` prüft darauf. Nicht zu verwechseln mit „nicht verfügbar“. |
 | Objekte der Anwendung | Konto, Instrument, Kerze, Tick, Order, Position und Strategie: Objekte, deren Werte das Handelssystem beziehungsweise der Strategietester bereitstellt. Ihr Objekttyp wird nicht vom Anwender gestaltet und nicht als Vorlage gespeichert. Konto, Instrument, Kerze und Tick können Parameter haben und mehrfach als Instanz verwendet werden. Order und Position bezeichnen in einer Regel die Order beziehungsweise Position, auf die die Regel angewendet wird, im Ablauf die Order und Position der Verwaltung (Fachmodell req-fach-051). |
 | Strategieparameter | Ein Wert, der an einer Stelle der Strategie festgelegt und überall in ihr verwendet wird, zum Beispiel die Handelszeiteinheit. Er kann im Ablauf mit dem Element „Parameter setzen“ geändert werden. |
 | Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
@@ -47,10 +54,10 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Objektverzeichnis | Ein Objektspeicher als Dateiverzeichnis mit einer Datei je Objekt. Im Vorhaben `strategiedesign` die einzige Form des Objektspeichers. |
 | Zeichenfläche | Der Bereich der Oberfläche, auf dem Elemente angeordnet und verbunden werden. |
 | Eigenschaftenansicht | Der Bereich der Oberfläche, in dem die Eigenschaften des ausgewählten Elements angezeigt und seine Parameter geändert werden. |
-| Konsistenzprüfung | Die Kontrolle einer Strategie auf Vollständigkeit und Widerspruchsfreiheit, ohne sie auszuführen. Sie läuft beim Speichern und auf Anforderung. Nicht zu verwechseln mit dem Prüfen durch eine Regel. |
+| Konsistenzprüfung | Die Kontrolle einer Strategie oder einer Vorlage auf Vollständigkeit und Widerspruchsfreiheit, ohne sie auszuführen. Sie läuft beim Speichern und auf Anforderung und ist in der gemeinsamen Python-Bibliothek umgesetzt. Nicht zu verwechseln mit dem Prüfen durch eine Regel. |
 | Pflichtparameter | Ein Parameter, der einen Wert haben muss, damit die Konsistenzprüfung keinen Fehler meldet. Welche Parameter Pflicht sind, legt der Objekttyp fest. Alle anderen Parameter sind optional. |
 | Standardwert | Der Wert eines Parameters, den eine Vorlage vorgibt. Er wird beim Einfügen in eine Strategie von der Instanz übernommen und dort geändert. |
-| Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Beschreibung und dem betroffenen Element. |
+| Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Kennung des Befunds, dem betroffenen Element, der betroffenen Instanz oder Regel (oder keinem) und Angaben für den Text. Die Texte stehen in der Oberfläche, nicht in der Bibliothek. |
 | Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
 
 ## Technische Begriffe
@@ -58,8 +65,8 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Begriff | Bedeutung |
 | --- | --- |
 | Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Elementtypen. pipwerk Studio, pipwerk backtest und pipwerk trader binden es ein. |
-| Typbeschreibung | Die maschinenlesbare Beschreibung eines Elementtyps: Kennung, Beschriftungen in Deutsch und Englisch, Parameter mit Datentyp und erlaubten Bindungsarten, Eingaben, Eigenschaften und Ergebnisse. Die Oberfläche baut daraus Elementbibliothek, Elemente und Eigenschaftenansicht auf. |
-| Elementregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Elementtypen angemeldet sind und von der sie abgefragt werden. |
+| Typbeschreibung | Die maschinenlesbare Beschreibung eines Elementtyps oder Objekttyps mit den Feldern Kennung, Art (Auslöser, Element des Ablaufs, Objekttyp, Objekt der Anwendung, Ordertyp, Berechnungsverfahren des Trends), Beschriftung (Name und Beschreibung in Deutsch und Englisch), Parameter (Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung), Eigenschaften (Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen, ob der Anwender sie belegt), Ausgänge, „Regeln zulässig“ und „auf Zeichenfläche“. Die Oberfläche baut daraus Elementbibliothek, Elemente und Eigenschaftenansicht auf. |
+| Elementregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Elementtypen und Objekttypen (und die Berechnungsverfahren des Trends) angemeldet sind und von der sie nach Kennung oder als Liste abgefragt werden. Weitere Python-Pakete melden Typen über den Einstiegspunkt `pipwerk.element_types` an. |
 | Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API und Nachrichten verwendet. |
 | Strategiedatei | Eine Datei im Strategieverzeichnis, die ein Strategiedokument enthält. Sie ist die verbindliche Fassung der Strategie. |
 | Schema | Die formale Beschreibung, welche Felder ein Dokument enthalten muss und welche Werte zulässig sind. Pipwerk verwendet JSON-Schema. Schemata liegen versioniert unter `contracts/`. |
@@ -76,7 +83,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Name | Zweck in Pipwerk |
 | --- | --- |
 | FastAPI | Python-Bibliothek, mit der die Web-API einer Komponente gebaut wird. |
-| Pydantic | Python-Bibliothek, die Daten an den Schnittstellen prüft und umwandelt: Sie liest JSON ein, prüft Felder und Typen und erzeugt daraus Python-Objekte. Aus ihren Modellen wird das JSON-Schema erzeugt. In der gemeinsamen Python-Bibliothek wird sie nicht verwendet. |
+| Pydantic | Python-Bibliothek, die Daten an den Schnittstellen prüft und umwandelt: Sie liest JSON ein, prüft Felder und Typen und erzeugt daraus Python-Objekte. Aus ihren Modellen wird das JSON-Schema erzeugt. In der gemeinsamen Python-Bibliothek wird sie nur im Teilpaket für Dokumente (`pipwerk_domain.documents`) verwendet; das Objektmodell besteht aus einfachen Python-Klassen ohne Pydantic. |
 | SQLAlchemy | Python-Bibliothek für den Zugriff auf relationale Datenbanken. Welche Datenbank dahinter liegt (derzeit SQLite), steht in der Konfiguration. |
 | Alembic | Werkzeug zu SQLAlchemy, das Änderungen am Datenbankaufbau versioniert durchführt. Eine bestehende Datenbank wird damit auf einen neuen Aufbau gebracht, ohne sie neu anzulegen. |
 | pytest | Werkzeug für automatische Tests von Python-Code. |
@@ -93,6 +100,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-16 | Vorhaben `strategiedesign`, Arbeitspaket `wp01`, Auftrag 01: Begriffe der gemeinsamen Python-Bibliothek ergänzt (nicht verfügbar, leer, Herkunft, Kennung, Namensraum, Ausdruck, normalisierte Schreibweise); Instanz, Konsistenzprüfung, Befund, Typbeschreibung, Elementregister und Pydantic berichtigt. |
 | 2026-10-16 | Objektspeicher und Objektverzeichnis ergänzt, Objekttyp und Bindungsart angepasst. Nachprüfung der QA, Durchlauf 3. |
 | 2026-10-16 | Objekte der Anwendung: Order und Position aus dem Zusammenhang. Nachprüfung der QA, Durchlauf 4. |
 | 2026-10-15 | Vorlage, Instanz, Objekte der Anwendung, Strategieparameter, Parameter setzen ergänzt. Verweis entfernt. Auslöser, Regelwerk, Verbindung, Standardwert und Ausgänge der Elemente angepasst. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
