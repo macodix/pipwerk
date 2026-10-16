@@ -12,7 +12,7 @@
 # pytest, ruff check, ruff format --check, mypy), search in the repository for
 # the spelling of the name, frontend (npm ci, typecheck, Vitest, build) and the
 # browser test with Playwright on the given ports. --with-audit adds pip-audit
-# and npm audit.
+# for the library and the backend and npm audit.
 #
 # The working directory is derived from the path of this script. The script
 # can be called from any directory. Ports are parameters; the script contains
@@ -175,10 +175,12 @@ search_name() {
     printf '%s: %s mentions checked, all spelled correctly\n' "$PROG" "$search_count"
 }
 
+# pip_audit <in_library|in_backend>: checks the packages locked in uv.lock of
+# that directory for known vulnerabilities.
 pip_audit() {
     audit_requirements=$(mktemp) || return 1
     audit_status=0
-    in_backend export --frozen --no-hashes --no-emit-project -o "$audit_requirements" &&
+    "$1" export --frozen --no-hashes --no-emit-project -o "$audit_requirements" &&
         uvx pip-audit -r "$audit_requirements" --no-deps --disable-pip || audit_status=1
     rm -f "$audit_requirements"
     return "$audit_status"
@@ -204,6 +206,9 @@ step "library: ruff format --check" in_library run --frozen ruff format --check
 step "library: mypy" in_library run --frozen mypy
 step "library: schemas equal to contracts/strategies/v1" in_library run --frozen \
     python -m pipwerk_domain.documents.schemas --check "$schemas_dir"
+if [ "$with_audit" = 1 ]; then
+    step "library: pip-audit" pip_audit in_library
+fi
 
 # Backend (technical documentation, section 6.1)
 step "backend: uv sync --frozen" in_backend sync --frozen
@@ -213,7 +218,7 @@ step "backend: ruff format --check" in_backend run --frozen ruff format --check
 step "backend: mypy" in_backend run --frozen mypy
 step "search in the repository for the spelling of the name" search_name
 if [ "$with_audit" = 1 ]; then
-    step "backend: pip-audit" pip_audit
+    step "backend: pip-audit" pip_audit in_backend
 fi
 
 # Frontend (section 6.2)
