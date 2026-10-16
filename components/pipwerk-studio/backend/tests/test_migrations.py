@@ -10,13 +10,16 @@ and the start through the command line.
 import sqlite3
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 import pytest
 import uvicorn
+from alembic import op as alembic_op
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 from pipwerk_studio import cli
 from pipwerk_studio.app import create_app
@@ -199,3 +202,83 @@ def test_start_with_an_unusable_schema_fails_with_a_message(
     assert exit_code == 1
     assert "cannot be updated" in capsys.readouterr().err
     assert started == []
+
+
+def failing_second_migration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Let revision 0002 fail after its change was made."""
+    real_add_column = alembic_op.add_column
+
+    def add_column_then_fail(*args: Any, **kwargs: Any) -> None:
+        real_add_column(*args, **kwargs)
+        raise RuntimeError("simulated failure with a secret detail")
+
+    monkeypatch.setattr(alembic_op, "add_column", add_column_then_fail)
+
+
+def test_a_failed_migration_of_the_schema_before_alembic_leaves_the_database_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    create_legacy_database(tmp_path, "en")
+    with monkeypatch.context() as patched:
+        failing_second_migration(patched)
+
+        with pytest.raises(DatabaseMigrationError) as caught:
+            create_studio_engine(database_url(tmp_path))
+
+    message = str(caught.value)
+    assert "migration" in message
+    assert "connection" not in message
+    assert "secret" not in message
+    assert (
+        sqlite_rows(tmp_path, "SELECT name FROM sqlite_master WHERE name = 'alembic_version'") == []
+    )
+    assert column_names(tmp_path) == ["id", "language"]
+    assert sqlite_rows(tmp_path, "SELECT id, language FROM studio_settings") == [(1, "en")]
+
+    client = TestClient(create_app(database_url(tmp_path)))
+
+    assert client.get("/api/studio/settings/language").json() == {"language": "en"}
+    assert sqlite_rows(tmp_path, "SELECT version_num FROM alembic_version") == [(NEWEST_REVISION,)]
+
+
+def test_a_failed_migration_of_a_new_database_leaves_no_table_and_the_next_start_works(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with monkeypatch.context() as patched:
+        failing_second_migration(patched)
+
+        with pytest.raises(DatabaseMigrationError) as caught:
+            create_studio_engine(database_url(tmp_path))
+
+    assert "migration" in str(caught.value)
+    assert "connection" not in str(caught.value)
+    assert sqlite_rows(tmp_path, "SELECT name FROM sqlite_master WHERE type = 'table'") == []
+
+    client = TestClient(create_app(database_url(tmp_path)))
+
+    assert client.get("/api/studio/settings/language").json() == {"language": "de"}
+    assert column_names(tmp_path) == ["id", "language", "object_directory"]
+
+
+def test_a_failed_migration_stops_the_start_with_the_migration_as_the_cause(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    started: list[object] = []
+    monkeypatch.setattr(uvicorn, "run", lambda *args, **kwargs: started.append(args))
+    config_path = tmp_path / "pipwerk-studio.ini"
+    config_path.write_text(f"[database]\nurl = {database_url(tmp_path)}\n", encoding="utf-8")
+    failing_second_migration(monkeypatch)
+
+    exit_code = cli.main(["-c", str(config_path)])
+
+    error_output = capsys.readouterr().err
+    assert exit_code == 1
+    assert "migration" in error_output
+    assert "connection" not in error_output
+    assert "secret" not in error_output
+    assert started == []
+
+
+def test_an_unreachable_database_is_still_reported_as_a_connection_problem(tmp_path: Path) -> None:
+    with pytest.raises(OperationalError):
+        create_studio_engine(f"sqlite:///{tmp_path / 'missing' / 'studio.db'}")

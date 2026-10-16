@@ -10,6 +10,7 @@ the lock against concurrent changes and writes of the object store.
 
 import errno
 import os
+import sqlite3
 import stat
 import threading
 from collections.abc import Callable
@@ -24,7 +25,7 @@ from pipwerk_studio.object_store import (
     ObjectMoveError,
     ObjectMoveRollbackError,
 )
-from pipwerk_studio.settings_service import SettingsService
+from pipwerk_studio.settings_service import SettingsService, StoredObjectDirectoryInvalidError
 from pipwerk_studio.storage import create_session_factory, create_studio_engine
 
 IDS = [
@@ -466,6 +467,105 @@ def test_a_failure_to_save_and_to_bring_the_files_back_names_the_files(
 
     assert caught.value.names == setup.names
     assert setup.new_names() == setup.names
+
+
+# --- symbolic links that take the place of a file -------------------------------------------
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symbolic links need extra rights on Windows")
+def test_a_file_replaced_by_a_symbolic_link_after_the_listing_is_not_followed_when_moving(
+    setup: Setup, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outside = tmp_path / "outside.json"
+    outside.write_text("outside content", encoding="utf-8")
+    real = object_store._move_file
+
+    def move(source: Path, target: Path) -> None:
+        if source.name == setup.names[1]:
+            source.unlink()
+            source.symlink_to(outside)
+        real(source, target)
+
+    monkeypatch.setattr(object_store, "_move_file", move)
+
+    with pytest.raises(ObjectMoveError):
+        setup.service.set_object_directory(str(setup.new), move=True)
+
+    assert outside.read_text(encoding="utf-8") == "outside content"
+    assert outside.stat().st_nlink == 1
+    assert setup.new_names() == []
+    assert (setup.old / setup.names[1]).is_symlink()
+    assert setup.service.get_object_directory().is_default is True
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symbolic links need extra rights on Windows")
+def test_a_file_replaced_by_a_symbolic_link_is_not_followed_when_bringing_it_back(
+    setup: Setup, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outside = tmp_path / "outside.json"
+    outside.write_text("outside content", encoding="utf-8")
+    real = object_store._move_file
+
+    def move(source: Path, target: Path) -> None:
+        if source.parent == setup.old and source.name == setup.names[2]:
+            # The third file fails; before bringing back, the second one is replaced.
+            (setup.new / setup.names[1]).unlink()
+            (setup.new / setup.names[1]).symlink_to(outside)
+            raise OSError("failure")
+        real(source, target)
+
+    monkeypatch.setattr(object_store, "_move_file", move)
+
+    with pytest.raises(ObjectMoveRollbackError) as caught:
+        setup.service.set_object_directory(str(setup.new), move=True)
+
+    assert caught.value.names == [setup.names[1]]
+    assert outside.read_text(encoding="utf-8") == "outside content"
+    assert outside.stat().st_nlink == 1
+    assert setup.names[1] not in setup.old_names()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symbolic links need extra rights on Windows")
+def test_copying_does_not_follow_a_symbolic_link(tmp_path: Path) -> None:
+    outside = tmp_path / "outside.json"
+    outside.write_text("outside content", encoding="utf-8")
+    source = tmp_path / "source.json"
+    source.symlink_to(outside)
+    target_directory = tmp_path / "target"
+    target_directory.mkdir()
+
+    with pytest.raises(OSError):
+        object_store._copy_file(source, target_directory / "target.json")
+
+    assert list(target_directory.iterdir()) == []
+    assert outside.read_text(encoding="utf-8") == "outside content"
+
+
+def test_a_target_directory_that_cannot_be_created_is_told_apart(
+    setup: Setup, tmp_path: Path
+) -> None:
+    blocker = tmp_path / "blocker"
+    blocker.write_text("a file", encoding="utf-8")
+
+    with pytest.raises(object_store.ObjectTargetNotCreatableError):
+        setup.service.set_object_directory(str(blocker / "objects"), move=True)
+
+
+def test_moving_with_a_stored_value_that_is_not_absolute_is_rejected_and_saving_repairs(
+    setup: Setup, tmp_path: Path
+) -> None:
+    setup.service.set_language("en")
+    with sqlite3.connect(tmp_path / "studio.db") as connection:
+        connection.execute("UPDATE studio_settings SET object_directory = 'relative'")
+
+    with pytest.raises(StoredObjectDirectoryInvalidError):
+        setup.service.set_object_directory(str(setup.new), move=True)
+    assert setup.old_names() == setup.names
+    assert not setup.new.exists()
+
+    setup.service.set_object_directory(str(setup.new), move=False)
+
+    assert setup.service.get_object_directory().path == setup.new
 
 
 # --- locking -------------------------------------------------------------------------

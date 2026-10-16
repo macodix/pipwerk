@@ -12,6 +12,11 @@ Three starting points are handled:
   ``studio_settings`` with the columns ``id`` and ``language``, no version
   table of Alembic): it is recognised as the first migration and then updated;
 - a current database: nothing changes.
+
+All migrations of one start, including the version table, run in one
+transaction. If one fails, the transaction is rolled back and the database is as
+it was before; the next start begins again. On SQLite this needs the explicit
+transactions set up in ``pipwerk_studio.storage``.
 """
 
 from __future__ import annotations
@@ -68,15 +73,28 @@ def _is_unversioned_initial_schema(connection: Connection) -> bool:
 
 
 def migrate_database(engine: Engine) -> None:
-    """Bring the database of ``engine`` to the newest schema."""
-    try:
-        with engine.begin() as connection:
-            config = _alembic_config(connection)
-            if _is_unversioned_initial_schema(connection):
-                command.stamp(config, INITIAL_REVISION)
-            command.upgrade(config, "head")
-    except CommandError as error:
-        # For example a database written by a newer version of pipwerk Studio.
-        raise DatabaseMigrationError(
-            "The database schema cannot be updated by this version of pipwerk Studio."
-        ) from error
+    """Bring the database of ``engine`` to the newest schema, all or nothing.
+
+    A database that cannot be reached raises the error of SQLAlchemy as before.
+    A failure of the migrations themselves raises ``DatabaseMigrationError``
+    after the transaction was rolled back.
+    """
+    with engine.connect() as connection:
+        try:
+            with connection.begin():
+                config = _alembic_config(connection)
+                if _is_unversioned_initial_schema(connection):
+                    command.stamp(config, INITIAL_REVISION)
+                command.upgrade(config, "head")
+        except DatabaseMigrationError:
+            raise
+        except CommandError as error:
+            # For example a database written by a newer version of pipwerk Studio.
+            raise DatabaseMigrationError(
+                "The database schema cannot be updated by this version of pipwerk Studio."
+            ) from error
+        except Exception as error:
+            raise DatabaseMigrationError(
+                "A migration of the pipwerk Studio database schema failed. "
+                "The changes of this start were rolled back."
+            ) from error

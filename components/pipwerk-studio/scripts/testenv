@@ -270,7 +270,9 @@ EOF
     # The object directory of the test environment lies below .testenv/. It is
     # stored in the database of the test environment before the backend starts
     # (the setting "object directory"); stop removes it with .testenv/.
-    "$backend_dir/.venv/bin/python" -c '
+    # -I (isolated mode): the current directory of the caller is not searched
+    # for modules.
+    "$backend_dir/.venv/bin/python" -I -c '
 import sys
 
 from pipwerk_studio.settings_service import SettingsService

@@ -85,6 +85,10 @@ class ObjectMoveError(ObjectStoreError):
     """Moving the files failed; the files moved so far were brought back."""
 
 
+class ObjectTargetNotCreatableError(ObjectMoveError):
+    """The target directory could not be created; nothing was moved."""
+
+
 class ObjectMoveRollbackError(ObjectStoreError):
     """Moving failed and bringing back failed too: files are in the target directory."""
 
@@ -232,30 +236,50 @@ def _copy_file(source: Path, target: Path) -> None:
     The copy is written to a temporary file in the target directory and then
     linked to the final name; linking fails if the name exists.
     """
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=_TEMPORARY_PREFIX, suffix=_TEMPORARY_SUFFIX, dir=target.parent
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as destination, source.open("rb") as origin:
-            shutil.copyfileobj(origin, destination)
-            destination.flush()
-            os.fsync(destination.fileno())
-        os.link(temporary, target)
-    finally:
-        with contextlib.suppress(OSError):
-            temporary.unlink()
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+    # Opening first: a symbolic link in place of the file fails here and
+    # nothing has been created yet.
+    with os.fdopen(os.open(source, flags), "rb") as origin:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=_TEMPORARY_PREFIX, suffix=_TEMPORARY_SUFFIX, dir=target.parent
+        )
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(descriptor, "wb") as destination:
+                shutil.copyfileobj(origin, destination)
+                destination.flush()
+                os.fsync(destination.fileno())
+            _link(temporary, target)
+        finally:
+            with contextlib.suppress(OSError):
+                temporary.unlink()
+
+
+def _link(source: Path, target: Path) -> None:
+    """Create a hard link ``target`` to ``source`` without following a symbolic link.
+
+    Fails with ``FileExistsError`` if ``target`` exists.
+    """
+    if os.link in os.supports_follow_symlinks:
+        os.link(source, target, follow_symlinks=False)
+    else:
+        os.link(source, target)
 
 
 def _move_file(source: Path, target: Path) -> None:
     """Move one file and never overwrite ``target``.
 
-    A hard link is created first; it fails with ``FileExistsError`` if the
-    name exists, even if it came into being just now. If linking is not
-    possible (another file system), the file is copied instead.
+    Only a regular file is moved: this is checked again immediately before, and
+    a symbolic link that has taken its place since the listing is not followed
+    (hard link without following, ``O_NOFOLLOW`` when copying). A hard link is
+    created first; it fails with ``FileExistsError`` if the name exists, even if
+    it came into being just now. If linking is not possible (another file
+    system), the file is copied instead.
     """
+    if not _is_regular_file(source):
+        raise OSError("Not a regular file.")
     try:
-        os.link(source, target)
+        _link(source, target)
     except FileExistsError:
         raise
     except OSError:
@@ -325,7 +349,7 @@ def move_objects(source: Path, target: Path) -> MovedObjects:
     try:
         target.mkdir(mode=0o700, parents=True, exist_ok=True)
     except OSError as error:
-        raise ObjectMoveError("The target directory cannot be created.") from error
+        raise ObjectTargetNotCreatableError("The target directory cannot be created.") from error
     moved: list[str] = []
     try:
         for name in names:

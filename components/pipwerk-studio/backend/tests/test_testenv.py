@@ -453,6 +453,10 @@ def test_start_stores_the_object_directory_below_testenv_before_the_backend_star
     record = replica.base / "record"
     record.mkdir()
     replica.install_working_programs(record)
+    # Modules in the directory the script is called from must not be loaded: the
+    # Python of the script runs in isolated mode.
+    for module in ("sqlalchemy.py", "pipwerk_studio.py"):
+        (replica.base / module).write_text("raise RuntimeError('loaded')\n", encoding="utf-8")
 
     result = replica.start()
 
@@ -482,6 +486,7 @@ def test_the_script_sets_the_object_directory_through_the_database_not_the_envir
     assert "set_object_directory" in script
     assert '"$env_dir/objects"' in script
     assert "PIPWERK_STUDIO_OBJECT" not in script
+    assert 'bin/python" -I -c' in script
 
 
 def test_status_and_stop_without_a_test_environment(

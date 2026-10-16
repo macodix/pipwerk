@@ -325,6 +325,54 @@ def test_put_names_both_directories_and_the_files_if_bringing_back_fails(
     assert client.get(ENDPOINT).json() == {"path": str(default_directory), "is_default": True}
 
 
+def test_put_with_moving_rejects_a_stored_value_that_is_not_absolute_with_409(
+    client: TestClient, tmp_path: Path
+) -> None:
+    client.put("/api/studio/settings/language", json={"language": "en"})
+    with sqlite3.connect(tmp_path / "studio.db") as connection:
+        connection.execute("UPDATE studio_settings SET object_directory = 'relative/secret'")
+    new = tmp_path / "new"
+
+    response = client.put(ENDPOINT, json={"path": str(new), "move": True})
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": (
+            "The stored pipwerk Studio object directory is invalid, so no files can be moved. "
+            "Save the object directory without moving files to repair it."
+        )
+    }
+    assert "secret" not in response.text
+    assert not new.exists()
+    assert client.get(ENDPOINT).status_code == 503
+    # Saving without moving repairs the setting.
+    repaired = client.put(ENDPOINT, json={"path": str(new), "move": False})
+    assert repaired.status_code == 200
+    assert client.get(ENDPOINT).json() == {"path": str(new), "is_default": False}
+    assert client.get("/api/studio/settings/language").json() == {"language": "en"}
+
+
+def test_put_says_that_the_new_directory_could_not_be_created_and_not_that_files_came_back(
+    client: TestClient, default_directory: Path, tmp_path: Path
+) -> None:
+    put_files(default_directory)
+    blocker = tmp_path / "blocker"
+    blocker.write_text("a file", encoding="utf-8")
+
+    response = client.put(ENDPOINT, json={"path": str(blocker / "objects"), "move": True})
+
+    assert response.status_code == 500
+    assert response.json() == {
+        "detail": (
+            "The new object directory could not be created. Nothing was moved and the object "
+            "directory is unchanged."
+        )
+    }
+    assert "brought back" not in response.text
+    assert names_in(default_directory) == sorted(NAMES)
+    assert client.get(ENDPOINT).json() == {"path": str(default_directory), "is_default": True}
+
+
 # --- the contract and the existing endpoints ----------------------------------------------
 
 

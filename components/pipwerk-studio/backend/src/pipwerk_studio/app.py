@@ -24,6 +24,7 @@ from pipwerk_studio.object_store import (
     ObjectConflictError,
     ObjectMoveError,
     ObjectMoveRollbackError,
+    ObjectTargetNotCreatableError,
 )
 from pipwerk_studio.revision import (
     CommitDateLookup,
@@ -137,6 +138,14 @@ INVALID_OBJECT_DIRECTORY_TEXT = "The object directory must be an absolute path."
 STORED_OBJECT_DIRECTORY_INVALID_TEXT = "The stored pipwerk Studio object directory is invalid."
 OBJECT_CONFLICT_TEXT = (
     "The new object directory already contains files with the same names. Nothing was moved."
+)
+STORED_OBJECT_DIRECTORY_NO_MOVE_TEXT = (
+    "The stored pipwerk Studio object directory is invalid, so no files can be moved. "
+    "Save the object directory without moving files to repair it."
+)
+OBJECT_TARGET_NOT_CREATED_TEXT = (
+    "The new object directory could not be created. Nothing was moved and the object "
+    "directory is unchanged."
 )
 OBJECT_MOVE_FAILED_TEXT = (
     "Moving the object files failed. The files were brought back and the object directory "
@@ -317,8 +326,11 @@ def create_app(
             "directory first and the setting is saved afterwards; without it only "
             "the setting is saved. Responds with HTTP 422 for an invalid body or "
             "a path that is not absolute, HTTP 409 if the new directory already "
-            "contains a file of the same name (nothing is moved), and HTTP 500 if "
-            "moving failed. After a failed move the moved files are brought back "
+            "contains a file of the same name or if the stored object directory is "
+            "invalid and files are to be moved (nothing is moved; saving without "
+            "moving repairs the setting), and HTTP 500 if "
+            "the new directory cannot be created or moving failed. After a failed "
+            "move the moved files are brought back "
             "and the setting is unchanged; if that fails too, the response names "
             "both directories and the files concerned. A file is never overwritten."
         ),
@@ -335,6 +347,15 @@ def create_app(
             raise HTTPException(status_code=422, detail=INVALID_OBJECT_DIRECTORY_TEXT) from error
         except ObjectConflictError as error:
             raise HTTPException(status_code=409, detail=OBJECT_CONFLICT_TEXT) from error
+        except StoredObjectDirectoryInvalidError as error:
+            # Only with move: there is no valid directory to move the files from.
+            logger.error("%s", error)
+            raise HTTPException(
+                status_code=409, detail=STORED_OBJECT_DIRECTORY_NO_MOVE_TEXT
+            ) from error
+        except ObjectTargetNotCreatableError as error:
+            logger.error("The new object directory could not be created.", exc_info=error)
+            raise HTTPException(status_code=500, detail=OBJECT_TARGET_NOT_CREATED_TEXT) from error
         except ObjectMoveError as error:
             logger.error("Moving the object files failed.", exc_info=error)
             raise HTTPException(status_code=500, detail=OBJECT_MOVE_FAILED_TEXT) from error
