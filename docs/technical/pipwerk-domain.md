@@ -506,7 +506,7 @@ Die Tests (pytest) umfassen:
 | `test_architecture.py` | keine Frameworks, Pydantic nur in `documents`, kein `eval`/`exec`/`compile`, keine festen Pfade, Ports und Rechnernamen, Laufzeitabhängigkeit nur Pydantic |
 | `test_hardening.py` | Strategieparameter in Vorlagen und Instanzen, Zahlen ohne JSON-Wert, doppelte Schlüssel, Namen und Zahlen in ASCII, lange Ketten und Kreise von Berechnungen, fehlerhafte Einstiegspunkte, Grenzen der Befunde mit Zeit und Speicher, Stelle bei Auswahlwerten, Trend ohne Richtung, `str-01` |
 | `test_hardening_2.py` | Einstiegspunkte je Paket, eine Grenze für alle Befunde eines Ausdrucks, einzelne Ersatzzeichen, Kodierung von Bytes, `PREVIOUS` ohne Abhängigkeit, Laufzeit und Speicher der Normalisierung |
-| `test_hardening_3.py` | die Grenze von 50 Befunden je Ausdruck mit `expression.order_outside_management`, `rule.result_mismatch` und Hinweisen in Vorlagen (jeweils mit Gegenprobe), Normalisierung von 2 MiB mit Umschreiben jedes Ausdrucks, Kreis und mehrfach eingehängte Teile bei der Prüfung auf Ersatzzeichen |
+| `test_hardening_3.py` | die Grenze von 50 Befunden je Ausdruck mit `expression.order_outside_management`, `rule.result_mismatch` und Hinweisen in Vorlagen sowie mit `rule.order_in_indicator` (Regel und Regelwerk in einer Vorlage `Indikator`) (jeweils mit Gegenprobe), Normalisierung von 2 MiB mit Umschreiben jedes Ausdrucks, Kreis und mehrfach eingehängte Teile bei der Prüfung auf Ersatzzeichen |
 | `test_model.py` | Objektmodell |
 | `test_normalize.py` | Normalisierung aller Ausdrücke einer Strategie oder Vorlage |
 | `test_documentation.py` | Kennungen und Befunde dieses Dokuments stimmen mit dem Code überein |
