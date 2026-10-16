@@ -5,7 +5,7 @@
 - strategie-id: `str-03`
 - status: `understood`
 - quelle: Entwurf „Trendfolge mit gleitenden Durchschnitten“ in `Teststrategien_fuer_den_grafischen_Strategiedesigner.md` und Abschnitt 2.1 „Moving-Average-Crossover“ in `trading-strategiesammlung_v0.5.md`. Ausgearbeitet vom Projektleiter als Testfall im Auftrag des Auftraggebers.
-- zuletzt geprüft: `2026-10-15`
+- zuletzt geprüft: `2026-10-16`
 
 ## Zweck
 
@@ -31,13 +31,13 @@ Geprüft wird, ob der schnelle EMA den langsamen bei diesem Kerzenschluss gekreu
 
 ### 3. Position eröffnen
 
-Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Der Stop-Loss wird als Berechnung im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung, und der Order direkt übergeben. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002): Der Verlust bis zum Stop-Loss beträgt höchstens 1 % des Kapitals, das Volumen wird auf den Volumenschritt abgerundet. Liegt es unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
+Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der Stop-Loss liegt beim Kauf 2 ATR unter, beim Verkauf 2 ATR über dem Schlusskurs der Kerze. Ein Take-Profit wird nicht gesetzt. Der Stop-Loss wird als Berechnung im Ablauf ermittelt, Long und Short in einem Zweig mit Fallunterscheidung, und der Order direkt übergeben. Das Volumen bestimmt die Risikoregel der Strategie, eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002): Der Verlust vom Preis der Order bis zum Stop-Loss beträgt höchstens 1 % des Kapitals, das Volumen wird auf den Volumenschritt abgerundet. Preis der Marktorder ist bis zur Ausführung der aktuelle Kurs (Fachmodell req-fach-028). Liegt es unter dem Mindestvolumen, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Position eröffnet.
 
 ### 4. Position verwalten
 
-Jede eröffnete Position hat ihre eigene Verwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Sie wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
+Jede eröffnete Position hat ihre eigene Verwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Nach der Ausführung prüft die Risikoregel mit dem Ausführungspreis erneut, ob die Risikogrenze eingehalten ist (req-core-002). Die Verwaltung wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
 
-- Hat der schnelle EMA den langsamen entgegen der Richtung der Position gekreuzt, wird die Position ganz geschlossen.
+- Hat der schnelle EMA den langsamen entgegen der Richtung der Position gekreuzt, wird die Position mit „Position schließen“ ohne Volumenangabe ganz geschlossen. Die Risikoregel gilt für die Schließorder nicht (Fachmodell req-fach-046).
 - Andernfalls wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird mit „Position ändern“ nur übernommen, wenn er den bisherigen Stop-Loss (`Position.Stop-Loss`) in Richtung der Position (`Position.Richtung`) verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
 
 ### 5. Position beenden
@@ -61,10 +61,10 @@ Der im Entwurf genannte optionale Trendfilter entfällt. Die Strategie bleibt da
 
 ## Offene fachliche Fragen
 
-Keine.
+- Ergibt die Prüfung nach der Ausführung, dass die Risikogrenze mit dem Ausführungspreis überschritten ist, legt dieser Testfall keine Maßnahme fest. Für die Gestaltung im Strategiedesigner ohne Bedeutung.
 
 ## Bestätigungsvermerk
 
 - fachlich geprüft durch: Auftraggeber
-- Ergebnis: bestätigt im Chat als zweiter Testfall am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15
-- Datum: `2026-10-15`
+- Ergebnis: bestätigt im Chat als zweiter Testfall am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15, Risikoregel (bestimmt das Volumen, Preis der Marktorder, nicht für die Schließorder) im Chat am 2026-10-15 und 2026-10-16
+- Datum: `2026-10-16`

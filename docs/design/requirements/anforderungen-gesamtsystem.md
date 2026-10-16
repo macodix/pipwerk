@@ -5,7 +5,7 @@
 - status: `draft`
 - abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-10-15`
+- zuletzt aktualisiert: `2026-10-16`
 
 ## 1. Systemaufteilung
 
@@ -143,7 +143,7 @@ Für persistente Datenspeicherung wird SQLAlchemy als gemeinsame Speicherschnitt
 
 Das über SQLAlchemy verwendete konkrete Speicher-Backend ist Bestandteil der Konfiguration und wird von Pipwerk nicht allgemein festgelegt.
 
-Der Objektspeicher (req-system-012) ist davon getrennt. Wo er liegt, ist eine Einstellung der Komponente: ein Verzeichnis, in dem jedes Objekt eine Datei ist, oder eine Datenbank über SQLAlchemy. In der ersten Ausbaustufe gibt es nur das Verzeichnis; die Dateien sind dort die verbindliche Fassung der Objekte. Alle übrigen persistenten Daten werden über SQLAlchemy gespeichert.
+Der Objektspeicher (req-system-012) ist davon getrennt. Wo er liegt, ist eine Einstellung der Komponente: ein Verzeichnis, in dem jedes Objekt eine Datei ist, oder eine Datenbank über SQLAlchemy. Im Vorhaben `strategiedesign` gibt es nur das Verzeichnis (Objektverzeichnis); die Dateien sind dort die verbindliche Fassung der Objekte. Alle übrigen persistenten Daten werden über SQLAlchemy gespeichert.
 
 ### req-system-016 -- Zweistufige Konfiguration
 
@@ -212,3 +212,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, einfache Backslashes in den Windows-Pfaden, Dateiname der Startkonfiguration als Festlegung der technischen Dokumentation. |
 | 2026-10-15 | req-system-011: „extern zugänglich“ festgelegt, Anmeldung grundsätzlich vorgesehen, Zeitpunkt offen. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
 | 2026-10-15 | req-system-012 und req-system-015: Objektspeicher für Strategien und Vorlagen getrennt von den übrigen Daten, Ablage als Einstellung wahlfrei (Verzeichnis oder Datenbank), erste Ausbaustufe Verzeichnis. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`, Nachprüfung der QA). |
+| 2026-10-16 | req-system-015: „Vorhaben strategiedesign“ statt „erste Ausbaustufe“, Begriff Objektverzeichnis. Nachprüfung der QA, Durchlauf 3. |

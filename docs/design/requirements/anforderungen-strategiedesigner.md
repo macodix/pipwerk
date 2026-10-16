@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-15`
+- zuletzt aktualisiert: `2026-10-16`
 - abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -41,7 +41,7 @@ Beispiele sind:
 -   Indikator,
 -   Order,
 -   Position,
--   Konto, Instrument, Kerze, Tick (Objekte der Anwendung, Fachmodell req-fach-051).
+-   Konto, Instrument, Kerze, Tick, Order, Position, Strategie (Objekte der Anwendung, Fachmodell req-fach-051).
 
 Marktphase, Bewegung und Korrektur sind keine eigenen Objekte, sondern Werte der Eigenschaft `Phase` eines Indikators, zum Beispiel des Indikators Markttechnik.
 
@@ -220,7 +220,7 @@ Allgemeine Ablaufbegriffe wie „Entry“ oder „Exit“ sind keine eigenständ
 
 Allgemeine Risiko-, Konto-, Instrument- und Brokerregeln werden als Vorlagen von Regeln und Regelwerken außerhalb der einzelnen Strategie gepflegt. Eine Strategie übernimmt sie als Instanz mit den Standardwerten der Vorlage (req-param-005), zum Beispiel die Regel „Risiko je Trade“.
 
-Mitgelieferte Regelvorlage „Risiko je Trade“: Parameter `Risikogrenze` (Standardwert 1 % des Kapitals). Sie bestimmt das Volumen einer Order aus Einstieg, Stop-Loss, Tickwert des Instruments und Risikogrenze, abgerundet auf den Volumenschritt des Instruments. Ist das Volumen nicht mehr änderbar, bei „Order ändern“ und „Position ändern“, prüft sie, ob der Verlust bis zum Stop-Loss die Risikogrenze einhält (Fachmodell req-fach-020).
+Mitgelieferte Regelvorlage „Risiko je Trade“: Parameter `Risikogrenze` (Standardwert 1 %). Eingangswerte: `Order.Preis`, `Order.Stop-Loss`, `Instrument.Tickgröße`, `Instrument.Tickwert`, `Instrument.Volumenschritt`, `Konto.Kapital`. Sie bestimmt das Volumen einer Order so, dass der Verlust vom Preis bis zum Stop-Loss höchstens Risikogrenze × Kapital beträgt, abgerundet auf den Volumenschritt. Bei einer Marktorder ist der Preis bis zur Ausführung der angenommene Preis, der aktuelle Kurs (Fachmodell req-fach-028); nach der Ausführung prüft die Regel mit dem Ausführungspreis erneut, ob die Risikogrenze eingehalten ist. Ist das Volumen nicht mehr änderbar, bei „Order ändern“ und „Position ändern“, prüft sie, ob der Verlust bis zum Stop-Loss die Risikogrenze einhält; bei einer Position rechnet sie ab `Position.Einstiegspreis` (Fachmodell req-fach-020). Für eine Schließorder gilt sie nicht (Fachmodell req-fach-046).
 
 ## 6. Darstellung und Detaillierung
 
@@ -262,7 +262,7 @@ konkreten Objekt und seinen verwendeten Berechnungsverfahren bereitgestellten
 Metadaten aufgebaut werden. Sie darf keine Kenntnis einer konkreten
 Handelsstrategie voraussetzen.
 
-Die Eigenschaftenansicht einer Instanz zeigt deren Herkunft: die Vorlage, aus der sie entstanden ist, und ihren Objekttyp, zum Beispiel „ema21, aus Vorlage EMA, Objekttyp Indikator“. Die Eigenschaftenansicht der Strategie selbst (Bezeichnung, Beschreibung, Strategieparameter, Regeln und Regelwerke der Strategie) öffnet ein Klick auf die leere Zeichenfläche.
+Die Eigenschaftenansicht einer Instanz zeigt deren Herkunft: die Vorlage, aus der sie entstanden ist, und ihren Objekttyp, zum Beispiel „ema21, aus Objekttyp EMA“ oder „regel_risiko, aus Vorlage Risiko je Trade, Objekttyp Regel“. Die Eigenschaftenansicht der Strategie selbst (Bezeichnung, Beschreibung, Strategieparameter, Regeln und Regelwerke der Strategie) öffnet ein Klick auf die leere Zeichenfläche.
 
 ### req-ui-006 -- Hierarchische Darstellung komplexer Abläufe
 
@@ -282,7 +282,7 @@ Die Einstellung gilt ausschließlich für den Strategiedesigner. Ihre Änderung 
 
 ### req-ui-009 -- Einstellungsbereich
 
-Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Der Objektspeicher (Gesamtsystem req-system-012, req-system-015), in dem Strategien und die übrigen eigenständig gespeicherten Objekte abgelegt werden, wird ebenfalls dort angezeigt und geändert. Im Vorhaben `strategiedesign` ist er ein Verzeichnis mit einer Datei je Objekt (Objektverzeichnis). Die Einstellung selbst liegt im Speicher der Komponente (req-system-016). Die Dateien sind die verbindliche Fassung der Objekte, ein Verzeichnis der Objekte im Speicher der Komponente lässt sich aus ihnen neu erzeugen. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
+Der Strategiedesigner bietet einen eigenen Menüpunkt „Einstellungen“. Dort werden alle Einstellungen der Komponente angezeigt und geändert, die über die Oberfläche änderbar sind. Die Auswahl der Oberflächensprache Deutsch oder Englisch (req-ui-007, req-ui-008) befindet sich in diesem Bereich und nicht an anderer Stelle der Oberfläche. Der Objektspeicher (Gesamtsystem req-system-012, req-system-015), in dem Strategien und die übrigen eigenständig gespeicherten Objekte abgelegt werden, wird ebenfalls dort angezeigt und geändert. Im Vorhaben `strategiedesign` ist er ein Objektverzeichnis: ein Dateiverzeichnis mit einer Datei je Objekt. Die Einstellung selbst liegt im Speicher der Komponente (req-system-016). Die Dateien sind die verbindliche Fassung der Objekte; was die Komponente sonst über die Objekte im Speicher hält, lässt sich aus ihnen neu erzeugen. Weitere Einstellungen kommen dort hinzu, wenn sie festgelegt werden.
 
 ### req-ui-010 -- Angaben zu pipwerk Studio
 
@@ -330,7 +330,7 @@ Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenflä
 
 Der Anwender zieht einen Objekttyp oder eine gespeicherte Vorlage aus der Elementbibliothek auf die Zeichenfläche. Es entsteht eine Instanz mit den Standardwerten des Objekttyps beziehungsweise der Vorlage. In der Eigenschaftenansicht gibt der Anwender der Instanz einen Namen (zum Beispiel `EMA21`), unter dem sie in Ausdrücken dieser Strategie angesprochen wird, und setzt ihre Parameter. Zwei Instanzen aus derselben Vorlage sind zwei Objekte der Strategie. Die Instanz wird mit der Strategie gespeichert. Auf Wunsch speichert der Anwender sie als neue Vorlage, die danach in der Elementbibliothek für andere Strategien zur Verfügung steht.
 
-Konto, Instrument, Kerze und Tick (Objekte der Anwendung, Fachmodell req-fach-051) sind in Ausdrücken immer verfügbar. Sie stehen zusätzlich in der Elementbibliothek und können wie andere Objekte als Instanz auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen, zum Beispiel die Zeiteinheit einer Kerze. Eine Strategie kann mehrere Instanzen davon verwenden. Sie brauchen keine Ablaufverbindung, ebenso wenig wie Indikatoren und Trends.
+Die Objekte der Anwendung (Fachmodell req-fach-051) sind in Ausdrücken verfügbar, Order und Position nur in der Verwaltung einer Order. Sie stehen zusätzlich in der Elementbibliothek und können wie andere Objekte als Instanz auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen, zum Beispiel die Zeiteinheit einer Kerze. Eine Strategie kann mehrere Instanzen davon verwenden. Sie brauchen keine Ablaufverbindung, ebenso wenig wie Indikatoren und Trends.
 
 ### req-ablauf-004 -- Objekt anlegen (vorläufig)
 
@@ -457,4 +457,5 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-14 | Auslöser auch am Anfang der Verwaltung einer Order. Abgestimmt mit dem Auftraggeber im Chat. |
 | 2026-10-14 | Eindeutige Korrekturen nach dem Prüfbericht der QA zu `strategiedesign`: „Strategie“ statt „Strategiedefinition“, „Berechnungsverfahren“ statt „Komponente“ eines Objekts, „Eigenschaften“ statt „Parameter“ eines Ordertyps, Marktphase, Bewegung und Korrektur als Werte der Eigenschaft Phase, Objekte liefern keine Ergebnisse, Gültigkeit wartender Orders über die Verwaltung, keine ExitOrder, Objektverzeichnis und Speicher, Aufrufstelle des Dialogs „Über pipwerk Studio“ ohne Bezug auf die Sprachauswahl, Standanzeige beschrieben, Löschschutz auch bei Verwendung in Objekten, sprachliche Fehler, Änderungsnachweis als eine Tabelle. |
 | 2026-10-15 | Entscheidungen des Auftraggebers zu den Befunden der QA (`strategiedesign`, Durchlauf 1): Objekte der Anwendung (req-fach-001, req-ablauf-003), Auslösertypen (req-fach-015), Vorlage und Instanz (req-param-005, req-core-002, req-ablauf-003, req-ablauf-006), Benennung von Ablaufelementen (req-ui-003), fachliche und technische Ebene (req-ui-004), Herkunft und Eigenschaftenansicht der Strategie (req-ui-005), Regeln zuordnen vorläufig (req-ui-012), Eingabehilfe (req-ui-013), Konsistenzprüfung erweitert (req-ablauf-007), Öffnen (req-ablauf-008), Objektverzeichnis ändern (req-ablauf-009), Anmeldung als offener Punkt. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-15. |
+| 2026-10-16 | Entscheidungen des Auftraggebers zur Nachprüfung der QA (`strategiedesign`, Durchlauf 3): Regelvorlage „Risiko je Trade“ mit vollständigen Eingangswerten, Preis der Marktorder, Prüfung nach Ausführung, keine Anwendung auf Schließorders (req-core-002); Objekte der Anwendung vollständig aufgezählt (req-fach-001, req-ablauf-003); Beispiel Herkunft (req-ui-005); Begriffe Objektspeicher und Objektverzeichnis (req-ui-009). Abgestimmt mit dem Auftraggeber im Chat am 2026-10-16. |
 | 2026-10-15 | Entscheidungen des Auftraggebers zur Nachprüfung der QA (`strategiedesign`, Durchlauf 2): Objektspeicher als Einstellung (req-ui-009), Objekte der Anwendung mit Parametern und mehreren Instanzen (req-ablauf-003), Regelvorlage „Risiko je Trade“ beschrieben (req-core-002), Instanz in vollem Umfang änderbar (req-param-005), „Position schließen“ mit Regeln (req-ui-012), Öffnen bei unbekanntem Typ (req-ablauf-008), Beispiel in req-ui-005, Begriff „Ablaufelement“ entfernt (req-ui-003, req-ablauf-007), Sprachfehler Abschnitt 9 Punkt 7, Betreiber in Abschnitt 9 Punkt 10, Überschrift req-fach-027. Abgestimmt mit dem Auftraggeber im Chat am 2026-10-15. |

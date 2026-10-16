@@ -5,7 +5,7 @@
 - strategie-id: `str-01`
 - status: `understood`
 - quelle: `scalping-punkt-2-ausbruch-einfach(1).md` und bestätigte Klärungen im Projektchat
-- zuletzt geprüft: `2026-10-15`
+- zuletzt geprüft: `2026-10-16`
 
 ## Handelsidee
 
@@ -17,7 +17,7 @@ Die größere Zeiteinheit bestimmt, ob ein intakter Trend vorliegt und sich der 
 
 Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie Trend und Phase werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Trend intakt, Phase, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
 
-Für die Tradeplanung werden außerdem vom Instrument Spread, Pip, Tickwert, Mindestvolumen und Volumenschritt und vom Konto Kapital und freie Margin benötigt (Objekte der Anwendung `Konto` und `Instrument`, Fachmodell req-fach-051) sowie die Risikoregel der Strategie (Abschnitt 4).
+Für die Tradeplanung werden außerdem vom Instrument Spread, Pip, Tickgröße, Tickwert, Mindestvolumen und Volumenschritt und vom Konto das Kapital benötigt (Objekte der Anwendung `Konto` und `Instrument`, Fachmodell req-fach-051) sowie die Risikoregel der Strategie (Abschnitt 4).
 
 Signalzeiteinheit, Handelszeiteinheit, Entry-Puffer und Stop-Puffer sind Strategieparameter (Fachmodell req-fach-046). Der Indikator `Markttechnik` wird zweimal als Instanz verwendet: einmal auf der Signalzeiteinheit, einmal auf der Handelszeiteinheit.
 
@@ -33,7 +33,7 @@ Liegt kein intakter Trend vor, wird kein Trade geplant. Liegt ein intakter Trend
 
 ### 2. Handelsmöglichkeit erkennen
 
-Die Handelszeiteinheit ist kleiner als die Signalzeiteinheit. Welche Paarungen sich bewährt haben, zeigt die Tabelle; sie ist eine Empfehlung für die Werte der beiden Strategieparameter, nicht Teil des Ablaufs:
+Der Anwender wählt die Handelszeiteinheit kleiner als die Signalzeiteinheit; das ist eine Vorgabe für die Werte, keine Prüfung im Ablauf oder in der Konsistenzprüfung. Welche Paarungen sich bewährt haben, zeigt die Tabelle; sie ist eine Empfehlung für die Werte der beiden Strategieparameter, nicht Teil des Ablaufs:
 
 | Signalzeiteinheit | mögliche Handelszeiteinheiten |
 |---|---|
@@ -62,9 +62,9 @@ Entry-Puffer und Stop-Puffer sind Parameter von ungefähr 3 bis 5 Pips. Der Take
 
 Das Handelsvolumen bestimmt die Risikoregel der Strategie: eine Instanz der Regelvorlage „Risiko je Trade“ (Standardwert 1 %, Anforderungen Strategiedesigner req-core-002), die als Regel der Strategie für jede Order gilt. Sie berechnet das Volumen aus Einstieg, Stop-Loss, Tickwert und einer Risikogrenze von maximal 1 % des Kapitals und rundet es auf den Volumenschritt ab. Kapital ist der Kontostand einschließlich der Gewinne und Verluste offener Positionen.
 
-Danach wird geprüft, ob dieses Volumen das Mindestvolumen des Instruments erreicht und ob ausreichend freie Margin vorhanden ist.
+Danach wird geprüft, ob dieses Volumen das Mindestvolumen des Instruments erreicht. Eine Prüfung der freien Margin ist nicht Teil dieses Testfalls.
 
-Ist der Trade nicht handelbar, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Order gestellt. Die Strategie wechselt nicht selbst auf eine kleinere Handelszeiteinheit. Ob die Strategie in einem solchen Fall mit dem nächstkleineren Zeiteinheitenpaar (zum Beispiel M15/M5 statt H1/M15) erneut gestartet wird, kann bei ihrer Anwendung festgelegt werden; das ist ein Neustart mit anderen Parametern und nicht Teil dieses Testfalls.
+Ist der Trade nicht handelbar, nimmt „Order aufgeben“ den Ausgang „nicht gestellt“ und es wird keine Order gestellt. Die Strategie wechselt nicht selbst auf eine kleinere Handelszeiteinheit. Ob die Strategie in einem solchen Fall mit kleineren Zeiteinheiten erneut gestartet wird, kann bei ihrer Anwendung festgelegt werden; das ist ein Neustart mit anderen Werten der beiden Strategieparameter und nicht Teil dieses Testfalls.
 
 ### 5. Order stellen
 
@@ -113,8 +113,8 @@ Der ZigZag-Indikator ist ein Indikator von pipwerk. Er rechnet nach demselben Ve
 ## Bestätigungsvermerk
 
 - fachlich geprüft durch: Auftraggeber
-- Ergebnis: bestätigt im Chat am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15, Klarstellung zur Handelszeiteinheit (kein Wechsel im Ablauf) im Chat am 2026-10-15
-- Datum: `2026-10-15`
+- Ergebnis: bestätigt im Chat am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15, Klarstellungen zur Handelszeiteinheit (kein Wechsel im Ablauf) und zur Risikoregel (bestimmt das Volumen) im Chat am 2026-10-15, Margin-Prüfung aus dem Testfall genommen im Chat am 2026-10-16
+- Datum: `2026-10-16`
 
 ## Herkunft
 

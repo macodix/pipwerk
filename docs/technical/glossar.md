@@ -19,7 +19,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Begriff | Bedeutung |
 | --- | --- |
 | Objekt | Etwas, mit dem ein Händler arbeitet, beschrieben im Fachmodell, zum Beispiel Strategie, Trend, Indikator, Regel, Regelwerk oder Order. Ein Objekt hat Eigenschaften, unabhängig davon, ob und wie es auf der Zeichenfläche dargestellt wird. Die Begriffe „Handelsobjekt“ und „fachliches Objekt“ werden nicht verwendet. |
-| Objekttyp | Die Art eines Objekts, zum Beispiel „gleitender Durchschnitt (EMA)“ oder „Markttechnik-Trend“. Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
+| Objekttyp | Die Art eines Objekts, zum Beispiel „Regel“, „Trend“ oder ein mitgelieferter Indikator wie „EMA“ oder „Markttechnik“ (Fachmodell req-fach-013a, req-fach-054). Aus einem Objekttyp werden konkrete Objekte mit eigenen Parameterwerten angelegt. |
 | Vorlage | Ein gespeichertes Objekt (Indikator, Trend, Regel, Regelwerk) mit Standardwerten. Beim Einfügen in eine Strategie entsteht daraus eine Instanz. |
 | Instanz | Das Objekt, das beim Einfügen einer Vorlage oder eines Objekttyps in eine Strategie entsteht. Es übernimmt die Standardwerte, trägt einen in der Strategie vergebenen Namen (zum Beispiel EMA21), gehört nur dieser Strategie und nennt seine Herkunft. |
 | Objekte der Anwendung | Konto, Instrument, Kerze, Tick, Order, Position und Strategie: Objekte, deren Werte das Handelssystem beziehungsweise der Strategietester bereitstellt. Ihr Objekttyp wird nicht vom Anwender gestaltet und nicht als Vorlage gespeichert. Sie können Parameter haben und mehrfach als Instanz verwendet werden, in Ausdrücken sind sie immer verfügbar. |
@@ -42,7 +42,9 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Eigenschaft | Alles, was ein Objekt beschreibt, ob vom Anwender eingestellt oder vom Objekt ermittelt. Die Richtung eines Trends ist eine Eigenschaft, auch wenn sie berechnet wird. |
 | Parameter | Eine Eigenschaft, die der Anwender einstellt, zum Beispiel die Zeiteinheit eines Trends oder die Periode eines gleitenden Durchschnitts. |
 | Ergebnis | Das, was eine Regel, eine Bedingung oder eine Berechnung liefert. Objekte liefern keine Ergebnisse, sondern haben Eigenschaften. Der Begriff „Ausgabe“ wird nicht verwendet. |
-| Bindungsart | Die Art, wie ein Parameter seinen Wert erhält: fest in der Strategie eingetragen, durch eine Regel bestimmt, erst bei der Anwendung übergeben, oder aus einer Eigenschaft oder einem Ergebnis eines anderen Elements. |
+| Bindungsart | Die Art, wie ein Parameter seinen Wert erhält: fest in der Strategie eingetragen, aus einem Strategieparameter, durch eine Berechnung oder Regel bestimmt, erst bei der Anwendung übergeben, oder aus einer Eigenschaft eines anderen Objekts (Fachmodell req-fach-046). |
+| Objektspeicher | Der Ort, an dem Strategien und Vorlagen dauerhaft abgelegt werden, getrennt von den übrigen Daten der Komponente. Als Einstellung wahlfrei: Objektverzeichnis oder Datenbank (Gesamtsystem req-system-012, req-system-015). |
+| Objektverzeichnis | Ein Objektspeicher als Dateiverzeichnis mit einer Datei je Objekt. Im Vorhaben `strategiedesign` die einzige Form des Objektspeichers. |
 | Zeichenfläche | Der Bereich der Oberfläche, auf dem Elemente angeordnet und verbunden werden. |
 | Eigenschaftenansicht | Der Bereich der Oberfläche, in dem die Eigenschaften des ausgewählten Elements angezeigt und seine Parameter geändert werden. |
 | Konsistenzprüfung | Die Kontrolle einer Strategie auf Vollständigkeit und Widerspruchsfreiheit, ohne sie auszuführen. Sie läuft beim Speichern und auf Anforderung. Nicht zu verwechseln mit dem Prüfen durch eine Regel. |
@@ -92,6 +94,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Datum | Änderung |
 | --- | --- |
 | 2026-10-15 | Vorlage, Instanz, Objekte der Anwendung, Strategieparameter, Parameter setzen ergänzt. Verweis entfernt. Auslöser, Regelwerk, Verbindung, Standardwert und Ausgänge der Elemente angepasst. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
+| 2026-10-16 | Objektspeicher und Objektverzeichnis ergänzt, Objekttyp und Bindungsart angepasst. Nachprüfung der QA, Durchlauf 3. |
 | 2026-10-15 | Objekte der Anwendung: mit Parametern und mehreren Instanzen. Order aufgeben: Eigenschaften statt Parameter. Änderungsnachweis nach Datum geordnet. Entscheidungen des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`, Nachprüfung der QA). |
 | 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |
 | 2026-10-14 | Anwendung einer Strategie, Auswertung und Verwaltung einer Order ergänzt. |
