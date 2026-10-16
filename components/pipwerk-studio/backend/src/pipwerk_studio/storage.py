@@ -9,8 +9,9 @@ the public domain or API representation of Studio settings.
 from __future__ import annotations
 
 from sqlalchemy import Integer, String, create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from pipwerk_studio.migrate import migrate_database
 
@@ -54,12 +55,27 @@ def create_studio_engine(database_url: str) -> Engine:
         # threads; a busy timeout makes concurrent write transactions wait for
         # the SQLite file lock instead of failing immediately.
         connect_args = {"check_same_thread": False, "timeout": 30}
-    engine = create_engine(database_url, connect_args=connect_args)
+    if _is_sqlite_memory(database_url):
+        # A database in memory exists only as long as its connection, and a
+        # private one once per connection: the worker threads of the web
+        # application would each get their own, empty one. All threads share
+        # one connection instead.
+        engine = create_engine(database_url, connect_args=connect_args, poolclass=StaticPool)
+    else:
+        engine = create_engine(database_url, connect_args=connect_args)
     # The engine of the operation keeps the default transaction behaviour of
-    # the driver. The migration at startup uses its own connection with
-    # explicit transactions (pipwerk_studio.migrate).
+    # the driver. The migration at startup takes one connection from it and
+    # controls the transaction of that connection only (pipwerk_studio.migrate).
     migrate_database(engine)
     return engine
+
+
+def _is_sqlite_memory(database_url: str) -> bool:
+    """Tell whether the URL names a SQLite database in memory (also as URI)."""
+    url = make_url(database_url)
+    if url.get_backend_name() != "sqlite":
+        return False
+    return url.database in (None, "", ":memory:") or url.query.get("mode") == "memory"
 
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:
