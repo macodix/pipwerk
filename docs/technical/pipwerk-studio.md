@@ -624,7 +624,7 @@ Einen Backend-Neustart weist der Browsertest nicht nach; dieser wird im Backend-
 
 ### 6.4 Prüfskript
 
-Das Prüfskript `components/pipwerk-studio/scripts/check` (POSIX-Shell) führt die Prüfungen aus den Abschnitten 6.1 bis 6.3 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
+Das Prüfskript `components/pipwerk-studio/scripts/check` (POSIX-Shell) führt die Prüfungen der gemeinsamen Python-Bibliothek in `packages/domain-core` ([technische Dokumentation der Bibliothek](pipwerk-domain.md), Abschnitt 12) und die Prüfungen aus den Abschnitten 6.1 bis 6.3 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
 
 ```sh
 <Arbeitsverzeichnis>/components/pipwerk-studio/scripts/check --backend-port <port> --frontend-port <port> [--with-audit]
@@ -638,14 +638,15 @@ Das Prüfskript `components/pipwerk-studio/scripts/check` (POSIX-Shell) führt d
 
 Reihenfolge der Prüfungen:
 
-1. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
-2. Suche im Repository nach der Schreibweise des Namens (Abschnitt 6.1, dritter Punkt). Das Skript wertet jeden Treffer aus; die Prüfung scheitert, sobald ein Treffer nicht genau „pipwerk Studio“ oder der Bezeichner `pipwerk-studio` ist, und nennt Datei, Zeile und Treffer.
-3. mit `--with-audit`: `pip-audit`
-4. Oberfläche im Verzeichnis `frontend`: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`
-5. mit `--with-audit`: `npm audit`
-6. Browsertest `npm run e2e` mit den beiden Ports
+1. Gemeinsame Python-Bibliothek im Verzeichnis `packages/domain-core` desselben Arbeitsverzeichnisses: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy` und der Abgleich der erzeugten JSON-Schemata mit den Dateien unter `contracts/strategies/v1/` (`python -m pipwerk_domain.documents.schemas --check`)
+2. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
+3. Suche im Repository nach der Schreibweise des Namens (Abschnitt 6.1, dritter Punkt). Das Skript wertet jeden Treffer aus; die Prüfung scheitert, sobald ein Treffer nicht genau „pipwerk Studio“ oder der Bezeichner `pipwerk-studio` ist, und nennt Datei, Zeile und Treffer.
+4. mit `--with-audit`: `pip-audit` für das Backend
+5. Oberfläche im Verzeichnis `frontend`: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`
+6. mit `--with-audit`: `npm audit`
+7. Browsertest `npm run e2e` mit den beiden Ports
 
-Eine gescheiterte Prüfung bricht die übrigen nicht ab. Am Ende nennt das Skript die bestandenen und die gescheiterten Prüfungen. Exitcodes: 0, wenn alle Prüfungen bestehen; 1, wenn mindestens eine scheitert; 2 bei ungültigem Aufruf, fehlendem Programm oder wenn das Verzeichnis des Skripts nicht in einem Arbeitsverzeichnis von Git liegt.
+Eine gescheiterte Prüfung bricht die übrigen nicht ab. Am Ende nennt das Skript die bestandenen und die gescheiterten Prüfungen. Exitcodes: 0, wenn alle Prüfungen bestehen; 1, wenn mindestens eine scheitert; 2 bei ungültigem Aufruf, fehlendem Programm, fehlendem Verzeichnis `packages/domain-core` oder `contracts/strategies/v1` oder wenn das Verzeichnis des Skripts nicht in einem Arbeitsverzeichnis von Git liegt.
 
 Voraussetzungen: Git, uv, Node.js mit npm und `npx` in den Versionen aus Abschnitt 3, die Testbrowser von Playwright (Abschnitt 6.3), Zugriff auf die Paketquellen für `uv sync --frozen` und `npm ci` und zwei freie Ports. `npm ci` ersetzt `frontend/node_modules`; das Skript darf deshalb nicht gleichzeitig mit einer Testumgebung oder einem Entwicklungsserver im selben Arbeitsverzeichnis laufen.
 
