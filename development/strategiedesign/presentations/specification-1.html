@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>strategiedesign Technische Konzeption</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentationen zuvor. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:100px 128px;display:flex;flex-direction:column;gap:36px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:62px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:30px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:26px;line-height:1.42;color:var(--text)}
+code{font-size:.92em;background:#eef2ef;padding:1px 6px;border-radius:5px}
+.note{font-size:23px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:30px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 32px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 14px;font-size:29px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:12px 20px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:24px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:24px 32px;font-size:28px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:112px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:26px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+.layer{display:grid;grid-template-columns:1fr;gap:16px}
+.layer > div{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:18px 28px;display:flex;gap:28px;align-items:baseline}
+.layer b{font-size:28px;min-width:420px;color:var(--green)}
+.layer span{font-size:24px;color:var(--text);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben strategiedesign · Phase 2 Konzeption</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Technische Konzeption des Strategiedesigners</h1>
+<p style="font-size:36px;width:1560px">Deine Dokumente haben die Prüfung bestanden. Der Softwarearchitekt hat daraus die technische Spezifikation erstellt, die Qualitätssicherung hat sie geprüft und freigegeben. Diese Präsentation zeigt, was gebaut wird, wie deine beiden Testfälle abgebildet sind, und welche acht Festlegungen zu bisher offenen Punkten du bestätigst.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">16. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/strategiedesign/specification.md</code></p>
+<p class="num">1 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Wo wir stehen</h2>
+<div class="chain">
+<div class="node">Phase 1<small>Anforderungen: deine Dokumente, von der QA geprüft</small></div><span class="arrow">→</span>
+<div class="node" style="border-width:4px">Phase 2<small>Konzeption: diese Spezifikation, von der QA geprüft</small></div><span class="arrow">→</span>
+<div class="node">Phase 3<small>Planung: Arbeitspakete</small></div><span class="arrow">→</span>
+<div class="node">Phase 4<small>Umsetzung je Paket</small></div><span class="arrow">→</span>
+<div class="node">Phase 5<small>Abnahme: du probierst aus</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Prüfung der Dokumente</h3><p>Die Qualitätssicherung (QA) hat die Anforderungen, das Fachmodell, den Indikator Markttechnik und die beiden Testfälle in sieben Durchläufen geprüft. Ergebnis: <b>bestanden</b>. Beide Testfälle lassen sich mit den beschriebenen Objekten und Abläufen vollständig gestalten, speichern und laden.</p></div>
+<div class="card col"><h3>Spezifikation</h3><p>Der Softwarearchitekt hat festgelegt, aus welchen Teilen der Strategiedesigner besteht, wie Strategien gespeichert werden, wie Formeln geprüft werden und wie die Oberfläche arbeitet. Die QA hat die Spezifikation in zwei Durchläufen geprüft. Ergebnis: <b>bestanden</b>.</p></div>
+<div class="card col"><h3>Deine Bestätigung</h3><p>Die Spezifikation braucht keine Entscheidung, um umgesetzt zu werden. Sie füllt aber acht Punkte, die in deinen Dokumenten offen waren, mit Vorschlägen. Die stehen auf den Folien 13 und 14. Nach deiner Bestätigung beginnt die Planung der Arbeitspakete.</p></div>
+</div>
+<p class="note">Begriffe: <b>pipwerk Studio</b> ist die bestehende Anwendung mit Kopfzeile, Fußzeile und Einstellungen; der Strategiedesigner wird ihr Hauptteil. <b>Strategietester</b> und <b>Handelssystem</b> sind die späteren Komponenten, die Strategien ausführen: im Rückblick auf Kursdaten beziehungsweise im Handel. Ein <b>Testfall</b> ist eine Strategiebeschreibung, die sich im Designer vollständig nachbauen lassen muss (Punkt-2-Ausbruch, EMA-Trendfolge). Der Indikator <b>Markttechnik</b> bestimmt nach Michael Voigt Trendrichtung, ob der Trend intakt ist, die Phase (Bewegung oder Korrektur) und die Punkte 1, 2 und 3 des Trends; Punkt 1/3 ist der jeweils letzte Punkt 1 oder 3. Ein <b>Ausdruck</b> ist eine Formel in einer Regel, Bedingung oder Berechnung. Eine <b>bestimmende Regel</b> setzt einen Wert der Order, eine <b>prüfende Regel</b> lässt sie zu oder lehnt sie ab. Die <b>Konsistenzprüfung</b> meldet Fehler und Hinweise in einer Strategie. Kennungen wie <code>req-fach-036</code> verweisen auf die Stelle in deinen Dokumenten.</p>
+<p class="num">2 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Was gebaut wird</h2>
+<div class="row">
+<div class="card col"><h3>Gegenstand</h3><p>pipwerk Studio erhält den Strategiedesigner: Strategien und Vorlagen (Indikator, Trend, Regel, Regelwerk) anlegen, auf der Zeichenfläche gestalten, prüfen lassen, speichern, öffnen und löschen.</p><p><b>Nachweis:</b> Beide Testfälle lassen sich in der Oberfläche vollständig gestalten, speichern und wieder laden, und die Konsistenzprüfung meldet für sie keinen Fehler.</p></div>
+<div class="card col"><h3>Nicht Gegenstand</h3><p>Die Ausführung von Strategien: kein Debuggen, kein Testen, kein Handeln. Indikatoren werden nicht berechnet, Formeln nicht ausgewertet.</p><p>Die Spezifikation legt die Bedeutung von Formeln und Regeln aber so fest, dass Strategietester und Handelssystem sie später ausführen können, ohne dass eine gespeicherte Strategie geändert werden muss.</p></div>
+<div class="card col"><h3>Abweichungen vom früheren Pflichtenheft</h3><p>Das Pflichtenheft aus der Zeit vor dem Entwicklungsverfahren war Vorlage, keine Festlegung.</p><ul><li>Objekte in einer Strategie sind Kopien, keine Verweise.</li><li>Löschen einer eigenen Vorlage nach Rückfrage statt Löschschutz.</li><li>Mehrere Auslöser statt genau einem; Formeln mit Funktionen.</li><li>Kein Index in der Datenbank, die Dateien sind die einzige Quelle.</li><li>Indikatoren beschreiben Parameter und Eigenschaften, ohne Berechnung.</li></ul><p class="ref">Grund: Deine Dokumente legen es inzwischen so fest.</p></div>
+</div>
+<p class="num">3 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Aufbau: drei Teile</h2>
+<div class="layer">
+<div><b>Gemeinsame Bibliothek (Python)</b><span>Kennt alle Element- und Objekttypen, das Strategiemodell, die Formelprüfung, die Konsistenzprüfung und das Dateiformat. Sie liegt außerhalb von pipwerk Studio, damit Strategietester und Handelssystem dieselbe Bibliothek verwenden und Strategien gleich verstehen.</span></div>
+<div><b>Backend von pipwerk Studio</b><span>Speichert Strategien und Vorlagen als Dateien im Objektverzeichnis, bietet eine Web-Schnittstelle zum Lesen, Schreiben und Prüfen, und liefert der Oberfläche die Typbeschreibungen.</span></div>
+<div><b>Oberfläche von pipwerk Studio</b><span>Zeichenfläche, Elementbibliothek und Eigenschaftenansicht. Sie kennt keinen einzelnen Typ: Alles, was sie anzeigt, entsteht aus den Typbeschreibungen des Backends. Ein neuer Objekttyp braucht keine Änderung an der Oberfläche.</span></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Das Strategiedokument ist maßgeblich</h3><p>Was auf der Zeichenfläche liegt, ist nur die Darstellung. Jede Änderung dort ändert das Dokument; beim Öffnen wird die Zeichenfläche aus dem Dokument aufgebaut.</p></div>
+<div class="card col"><h3>Instanzen sind vollständige Kopien</h3><p>Fügst du eine Vorlage in eine Strategie ein, enthält die Strategie alles, was sie braucht. Kein Dokument verweist auf ein anderes. Löschen oder Ändern einer Vorlage wirkt nicht auf bestehende Strategien.</p></div>
+<div class="card col"><h3>Mitgeliefertes kommt aus der Bibliothek</h3><p>EMA, ATR, Markttechnik und die Regelvorlage „Risiko je Trade“ sind Teil der Software, in jeder Installation gleich. Eigene Abwandlungen entstehen, indem du eine Instanz als neue Vorlage speicherst.</p></div>
+</div>
+<p class="num">4 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Was die Bibliothek mitbringt</h2>
+<table>
+<tr><th style="width:300px">Gruppe</th><th>Typen</th></tr>
+<tr><td>Auslöser</td><td>Kerzenschluss (mit Zeiteinheit), Tick. Der dritte Auslösertyp aus dem Fachmodell, ein Ereignis von außerhalb, ist offen und wird nicht angeboten.</td></tr>
+<tr><td>Elemente des Ablaufs</td><td>Bedingung (Ausgänge wahr, falsch), Berechnung, Parameter setzen, Order aufgeben (gestellt, nicht gestellt), Order ändern (geändert, nicht geändert), Order löschen, Position ändern, Position schließen</td></tr>
+<tr><td>Ordertypen</td><td>Marktorder, Stop-Order, Limit-Order, Stop-Limit-Order, Schließorder (nur über „Position schließen“)</td></tr>
+<tr><td>Objekte der Anwendung</td><td>Konto, Instrument, Kerze (mit Zeiteinheit), Tick, Order, Position, Strategie</td></tr>
+<tr><td>Indikatoren</td><td>EMA, ATR, Markttechnik mit ihren Parametern und Eigenschaften, ohne Berechnung</td></tr>
+<tr><td>Allgemeine Objekttypen</td><td>Indikator, Trend, Regel, Regelwerk: daraus legst du eigene Vorlagen an, ohne Programmierung</td></tr>
+<tr><td>Regelvorlage</td><td>„Risiko je Trade“</td></tr>
+</table>
+<div class="row">
+<div class="card col"><h3>Typbeschreibung</h3><p>Jeder Typ beschreibt sich selbst: Name in Deutsch und Englisch, Parameter mit Datentyp und Standardwert, Eigenschaften, Ausgänge, ob Regeln zugeordnet werden können, ob er auf die Zeichenfläche darf. Daraus baut die Oberfläche Elementbibliothek und Eigenschaftenansicht.</p></div>
+<div class="card col"><h3>Kennungen</h3><p>Gespeichert werden sprachneutrale Kennungen aus dem deutschen Namen: <code>trend_intakt</code>, <code>punkt_13</code> für „Punkt 1/3“, <code>stop_loss</code>, <code>aufwaerts</code>. Die Oberfläche zeigt den Namen in der gewählten Sprache.</p></div>
+<div class="card col"><h3>Erweiterbar</h3><p>Weitere Typen melden sich in einem Elementregister an, auch aus zusätzlichen Python-Paketen. Eigene Indikatoren und Trends legst du als Vorlage aus Formeln und enthaltenen Indikatoren an.</p></div>
+</div>
+<p class="num">5 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Strategie, Instanz, Vorlage</h2>
+<div class="row">
+<div class="card col"><h3>Strategie</h3><p>Kennung, Bezeichnung, Beschreibung, Strategieparameter (mit festem Wert oder erst beim Einsatz der Strategie übergeben, „bei der Anwendung“), Regeln und Regelwerke der Strategie, Elemente, Verbindungen.</p><p>Jedes Element weiß, zu welcher Verwaltung es gehört. Die Verwaltung einer Order ist der Bereich, der am Ausgang „gestellt“ von „Order aufgeben“ hängt; sie hat eigene Auslöser und kann selbst wieder ein „Order aufgeben“ enthalten.</p></div>
+<div class="card col"><h3>Instanz</h3><p>Entsteht, wenn du einen Objekttyp oder eine Vorlage auf die Zeichenfläche ziehst. Sie trägt einen Namen ohne Leerzeichen, unter dem Formeln sie ansprechen (<code>ema20.Wert</code>), nennt ihre Herkunft („EMA21, aus Objekttyp EMA“) und enthält den gesamten Inhalt der Vorlage. Sie ist in der Strategie in vollem Umfang änderbar.</p></div>
+<div class="card col"><h3>Vorlage</h3><p>Ein gespeichertes Objekt mit Standardwerten. Je nach Objekttyp enthält sie mehr: Ein eigener <b>Indikator</b> hat eigene Parameter, enthaltene Indikatoren, Regeln und Eigenschaften, jede mit einer Formel. Ein <b>Trend</b> hat Zeiteinheit und Berechnungsverfahren; mitgeliefert ist das Verfahren „Ausdruck“. Eine <b>Regel</b> hat Parameter und ihre Formel. Ein <b>Regelwerk</b> enthält Regeln in festgelegter Reihenfolge.</p></div>
+</div>
+<div class="card"><h3>Namen in Formeln</h3><p>Enthaltene Objekte werden mehrstufig angesprochen: <code>trend_h1.ema20.Wert</code> ist der Wert des EMA <code>ema20</code> im Trend <code>trend_h1</code>. In einer Strategie sind Instanzen, Bedingungen, Berechnungen, Strategieparameter und die Regeln der Strategie ansprechbar; die Regeln eines Elements nur in den Formeln dieses Elements. Namen müssen innerhalb ihres Bereichs eindeutig sein.</p></div>
+<p class="num">6 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Formeln (Ausdrücke)</h2>
+<div class="row">
+<div class="card col"><h3>Schreibweise</h3><p>Nach OpenFormula, der Norm für Tabellenkalkulationen. Zahlen mit Dezimalpunkt, Texte in Anführungszeichen, Argumente mit Semikolon getrennt. Funktionen der ersten Auswahl: <code>IF</code>, <code>AND</code>, <code>OR</code>, <code>NOT</code>, <code>MIN</code>, <code>MAX</code>, <code>ABS</code>, <code>FLOOR</code>, <code>CEILING</code>, <code>ISNA</code>, <code>IFNA</code>, <code>ISBLANK</code> und <code>PREVIOUS</code> für den Wert bei der vorherigen Auswertung.</p><p>Beispiel: <code>markttechnik_h1.phase = "bewegung"</code></p></div>
+<div class="card col"><h3>Prüfung im Designer</h3><p>Die Bibliothek zerlegt jede Formel und prüft Namen, Eigenschaften und Datentypen. Sie weiß, in welchem Zusammenhang eine Formel steht: In einer Regel sind <code>Order</code> und <code>Position</code> bekannt, in der Verwaltung ebenso, im Hauptablauf sind sie ein Fehler. Ausgewertet wird nichts; das tun später Strategietester und Handelssystem.</p><p>Eine <b>Belegung</b> ist der Wert, den eine Eigenschaft oder ein Parameter erhält. Die <b>Bindungsart</b> sagt, woher er kommt: fester Wert, Strategieparameter, Formel oder erst bei der Anwendung.</p></div>
+<div class="card col"><h3>Zwei Arten von „kein Wert“</h3><p><b>Nicht verfügbar:</b> Die Formel spricht etwas an, das es in diesem Zusammenhang nicht gibt, etwa <code>Position</code> bei einer Order, die noch keine Position hat. Eine Regel, deren Ergebnis so ausfällt, wird nicht angewendet.</p><p><b>Leer:</b> Die Eigenschaft gibt es, sie hat aber gerade keinen Wert, etwa Punkt 2 der Markttechnik ohne Trend. Rechnen damit ist ein Fehler.</p></div>
+</div>
+<table>
+<tr><th style="width:520px">Wenn eine Formel bei der Ausführung keinen Wert ergibt</th><th>Wirkung</th></tr>
+<tr><td>Bedingung</td><td>nimmt den Ausgang „falsch“</td></tr>
+<tr><td>Regel, Ergebnis „nicht verfügbar“</td><td>die Regel wird nicht angewendet, ohne Fehler oder Meldung</td></tr>
+<tr><td>bestimmende Regel, Fehler oder „leer“</td><td>die Eigenschaft ist nicht bestimmbar, die Order wird nicht gestellt</td></tr>
+<tr><td>prüfende Regel, Fehler oder „leer“</td><td>die Prüfung ist nicht erfüllt</td></tr>
+<tr><td>Belegung bei Order aufgeben, Order ändern, Position ändern</td><td>Ausgang „nicht gestellt“ beziehungsweise „nicht geändert“</td></tr>
+<tr><td>Parameter setzen</td><td>der Strategieparameter bleibt unverändert, der Ablauf geht weiter</td></tr>
+</table>
+<p class="num">7 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Die Regelvorlage „Risiko je Trade“</h2>
+<div class="row">
+<div class="card col"><h3>Fachlich</h3><p>Der Verlust vom Preis bis zum Stop-Loss darf höchstens die Risikogrenze betragen, Standard 1 % des Kapitals. Solange das Volumen änderbar ist, bestimmt die Regel es daraus, abgerundet auf den Volumenschritt. Danach prüft sie, ob das bestehende Volumen die Grenze einhält.</p></div>
+<div class="card col"><h3>Technisch: eine Regel hat zwei Angaben mehr</h3><p><b>Bestimmte Eigenschaft:</b> hier das Volumen. <b>Vergleich beim Prüfen:</b> hier „höchstens“, das bestehende Volumen darf höchstens so groß sein wie das berechnete. Ob die Regel bestimmt oder prüft, ergibt sich aus der Stelle: Bei „Order aufgeben“ ist alles änderbar, bei „Order ändern“ nur Preis, Stop-Loss, Take-Profit und Gültigkeit, bei „Position ändern“ nichts an der Order.</p></div>
+<div class="card col"><h3>Eine Formel für alle Fälle</h3><p>Die Formel prüft zuerst, ob eine Position vorhanden ist. Wenn nicht, rechnet sie mit Preis und Stop-Loss der Order (bei der Stop-Limit-Order mit dem Limitpreis), sonst mit Einstiegspreis und Stop-Loss der Position. Liegt der Stop-Loss auf oder hinter dem Preis, ist kein Verlust möglich: Die Prüfung ist erfüllt, es wird nicht durch null geteilt.</p></div>
+</div>
+<table>
+<tr><th style="width:460px">Fall</th><th style="width:380px">Preis</th><th>Wirkung</th></tr>
+<tr><td>Order aufgeben, Markt-, Stop- oder Limit-Order</td><td>Preis der Order, bei der Marktorder der angenommene</td><td>bestimmt das Volumen</td></tr>
+<tr><td>Order aufgeben, Stop-Limit-Order</td><td>Limitpreis</td><td>bestimmt das Volumen</td></tr>
+<tr><td>Order ändern</td><td>der Preis der geänderten Order, bei der Stop-Limit-Order wieder der Limitpreis</td><td>prüft das bestehende Volumen; Bestimmen und Prüfen rechnen bei derselben Order mit derselben Preisangabe</td></tr>
+<tr><td>Position ändern; bei einer Marktorder die erneute Prüfung nach der Ausführung mit dem Ausführungspreis</td><td>Einstiegspreis der Position</td><td>prüft das Volumen der Position; ein nachgezogener Stop-Loss hinter dem Einstieg erfüllt die Prüfung</td></tr>
+<tr><td>Schließorder</td><td>keine Richtung, kein Stop-Loss</td><td>wird nicht angewendet</td></tr>
+<tr><td>Order ohne Stop-Loss</td><td>–</td><td>nicht erfüllt, weil der Verlust unbegrenzt ist (Folie 14, Punkt 5)</td></tr>
+</table>
+<p class="num">8 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Konsistenzprüfung</h2>
+<p>Läuft beim Speichern und auf Anforderung, für Strategien und Vorlagen. Speichern ist auch mit Befunden immer möglich. Eine Strategie mit Fehlern kann nicht ausgeführt werden. Eine <b>Rückführung</b> ist eine Verbindung zurück zu einem früheren Element des Ablaufs.</p>
+<div class="row">
+<div class="card col"><h3>Fehler</h3><ul><li>Strategie ohne Auslöser; Auslöser ohne Verbindung in den Ablauf</li><li>Element des Ablaufs ohne eingehende Verbindung</li><li>fehlerhafte Formel: Schreibfehler, unbekannte Funktion, unbekannter Name, unbekannte Eigenschaft, unpassender Typ, unbekannter Wert einer Auswahl</li><li>Ergebnis einer bestimmenden Regel passt nicht zur Eigenschaft</li><li>Rückführung im Ablauf ohne Bedingung, die sie beendet</li><li>Pflichtparameter ohne Wert und nicht „bei der Anwendung“</li><li>Pflichteigenschaft der Order ohne Belegung und ohne bestimmende Regel</li></ul></div>
+<div class="card col"><h3>Fehler (Fortsetzung)</h3><ul><li>Regelwerk mit Vorwärts- oder Zirkelbezug</li><li><code>Order</code> oder <code>Position</code> im Ablauf außerhalb einer Verwaltung</li><li>eine Formel verwendet <code>Kerze</code>, ohne dass eine Kerze mit Zeiteinheit auf der Zeichenfläche liegt, und die Auswertung wird nicht von einem Kerzenschluss gestartet: Die Zeiteinheit der Kerze ist dann unbestimmt</li><li>Order ändern, Order löschen, Position ändern, Position schließen außerhalb einer Verwaltung</li><li>Name doppelt vergeben</li><li>unbekannter Element- oder Objekttyp</li></ul><h3>Hinweis</h3><ul><li>kein Element „Order aufgeben“ erreichbar</li></ul></div>
+<div class="card col"><h3>Anzeige</h3><p>Keine Meldung, die weggeklickt werden muss. Ein Element mit Fehler ist rot umrandet, mit Hinweis orange. Bei Auswahl steht der Text in der Eigenschaftenansicht neben den Eigenschaften. Befunde zu einer Regel der Strategie stehen bei dieser Regel, Befunde ohne Element in der Eigenschaftenansicht der Strategie. Eine Zahl in der Kopfzeile nennt die Befunde der Strategie.</p><p>Formeln werden beim Eingeben geprüft: Nach einem Namen und einem Punkt bietet die Eingabe die passenden Eigenschaften an.</p></div>
+</div>
+<p class="num">9 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Speichern: Objektverzeichnis und Web-Schnittstelle</h2>
+<div class="row">
+<div class="card col"><h3>Dateien</h3><p>Je Objekt eine Datei <code>&lt;Kennung&gt;.&lt;Art&gt;.json</code> im Objektverzeichnis, Art aus strategy, indicator, trend, rule, ruleset. Geschrieben wird über eine temporäre Datei und Umbenennen, damit keine halbe Datei entsteht. Eine unlesbare Datei erscheint in der Liste als „nicht lesbar“ und wird nicht angetastet.</p><p>Das Dateiformat ist in Schemata unter <code>contracts/strategies/v1/</code> festgehalten. Ein Dokument mit unbekanntem Typ wird trotzdem geladen; das Element erscheint rot umrandet und bleibt beim Speichern erhalten.</p></div>
+<div class="card col"><h3>Objektverzeichnis</h3><p>Einstellung in der Datenbank der Komponente, mit sinnvollem Standardpfad je Betriebssystem. Für diese Einstellung erhält die Datenbank eine Spalte; dazu wird Alembic eingeführt, ein Werkzeug, das Änderungen am Datenbankschema nachvollziehbar ausführt.</p><p>Beim Ändern des Verzeichnisses mit der Option „Dateien verschieben“ werden alle Dateien verschoben, erst danach wird die Einstellung gespeichert. Liegt im Ziel eine Datei gleichen Namens, passiert nichts und die Änderung wird abgelehnt. Scheitert das Verschieben unterwegs, kommen die Dateien zurück.</p></div>
+<div class="card col"><h3>Web-Schnittstelle</h3><p>Öffentlich unter <code>/api/v1/</code>: Typbeschreibungen abrufen; je Art auflisten, anlegen, lesen, speichern, löschen; Verwendungen einer Vorlage abfragen; ein Dokument prüfen ohne zu speichern. Beschrieben in <code>contracts/api/</code>.</p><p>Befunde der Konsistenzprüfung verhindern das Speichern nicht. Abgelehnt wird nur ein Dokument, das das Dateiformat verletzt; über die Oberfläche kann das nicht entstehen, nur über die Schnittstelle.</p></div>
+</div>
+<p class="num">10 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Oberfläche</h2>
+<div class="row">
+<div class="card col"><h3>Aufbau</h3><p><b>Kopfzeile:</b> Neue Strategie, Öffnen, Speichern, Prüfen, Schließen, Löschen, Einstellungen; rechts „Über pipwerk Studio“. Die Sprachauswahl, bisher in der Kopfzeile, wandert in die Einstellungen.</p><p><b>Links:</b> Elementbibliothek mit Auslösern, Elementen des Ablaufs, Objekten der Anwendung, Objekttypen, mitgelieferten und gespeicherten Vorlagen, „Neues Objekt“.</p><p><b>Mitte:</b> Zeichenfläche. <b>Rechts:</b> Eigenschaftenansicht des ausgewählten Elements oder, nach Klick auf die leere Fläche, der Strategie.</p></div>
+<div class="card col"><h3>Zeichenfläche</h3><p>Elemente zeigen ihre Bezeichnung und ihre Ausgänge als Anschlüsse. Objekte auf der Zeichenfläche haben keine Anschlüsse.</p><p>Die Verwaltung erscheint als Rahmen, der mit dem Ausgang „gestellt“ verbunden ist. Elemente, die in den Rahmen gezogen werden, gehören zur Verwaltung. Der Rahmen lässt sich einklappen.</p><p>Die Eigenschaftenansicht entsteht aus der Typbeschreibung: Eingabe je Datentyp, Wahl der Bindungsart je Parameter, Herkunft der Instanz.</p></div>
+<div class="card col"><h3>Arbeitsabläufe</h3><ul><li>Neue Strategie: leere Zeichenfläche mit einem Auslöser Kerzenschluss</li><li>Objekt verwenden: ziehen, Name und Parameter setzen, „Als Vorlage speichern“</li><li>Regeln zuordnen: in der Eigenschaftenansicht der Strategie oder eines Elements</li><li>Vorlage anlegen oder öffnen: eigene Ansicht mit Speichern, Prüfen, Schließen, Löschen; die Strategie bleibt dahinter offen</li><li>Schließen mit ungespeicherten Änderungen: Speichern, Verwerfen, Abbrechen</li><li>Löschen einer Vorlage: Rückfrage mit den Strategien, die sie verwenden</li></ul></div>
+</div>
+<p class="num">11 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Deine Testfälle im Designer</h2>
+<div class="row">
+<div class="card col"><h3>Punkt-2-Ausbruch</h3><p>Strategieparameter Signalzeiteinheit, Handelszeiteinheit, Entry-Puffer und Stop-Puffer (die Abstände des Einstiegs hinter Punkt 2 und des Stop-Loss hinter Punkt 1/3). Zwei Instanzen der Markttechnik, eine je Zeiteinheit. Regel der Strategie „Risiko je Trade“ mit 1 %.</p><p><b>Hauptablauf:</b> Kerzenschluss der Handelszeiteinheit → Trend intakt und Phase Bewegung? → Trendrichtung beider Zeiteinheiten gleich? → keine wartende Order, keine offene Position? → Berechnungen Einstieg, Stop, Ziel → Stop-Order aufgeben mit einer kleinen prüfenden Regel „Mindestvolumen“ am Element: Das Volumen muss mindestens das Mindestvolumen des Instruments erreichen.</p><p><b>Verwaltung:</b> Bei jedem Tick: Punkt 1/3 durchbrochen? → Order löschen. Bei jedem Kerzenschluss: Stop neu berechnet, abweichend? → Order ändern; nicht geändert → Order löschen.</p></div>
+<div class="card col"><h3>EMA-Trendfolge</h3><p>Strategieparameter Zeiteinheit (H1), Stop-Abstand (2). Instanzen EMA 20, EMA 50, ATR 14. Regel der Strategie „Risiko je Trade“ mit 1 %.</p><p><b>Hauptablauf:</b> Kerzenschluss → Kreuzen der EMA, geprüft mit dem Wert der vorherigen Auswertung → Richtung und Stop berechnen → Marktorder aufgeben mit Regel „Mindestvolumen“ am Element.</p><p><b>Verwaltung:</b> Bei jedem Kerzenschluss, sobald die Order ausgeführt ist: Kreuzen gegen die Position? → Position schließen. Sonst Stop neu berechnen, verbessert? → Position ändern.</p></div>
+</div>
+<div class="card"><h3>Warum „Mindestvolumen“ am Element und nicht an der Strategie</h3><p>Die Regel „Risiko je Trade“ braucht Richtung und Stop-Loss; bei der Schließorder gibt es beides nicht, ihr Ergebnis ist „nicht verfügbar“, und sie wird nicht angewendet. „Mindestvolumen“ braucht nur das Volumen, und das ist bei einer Schließorder ohne Volumenangabe „leer“: Als Regel der Strategie wäre die Prüfung nicht erfüllt, und die Position würde nicht geschlossen. Als Regel des Elements „Order aufgeben“ gilt sie genau dort, wo sie gebraucht wird. Beide Testfälle liegen als Dokumente im Repository und werden automatisch geprüft: Laden, gegen das Schema prüfen, null Fehler der Konsistenzprüfung, speichern, vergleichen.</p></div>
+<p class="num">12 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Zu bestätigen, Teil 1: Anzeige und Mitgeliefertes</h2>
+<div class="grid2">
+<div class="card prop"><h3>1 · Befunde ohne Element</h3><p>Befunde, die zu keinem Element gehören, stehen in der Eigenschaftenansicht der Strategie. Hinweise sind orange markiert, Fehler rot.</p><p class="ref">Füllt den offenen Punkt in req-ui-011.</p></div>
+<div class="card prop"><h3>2 · Mitgeliefertes ist unveränderlich</h3><p>EMA, ATR, Markttechnik und die Regelvorlage „Risiko je Trade“ lassen sich nicht ändern oder löschen. Eine Abwandlung entsteht, indem du eine Instanz als neue Vorlage speicherst.</p><p>Grund: Sie sind Teil der Software und in jeder Installation gleich.</p></div>
+<div class="card prop"><h3>3 · Funktionen der ersten Auswahl</h3><p>Bisher festgelegt waren <code>IF</code>, <code>MIN</code>, <code>MAX</code>, <code>ABS</code> und <code>PREVIOUS</code>. Ergänzt um <code>FLOOR</code>, <code>CEILING</code>, <code>AND</code>, <code>OR</code>, <code>NOT</code>, <code>ISNA</code>, <code>IFNA</code>, <code>ISBLANK</code> aus der Norm. Die Auswahl bleibt bei Bedarf erweiterbar. Funktionsnamen stehen in der Schreibweise der Norm; deutsche Namen bleiben offen.</p><p class="ref">req-fach-036</p></div>
+<div class="card prop"><h3>4 · Order und Position in Regeln</h3><p>Spricht eine Regel <code>Order</code> oder <code>Position</code> an, wo es das Objekt gerade nicht gibt, ist der Wert „nicht verfügbar“ und die Regel wird nicht angewendet. Verwendet eine Formel im Hauptablauf, in einem Indikator oder in einem Trend das Ergebnis einer Regel, die <code>Order</code> oder <code>Position</code> anspricht, ist das ein Fehler. In der Verwaltung sieht die Regel deren Order und Position.</p></div>
+</div>
+<p class="num">13 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Zu bestätigen, Teil 2: Regeln, Trend, Formeln</h2>
+<div class="grid2">
+<div class="card prop"><h3>5 · Ohne Stop-Loss kein Risiko-Volumen</h3><p>Eine Order oder Position ohne Stop-Loss erfüllt die Regel „Risiko je Trade“ nicht: Das Volumen ist nicht bestimmbar, die Prüfung nicht erfüllt, weil der mögliche Verlust unbegrenzt ist.</p></div>
+<div class="card prop"><h3>6 · Trend mit Berechnungsverfahren „Ausdruck“</h3><p>Mitgeliefert ist nur dieses Verfahren: Der Trend enthält Indikatoren und Regeln und legt mit je einer Formel seine Richtung und weitere Eigenschaften fest. Welche Werte die Richtung annimmt, bestimmt diese Formel, weil das Fachmodell sie nicht festlegt.</p><p class="ref">Anforderungen Strategiedesigner, Abschnitt 9 Punkt 9</p></div>
+<div class="card prop"><h3>7 · Mehrstufige Namen</h3><p>Eigenschaften eines Indikators, der in einem Trend oder Indikator enthalten ist, werden mehrstufig angesprochen: <code>trend_h1.ema20.Wert</code>.</p><p class="ref">req-fach-012 ließ offen, wie.</p></div>
+<div class="card prop"><h3>8 · Bedingung ohne Wert nimmt „falsch“</h3><p>Ergibt die Formel einer Bedingung bei der Ausführung keinen Wert, etwa weil die Markttechnik ohne Trend keinen Punkt 2 hat, nimmt die Bedingung den Ausgang „falsch“. Im Punkt-2-Ausbruch wird dann kein Trade geplant, und eine wartende Order wird beim Tick nicht gelöscht, solange Punkt 1/3 nicht belegt ist.</p></div>
+</div>
+<p class="num">14 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Zur Kenntnis: Folgen deiner fachlichen Festlegungen</h2>
+<p>Diese beiden Wirkungen ergeben sich aus den Anforderungen und dem Fachmodell, nicht aus einer Entscheidung der Spezifikation. Sie werden erst sichtbar, wenn die Regel konkret abgebildet ist.</p>
+<div class="row">
+<div class="card col ask"><h3>Prüfung mit dem aktuellen Kapital</h3><p>Die Regel „Risiko je Trade“ prüft bei „Order ändern“ und „Position ändern“ mit dem Kapital zu diesem Zeitpunkt. Ist das Kapital gesunken, lehnt sie auch eine Änderung ab, die das Risiko verringert, solange der Stop-Loss noch auf der Verlustseite liegt.</p></div>
+<div class="card col ask"><h3>Zwei Risikogrenzen</h3><p>Regeln werden in fester Reihenfolge angewendet: erst die der Strategie, dann die des Elements; beim Bestimmen gilt der zuletzt gesetzte Wert. Legt eine Regel am Element „Order aufgeben“ eine höhere Risikogrenze fest als die Regel der Strategie, gilt beim Bestimmen also die des Elements. Beim Ändern prüft nur die Regel der Strategie mit der niedrigeren Grenze. Die Order lässt sich dann nicht ändern.</p></div>
+</div>
+<div class="card"><h3>Was du tun kannst</h3><p>Nichts, wenn das Verhalten so gewollt ist. Andernfalls ist es eine fachliche Änderung an deinen Dokumenten, etwa: Die Prüfung beim Ändern rechnet mit dem Kapital zum Zeitpunkt des Aufgebens, oder eine Regel des Elements ersetzt die gleichnamige Regel der Strategie auch beim Prüfen. Eine solche Änderung geht zurück in Phase 1 und wird von der QA an den geänderten Stellen nachgeprüft.</p></div>
+<p class="num">15 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Nachweis, Sicherheit, Dokumentation</h2>
+<div class="row">
+<div class="card col"><h3>Tests</h3><ul><li>Bibliothek: Formelprüfung mit gültigen und fehlerhaften Fällen, jeder Befund der Konsistenzprüfung mit Gegenprobe, Schreiben und Lesen jedes Dokumenttyps, Schemata</li><li>Backend: jeder Endpunkt mit Erfolgs- und Fehlerfällen, Dateien, Verschieben, Datenbankmigration</li><li>Oberfläche: Aufbau aus Typbeschreibungen, Dokument aus Zeichenfläche und zurück, Rückfragen, Sprachwechsel</li><li>Browsertest in Chromium, Firefox und WebKit: jeder Testfall wird über die Oberfläche aufgebaut, gespeichert, nach Neuladen geöffnet und mit dem Testfalldokument verglichen</li></ul></div>
+<div class="card col"><h3>Sicherheit</h3><ul><li>Ohne Anmeldung, wie bisher nur im vom Betreiber kontrollierten Netz; die neuen schreibenden Endpunkte werden in der technischen Dokumentation als Risiko außerhalb der Loopback-Adresse genannt</li><li>Dateinamen nur aus geprüften Kennungen, keine Pfadangabe von außen außer der Einstellung Objektverzeichnis</li><li>Begrenzungen: Dokumentgröße höchstens 2 MiB, Länge und Tiefe von Formeln, Zahl der Elemente</li><li>Formeln werden nur zerlegt, nie ausgeführt; Texte nie als HTML</li></ul></div>
+<div class="card col"><h3>Dokumentation</h3><ul><li>Technische Dokumentation von pipwerk Studio: Aufbau, Objektverzeichnis, Web-Schnittstelle, Alembic, Prüfungen, Sicherheit</li><li>Neue technische Dokumentation der Bibliothek: Objektmodell, Formeln, Konsistenzprüfung, Dateiformat</li><li>Anwenderdokumentation: alle Arbeitsabläufe Schritt für Schritt, Schreibweise von Formeln, Befunde und ihre Behebung, beide Testfälle als Anleitung</li><li>Glossar (das Begriffsverzeichnis des Projekts): neue Begriffe und Berichtigung von Einträgen, die der Spezifikation widersprechen</li></ul></div>
+</div>
+<p class="num">16 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Wie es weitergeht</h2>
+<div class="chain">
+<div class="node">Bestätigung<small>du bestätigst die acht Festlegungen oder entscheidest anders</small></div><span class="arrow">→</span>
+<div class="node">Planung<small>der Softwarearchitekt teilt die Spezifikation in Arbeitspakete, die QA prüft die Abdeckung</small></div><span class="arrow">→</span>
+<div class="node">Präsentation des Plans<small>du bestätigst die Pakete und ihre Reihenfolge</small></div><span class="arrow">→</span>
+<div class="node">Umsetzung<small>Paket für Paket, mit Tests und Prüfbericht</small></div><span class="arrow">→</span>
+<div class="node">Abnahme<small>du probierst jedes Paket in der Testumgebung aus</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Wenn du anders entscheidest</h3><p>Einwände zu den acht Festlegungen gehen mit einer Meldung an den Softwarearchitekten, der die Spezifikation überarbeitet. Fachliche Änderungen an deinen Dokumenten gehen zurück in Phase 1 und werden an den geänderten Stellen nachgeprüft.</p></div>
+<div class="card col"><h3>Was noch offen bleibt</h3><p>Nur Punkte, die die Ausführung betreffen und für den Designer nicht gebraucht werden: Bezug von PREVIOUS bei mehreren Auslösern, Geltungsdauer von „Parameter setzen“, Maßnahme, wenn die Prüfung nach der Ausführung einer Marktorder die Risikogrenze verletzt sieht, eine Regel zur freien Margin, das externe Ereignis als Auslöser. Sie werden mit dem Strategietester geklärt.</p></div>
+</div>
+<p class="num">17 / 18</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Bestätigung</h2>
+<div class="row">
+<div class="card col"><h3>Festlegungen 1 bis 8</h3><p>Befunde ohne Element in der Strategieansicht · Mitgeliefertes unveränderlich · erweiterte Funktionsauswahl · Order und Position in Regeln · ohne Stop-Loss kein Risiko-Volumen · Trend mit Verfahren „Ausdruck“ · mehrstufige Namen · Bedingung ohne Wert nimmt „falsch“</p></div>
+<div class="card col"><h3>Zur Kenntnis</h3><p>Prüfung mit dem aktuellen Kapital · zwei Risikogrenzen bei Strategie und Element</p></div>
+</div>
+<p class="rule">Vermerk der Bestätigung: offen.</p>
+<p class="num">18 / 18</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
