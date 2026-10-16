@@ -6,7 +6,7 @@
 - stand: 2026-10-16
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek), `components/pipwerk-studio` (Backend und Oberfläche), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers; Nachprüfung der Dokumente bestanden in [requirements-7.md](reviews/requirements-7.md). Vorlagen: [Pflichtenheft](../../docs/design/planning/pflichtenheft-strategiedesigner.md) und Arbeitspakete AP2 bis AP9. Wo sie den geltenden Dokumenten widersprechen, folgt diese Spezifikation den geltenden Dokumenten (Abschnitt 1).
-- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde B1 bis B4 und Hinweise S1 bis S15 eingearbeitet: B1 Abschnitt 3.5, B2 Abschnitt 3.4 und Abschnitt 10 Punkt 8, B3 Abschnitt 3.3 und Abschnitt 10 Punkt 7, B4 Abschnitt 3.3; S1 Abschnitt 3.4, S2 bis S4 und S8 Abschnitte 3.1 und 3.3, S5 und S6 Abschnitte 5.1 und 5.2, S7 und S9 Abschnitt 3.1, S10 Abschnitt 3.6, S11 Abschnitt 4.1, S12 Abschnitt 3.1, S13 Abschnitt 9, S14 Abschnitt 10, S15 Abschnitt 3.7
+- prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde B1 bis B4 und Hinweise S1 bis S15 eingearbeitet: B1 Abschnitt 3.5, B2 Abschnitt 3.4 und Abschnitt 10 Punkt 8, B3 Abschnitt 3.3 und Abschnitt 10 Punkt 7, B4 Abschnitt 3.3; S1 Abschnitt 3.4, S2 bis S4 und S8 Abschnitte 3.1 und 3.3, S5 und S6 Abschnitte 5.1 und 5.2, S7 und S9 Abschnitt 3.1, S10 Abschnitt 3.6, S11 Abschnitt 4.1, S12 Abschnitt 3.1, S13 Abschnitt 9, S14 Abschnitt 10, S15 Abschnitt 3.7. Durchlauf 2 [specification-2.md](reviews/specification-2.md) bestanden; die Hinweise S16 bis S22 werden in den Aufträgen der Phase 4 erledigt.
 
 ## 1. Gegenstand
 
