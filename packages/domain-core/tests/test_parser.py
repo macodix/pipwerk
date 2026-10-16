@@ -79,12 +79,39 @@ def test_values(source: str, expected: str) -> None:
         ("a", "a"),
         ("Order.Volumen", "Order.Volumen"),
         ("trend_h1.ema20.Wert", "trend_h1.ema20.Wert"),
-        ("Äpfel.größe", "Äpfel.größe"),
+        ("_x1.Y_2", "_x1.Y_2"),
         ("punkt_13", "punkt_13"),
     ],
 )
 def test_names(source: str, expected: str) -> None:
     assert tree(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "еma20",  # Cyrillic e in the first place
+        "ema2а",  # Cyrillic a in the last place
+        "Äpfel",
+        "größe",
+        "a.б",
+        "１ + 1",  # full-width digit
+        "٣ + 1",  # Arabic-indic digit
+        "1 + ١٢",
+        "12٣",
+        "1.٥",
+    ],
+)
+def test_only_ascii_letters_and_digits_make_names_and_numbers(source: str) -> None:
+    result = parse(source)
+    assert result.issue is not None
+    assert result.issue.reason in ("invalid_character", "invalid_number")
+
+
+def test_a_line_feed_ends_a_name() -> None:
+    result = parse("ema20\n")  # the line feed is white space, not part of the name
+    assert isinstance(result.tree, Name)
+    assert result.tree.segments[0].text == "ema20"
 
 
 def test_name_segments_have_positions() -> None:

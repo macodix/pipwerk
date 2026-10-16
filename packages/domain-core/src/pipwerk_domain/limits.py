@@ -23,3 +23,11 @@ MAX_STRATEGY_PARAMETERS = 200
 
 MAX_INSTANCE_NESTING = 16
 """Levels of instances inside instances. The instance of an element is level 1."""
+
+MAX_FINDINGS_PER_EXPRESSION = 50
+"""Findings reported for one expression. Further findings of the expression are dropped and
+the finding ``findings.truncated`` is added."""
+
+MAX_FINDINGS_PER_CHECK = 1000
+"""Findings of one check of a strategy or template. At the limit the check ends and adds the
+finding ``findings.truncated``."""

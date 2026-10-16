@@ -1,9 +1,11 @@
 """The consistency check (specification 3.6) for strategies and templates."""
 
+import re
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import date, datetime
+from math import isfinite
 
 from pipwerk_domain import catalog
 from pipwerk_domain.consistency import findings as fc
@@ -18,6 +20,7 @@ from pipwerk_domain.expressions import exprtypes as et
 from pipwerk_domain.expressions.checker import IssueKind
 from pipwerk_domain.expressions.exprtypes import ExprType, type_of
 from pipwerk_domain.expressions.symbols import Environment, Scope, Symbol, SymbolKind
+from pipwerk_domain.limits import MAX_FINDINGS_PER_CHECK, MAX_FINDINGS_PER_EXPRESSION
 from pipwerk_domain.model import (
     Binding,
     Connection,
@@ -54,6 +57,8 @@ from pipwerk_domain.typedesc import (
     choice_ids,
 )
 
+_TEXTS = re.compile(r'"(?:[^"]|"")*"')
+_NAME_BEFORE_POINT = re.compile(r"(?<![A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*)\.")
 _MAIN_FLOW = "main_flow"
 _INDICATOR = "indicator"
 _ORDER_OBJECTS = (catalog.OBJECT_ORDER, catalog.OBJECT_POSITION)
@@ -125,6 +130,10 @@ def _param_of_strategy_parameter(item: StrategyParameter) -> _Param:
     )
 
 
+class _FindingLimit(Exception):  # noqa: N818 - ends the check, is no error condition
+    """The limit of findings of a check is reached."""
+
+
 @dataclass(slots=True)
 class _Ctx:
     """Where an instance or expression stands: its names, parameters, and whether
@@ -138,6 +147,7 @@ class _Ctx:
     order_context: str
     rule_order_error: bool
     rule_template: bool = False
+    in_template: bool = False
 
     def below(self, name: str) -> str:
         return f"{self.subject}.{name}" if self.subject else name
@@ -204,8 +214,11 @@ class _RuleItem:
 class Checker:
     """Runs the consistency check. One object checks one strategy or one template."""
 
-    def __init__(self, registry: ElementRegistry) -> None:
+    def __init__(
+        self, registry: ElementRegistry, max_findings: int | None = MAX_FINDINGS_PER_CHECK
+    ) -> None:
         self.registry = registry
+        self.max_findings = max_findings
         self.findings: list[Finding] = []
         self._analyses: dict[tuple[int, str], Analysis] = {}
         self._owners: dict[tuple[int, str], object] = {}
@@ -213,7 +226,7 @@ class Checker:
         self._items: dict[int, _RuleItem] = {}
         self._rule_symbols: dict[int, Symbol] = {}
         self._closed = application_scope(registry)
-        self._candle_uses: list[tuple[str | None, str | None]] = []
+        self._candle_uses: dict[tuple[str | None, str | None], None] = {}
         self._management_scopes: dict[str | None, Scope] = {}
         self._non_candle_reach: set[str] = set()
         self._strategy = Strategy(id="", title="")
@@ -224,7 +237,39 @@ class Checker:
     # entry points
 
     def check_strategy(self, strategy: Strategy) -> list[Finding]:
+        """Check a strategy. At the limit of findings the check ends with the finding
+        ``findings.truncated``."""
+        try:
+            self._check_strategy(strategy)
+        except _FindingLimit:
+            self._truncated_at_limit()
+        return self.findings
+
+    def check_template(self, template: Template) -> list[Finding]:
+        """Check a template. At the limit of findings the check ends with the finding
+        ``findings.truncated``."""
+        try:
+            self._check_template(template)
+        except _FindingLimit:
+            self._truncated_at_limit()
+        return self.findings
+
+    def _truncated_at_limit(self) -> None:
+        self.findings.append(
+            Finding(
+                Level.ERROR,
+                fc.FINDINGS_TRUNCATED,
+                None,
+                None,
+                {"limit": self.max_findings, "scope": "check"},
+            )
+        )
+
+    def _check_strategy(self, strategy: Strategy) -> None:
         self._strategy = strategy
+        # `Strategie` knows the parameters of this strategy everywhere in it, also in
+        # indicators, trends and rulesets (these see no other names of the strategy)
+        self._closed = application_scope(self.registry, strategy.parameters)
         scope = Scope(application_scope(self.registry, strategy.parameters))
         self._strategy_scope = scope
         self._strategy_params = {
@@ -241,6 +286,7 @@ class Checker:
             entries.append((rule.name, None, rule.name))
         self._duplicates(entries, "strategy")
         self._check_strategy_parameters(strategy)
+        self._analyze_calculations(strategy)
         for element in strategy.elements:
             self._check_element(element)
         self._check_rule_list(
@@ -252,26 +298,85 @@ class Checker:
         )
         self._check_flow(strategy)
         self._check_candle_uses(strategy)
-        return self.findings
 
-    def check_template(self, template: Template) -> list[Finding]:
+    def _check_template(self, template: Template) -> None:
         description = self.registry.get(template.object_type)
         if description is None:
             self._add(Level.ERROR, fc.TYPE_UNKNOWN, kind="object", type=template.object_type)
-            return self.findings
-        ctx = _Ctx(None, "", self._closed, {}, False, _INDICATOR, False)
+            return
+        # checked by itself, a template does not know the strategy parameters: any property
+        # of `Strategie` is accepted and reported as a hint
+        self._closed = application_scope(self.registry, None, open_strategy=True)
+        ctx = _Ctx(None, "", self._closed, {}, False, _INDICATOR, False, in_template=True)
         category = description.category
         if category is ObjectCategory.RULE:
-            open_app = application_scope(self.registry, None, open_strategy=True)
-            item = self._item(template, open_app)
-            ctx.env = open_app
+            item = self._item(template, self._closed)
             ctx.rule_template = True
             self._check_rule(template, item, ctx, None)
         elif category is ObjectCategory.RULESET:
             self._check_rule(template, self._item(template, self._closed), ctx, None)
         else:
             self._check_object(template, description, ctx)
-        return self.findings
+
+    def _analyze_calculations(self, strategy: Strategy) -> None:
+        """Analyze the calculations so that a calculation is analyzed after the ones whose
+        result it uses. That keeps long chains of calculations out of the recursion; a cycle
+        between results is a finding."""
+        calculations = {
+            item.name.lower(): item
+            for item in strategy.elements
+            if item.type == catalog.FLOW_CALCULATION
+            and item.name
+            and item.instance is None
+            and item.id
+        }
+        edges: dict[str, list[str]] = {}
+        for key, element in calculations.items():
+            edges[key] = self._used_calculations(element, calculations)
+        for component in strongly_connected_components(list(calculations), edges):
+            members = [calculations[key] for key in component]
+            if len(component) > 1 or component[0] in edges[component[0]]:
+                self._add(
+                    Level.ERROR,
+                    fc.CALCULATION_CIRCULAR,
+                    members[0].id,
+                    members[0].name,
+                    elements=[item.id for item in members],
+                    names=[str(item.name) for item in members],
+                )
+            for element in members:
+                binding = element.parameters.get("ausdruck")
+                if binding is None or not isinstance(binding.value, str):
+                    continue
+                if binding.kind is not BindingKind.EXPRESSION:
+                    continue
+                # report the findings at once, so that a document full of faulty
+                # expressions ends at the limit of findings before all are analyzed
+                analysis = self.analyze_cached(
+                    binding,
+                    "parameter:ausdruck",
+                    binding.value,
+                    self._element_env(element),
+                    None,
+                )
+                ctx = self._strategy_ctx(element, order_error=element.management_of is None)
+                self._report(binding, "parameter:ausdruck", analysis, ctx)
+                analysis.release()
+
+    @staticmethod
+    def _used_calculations(element: Element, calculations: dict[str, Element]) -> list[str]:
+        """The calculations whose result an expression may use: the names in front of a
+        point, outside of texts. A cheap scan of the text, so that all expressions need not be
+        parsed before the first finding is reported."""
+        binding = element.parameters.get("ausdruck")
+        if binding is None or not isinstance(binding.value, str):
+            return []
+        used: list[str] = []
+        for match in _NAME_BEFORE_POINT.finditer(_TEXTS.sub('""', binding.value)):
+            key = match.group(1).lower()
+            if key in calculations and key not in used:
+                used.append(key)
+        return used
 
     # ------------------------------------------------------------------------------
     # helpers
@@ -284,6 +389,8 @@ class Checker:
         subject: str | None = None,
         **details: object,
     ) -> None:
+        if self.max_findings is not None and len(self.findings) >= self.max_findings:
+            raise _FindingLimit
         self.findings.append(Finding(level, code, element, subject, dict(details)))
 
     def _duplicates(
@@ -326,7 +433,7 @@ class Checker:
         return [
             (self._owners[key], key[1], analysis.normalized)
             for key, analysis in self._analyses.items()
-            if analysis.tree is not None and analysis.normalized != analysis.source
+            if analysis.parsed_ok and analysis.normalized != analysis.source
         ]
 
     def expression_analyses(self) -> list[Analysis]:
@@ -369,8 +476,20 @@ class Checker:
                 self._add(Level.HINT, fc.RULE_UNRESOLVED_NAME, ctx.element_id, subject, **data)
             else:
                 self._add(Level.ERROR, fc.EXPRESSION_INVALID, ctx.element_id, subject, **data)
+        if analysis.truncated:
+            self._add(
+                Level.ERROR,
+                fc.FINDINGS_TRUNCATED,
+                None,
+                None,
+                limit=MAX_FINDINGS_PER_EXPRESSION,
+                scope="expression",
+                field=field,
+                element_id=ctx.element_id,
+                instance=subject,
+            )
         for name in analysis.names:
-            if ctx.rule_template and any(
+            if ctx.in_template and any(
                 symbol.kind is SymbolKind.UNRESOLVED for symbol in name.symbols
             ):
                 self._add(
@@ -389,7 +508,7 @@ class Checker:
                 and name.symbols[0].kind is SymbolKind.APPLICATION_OBJECT
                 and name.symbols[0].object_type == catalog.OBJECT_CANDLE
             ):
-                self._candle_uses.append((ctx.element_id, subject))
+                self._candle_uses[(ctx.element_id, subject)] = None
         if ctx.order_error and self.analysis_uses_order(analysis):
             self._add(
                 Level.ERROR,
@@ -530,10 +649,11 @@ class Checker:
             return et.UNKNOWN
         if not isinstance(binding.value, str):
             return et.UNKNOWN
-        analysis = self.analyze_cached(
-            binding, "parameter:ausdruck", binding.value, self._element_env(element), None
-        )
-        return analysis.result_type
+        # Only an expression that has been analyzed already gives its type. The order of
+        # `_analyze_calculations` makes that the case except in a cycle; so no chain of
+        # calculations ends up in nested calls.
+        analysis = self._analyses.get((id(binding), "parameter:ausdruck"))
+        return et.UNKNOWN if analysis is None else analysis.result_type
 
     def _element_env(self, element: Element) -> Environment:
         """Namespace for the expressions of an element: in a management the order type of
@@ -830,6 +950,7 @@ class Checker:
         field = f"{label}:{item.id}"
         analysis = self.analyze_cached(binding, field, text, ctx.env, expected)
         self._report(binding, field, analysis, ctx)
+        analysis.release()
 
     def _check_parameter_binding(
         self, item: _Param, binding: Binding, ctx: _Ctx, label: str
@@ -880,6 +1001,8 @@ class Checker:
             return
         own = [_param_of_definition(item) for item in content.parameters]
         all_params = [*params, *own]
+        if description.id == TREND_TYPE_ID:
+            self._check_trend_direction(content, ctx)
         scope = Scope(self._closed)
         entries: list[tuple[str, str | None, str | None]] = []
         for item in all_params:
@@ -912,6 +1035,23 @@ class Checker:
         for own_property in content.properties:
             self._check_property_definition(own_property, inner)
 
+    def _check_trend_direction(self, content: ObjectContent, ctx: _Ctx) -> None:
+        """A trend with the calculation method "Ausdruck" needs an expression for the
+        property ``richtung`` (specification 3.3)."""
+        binding = content.parameter_values.get("berechnungsverfahren")
+        method = catalog.TREND_METHOD_EXPRESSION
+        if binding is not None and binding.kind is BindingKind.FIXED:
+            method = str(binding.value)
+        has_direction = any(item.name.lower() == "richtung" for item in content.properties)
+        if method == catalog.TREND_METHOD_EXPRESSION and not has_direction:
+            self._add(
+                Level.ERROR,
+                fc.TREND_DIRECTION_MISSING,
+                ctx.element_id,
+                ctx.subject or None,
+                property="richtung",
+            )
+
     def _check_nested_instance(self, instance: Instance, ctx: _Ctx) -> None:
         subject = ctx.below(instance.name)
         description = self.registry.get(instance.object_type)
@@ -937,6 +1077,7 @@ class Checker:
             type_of(definition.datatype, definition.choices),
         )
         self._report(definition, field, analysis, ctx)
+        analysis.release()
 
     # ------------------------------------------------------------------------------
     # rules
@@ -1273,7 +1414,11 @@ def _fixed_problem(item: _Param, value: Scalar | None) -> tuple[str, dict[str, o
     """Why a fixed value does not fit the data type, or ``None``."""
     datatype = item.datatype
     if datatype in (DataType.NUMBER, DataType.PERCENT):
-        ok = isinstance(value, int | float) and not isinstance(value, bool)
+        ok = (
+            isinstance(value, int | float)
+            and not isinstance(value, bool)
+            and (not isinstance(value, float) or isfinite(value))
+        )
     elif datatype is DataType.INTEGER:
         ok = isinstance(value, int) and not isinstance(value, bool)
     elif datatype is DataType.BOOLEAN:

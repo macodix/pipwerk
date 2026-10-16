@@ -61,6 +61,10 @@ Expression = Annotated[
     Field(max_length=MAX_EXPRESSION_LENGTH, description="Expression in OpenFormula notation"),
     AfterValidator(_check_depth),
 ]
+FiniteFloat = Annotated[float, Field(allow_inf_nan=False)]
+"""A decimal number; ``NaN``, ``Infinity`` and numbers that become infinite are no values."""
+ScalarValue = bool | int | FiniteFloat | str
+"""The value of a fixed binding, a default or a strategy parameter."""
 UuidString = Annotated[str, Field(pattern=UUID_PATTERN)]
 RuleList = Annotated[list["InstanceDocument"], Field(max_length=MAX_RULES_PER_LIST)]
 
@@ -73,7 +77,7 @@ class BindingDocument(_Strict):
     """Value of a parameter or property with its kind of binding."""
 
     kind: BindingKindName
-    value: bool | int | float | str | None = None
+    value: ScalarValue | None = None
 
     @model_validator(mode="after")
     def _check_value(self) -> BindingDocument:
@@ -104,7 +108,7 @@ class ParameterDefinitionDocument(_Strict):
     name: str
     datatype: DataTypeName
     required: bool = False
-    default: bool | int | float | str | None = None
+    default: ScalarValue | None = None
     choices: list[str] = Field(default_factory=list)
 
 
@@ -122,7 +126,7 @@ class StrategyParameterDocument(_Strict):
 
     name: str
     datatype: DataTypeName
-    value: bool | int | float | str | None = None
+    value: ScalarValue | None = None
     at_application: bool = False
     choices: list[str] = Field(default_factory=list)
 
@@ -160,8 +164,8 @@ class ElementDocument(_Strict):
     type: str
     title: str = ""
     name: str | None = None
-    x: float = 0.0
-    y: float = 0.0
+    x: FiniteFloat = 0.0
+    y: FiniteFloat = 0.0
     parameters: dict[str, BindingDocument] = Field(default_factory=dict)
     properties: dict[str, BindingDocument] = Field(default_factory=dict)
     rules: RuleList = Field(default_factory=list)

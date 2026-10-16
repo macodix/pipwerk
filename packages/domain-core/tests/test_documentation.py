@@ -68,7 +68,7 @@ def test_the_finding_identifiers_of_the_documentation_are_those_of_the_code() ->
         for name, value in vars(findings_module).items()
         if name.isupper() and isinstance(value, str) and re.match(r"^[a-z_]+\.[a-z_]+$", value)
     }
-    assert len(codes) == 24
+    assert len(codes) == 27
     documented = set(first_cells(section("9", "10")))
     assert documented == codes
 
@@ -142,6 +142,8 @@ def test_every_limit_is_listed_with_its_value() -> None:
         "MAX_RULES_PER_LIST": str(limits.MAX_RULES_PER_LIST),
         "MAX_STRATEGY_PARAMETERS": str(limits.MAX_STRATEGY_PARAMETERS),
         "MAX_INSTANCE_NESTING": str(limits.MAX_INSTANCE_NESTING),
+        "MAX_FINDINGS_PER_EXPRESSION": str(limits.MAX_FINDINGS_PER_EXPRESSION),
+        "MAX_FINDINGS_PER_CHECK": str(limits.MAX_FINDINGS_PER_CHECK),
     }
     constants = {name for name in vars(limits) if name.startswith("MAX_")}
     assert constants == set(rows)
@@ -262,3 +264,22 @@ def test_the_readmes_point_to_the_documentation() -> None:
         REPOSITORY / "docs" / "technical" / "README.md",
     ):
         assert "pipwerk-domain.md" in path.read_text(encoding="utf-8"), path.name
+
+
+def test_the_readmes_of_the_library_and_the_contracts_have_no_commands_and_no_rules() -> None:
+    """A README gives the purpose and points to the document (development procedure)."""
+    for path in (
+        LIBRARY_SOURCE.parents[1] / "README.md",
+        REPOSITORY / "contracts" / "strategies" / "README.md",
+    ):
+        text = path.read_text(encoding="utf-8")
+        assert "```" not in text, path.name
+        assert "uv " not in text, path.name
+        assert "must not" not in text, path.name
+        assert len(text.splitlines()) <= 8, path.name
+
+
+def test_the_glossary_names_the_kind_of_the_calculation_methods() -> None:
+    text = GLOSSARY.read_text(encoding="utf-8")
+    description = next(line for line in text.splitlines() if line.startswith("| Typbeschreibung |"))
+    assert "Berechnungsverfahren des Trends" in description

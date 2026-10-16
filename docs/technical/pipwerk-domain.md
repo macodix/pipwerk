@@ -109,7 +109,7 @@ Weitere Pakete melden Typen über den Einstiegspunkt `pipwerk.element_types` an 
 - eine Folge von Typbeschreibungen, oder
 - eine Funktion, die ein Objekt mit der Methode `register(beschreibung)` erhält und dort anmeldet.
 
-`ElementRegistry.load_entry_points()` lädt alle Einstiegspunkte der Gruppe, `create_registry()` ruft sie auf. Ein fehlerhafter Einstiegspunkt (Ladefehler, Ausnahme beim Anmelden, falscher Rückgabetyp, doppelte Kennung) verhindert das Laden der übrigen nicht. Er meldet nichts an – auch nichts von dem, was er vor dem Fehler angemeldet hätte – und wird mit dem Namen des Einstiegspunkts und der Klasse der Ausnahme protokolliert (Logger `pipwerk_domain.registry`, Stufe `WARNING`), ohne Ausnahmetext, ohne Rückverfolgung und ohne Pfad. Der Rückgabewert `LoadReport` nennt die geladenen und die fehlgeschlagenen Einstiegspunkte. Zum Testen lässt sich eine Liste nachgebildeter Einstiegspunkte (Objekte mit `name` und `load()`) übergeben.
+`ElementRegistry.load_entry_points()` lädt alle Einstiegspunkte der Gruppe, `create_registry()` ruft sie auf. Ein fehlerhafter Einstiegspunkt (Ladefehler, Ausnahme beim Anmelden, `SystemExit` beim Laden, falscher Rückgabetyp, doppelte Kennung) verhindert das Laden der übrigen nicht. Dasselbe gilt für fehlerhafte Metadaten der Einstiegspunkte irgendeines installierten Pakets (zum Beispiel eine Zeile ohne `=`, auch in einer anderen Gruppe): Das Lesen scheitert dann, es wird mit der Klasse der Ausnahme protokolliert, und das Register enthält trotzdem alle mitgelieferten Typen. Er meldet nichts an – auch nichts von dem, was er vor dem Fehler angemeldet hätte – und wird mit dem Namen des Einstiegspunkts und der Klasse der Ausnahme protokolliert (Logger `pipwerk_domain.registry`, Stufe `WARNING`), ohne Ausnahmetext, ohne Rückverfolgung und ohne Pfad. Der Rückgabewert `LoadReport` nennt die geladenen und die fehlgeschlagenen Einstiegspunkte. Zum Testen lässt sich eine Liste nachgebildeter Einstiegspunkte (Objekte mit `name` und `load()`) übergeben.
 
 ## 4. Mitgelieferte Typen und Kennungen
 
@@ -237,8 +237,8 @@ Ein Ausdruck sieht Namen von innen nach außen; ein innerer Name verdeckt einen 
 | --- | --- |
 | Regel der Strategie | 1. Parameter der Regel (ohne Punkt), 2. die Regeln der Strategie (dieselbe Liste), 3. Namensraum der Strategie, 4. Objekte der Anwendung |
 | Regel eines Elements | 1. Parameter der Regel, 2. die Regeln des Elements (dieselbe Liste), 3. Namensraum der Strategie, 4. Objekte der Anwendung |
-| Regel in einer Vorlage `Indikator` oder `Trend` (und in einer Instanz davon) | 1. Parameter der Regel, 2. Namensraum der Vorlage: ihre eigenen Parameter, ihre enthaltenen Instanzen und Regeln, 3. Objekte der Anwendung. Die Namen der Strategie sieht sie nicht. |
-| Regel in einem `Regelwerk` (Vorlage oder Instanz) | 1. Parameter der Regel, 2. die Regeln des Regelwerks (`regel`), 3. Objekte der Anwendung. Die Namen der Strategie sieht sie nicht. |
+| Regel in einer Vorlage `Indikator` oder `Trend` (und in einer Instanz davon) | 1. Parameter der Regel, 2. Namensraum der Vorlage: ihre eigenen Parameter, ihre enthaltenen Instanzen und Regeln, 3. Objekte der Anwendung, darunter `Strategie` mit den Strategieparametern. Die übrigen Namen der Strategie sieht sie nicht. |
+| Regel in einem `Regelwerk` (Vorlage oder Instanz) | 1. Parameter der Regel, 2. die Regeln des Regelwerks (`regel`), 3. Objekte der Anwendung, darunter `Strategie` mit den Strategieparametern. Die übrigen Namen der Strategie sieht sie nicht. |
 | Ausdruck eines Elements, einer Berechnung oder Bedingung | Namensraum der Strategie, dann Objekte der Anwendung; in einer Verwaltung hat `Order` die Eigenschaften des Ordertyps |
 | Eigenschaft eines `Indikator` oder `Trend` | Namensraum der Vorlage, dann Objekte der Anwendung |
 | Gesamtergebnis eines `Regelwerks` | die Regeln des Regelwerks, dann Objekte der Anwendung |
@@ -251,8 +251,9 @@ Folgerungen aus den Festlegungen:
 - Haben eine Regel des Elements und eine Regel der Strategie denselben Namen, meint ein Ausdruck einer Regel des Elements die Regel des Elements. Das ist kein Befund „Name doppelt vergeben“.
 - „Name doppelt vergeben“ (Abschnitt 9) gilt für zwei Namen derselben Ebene: im Namensraum der Strategie, in den Regeln eines Elements, in den Parametern einer Regel, in den Regeln eines Regelwerks, im Namensraum einer Vorlage (Parameter, Instanzen, Regeln) und unter den Strategieparametern.
 - Strategieparameter sind nur als `Strategie.name` ansprechbar und kollidieren deshalb nicht mit Instanzen.
-- Ein Regelwerk ist ein geschlossener Namensraum, auch als Instanz in der Strategie (Festlegung der Umsetzung nach dem Auftrag): Seine Regeln sehen weder die Namen der Strategie noch die der Regeln außerhalb.
-- Namen von Instanzen, Elementen, Regeln und Parametern müssen aus Buchstaben, Ziffern und `_` bestehen und mit einem Buchstaben oder `_` beginnen, sonst meldet die Prüfung `name.invalid`.
+- `Strategie` ist ein Objekt der Anwendung, auch in Indikator, Trend und Regelwerk. Die Strategieparameter unter `Strategie.<name>` sind dort ansprechbar. Eine Vorlage, für sich geprüft, kennt die Strategieparameter nicht; ein unbekannter Strategieparameter ist dort ein Hinweis `rule.unresolved_name` (bei Vorlagen `Regel`, `Regelwerk`, `Indikator` und `Trend` gleich). Eine Instanz innerhalb einer Strategie, auch in einem Regelwerk der Strategie, wird gegen die Strategieparameter dieser Strategie geprüft; ein unbekannter ist dort ein Fehler `expression.invalid`.
+- Ein Regelwerk ist ein geschlossener Namensraum, auch als Instanz in der Strategie (Festlegung der Umsetzung nach dem Auftrag): Seine Regeln sehen weder die übrigen Namen der Strategie (Instanzen, Berechnungen, Bedingungen, Regeln) noch die Regeln außerhalb. Dasselbe gilt für die Ausdrücke von Indikator und Trend.
+- Namen von Instanzen, Elementen, Regeln und Parametern dürfen nur aus den ASCII-Buchstaben `A` bis `Z` und `a` bis `z`, den ASCII-Ziffern `0` bis `9` und `_` bestehen und müssen mit einem Buchstaben oder `_` beginnen (geprüft mit `fullmatch`), sonst meldet die Prüfung `name.invalid`. Buchstaben und Ziffern anderer Schriften (kyrillisches `е`, arabisch-indische oder Vollbreitenziffern) und ein Zeilenumbruch sind nicht erlaubt, damit ein Name nicht einem anderen zum Verwechseln ähnlich sieht.
 
 ## 7. Ausdrücke
 
@@ -260,7 +261,7 @@ Ausdrücke folgen einer Auswahl aus OpenFormula (Spezifikation 3.4). Der Parser 
 
 ### 7.1 Schreibweise
 
-- Zahlen mit Dezimalpunkt (`3.14`), Texte in doppelten Anführungszeichen (ein doppeltes Anführungszeichen im Text wird verdoppelt: `"a""b"`), `TRUE()` und `FALSE()`, das Prozentzeichen unmittelbar nach einer Zahl (`1%` ist `0.01`).
+- Zahlen mit Dezimalpunkt, nur mit den ASCII-Ziffern `0` bis `9` (`3.14`); Namen nur mit ASCII-Buchstaben, ASCII-Ziffern und `_`. Andere Zeichen sind ein Schreibfehler (`invalid_character`, bei Ziffern hinter einer Zahl `invalid_number`). Texte in doppelten Anführungszeichen (ein doppeltes Anführungszeichen im Text wird verdoppelt: `"a""b"`), `TRUE()` und `FALSE()`, das Prozentzeichen unmittelbar nach einer Zahl (`1%` ist `0.01`).
 - Operatoren: `+ - * / ^ &`, Vergleiche `= <> < <= > >=`, Vorzeichen und Klammern. Die logischen Operatoren sind die Funktionen `AND`, `OR`, `NOT`.
 - Rangfolge von niedrig nach hoch: Vergleich, `&`, `+ -`, `* /`, `^`, Vorzeichen. Wie in OpenFormula bindet das Vorzeichen stärker als `^`, `-2^2` ist also 4. Alle binären Operatoren gruppieren von links.
 - Argumente einer Funktion trennt `;`. Zwischen den Teilen darf Leerraum einschließlich Zeilenumbrüchen stehen.
@@ -307,7 +308,7 @@ Die Typprüfung kennt die Datentypen aus Abschnitt 3.1. Zahl, Ganzzahl und Proze
 | `unknown_name` | unbekannter Name (Stelle des ersten Namensteils) | – | `name` |
 | `unknown_property` | unbekannte Eigenschaft (Stelle des Namensteils) | – | `object`, `property` |
 | `type_mismatch` | unpassender Typ | `operand`, `comparison`, `ordering`, `argument`, `branches`, `result`, `object_not_value` | `expected`, `found`, `operator`, `function`, `index`, `left`, `right`, `name` |
-| `unknown_choice_value` | unbekannter Wert einer Auswahl | `comparison`, `result` | `values`, `allowed` |
+| `unknown_choice_value` | unbekannter Wert einer Auswahl (Stelle des Textes selbst, auch in den Wertzweigen von `IF` und `IFNA` und in Klammern; je unbekanntem Text ein Befund) | `comparison`, `result` | `values`, `allowed` |
 | `argument_count` | falsche Zahl von Argumenten | – | `function`, `minimum`, `maximum`, `found` |
 
 Die Umgebung (`Environment`) löst den ersten Teil eines Namens auf; `Scope` ist ihre Umsetzung als Namensraum mit äußerem Namensraum. Die Konsistenzprüfung baut die Namensräume nach Abschnitt 6 auf.
@@ -400,7 +401,10 @@ Diese Befunde stehen nicht in der Tabelle der Spezifikation; sie sind für eine 
 
 | Kennung | Stufe | Befund | Angaben |
 | --- | --- | --- | --- |
-| `rule.unresolved_name` | Hinweis | Der Ausdruck einer Regelvorlage spricht einen Namen an, der weder Objekt der Anwendung noch Parameter der Regel ist (auch eine unbekannte Eigenschaft von `Strategie`); geprüft wird der Name in jeder Strategie, die die Regel enthält (Spezifikation 3.4) | wie `expression.invalid` |
+| `rule.unresolved_name` | Hinweis | Der Ausdruck einer Regelvorlage spricht einen Namen an, der weder Objekt der Anwendung noch Parameter der Regel ist; in jeder Vorlage (`Regel`, `Regelwerk`, `Indikator`, `Trend`), für sich geprüft, außerdem ein Strategieparameter unter `Strategie`, den die Vorlage nicht kennen kann. Geprüft wird der Name in jeder Strategie, die die Vorlage enthält (Spezifikation 3.4) | wie `expression.invalid` |
+| `trend.direction_missing` | Fehler | Ein `Trend` mit dem Berechnungsverfahren „Ausdruck“ (Standard) hat keinen Ausdruck für die Eigenschaft `richtung` (Spezifikation 3.3); gilt für die Vorlage und die Instanz | `property` |
+| `calculation.circular_reference` | Fehler | Berechnungen verwenden ihre Ergebnisse im Kreis (auch eine Berechnung ihr eigenes). Die Prüfung ordnet die Berechnungen nach ihren Abhängigkeiten, ohne Rekursion über Python-Aufrufe, auch bei einer Kette bis zur Grenze der Elemente | `elements`, `names`; Element ist das erste der Gruppe |
+| `findings.truncated` | Fehler | Die Zahl der Befunde ist begrenzt (Abschnitt 11). Bei Erreichen einer Grenze folgt dieser Befund ohne Element | `limit`, `scope` (`expression`: mehr als 50 Befunde in einem Ausdruck, weitere entfallen, dazu `field`, `element_id`, `instance`; `check`: 1000 Befunde in der Prüfung, die Prüfung endet) |
 | `connection.invalid` | Fehler | Verbindung mit unbekannter Quelle oder unbekanntem Ziel, unbekanntem Ausgang, mit einem Auslöser als Ziel oder zwischen Ablauf und einer Verwaltung (oder zwei Verwaltungen) | `reason` (`unknown_source`, `unknown_target`, `unknown_output`, `target_is_trigger`, `across_managements`), `source`, `output`, `target` |
 | `parameter.binding_invalid` | Fehler | Belegung passt nicht: Bindungsart nicht erlaubt, fester Wert vom falschen Typ oder nicht in der Auswahl, unbekannter Parameter oder unbekannte Eigenschaft, Strategieparameter unbekannt oder vom falschen Typ, von der Anwendung belegte Eigenschaft belegt | `reason` (`binding_kind`, `type`, `choice_value`, `value`, `unknown_parameter`, `unknown_property`, `set_by_application`), `parameter` oder `property` |
 | `name.invalid` | Fehler | Name enthält Zeichen, die ein Ausdruck nicht ansprechen kann | `name`, `what` |
@@ -409,7 +413,7 @@ Diese Befunde stehen nicht in der Tabelle der Spezifikation; sie sind für eine 
 | `rule.invalid_type` | Fehler | In einer Liste von Regeln steht ein anderer Objekttyp, oder ein Objekt `Regel`/`Regelwerk` steht als Instanz oder Element | `reason` (`in_rules`, `in_instances`), `type` |
 | `rule.comparison_missing` | Fehler | Eine bestimmende Regel nennt keinen Vergleich beim Prüfen | – |
 
-Die Kennungen der Befunde sind Konstanten in `pipwerk_domain.consistency.findings`.
+Die Kennungen der Befunde sind Konstanten in `pipwerk_domain.consistency.findings`. Die Prüfung liefert höchstens `MAX_FINDINGS_PER_CHECK` Befunde und dazu den Befund `findings.truncated`; sie endet dann, spätere Befunde und Ausdrücke bleiben ungeprüft. `normalize_strategy` und `normalize_template` prüfen ohne diese Grenze (nur mit der Grenze je Ausdruck).
 
 ## 10. Dokumente und Schemata
 
@@ -429,6 +433,8 @@ Kopffelder: `format` und `format_version` (`1.0`). Ein Dokument mit höherer Hau
 - Vorlage: `id`, `title`, `description`, `object_type` und der Inhalt: `parameter_values`, `parameters`, `properties`, `instances`, `rules`, `expression`, `determined_property`, `comparison`, `result_expression`.
 - Instanz (in `rules`, `instances`, `instance`): `name`, `object_type`, `origin` und derselbe Inhalt.
 - Belegung (`Binding`): `{"kind": "fixed", "value": 5}`, `{"kind": "parameter", "value": "name"}`, `{"kind": "expression", "value": "…"}` oder `{"kind": "application"}`.
+
+Zahlen sind endlich: `NaN`, `Infinity`, `-Infinity` und Zahlen, die zu unendlich werden (`1e999`), lehnt die Bibliothek an jedem Zahlenfeld ab (feste Werte, Standardwerte, Werte von Strategieparametern, `x`, `y`), beim Lesen eines JSON-Textes, beim Prüfen eines Python-Objekts und beim Aufbau eines Dokuments aus dem Objektmodell. Geschrieben wird nur gültiges JSON (`allow_nan=False`). Ein JSON-Text mit einem Schlüssel, der in einem Objekt zweimal vorkommt, wird abgelehnt; ebenso Text, der kein gültiges JSON ist oder zu tief geschachtelt ist. Alles das ist ein `DocumentError`.
 
 Kennungen (`id`, `template_id`, `management_of`, Verbindungen) sind UUIDs in Kleinbuchstaben. Die Typen von Elementen und Objekten sind Zeichenketten. Ein Dokument mit einem unbekannten Elementtyp oder Objekttyp ist deshalb gültig und wird geladen; alle Belegungen bleiben beim Schreiben erhalten, die Konsistenzprüfung meldet den Typ (`type.unknown`). Gespeichert werden nur Kennungen, keine übersetzten Texte.
 
@@ -462,6 +468,10 @@ Die Begrenzungen (Spezifikation Abschnitt 8) stehen als Konstanten in `pipwerk_d
 | `MAX_RULES_PER_LIST` | 200 | Regeln je Liste (Strategie, Element, Indikator, Trend, Regelwerk, Instanz) |
 | `MAX_STRATEGY_PARAMETERS` | 200 | Strategieparameter |
 | `MAX_INSTANCE_NESTING` | 16 | Schachtelung von Instanzen in Instanzen; die Instanz eines Elements und eine Regel der Strategie sind Ebene 1, enthaltene Instanzen und Regeln eine Ebene tiefer |
+| `MAX_FINDINGS_PER_EXPRESSION` | 50 | Befunde je Ausdruck; weitere entfallen, dazu kommt `findings.truncated` (`scope` = `expression`) |
+| `MAX_FINDINGS_PER_CHECK` | 1000 | Befunde je Prüfung einer Strategie oder Vorlage; die Prüfung endet, dazu kommt `findings.truncated` (`scope` = `check`) |
+
+Die Grenzen der Befunde schützen Rechenzeit und Speicher (OWASP API4): Ein Dokument von 2 MiB mit lauter fehlerhaften Ausdrücken ergibt höchstens 1001 Befunde. Die Berechnungen werden dazu nach ihren Abhängigkeiten geordnet und ihre Befunde sofort gemeldet; der Speicher der Syntaxbäume wird nach dem Melden freigegeben. Ein Test belegt Zeit (unter 5 s) und Speicher für ein solches Dokument.
 
 Der Parser meldet einen zu langen oder zu tief geschachtelten Ausdruck auch beim Prüfen als Schreibfehler (`too_long`, `too_deep`). Die Schachtelung von Instanzen wird vor dem Aufbau der Modelle an den Rohdaten geprüft, damit auch sehr tiefe Eingaben den Stapel nicht erschöpfen.
 
@@ -494,6 +504,7 @@ Die Tests (pytest) umfassen:
 | `test_testcases.py` | beide Testfalldokumente: Schema, null Befunde, Schreiben und Vergleichen, Normalisierung ändert nichts, Vollständigkeit nach Abschnitt 6, abgewandelte Fassungen mit den Befunden |
 | `test_risk_rule.py` | „Risiko je Trade“ als Regel der Strategie und eines Elements, Bestandteile, Kopie |
 | `test_architecture.py` | keine Frameworks, Pydantic nur in `documents`, kein `eval`/`exec`/`compile`, keine festen Pfade, Ports und Rechnernamen, Laufzeitabhängigkeit nur Pydantic |
+| `test_hardening.py` | Strategieparameter in Vorlagen und Instanzen, Zahlen ohne JSON-Wert, doppelte Schlüssel, Namen und Zahlen in ASCII, lange Ketten und Kreise von Berechnungen, fehlerhafte Einstiegspunkte, Grenzen der Befunde mit Zeit und Speicher, Stelle bei Auswahlwerten, Trend ohne Richtung, `str-01` |
 | `test_model.py` | Objektmodell |
 | `test_normalize.py` | Normalisierung aller Ausdrücke einer Strategie oder Vorlage |
 | `test_documentation.py` | Kennungen und Befunde dieses Dokuments stimmen mit dem Code überein |
@@ -536,7 +547,7 @@ Wo die Spezifikation etwas offen lässt, gilt Folgendes; es ist hier festgehalte
 5. Namen im gespeicherten Ausdruck: Objekte der Anwendung wie im Fachmodell (`Order`, `Konto`), alle Eigenschaften, Parameter von Typen und `ergebnis` in der Kennung (klein), Namen von Instanzen, Bedingungen, Berechnungen, Regeln und eigenen Parametern wie vergeben.
 6. Ein leerer Ausdruck ist ein Schreibfehler (`unexpected_end`).
 7. Eine Bedingung verlangt einen Wahrheitswert, eine nur prüfende Regel ebenfalls; der Ausdruck einer Berechnung hat keinen vorgeschriebenen Typ.
-8. Ein Regelwerk ist ein geschlossener Namensraum (Abschnitt 6).
+8. Ein Regelwerk ist ein geschlossener Namensraum bis auf die Objekte der Anwendung, darunter `Strategie` mit den Strategieparametern (Abschnitt 6; Festlegung des Softwarearchitekten nach dem Testbericht).
 9. `PREVIOUS` verlangt als erstes Argument einen Namen.
 10. Die Befunde aus Abschnitt 9.2 und die Hinweise `rule.unresolved_name` und `flow.no_order_reachable`.
 11. Der Befund `candle.no_instance` wird nur gemeldet, wenn ein Ausdruck die Kerze unter dem Namen des Objekttyps (`Kerze.schluss`) verwendet.

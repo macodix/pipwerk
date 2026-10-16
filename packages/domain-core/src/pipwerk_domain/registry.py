@@ -109,7 +109,15 @@ class ElementRegistry:
         text of the exception and without paths.
         """
         if entry_point_list is None:
-            entry_point_list = entry_points(group=ENTRY_POINT_GROUP)
+            try:
+                entry_point_list = list(entry_points(group=ENTRY_POINT_GROUP))
+            except Exception as error:  # faulty metadata of any installed package
+                _logger.warning(
+                    "The entry points of the group %s could not be read (%s)",
+                    ENTRY_POINT_GROUP,
+                    type(error).__name__,
+                )
+                return LoadReport((), ())
         loaded: list[str] = []
         failed: list[str] = []
         for entry_point in entry_point_list:
@@ -117,7 +125,8 @@ class ElementRegistry:
             try:
                 descriptions = _descriptions_of(entry_point.load())
                 self._register_all_or_none(descriptions)
-            except Exception as error:  # a faulty entry point must not stop the others
+            # a faulty entry point must not stop the others, not even by `SystemExit`
+            except (Exception, SystemExit) as error:
                 _logger.warning(
                     "Entry point %r of the group %s could not be loaded (%s)",
                     name,

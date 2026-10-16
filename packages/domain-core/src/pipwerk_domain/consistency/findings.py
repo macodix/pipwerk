@@ -41,6 +41,9 @@ ELEMENT_RULES_NOT_ALLOWED = "element.rules_not_allowed"
 ELEMENT_MANAGEMENT_INVALID = "element.management_invalid"
 RULE_INVALID_TYPE = "rule.invalid_type"
 RULE_COMPARISON_MISSING = "rule.comparison_missing"
+TREND_DIRECTION_MISSING = "trend.direction_missing"
+CALCULATION_CIRCULAR = "calculation.circular_reference"
+FINDINGS_TRUNCATED = "findings.truncated"
 
 
 @dataclass(frozen=True, slots=True)

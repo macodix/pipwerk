@@ -35,9 +35,38 @@ def parse_document(data: str | bytes | dict[str, object]) -> AnyDocument:
 
     Raises :class:`DocumentError` (a Pydantic ``ValidationError``) if it does not fit.
     """
-    if isinstance(data, dict):
-        return _ADAPTER.validate_python(data, strict=True)
-    return _ADAPTER.validate_json(data, strict=True)
+    if isinstance(data, str | bytes):
+        data = _load_json(data)  # type: ignore[assignment]
+    return _ADAPTER.validate_python(data, strict=True)
+
+
+def _error(message: str) -> ValidationError:
+    return ValidationError.from_exception_data(
+        "Document",
+        [{"type": "value_error", "loc": (), "input": None, "ctx": {"error": ValueError(message)}}],
+    )
+
+
+def _object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate key in a JSON object")
+        result[key] = value
+    return result
+
+
+def _constant(name: str) -> object:
+    raise ValueError(f"{name} is no JSON value")
+
+
+def _load_json(data: str | bytes) -> object:
+    """Parse JSON text strictly: no ``NaN``, ``Infinity`` or ``-Infinity``, no key twice in
+    an object. Any problem is a validation error."""
+    try:
+        return json.loads(data, object_pairs_hook=_object, parse_constant=_constant)
+    except (ValueError, RecursionError) as error:
+        raise _error(str(error) if isinstance(error, ValueError) else "nested too deep") from None
 
 
 def read_document(data: str | bytes) -> Strategy | Template:
@@ -52,7 +81,7 @@ def document_to_json(document: AnyDocument) -> str:
     data = document.model_dump(mode="json")
     ordered = {key: data[key] for key in _HEAD if key in data}
     ordered.update({key: value for key, value in data.items() if key not in _HEAD})
-    return json.dumps(ordered, indent=2, ensure_ascii=False) + "\n"
+    return json.dumps(ordered, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
 
 
 def write_document(value: Strategy | Template) -> str:

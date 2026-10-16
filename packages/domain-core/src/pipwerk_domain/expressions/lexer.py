@@ -36,9 +36,17 @@ class SyntaxProblem(Exception):  # noqa: N818 - carries data of a finding, not a
         self.details = details
 
 
-_NUMBER = re.compile(r"\d+(?:\.\d+)?")
-_NAME = re.compile(r"[^\W\d]\w*(?:\.[^\W\d]\w*)*")
-_OPERATORS = ("<>", "<=", ">=", "+", "-", "*", "/", "^", "&", "=", "<", ">")
+_TOKEN = re.compile(
+    r"""
+      (?P<space>\s+)
+    | (?P<number>[0-9]+(?:\.[0-9]+)?)
+    | (?P<name>[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)
+    | (?P<operator><>|<=|>=|[-+*/^&=<>])
+    | (?P<single>[();%])
+    | (?P<string>")
+    """,
+    re.VERBOSE,
+)
 _SINGLE = {
     "(": TokenKind.LEFT_PAREN,
     ")": TokenKind.RIGHT_PAREN,
@@ -56,41 +64,33 @@ def tokenize(source: str) -> list[Token]:
     tokens: list[Token] = []
     position = 0
     length = len(source)
+    match_at = _TOKEN.match
     while position < length:
-        char = source[position]
-        if char.isspace():
-            position += 1
+        found = match_at(source, position)
+        if found is None:
+            raise SyntaxProblem("invalid_character", position, position + 1, found=source[position])
+        group = found.lastgroup
+        end = found.end()
+        if group == "space":
+            position = end
             continue
-        if char == '"':
+        if group == "string":
             position = _string(source, position, tokens)
             continue
-        if char in _SINGLE:
-            tokens.append(Token(_SINGLE[char], char, position, position + 1))
-            position += 1
-            continue
-        number = _NUMBER.match(source, position)
-        if number is not None:
-            end = number.end()
+        if group == "number":
             if end < length and (source[end].isalnum() or source[end] in "_."):
                 raise SyntaxProblem("invalid_number", position, end + 1, found=source[end])
-            tokens.append(Token(TokenKind.NUMBER, number.group(), position, end))
-            position = end
-            continue
-        name = _NAME.match(source, position)
-        if name is not None:
-            end = name.end()
+            tokens.append(Token(TokenKind.NUMBER, found.group(), position, end))
+        elif group == "name":
             if end < length and source[end] == ".":
                 raise SyntaxProblem("invalid_character", end, end + 1, found=".")
-            tokens.append(Token(TokenKind.NAME, name.group(), position, end))
-            position = end
-            continue
-        operator = next((item for item in _OPERATORS if source.startswith(item, position)), None)
-        if operator is not None:
-            end = position + len(operator)
-            tokens.append(Token(TokenKind.OPERATOR, operator, position, end))
-            position = end
-            continue
-        raise SyntaxProblem("invalid_character", position, position + 1, found=char)
+            tokens.append(Token(TokenKind.NAME, found.group(), position, end))
+        elif group == "operator":
+            tokens.append(Token(TokenKind.OPERATOR, found.group(), position, end))
+        else:
+            text = found.group()
+            tokens.append(Token(_SINGLE[text], text, position, end))
+        position = end
     tokens.append(Token(TokenKind.END, "", length, length))
     return tokens
 

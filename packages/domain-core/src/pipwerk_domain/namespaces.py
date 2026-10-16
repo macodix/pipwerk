@@ -28,7 +28,7 @@ from pipwerk_domain.model import Instance, PropertyDefinition, StrategyParameter
 from pipwerk_domain.registry import ElementRegistry
 from pipwerk_domain.typedesc import DataType, ElementKind, PropertyDescription
 
-_NAME = re.compile(r"^[^\W\d]\w*$")
+_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 RESULT_PROPERTY = "ergebnis"
 """Identifier of the result of a rule, condition or calculation (``regel.ergebnis``)."""
@@ -36,8 +36,9 @@ RESULT_PROPERTY = "ergebnis"
 
 def is_valid_name(text: str) -> bool:
     """Whether a name of an instance, element, rule or parameter can be addressed in an
-    expression: letters, digits and ``_``, starting with a letter or ``_``, no space."""
-    return _NAME.match(text) is not None
+    expression: only the ASCII letters A-Z and a-z, the ASCII digits 0-9 and ``_``, starting
+    with a letter or ``_``, nothing else (no space, no line feed, no other script)."""
+    return _NAME.fullmatch(text) is not None
 
 
 def property_type(prop: PropertyDescription) -> ExprType:

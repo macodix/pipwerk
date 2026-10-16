@@ -70,7 +70,7 @@ def test_normalization_does_not_change_the_document(name: str) -> None:
     analyses = checker.expression_analyses()
     assert len(analyses) > 10
     for analysis in analyses:
-        assert analysis.tree is not None
+        assert analysis.parsed_ok
         assert analysis.normalized == analysis.source
 
 

@@ -436,7 +436,7 @@
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "IF(mt_signal.trendrichtung = \"aufwaerts\"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
+          "value": "IF(Order.richtung = \"buy\"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
         }
       },
       "properties": {},

@@ -23,12 +23,34 @@ from pipwerk_domain.expressions.nodes import (
     Unary,
     postorder,
 )
-from pipwerk_domain.expressions.parser import parse
+from pipwerk_domain.expressions.parser import ParseResult, parse
 from pipwerk_domain.expressions.symbols import Environment, Symbol, SymbolKind
+from pipwerk_domain.limits import MAX_FINDINGS_PER_EXPRESSION
 from pipwerk_domain.typedesc import DataType
 
 _ORDERING = ("<", "<=", ">", ">=")
 _ARITHMETIC = ("+", "-", "*", "/", "^")
+
+
+def _result_texts(node: Node) -> list[String]:
+    """The fixed texts that can be the result of ``node``: the node itself if it is a text,
+    inside parentheses and in the value branches of ``IF`` and ``IFNA``."""
+    found: list[String] = []
+    stack: list[Node] = [node]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, String):
+            found.append(current)
+        elif isinstance(current, Group):
+            stack.append(current.inner)
+        elif isinstance(current, Call):
+            name = current.name.upper()
+            if name == "IF":
+                stack.extend(current.args[1:])
+            elif name == "IFNA":
+                stack.extend(current.args)
+    found.sort(key=lambda item: item.start)
+    return found
 
 
 class IssueKind(StrEnum):
@@ -97,24 +119,39 @@ class Analysis:
     functions: list[RecognizedFunction]
     result_type: ExprType
     normalized: str
+    truncated: bool = False
+    """True if the expression had more findings than ``MAX_FINDINGS_PER_EXPRESSION``."""
+    parsed_ok: bool = False
+    """True if the expression has no syntax problem (also after :meth:`release`)."""
+
+    def __post_init__(self) -> None:
+        self.parsed_ok = self.tree is not None
 
     @property
     def ok(self) -> bool:
         return not self.issues
+
+    def release(self) -> None:
+        """Drop the syntax tree and the recognized names and functions, which take most of
+        the memory, once the findings of the expression have been used."""
+        self.tree = None
+        self.names = []
+        self.functions = []
 
 
 def analyze(
     source: str,
     environment: Environment,
     expected: ExprType | None = None,
+    parsed: ParseResult | None = None,
 ) -> Analysis:
     """Parse and check an expression.
 
     ``expected`` is the type the result must have (for example the data type of the
     property that a rule determines); fixed texts are checked against the values of a
-    choice.
+    choice. ``parsed`` is the result of ``parse(source)`` if the caller has it already.
     """
-    parsed = parse(source)
+    parsed = parse(source) if parsed is None else parsed
     if parsed.tree is None or parsed.issue is not None:
         issue = parsed.issue
         assert issue is not None  # noqa: S101 - parse returns either a tree or an issue
@@ -151,6 +188,7 @@ class _Checker:
         self.functions: list[RecognizedFunction] = []
         self.replacements: list[tuple[int, int, str]] = []
         self.types: dict[int, ExprType] = {}
+        self.truncated = False
 
     def run(self, tree: Node, expected: ExprType | None) -> Analysis:
         for node in postorder(tree):
@@ -169,6 +207,7 @@ class _Checker:
             self.functions,
             result,
             self._normalized(),
+            self.truncated,
         )
 
     def _normalized(self) -> str:
@@ -180,6 +219,9 @@ class _Checker:
     def _issue(
         self, kind: IssueKind, start: int, end: int, reason: str = "", **details: object
     ) -> None:
+        if len(self.issues) >= MAX_FINDINGS_PER_EXPRESSION:
+            self.truncated = True  # further findings of this expression are dropped
+            return
         self.issues.append(ExpressionIssue(kind, start, end, reason, dict(details)))
 
     def _mismatch(
@@ -199,20 +241,8 @@ class _Checker:
         mismatch = et.mismatch_with(expected, result)
         if mismatch is None:
             return
-        target = tree
-        while isinstance(target, Group):
-            target = target.inner
         if mismatch.reason == "choice_value":
-            if not isinstance(target, String):
-                target = tree
-            self._issue(
-                IssueKind.UNKNOWN_CHOICE_VALUE,
-                target.start,
-                target.end,
-                "result",
-                values=list(mismatch.values),
-                allowed=list(mismatch.allowed),
-            )
+            self._report_choice_value(tree, mismatch, "result")
         else:
             self._mismatch(tree, "result", expected.describe(), result)
 
@@ -357,17 +387,25 @@ class _Checker:
         ):
             mismatch = et.literal_mismatch(choice_side, other)
             if mismatch is not None:
-                target = other_node
-                while isinstance(target, Group):
-                    target = target.inner
-                self._issue(
-                    IssueKind.UNKNOWN_CHOICE_VALUE,
-                    target.start,
-                    target.end,
-                    "comparison",
-                    values=list(mismatch.values),
-                    allowed=list(mismatch.allowed),
-                )
+                self._report_choice_value(other_node, mismatch, "comparison")
+
+    def _report_choice_value(self, node: Node, mismatch: et.Mismatch, reason: str) -> None:
+        """Report a text that is no value of the choice, at the text itself: a text that
+        stands for the result of ``node`` (also in the branches of ``IF``)."""
+        bad = set(mismatch.values)
+        targets: list[Node] = [item for item in _result_texts(node) if item.value in bad]
+        if not targets:
+            targets = [node]
+        for target in targets:
+            values = [target.value] if isinstance(target, String) else list(mismatch.values)
+            self._issue(
+                IssueKind.UNKNOWN_CHOICE_VALUE,
+                target.start,
+                target.end,
+                reason,
+                values=values,
+                allowed=list(mismatch.allowed),
+            )
 
     # functions ----------------------------------------------------------------------
 

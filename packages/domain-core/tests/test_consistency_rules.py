@@ -575,8 +575,10 @@ def test_a_rule_in_an_indicator_sees_its_parameters_instances_and_rules_not_the_
     )
     assert check_template(value) == []
     value.rules.append(rule("c", "Strategie.irgendwas > 0"))
-    found = only(check_template(value), fc.EXPRESSION_INVALID)
-    assert found[0].details["issue"] == "unknown_property"  # Strategie is known, the name is not
+    # checked by itself the template does not know the strategy parameters: a hint
+    found = check_template(value)
+    assert codes(found) == [fc.RULE_UNRESOLVED_NAME]
+    assert found[0].level is Level.HINT
 
 
 def test_the_names_of_the_strategy_are_not_visible_in_an_indicator_instance() -> None:
