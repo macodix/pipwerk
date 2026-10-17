@@ -200,6 +200,34 @@ def test_check_reports_exactly_the_findings_of_the_documentation(
     assert client.get("/api/v1/strategies").json() == {"items": []}  # nothing was saved
 
 
+def test_the_documentation_names_the_fields_and_counting_of_the_position() -> None:
+    row = next(
+        line
+        for line in documentation_section(
+            "#### Befunde der Konsistenzprüfung", "### Zweiter Weg"
+        ).splitlines()
+        if "`str-03-schreibfehler.strategy.json`" in line
+    )
+    for text in ("`details.start`", "`details.end`", "13 und 14", "ab 0", "hinter ihrem letzten"):
+        assert text in row, text
+
+
+def test_the_steps_replace_the_identifier_in_the_request_body_not_in_the_file() -> None:
+    documentation = DOCUMENTATION.read_text(encoding="utf-8")
+    assert "Ersetzen Sie vorher im Feld `id` der Datei" not in documentation
+    assert documentation.count("Die Datei im Arbeitsverzeichnis bleibt unverändert.") == 2
+    top_level = "im Feld `id` auf der obersten Ebene des Dokuments"
+    assert (
+        documentation.count(f"Ersetzen Sie dann im eingefügten Text die Kennung {top_level}") == 2
+    )
+    step = documentation.split("4. `PUT /api/v1/strategies/{id}`")[1].split("\n")[0]
+    assert "Das Feld `id` auf der obersten Ebene des Dokuments" in step
+    assert documentation.count("Die Felder `id` der Elemente bleiben unverändert.") == 2
+    assert "nicht als neue Datei im Arbeitsverzeichnis" in documentation
+    assert "weder in einer vorhandenen noch in einer neuen Datei" in documentation
+    assert "ohne sie im Arbeitsverzeichnis zu speichern" in documentation
+
+
 def test_the_unchanged_test_case_has_no_finding(client: TestClient) -> None:
     assert check(client, load_case("str-03")).json()["findings"] == []
 
