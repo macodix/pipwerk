@@ -40,7 +40,7 @@ Die Web-API (siehe Glossar) von pipwerk Studio legt Strategien und Vorlagen an, 
 1. `GET /api/v1/element-types` liefert alle Typen mit ihren deutschen und englischen Namen, die mitgelieferte Regelvorlage „Risiko je Trade“ und die Funktionen für Ausdrücke.
 2. `POST /api/v1/strategies` legt eine Strategie an. Als „Request body“ fügen Sie den Inhalt einer Datei aus `contracts/strategies/v1/testcases/` ein, zum Beispiel `str-03.strategy.json`. Die Antwort nennt die neue Kennung der Strategie, das gespeicherte Dokument und die Befunde der Konsistenzprüfung. Für die beiden Testfälle ist die Liste der Befunde leer. Die Kennung im Dokument ersetzt pipwerk Studio durch eine neue.
 3. `GET /api/v1/strategies` nennt die gespeicherten Strategien, `GET /api/v1/strategies/{id}` liefert eine Strategie. Für `{id}` tragen Sie die Kennung aus Schritt 2 ein.
-4. `PUT /api/v1/strategies/{id}` speichert eine geänderte Strategie, auch wenn die Konsistenzprüfung Befunde meldet. Das Feld `id` im „Request body“ muss die Kennung aus dem Pfad enthalten; ersetzen Sie sie bei Bedarf im eingefügten Text, nicht in der Datei.
+4. `PUT /api/v1/strategies/{id}` speichert eine geänderte Strategie, auch wenn die Konsistenzprüfung Befunde meldet. Das Feld `id` auf der obersten Ebene des Dokuments im „Request body“ muss die Kennung aus dem Pfad enthalten; ersetzen Sie sie bei Bedarf im eingefügten Text, nicht in der Datei. Die Felder `id` der Elemente bleiben unverändert.
 5. `POST /api/v1/check` prüft ein Dokument jeder Art, ohne es zu speichern. Beispiele dafür stehen im Unterabschnitt „Befunde der Konsistenzprüfung“.
 6. `GET /api/v1/rules/{id}/usages` nennt die Strategien und Vorlagen, die eine Instanz aus dieser Vorlage enthalten. Das Löschen einer Vorlage mit `DELETE` ändert diese Strategien nicht. Den ganzen Ablauf mit einer Vorlage beschreibt der Unterabschnitt „Vorlage anlegen, ändern und löschen“.
 
@@ -48,7 +48,7 @@ pipwerk Studio speichert jedes Objekt als eine Datei im Objektverzeichnis (siehe
 
 #### Beispieldokumente
 
-Die Beispieldokumente für die folgenden beiden Unterabschnitte liegen als Dateien im Verzeichnis `contracts/strategies/v1/examples/` des Arbeitsverzeichnisses. Öffnen Sie eine Datei in einem Texteditor, kopieren Sie den ganzen Inhalt und fügen Sie ihn im „Request body“ ein. Die Dateien im Arbeitsverzeichnis ändern Sie nie und speichern sie nicht neu: Eine Änderung an einer Datei wäre eine nicht committete Änderung, und der nächste Start der Testumgebung bräche ab (Abschnitt 2). Muss in einem Schritt etwas im Text ersetzt werden, ersetzen Sie es im Text, den Sie im „Request body“ eingefügt haben, nicht in der Datei. Die beiden Strategien `str-01` und `str-03`, auf denen die Beispiele aufbauen, liegen im Verzeichnis `contracts/strategies/v1/testcases/`. Die Beispiele verwenden `str-03` (Titel „EMA-Trendfolge“).
+Die Beispieldokumente für die folgenden beiden Unterabschnitte liegen als Dateien im Verzeichnis `contracts/strategies/v1/examples/` des Arbeitsverzeichnisses. Öffnen Sie eine Datei in einem Texteditor, kopieren Sie den ganzen Inhalt und fügen Sie ihn im „Request body“ ein. Die Dateien im Arbeitsverzeichnis ändern Sie nie und speichern sie nicht neu. Auch Kopien von Antworten und geänderte Dokumente speichern Sie nicht als neue Datei im Arbeitsverzeichnis, sondern nur außerhalb davon oder gar nicht. Eine geänderte oder neue Datei wäre eine nicht committete Änderung, und der nächste Start der Testumgebung bräche ab (Abschnitt 2). Muss in einem Schritt etwas im Text ersetzt werden, ersetzen Sie es im Text, den Sie im „Request body“ eingefügt haben, nicht in der Datei. Die beiden Strategien `str-01` und `str-03`, auf denen die Beispiele aufbauen, liegen im Verzeichnis `contracts/strategies/v1/testcases/`. Die Beispiele verwenden `str-03` (Titel „EMA-Trendfolge“).
 
 #### Vorlage anlegen, ändern und löschen
 
@@ -74,8 +74,8 @@ Diese Schritte zeigen, dass eine Vorlage angelegt, geändert und gelöscht werde
 
 5. `PUT /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Fügen Sie das geänderte Dokument aus Schritt 4 im „Request body“ ein. Erwartet: Status 200, `findings` ist leer.
 6. `GET /api/v1/rules/{id}/usages` mit `<Kennung der Vorlage>`: Erwartet: Status 200 und `usages` mit genau einem Eintrag. Er hat `art` mit `strategies`, die Kennung der Strategie und den Titel „EMA-Trendfolge“. `skipped_unreadable` ist 0.
-7. `GET /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Kopieren Sie die Antwort („Response body“) und heben Sie sie in einem Texteditor auf, ohne eine Datei im Arbeitsverzeichnis zu überschreiben. Sie dient als Vergleich in Schritt 10.
-8. `PUT /api/v1/rules/{id}` mit `<Kennung der Vorlage>`: Fügen Sie den Inhalt der Datei `regel-vorlage-geaendert.rule.json` im „Request body“ ein. Ersetzen Sie dann im eingefügten Text, im Feld `id`, die Kennung durch `<Kennung der Vorlage>`. Die Datei im Arbeitsverzeichnis bleibt unverändert. Die Kennung wird ersetzt, weil die Kennung im Dokument die im Pfad sein muss. Erwartet: Status 200. Der Titel lautet jetzt „Mindestvolumen doppelt“.
+7. `GET /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Kopieren Sie die Antwort („Response body“) und heben Sie sie in einem Texteditor auf, ohne sie im Arbeitsverzeichnis zu speichern, weder in einer vorhandenen noch in einer neuen Datei. Sie dient als Vergleich in Schritt 10.
+8. `PUT /api/v1/rules/{id}` mit `<Kennung der Vorlage>`: Fügen Sie den Inhalt der Datei `regel-vorlage-geaendert.rule.json` im „Request body“ ein. Ersetzen Sie dann im eingefügten Text die Kennung im Feld `id` auf der obersten Ebene des Dokuments durch `<Kennung der Vorlage>`. Die Datei im Arbeitsverzeichnis bleibt unverändert. Die Kennung wird ersetzt, weil die Kennung im Dokument die im Pfad sein muss. Erwartet: Status 200. Der Titel lautet jetzt „Mindestvolumen doppelt“.
 9. `DELETE /api/v1/rules/{id}` mit `<Kennung der Vorlage>`: Erwartet: Status 204. `GET /api/v1/rules/{id}` mit derselben Kennung antwortet danach mit dem Status 404.
 10. `GET /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Die Antwort ist Zeichen für Zeichen die aus Schritt 7. Die Instanz „mindest“ steht weiter in der Strategie, auch nach dem Ändern (Schritt 8) und dem Löschen (Schritt 9) der Vorlage.
 
@@ -100,7 +100,7 @@ Zu den Änderungen 2 bis 7 meldet die Prüfung nur den genannten Befund und kein
 Befunde verhindern das Speichern nicht. So speichern Sie eine Fassung mit Befunden:
 
 1. `POST /api/v1/strategies` mit dem Inhalt von `str-03.strategy.json` legt die Strategie an. Notieren Sie die Kennung aus dem Feld `id`.
-2. `PUT /api/v1/strategies/{id}` mit dieser Kennung: Fügen Sie den Inhalt einer Datei aus der Tabelle im „Request body“ ein. Ersetzen Sie dann im eingefügten Text, im Feld `id`, die Kennung durch die notierte Kennung. Die Datei im Arbeitsverzeichnis bleibt unverändert. Erwartet: Status 200. Die Antwort enthält den Befund aus der Tabelle in `findings`.
+2. `PUT /api/v1/strategies/{id}` mit dieser Kennung: Fügen Sie den Inhalt einer Datei aus der Tabelle im „Request body“ ein. Ersetzen Sie dann im eingefügten Text die Kennung im Feld `id` auf der obersten Ebene des Dokuments durch die notierte Kennung. Die Felder `id` der Elemente bleiben unverändert. Die Datei im Arbeitsverzeichnis bleibt unverändert. Erwartet: Status 200. Die Antwort enthält den Befund aus der Tabelle in `findings`.
 3. `GET /api/v1/strategies/{id}` liefert die gespeicherte Fassung mit der Änderung.
 
 ### Zweiter Weg: Entwicklungsbetrieb

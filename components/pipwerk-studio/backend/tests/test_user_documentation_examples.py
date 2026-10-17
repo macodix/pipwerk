@@ -216,7 +216,16 @@ def test_the_steps_replace_the_identifier_in_the_request_body_not_in_the_file() 
     documentation = DOCUMENTATION.read_text(encoding="utf-8")
     assert "Ersetzen Sie vorher im Feld `id` der Datei" not in documentation
     assert documentation.count("Die Datei im Arbeitsverzeichnis bleibt unverändert.") == 2
-    assert documentation.count("im eingefügten Text, im Feld `id`,") == 2
+    top_level = "im Feld `id` auf der obersten Ebene des Dokuments"
+    assert (
+        documentation.count(f"Ersetzen Sie dann im eingefügten Text die Kennung {top_level}") == 2
+    )
+    step = documentation.split("4. `PUT /api/v1/strategies/{id}`")[1].split("\n")[0]
+    assert "Das Feld `id` auf der obersten Ebene des Dokuments" in step
+    assert documentation.count("Die Felder `id` der Elemente bleiben unverändert.") == 2
+    assert "nicht als neue Datei im Arbeitsverzeichnis" in documentation
+    assert "weder in einer vorhandenen noch in einer neuen Datei" in documentation
+    assert "ohne sie im Arbeitsverzeichnis zu speichern" in documentation
 
 
 def test_the_unchanged_test_case_has_no_finding(client: TestClient) -> None:
