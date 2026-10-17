@@ -41,10 +41,67 @@ Die Web-API (siehe Glossar) von pipwerk Studio legt Strategien und Vorlagen an, 
 2. `POST /api/v1/strategies` legt eine Strategie an. Als „Request body“ fügen Sie den Inhalt einer Datei aus `contracts/strategies/v1/testcases/` ein, zum Beispiel `str-03.strategy.json`. Die Antwort nennt die neue Kennung der Strategie, das gespeicherte Dokument und die Befunde der Konsistenzprüfung. Für die beiden Testfälle ist die Liste der Befunde leer. Die Kennung im Dokument ersetzt pipwerk Studio durch eine neue.
 3. `GET /api/v1/strategies` nennt die gespeicherten Strategien, `GET /api/v1/strategies/{id}` liefert eine Strategie. Für `{id}` tragen Sie die Kennung aus Schritt 2 ein.
 4. `PUT /api/v1/strategies/{id}` speichert eine geänderte Strategie, auch wenn die Konsistenzprüfung Befunde meldet. Die Kennung im Dokument muss die im Pfad sein.
-5. `POST /api/v1/check` prüft ein Dokument jeder Art, ohne es zu speichern.
-6. `GET /api/v1/rules/{id}/usages` nennt die Strategien und Vorlagen, die eine Instanz aus dieser Vorlage enthalten. Das Löschen einer Vorlage mit `DELETE` ändert diese Strategien nicht.
+5. `POST /api/v1/check` prüft ein Dokument jeder Art, ohne es zu speichern. Beispiele dafür stehen im Unterabschnitt „Befunde der Konsistenzprüfung“.
+6. `GET /api/v1/rules/{id}/usages` nennt die Strategien und Vorlagen, die eine Instanz aus dieser Vorlage enthalten. Das Löschen einer Vorlage mit `DELETE` ändert diese Strategien nicht. Den ganzen Ablauf mit einer Vorlage beschreibt der Unterabschnitt „Vorlage anlegen, ändern und löschen“.
 
-pipwerk Studio speichert jedes Objekt als eine Datei im Objektverzeichnis (siehe Glossar). In der Testumgebung liegt es unter `components/pipwerk-studio/.testenv/objects`. Ein Dokument, das dem Schema nicht entspricht, zum Beispiel mit einem zusätzlichen Feld, lehnt pipwerk Studio mit dem Status 422 ab. Ein Dokument ist höchstens 2 MiB groß, sonst antwortet pipwerk Studio mit dem Status 413. Eine Datei im Objektverzeichnis, die sich nicht lesen lässt, steht in der Liste mit dem Kennzeichen „unreadable“. pipwerk Studio verändert sie nie; sie lässt sich über die Web-API weder lesen noch ändern noch löschen (Status 409). Entfernen Sie eine solche Datei im Dateisystem.
+pipwerk Studio speichert jedes Objekt als eine Datei im Objektverzeichnis (siehe Glossar). In der Testumgebung liegt es unter `components/pipwerk-studio/.testenv/objects`. Ein Dokument, das dem Schema nicht entspricht, zum Beispiel mit einem zusätzlichen Feld, lehnt pipwerk Studio mit dem Status 422 ab. Ein Dokument ist höchstens 2 MiB groß, sonst antwortet pipwerk Studio mit dem Status 413. Eine Datei im Objektverzeichnis, die sich nicht lesen lässt, steht in der Liste mit dem Feld `unreadable` und dem Wert `true` (auf Deutsch: nicht lesbar). pipwerk Studio verändert sie nie; sie lässt sich über die Web-API weder lesen noch ändern noch löschen (Status 409). Entfernen Sie eine solche Datei im Dateisystem.
+
+#### Beispieldokumente
+
+Die Beispieldokumente für die folgenden beiden Unterabschnitte liegen als Dateien im Verzeichnis `contracts/strategies/v1/examples/` des Arbeitsverzeichnisses. Öffnen Sie eine Datei in einem Texteditor, kopieren Sie den ganzen Inhalt und fügen Sie ihn im „Request body“ ein. Die beiden Strategien `str-01` und `str-03`, auf denen die Beispiele aufbauen, liegen im Verzeichnis `contracts/strategies/v1/testcases/`. Die Beispiele verwenden `str-03` (Titel „EMA-Trendfolge“).
+
+#### Vorlage anlegen, ändern und löschen
+
+Diese Schritte zeigen, dass eine Vorlage angelegt, geändert und gelöscht werden kann und dass eine Strategie, die eine Instanz der Vorlage enthält, davon unberührt bleibt. Eine Instanz ist eine vollständige Kopie der Vorlage innerhalb der Strategie (siehe Glossar). Die Vorlage ist hier eine Regel (Objekttyp `Regel`).
+
+1. `POST /api/v1/rules`: Fügen Sie den Inhalt der Datei `regel-vorlage.rule.json` ein. Erwartet: Status 201, `findings` ist leer. Notieren Sie die Kennung aus dem Feld `id` der Antwort. Sie heißt im Folgenden `<Kennung der Vorlage>`.
+2. `POST /api/v1/strategies`: Fügen Sie den Inhalt der Datei `str-03.strategy.json` ein (Verzeichnis `testcases`). Erwartet: Status 201, `findings` ist leer. Notieren Sie die Kennung aus dem Feld `id`. Sie heißt im Folgenden `<Kennung der Strategie>`.
+3. `GET /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Kopieren Sie die ganze Antwort. Das ist das Dokument der Strategie.
+4. Fügen Sie in dieses Dokument eine Instanz der Vorlage ein. Suchen Sie die Liste `"rules"` auf der obersten Ebene des Dokuments, direkt unter `"parameters"` (nicht die Listen `"rules"` in den Elementen). Sie enthält einen Eintrag mit `"name": "risiko"`. Fügen Sie nach dem Ende dieses Eintrags ein Komma und den folgenden Eintrag ein. Ersetzen Sie dabei `<Kennung der Vorlage>` durch die Kennung aus Schritt 1 (mit den Anführungszeichen):
+
+   ```json
+   {
+     "name": "mindest",
+     "object_type": "Regel",
+     "origin": {
+       "object_type": "Regel",
+       "template_id": "<Kennung der Vorlage>",
+       "template_title": "Mindestvolumen"
+     },
+     "expression": "Order.volumen >= Instrument.mindestvolumen"
+   }
+   ```
+
+5. `PUT /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Fügen Sie das geänderte Dokument ein. Erwartet: Status 200, `findings` ist leer.
+6. `GET /api/v1/rules/{id}/usages` mit `<Kennung der Vorlage>`: Erwartet: Status 200 und `usages` mit genau einem Eintrag. Er hat `art` mit `strategies`, die Kennung der Strategie und den Titel „EMA-Trendfolge“. `skipped_unreadable` ist 0.
+7. `GET /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Kopieren Sie die Antwort und heben Sie sie auf. Sie dient als Vergleich in Schritt 10.
+8. `PUT /api/v1/rules/{id}` mit `<Kennung der Vorlage>`: Fügen Sie den Inhalt der Datei `regel-vorlage-geaendert.rule.json` ein. Ersetzen Sie vorher im Feld `id` der Datei die Kennung durch `<Kennung der Vorlage>`, weil die Kennung im Dokument die im Pfad sein muss. Erwartet: Status 200. Der Titel lautet jetzt „Mindestvolumen doppelt“.
+9. `DELETE /api/v1/rules/{id}` mit `<Kennung der Vorlage>`: Erwartet: Status 204. `GET /api/v1/rules/{id}` mit derselben Kennung antwortet danach mit dem Status 404.
+10. `GET /api/v1/strategies/{id}` mit `<Kennung der Strategie>`: Die Antwort ist Zeichen für Zeichen die aus Schritt 7. Die Instanz „mindest“ steht weiter in der Strategie, auch nach dem Ändern (Schritt 8) und dem Löschen (Schritt 9) der Vorlage.
+
+#### Befunde der Konsistenzprüfung
+
+Die Konsistenzprüfung meldet Befunde (siehe Glossar). `POST /api/v1/check` prüft ein Dokument und speichert es nicht. Die Antwort enthält die Liste `findings`. Jeder Befund hat die Felder `level` (`error` für einen Fehler, `hint` für einen Hinweis), `code` (die Art des Befunds), `element` (die Kennung des betroffenen Elements oder `null`), `subject` und `details`.
+
+Die Strategie `str-03` hat keinen Befund. Sieben abgewandelte Fassungen liegen im Verzeichnis `examples`. Jede ist `str-03` mit genau einer Änderung. Neue Elemente sind dabei mit allen Feldern ausgeschrieben, so wie pipwerk Studio sie speichert; die Tabelle nennt nur die wesentlichen Angaben. Fügen Sie die Datei bei `POST /api/v1/check` im „Request body“ ein. Die Tabelle nennt die Änderung und den Befund, den die Prüfung meldet. Das Element „Kreuzen“ ist das Element vom Typ `flow.condition` mit dem Titel „Kreuzen“ (Kennung `7e1ab090-5a18-5414-9f00-5541c0e4b325`); sein Ausdruck steht im Feld `parameters.ausdruck.value`.
+
+| Nr. | Datei | Änderung an `str-03` | Befund |
+| --- | --- | --- | --- |
+| 1 | `str-03-ohne-ausloeser.strategy.json` | Entfernt ist das Element „Kerzenschluss“ vom Typ `trigger.candle_close` mit `"management_of": null` (Kennung `fd3b87fb-a152-51fa-bd12-4579eba0a33d`) und die Verbindung, die von ihm ausgeht. | `strategy.no_trigger` (Fehler); außerdem `flow.no_incoming` (Fehler) für „Kreuzen“ und `flow.no_order_reachable` (Hinweis) |
+| 2 | `str-03-schreibfehler.strategy.json` | Der Ausdruck von „Kreuzen“ lautet `ema20.wert > > 1`. | `expression.invalid` (Fehler) für „Kreuzen“ mit `details.issue` gleich `syntax` und der Stelle 13 bis 14 (das zweite `>`) |
+| 3 | `str-03-unbekannter-name.strategy.json` | Der Ausdruck von „Kreuzen“ lautet `gibtesnicht.wert > 1`. | `expression.invalid` (Fehler) für „Kreuzen“ mit `details.issue` gleich `unknown_name` und `details.name` gleich `gibtesnicht` |
+| 4 | `str-03-order-im-hauptablauf.strategy.json` | Der Ausdruck von „Kreuzen“ lautet `Order.volumen > 0`. Das Element liegt im Hauptablauf. | `expression.order_outside_management` (Fehler) für „Kreuzen“ |
+| 5 | `str-03-order-im-indikator.strategy.json` | Neu in `elements`: ein Element vom Typ `Indikator` (Kennung `00000000-0000-4000-8000-0000000000aa`) mit der Instanz `eigener_indikator`. Sie enthält eine Regel `regel` mit dem Ausdruck `Order.volumen > 0`. | `rule.order_in_indicator` (Fehler) für dieses Element, `subject` gleich `eigener_indikator.regel` |
+| 6 | `str-03-order-aendern-ausserhalb.strategy.json` | Neu in `elements`: ein Element vom Typ `flow.modify_order` (Kennung `00000000-0000-4000-8000-0000000000aa`), das zu keiner Verwaltung gehört, und eine Verbindung vom Element „Kerzenschluss“ mit der Kennung `fd3b87fb-a152-51fa-bd12-4579eba0a33d` (Ausgang `weiter`) zu ihm. | `flow.management_only` (Fehler) für das neue Element |
+| 7 | `str-03-unbekannter-elementtyp.strategy.json` | Neu in `elements`: ein Element mit dem Typ `x.unbekannt` (Kennung `00000000-0000-4000-8000-0000000000bb`). | `type.unknown` (Fehler) für das neue Element, `details.type` gleich `x.unbekannt` |
+
+Zu den Änderungen 2 bis 7 meldet die Prüfung nur den genannten Befund und keinen weiteren. Zu Änderung 1 meldet sie die drei genannten Befunde.
+
+Befunde verhindern das Speichern nicht. So speichern Sie eine Fassung mit Befunden:
+
+1. `POST /api/v1/strategies` mit dem Inhalt von `str-03.strategy.json` legt die Strategie an. Notieren Sie die Kennung aus dem Feld `id`.
+2. `PUT /api/v1/strategies/{id}` mit dieser Kennung: Fügen Sie den Inhalt einer Datei aus der Tabelle ein. Ersetzen Sie vorher im Feld `id` der Datei die Kennung durch die notierte Kennung. Erwartet: Status 200. Die Antwort enthält den Befund aus der Tabelle in `findings`.
+3. `GET /api/v1/strategies/{id}` liefert die gespeicherte Fassung mit der Änderung.
 
 ### Zweiter Weg: Entwicklungsbetrieb
 
@@ -177,6 +234,10 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 | Hintergrunddienst | Der Teil von pipwerk Studio, der außerhalb des Browsers auf dem Rechner läuft und zum Beispiel die gewählte Sprache speichert. Er wird auch Backend genannt. |
 | Web-API | Die über HTTP erreichbare Schnittstelle von pipwerk Studio. Programme und die Seite `/docs` im Browser rufen ihre Endpunkte auf, um Strategien und Vorlagen zu speichern und zu prüfen. Jede Adresse darin heißt Endpunkt. |
 | Objektverzeichnis | Das Verzeichnis auf dem Rechner, in dem pipwerk Studio jede Strategie und jede Vorlage als eine Datei ablegt. Die Dateien sind die einzige Quelle der Strategien und Vorlagen. |
+| Vorlage | Ein wiederverwendbares Objekt, zum Beispiel eine Regel. Es wird einmal angelegt und gespeichert und lässt sich in Strategien verwenden. |
+| Instanz | Eine vollständige Kopie einer Vorlage innerhalb einer Strategie. Sie nennt ihre Vorlage in `origin`. Ändern oder Löschen der Vorlage ändert die Instanz nicht. |
+| Konsistenzprüfung | Die Prüfung eines Dokuments auf Widersprüche, zum Beispiel einen Ausdruck mit Schreibfehler oder einen unbekannten Namen. Sie liefert Befunde. |
+| Befund | Ein Ergebnis der Konsistenzprüfung: ein Fehler (`error`) oder ein Hinweis (`hint`) mit einer Art (`code`) und, wenn möglich, dem betroffenen Element. Ein Dokument mit Befunden lässt sich trotzdem speichern. |
 | Tooltip | Ein kleines Hinweisfenster, das erscheint, wenn der Mauszeiger kurz über einer Anzeige verweilt. |
 | Testumgebung | pipwerk Studio, gebaut und gestartet aus genau einem Commit eines Arbeitsverzeichnisses ohne nicht committete Änderungen. |
 | Testumgebungsskript | Das Skript `components/pipwerk-studio/scripts/testenv`, das die Testumgebung startet, abfragt und beendet. |
@@ -195,7 +256,7 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 | ausgecheckt | Ein Commit ist ausgecheckt, wenn Git seine Dateien in einen Git-Arbeitsbereich gelegt hat. Er bleibt der ausgecheckte Commit, auch wenn Sie danach Dateien ändern oder neue anlegen. Solche Änderungen gehören zu keinem Commit. Welche davon als nicht committete Änderungen zählen, steht unter „nicht committete Änderung“. |
 | INI-Startkonfiguration | Eine Datei im INI-Format (siehe nächster Eintrag), die vor dem Start festlegt, wie der Hintergrunddienst startet, mindestens die Datenbankverbindung. |
 | INI-Format | Eine einfache Art, eine Textdatei zu schreiben: Eine Überschrift steht in eckigen Klammern, darunter folgen Zeilen der Form `name = wert`. Beispiel: Unter der Überschrift `[database]` steht die Zeile `url = …`, die nach dem Gleichheitszeichen angibt, wo die Datenbank liegt. |
-| Datenbank | Der Speicher, in dem der Hintergrunddienst Einstellungen wie die gewählte Sprache dauerhaft ablegt. |
+| Datenbank | Der Speicher, in dem der Hintergrunddienst Einstellungen dauerhaft ablegt, zum Beispiel die gewählte Sprache und die Einstellung „Objektverzeichnis“ (den Ort, an dem Strategien und Vorlagen liegen). Die Strategien und Vorlagen selbst liegen als Dateien im Objektverzeichnis, nicht in der Datenbank. |
 | Oberfläche | Der Teil von pipwerk Studio, den Sie im Webbrowser sehen und bedienen. |
 | Bau (bauen) | Das Erzeugen der fertigen Oberfläche aus den Dateien des Repositorys. Dabei werden auch Kennung und Datum des Commits sowie der Lizenztext in die Oberfläche geschrieben. |
 | Entwicklungsserver | Ein Programm, das die Oberfläche im Entwicklungsbetrieb im Webbrowser bereitstellt und Änderungen an den Dateien sofort sichtbar macht. |
