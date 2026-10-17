@@ -6,10 +6,13 @@
 #
 #   check --backend-port <port> --frontend-port <port> [--with-audit]
 #
-# Checks: backend (uv sync --frozen, pytest, ruff check, ruff format --check,
-# mypy), search in the repository for the spelling of the name, frontend
-# (npm ci, typecheck, Vitest, build) and the browser test with Playwright on
-# the given ports. --with-audit adds pip-audit and npm audit.
+# Checks: the shared Python library in packages/domain-core (uv sync --frozen,
+# pytest, ruff check, ruff format --check, mypy, comparison of the generated
+# JSON schemas with contracts/strategies/v1), backend (uv sync --frozen,
+# pytest, ruff check, ruff format --check, mypy), search in the repository for
+# the spelling of the name, frontend (npm ci, typecheck, Vitest, build) and the
+# browser test with Playwright on the given ports. --with-audit adds pip-audit
+# for the library and the backend and npm audit.
 #
 # The working directory is derived from the path of this script. The script
 # can be called from any directory. Ports are parameters; the script contains
@@ -18,7 +21,8 @@
 # This file may contain wrong spellings of the name as check values; it is
 # excluded from the search in the repository.
 #
-# Documentation: docs/technical/pipwerk-studio.md, section 6.4 "Prüfskript".
+# Documentation: docs/technical/pipwerk-studio.md, section 6.4 "Prüfskript";
+# checks of the library: docs/technical/pipwerk-domain.md, section 12.
 
 set -u
 
@@ -46,6 +50,12 @@ component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
     die "cannot determine the directory of the component"
 backend_dir="$component_dir/backend"
 frontend_dir="$component_dir/frontend"
+# The shared Python library and the contracts lie two levels above the
+# component, in the same working directory.
+library_dir=$(CDPATH='' cd -- "$component_dir/../../packages/domain-core" && pwd -P) ||
+    die "cannot determine the directory of the library packages/domain-core"
+schemas_dir=$(CDPATH='' cd -- "$component_dir/../../contracts/strategies/v1" && pwd -P) ||
+    die "cannot determine the directory of the schemas contracts/strategies/v1"
 
 # require_port <parameter> <value>: sets PORT_VALUE to the value without
 # leading zeros. The length check keeps numbers out of the shell's integer
@@ -127,6 +137,10 @@ step() {
     fi
 }
 
+in_library() {
+    uv --directory "$library_dir" "$@"
+}
+
 in_backend() {
     uv --directory "$backend_dir" "$@"
 }
@@ -161,10 +175,17 @@ search_name() {
     printf '%s: %s mentions checked, all spelled correctly\n' "$PROG" "$search_count"
 }
 
+# pip_audit <in_library|in_backend> [<option of uv export>...]: checks the
+# packages locked in uv.lock of that directory for known vulnerabilities. The
+# further options go to uv export; the backend leaves out the library of the
+# repository with --no-emit-package pipwerk-domain (section 6.1): it is a path
+# dependency, not a published package, and is checked with its own uv.lock.
 pip_audit() {
+    audit_in=$1
+    shift
     audit_requirements=$(mktemp) || return 1
     audit_status=0
-    in_backend export --frozen --no-hashes --no-emit-project -o "$audit_requirements" &&
+    "$audit_in" export --frozen --no-hashes --no-emit-project "$@" -o "$audit_requirements" &&
         uvx pip-audit -r "$audit_requirements" --no-deps --disable-pip || audit_status=1
     rm -f "$audit_requirements"
     return "$audit_status"
@@ -182,6 +203,18 @@ browser_test() {
 printf '%s: checking %s at commit %s\n' "$PROG" "$repo_root" \
     "$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || printf 'unknown')"
 
+# Shared Python library (docs/technical/pipwerk-domain.md, section 12)
+step "library: uv sync --frozen" in_library sync --frozen
+step "library: pytest" in_library run --frozen pytest
+step "library: ruff check" in_library run --frozen ruff check
+step "library: ruff format --check" in_library run --frozen ruff format --check
+step "library: mypy" in_library run --frozen mypy
+step "library: schemas equal to contracts/strategies/v1" in_library run --frozen \
+    python -m pipwerk_domain.documents.schemas --check "$schemas_dir"
+if [ "$with_audit" = 1 ]; then
+    step "library: pip-audit" pip_audit in_library
+fi
+
 # Backend (technical documentation, section 6.1)
 step "backend: uv sync --frozen" in_backend sync --frozen
 step "backend: pytest" in_backend run --frozen pytest
@@ -190,7 +223,7 @@ step "backend: ruff format --check" in_backend run --frozen ruff format --check
 step "backend: mypy" in_backend run --frozen mypy
 step "search in the repository for the spelling of the name" search_name
 if [ "$with_audit" = 1 ]; then
-    step "backend: pip-audit" pip_audit
+    step "backend: pip-audit" pip_audit in_backend --no-emit-package pipwerk-domain
 fi
 
 # Frontend (section 6.2)
