@@ -380,7 +380,7 @@ devteam/
   settings.json                Freigaben
 ```
 
-Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:*` und `http://localhost:*` freigegeben, die URL als erstes Argument, für die Prüfung in einer Testumgebung durch Tester und QA.
+Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:<port>/<pfad>` und `http://localhost:<port>/<pfad>` freigegeben (Regeln `Bash(curl http://127.0.0.1:*/*)` und `Bash(curl http://localhost:*/*)`; die Endung `:*` bedeutet in Claude Code „Leerzeichen und Platzhalter“ und ist dafür ungeeignet), die URL als erstes Argument, für die Prüfung in einer Testumgebung durch Tester und QA.
 
 Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie um. Änderungen daran veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
