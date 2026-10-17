@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-16`
+- zuletzt aktualisiert: `2026-10-18`
 - abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -132,7 +132,7 @@ Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als 
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie hat mindestens einen Auslöser. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen legt das Fachmodell fest (req-fach-053): Kerzenschluss mit Zeiteinheit, Tick und externes Ereignis. Die Verwaltung einer Order hat eigene Auslöser-Elemente innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
+Strategieabläufe werden durch Auslöser gestartet beziehungsweise erneut ausgewertet. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Offen: wie eine Strategie oder Verwaltung ohne Auslöser ausgewertet wird, zum Beispiel durch Start von Hand. Die Frage betrifft die Ausführung und wird vor der Beschreibung des Strategietesters geklärt. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen legt das Fachmodell fest (req-fach-053): Kerzenschluss mit Zeiteinheit, Tick und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
 
 Die Wiederholung einer Strategieauswertung ergibt sich aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -322,7 +322,7 @@ Der Strategiedesigner bietet folgende Arbeitsabläufe:
 
 ### req-ablauf-002 -- Strategie anlegen
 
-Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenfläche mit einem Auslöser-Element, dessen Parameter noch zu setzen sind. Bezeichnung und Beschreibung gibt der Anwender in der Eigenschaftenansicht der Strategie ein. Beide sind jederzeit änderbar. Gespeichert wird erst, wenn der Anwender speichert.
+Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenfläche ohne Elemente. Bezeichnung und Beschreibung gibt der Anwender in der Eigenschaftenansicht der Strategie ein. Beide sind jederzeit änderbar. Gespeichert wird erst, wenn der Anwender speichert.
 
 ### req-ablauf-003 -- Objekte in einer Strategie verwenden
 
@@ -460,3 +460,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 4), vom Projektleiter: Order und Position in Regeln aus dem Zusammenhang (req-ablauf-003), Eingangswerte der prüfenden Rolle (req-core-002), doppelte Nennung entfernt (req-fach-001), Objekttyp eines angelegten Indikators (req-ui-005). |
 | 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 5), vom Projektleiter: Limitpreis bei der Stop-Limit-Order, Prüfung nach Ausführung auf der Position, Unterscheidung der Fälle (req-core-002); Order und Position in Regeln (req-ablauf-003). |
 | 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 6). Entscheidung des Auftraggebers im Chat am 2026-10-16: Regelvorlage „Risiko je Trade“ in req-core-002 auf die fachliche Festlegung zurückgeführt, die Abbildung im Ausdruck ist Sache der Spezifikation. |
+| 2026-10-18 | Entscheidung des Auftraggebers im Chat am 2026-10-18: Auslöser sind optional, für die Strategie und für die Verwaltung einer Order (req-fach-015); „Neue Strategie“ öffnet eine leere Zeichenfläche (req-ablauf-002). Grundsatz: keine Einschränkung ohne klare Notwendigkeit. Auswertung ohne Auslöser offen. Anlass: Ergänzung der Spezifikation in Phase 4 (`strategiedesign/wp02`, `development/strategiedesign/reviews/specification-4.md`). |
