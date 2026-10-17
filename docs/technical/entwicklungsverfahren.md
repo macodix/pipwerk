@@ -380,7 +380,7 @@ devteam/
   settings.json                Freigaben
 ```
 
-Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`.
+Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:*` und `http://localhost:*` freigegeben, die URL als erstes Argument, für die Prüfung in einer Testumgebung durch Tester und QA.
 
 Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie um. Änderungen daran veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
@@ -411,6 +411,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-17 | Freigabe für HTTP-Anfragen mit `curl` an die Testumgebung auf dem eigenen Rechner. Anlass: Frage `strategiedesign/questions/wp01-03.md`. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
 | 2026-10-17 | Rein technische Streitpunkte: Eine Schleife ohne Fortschritt, deren Entscheidung weder Dokumente des Auftraggebers noch bestätigte Festlegungen, Abnahmekriterien oder Umfang ändert, entscheidet der Softwarearchitekt abschließend. Anlass: Frage `strategiedesign/questions/wp01-01.md`. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
 | 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl: weiter, solange die blockierenden Befunde weniger werden; eine Ebene höher bei unverändert wiederkehrendem Befund oder gleichbleibender Zahl; Befunde für eine höhere Ebene sofort dorthin. Phasen 1, 2, 3 und 5 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
 | 2026-10-14 | Berichte von Tester und QA im Berichtsverzeichnis `work/<ref>/reports/` statt ohne Commit im eigenen Arbeitsverzeichnis (Ablauftest, Hinweis H1 der QA). |
