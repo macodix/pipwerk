@@ -6,7 +6,7 @@
 - stand: 2026-10-17
 - komponenten: `packages/domain-core`, `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber am 2026-10-16 mit allen acht Festlegungen ([Präsentation](presentations/specification-1.html), Vermerk der Bestätigung), Stand `main` Commit `fc30c0e25eeda28517b10bd62b64231046f2a467`
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md).
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md), bestanden, Bestätigung offen; `wp02` ruht bis zur Bestätigung.
 
 ## Übersicht
 
