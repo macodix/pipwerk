@@ -66,6 +66,35 @@ test.beforeEach(async ({ request }) => {
   expect(response.ok()).toBe(true);
 });
 
+const SETTINGS = /^(Einstellungen|Settings)$/;
+const LANGUAGE = /^(Sprache|Language)$/;
+const CLOSE = /^(Schließen|Close)$/;
+
+// The selection of the language is in the settings, not in the header any more.
+async function openSettings(page: Page): Promise<Locator> {
+  await page.getByRole('button', { name: SETTINGS }).click();
+  const dialog = page.getByRole('dialog', { name: SETTINGS });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+async function closeSettings(page: Page): Promise<void> {
+  await page.getByRole('dialog', { name: SETTINGS }).getByRole('button', { name: CLOSE }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+
+async function setLanguage(page: Page, language: 'de' | 'en'): Promise<void> {
+  const dialog = await openSettings(page);
+  const select = dialog.getByLabel(LANGUAGE);
+  // The selection is enabled when the stored language has been read.
+  await expect(select).toBeEnabled();
+  await select.selectOption(language);
+  await expect(page.locator('html')).toHaveAttribute('lang', language);
+  // ... and enabled again when the new language has been stored.
+  await expect(select).toBeEnabled();
+  await closeSettings(page);
+}
+
 test('starts with an empty canvas, reaches the backend and switches the language', async ({
   page,
 }) => {
@@ -93,14 +122,15 @@ test('starts with an empty canvas, reaches the backend and switches the language
   await healthResponse;
   await expect(page.getByRole('status')).toHaveText('Backend: verbunden');
 
-  await page.getByLabel('Sprache').selectOption('en');
+  await expect(page.getByLabel('Sprache')).toHaveCount(0);
+  await setLanguage(page, 'en');
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('region', { name: 'Designer canvas' })).toBeVisible();
   await expect(page.getByText('The canvas is empty.')).toBeVisible();
   await expect(page.getByRole('status')).toHaveText('Backend: connected');
 
-  await page.getByLabel('Language').selectOption('de');
+  await setLanguage(page, 'de');
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   await expect(page.getByRole('region', { name: 'Designer-Arbeitsfläche' })).toBeVisible();
@@ -111,22 +141,27 @@ test('starts with an empty canvas, reaches the backend and switches the language
 
 test('persists the Studio language across page reloads (req-ui-008)', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByLabel('Sprache')).toHaveValue('de');
+  let dialog = await openSettings(page);
+  await expect(dialog.getByLabel('Sprache')).toHaveValue('de');
+  await closeSettings(page);
 
-  await page.getByLabel('Sprache').selectOption('en');
+  await setLanguage(page, 'en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
   // Reload: the authoritative language must come back from the backend, not
   // from any browser-side storage.
   await page.reload();
-  await expect(page.getByLabel('Language')).toHaveValue('en');
+  dialog = await openSettings(page);
+  await expect(dialog.getByLabel('Language')).toHaveValue('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await closeSettings(page);
 
   // Switch back to German and verify it is restored after another reload,
   // without affecting anything else on the page.
-  await page.getByLabel('Language').selectOption('de');
+  await setLanguage(page, 'de');
   await page.reload();
-  await expect(page.getByLabel('Sprache')).toHaveValue('de');
+  dialog = await openSettings(page);
+  await expect(dialog.getByLabel('Sprache')).toHaveValue('de');
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 });
 
@@ -152,12 +187,12 @@ test('shows the revision in the footer next to the backend status and switches i
   expect(revisionBox).not.toBeNull();
   expect(revisionBox!.x).toBeGreaterThan(backendBox!.x + backendBox!.width - 1);
 
-  await page.getByLabel('Sprache').selectOption('en');
+  await setLanguage(page, 'en');
 
   await expect(footer.getByText(english, { exact: true })).toBeVisible();
   await expect(footer.getByText(german, { exact: true })).toHaveCount(0);
 
-  await page.getByLabel('Language').selectOption('de');
+  await setLanguage(page, 'de');
 
   await expect(footer.getByText(german, { exact: true })).toBeVisible();
 });
@@ -181,12 +216,12 @@ test('shows commit and commit date as tooltip and accessible description', async
   await expect(display).toHaveAttribute('title', german);
   await expect(display).toHaveAccessibleDescription(german);
 
-  await page.getByLabel('Sprache').selectOption('en');
+  await setLanguage(page, 'en');
 
   await expect(display).toHaveAttribute('title', english);
   await expect(display).toHaveAccessibleDescription(english);
 
-  await page.getByLabel('Language').selectOption('de');
+  await setLanguage(page, 'de');
 
   await expect(display).toHaveAttribute('title', german);
   await expect(display).toHaveAccessibleDescription(german);
@@ -229,8 +264,8 @@ function revisionValue(dialog: Locator, label: string): Locator {
 async function waitForLoadedPage(page: Page): Promise<void> {
   await page.goto('/');
   await expect(page.getByRole('contentinfo').getByRole('status')).toHaveText('Backend: verbunden');
-  // The language select is enabled when the stored language has been read.
-  await expect(page.getByLabel('Sprache')).toBeEnabled();
+  // The menu works when the type descriptions have been loaded.
+  await expect(page.getByRole('button', { name: 'Neue Strategie' })).toBeEnabled();
 }
 
 test('opens the About dialog with the mouse and shows its content in German and English', async ({
@@ -257,7 +292,7 @@ test('opens the About dialog with the mouse and shows its content in German and 
   await expect(german.getByRole('button', { name: 'Schließen' })).toBeFocused();
 
   await german.getByRole('button', { name: 'Schließen' }).click();
-  await page.getByLabel('Sprache').selectOption('en');
+  await setLanguage(page, 'en');
   await expect(openButton(page, 'About pipwerk Studio')).toBeVisible();
   await openButton(page, 'About pipwerk Studio').click();
 
@@ -276,9 +311,12 @@ test('opens the About dialog with the mouse and shows its content in German and 
 test('opens the About dialog with the keyboard', async ({ page }) => {
   await waitForLoadedPage(page);
 
-  // Tab order of the header: language select, then the button.
-  await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Sprache')).toBeFocused();
+  // Tab order of the header: the enabled entries of the menu (new strategy, open, settings), then the button.
+  const menu = ['Neue Strategie', 'Öffnen', 'Einstellungen'];
+  for (const name of menu) {
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name, exact: true })).toBeFocused();
+  }
   await page.keyboard.press('Tab');
   await expect(openButton(page)).toBeFocused();
   await page.keyboard.press('Enter');
@@ -303,7 +341,7 @@ test('shows the commit and its date in the dialog as built, in the time zone of 
   );
   await dialog.getByRole('button', { name: 'Schließen' }).click();
 
-  await page.getByLabel('Sprache').selectOption('en');
+  await setLanguage(page, 'en');
   await openButton(page, 'About pipwerk Studio').click();
   dialog = page.getByRole('dialog');
   await expect(revisionValue(dialog, 'Revision')).toHaveText(
@@ -319,7 +357,7 @@ test('shows unknown in the dialog without a Git working tree', async ({ page }) 
   await expect(revisionValue(page.getByRole('dialog'), 'Stand')).toHaveText('unbekannt');
   await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
 
-  await page.getByLabel('Sprache').selectOption('en');
+  await setLanguage(page, 'en');
   await openButton(page, 'About pipwerk Studio').click();
   await expect(revisionValue(page.getByRole('dialog'), 'Revision')).toHaveText('unknown');
 });
@@ -366,14 +404,14 @@ test('makes no request to another address when it opens and while it is open', a
 
 test('locks the rest of the page while the dialog is open', async ({ page }) => {
   await waitForLoadedPage(page);
-  const select = page.getByLabel('Sprache');
+  const settings = page.getByRole('button', { name: SETTINGS });
   const button = openButton(page);
   await button.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
 
-  // Mouse: at the place of the select and the button there is something else.
-  for (const target of [select, button]) {
+  // Mouse: at the place of the settings button and the About button there is something else.
+  for (const target of [settings, button]) {
     const box = await target.boundingBox();
     expect(box).not.toBeNull();
     const x = box!.x + box!.width / 2;
@@ -388,7 +426,9 @@ test('locks the rest of the page while the dialog is open', async ({ page }) => 
     await expect(target).not.toBeFocused();
     await expect(dialog).toBeVisible();
   }
-  await expect(select).toHaveValue('de');
+  // The click on the settings button opened nothing: only the About dialog is open, the language is unchanged.
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 
   await expect(dialog).toBeVisible();
 });

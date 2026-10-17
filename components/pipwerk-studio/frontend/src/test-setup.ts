@@ -3,6 +3,9 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
+// A failed query of Testing Library prints the page; a limit keeps the report readable.
+process.env.DEBUG_PRINT_LIMIT ??= '3000';
+
 // jsdom has no layout engine. React Flow needs ResizeObserver to render, so a
 // minimal stand-in is provided for component tests.
 class ResizeObserverStub {
@@ -12,6 +15,14 @@ class ResizeObserverStub {
 }
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+
+// React Flow reads the zoom of the viewport with `DOMMatrixReadOnly`, which jsdom does not have.
+// The viewport of the tests is never zoomed.
+class DOMMatrixReadOnlyStub {
+  m22 = 1;
+}
+
+vi.stubGlobal('DOMMatrixReadOnly', DOMMatrixReadOnlyStub);
 
 // jsdom does not implement `showModal()` and `close()` of `<dialog>` completely.
 // The stand-ins set and remove the attribute `open`; `close()` fires the event
@@ -34,4 +45,5 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+  vi.stubGlobal('DOMMatrixReadOnly', DOMMatrixReadOnlyStub);
 });

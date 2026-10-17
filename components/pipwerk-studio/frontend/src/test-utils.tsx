@@ -5,6 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import { vi } from 'vitest';
 
 import { createI18n, type SupportedLanguage } from './i18n';
+import typesJson from './testing/element-types.json';
 
 export function renderWithProviders(ui: ReactElement, language?: SupportedLanguage) {
   const queryClient = new QueryClient({
@@ -22,6 +23,9 @@ export function renderWithProviders(ui: ReactElement, language?: SupportedLangua
 }
 
 function toResponse(status: number, body: unknown): Response {
+  if (status === 204) {
+    return new Response(null, { status });
+  }
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
@@ -50,42 +54,68 @@ export function createGate(): { promise: Promise<RouteResponse>; release: (r: Ro
   return { promise, release };
 }
 
+/** A request the mock has seen. */
+export type RecordedCall = { method: string; url: string; body: unknown };
+
+/** A route a test adds: it answers a request or returns `undefined` to leave it to the standard routes. */
+export type ExtraRoute = (call: RecordedCall) => RouteResponse | Promise<RouteResponse> | undefined;
+
+export const EMPTY_LIST = { status: 200, body: { items: [] } } as const;
+
 /**
  * Mocks `fetch` with per-endpoint responses so tests can exercise the
  * backend health check, the Studio revision and the Studio language endpoints independently.
  * Defaults to a healthy backend, an undeterminable revision and a stored German language when a route
- * is not explicitly overridden.
+ * is not explicitly overridden. The Web API answers with the standard type descriptions, empty lists
+ * and an object directory; `extra` adds or replaces routes. Returns the requests the mock has seen.
  */
 export function mockFetchRoutes(overrides: {
   health?: RouteResponse;
   revision?: RouteResponse;
   getLanguage?: RouteSource;
   putLanguage?: RouteSource<[unknown]>;
-} = {}): void {
+  elementTypes?: RouteResponse;
+  extra?: ExtraRoute;
+} = {}): { calls: RecordedCall[] } {
   const health = overrides.health ?? { status: 200, body: { status: 'ok' } };
   const revision = overrides.revision ?? { status: 200, body: { revision: null, commit: null, committed_at: null } };
   const getLanguage = overrides.getLanguage ?? { status: 200, body: { language: 'de' } };
   const putLanguage: RouteSource<[unknown]> =
     overrides.putLanguage ?? ((requestBody: unknown) => ({ status: 200, body: requestBody }));
+  const elementTypes = overrides.elementTypes ?? { status: 200, body: typesJson };
+  const calls: RecordedCall[] = [];
 
   vi.stubGlobal(
     'fetch',
     (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
       const url = typeof input === 'string' ? input : input.toString();
       const method = (init?.method ?? 'GET').toUpperCase();
+      const body: unknown = init?.body !== undefined ? JSON.parse(String(init.body)) : undefined;
+      const call: RecordedCall = { method, url, body };
+      calls.push(call);
 
-      let route: RouteResponse | Promise<RouteResponse>;
-      if (url.includes('/api/health')) {
-        route = health;
-      } else if (url.includes('/api/studio/revision')) {
-        route = revision;
-      } else if (url.includes('/api/studio/settings/language') && method === 'GET') {
-        route = typeof getLanguage === 'function' ? getLanguage() : getLanguage;
-      } else if (url.includes('/api/studio/settings/language') && method === 'PUT') {
-        const requestBody: unknown = init?.body !== undefined ? JSON.parse(String(init.body)) : {};
-        route = typeof putLanguage === 'function' ? putLanguage(requestBody) : putLanguage;
-      } else {
-        return Promise.reject(new Error(`Unmocked fetch call: ${method} ${url}`));
+      let route: RouteResponse | Promise<RouteResponse> | undefined = overrides.extra?.(call);
+      if (route === undefined) {
+        if (url.includes('/api/health')) {
+          route = health;
+        } else if (url.includes('/api/studio/revision')) {
+          route = revision;
+        } else if (url.includes('/api/studio/settings/language') && method === 'GET') {
+          route = typeof getLanguage === 'function' ? getLanguage() : getLanguage;
+        } else if (url.includes('/api/studio/settings/language') && method === 'PUT') {
+          const requestBody: unknown = body ?? {};
+          route = typeof putLanguage === 'function' ? putLanguage(requestBody) : putLanguage;
+        } else if (url.includes('/api/v1/element-types')) {
+          route = elementTypes;
+        } else if (/\/api\/v1\/(strategies|indicators|trends|rules|rulesets)$/.test(url) && method === 'GET') {
+          route = EMPTY_LIST;
+        } else if (url.includes('/api/studio/settings/object-directory') && method === 'GET') {
+          route = { status: 200, body: { path: '/var/objects', is_default: true } };
+        } else if (url.includes('/api/v1/check') && method === 'POST') {
+          route = { status: 200, body: { findings: [], expressions: [], names_truncated: false } };
+        } else {
+          return Promise.reject(new Error(`Unmocked fetch call: ${method} ${url}`));
+        }
       }
 
       const signal = init?.signal ?? undefined;
@@ -110,4 +140,5 @@ export function mockFetchRoutes(overrides: {
       return Promise.race([answered, aborted]);
     },
   );
+  return { calls };
 }

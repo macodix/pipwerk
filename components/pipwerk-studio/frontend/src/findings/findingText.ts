@@ -1,0 +1,231 @@
+import type { i18n as I18n, TFunction } from 'i18next';
+
+import type { Finding } from '../api/objects';
+import type { StrategyDocument } from '../document/types';
+import type { SupportedLanguage } from '../i18n';
+import { labelText, orderSelector, typeName, type TypeIndex } from '../model/typeIndex';
+
+/**
+ * The text of a finding in the language of the interface. The texts stand in
+ * the translation files under `findings.<identifier of the finding>`; the
+ * data of the finding is inserted. A finding with an identifier that has no
+ * text appears with a general text and its identifier (specification 5.4).
+ */
+
+export type FindingTextContext = {
+  document: StrategyDocument | null;
+  types: TypeIndex | null;
+  language: SupportedLanguage;
+};
+
+/** The kinds of problems in an expression (`details.issue` of `expression.invalid`), by the documentation of the library, section 7.3. */
+export const EXPRESSION_ISSUES = [
+  'syntax',
+  'unknown_function',
+  'unknown_name',
+  'unknown_property',
+  'type_mismatch',
+  'unknown_choice_value',
+  'argument_count',
+] as const;
+
+/** The reasons of a typing error (`details.reason` of the issue `syntax`). */
+export const SYNTAX_REASONS = [
+  'unexpected_end',
+  'unexpected_token',
+  'invalid_character',
+  'invalid_number',
+  'unterminated_string',
+  'too_long',
+  'too_deep',
+] as const;
+
+export const CONNECTION_REASONS = [
+  'unknown_source',
+  'unknown_target',
+  'unknown_output',
+  'target_is_trigger',
+  'across_managements',
+] as const;
+
+export const BINDING_REASONS = [
+  'binding_kind',
+  'type',
+  'choice_value',
+  'value',
+  'unknown_parameter',
+  'unknown_property',
+  'set_by_application',
+] as const;
+
+export const RESULT_REASONS = ['unknown_property', 'choice_value', 'type'] as const;
+
+export const REFERENCE_KINDS = ['forward', 'cycle'] as const;
+
+/** The data the texts can use. Every name has a value (empty if the finding does not have it). */
+const knownDetails = [
+  'name',
+  'property',
+  'parameter',
+  'type',
+  'field',
+  'issue',
+  'reason',
+  'found',
+  'expected',
+  'elements',
+  'owner',
+  'kind',
+  'scope',
+  'limit',
+  'source',
+  'output',
+  'target',
+  'function',
+  'operator',
+  'values',
+  'allowed',
+  'object',
+  'minimum',
+  'maximum',
+  'index',
+  'left',
+  'right',
+  'what',
+  'namespace',
+  'rule',
+  'refers_to',
+  'list',
+  'start',
+  'end',
+  'order_type',
+  'rules',
+  'names',
+  'context',
+  'length',
+  'instance',
+] as const;
+
+function plain(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(plain).join(', ');
+  }
+  return '';
+}
+
+function labelOfId(
+  ctx: FindingTextContext,
+  finding: Finding,
+  kind: 'parameter' | 'property',
+  id: string,
+): string {
+  if (ctx.document === null || ctx.types === null || finding.element === null) {
+    return id;
+  }
+  const element = ctx.document.elements.find((candidate) => candidate.id === finding.element);
+  const type = element === undefined ? undefined : ctx.types.byId.get(element.type);
+  if (type === undefined) {
+    return id;
+  }
+  const own = kind === 'parameter' ? type.parameters : type.properties;
+  const found = own.find((candidate) => candidate.id === id);
+  if (found !== undefined) {
+    return labelText(found.label, ctx.language);
+  }
+  // The properties the user sets for an order come from the order type that the element selects.
+  const selector = orderSelector(ctx.types, type);
+  if (kind === 'property' && selector !== null) {
+    for (const orderType of selector.orderTypes) {
+      const property = orderType.properties.find((candidate) => candidate.id === id);
+      if (property !== undefined) {
+        return labelText(property.label, ctx.language);
+      }
+    }
+  }
+  return id;
+}
+
+/** Codes whose `type` is an identifier the user interface does not translate. */
+const RAW_TYPE_CODES = new Set(['type.unknown', 'rule.invalid_type']);
+
+export function findingParams(
+  t: TFunction,
+  finding: Finding,
+  ctx: FindingTextContext,
+): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const key of knownDetails) {
+    params[key] = plain(finding.details[key]);
+  }
+  params.code = finding.code;
+  params.subject = finding.subject ?? '';
+  const element = ctx.document?.elements.find((candidate) => candidate.id === finding.element);
+  params.element = element === undefined ? '' : element.title !== '' ? element.title : element.type;
+  if (typeof finding.details.parameter === 'string') {
+    params.parameter = labelOfId(ctx, finding, 'parameter', finding.details.parameter);
+  }
+  if (typeof finding.details.property === 'string') {
+    params.property = labelOfId(ctx, finding, 'property', finding.details.property);
+  }
+  if (typeof finding.details.type === 'string' && ctx.types !== null && !RAW_TYPE_CODES.has(finding.code)) {
+    params.type = typeName(ctx.types, finding.details.type, ctx.language);
+  }
+  const field = finding.details.field;
+  if (typeof field === 'string') {
+    const separator = field.indexOf(':');
+    const kind = separator < 0 ? field : field.slice(0, separator);
+    const id = separator < 0 ? '' : field.slice(separator + 1);
+    if (kind === 'parameter') {
+      params.field = t('findings.fields.parameter', { name: labelOfId(ctx, finding, 'parameter', id) });
+    } else if (kind === 'property') {
+      params.field = t('findings.fields.property', { name: labelOfId(ctx, finding, 'property', id) });
+    } else if (kind === 'property_definition') {
+      params.field = t('findings.fields.propertyDefinition', { name: id });
+    } else if (kind === 'expression' || kind === 'result_expression') {
+      params.field = t(`findings.fields.${kind}`);
+    } else {
+      params.field = field;
+    }
+  }
+  const reason = params.reason ?? '';
+  if (finding.code === 'connection.invalid') {
+    params.reason = t(`findings.connectionReasons.${reason}`, { defaultValue: reason });
+  } else if (finding.code === 'parameter.binding_invalid') {
+    params.reason = t(`findings.bindingReasons.${reason}`, { defaultValue: reason });
+  } else if (finding.code === 'rule.result_mismatch') {
+    params.reason = t(`findings.resultReasons.${reason}`, { defaultValue: reason });
+  } else if (finding.code === 'ruleset.reference_order') {
+    params.kind = t(`findings.referenceKinds.${params.kind ?? ''}`, { defaultValue: params.kind ?? '' });
+  } else if (finding.code === 'flow.unending_loop') {
+    params.elements = String(Array.isArray(finding.details.elements) ? finding.details.elements.length : 0);
+  }
+  if (params.issue === 'syntax') {
+    params.syntaxReason = t(`findings.syntax.${reason}`, { defaultValue: reason, found: params.found });
+  }
+  return params;
+}
+
+/** The keys of the findings that have no text, for a list of identifiers. `has` tells whether a key exists. */
+export function missingFindingTexts(codes: readonly string[], has: (key: string) => boolean): string[] {
+  return codes.map((code) => `findings.${code}`).filter((key) => !has(key));
+}
+
+export function findingText(t: TFunction, i18n: I18n, finding: Finding, ctx: FindingTextContext): string {
+  const params = findingParams(t, finding, ctx);
+  const key = `findings.${finding.code}`;
+  if (!i18n.exists(key)) {
+    return t('findings.unknown', params);
+  }
+  if (finding.code === 'expression.invalid' || finding.code === 'rule.unresolved_name') {
+    const issueKey = `findings.issues.${params.issue ?? ''}`;
+    const problem = i18n.exists(issueKey) ? t(issueKey, params) : t('findings.issues.other', params);
+    return t(key, { ...params, problem });
+  }
+  return t(key, params);
+}

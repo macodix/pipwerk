@@ -10,7 +10,7 @@
 
 pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Mit ihm sollen später Handelsstrategien auf einer Arbeitsfläche zusammengestellt und bearbeitet werden.
 
-Der derzeitige Stand ist ein technisches Grundgerüst. pipwerk Studio zeigt eine leere Arbeitsfläche und unterstützt eine dauerhaft gespeicherte deutsche oder englische Oberfläche. In der Oberfläche können Strategien noch nicht angelegt, bearbeitet, gespeichert oder ausgeführt werden. Strategien und Vorlagen lassen sich bisher nur über die Web-API anlegen, lesen, ändern und löschen (Abschnitt 2, „Web-API ausprobieren“); ausgeführt werden sie nicht. Begriffe, die Sie ohne Vorwissen vielleicht nicht kennen, erklärt das Glossar in Abschnitt 7, zum Beispiel Oberfläche und Datenbank.
+Der derzeitige Stand: In der Oberfläche können Strategien angelegt, auf der Zeichenfläche gestaltet, geprüft, gespeichert, geöffnet, geschlossen und gelöscht werden; Sprache und Objektverzeichnis stellen Sie in den Einstellungen ein. Vorlagen (Indikator, Trend, Regel, Regelwerk) lassen sich in der Oberfläche noch nicht anlegen, ansehen oder löschen; das geht bisher nur über die Web-API (Abschnitt 2, „Web-API ausprobieren“). Strategien werden nicht ausgeführt. Die Arbeitsabläufe Schritt für Schritt und die beiden Testfälle als Anleitung folgen in einer späteren Fassung dieses Dokuments. Begriffe, die Sie ohne Vorwissen vielleicht nicht kennen, erklärt das Glossar in Abschnitt 7, zum Beispiel Oberfläche und Datenbank.
 
 ## 2. pipwerk Studio öffnen
 
@@ -111,11 +111,15 @@ Nach dem Start wird pipwerk Studio in einem Webbrowser unter der Adresse `http:/
 
 ## 3. Aufbau der Oberfläche
 
-Die Oberfläche besteht aus drei Bereichen.
+Die Oberfläche besteht aus der Kopfzeile oben, drei Bereichen in der Mitte (Elementbibliothek, Zeichenfläche, Eigenschaftenansicht) und der Fußzeile unten.
 
-Oben steht die Kopfzeile. Sie zeigt links den Namen „pipwerk Studio“ und rechts das Auswahlfeld für die Sprache. Rechts neben dem Auswahlfeld steht die Schaltfläche „Über pipwerk Studio“ (auf Englisch „About pipwerk Studio“). Sie öffnet den Dialog, den Abschnitt 4 beschreibt. Der Name lautet in Deutsch und in Englisch gleich. Auch der Titel der Seite im Browser lautet „pipwerk Studio“.
+Oben steht die Kopfzeile. Sie zeigt links den Namen „pipwerk Studio“ und das Menü mit den Einträgen „Neue Strategie“, „Öffnen“, „Speichern“, „Prüfen“, „Schließen“, „Löschen“ und „Einstellungen“. Ohne geöffnete Strategie sind nur „Neue Strategie“, „Öffnen“ und „Einstellungen“ bedienbar. Rechts steht, sobald die Strategie geprüft oder gespeichert wurde, die Zahl der Befunde („Befunde: 3“; ein Hinweistext nennt Fehler und Hinweise getrennt), und die Schaltfläche „Über pipwerk Studio“ (auf Englisch „About pipwerk Studio“). Sie öffnet den Dialog, den Abschnitt 4 beschreibt. Der Name lautet in Deutsch und in Englisch gleich. Auch der Titel der Seite im Browser lautet „pipwerk Studio“. Die Auswahl der Sprache steht nicht mehr in der Kopfzeile, sondern in den Einstellungen (Abschnitt 5).
 
-In der Mitte liegt die Designer-Arbeitsfläche. Sie ist mit einem Punktraster hinterlegt. Oben links steht der Hinweis „Die Arbeitsfläche ist leer.“ Die Arbeitsfläche kann mit der Maus verschoben und mit dem Mausrad vergrößert oder verkleinert werden. Weitere Funktionen hat sie noch nicht.
+Links liegt die Elementbibliothek mit den Gruppen „Auslöser“, „Elemente des Ablaufs“, „Objekte der Anwendung“, „Objekttypen“, „Mitgelieferte Vorlagen“ und „Gespeicherte Vorlagen“. Einträge ziehen Sie mit der Maus auf die Zeichenfläche. Mit der Tastatur wählen Sie einen Eintrag (Tabulatortaste, Leertaste) und fügen ihn mit der Eingabetaste in die Mitte der sichtbaren Zeichenfläche ein. Einträge mit der Marke „für Regeln“ gehören nicht auf die Zeichenfläche, sondern zu den Regeln der Strategie oder eines Elements.
+
+In der Mitte liegt die Zeichenfläche. Sie ist mit einem Punktraster hinterlegt. Ohne geöffnete Strategie steht oben links der Hinweis „Die Arbeitsfläche ist leer.“ Die Zeichenfläche kann mit der Maus verschoben und mit dem Mausrad vergrößert oder verkleinert werden. Elemente zeigen ihre Bezeichnung (Objekte den Namen ihrer Instanz) und, wenn der Typ Ausgänge hat, Anschlüsse: den Eingang links und die Ausgänge rechts. Eine Verbindung ziehen Sie von einem Ausgang zu einem Element, auch zurück zu einem früheren. Verbindungen und Elemente löschen Sie, indem Sie sie auswählen und die Entf-Taste drücken. Die Verwaltung einer Order erscheint als Rahmen unterhalb von „Order aufgeben“; er ist mit dem Element verbunden. Ein Element, das Sie in den Rahmen ziehen, gehört zu dieser Verwaltung, eines, das Sie herausziehen, nicht mehr. Der Rahmen lässt sich mit dem Pfeil in seiner Kopfzeile ein- und aufklappen; eingeklappt sind seine Elemente verborgen und bleiben in der Strategie. Ein Element mit Fehler ist rot, eines mit Hinweis orange umrandet (zusätzlich steht das Wort „Fehler“ beziehungsweise „Hinweis“ am Element). Ein Element, dessen Typ pipwerk Studio nicht kennt, ist rot umrandet und zeigt die Kennung seines Typs; es lässt sich verschieben, als Ziel verbinden und löschen, seine Werte sind nur lesbar und bleiben beim Speichern unverändert.
+
+Rechts liegt die Eigenschaftenansicht. Sie zeigt das ausgewählte Element, die ausgewählte Regel oder, nach einem Klick auf die leere Zeichenfläche, die Strategie (Bezeichnung, Beschreibung, Parameter, Regeln). Die Eingaben entstehen aus der Beschreibung des Typs: je Parameter eine Eingabe nach dem Datentyp (zum Beispiel Zahl, Prozent, Wahrheitswert, Auswahl, Zeiteinheit, Datum) und die Wahl der Bindungsart (fester Wert, Parameter, Ausdruck, bei der Anwendung). Parameter, die nur bei einem bestimmten Wert eines anderen gelten, erscheinen erst dann. Bei einer Order stehen nur die Eigenschaften, die Sie belegen. Eine Instanz nennt ihre Herkunft („ema20, aus Objekttyp EMA“). Bei der Eingabe eines Ausdrucks schlägt pipwerk Studio nach einem Namen und einem Punkt die Eigenschaften dieses Objekts vor (mit den Pfeiltasten und der Eingabetaste oder mit der Maus); darunter steht der Ausdruck mit den Namen in der gewählten Sprache. Geschrieben wird immer die Kennung. Befunde zu einem Element stehen bei dessen Eigenschaften, Befunde zu einer Regel bei der Regel, Befunde ohne Element bei der Strategie.
 
 Unten steht die Fußzeile. Sie zeigt links, ob pipwerk Studio seinen Hintergrunddienst erreicht, und rechts daneben den Stand, aus dem pipwerk Studio läuft. Der Hintergrunddienst ist der Teil von pipwerk Studio, der außerhalb des Browsers läuft (siehe Glossar in Abschnitt 7).
 
@@ -142,9 +146,9 @@ Der Dialog nennt den Namen von pipwerk Studio, den genauen Stand, die Lizenz und
 
 ### Öffnen und Schließen
 
-Öffnen: Klicken Sie in der Kopfzeile auf die Schaltfläche „Über pipwerk Studio“ rechts neben dem Auswahlfeld für die Sprache. Mit der Tastatur erreichen Sie die Schaltfläche mit der Tabulatortaste und öffnen den Dialog mit der Eingabetaste.
+Öffnen: Klicken Sie in der Kopfzeile auf die Schaltfläche „Über pipwerk Studio“ rechts neben dem Menü. Mit der Tastatur erreichen Sie die Schaltfläche mit der Tabulatortaste und öffnen den Dialog mit der Eingabetaste.
 
-Schließen: Klicken Sie im Dialog auf „Schließen“ oder drücken Sie die Escape-Taste. Ein Klick neben den Dialog schließt ihn nicht. Beim Öffnen liegt der Fokus (siehe Glossar in Abschnitt 7) auf „Schließen“; nach dem Schließen liegt er wieder auf der Schaltfläche „Über pipwerk Studio“. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt: Sie können weder mit der Maus noch mit der Tastatur das Auswahlfeld für die Sprache oder die Schaltfläche in der Kopfzeile bedienen. Mit der Tabulatortaste wandert der Fokus nur zwischen den Bedienelementen des Dialogs (Lizenzfeld, Verweis, „Schließen“); vom letzten Element geht er mit der Tabulatortaste zum ersten, vom ersten mit Umschalt+Tabulatortaste zum letzten.
+Schließen: Klicken Sie im Dialog auf „Schließen“ oder drücken Sie die Escape-Taste. Ein Klick neben den Dialog schließt ihn nicht. Beim Öffnen liegt der Fokus (siehe Glossar in Abschnitt 7) auf „Schließen“; nach dem Schließen liegt er wieder auf der Schaltfläche „Über pipwerk Studio“. Solange der Dialog offen ist, ist die übrige Oberfläche gesperrt: Sie können weder mit der Maus noch mit der Tastatur das Menü oder die Schaltfläche in der Kopfzeile bedienen. Mit der Tabulatortaste wandert der Fokus nur zwischen den Bedienelementen des Dialogs (Lizenzfeld, Verweis, „Schließen“); vom letzten Element geht er mit der Tabulatortaste zum ersten, vom ersten mit Umschalt+Tabulatortaste zum letzten.
 
 ### Inhalt
 
@@ -186,7 +190,7 @@ Die Anzeige im Dialog braucht keine Internetverbindung: Name, Stand, Lizenztext 
 
 ### Sprachwechsel bei offenem Dialog
 
-Die Texte des Dialogs (Überschrift, Bezeichnungen, Anzeige des Stands, „Schließen“) folgen der Sprache der Oberfläche. Das Auswahlfeld für die Sprache ist bei offenem Dialog gesperrt. Ändert sich die Sprache trotzdem, weil pipwerk Studio eine in einem anderen Browserfenster geänderte Sprache vom Hintergrunddienst neu liest, wechseln die Texte des offenen Dialogs sofort. Der Dialog bleibt offen und der Fokus bleibt, wo er ist. Name, Lizenz und Adresse bleiben unverändert, weil sie nicht übersetzt werden.
+Die Texte des Dialogs (Überschrift, Bezeichnungen, Anzeige des Stands, „Schließen“) folgen der Sprache der Oberfläche. Die Einstellungen sind bei offenem Dialog gesperrt. Ändert sich die Sprache trotzdem, weil pipwerk Studio eine in einem anderen Browserfenster geänderte Sprache vom Hintergrunddienst neu liest, wechseln die Texte des offenen Dialogs sofort. Der Dialog bleibt offen und der Fokus bleibt, wo er ist. Name, Lizenz und Adresse bleiben unverändert, weil sie nicht übersetzt werden.
 
 ## 5. Sprache wechseln
 
@@ -194,8 +198,11 @@ pipwerk Studio kann auf Deutsch und auf Englisch angezeigt werden. Ohne zuvor ge
 
 So wird die Sprache gewechselt:
 
-1. Klicken Sie in der Kopfzeile auf das Auswahlfeld neben „Sprache“ beziehungsweise „Language“.
-2. Wählen Sie „English“ für Englisch oder „Deutsch“ für Deutsch.
+1. Klicken Sie in der Kopfzeile im Menü auf „Einstellungen“ beziehungsweise „Settings“. Es öffnet sich der Dialog der Einstellungen.
+2. Wählen Sie im Auswahlfeld neben „Sprache“ beziehungsweise „Language“ „English“ für Englisch oder „Deutsch“ für Deutsch.
+3. Schließen Sie den Dialog mit „Schließen“ beziehungsweise „Close“. Eine geöffnete Strategie bleibt dabei unverändert geöffnet.
+
+Im selben Dialog stellen Sie das Objektverzeichnis ein, in dem pipwerk Studio die Strategien und Vorlagen als Dateien ablegt. Tragen Sie einen absoluten Pfad ein und wählen Sie „Verzeichnis ändern“. pipwerk Studio fragt „Dateien verschieben?“: Mit „Ja, Dateien verschieben“ werden alle vorhandenen Dateien in das neue Verzeichnis verschoben, mit „Nein, nur das Verzeichnis ändern“ wird nur die Einstellung geändert, mit „Abbrechen“ bleibt alles, wie es war. Scheitert die Änderung, zum Beispiel weil im neuen Verzeichnis schon Dateien mit denselben Namen liegen oder der Pfad nicht absolut ist, steht die Ursache im Dialog. Eine geöffnete Strategie bleibt geöffnet und wird beim nächsten Speichern in das neue Verzeichnis geschrieben.
 
 Alle Texte der Oberfläche erscheinen sofort in der gewählten Sprache. Der Name „pipwerk Studio“ bleibt unverändert. Selbst vergebene Namen, frei eingegebene Texte, Strategieinhalte und andere fachliche Einstellungen werden durch den Sprachwechsel nicht übersetzt oder verändert.
 
@@ -213,7 +220,8 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 
 ## 6. Bekannte Einschränkungen
 
-- Die Arbeitsfläche ist noch leer; Strategien können in der Oberfläche noch nicht bearbeitet werden. Strategien und Vorlagen lassen sich bisher nur über die Web-API anlegen und ändern (Abschnitt 2).
+- Vorlagen lassen sich in der Oberfläche noch nicht anlegen, ansehen, speichern oder löschen; das geht bisher nur über die Web-API (Abschnitt 2).
+- In der Eingabe eines Ausdrucks schlägt pipwerk Studio die Strategieparameter (`Strategie.<Name>`) noch nicht vor; sie lassen sich trotzdem eingeben.
 - Mit `--host` kann jeder im Netz Strategien, Vorlagen und das Objektverzeichnis ändern; es gibt keine Anmeldung (Abschnitt 2).
 - pipwerk Studio besitzt noch kein Installationspaket für Anwender.
 - Die Sprache gilt für die gesamte laufende Komponente pipwerk Studio und nicht für einzelne Personen.

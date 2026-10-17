@@ -17,7 +17,11 @@
   },
   "canvas": {
     "label": "Designer-Arbeitsfläche",
-    "empty": "Die Arbeitsfläche ist leer."
+    "empty": "Die Arbeitsfläche ist leer.",
+    "controls": "Ansicht der Arbeitsfläche",
+    "management": "Verwaltung: {{title}}",
+    "collapse": "Verwaltung „{{title}}“ einklappen",
+    "expand": "Verwaltung „{{title}}“ aufklappen"
   },
   "backend": {
     "checking": "Backend: Verbindung wird geprüft",
@@ -29,5 +33,310 @@
     "unknown": "Stand: unbekannt",
     "commit": "Commit {{commit}}",
     "commitAt": "Commit {{commit}} vom {{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr"
+  },
+  "menu": {
+    "label": "Menü",
+    "new": "Neue Strategie",
+    "open": "Öffnen",
+    "save": "Speichern",
+    "check": "Prüfen",
+    "close": "Schließen",
+    "delete": "Löschen",
+    "settings": "Einstellungen"
+  },
+  "datatype": {
+    "number": "Zahl",
+    "integer": "Ganzzahl",
+    "percent": "Prozent",
+    "boolean": "Wahrheitswert",
+    "text": "Text",
+    "choice": "Auswahl",
+    "time_unit": "Zeiteinheit",
+    "timestamp": "Zeitpunkt",
+    "date": "Datum",
+    "expression": "Ausdruck",
+    "object": "Objekt"
+  },
+  "library": {
+    "label": "Elementbibliothek",
+    "title": "Elementbibliothek",
+    "groups": {
+      "triggers": "Auslöser",
+      "flow": "Elemente des Ablaufs",
+      "applicationObjects": "Objekte der Anwendung",
+      "objectTypes": "Objekttypen",
+      "builtinTemplates": "Mitgelieferte Vorlagen",
+      "storedTemplates": "Gespeicherte Vorlagen"
+    },
+    "empty": "Keine Einträge.",
+    "loadFailed": "Die Typbeschreibungen konnten nicht geladen werden. Ohne sie lässt sich keine Strategie anlegen oder öffnen.",
+    "retry": "Erneut versuchen",
+    "storedFailed": "Die gespeicherten Vorlagen konnten nicht gelesen werden.",
+    "unreadable": "nicht lesbar",
+    "forRules": "für Regeln"
+  },
+  "properties": {
+    "panel": "Eigenschaften",
+    "none": "Es ist keine Strategie geöffnet. Legen Sie mit „Neue Strategie“ eine an oder öffnen Sie eine gespeicherte.",
+    "multiple": "{{count}} Elemente ausgewählt.",
+    "strategy": "Strategie",
+    "title": "Bezeichnung",
+    "description": "Beschreibung",
+    "label": "Bezeichnung",
+    "name": "Name",
+    "parameters": "Parameter",
+    "properties": "Eigenschaften",
+    "orderProperties": "Eigenschaften der Order",
+    "instanceValues": "Werte der Instanz",
+    "noParameters": "Die Strategie hat keine Parameter.",
+    "parameterName": "Name des Parameters {{number}}",
+    "parameterType": "Datentyp von {{name}}",
+    "parameterChoices": "Werte von {{name}}",
+    "choicesHint": "durch Komma getrennt",
+    "parameterValue": "Wert von {{name}}",
+    "atApplication": "bei der Anwendung",
+    "removeParameter": "Parameter {{name}} entfernen",
+    "remove": "Entfernen",
+    "addParameter": "Parameter hinzufügen",
+    "newParameterName": "parameter",
+    "unknownType": "Unbekannter Typ „{{type}}“. Die Belegungen werden nur angezeigt und bleiben beim Speichern unverändert.",
+    "originType": "{{name}}, aus Objekttyp {{type}}",
+    "originTemplate": "{{name}}, aus Vorlage {{title}}",
+    "choose": "bitte wählen",
+    "unset": "nicht belegt",
+    "application": "bei der Anwendung übergeben",
+    "bindingKindOf": "Bindungsart von {{name}}",
+    "binding": {
+      "fixed": "fester Wert",
+      "parameter": "Parameter",
+      "expression": "Ausdruck",
+      "application": "bei der Anwendung"
+    }
+  },
+  "rules": {
+    "title": "Regeln",
+    "none": "Keine Regeln.",
+    "select": "Regel {{name}} auswählen",
+    "up": "Regel {{name}} nach oben",
+    "down": "Regel {{name}} nach unten",
+    "remove": "Regel {{name}} entfernen",
+    "removeShort": "Entfernen",
+    "errors_one": "{{count}} Fehler",
+    "errors_other": "{{count}} Fehler",
+    "hints_one": "{{count}} Hinweis",
+    "hints_other": "{{count}} Hinweise",
+    "fromLibrary": "Vorlage aus der Elementbibliothek",
+    "add": "Hinzufügen",
+    "new": "Neue Regel"
+  },
+  "ruleView": {
+    "back": "Zurück zu {{owner}}",
+    "parameterDefinitions": "Parameter der Regel",
+    "parameterValues": "Werte der Parameter",
+    "required": "Pflicht",
+    "standardValue": "Standardwert von {{name}}",
+    "expression": "Ausdruck",
+    "resultExpression": "Ausdruck für das Gesamtergebnis",
+    "determinedProperty": "Bestimmte Eigenschaft der Order",
+    "checkOnly": "keine (nur prüfend)",
+    "comparison": "Vergleich beim Prüfen",
+    "comparisons": {
+      "hoechstens": "höchstens",
+      "mindestens": "mindestens",
+      "gleich": "gleich"
+    }
+  },
+  "expression": {
+    "suggestions": "Vorschläge",
+    "display": "Anzeige"
+  },
+  "findings": {
+    "title": "Befunde",
+    "ofStrategy": "Befunde der Strategie",
+    "ofElement": "Befunde dieses Elements",
+    "ofRule": "Befunde dieser Regel",
+    "level": {
+      "error": "Fehler",
+      "hint": "Hinweis"
+    },
+    "count_one": "Befunde: {{count}}",
+    "count_other": "Befunde: {{count}}",
+    "countDetail": "{{errors}} Fehler, {{hints}} Hinweise",
+    "unknown": "Befund {{code}}",
+    "fields": {
+      "parameter": "Parameter „{{name}}“",
+      "property": "Eigenschaft „{{name}}“",
+      "propertyDefinition": "Eigenschaft „{{name}}“ der Instanz",
+      "expression": "Ausdruck",
+      "result_expression": "Ausdruck für das Gesamtergebnis"
+    },
+    "issues": {
+      "syntax": "Schreibfehler an Stelle {{start}} bis {{end}}: {{syntaxReason}}",
+      "unknown_function": "Unbekannte Funktion „{{name}}“ (Stelle {{start}} bis {{end}}).",
+      "unknown_name": "Unbekannter Name „{{name}}“ (Stelle {{start}} bis {{end}}).",
+      "unknown_property": "„{{object}}“ hat keine Eigenschaft „{{property}}“ (Stelle {{start}} bis {{end}}).",
+      "type_mismatch": "Der Typ passt nicht: erwartet {{expected}}, gefunden {{found}} (Stelle {{start}} bis {{end}}).",
+      "unknown_choice_value": "„{{values}}“ ist kein Wert der Auswahl; erlaubt sind {{allowed}} (Stelle {{start}} bis {{end}}).",
+      "argument_count": "Die Funktion {{function}} erhält {{found}} Argumente; erlaubt sind {{minimum}} bis {{maximum}} (Stelle {{start}} bis {{end}}).",
+      "other": "Der Ausdruck ist an Stelle {{start}} bis {{end}} fehlerhaft."
+    },
+    "syntax": {
+      "unexpected_end": "der Ausdruck endet zu früh",
+      "unexpected_token": "unerwartetes Zeichen „{{found}}“",
+      "invalid_character": "ungültiges Zeichen „{{found}}“",
+      "invalid_number": "ungültige Zahl",
+      "unterminated_string": "Text nicht abgeschlossen",
+      "too_long": "der Ausdruck ist zu lang",
+      "too_deep": "der Ausdruck ist zu tief geschachtelt"
+    },
+    "connectionReasons": {
+      "unknown_source": "die Quelle ist kein Element",
+      "unknown_target": "das Ziel ist kein Element",
+      "unknown_output": "der Ausgang gehört nicht zum Element",
+      "target_is_trigger": "ein Auslöser hat keinen Eingang",
+      "across_managements": "die Verbindung führt zwischen dem Ablauf und einer Verwaltung oder zwischen zwei Verwaltungen"
+    },
+    "bindingReasons": {
+      "binding_kind": "diese Bindungsart ist nicht erlaubt",
+      "type": "der feste Wert hat den falschen Datentyp",
+      "choice_value": "der feste Wert gehört nicht zur Auswahl",
+      "value": "der Wert ist nicht zulässig",
+      "unknown_parameter": "der Parameter ist unbekannt",
+      "unknown_property": "die Eigenschaft ist unbekannt",
+      "set_by_application": "die Anwendung belegt diese Eigenschaft, nicht der Anwender"
+    },
+    "resultReasons": {
+      "unknown_property": "die bestimmte Eigenschaft ist unbekannt",
+      "choice_value": "das Ergebnis ist kein Wert der Auswahl",
+      "type": "der Typ des Ergebnisses passt nicht"
+    },
+    "referenceKinds": {
+      "forward": "Vorwärtsbezug",
+      "cycle": "Zirkelbezug"
+    },
+    "strategy": {
+      "no_trigger": "Die Strategie hat keinen Auslöser."
+    },
+    "trigger": {
+      "unconnected": "Der Auslöser ist mit keinem Element des Ablaufs verbunden."
+    },
+    "flow": {
+      "no_incoming": "Zu diesem Element des Ablaufs führt keine Verbindung.",
+      "unending_loop": "Rückführung ohne Bedingung, die sie beendet (an {{elements}} Elementen).",
+      "management_only": "„{{type}}“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf.",
+      "no_order_reachable": "Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt."
+    },
+    "expression": {
+      "invalid": "Der Ausdruck in {{field}} ist fehlerhaft: {{problem}}",
+      "order_outside_management": "Der Ausdruck in {{field}} verwendet Order oder Position außerhalb einer Verwaltung."
+    },
+    "rule": {
+      "unresolved_name": "Hinweis zum Ausdruck in {{field}}: {{problem}} Die Vorlage allein kennt den Namen nicht; geprüft wird er in jeder Strategie, die die Vorlage enthält.",
+      "result_mismatch": "Das Ergebnis der Regel passt nicht zur bestimmten Eigenschaft „{{property}}“: {{reason}}.",
+      "order_in_indicator": "Die Regel spricht Order oder Position an. In einem Indikator oder Trend ist das nicht erlaubt.",
+      "invalid_type": "In dieser Liste von Regeln steht ein Objekt vom Typ „{{type}}“, das dort nicht stehen darf.",
+      "comparison_missing": "Die bestimmende Regel nennt keinen Vergleich beim Prüfen."
+    },
+    "parameter": {
+      "missing": "Der Pflichtparameter „{{parameter}}“ hat keinen Wert.",
+      "binding_invalid": "Die Belegung von „{{parameter}}{{property}}“ passt nicht: {{reason}}."
+    },
+    "order": {
+      "property_missing": "Die Eigenschaft „{{property}}“ der Order ist nicht belegt, und keine bestimmende Regel liefert sie."
+    },
+    "ruleset": {
+      "reference_order": "Regelwerk mit {{kind}}."
+    },
+    "candle": {
+      "no_instance": "Die Kerze wird verwendet, aber auf der Zeichenfläche liegt keine Kerze mit gesetzter Zeiteinheit."
+    },
+    "name": {
+      "duplicate": "Der Name „{{name}}“ ist doppelt vergeben.",
+      "invalid": "Der Name „{{name}}“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann."
+    },
+    "type": {
+      "unknown": "Der Typ „{{type}}“ ist unbekannt."
+    },
+    "trend": {
+      "direction_missing": "Dem Trend fehlt der Ausdruck für die Eigenschaft „{{property}}“."
+    },
+    "calculation": {
+      "circular_reference": "Berechnungen verwenden ihre Ergebnisse im Kreis ({{names}})."
+    },
+    "findings": {
+      "truncated": "Es gibt mehr Befunde, als angezeigt werden (Grenze {{limit}})."
+    },
+    "connection": {
+      "invalid": "Ungültige Verbindung: {{reason}}."
+    },
+    "element": {
+      "rules_not_allowed": "Diesem Element sind Regeln zugeordnet, obwohl „{{type}}“ keine zulässt.",
+      "management_invalid": "Das Element gehört zur Verwaltung eines Elements, das keine Order aufgibt."
+    }
+  },
+  "dialogs": {
+    "unsaved": {
+      "title": "Ungespeicherte Änderungen",
+      "text": "Die Strategie hat Änderungen, die noch nicht gespeichert sind.",
+      "save": "Speichern",
+      "discard": "Verwerfen",
+      "cancel": "Abbrechen"
+    },
+    "delete": {
+      "title": "Strategie löschen?",
+      "text": "Die Strategie „{{title}}“ wird gelöscht.",
+      "textUntitled": "Die Strategie ohne Bezeichnung wird gelöscht.",
+      "notSaved": "Sie wurde noch nicht gespeichert; es wird nur die geöffnete Strategie verworfen.",
+      "confirm": "Löschen",
+      "cancel": "Abbrechen"
+    },
+    "error": {
+      "ok": "OK"
+    }
+  },
+  "errors": {
+    "http": "Das Backend hat die Anfrage mit dem Status {{status}} abgelehnt.",
+    "timeout": "Das Backend hat nicht rechtzeitig geantwortet.",
+    "unexpectedResponse": "Das Backend hat eine unerwartete Antwort geschickt.",
+    "network": "Das Backend ist nicht erreichbar.",
+    "saveFailed": "Die Strategie konnte nicht gespeichert werden.",
+    "openFailed": "Die Strategie konnte nicht geöffnet werden.",
+    "deleteFailed": "Die Strategie konnte nicht gelöscht werden.",
+    "checkFailed": "Die Strategie konnte nicht geprüft werden.",
+    "insertFailed": "Der Eintrag konnte nicht eingefügt werden."
+  },
+  "openDialog": {
+    "title": "Strategie öffnen",
+    "loading": "Die Strategien werden gelesen.",
+    "loadFailed": "Die Liste der Strategien konnte nicht gelesen werden.",
+    "retry": "Erneut versuchen",
+    "empty": "Es sind keine Strategien gespeichert.",
+    "columnTitle": "Bezeichnung",
+    "columnDescription": "Beschreibung",
+    "columnModified": "Letzte Änderung",
+    "modifiedValue": "{{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr",
+    "unreadable": "nicht lesbar",
+    "untitled": "(ohne Bezeichnung)",
+    "cancel": "Abbrechen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "directorySection": "Objektverzeichnis",
+    "directoryLoading": "Das Objektverzeichnis wird gelesen.",
+    "directoryLoadFailed": "Das Objektverzeichnis konnte nicht gelesen werden.",
+    "directoryNotSet": "Es ist kein Objektverzeichnis festgelegt und es lässt sich kein Standard bestimmen.",
+    "directoryIsDefault": "Es gilt das Standardverzeichnis.",
+    "directoryIsSet": "Das Verzeichnis wurde festgelegt.",
+    "directory": "Verzeichnis (absoluter Pfad)",
+    "directoryChange": "Verzeichnis ändern",
+    "moveQuestion": "Dateien verschieben?",
+    "moveYes": "Ja, Dateien verschieben",
+    "moveNo": "Nein, nur das Verzeichnis ändern",
+    "moveCancel": "Abbrechen",
+    "directorySaved": "Das Objektverzeichnis wurde geändert.",
+    "directoryFailed": "Das Objektverzeichnis konnte nicht geändert werden.",
+    "moveFailureFrom": "Altes Verzeichnis: {{directory}}",
+    "moveFailureTo": "Neues Verzeichnis, darin liegen die Dateien, die nicht zurückgeholt werden konnten: {{directory}}",
+    "close": "Schließen"
   }
 }
