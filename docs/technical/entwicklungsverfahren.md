@@ -321,7 +321,7 @@ Alle Zweige werden nach GitHub übertragen. Der Softwarearchitekt führt einen A
 Die Sitzung startet mit festen Einstellungsquellen, sodass Agentendefinitionen, Skills, Hooks und Freigaben ausschließlich aus `devteam/` kommen:
 
 ```sh
-claude --setting-sources project --permission-mode default \
+claude --setting-sources project --permission-mode dontAsk \
   --plugin-dir ROOT/devteam --settings ROOT/devteam/settings.json \
   --agent devteam:software-architect "<Startauftrag>"
 ```
@@ -377,13 +377,12 @@ devteam/
   lib/startrole                gemeinsamer Teil der Startskripte
   start.conf                   Programmaufruf der Startskripte
   hooks/hooks.json             Herzschlag
-  settings.json                Freigaben der Rollen
-  settings-architect.json      Freigaben des Softwarearchitekten, zusätzlich Schreiben in devteam/
+  settings.json                Freigaben
 ```
 
 Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:<port>/<pfad>` und `http://localhost:<port>/<pfad>` freigegeben (Regeln `Bash(curl http://127.0.0.1:*/*)` und `Bash(curl http://localhost:*/*)`; die Endung `:*` bedeutet in Claude Code „Leerzeichen und Platzhalter“ und ist dafür ungeeignet), die URL als erstes Argument, für die Prüfung in einer Testumgebung durch Tester und QA.
 
-Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie um. `devteam/` gehört dem Softwarearchitekten: Er pflegt Rollendateien, Startskripte und Freigaben selbst, prüft vor jedem Arbeitspaket mit einem Probelauf je Rolle, ob die nötigen Befehle freigegeben sind, und berichtigt abgelehnte, aber nötige Befehle selbst. Seine Sitzung startet dafür mit `devteam/settings-architect.json`, die übrigen Rollen mit `devteam/settings.json` ohne Schreibrecht auf `devteam/`. Auftraggeber und Projektleiter sind daran nicht beteiligt.
+Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie um. Änderungen daran veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
 ### Einrichtung auf dem Entwicklungsrechner
 
@@ -412,7 +411,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-17 | `devteam/` gehört dem Softwarearchitekten: Er pflegt und prüft die Freigaben seiner Rollen selbst. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
+| 2026-10-17 | Aufruf von `agentrun` an den Stand auf dem Entwicklungsrechner angeglichen: `--permission-mode dontAsk` (`scripts/agentrun`, `devteam/start.conf`). Freigaben in `devteam/settings.json` auf den Bedarf der Rollen eingeengt und je Rolle mit Probelauf geprüft (Bericht `transfer/20261017-freigaben-pruefen-bericht.md`). |
 | 2026-10-17 | Freigabe für HTTP-Anfragen mit `curl` an die Testumgebung auf dem eigenen Rechner. Anlass: Frage `strategiedesign/questions/wp01-03.md`. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
 | 2026-10-17 | Rein technische Streitpunkte: Eine Schleife ohne Fortschritt, deren Entscheidung weder Dokumente des Auftraggebers noch bestätigte Festlegungen, Abnahmekriterien oder Umfang ändert, entscheidet der Softwarearchitekt abschließend. Anlass: Frage `strategiedesign/questions/wp01-01.md`. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
 | 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl: weiter, solange die blockierenden Befunde weniger werden; eine Ebene höher bei unverändert wiederkehrendem Befund oder gleichbleibender Zahl; Befunde für eine höhere Ebene sofort dorthin. Phasen 1, 2, 3 und 5 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
