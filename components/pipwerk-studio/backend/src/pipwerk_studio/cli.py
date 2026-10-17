@@ -15,7 +15,9 @@ import uvicorn
 from sqlalchemy.exc import SQLAlchemyError
 
 from pipwerk_studio.app import create_app
-from pipwerk_studio.config import StartupConfigError, load_database_url
+from pipwerk_studio.config import StartupConfigError, load_startup_config
+from pipwerk_studio.host_check import InvalidAllowedHostError, build_allowed_hosts
+from pipwerk_studio.migrate import DatabaseMigrationError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,6 +39,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1).")
     parser.add_argument("--port", type=int, default=8000, help="Bind port (default: 8000).")
+    parser.add_argument(
+        "--allowed-host",
+        dest="allowed_hosts",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help=(
+            "Name or IP address allowed in the Host header of a request, in addition to "
+            "127.0.0.1, localhost and ::1 and to the names of the startup configuration "
+            "(entry allowed_hosts in the section server). May be repeated. The entry *ip "
+            "allows every IP address."
+        ),
+    )
     return parser
 
 
@@ -45,19 +60,33 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        database_url = load_database_url(args.config_path)
+        startup_config = load_startup_config(args.config_path)
     except StartupConfigError as error:
         print(f"pipwerk-studio: {error}", file=sys.stderr)
         return 1
 
     try:
-        app = create_app(database_url)
+        allowed_hosts = [*startup_config.allowed_hosts, *args.allowed_hosts]
+        build_allowed_hosts(allowed_hosts)  # reject an invalid name before anything starts
+    except InvalidAllowedHostError as error:
+        print(f"pipwerk-studio: invalid value of --allowed-host: {error}", file=sys.stderr)
+        return 1
+
+    try:
+        app = create_app(
+            startup_config.database_url,
+            config_origin=startup_config.origin,
+            allowed_hosts=allowed_hosts,
+        )
     except SQLAlchemyError as error:
         print(
             f"pipwerk-studio: the database connection of the startup configuration "
             f"cannot be used: {error}",
             file=sys.stderr,
         )
+        return 1
+    except DatabaseMigrationError as error:
+        print(f"pipwerk-studio: {error}", file=sys.stderr)
         return 1
     uvicorn.run(app, host=args.host, port=args.port)
     return 0

@@ -1,3 +1,5 @@
 # Domain Core
 
-Shared Python domain model and domain logic.
+Shared Python library of pipwerk (package `pipwerk_domain`).
+
+Documentation: [docs/technical/pipwerk-domain.md](../../docs/technical/pipwerk-domain.md)

@@ -1,0 +1,4818 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "pipwerk Studio",
+    "version": "1.0.0",
+    "description": "Public web API of pipwerk Studio, version 1: type descriptions, strategies and templates (indicators, trends, rules, rulesets), their usages and the consistency check. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk Studio under /api/ are not part of this description."
+  },
+  "paths": {
+    "/api/v1/element-types": {
+      "get": {
+        "tags": [
+          "element-types"
+        ],
+        "summary": "List the type descriptions",
+        "description": "All type descriptions of the element register with names and descriptions in German and English, the delivered templates as documents and the functions of expressions. The user interface builds the element library and the property view from this.",
+        "operationId": "list_element_types",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ElementTypesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/strategies": {
+      "get": {
+        "tags": [
+          "strategies"
+        ],
+        "summary": "List the strategies",
+        "description": "Lists the strategies in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "operationId": "list_strategies",
+        "responses": {
+          "200": {
+            "description": "The objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "strategies"
+        ],
+        "summary": "Create an object of the kind strategy",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "operationId": "create_strategies",
+        "requestBody": {
+          "description": "A document of the format pipwerk.strategy.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStrategy"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/strategies/{id}": {
+      "get": {
+        "tags": [
+          "strategies"
+        ],
+        "summary": "Read an object of the kind strategy",
+        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "operationId": "read_strategies",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "strategies"
+        ],
+        "summary": "Save an object of the kind strategy",
+        "description": "Replaces the object. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403).",
+        "operationId": "replace_strategies",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStrategy"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "A document of the format pipwerk.strategy.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyDocument"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "strategies"
+        ],
+        "summary": "Delete an object of the kind strategy",
+        "description": "Deletes the object. Instances made from a template in other objects are not changed. A delivered template cannot be deleted (HTTP 403); a file that is not readable is not deleted (HTTP 409).",
+        "operationId": "delete_strategies",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The object was deleted."
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/strategies/{id}/usages": {
+      "get": {
+        "tags": [
+          "strategies"
+        ],
+        "summary": "Find the usages of a template of the kind strategy",
+        "description": "Lists the strategies and templates that contain an instance whose origin is this template, also inside contained instances and rulesets. Files that are not readable are skipped and counted.",
+        "operationId": "usages_strategies",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The usages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indicators": {
+      "get": {
+        "tags": [
+          "indicators"
+        ],
+        "summary": "List the indicators",
+        "description": "Lists the indicators in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "operationId": "list_indicators",
+        "responses": {
+          "200": {
+            "description": "The objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "indicators"
+        ],
+        "summary": "Create an object of the kind indicator",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "operationId": "create_indicators",
+        "requestBody": {
+          "description": "A document of the format pipwerk.indicator.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedIndicator"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indicators/{id}": {
+      "get": {
+        "tags": [
+          "indicators"
+        ],
+        "summary": "Read an object of the kind indicator",
+        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "operationId": "read_indicators",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicatorDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "indicators"
+        ],
+        "summary": "Save an object of the kind indicator",
+        "description": "Replaces the object. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403).",
+        "operationId": "replace_indicators",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedIndicator"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "A document of the format pipwerk.indicator.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "indicators"
+        ],
+        "summary": "Delete an object of the kind indicator",
+        "description": "Deletes the object. Instances made from a template in other objects are not changed. A delivered template cannot be deleted (HTTP 403); a file that is not readable is not deleted (HTTP 409).",
+        "operationId": "delete_indicators",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The object was deleted."
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indicators/{id}/usages": {
+      "get": {
+        "tags": [
+          "indicators"
+        ],
+        "summary": "Find the usages of a template of the kind indicator",
+        "description": "Lists the strategies and templates that contain an instance whose origin is this template, also inside contained instances and rulesets. Files that are not readable are skipped and counted.",
+        "operationId": "usages_indicators",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The usages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trends": {
+      "get": {
+        "tags": [
+          "trends"
+        ],
+        "summary": "List the trends",
+        "description": "Lists the trends in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "operationId": "list_trends",
+        "responses": {
+          "200": {
+            "description": "The objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "trends"
+        ],
+        "summary": "Create an object of the kind trend",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "operationId": "create_trends",
+        "requestBody": {
+          "description": "A document of the format pipwerk.trend.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrendDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedTrend"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trends/{id}": {
+      "get": {
+        "tags": [
+          "trends"
+        ],
+        "summary": "Read an object of the kind trend",
+        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "operationId": "read_trends",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "trends"
+        ],
+        "summary": "Save an object of the kind trend",
+        "description": "Replaces the object. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403).",
+        "operationId": "replace_trends",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedTrend"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "A document of the format pipwerk.trend.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrendDocument"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "trends"
+        ],
+        "summary": "Delete an object of the kind trend",
+        "description": "Deletes the object. Instances made from a template in other objects are not changed. A delivered template cannot be deleted (HTTP 403); a file that is not readable is not deleted (HTTP 409).",
+        "operationId": "delete_trends",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The object was deleted."
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trends/{id}/usages": {
+      "get": {
+        "tags": [
+          "trends"
+        ],
+        "summary": "Find the usages of a template of the kind trend",
+        "description": "Lists the strategies and templates that contain an instance whose origin is this template, also inside contained instances and rulesets. Files that are not readable are skipped and counted.",
+        "operationId": "usages_trends",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The usages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules": {
+      "get": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "List the rules",
+        "description": "Lists the rules in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "operationId": "list_rules",
+        "responses": {
+          "200": {
+            "description": "The objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Create an object of the kind rule",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "operationId": "create_rules",
+        "requestBody": {
+          "description": "A document of the format pipwerk.rule.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedRule"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules/{id}": {
+      "get": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Read an object of the kind rule",
+        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "operationId": "read_rules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Save an object of the kind rule",
+        "description": "Replaces the object. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403).",
+        "operationId": "replace_rules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedRule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "A document of the format pipwerk.rule.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleDocument"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Delete an object of the kind rule",
+        "description": "Deletes the object. Instances made from a template in other objects are not changed. A delivered template cannot be deleted (HTTP 403); a file that is not readable is not deleted (HTTP 409).",
+        "operationId": "delete_rules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The object was deleted."
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules/{id}/usages": {
+      "get": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Find the usages of a template of the kind rule",
+        "description": "Lists the strategies and templates that contain an instance whose origin is this template, also inside contained instances and rulesets. Files that are not readable are skipped and counted.",
+        "operationId": "usages_rules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The usages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rulesets": {
+      "get": {
+        "tags": [
+          "rulesets"
+        ],
+        "summary": "List the rulesets",
+        "description": "Lists the rulesets in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "operationId": "list_rulesets",
+        "responses": {
+          "200": {
+            "description": "The objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectList"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "rulesets"
+        ],
+        "summary": "Create an object of the kind ruleset",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "operationId": "create_rulesets",
+        "requestBody": {
+          "description": "A document of the format pipwerk.ruleset.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedRuleset"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rulesets/{id}": {
+      "get": {
+        "tags": [
+          "rulesets"
+        ],
+        "summary": "Read an object of the kind ruleset",
+        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "operationId": "read_rulesets",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RulesetDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "rulesets"
+        ],
+        "summary": "Save an object of the kind ruleset",
+        "description": "Replaces the object. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403).",
+        "operationId": "replace_rulesets",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedRuleset"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "A document of the format pipwerk.ruleset.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "rulesets"
+        ],
+        "summary": "Delete an object of the kind ruleset",
+        "description": "Deletes the object. Instances made from a template in other objects are not changed. A delivered template cannot be deleted (HTTP 403); a file that is not readable is not deleted (HTTP 409).",
+        "operationId": "delete_rulesets",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The object was deleted."
+          },
+          "403": {
+            "description": "A delivered template cannot be changed or deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rulesets/{id}/usages": {
+      "get": {
+        "tags": [
+          "rulesets"
+        ],
+        "summary": "Find the usages of a template of the kind ruleset",
+        "description": "Lists the strategies and templates that contain an instance whose origin is this template, also inside contained instances and rulesets. Files that are not readable are skipped and counted.",
+        "operationId": "usages_rulesets",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the object (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the object (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The usages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The file of the object is not readable; it is left unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/check": {
+      "post": {
+        "tags": [
+          "check"
+        ],
+        "summary": "Check a document",
+        "description": "Runs the consistency check on a document of any kind without saving it, as it is written (positions refer to the given expressions). The answer names the findings and, for each expression, the recognized names with position and identifier.",
+        "operationId": "check_document",
+        "requestBody": {
+          "description": "A document of any format.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/StrategyDocument"
+                  },
+                  {
+                    "$ref": "#/components/schemas/IndicatorDocument"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TrendDocument"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RuleDocument"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RulesetDocument"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "format",
+                  "mapping": {
+                    "pipwerk.strategy": "#/components/schemas/StrategyDocument",
+                    "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                    "pipwerk.trend": "#/components/schemas/TrendDocument",
+                    "pipwerk.rule": "#/components/schemas/RuleDocument",
+                    "pipwerk.ruleset": "#/components/schemas/RulesetDocument"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The result of the check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ApiError",
+        "description": "Error body with a fixed text. It names no path, no exception text and no input."
+      },
+      "ArgumentKind": {
+        "type": "string",
+        "enum": [
+          "number",
+          "integer",
+          "boolean",
+          "any",
+          "name"
+        ],
+        "title": "ArgumentKind",
+        "description": "What an argument must be."
+      },
+      "BindingDocument": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "parameter",
+              "expression",
+              "application"
+            ],
+            "title": "Kind"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "BindingDocument",
+        "description": "Value of a parameter or property with its kind of binding."
+      },
+      "BindingKind": {
+        "type": "string",
+        "enum": [
+          "fixed",
+          "parameter",
+          "expression",
+          "application"
+        ],
+        "title": "BindingKind",
+        "description": "How a parameter or property receives its value (glossary \"Bindungsart\")."
+      },
+      "CheckResponse": {
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "expressions": {
+            "items": {
+              "$ref": "#/components/schemas/ExpressionNamesModel"
+            },
+            "type": "array",
+            "title": "Expressions"
+          },
+          "names_truncated": {
+            "type": "boolean",
+            "title": "Names Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "findings",
+          "expressions",
+          "names_truncated"
+        ],
+        "title": "CheckResponse",
+        "description": "Result of the consistency check of a document that was not saved."
+      },
+      "ChoiceModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ChoiceModel",
+        "description": "A fixed value of a choice."
+      },
+      "ConditionModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "ConditionModel",
+        "description": "The parameter or property applies only if the parameter or property ``name`` has\n``value``."
+      },
+      "ConnectionDocument": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Source"
+          },
+          "output": {
+            "type": "string",
+            "title": "Output"
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Target"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "output",
+          "target"
+        ],
+        "title": "ConnectionDocument",
+        "description": "A connection from an output of an element to an element."
+      },
+      "DataType": {
+        "type": "string",
+        "enum": [
+          "number",
+          "integer",
+          "percent",
+          "boolean",
+          "text",
+          "choice",
+          "time_unit",
+          "timestamp",
+          "date",
+          "expression",
+          "object"
+        ],
+        "title": "DataType",
+        "description": "Data types of parameters, properties and expression values."
+      },
+      "ElementDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "x": {
+            "type": "number",
+            "title": "X",
+            "default": 0.0
+          },
+          "y": {
+            "type": "number",
+            "title": "Y",
+            "default": 0.0
+          },
+          "parameters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Parameters"
+          },
+          "properties": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Properties"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "management_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Management Of"
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InstanceDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "ElementDocument",
+        "description": "An element on the drawing area. The type is a text; an unknown type is valid and\nits values are kept."
+      },
+      "ElementKind": {
+        "type": "string",
+        "enum": [
+          "trigger",
+          "flow",
+          "object_type",
+          "application_object",
+          "order_type",
+          "trend_method"
+        ],
+        "title": "ElementKind",
+        "description": "The kind (\"Art\") of a type description."
+      },
+      "ElementTypesResponse": {
+        "properties": {
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/TypeDescriptionModel"
+            },
+            "type": "array",
+            "title": "Types"
+          },
+          "templates": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/IndicatorDocument"
+                },
+                {
+                  "$ref": "#/components/schemas/TrendDocument"
+                },
+                {
+                  "$ref": "#/components/schemas/RuleDocument"
+                },
+                {
+                  "$ref": "#/components/schemas/RulesetDocument"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "format",
+                "mapping": {
+                  "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                  "pipwerk.rule": "#/components/schemas/RuleDocument",
+                  "pipwerk.ruleset": "#/components/schemas/RulesetDocument",
+                  "pipwerk.trend": "#/components/schemas/TrendDocument"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Templates"
+          },
+          "functions": {
+            "items": {
+              "$ref": "#/components/schemas/FunctionModel"
+            },
+            "type": "array",
+            "title": "Functions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "types",
+          "templates",
+          "functions"
+        ],
+        "title": "ElementTypesResponse",
+        "description": "All type descriptions of the element register, the delivered templates as documents\nand the functions of expressions."
+      },
+      "ErrorPlace": {
+        "properties": {
+          "location": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "location",
+          "type"
+        ],
+        "title": "ErrorPlace",
+        "description": "One error of a request: the place in the request or document and the error type."
+      },
+      "ExpressionNamesModel": {
+        "properties": {
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "names": {
+            "items": {
+              "$ref": "#/components/schemas/NameModel"
+            },
+            "type": "array",
+            "title": "Names"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "element",
+          "subject",
+          "field",
+          "names"
+        ],
+        "title": "ExpressionNamesModel",
+        "description": "The names recognized in one expression. ``element`` and ``subject`` tell where the\nexpression stands, ``field`` which expression it is (as for a finding)."
+      },
+      "FindingModel": {
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "error",
+              "hint"
+            ],
+            "title": "Level"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "element": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "level",
+          "code",
+          "element",
+          "subject",
+          "details"
+        ],
+        "title": "FindingModel",
+        "description": "A finding of the consistency check (specification 3.6)."
+      },
+      "FunctionModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/FunctionParameterModel"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "variadic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ArgumentKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "$ref": "#/components/schemas/ResultKind"
+          },
+          "description": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "min_arguments": {
+            "type": "integer",
+            "title": "Min Arguments"
+          },
+          "max_arguments": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Arguments"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "parameters",
+          "variadic",
+          "result",
+          "description",
+          "min_arguments",
+          "max_arguments"
+        ],
+        "title": "FunctionModel",
+        "description": "A function of expressions with its signature."
+      },
+      "FunctionParameterModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ArgumentKind"
+          },
+          "optional": {
+            "type": "boolean",
+            "title": "Optional"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "optional"
+        ],
+        "title": "FunctionParameterModel",
+        "description": "A parameter of a function of expressions."
+      },
+      "IndicatorDocument": {
+        "properties": {
+          "parameter_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Parameter Values"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "title": "Instances"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "determined_property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Determined Property"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "hoechstens",
+                  "mindestens",
+                  "gleich"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparison"
+          },
+          "result_expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Expression"
+          },
+          "format_version": {
+            "type": "string",
+            "pattern": "^1\\.[0-9]+$",
+            "title": "Format Version",
+            "description": "Version of the format; a document of a higher major version is rejected"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "format": {
+            "type": "string",
+            "const": "pipwerk.indicator",
+            "title": "Format"
+          },
+          "object_type": {
+            "type": "string",
+            "title": "Object Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format_version",
+          "id",
+          "title",
+          "format",
+          "object_type"
+        ],
+        "title": "IndicatorDocument",
+        "description": "Document of an indicator: ``Indikator`` or a delivered indicator type."
+      },
+      "InstanceDocument": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "object_type": {
+            "type": "string",
+            "title": "Object Type"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OriginDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parameter_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Parameter Values"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "title": "Instances"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "determined_property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Determined Property"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "hoechstens",
+                  "mindestens",
+                  "gleich"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparison"
+          },
+          "result_expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Expression"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "object_type"
+        ],
+        "title": "InstanceDocument",
+        "description": "A complete copy of a template or object type (E4). The base classes are in this\norder so that name, object type and origin come before the content."
+      },
+      "InvalidRequest": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorPlace"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "errors"
+        ],
+        "title": "InvalidRequest",
+        "description": "Error body for a request or document that does not fit the schema (HTTP 422). Names\nat most 50 places and the error type of each, never the values."
+      },
+      "LabelModel": {
+        "properties": {
+          "de": {
+            "type": "string",
+            "title": "De"
+          },
+          "en": {
+            "type": "string",
+            "title": "En"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "de",
+          "en"
+        ],
+        "title": "LabelModel",
+        "description": "A text in German and English."
+      },
+      "NameModel": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          },
+          "identifier": {
+            "type": "string",
+            "title": "Identifier"
+          },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved"
+          },
+          "previous": {
+            "type": "boolean",
+            "title": "Previous"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/NameSegmentModel"
+            },
+            "type": "array",
+            "title": "Segments"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "identifier",
+          "resolved",
+          "previous",
+          "segments"
+        ],
+        "title": "NameModel",
+        "description": "A name recognized in an expression; ``start`` is the first character and ``end`` the\nposition after the last character."
+      },
+      "NameSegmentModel": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "title": "Identifier"
+          },
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "start",
+          "end"
+        ],
+        "title": "NameSegmentModel",
+        "description": "One part of a recognized name."
+      },
+      "ObjectCategory": {
+        "type": "string",
+        "enum": [
+          "indicator",
+          "trend",
+          "rule",
+          "ruleset"
+        ],
+        "title": "ObjectCategory",
+        "description": "Subdivision of the kind ``object_type``."
+      },
+      "ObjectList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ObjectListEntry"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ObjectList",
+        "description": "The objects of one kind, sorted by title; the not readable ones come last."
+      },
+      "ObjectListEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type"
+          },
+          "modified": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Modified"
+          },
+          "unreadable": {
+            "type": "boolean",
+            "title": "Unreadable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "object_type",
+          "modified",
+          "unreadable"
+        ],
+        "title": "ObjectListEntry",
+        "description": "An object in the list. A file that is not readable (cannot be read, does not fit the\nschema or names another identifier than its file name) has only the identifier, the time\nof its last change and ``unreadable`` true; it is not changed."
+      },
+      "OriginDocument": {
+        "properties": {
+          "object_type": {
+            "type": "string",
+            "title": "Object Type"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "object_type"
+        ],
+        "title": "OriginDocument",
+        "description": "Origin of an instance: object type and, if known, identifier and title of the template."
+      },
+      "OutputModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "OutputModel",
+        "description": "An output of an element of the flow."
+      },
+      "ParameterDefinitionDocument": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "datatype": {
+            "type": "string",
+            "enum": [
+              "number",
+              "integer",
+              "percent",
+              "boolean",
+              "text",
+              "choice",
+              "time_unit",
+              "timestamp",
+              "date",
+              "expression",
+              "object"
+            ],
+            "title": "Datatype"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Choices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "datatype"
+        ],
+        "title": "ParameterDefinitionDocument",
+        "description": "Own parameter of a template or instance."
+      },
+      "ParameterModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "datatype": {
+            "$ref": "#/components/schemas/DataType"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceModel"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "bindings": {
+            "items": {
+              "$ref": "#/components/schemas/BindingKind"
+            },
+            "type": "array",
+            "title": "Bindings"
+          },
+          "applies_when": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConditionModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "datatype",
+          "label",
+          "required",
+          "default",
+          "choices",
+          "bindings",
+          "applies_when",
+          "object_type"
+        ],
+        "title": "ParameterModel",
+        "description": "A parameter of a type."
+      },
+      "PropertyDefinitionDocument": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "datatype": {
+            "type": "string",
+            "enum": [
+              "number",
+              "integer",
+              "percent",
+              "boolean",
+              "text",
+              "choice",
+              "time_unit",
+              "timestamp",
+              "date",
+              "expression",
+              "object"
+            ],
+            "title": "Datatype"
+          },
+          "expression": {
+            "type": "string",
+            "maxLength": 4096,
+            "title": "Expression",
+            "description": "Expression in OpenFormula notation"
+          },
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Choices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "datatype",
+          "expression"
+        ],
+        "title": "PropertyDefinitionDocument",
+        "description": "Own property of an indicator or trend with its expression."
+      },
+      "PropertyModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "datatype": {
+            "$ref": "#/components/schemas/DataType"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "must": {
+            "type": "boolean",
+            "title": "Must"
+          },
+          "set_by_user": {
+            "type": "boolean",
+            "title": "Set By User"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceModel"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "applies_when": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConditionModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "datatype",
+          "label",
+          "must",
+          "set_by_user",
+          "default",
+          "choices",
+          "applies_when",
+          "object_type"
+        ],
+        "title": "PropertyModel",
+        "description": "A property of a type."
+      },
+      "ResultKind": {
+        "type": "string",
+        "enum": [
+          "number",
+          "boolean",
+          "branches",
+          "first_argument"
+        ],
+        "title": "ResultKind",
+        "description": "How the result type of a function follows."
+      },
+      "RuleDocument": {
+        "properties": {
+          "parameter_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Parameter Values"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "title": "Instances"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "determined_property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Determined Property"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "hoechstens",
+                  "mindestens",
+                  "gleich"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparison"
+          },
+          "result_expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Expression"
+          },
+          "format_version": {
+            "type": "string",
+            "pattern": "^1\\.[0-9]+$",
+            "title": "Format Version",
+            "description": "Version of the format; a document of a higher major version is rejected"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "format": {
+            "type": "string",
+            "const": "pipwerk.rule",
+            "title": "Format"
+          },
+          "object_type": {
+            "type": "string",
+            "const": "Regel",
+            "title": "Object Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format_version",
+          "id",
+          "title",
+          "format",
+          "object_type"
+        ],
+        "title": "RuleDocument",
+        "description": "Document of a rule."
+      },
+      "RulesetDocument": {
+        "properties": {
+          "parameter_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Parameter Values"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "title": "Instances"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "determined_property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Determined Property"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "hoechstens",
+                  "mindestens",
+                  "gleich"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparison"
+          },
+          "result_expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Expression"
+          },
+          "format_version": {
+            "type": "string",
+            "pattern": "^1\\.[0-9]+$",
+            "title": "Format Version",
+            "description": "Version of the format; a document of a higher major version is rejected"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "format": {
+            "type": "string",
+            "const": "pipwerk.ruleset",
+            "title": "Format"
+          },
+          "object_type": {
+            "type": "string",
+            "const": "Regelwerk",
+            "title": "Object Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format_version",
+          "id",
+          "title",
+          "format",
+          "object_type"
+        ],
+        "title": "RulesetDocument",
+        "description": "Document of a ruleset."
+      },
+      "SavedIndicator": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document": {
+            "$ref": "#/components/schemas/IndicatorDocument"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "document",
+          "findings"
+        ],
+        "title": "SavedIndicator",
+        "description": "Answer to saving a document of the kind indicator: the identifier, the document as saved (expressions in the normalized spelling) and the findings of the consistency check."
+      },
+      "SavedRule": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document": {
+            "$ref": "#/components/schemas/RuleDocument"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "document",
+          "findings"
+        ],
+        "title": "SavedRule",
+        "description": "Answer to saving a document of the kind rule: the identifier, the document as saved (expressions in the normalized spelling) and the findings of the consistency check."
+      },
+      "SavedRuleset": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document": {
+            "$ref": "#/components/schemas/RulesetDocument"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "document",
+          "findings"
+        ],
+        "title": "SavedRuleset",
+        "description": "Answer to saving a document of the kind ruleset: the identifier, the document as saved (expressions in the normalized spelling) and the findings of the consistency check."
+      },
+      "SavedStrategy": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document": {
+            "$ref": "#/components/schemas/StrategyDocument"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "document",
+          "findings"
+        ],
+        "title": "SavedStrategy",
+        "description": "Answer to saving a document of the kind strategy: the identifier, the document as saved (expressions in the normalized spelling) and the findings of the consistency check."
+      },
+      "SavedTrend": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document": {
+            "$ref": "#/components/schemas/TrendDocument"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "document",
+          "findings"
+        ],
+        "title": "SavedTrend",
+        "description": "Answer to saving a document of the kind trend: the identifier, the document as saved (expressions in the normalized spelling) and the findings of the consistency check."
+      },
+      "StrategyDocument": {
+        "properties": {
+          "format_version": {
+            "type": "string",
+            "pattern": "^1\\.[0-9]+$",
+            "title": "Format Version",
+            "description": "Version of the format; a document of a higher major version is rejected"
+          },
+          "format": {
+            "type": "string",
+            "const": "pipwerk.strategy",
+            "title": "Format"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/StrategyParameterDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Parameters"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/ElementDocument"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Elements"
+          },
+          "connections": {
+            "items": {
+              "$ref": "#/components/schemas/ConnectionDocument"
+            },
+            "type": "array",
+            "maxItems": 4000,
+            "title": "Connections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format_version",
+          "format",
+          "id",
+          "title"
+        ],
+        "title": "StrategyDocument",
+        "description": "Document of a strategy (format ``pipwerk.strategy``)."
+      },
+      "StrategyParameterDocument": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "datatype": {
+            "type": "string",
+            "enum": [
+              "number",
+              "integer",
+              "percent",
+              "boolean",
+              "text",
+              "choice",
+              "time_unit",
+              "timestamp",
+              "date",
+              "expression",
+              "object"
+            ],
+            "title": "Datatype"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "at_application": {
+            "type": "boolean",
+            "title": "At Application",
+            "default": false
+          },
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Choices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "datatype"
+        ],
+        "title": "StrategyParameterDocument",
+        "description": "Parameter of a strategy: a value or \"at the application\"."
+      },
+      "TrendDocument": {
+        "properties": {
+          "parameter_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BindingDocument"
+            },
+            "type": "object",
+            "title": "Parameter Values"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyDefinitionDocument"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "title": "Instances"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceDocument"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Rules"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "determined_property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Determined Property"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "hoechstens",
+                  "mindestens",
+                  "gleich"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparison"
+          },
+          "result_expression": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Expression in OpenFormula notation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Expression"
+          },
+          "format_version": {
+            "type": "string",
+            "pattern": "^1\\.[0-9]+$",
+            "title": "Format Version",
+            "description": "Version of the format; a document of a higher major version is rejected"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "format": {
+            "type": "string",
+            "const": "pipwerk.trend",
+            "title": "Format"
+          },
+          "object_type": {
+            "type": "string",
+            "const": "Trend",
+            "title": "Object Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format_version",
+          "id",
+          "title",
+          "format",
+          "object_type"
+        ],
+        "title": "TrendDocument",
+        "description": "Document of a trend."
+      },
+      "TypeDescriptionModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ElementKind"
+          },
+          "name": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "description": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterModel"
+            },
+            "type": "array",
+            "title": "Parameters"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/PropertyModel"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "outputs": {
+            "items": {
+              "$ref": "#/components/schemas/OutputModel"
+            },
+            "type": "array",
+            "title": "Outputs"
+          },
+          "rules_allowed": {
+            "type": "boolean",
+            "title": "Rules Allowed"
+          },
+          "on_canvas": {
+            "type": "boolean",
+            "title": "On Canvas"
+          },
+          "builtin": {
+            "type": "boolean",
+            "title": "Builtin"
+          },
+          "by_user": {
+            "type": "boolean",
+            "title": "By User"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "description",
+          "category",
+          "parameters",
+          "properties",
+          "outputs",
+          "rules_allowed",
+          "on_canvas",
+          "builtin",
+          "by_user"
+        ],
+        "title": "TypeDescriptionModel",
+        "description": "Description of an element type or object type: the data the user interface is built\nfrom (specification 3.1)."
+      },
+      "UsageEntry": {
+        "properties": {
+          "art": {
+            "type": "string",
+            "enum": [
+              "strategies",
+              "indicators",
+              "trends",
+              "rules",
+              "rulesets"
+            ],
+            "title": "Art"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "art",
+          "id",
+          "title"
+        ],
+        "title": "UsageEntry",
+        "description": "A strategy or template that contains an instance made from the template."
+      },
+      "UsagesResponse": {
+        "properties": {
+          "usages": {
+            "items": {
+              "$ref": "#/components/schemas/UsageEntry"
+            },
+            "type": "array",
+            "title": "Usages"
+          },
+          "skipped_unreadable": {
+            "type": "integer",
+            "title": "Skipped Unreadable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "usages",
+          "skipped_unreadable"
+        ],
+        "title": "UsagesResponse",
+        "description": "The usages of a template. Files that are not readable are skipped and counted."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "check"
+    },
+    {
+      "name": "element-types"
+    },
+    {
+      "name": "indicators"
+    },
+    {
+      "name": "rules"
+    },
+    {
+      "name": "rulesets"
+    },
+    {
+      "name": "strategies"
+    },
+    {
+      "name": "trends"
+    }
+  ]
+}

@@ -1,22 +1,37 @@
 """HTTP application of pipwerk Studio.
 
 The application provides a technical health check, the internal pipwerk Studio
-settings endpoints and the internal pipwerk Studio revision endpoint. The only
-operational setting kept today is the pipwerk Studio user interface language
-(req-ui-008): a component-wide, backend-authoritative setting that
-is never stored in the browser and never part of strategy data.
-No other domain logic lives in this module.
+settings endpoints and the internal pipwerk Studio revision endpoint. The
+operational settings kept are the pipwerk Studio user interface language
+(req-ui-008) and the object directory (specification 4.1): component-wide,
+backend-authoritative settings that are never stored in the browser and never
+part of strategy data. No other domain logic lives in this module.
 """
 
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict, model_validator
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, Response
+from pipwerk_domain.defaults import default_registry
+from pipwerk_domain.registry import ElementRegistry
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from pipwerk_studio.config import load_database_url
+from pipwerk_studio.config import ConfigOrigin, load_startup_config
+from pipwerk_studio.docs_page import install_docs
+from pipwerk_studio.host_check import HostCheckMiddleware, build_allowed_hosts
+from pipwerk_studio.object_service import ObjectService
+from pipwerk_studio.object_store import (
+    ObjectConflictError,
+    ObjectMoveError,
+    ObjectMoveRollbackError,
+    ObjectTargetNotCreatableError,
+)
 from pipwerk_studio.revision import (
     CommitDateLookup,
     RevisionLookup,
@@ -25,11 +40,21 @@ from pipwerk_studio.revision import (
     lookup_git_revision,
 )
 from pipwerk_studio.settings_service import (
+    MAX_OBJECT_DIRECTORY_LENGTH,
+    InvalidObjectDirectoryError,
     Language,
+    ObjectDirectorySetting,
     SettingsService,
     StoredLanguageInvalidError,
+    StoredObjectDirectoryInvalidError,
 )
 from pipwerk_studio.storage import create_session_factory, create_studio_engine
+from pipwerk_studio.web_api import (
+    STORED_OBJECT_DIRECTORY_INVALID_TEXT,
+    install_public_api,
+    is_public_path,
+    request_validation_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +91,90 @@ class StudioLanguageUpdate(BaseModel):
     language: Language
 
 
+class StudioObjectDirectory(BaseModel):
+    """Read model of the object directory (specification 4.1).
+
+    ``path`` is the stored absolute path or the default; it is ``null`` if
+    nothing is stored and the default cannot be determined ("not set").
+    ``is_default`` is true as long as nothing is stored.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    path: str | None
+    is_default: bool
+
+
+class StudioObjectDirectoryUpdate(BaseModel):
+    """Write model to change the object directory.
+
+    ``path`` must be an absolute path. With ``move`` true the object files are
+    moved to the new directory before the setting is saved.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    path: str = Field(max_length=MAX_OBJECT_DIRECTORY_LENGTH)
+    move: bool
+
+
+class ObjectDirectoryError(BaseModel):
+    """Error body of the object directory endpoints: a fixed text only."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    detail: str
+
+
+class ObjectMoveRestoreFailure(BaseModel):
+    """Error body if moving failed and the files could not be brought back.
+
+    ``source_directory`` is the old and ``target_directory`` the new object
+    directory; ``files`` are the names of the files that are now in the new
+    directory and could not be brought back.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    detail: str
+    source_directory: str
+    target_directory: str
+    files: list[str]
+
+
+OBJECT_DIRECTORY_PATH = "/api/studio/settings/object-directory"
+INVALID_OBJECT_DIRECTORY_BODY_TEXT = (
+    "The request body must be a JSON object with the fields path (text) and move (true or false)."
+)
+INVALID_OBJECT_DIRECTORY_TEXT = "The object directory must be an absolute path."
+OBJECT_CONFLICT_TEXT = (
+    "The new object directory already contains files with the same names. Nothing was moved."
+)
+STORED_OBJECT_DIRECTORY_NO_MOVE_TEXT = (
+    "The stored pipwerk Studio object directory is invalid, so no files can be moved. "
+    "Save the object directory without moving files to repair it."
+)
+OBJECT_TARGET_NOT_CREATED_TEXT = (
+    "The new object directory could not be created. Nothing was moved and the object "
+    "directory is unchanged."
+)
+OBJECT_MOVE_FAILED_TEXT = (
+    "Moving the object files failed. The files were brought back and the object directory "
+    "is unchanged."
+)
+OBJECT_MOVE_NOT_RESTORED_TEXT = (
+    "Moving the object files failed and some files could not be brought back. "
+    "The object directory is unchanged."
+)
+
+
+def _object_directory_model(setting: ObjectDirectorySetting) -> StudioObjectDirectory:
+    return StudioObjectDirectory(
+        path=None if setting.path is None else str(setting.path),
+        is_default=setting.is_default,
+    )
+
+
 class StudioRevision(BaseModel):
     """Read model of the revision pipwerk Studio runs from.
 
@@ -97,6 +206,9 @@ def create_app(
     database_url: str | None = None,
     revision_lookup: RevisionLookup = lookup_git_revision,
     commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
+    config_origin: ConfigOrigin | None = None,
+    registry: ElementRegistry | None = None,
+    allowed_hosts: Sequence[str] = (),
 ) -> FastAPI:
     """Create the pipwerk Studio HTTP application.
 
@@ -107,17 +219,55 @@ def create_app(
     configuration is found, ``StartupConfigError`` is raised; there is no
     implicit replacement database.
 
+    ``config_origin`` tells where the startup configuration was found; it
+    decides the default of the object directory. It is taken from the startup
+    configuration if that is loaded here. A caller that passes ``database_url``
+    without ``config_origin`` is treated like a startup configuration given
+    with ``-c``.
+
     ``revision_lookup`` determines the full commit hash and ``commit_date_lookup``
     its committer date, once at creation; tests replace them to stay independent
     of a real Git working tree.
+
+    ``registry`` is the element register of the shared library that the public
+    web API uses; by default the register of the process with the delivered
+    types and the types of the entry points.
+
+    ``allowed_hosts`` lists the names (and IP addresses) allowed in the ``Host``
+    header of a request in addition to the default names ``127.0.0.1``,
+    ``localhost`` and ``::1`` (``host_check.py``); every other request is
+    answered with HTTP 400.
     """
-    resolved_database_url = database_url if database_url is not None else load_database_url()
+    if database_url is None:
+        startup_config = load_startup_config()
+        resolved_database_url = startup_config.database_url
+        resolved_origin: ConfigOrigin = startup_config.origin
+    else:
+        resolved_database_url = database_url
+        resolved_origin = config_origin if config_origin is not None else "explicit"
     engine = create_studio_engine(resolved_database_url)
     session_factory = create_session_factory(engine)
-    settings_service = SettingsService(session_factory)
+    settings_service = SettingsService(session_factory, resolved_origin)
     studio_revision = determine_revision(revision_lookup, commit_date_lookup)
+    element_registry = default_registry() if registry is None else registry
 
-    app = FastAPI(title="pipwerk Studio")
+    # One schema per model for requests and responses together: the documents of the public
+    # web API have fields with defaults that a request may omit.
+    app = FastAPI(
+        title="pipwerk Studio",
+        separate_input_output_schemas=False,
+        docs_url=None,  # /docs is added by docs_page.py (fixed version, Subresource Integrity)
+        redoc_url=None,
+    )
+    install_docs(app)
+    install_public_api(
+        app,
+        ObjectService(settings_service.object_store, element_registry),
+        element_registry,
+    )
+
+    # The outermost middleware (added last): every request on every path is checked.
+    app.add_middleware(HostCheckMiddleware, allowed_hosts=build_allowed_hosts(allowed_hosts))
 
     @app.get("/api/health")
     def read_health() -> HealthStatus:
@@ -160,6 +310,97 @@ def create_app(
     def write_language(update: StudioLanguageUpdate) -> StudioLanguage:
         stored = settings_service.set_language(update.language)
         return StudioLanguage(language=stored)
+
+    @app.exception_handler(RequestValidationError)
+    async def handle_invalid_request(request: Request, error: RequestValidationError) -> Response:
+        # The object directory endpoints answer with a fixed text that does not
+        # repeat the input; the other endpoints keep the default answer.
+        if request.url.path == OBJECT_DIRECTORY_PATH:
+            body = ObjectDirectoryError(detail=INVALID_OBJECT_DIRECTORY_BODY_TEXT)
+            return JSONResponse(status_code=422, content=body.model_dump())
+        if is_public_path(request.url.path):
+            return request_validation_response(error)
+        return await request_validation_exception_handler(request, error)
+
+    @app.exception_handler(ObjectMoveRollbackError)
+    def handle_object_move_not_restored(
+        _request: Request, error: ObjectMoveRollbackError
+    ) -> JSONResponse:
+        logger.error("Moving the object files failed and they could not be restored.")
+        body = ObjectMoveRestoreFailure(
+            detail=OBJECT_MOVE_NOT_RESTORED_TEXT,
+            source_directory=str(error.source),
+            target_directory=str(error.target),
+            files=error.names,
+        )
+        return JSONResponse(status_code=500, content=body.model_dump())
+
+    @app.get(
+        OBJECT_DIRECTORY_PATH,
+        summary="Read the object directory of pipwerk Studio",
+        description=(
+            "Internal pipwerk Studio settings endpoint used by the pipwerk Studio "
+            "user interface. Returns the absolute path of the object directory and "
+            "whether it is the default. The default depends on where the startup "
+            "configuration was found. The path is null if nothing is stored and "
+            "the default cannot be determined. Responds with HTTP 503 if the "
+            "stored value is not an absolute path; a valid write repairs it."
+        ),
+        responses={503: {"model": ObjectDirectoryError}},
+    )
+    def read_object_directory() -> StudioObjectDirectory:
+        try:
+            return _object_directory_model(settings_service.get_object_directory())
+        except StoredObjectDirectoryInvalidError as error:
+            logger.error("%s", error)
+            raise HTTPException(
+                status_code=503, detail=STORED_OBJECT_DIRECTORY_INVALID_TEXT
+            ) from error
+
+    @app.put(
+        OBJECT_DIRECTORY_PATH,
+        summary="Change the object directory of pipwerk Studio",
+        description=(
+            "Internal pipwerk Studio settings endpoint used by the pipwerk Studio "
+            "user interface. Changes the object directory to an absolute path. "
+            "With move set to true all object files are moved to the new "
+            "directory first and the setting is saved afterwards; without it only "
+            "the setting is saved. Responds with HTTP 422 for an invalid body or "
+            "a path that is not absolute, HTTP 409 if the new directory already "
+            "contains a file of the same name or if the stored object directory is "
+            "invalid and files are to be moved (nothing is moved; saving without "
+            "moving repairs the setting), and HTTP 500 if "
+            "the new directory cannot be created or moving failed. After a failed "
+            "move the moved files are brought back "
+            "and the setting is unchanged; if that fails too, the response names "
+            "both directories and the files concerned. A file is never overwritten."
+        ),
+        responses={
+            409: {"model": ObjectDirectoryError},
+            422: {"model": ObjectDirectoryError},
+            500: {"model": ObjectMoveRestoreFailure},
+        },
+    )
+    def write_object_directory(update: StudioObjectDirectoryUpdate) -> StudioObjectDirectory:
+        try:
+            setting = settings_service.set_object_directory(update.path, move=update.move)
+        except InvalidObjectDirectoryError as error:
+            raise HTTPException(status_code=422, detail=INVALID_OBJECT_DIRECTORY_TEXT) from error
+        except ObjectConflictError as error:
+            raise HTTPException(status_code=409, detail=OBJECT_CONFLICT_TEXT) from error
+        except StoredObjectDirectoryInvalidError as error:
+            # Only with move: there is no valid directory to move the files from.
+            logger.error("%s", error)
+            raise HTTPException(
+                status_code=409, detail=STORED_OBJECT_DIRECTORY_NO_MOVE_TEXT
+            ) from error
+        except ObjectTargetNotCreatableError as error:
+            logger.error("The new object directory could not be created.", exc_info=error)
+            raise HTTPException(status_code=500, detail=OBJECT_TARGET_NOT_CREATED_TEXT) from error
+        except ObjectMoveError as error:
+            logger.error("Moving the object files failed.", exc_info=error)
+            raise HTTPException(status_code=500, detail=OBJECT_MOVE_FAILED_TEXT) from error
+        return _object_directory_model(setting)
 
     @app.get(
         "/api/studio/revision",
