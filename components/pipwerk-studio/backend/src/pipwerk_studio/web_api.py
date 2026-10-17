@@ -73,6 +73,7 @@ from pipwerk_studio.object_service import (
     ObjectWriteFailedError,
     SavedObject,
 )
+from pipwerk_studio.settings_service import StoredObjectDirectoryInvalidError
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,7 @@ REQUEST_INVALID_TEXT = "The request is invalid."
 UNSUPPORTED_MEDIA_TEXT = "The request body must be JSON (Content-Type: application/json)."
 DOCUMENT_TOO_LARGE_TEXT = "The document is too large to be stored."
 DIRECTORY_NOT_SET_TEXT = "The object directory of pipwerk Studio is not set."
+STORED_OBJECT_DIRECTORY_INVALID_TEXT = "The stored pipwerk Studio object directory is invalid."
 DIRECTORY_UNREADABLE_TEXT = "The object directory of pipwerk Studio cannot be read."
 WRITE_FAILED_TEXT = "The object file could not be written or deleted."
 
@@ -462,6 +464,11 @@ def _guarded(call: Callable[[], Response]) -> Response:
         return _error(413, DOCUMENT_TOO_LARGE_TEXT)
     except ObjectDirectoryMissingError:
         return _error(503, DIRECTORY_NOT_SET_TEXT)
+    except StoredObjectDirectoryInvalidError as error:
+        # the stored setting is not an absolute path: the same answer as the internal
+        # endpoint of the setting gives
+        logger.error("%s", error)
+        return _error(503, STORED_OBJECT_DIRECTORY_INVALID_TEXT)
     except ObjectDirectoryUnreadableError as error:
         logger.error("The object directory cannot be read.", exc_info=error)
         return _error(500, DIRECTORY_UNREADABLE_TEXT)
@@ -498,7 +505,7 @@ def _error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
             "The object file could not be written or deleted, or the directory cannot be read.",
             ApiError,
         ),
-        503: ("The object directory is not set.", ApiError),
+        503: ("The object directory is not set or the stored setting is invalid.", ApiError),
     }
     return {
         status: {"description": texts[status][0], "model": texts[status][1]} for status in statuses
@@ -555,7 +562,7 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         response_model=None,
         responses={
             200: {"description": "The objects.", "model": ObjectList},
-            **_error_responses(500),
+            **_error_responses(500, 503),
         },
     )
     def list_objects() -> Response:
@@ -604,7 +611,7 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         response_model=None,
         responses={
             200: {"description": "The document.", "model": document_model},
-            **_error_responses(404, 409, 422),
+            **_error_responses(404, 409, 422, 503),
         },
     )
     def read_object(object_id: ObjectId) -> Response:
@@ -655,7 +662,7 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         response_model=None,
         responses={
             204: {"description": "The object was deleted."},
-            **_error_responses(403, 404, 409, 422, 500),
+            **_error_responses(403, 404, 409, 422, 500, 503),
         },
     )
     def delete_object(object_id: ObjectId) -> Response:
@@ -678,7 +685,7 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         response_model=None,
         responses={
             200: {"description": "The usages.", "model": UsagesResponse},
-            **_error_responses(404, 409, 422, 500),
+            **_error_responses(404, 409, 422, 500, 503),
         },
     )
     def usages_of_object(object_id: ObjectId) -> Response:

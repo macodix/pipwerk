@@ -56,6 +56,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -129,7 +139,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -200,6 +210,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -309,7 +329,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -405,6 +425,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -481,6 +511,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -506,6 +546,16 @@
           },
           "500": {
             "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -586,7 +636,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -657,6 +707,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -766,7 +826,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -862,6 +922,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -938,6 +1008,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -963,6 +1043,16 @@
           },
           "500": {
             "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1043,7 +1133,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1114,6 +1204,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -1223,7 +1323,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1319,6 +1419,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -1395,6 +1505,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -1420,6 +1540,16 @@
           },
           "500": {
             "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1500,7 +1630,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1571,6 +1701,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -1680,7 +1820,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1776,6 +1916,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -1852,6 +2002,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -1877,6 +2037,16 @@
           },
           "500": {
             "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1957,7 +2127,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2028,6 +2198,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -2137,7 +2317,7 @@
             }
           },
           "503": {
-            "description": "The object directory is not set.",
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2233,6 +2413,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -2302,6 +2492,16 @@
           },
           "500": {
             "description": "The object file could not be written or deleted, or the directory cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object directory is not set or the stored setting is invalid.",
             "content": {
               "application/json": {
                 "schema": {

@@ -201,6 +201,7 @@ class Replica:
         recorder = binaries / "pipwerk-studio"
         recorder.write_text(
             "#!/bin/sh\n"
+            'printf "%s\\n" "$@" > "$TESTENV_RECORD_DIR/arguments.txt"\n'
             'cp "$2" "$TESTENV_RECORD_DIR/pipwerk-studio.ini"\n'
             "database=$(sed -n 's|^url = sqlite:///||p' \"$2\")\n"
             'cp "$database" "$TESTENV_RECORD_DIR/studio.db"\n'
@@ -518,6 +519,63 @@ def test_start_stores_the_object_directory_below_testenv_before_the_backend_star
     assert len(lines) == 2
     assert lines[1].startswith("url = sqlite:///")
     assert "objects" not in lines[1]
+
+
+@pytest.mark.parametrize(
+    ("host_arguments", "expected"),
+    [
+        ([], []),
+        (["--host", "127.0.0.1"], ["--allowed-host", "127.0.0.1"]),
+        (["--host", "localhost"], ["--allowed-host", "localhost"]),
+        (["--host", "::1"], ["--allowed-host", "::1"]),
+        (["--host", "0.0.0.0"], ["--allowed-host", "0.0.0.0", "--allowed-host", "*ip"]),
+        (["--host", "::"], ["--allowed-host", "::", "--allowed-host", "*ip"]),
+    ],
+    ids=["no host", "loopback", "name", "IPv6", "all IPv4", "all IPv6"],
+)
+def test_the_value_of_host_joins_the_allowed_names_of_the_backend(
+    make_replica: Callable[..., Replica], host_arguments: list[str], expected: list[str]
+) -> None:
+    """The user interface passes its Host header on to the backend; the backend accepts only
+    names on its list. Without --host the default list is enough (127.0.0.1)."""
+    replica = make_replica()
+    record = replica.base / "record"
+    record.mkdir()
+    replica.install_working_programs(record)
+
+    replica.run(
+        "start",
+        "--frontend-port",
+        str(_free_port()),
+        "--backend-port",
+        str(_free_port()),
+        *host_arguments,
+    )
+
+    arguments = (record / "arguments.txt").read_text(encoding="utf-8").splitlines()
+    assert arguments[0] == "-c"
+    assert arguments[2:6] == ["--host", "127.0.0.1", "--port", arguments[5]]
+    assert arguments[6:] == expected  # the backend itself stays bound to 127.0.0.1
+
+
+def test_the_allowed_names_arrive_at_the_backend_and_let_the_proxy_header_pass(
+    tmp_path: Path,
+) -> None:
+    """The Host header that the proxy of the user interface passes on (its own address) is
+    accepted by a backend started with the arguments of the script, and a foreign one is not."""
+    from fastapi.testclient import TestClient
+
+    from pipwerk_studio.app import create_app
+
+    for host, allowed in (("192.0.2.7", ["192.0.2.7"]), ("203.0.113.9", ["0.0.0.0", "*ip"])):
+        client = TestClient(
+            create_app(f"sqlite:///{tmp_path / 'studio.db'}", allowed_hosts=allowed),
+            base_url=f"http://{host}:15173",
+        )
+        assert client.get("/api/health").status_code == 200
+        assert (
+            client.get("/api/health", headers={"host": "rebind.example:15173"}).status_code == 400
+        )
 
 
 def test_the_script_sets_the_object_directory_through_the_database_not_the_environment() -> None:

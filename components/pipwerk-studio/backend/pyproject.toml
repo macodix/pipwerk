@@ -44,7 +44,8 @@ target-version = "py314"
 select = ["E", "W", "F", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
+# S104: the tests name 0.0.0.0 as a value (--host), they bind nothing
+"tests/**" = ["S101", "S104"]
 
 [tool.mypy]
 strict = true
