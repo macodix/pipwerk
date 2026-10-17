@@ -3,11 +3,12 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-16
+- stand: 2026-10-17
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek), `components/pipwerk-studio` (Backend und Oberfläche), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers; Nachprüfung der Dokumente bestanden in [requirements-7.md](reviews/requirements-7.md). Vorlagen: [Pflichtenheft](../../docs/design/planning/pflichtenheft-strategiedesigner.md) und Arbeitspakete AP2 bis AP9. Wo sie den geltenden Dokumenten widersprechen, folgt diese Spezifikation den geltenden Dokumenten (Abschnitt 1).
 - prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde B1 bis B4 und Hinweise S1 bis S15 eingearbeitet: B1 Abschnitt 3.5, B2 Abschnitt 3.4 und Abschnitt 10 Punkt 8, B3 Abschnitt 3.3 und Abschnitt 10 Punkt 7, B4 Abschnitt 3.3; S1 Abschnitt 3.4, S2 bis S4 und S8 Abschnitte 3.1 und 3.3, S5 und S6 Abschnitte 5.1 und 5.2, S7 und S9 Abschnitt 3.1, S10 Abschnitt 3.6, S11 Abschnitt 4.1, S12 Abschnitt 3.1, S13 Abschnitt 9, S14 Abschnitt 10, S15 Abschnitt 3.7. Durchlauf 2 [specification-2.md](reviews/specification-2.md) bestanden; die Hinweise S16 bis S22 werden in den Aufträgen der Phase 4 erledigt.
 - abstimmung: [specification-1.html](presentations/specification-1.html), Festlegungen 1 bis 3 und 5 bis 8 am 2026-10-16 bestätigt. Einwand zu Festlegung 4 eingearbeitet in Abschnitt 3.4, Abschnitt 3.6 und Abschnitt 10 Punkt 4, Nachprüfung in [specification-3.md](reviews/specification-3.md).
+- ergänzung in Phase 4 (`wp02`): Abschnitt 3.1, Felder der Typbeschreibung „Ausgänge“ mit der Verwaltung, „benannt“, „Vorgabe der neuen Strategie“, „Strategieparameter“ und die Werte der Zeiteinheit. Anlass: Testbericht `strategiedesign/wp02:development/strategiedesign/wp02/tests/01-functiontest-1.md`, Hinweis H1; ohne diese Angaben kann die Oberfläche die Verwaltung nicht am Ausgang `gestellt` zeigen und die Strategieparameter nicht vorschlagen. Prüfung in [specification-4.md](reviews/specification-4.md), Bestätigung offen.
 
 ## 1. Gegenstand
 
@@ -49,9 +50,14 @@ Jeder Elementtyp und jeder Objekttyp liefert eine Typbeschreibung. Die Oberfläc
 | Beschriftung | Name und Beschreibung in Deutsch und Englisch |
 | Parameter | Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung; optional die Angabe, bei welchem Wert eines anderen Parameters er gilt (zum Beispiel die Parameter eines Berechnungsverfahrens des Trends, req-param-005) |
 | Eigenschaften | Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen zusätzlich, ob der Anwender sie belegt. `Instrument`, `Konto`, `Order-ID`, `Status` und `Strategie-ID` belegt die Anwendung, nicht der Anwender (req-fach-019, req-fach-053). |
-| Ausgänge | Kennungen und Beschriftungen der Ausgänge eines Elements des Ablaufs, zum Beispiel `wahr` und `falsch` |
+| Ausgänge | Kennungen und Beschriftungen der Ausgänge eines Elements des Ablaufs, zum Beispiel `wahr` und `falsch`; je Ausgang, ob an ihm die Verwaltung des Elements hängt (bei „Order aufgeben“ der Ausgang `gestellt`, Abschnitt 3.3) |
+| benannt | ob ein Element des Ablaufs einen Namen trägt, unter dem Ausdrücke sein Ergebnis ansprechen (Bedingung, Berechnung, Abschnitt 3.2) |
+| Vorgabe der neuen Strategie | bei Auslösern, ob eine neue Strategie mit einem Element dieses Typs beginnt (`Kerzenschluss`, Abschnitt 5.2) |
+| Strategieparameter | bei Objekten der Anwendung, ob Ausdrücke über dieses Objekt die Strategieparameter ansprechen (`Strategie`, Abschnitt 3.4) |
 | Regeln zulässig | ob dem Element Regeln und Regelwerke zugeordnet werden können (req-ui-012) |
 | auf Zeichenfläche | ob der Typ als Element auf die Zeichenfläche gelegt werden kann (req-fach-051) |
+
+Die Felder „Ausgänge“ mit der Verwaltung, „benannt“, „Vorgabe der neuen Strategie“ und „Strategieparameter“ braucht die Oberfläche, weil sie nach E2 keine einzelnen Typen kennt. Parameter und Eigenschaften vom Datentyp Zeiteinheit nennen ihre zulässigen Werte wie eine Auswahl.
 
 Kennungen von Eigenschaften, Parametern und festgelegten Werten werden aus dem deutschen Namen gebildet: Kleinbuchstaben, ä, ö, ü als ae, oe, ue, ß als ss, Leerzeichen und Bindestrich als `_`, andere Zeichen entfallen (req-fach-036, zum Beispiel `trend_intakt`, `punkt_13` aus „Punkt 1/3“, `aufwaerts`, `stop_loss`). Objekte der Anwendung tragen als Kennung ihren Namen aus dem Fachmodell (`Konto`, `Order`). Die vollständigen Listen der Kennungen legen die Aufträge fest.
 
