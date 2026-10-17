@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-16
+- stand: 2026-10-17
 
 ## Regeln
 
@@ -51,7 +51,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Ergebnis | Das, was eine Regel, eine Bedingung oder eine Berechnung liefert. Objekte liefern keine Ergebnisse, sondern haben Eigenschaften. Der Begriff „Ausgabe“ wird nicht verwendet. |
 | Bindungsart | Die Art, wie ein Parameter seinen Wert erhält: fest in der Strategie eingetragen, aus einem Strategieparameter, durch eine Berechnung oder Regel bestimmt, erst bei der Anwendung übergeben, oder aus einer Eigenschaft eines anderen Objekts (Fachmodell req-fach-046). |
 | Objektspeicher | Der Ort, an dem Strategien und Vorlagen dauerhaft abgelegt werden, getrennt von den übrigen Daten der Komponente. Als Einstellung wahlfrei: Objektverzeichnis oder Datenbank (Gesamtsystem req-system-012, req-system-015). |
-| Objektverzeichnis | Ein Objektspeicher als Dateiverzeichnis mit einer Datei je Objekt. Im Vorhaben `strategiedesign` die einzige Form des Objektspeichers. |
+| Objektverzeichnis | Ein Objektspeicher als Dateiverzeichnis mit einer Datei `<Kennung>.<Art>.json` je Objekt (Strategie oder Vorlage). Im Vorhaben `strategiedesign` die einzige Form des Objektspeichers. Der Pfad ist eine Einstellung von pipwerk Studio. Die Dateien sind die einzige Quelle der Objekte; eine Datei, die sich nicht lesen lässt, erscheint in der Liste als „nicht lesbar“ und wird nicht verändert. |
 | Zeichenfläche | Der Bereich der Oberfläche, auf dem Elemente angeordnet und verbunden werden. |
 | Eigenschaftenansicht | Der Bereich der Oberfläche, in dem die Eigenschaften des ausgewählten Elements angezeigt und seine Parameter geändert werden. |
 | Konsistenzprüfung | Die Kontrolle einer Strategie oder einer Vorlage auf Vollständigkeit und Widerspruchsfreiheit, ohne sie auszuführen. Sie läuft beim Speichern und auf Anforderung und ist in der gemeinsamen Python-Bibliothek umgesetzt. Nicht zu verwechseln mit dem Prüfen durch eine Regel. |
@@ -68,12 +68,12 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Typbeschreibung | Die maschinenlesbare Beschreibung eines Elementtyps oder Objekttyps mit den Feldern Kennung, Art (Auslöser, Element des Ablaufs, Objekttyp, Objekt der Anwendung, Ordertyp, Berechnungsverfahren des Trends), Beschriftung (Name und Beschreibung in Deutsch und Englisch), Parameter (Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung), Eigenschaften (Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen, ob der Anwender sie belegt), Ausgänge, „Regeln zulässig“ und „auf Zeichenfläche“. Die Oberfläche baut daraus Elementbibliothek, Elemente und Eigenschaftenansicht auf. |
 | Elementregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Elementtypen und Objekttypen (und die Berechnungsverfahren des Trends) angemeldet sind und von der sie nach Kennung oder als Liste abgefragt werden. Weitere Python-Pakete melden Typen über den Einstiegspunkt `pipwerk.element_types` an. |
 | Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API und Nachrichten verwendet. |
-| Strategiedatei | Eine Datei im Strategieverzeichnis, die ein Strategiedokument enthält. Sie ist die verbindliche Fassung der Strategie. |
+| Strategiedatei | Eine Datei im Objektverzeichnis, die ein Strategiedokument enthält. Sie ist die verbindliche Fassung der Strategie. |
 | Schema | Die formale Beschreibung, welche Felder ein Dokument enthalten muss und welche Werte zulässig sind. Pipwerk verwendet JSON-Schema. Schemata liegen versioniert unter `contracts/`. |
 | Formatversion | Die Versionsnummer des Schemas, nach dem ein Dokument geschrieben wurde. Sie steht im Dokument und erlaubt, ältere Dateien später zu erkennen und zu überführen. |
-| Index | Eine Tabelle in der Datenbank mit Kennung, Bezeichnung, Beschreibung, Formatversion, Dateiname und Zeitstempeln jedes gespeicherten Objekts. Der Index enthält das Objekt nicht, sondern verweist auf seine Datei, und lässt sich aus den Dateien neu aufbauen. |
+| Index | Ein Verzeichnis der gespeicherten Objekte mit Kennung, Bezeichnung und Beschreibung, das sich aus den Dateien neu aufbauen lässt. In pipwerk Studio gibt es keinen Index und keine Tabelle dafür in der Datenbank (Entscheidung E5): Ein Index wäre nur eine zweite Fassung derselben Daten. Die Dateien im Objektverzeichnis sind die einzige Quelle, das Backend liest sie bei Bedarf. Wird das zu langsam, kann später ein Index ergänzt werden. |
 | Schnittstelle | Eine Stelle, an der Daten in ein Programm hinein- oder herauskommen: die Web-API, das Lesen und Schreiben von Dateien, das Lesen der Konfiguration. |
-| Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. |
+| Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. Die öffentliche Web-API von pipwerk Studio liegt unter `/api/v1/` und ist unter `contracts/api/` beschrieben; die übrigen Endpunkte unter `/api/` sind interne Verbindungen der Komponente. |
 | Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Die QA prüft dort aus Kundensicht, der Auftraggeber erprobt dort und nimmt ab. |
 | Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt und Team liegen. |
 | Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#begriffe). |
@@ -100,6 +100,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-17 | Vorhaben `strategiedesign`, Arbeitspaket `wp01`, Auftrag 03: Index (keine Tabelle in der Datenbank, E5) und Strategiedatei (Objektverzeichnis statt Strategieverzeichnis) berichtigt; Objektverzeichnis und Web-API (öffentliche Web-API unter `/api/v1/`) ergänzt. |
 | 2026-10-16 | Vorhaben `strategiedesign`, Arbeitspaket `wp01`, Auftrag 01: Begriffe der gemeinsamen Python-Bibliothek ergänzt (nicht verfügbar, leer, Herkunft, Kennung, Namensraum, Ausdruck, normalisierte Schreibweise); Instanz, Konsistenzprüfung, Befund, Typbeschreibung, Elementregister und Pydantic berichtigt. |
 | 2026-10-16 | Objektspeicher und Objektverzeichnis ergänzt, Objekttyp und Bindungsart angepasst. Nachprüfung der QA, Durchlauf 3. |
 | 2026-10-16 | Objekte der Anwendung: Order und Position aus dem Zusammenhang. Nachprüfung der QA, Durchlauf 4. |

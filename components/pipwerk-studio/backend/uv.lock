@@ -444,12 +444,33 @@ wheels = [
 ]
 
 [[package]]
+name = "pipwerk-domain"
+version = "0.1.0"
+source = { editable = "../../../packages/domain-core" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = "==2.13.5" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "jsonschema", specifier = ">=4.26.0" },
+    { name = "mypy", specifier = ">=2.3.1" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "ruff", specifier = ">=0.16.9" },
+    { name = "types-jsonschema", specifier = ">=4.26.0.20261006" },
+]
+
+[[package]]
 name = "pipwerk-studio"
 version = "0.1.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
     { name = "fastapi" },
+    { name = "pipwerk-domain" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -466,6 +487,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "pipwerk-domain", editable = "../../../packages/domain-core" },
     { name = "sqlalchemy", specifier = ">=2.1.3" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]

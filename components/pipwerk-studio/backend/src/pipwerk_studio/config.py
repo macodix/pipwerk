@@ -4,7 +4,9 @@ The startup configuration contains only the information needed to start the
 Studio backend and let it find and use its configured storage
 (req-system-016, req-system-017, req-system-018). It is provided as an INI
 file with a ``[database]`` section and a ``url`` entry holding the
-SQLAlchemy database URL. All other, non-startup settings - such as the
+SQLAlchemy database URL. An optional ``[server]`` section may list further
+names allowed in the ``Host`` header (``allowed_hosts``, comma separated;
+see ``host_check.py``). All other, non-startup settings - such as the
 Studio language - are stored in the configured database itself
 (req-system-016) and are not part of this file.
 """
@@ -16,6 +18,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+
+from pipwerk_studio.host_check import InvalidAllowedHostError, normalize_entry
 
 #: File name of the pipwerk Studio startup configuration at every searched
 #: location.
@@ -35,6 +39,9 @@ class StartupConfig:
 
     database_url: str
     origin: ConfigOrigin
+    #: Names from the optional ``[server]`` entry ``allowed_hosts`` (comma separated) that
+    #: are allowed in the ``Host`` header in addition to the default names (``host_check.py``).
+    allowed_hosts: tuple[str, ...] = ()
 
 
 class StartupConfigError(Exception):
@@ -162,4 +169,15 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
         ) from error
     if not url:
         raise StartupConfigError(f"Startup configuration {path} has an empty [database] url")
-    return StartupConfig(database_url=url, origin=origin)
+    hosts: list[str] = []
+    if parser.has_option("server", "allowed_hosts"):
+        for item in parser.get("server", "allowed_hosts").split(","):
+            if not item.strip():
+                continue
+            try:
+                hosts.append(normalize_entry(item))
+            except InvalidAllowedHostError as error:
+                raise StartupConfigError(
+                    f"Startup configuration {path} has an invalid [server] allowed_hosts entry"
+                ) from error
+    return StartupConfig(database_url=url, origin=origin, allowed_hosts=tuple(hosts))

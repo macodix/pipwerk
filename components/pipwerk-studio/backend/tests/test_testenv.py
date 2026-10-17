@@ -1,8 +1,9 @@
 """Tests for the test environment script ``scripts/testenv``.
 
 ``testenv start`` runs in a replica of the repository in a temporary directory:
-exactly the versioned files ``LICENSE`` and ``components/pipwerk-studio/**``, in
-the same directory structure. ``uv``, ``npm`` and ``npx`` are replaced by
+exactly the versioned files ``LICENSE``, ``components/pipwerk-studio/**`` and
+``packages/domain-core/**`` (the backend needs the shared library as a path
+dependency), in the same directory structure. ``uv``, ``npm`` and ``npx`` are replaced by
 placeholder programs that note every call and end at once with exit code 1.
 
 Covered: the start aborts with a message on every uncommitted change and every
@@ -32,6 +33,7 @@ from pathlib import Path
 import pytest
 
 COMPONENT = "components/pipwerk-studio"
+LIBRARY = "packages/domain-core"
 SCRIPT = f"{COMPONENT}/scripts/testenv"
 GIT = shutil.which("git")
 GIT_ENVIRONMENT = {
@@ -69,7 +71,7 @@ pytestmark = pytest.mark.skipif(
 def _versioned_files(root: Path) -> list[str]:
     assert GIT is not None
     result = subprocess.run(  # noqa: S603
-        [GIT, "-C", str(root), "ls-files", "-z", "--", "LICENSE", COMPONENT],
+        [GIT, "-C", str(root), "ls-files", "-z", "--", "LICENSE", COMPONENT, LIBRARY],
         capture_output=True,
         check=True,
         env={**os.environ, "GIT_CONFIG_GLOBAL": os.devnull},
@@ -86,7 +88,7 @@ def _free_port() -> int:
 class Replica:
     """Replica of the repository in a temporary directory, with placeholders."""
 
-    def __init__(self, base: Path, *, with_git: bool) -> None:
+    def __init__(self, base: Path, *, with_git: bool, with_library: bool = True) -> None:
         assert SOURCE_ROOT is not None
         self.base = base
         self.root = base / "repository"
@@ -94,6 +96,8 @@ class Replica:
         self.call_log = base / "calls.log"
         self.call_log.write_text("", encoding="utf-8")
         for name in _versioned_files(SOURCE_ROOT):
+            if not with_library and name.startswith(f"{LIBRARY}/"):
+                continue
             source = SOURCE_ROOT / name
             if not source.is_file():
                 continue
@@ -197,6 +201,7 @@ class Replica:
         recorder = binaries / "pipwerk-studio"
         recorder.write_text(
             "#!/bin/sh\n"
+            'printf "%s\\n" "$@" > "$TESTENV_RECORD_DIR/arguments.txt"\n'
             'cp "$2" "$TESTENV_RECORD_DIR/pipwerk-studio.ini"\n'
             "database=$(sed -n 's|^url = sqlite:///||p' \"$2\")\n"
             'cp "$database" "$TESTENV_RECORD_DIR/studio.db"\n'
@@ -222,12 +227,12 @@ class Replica:
 def make_replica(tmp_path: Path) -> Callable[..., Replica]:
     counter = 0
 
-    def make(*, with_git: bool = True) -> Replica:
+    def make(*, with_git: bool = True, with_library: bool = True) -> Replica:
         nonlocal counter
         counter += 1
         base = tmp_path / f"case{counter}"
         base.mkdir()
-        return Replica(base, with_git=with_git)
+        return Replica(base, with_git=with_git, with_library=with_library)
 
     return make
 
@@ -296,6 +301,43 @@ def test_start_aborts_without_git(make_replica: Callable[..., Replica]) -> None:
     assert result.returncode != 0
     assert "not in a Git working directory" in result.stderr
     _assert_nothing_happened(replica)
+
+
+def test_start_aborts_on_a_changed_file_of_the_shared_library(
+    make_replica: Callable[..., Replica],
+) -> None:
+    """The backend runs the library of the same working directory: a change there counts."""
+    replica = make_replica()
+    with (replica.root / LIBRARY / "pyproject.toml").open("a", encoding="utf-8") as file:
+        file.write("# changed\n")
+
+    result = replica.start()
+
+    assert result.returncode != 0
+    assert "uncommitted changes" in result.stderr
+    assert "pyproject.toml" in result.stderr
+    _assert_nothing_happened(replica)
+
+
+def test_start_aborts_when_the_working_directory_has_no_shared_library(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica(with_library=False)
+
+    result = replica.start()
+
+    assert result.returncode != 0
+    assert "packages/domain-core is missing" in result.stderr
+    _assert_nothing_happened(replica)
+
+
+def test_the_replica_contains_the_shared_library_the_backend_needs() -> None:
+    assert SOURCE_ROOT is not None
+    names = _versioned_files(SOURCE_ROOT)
+    assert f"{LIBRARY}/pyproject.toml" in names
+    assert any(name.startswith(f"{LIBRARY}/src/pipwerk_domain/") for name in names)
+    lock = (SOURCE_ROOT / COMPONENT / "backend" / "uv.lock").read_text(encoding="utf-8")
+    assert 'source = { editable = "../../../packages/domain-core" }' in lock
 
 
 def test_check_lets_a_clean_working_directory_with_ignored_new_files_pass(
@@ -477,6 +519,63 @@ def test_start_stores_the_object_directory_below_testenv_before_the_backend_star
     assert len(lines) == 2
     assert lines[1].startswith("url = sqlite:///")
     assert "objects" not in lines[1]
+
+
+@pytest.mark.parametrize(
+    ("host_arguments", "expected"),
+    [
+        ([], []),
+        (["--host", "127.0.0.1"], ["--allowed-host", "127.0.0.1"]),
+        (["--host", "localhost"], ["--allowed-host", "localhost"]),
+        (["--host", "::1"], ["--allowed-host", "::1"]),
+        (["--host", "0.0.0.0"], ["--allowed-host", "0.0.0.0", "--allowed-host", "*ip"]),
+        (["--host", "::"], ["--allowed-host", "::", "--allowed-host", "*ip"]),
+    ],
+    ids=["no host", "loopback", "name", "IPv6", "all IPv4", "all IPv6"],
+)
+def test_the_value_of_host_joins_the_allowed_names_of_the_backend(
+    make_replica: Callable[..., Replica], host_arguments: list[str], expected: list[str]
+) -> None:
+    """The user interface passes its Host header on to the backend; the backend accepts only
+    names on its list. Without --host the default list is enough (127.0.0.1)."""
+    replica = make_replica()
+    record = replica.base / "record"
+    record.mkdir()
+    replica.install_working_programs(record)
+
+    replica.run(
+        "start",
+        "--frontend-port",
+        str(_free_port()),
+        "--backend-port",
+        str(_free_port()),
+        *host_arguments,
+    )
+
+    arguments = (record / "arguments.txt").read_text(encoding="utf-8").splitlines()
+    assert arguments[0] == "-c"
+    assert arguments[2:6] == ["--host", "127.0.0.1", "--port", arguments[5]]
+    assert arguments[6:] == expected  # the backend itself stays bound to 127.0.0.1
+
+
+def test_the_allowed_names_arrive_at_the_backend_and_let_the_proxy_header_pass(
+    tmp_path: Path,
+) -> None:
+    """The Host header that the proxy of the user interface passes on (its own address) is
+    accepted by a backend started with the arguments of the script, and a foreign one is not."""
+    from fastapi.testclient import TestClient
+
+    from pipwerk_studio.app import create_app
+
+    for host, allowed in (("192.0.2.7", ["192.0.2.7"]), ("203.0.113.9", ["0.0.0.0", "*ip"])):
+        client = TestClient(
+            create_app(f"sqlite:///{tmp_path / 'studio.db'}", allowed_hosts=allowed),
+            base_url=f"http://{host}:15173",
+        )
+        assert client.get("/api/health").status_code == 200
+        assert (
+            client.get("/api/health", headers={"host": "rebind.example:15173"}).status_code == 400
+        )
 
 
 def test_the_script_sets_the_object_directory_through_the_database_not_the_environment() -> None:

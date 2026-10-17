@@ -144,6 +144,7 @@ def test_every_limit_is_listed_with_its_value() -> None:
         "MAX_INSTANCE_NESTING": str(limits.MAX_INSTANCE_NESTING),
         "MAX_FINDINGS_PER_EXPRESSION": str(limits.MAX_FINDINGS_PER_EXPRESSION),
         "MAX_FINDINGS_PER_CHECK": str(limits.MAX_FINDINGS_PER_CHECK),
+        "MAX_NAMES_PER_CHECK": str(limits.MAX_NAMES_PER_CHECK),
     }
     constants = {name for name in vars(limits) if name.startswith("MAX_")}
     assert constants == set(rows)

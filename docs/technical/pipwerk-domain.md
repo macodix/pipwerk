@@ -22,7 +22,7 @@ Die Bibliothek wertet Ausdrücke nicht aus und führt keine Strategie aus. Sie h
 
 ## 2. Aufbau des Pakets
 
-Das Paket liegt in `packages/domain-core/`. Quelltext unter `src/pipwerk_domain/`, Tests unter `tests/`.
+Das Paket liegt in `packages/domain-core/`. Quelltext unter `src/pipwerk_domain/`, Tests unter `tests/`. Die Datei `src/pipwerk_domain/py.typed` kennzeichnet das Paket als typisiert, damit mypy die Typen in den Paketen nutzt, die die Bibliothek einbinden (pipwerk Studio bindet sie als editierbare Pfadabhängigkeit ein, siehe `docs/technical/pipwerk-studio.md`, Abschnitt 2.9).
 
 | Datei oder Teilpaket | Inhalt |
 | --- | --- |
@@ -30,14 +30,14 @@ Das Paket liegt in `packages/domain-core/`. Quelltext unter `src/pipwerk_domain/
 | `identifiers.py` | Bildungsregel für Kennungen (`identifier_from_name`) |
 | `registry.py` | Elementregister (`ElementRegistry`), Einstiegspunkt `pipwerk.element_types` |
 | `catalog.py` | mitgelieferte Typen mit Beschriftungen in Deutsch und Englisch |
-| `defaults.py` | `create_registry()` und `default_registry()`: Register mit den mitgelieferten Typen und den Typen der Einstiegspunkte |
+| `defaults.py` | `create_registry()` und `default_registry()`: Register mit den mitgelieferten Typen und den Typen der Einstiegspunkte; `builtin_templates()`: die mitgelieferten Vorlagen |
 | `model.py` | Objektmodell: `Strategy`, `Element`, `Connection`, `Management`, `Instance`, `Template`, `Binding`, `Origin` und weitere |
 | `risk_rule.py` | Regelvorlage „Risiko je Trade“ mit fester UUID |
 | `normalize.py` | Normalisierung aller Ausdrücke einer Strategie oder Vorlage (`normalize_strategy`, `normalize_template`) |
 | `limits.py` | Begrenzungen gegen Überlast als Konstanten |
 | `namespaces.py` | Namensräume: Objekte der Anwendung, Symbole von Parametern, Eigenschaften und Instanzen |
 | `expressions/` | Ausdrücke: `lexer.py`, `parser.py`, `nodes.py` (Syntaxbaum), `functions.py` (Funktionsliste), `exprtypes.py` (Typen und Verträglichkeit), `symbols.py` (Symbole und Namensräume), `checker.py` (Typprüfung, erkannte Namen, Normalisierung) |
-| `consistency/` | Konsistenzprüfung: `engine.py` (Prüfung), `findings.py` (Befunde und ihre Kennungen), `graph.py` (Rückführungen, Erreichbarkeit) |
+| `consistency/` | Konsistenzprüfung: `engine.py` (Prüfung), `findings.py` (Befunde und ihre Kennungen, erkannte Namen und Ergebnis einer Prüfung mit Namen), `graph.py` (Rückführungen, Erreichbarkeit) |
 | `documents/` | Dokumente: `models.py` (Pydantic-Modelle), `convert.py` (Übersetzung in beide Richtungen), `io.py` (Lesen und Schreiben als JSON-Text), `schemas.py` (JSON-Schemata) |
 
 Wichtige Einstiege:
@@ -51,6 +51,8 @@ Wichtige Einstiege:
 | Ausdruck normalisieren | `pipwerk_domain.expressions.normalize_expression(text, umgebung)` |
 | alle Ausdrücke einer Strategie oder Vorlage normalisieren | `pipwerk_domain.normalize.normalize_strategy(strategy)`, `normalize_template(template)` (liefern eine Kopie) |
 | Strategie oder Vorlage prüfen | `pipwerk_domain.consistency.check_strategy(strategy)`, `check_template(template)` |
+| prüfen und die erkannten Namen jedes Ausdrucks erhalten | `pipwerk_domain.consistency.check_strategy_with_names(strategy)`, `check_template_with_names(template)` (Abschnitt 9.3) |
+| mitgelieferte Vorlagen | `pipwerk_domain.defaults.builtin_templates()` (Abschnitt 5.1) |
 | Dokument lesen | `pipwerk_domain.documents.read_document(text)` (liefert `Strategy` oder `Template`) |
 | Dokument schreiben | `pipwerk_domain.documents.write_document(objekt)` |
 | Dokument nur auf das Format prüfen | `pipwerk_domain.documents.parse_document(text_oder_dict)` |
@@ -227,7 +229,7 @@ Die mitgelieferte Regelvorlage steht in `risk_rule.py`: `risk_per_trade_template
 7c1d4e2a-5b3f-4a86-9d27-e1f0a3c8b645
 ```
 
-Sie ist in jeder Installation gleich und wird nicht geändert oder gelöscht (E6). Ihre Bestandteile: Bezeichnung „Risiko je Trade“, Objekttyp `Regel`, Parameter `risikogrenze` (Prozent, Pflicht, Standardwert 1 %, also `0.01`), bestimmte Eigenschaft `volumen`, Vergleich beim Prüfen `hoechstens` und der Ausdruck aus Spezifikation 3.5 in normalisierter Schreibweise (Konstante `RISK_PER_TRADE_EXPRESSION`); der Abstand vom Preis zum Stop-Loss steht an beiden Stellen ausgeschrieben. Die Regel ist fehlerfrei als Regel der Strategie und als Regel eines Elements.
+`pipwerk_domain.defaults.builtin_templates()` liefert alle mitgelieferten Vorlagen (derzeit nur diese) als neue Objekte bei jedem Aufruf; das Backend kennt dadurch keine einzelne Vorlage (E2). Sie ist in jeder Installation gleich und wird nicht geändert oder gelöscht (E6). Ihre Bestandteile: Bezeichnung „Risiko je Trade“, Objekttyp `Regel`, Parameter `risikogrenze` (Prozent, Pflicht, Standardwert 1 %, also `0.01`), bestimmte Eigenschaft `volumen`, Vergleich beim Prüfen `hoechstens` und der Ausdruck aus Spezifikation 3.5 in normalisierter Schreibweise (Konstante `RISK_PER_TRADE_EXPRESSION`); der Abstand vom Preis zum Stop-Loss steht an beiden Stellen ausgeschrieben. Die Regel ist fehlerfrei als Regel der Strategie und als Regel eines Elements.
 
 ## 6. Namensräume
 
@@ -413,6 +415,10 @@ Diese Befunde stehen nicht in der Tabelle der Spezifikation; sie sind für eine 
 | `rule.invalid_type` | Fehler | In einer Liste von Regeln steht ein anderer Objekttyp, oder ein Objekt `Regel`/`Regelwerk` steht als Instanz oder Element | `reason` (`in_rules`, `in_instances`), `type` |
 | `rule.comparison_missing` | Fehler | Eine bestimmende Regel nennt keinen Vergleich beim Prüfen | – |
 
+### 9.3 Erkannte Namen einer Prüfung
+
+`check_strategy_with_names(strategy)` und `check_template_with_names(template)` prüfen wie `check_strategy` und `check_template` (dieselben Befunde) und liefern zusätzlich je Ausdruck die erkannten Namen (`CheckResult`: `findings`, `expressions`, `names_truncated`). Das braucht der Endpunkt `/api/v1/check` der Web-API (Spezifikation 5.3). Ein Eintrag von `expressions` (`ExpressionNames`) nennt `element` (Kennung des Elements oder `None`), `subject` (Instanz oder Regel, wie beim Befund) und `field` (welcher Ausdruck, dieselben Werte wie `field` bei `expression.invalid`) und die Namen (`NameOccurrence`): `start` und `end` (Zeichenpositionen im Ausdruck), `start` und `end` umfassen den ganzen geschriebenen Namen, `identifier` (die Schreibweise der erkannten Kennungen, mit Punkten verbunden; bei einem teilweise erkannten Namen nur die erkannten ersten Teile, bei einem ganz unbekannten leer), `resolved` (der ganze Name wurde erkannt), `previous` (der Name steht in `PREVIOUS(…)`) und `segments` (die erkannten Teile mit Kennung und Stelle; bei einem erkannten Namen alle, bei einem teilweise erkannten die erkannten ersten, bei einem ganz unbekannten keiner). Ein Ausdruck ohne Namen erscheint nicht. Es werden höchstens `MAX_NAMES_PER_CHECK` Namen zurückgegeben (Abschnitt 11). Die Namen werden gesammelt, bevor die Syntaxbäume freigegeben werden; ohne die Frage nach den Namen sammelt die Prüfung nichts.
+
 Die Kennungen der Befunde sind Konstanten in `pipwerk_domain.consistency.findings`. Die Prüfung liefert höchstens `MAX_FINDINGS_PER_CHECK` Befunde und dazu den Befund `findings.truncated`; sie endet dann, spätere Befunde und Ausdrücke bleiben ungeprüft. `normalize_strategy` und `normalize_template` brauchen keine Befunde: Sie zerlegen die Ausdrücke nur, schreiben Namen und Funktionen und sammeln keine Befundliste (ein Ausdruck, in dem nichts zu ändern ist, wird gar nicht zerlegt). Ihre Laufzeit für ein Dokument von 2 MiB liegt in der Größenordnung der Prüfung. Ein Test schützt vor einem Ausreißer der Laufzeit (Zeitgrenze ohne `tracemalloc` gemessen) mit einem Dokument, in dem die Normalisierung jeden Ausdruck zerlegen und umschreiben muss; die Zeit gilt nicht als Eigenschaft von Dokumenten dieser Größe.
 
 ## 10. Dokumente und Schemata
@@ -470,6 +476,7 @@ Die Begrenzungen (Spezifikation Abschnitt 8) stehen als Konstanten in `pipwerk_d
 | `MAX_INSTANCE_NESTING` | 16 | Schachtelung von Instanzen in Instanzen; die Instanz eines Elements und eine Regel der Strategie sind Ebene 1, enthaltene Instanzen und Regeln eine Ebene tiefer |
 | `MAX_FINDINGS_PER_EXPRESSION` | 50 | alle Befunde je Ausdruck zusammen. Die Liste ist abschließend: `expression.invalid`, `rule.unresolved_name` (auch Hinweise), `expression.order_outside_management`, `rule.result_mismatch` und `rule.order_in_indicator`. `rule.order_in_indicator` gehört bei einer Regel zum Ausdruck der Regel, bei einem Regelwerk zu dessen Ergebnisausdruck. Kein anderer Befund zählt dazu, insbesondere nicht `calculation.circular_reference` und `candle.no_instance`, denn sie betreffen mehrere Ausdrücke oder den Ablauf. Fallen weitere an, folgt genau ein `findings.truncated` (`scope` = `expression`) als letzter Befund des Ausdrucks; danach kommt kein Befund dieses Ausdrucks mehr. Die Zählung geschieht an einer Stelle der Prüfung (`Checker._expression_finding`) |
 | `MAX_FINDINGS_PER_CHECK` | 1000 | Befunde je Prüfung einer Strategie oder Vorlage; die Prüfung endet, dazu kommt `findings.truncated` (`scope` = `check`) |
+| `MAX_NAMES_PER_CHECK` | 20000 | erkannte Namen, die eine Prüfung zurückgibt, wenn danach gefragt wird (`check_strategy_with_names`, `check_template_with_names`, Abschnitt 9.3); weitere entfallen, `CheckResult.names_truncated` ist dann wahr. Die Befunde sind davon nicht berührt |
 
 Die Grenzen der Befunde schützen Rechenzeit und Speicher (OWASP API4): Ein Dokument von 2 MiB mit lauter fehlerhaften Ausdrücken ergibt höchstens 1001 Befunde. Die Berechnungen werden dazu nach ihren Abhängigkeiten geordnet und ihre Befunde sofort gemeldet; der Speicher der Syntaxbäume wird nach dem Melden freigegeben. Die Tests mit Zeitgrenze messen die Zeit ohne laufendes `tracemalloc`, Zeit und Speicher getrennt. Die Zeitgrenze hat auf dem Rechner des Entwicklers mindestens den Faktor 10 Reserve; die Tests schützen vor einem Ausreißer der Laufzeit und belegen keine Antwortzeit. Die Laufzeit gültiger großer Dokumente liegt darüber und hängt vom Dokument ab; die Bibliothek sagt dafür keine Zeit zu.
 
@@ -507,6 +514,7 @@ Die Tests (pytest) umfassen:
 | `test_hardening.py` | Strategieparameter in Vorlagen und Instanzen, Zahlen ohne JSON-Wert, doppelte Schlüssel, Namen und Zahlen in ASCII, lange Ketten und Kreise von Berechnungen, fehlerhafte Einstiegspunkte, Grenzen der Befunde mit Zeit und Speicher, Stelle bei Auswahlwerten, Trend ohne Richtung, `str-01` |
 | `test_hardening_2.py` | Einstiegspunkte je Paket, eine Grenze für alle Befunde eines Ausdrucks, einzelne Ersatzzeichen, Kodierung von Bytes, `PREVIOUS` ohne Abhängigkeit, Laufzeit und Speicher der Normalisierung |
 | `test_hardening_3.py` | die Grenze von 50 Befunden je Ausdruck mit `expression.order_outside_management`, `rule.result_mismatch` und Hinweisen in Vorlagen sowie mit `rule.order_in_indicator` (Regel und Regelwerk in einer Vorlage `Indikator`) (jeweils mit Gegenprobe), Normalisierung von 2 MiB mit Umschreiben jedes Ausdrucks, Kreis und mehrfach eingehängte Teile bei der Prüfung auf Ersatzzeichen |
+| `test_check_names.py` | erkannte Namen einer Prüfung (Stelle, Kennung, nicht erkannte Namen, `PREVIOUS`, Ort des Ausdrucks, Begrenzung) und mitgelieferte Vorlagen (`builtin_templates`) |
 | `test_model.py` | Objektmodell |
 | `test_normalize.py` | Normalisierung aller Ausdrücke einer Strategie oder Vorlage |
 | `test_documentation.py` | Kennungen und Befunde dieses Dokuments stimmen mit dem Code überein |

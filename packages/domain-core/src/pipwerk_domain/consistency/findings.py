@@ -71,3 +71,51 @@ class Finding:
             "subject": self.subject,
             "details": dict(self.details),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class NameSegment:
+    """One part of a recognized name: the identifier and its position in the expression."""
+
+    identifier: str
+    start: int
+    end: int
+
+
+@dataclass(frozen=True, slots=True)
+class NameOccurrence:
+    """A name recognized in an expression, with position (``start`` is the first character,
+    ``end`` the position after the last) and the identifier it stands for (spelled as the
+    identifiers are, joined with points). ``resolved`` is true if the whole name was
+    recognized, otherwise ``segments`` are the recognized first parts. ``previous`` is true
+    for the name in ``PREVIOUS(name)``."""
+
+    start: int
+    end: int
+    identifier: str
+    resolved: bool
+    previous: bool
+    segments: tuple[NameSegment, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ExpressionNames:
+    """The names recognized in one expression. ``element`` and ``subject`` tell where the
+    expression stands as for a finding; ``field`` tells which expression (the values are those
+    of ``details["field"]`` of ``expression.invalid``)."""
+
+    element: str | None
+    subject: str | None
+    field: str
+    names: tuple[NameOccurrence, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CheckResult:
+    """Result of a check that was asked for the recognized names: the findings and the names
+    of each expression. ``names_truncated`` is true if the limit ``MAX_NAMES_PER_CHECK`` was
+    reached and further names were dropped."""
+
+    findings: list[Finding]
+    expressions: list[ExpressionNames]
+    names_truncated: bool

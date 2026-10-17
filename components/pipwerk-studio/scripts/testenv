@@ -189,6 +189,7 @@ cmd_start() {
     frontend_port=''
     backend_port=''
     host=127.0.0.1
+    host_given=0
     while [ $# -gt 0 ]; do
         case $1 in
         --frontend-port | --backend-port | --host)
@@ -196,7 +197,10 @@ cmd_start() {
             case $1 in
             --frontend-port) frontend_port=$2 ;;
             --backend-port) backend_port=$2 ;;
-            --host) host=$2 ;;
+            --host)
+                host=$2
+                host_given=1
+                ;;
             esac
             shift 2
             ;;
@@ -228,6 +232,11 @@ cmd_start() {
         printf '%s\n' "$changes" | head -n 20 >&2
         exit 1
     fi
+
+    # The backend needs the shared library of the repository (path dependency in
+    # the lock file of the backend): the working directory must contain it.
+    [ -f "$repo_root/packages/domain-core/pyproject.toml" ] ||
+        die "packages/domain-core is missing in the working directory; the backend needs the shared library"
 
     require_command python3
     require_command uv
@@ -284,8 +293,20 @@ engine.dispose()
 ' "sqlite:///$env_dir/pipwerk-studio.db" "$env_dir/objects" ||
         die "the object directory of the test environment could not be set"
 
+    # The user interface passes the header Host of its own address on to the backend
+    # (proxy without changeOrigin), and the backend accepts only names on its list of
+    # allowed names (127.0.0.1, localhost and ::1 by default). With --host the value
+    # joins the list; for 0.0.0.0 and :: (all addresses of the machine, reached under
+    # addresses that cannot be listed) every IP address is allowed.
+    set --
+    if [ "$host_given" = 1 ]; then
+        set -- --allowed-host "$host"
+        case $host in
+        0.0.0.0 | '::') set -- "$@" --allowed-host '*ip' ;;
+        esac
+    fi
     nohup "$backend_dir/.venv/bin/pipwerk-studio" \
-        -c "$env_dir/pipwerk-studio.ini" --host 127.0.0.1 --port "$backend_port" \
+        -c "$env_dir/pipwerk-studio.ini" --host 127.0.0.1 --port "$backend_port" "$@" \
         >"$env_dir/backend.log" 2>&1 </dev/null &
     state_set backend_pid $!
     state_set backend_port "$backend_port"

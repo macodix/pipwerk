@@ -5,10 +5,12 @@ Every mention of the name in a text that the backend outputs must read exactly
 "Studio" must directly follow "pipwerk ". Checked are the error message of the
 start without startup configuration, the help text of the command line, the
 detail text of the HTTP response for an invalid stored language, the log
-entries and the description of the interface (``/openapi.json``).
+entries, the description of the interface (``/openapi.json``), the description of the public
+web API under ``contracts/api/`` and the fixed error texts of the public web API.
 """
 
 import argparse
+import json
 import logging
 import re
 from collections.abc import Callable
@@ -17,8 +19,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from web_api_support import CONTRACT_FILE
 
-from pipwerk_studio import cli
+from pipwerk_studio import body_limit, cli, web_api
 from pipwerk_studio.app import create_app
 from pipwerk_studio.storage import (
     SETTINGS_SINGLETON_ID,
@@ -237,3 +240,30 @@ def test_interface_description() -> None:
     for text in texts:
         assert_spelled_correctly(text)
     assert any(NAME in text for text in texts)
+
+
+def test_description_of_the_public_web_api_under_contracts() -> None:
+    """The new description (order 03): title exactly the name, all texts spelled correctly."""
+    description = json.loads(CONTRACT_FILE.read_text(encoding="utf-8"))
+
+    info = description["info"]
+    assert info["title"] == NAME
+    texts = [info["description"]]
+    texts += _collect(description["paths"], ("summary", "description"))
+    texts += _collect(description["components"]["schemas"], ("description",))
+    assert len(texts) >= 100
+    for text in texts:
+        assert_spelled_correctly(text)
+    assert sum(NAME in text for text in texts) >= 5
+
+
+def test_fixed_texts_of_the_public_web_api() -> None:
+    texts = [
+        value
+        for name, value in vars(web_api).items()
+        if name.endswith("_TEXT") and isinstance(value, str)
+    ]
+    texts += [body_limit.BODY_TOO_LARGE_TEXT]
+    assert len(texts) >= 12
+    for text in texts:
+        assert_spelled_correctly(text)

@@ -3,14 +3,14 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-14
+- stand: 2026-10-17
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu pipwerk Studio dient
 
 pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Mit ihm sollen später Handelsstrategien auf einer Arbeitsfläche zusammengestellt und bearbeitet werden.
 
-Der derzeitige Stand ist ein technisches Grundgerüst. pipwerk Studio zeigt eine leere Arbeitsfläche und unterstützt eine dauerhaft gespeicherte deutsche oder englische Oberfläche. Strategien können noch nicht angelegt, bearbeitet, gespeichert oder ausgeführt werden. Begriffe, die Sie ohne Vorwissen vielleicht nicht kennen, erklärt das Glossar in Abschnitt 7, zum Beispiel Oberfläche und Datenbank.
+Der derzeitige Stand ist ein technisches Grundgerüst. pipwerk Studio zeigt eine leere Arbeitsfläche und unterstützt eine dauerhaft gespeicherte deutsche oder englische Oberfläche. In der Oberfläche können Strategien noch nicht angelegt, bearbeitet, gespeichert oder ausgeführt werden. Strategien und Vorlagen lassen sich bisher nur über die Web-API anlegen, lesen, ändern und löschen (Abschnitt 2, „Web-API ausprobieren“); ausgeführt werden sie nicht. Begriffe, die Sie ohne Vorwissen vielleicht nicht kennen, erklärt das Glossar in Abschnitt 7, zum Beispiel Oberfläche und Datenbank.
 
 ## 2. pipwerk Studio öffnen
 
@@ -29,9 +29,22 @@ Alle drei Befehle unten rufen Sie in einem Terminal (siehe Glossar) im obersten 
 3. Abfragen: `components/pipwerk-studio/scripts/testenv status` nennt, ob die Testumgebung läuft, und die Adressen von Oberfläche und Hintergrunddienst mit ihren Ports.
 4. Beenden: `components/pipwerk-studio/scripts/testenv stop` beendet pipwerk Studio und entfernt die Dateien der Testumgebung, auch ihre Datenbank. Damit geht die gespeicherte Sprache verloren: Nach einem erneuten Start (Schritt 1) ist wieder Deutsch eingestellt. Entfernt werden auch die gespeicherten Strategien und Vorlagen der Testumgebung, solange das Objektverzeichnis unter `components/pipwerk-studio/.testenv/` liegt. Das ist nach dem Start der Fall. Wurde das Objektverzeichnis auf ein anderes Verzeichnis geändert, bleiben die Dateien dort erhalten.
 
-Zugriff von anderen Rechnern: Achtung, lesen Sie zuerst diesen Hinweis. Mit `--host` kann jeder, der Ihren Rechner im Netz erreicht, pipwerk Studio benutzen und dessen Einstellungen, zum Beispiel die Sprache, ändern. Es gibt keine Anmeldung. Verwenden Sie `--host` deshalb nur in einem Netz, dem Sie vertrauen. Ohne `--host` ist pipwerk Studio nur von Ihrem eigenen Rechner aus erreichbar. Sollen andere Rechner im Netz zugreifen, geben Sie beim Start `--host` an. Der vollständige Befehl lautet zum Beispiel: `components/pipwerk-studio/scripts/testenv start --frontend-port <Port der Oberfläche> --backend-port <Port des Hintergrunddienstes> --host 0.0.0.0`. `0.0.0.0` bedeutet: alle Netzwerkadressen des Rechners (siehe Glossar). Auf Ihrem eigenen Rechner gilt weiter die Adresse, die das Skript nennt, bei `0.0.0.0` also `http://127.0.0.1:<Port der Oberfläche>/`. Andere Rechner verwenden statt `127.0.0.1` die Netzwerkadresse Ihres Rechners (siehe Glossar), also `http://<Netzwerkadresse des Rechners>:<Port der Oberfläche>/`. Sie müssen die Netzwerkadresse selbst eingeben; ein Name wie `mein-rechner` statt der Netzwerkadresse funktioniert nicht, pipwerk Studio weist die Anfrage ab. Geben Sie statt `0.0.0.0` eine einzelne Netzwerkadresse des Rechners an, ist pipwerk Studio nur unter dieser Adresse erreichbar, und das Skript nennt diese Adresse.
+Zugriff von anderen Rechnern: Achtung, lesen Sie zuerst diesen Hinweis. Mit `--host` kann jeder, der Ihren Rechner im Netz erreicht, pipwerk Studio benutzen und dessen Einstellungen, zum Beispiel die Sprache, ändern. Er kann außerdem Strategien und Vorlagen anlegen, ändern und löschen und das Objektverzeichnis ändern, in dem pipwerk Studio sie speichert (siehe Glossar). Mit dem Ändern des Objektverzeichnisses lassen sich Dateien auf Ihrem Rechner in ein anderes Verzeichnis verschieben. Es gibt keine Anmeldung. Verwenden Sie `--host` deshalb nur in einem Netz, dem Sie vertrauen. Ohne `--host` ist pipwerk Studio nur von Ihrem eigenen Rechner aus erreichbar. Sollen andere Rechner im Netz zugreifen, geben Sie beim Start `--host` an. Der vollständige Befehl lautet zum Beispiel: `components/pipwerk-studio/scripts/testenv start --frontend-port <Port der Oberfläche> --backend-port <Port des Hintergrunddienstes> --host 0.0.0.0`. `0.0.0.0` bedeutet: alle Netzwerkadressen des Rechners (siehe Glossar). Auf Ihrem eigenen Rechner gilt weiter die Adresse, die das Skript nennt, bei `0.0.0.0` also `http://127.0.0.1:<Port der Oberfläche>/`. Andere Rechner verwenden statt `127.0.0.1` die Netzwerkadresse Ihres Rechners (siehe Glossar), also `http://<Netzwerkadresse des Rechners>:<Port der Oberfläche>/`. Sie müssen die Netzwerkadresse selbst eingeben; ein Name wie `mein-rechner` statt der Netzwerkadresse funktioniert nicht, pipwerk Studio weist die Anfrage ab. Geben Sie statt `0.0.0.0` eine einzelne Netzwerkadresse des Rechners an, ist pipwerk Studio nur unter dieser Adresse erreichbar, und das Skript nennt diese Adresse.
 
 Der Start bricht mit einer Fehlermeldung ab, wenn das Arbeitsverzeichnis nicht genau einem Commit entspricht. Das ist der Fall bei einer nicht committeten Änderung an einer Datei des Repositorys und bei einer neuen Datei, die Git (siehe Glossar) nicht ausdrücklich ignoriert. Der Start bricht auch ab, wenn das Skript nicht in einem Git-Arbeitsbereich (siehe Glossar) liegt. Die Meldung nennt die Ursache. In diesem Fall wurde nichts installiert, gebaut oder gestartet. Committen oder verwerfen Sie die Änderungen und starten Sie erneut. Der Start bricht ebenfalls ab, wenn schon eine Testumgebung läuft oder ein Port belegt ist.
+
+### Web-API ausprobieren
+
+Die Web-API (siehe Glossar) von pipwerk Studio legt Strategien und Vorlagen an, liest, ändert und löscht sie und prüft sie. Die Schnittstellenbeschreibung dazu zeigt Ihr Browser unter `http://127.0.0.1:<Port des Hintergrunddienstes>/docs`. Sie erreichen sie nur auf dem Rechner, auf dem die Testumgebung läuft, und nicht über den Port der Oberfläche. Die Seite `/docs` lädt das Programm, das sie darstellt (Swagger UI, Version 5.33.1), aus dem Internet von `cdn.jsdelivr.net`. Ihr Browser prüft die geladenen Dateien an einer festen Prüfsumme. Hat Ihr Browser keinen Zugang zum Internet, bleibt die Seite `/docs` leer; die Adresse `http://127.0.0.1:<Port des Hintergrunddienstes>/openapi.json` und die Endpunkte selbst funktionieren trotzdem. Rufen Sie den Hintergrunddienst mit der Adresse `127.0.0.1` oder `localhost` auf; unter einem anderen Namen weist er die Anfrage mit dem Status 400 ab. Die Endpunkte der Web-API beginnen mit `/api/v1/`. Zu jedem Endpunkt können Sie mit „Try it out“ eine Anfrage senden. Die Adressen enthalten die Art des Objekts: `strategies` (Strategien), `indicators` (Indikatoren), `trends` (Trends), `rules` (Regeln), `rulesets` (Regelwerke).
+
+1. `GET /api/v1/element-types` liefert alle Typen mit ihren deutschen und englischen Namen, die mitgelieferte Regelvorlage „Risiko je Trade“ und die Funktionen für Ausdrücke.
+2. `POST /api/v1/strategies` legt eine Strategie an. Als „Request body“ fügen Sie den Inhalt einer Datei aus `contracts/strategies/v1/testcases/` ein, zum Beispiel `str-03.strategy.json`. Die Antwort nennt die neue Kennung der Strategie, das gespeicherte Dokument und die Befunde der Konsistenzprüfung. Für die beiden Testfälle ist die Liste der Befunde leer. Die Kennung im Dokument ersetzt pipwerk Studio durch eine neue.
+3. `GET /api/v1/strategies` nennt die gespeicherten Strategien, `GET /api/v1/strategies/{id}` liefert eine Strategie. Für `{id}` tragen Sie die Kennung aus Schritt 2 ein.
+4. `PUT /api/v1/strategies/{id}` speichert eine geänderte Strategie, auch wenn die Konsistenzprüfung Befunde meldet. Die Kennung im Dokument muss die im Pfad sein.
+5. `POST /api/v1/check` prüft ein Dokument jeder Art, ohne es zu speichern.
+6. `GET /api/v1/rules/{id}/usages` nennt die Strategien und Vorlagen, die eine Instanz aus dieser Vorlage enthalten. Das Löschen einer Vorlage mit `DELETE` ändert diese Strategien nicht.
+
+pipwerk Studio speichert jedes Objekt als eine Datei im Objektverzeichnis (siehe Glossar). In der Testumgebung liegt es unter `components/pipwerk-studio/.testenv/objects`. Ein Dokument, das dem Schema nicht entspricht, zum Beispiel mit einem zusätzlichen Feld, lehnt pipwerk Studio mit dem Status 422 ab. Ein Dokument ist höchstens 2 MiB groß, sonst antwortet pipwerk Studio mit dem Status 413. Eine Datei im Objektverzeichnis, die sich nicht lesen lässt, steht in der Liste mit dem Kennzeichen „unreadable“. pipwerk Studio verändert sie nie; sie lässt sich über die Web-API weder lesen noch ändern noch löschen (Status 409). Entfernen Sie eine solche Datei im Dateisystem.
 
 ### Zweiter Weg: Entwicklungsbetrieb
 
@@ -143,7 +156,8 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 
 ## 6. Bekannte Einschränkungen
 
-- Die Arbeitsfläche ist noch leer; Strategien können noch nicht bearbeitet werden.
+- Die Arbeitsfläche ist noch leer; Strategien können in der Oberfläche noch nicht bearbeitet werden. Strategien und Vorlagen lassen sich bisher nur über die Web-API anlegen und ändern (Abschnitt 2).
+- Mit `--host` kann jeder im Netz Strategien, Vorlagen und das Objektverzeichnis ändern; es gibt keine Anmeldung (Abschnitt 2).
 - pipwerk Studio besitzt noch kein Installationspaket für Anwender.
 - Die Sprache gilt für die gesamte laufende Komponente pipwerk Studio und nicht für einzelne Personen.
 - Weitere Sprachen als Deutsch und Englisch sind nicht verfügbar.
@@ -161,6 +175,8 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 | Repository | Der Ort, an dem alle Dateien von Pipwerk mit ihrer gesamten Änderungsgeschichte gespeichert sind. Für pipwerk Studio ist das die Adresse https://github.com/macodix/pipwerk. |
 | Lizenz | Die Bedingungen, unter denen die Software genutzt, weitergegeben und verändert werden darf. pipwerk Studio steht unter der GNU General Public License, Version 3. |
 | Hintergrunddienst | Der Teil von pipwerk Studio, der außerhalb des Browsers auf dem Rechner läuft und zum Beispiel die gewählte Sprache speichert. Er wird auch Backend genannt. |
+| Web-API | Die über HTTP erreichbare Schnittstelle von pipwerk Studio. Programme und die Seite `/docs` im Browser rufen ihre Endpunkte auf, um Strategien und Vorlagen zu speichern und zu prüfen. Jede Adresse darin heißt Endpunkt. |
+| Objektverzeichnis | Das Verzeichnis auf dem Rechner, in dem pipwerk Studio jede Strategie und jede Vorlage als eine Datei ablegt. Die Dateien sind die einzige Quelle der Strategien und Vorlagen. |
 | Tooltip | Ein kleines Hinweisfenster, das erscheint, wenn der Mauszeiger kurz über einer Anzeige verweilt. |
 | Testumgebung | pipwerk Studio, gebaut und gestartet aus genau einem Commit eines Arbeitsverzeichnisses ohne nicht committete Änderungen. |
 | Testumgebungsskript | Das Skript `components/pipwerk-studio/scripts/testenv`, das die Testumgebung startet, abfragt und beendet. |
