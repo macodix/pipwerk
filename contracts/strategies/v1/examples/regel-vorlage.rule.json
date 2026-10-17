@@ -1,0 +1,17 @@
+{
+  "format": "pipwerk.rule",
+  "format_version": "1.0",
+  "id": "5b0f8e1c-2d47-4c3a-9a61-7e24d9c0b3f8",
+  "title": "Mindestvolumen",
+  "description": "Beispiel einer Regelvorlage: Das Volumen einer Order erreicht das Mindestvolumen des Instruments.",
+  "object_type": "Regel",
+  "parameter_values": {},
+  "parameters": [],
+  "properties": [],
+  "instances": [],
+  "rules": [],
+  "expression": "Order.volumen >= Instrument.mindestvolumen",
+  "determined_property": null,
+  "comparison": null,
+  "result_expression": null
+}

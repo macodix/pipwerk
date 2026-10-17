@@ -460,6 +460,10 @@ Das Schema drückt Typen, zusätzliche Felder, Kennungsmuster, die Hauptversion 
 
 Die Testfälle `str-01` und `str-03` (Spezifikation Abschnitt 6) liegen als `contracts/strategies/v1/testcases/str-01.strategy.json` und `str-03.strategy.json`. Sie sind vollständig, in normalisierter Schreibweise, mit der Regel der Strategie `risiko` aus „Risiko je Trade“ (1 %) und der Regel des Elements `mindestvolumen`. Sie bestehen die Konsistenzprüfung ohne Befund. Die Werte der Strategieparameter von `str-01` (Signalzeiteinheit `h1`, Handelszeiteinheit `m15`, Puffer 3) legt der Testfall fest, die Spezifikation nennt sie nicht. Die Kennungen der Elemente sind abgeleitet (UUID Version 5), Lage und Bezeichnungen der Elemente sind frei gewählt.
 
+### 10.3 Beispieldokumente
+
+Unter `contracts/strategies/v1/examples/` liegen neun Beispieldokumente für die Prüfung der Web-API über `/docs`, die die Anwenderdokumentation `docs/user/pipwerk-studio.md` („Web-API ausprobieren“) beschreibt: die Regelvorlage `regel-vorlage.rule.json`, ihre geänderte Fassung `regel-vorlage-geaendert.rule.json` und sieben Fassungen von `str-03` mit je einer Änderung, die je einen bestimmten Befund der Konsistenzprüfung auslöst (`str-03-*.strategy.json`). Sie sind gültig gegen das Schema und in der Schreibweise, in der die Ablage sie speichert (`write_document(read_document(Text))` gleich dem Text; `tests/test_schemas.py`). Die Kennung im Dokument ersetzt die Web-API beim Anlegen; bei `PUT` muss sie die Kennung des Pfads sein. Die Befunde prüfen die Tests des Backends (`test_user_documentation_examples.py`).
+
 ## 11. Begrenzungen gegen Überlast
 
 Die Begrenzungen (Spezifikation Abschnitt 8) stehen als Konstanten in `pipwerk_domain.limits`. Beim Lesen eines Dokuments prüft die Bibliothek sie und lehnt Überschreitungen als Fehler der Validierung (`DocumentError`) ab.
@@ -507,7 +511,7 @@ Die Tests (pytest) umfassen:
 | `test_consistency_flow.py` | Befunde des Ablaufs, der Parameter, der Belegungen, von `Order`/`Position`, der Typen und der Kerze, jeweils mit Gegenprobe |
 | `test_consistency_rules.py` | Ergebnis von Regeln, Regelwerke, Regeln in Indikatoren und Trends, Namensräume (S17), Zusammenhang der Typprüfung (S18, S27), Namen |
 | `test_documents.py` | Schreiben und Lesen jedes Dokumenttyps, zusätzliche Felder, höhere Hauptversion, unbekannte Typen, jede Begrenzung am Grenzwert und darüber |
-| `test_schemas.py` | erzeugte Schemata gleich den Dateien, Schemata gegen Dokumente, Befehl |
+| `test_schemas.py` | erzeugte Schemata gleich den Dateien, Schemata gegen Dokumente und Beispieldokumente, Befehl |
 | `test_testcases.py` | beide Testfalldokumente: Schema, null Befunde, Schreiben und Vergleichen, Normalisierung ändert nichts, Vollständigkeit nach Abschnitt 6, abgewandelte Fassungen mit den Befunden |
 | `test_risk_rule.py` | „Risiko je Trade“ als Regel der Strategie und eines Elements, Bestandteile, Kopie |
 | `test_architecture.py` | keine Frameworks, Pydantic nur in `documents`, kein `eval`/`exec`/`compile`, keine festen Pfade, Ports und Rechnernamen, Laufzeitabhängigkeit nur Pydantic |

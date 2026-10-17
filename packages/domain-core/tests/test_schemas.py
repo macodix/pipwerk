@@ -9,7 +9,7 @@ import pytest
 from jsonschema import Draft202012Validator, ValidationError
 
 from pipwerk_domain import catalog
-from pipwerk_domain.documents import write_document
+from pipwerk_domain.documents import read_document, write_document
 from pipwerk_domain.documents.schemas import (
     SCHEMA_MODELS,
     differing_schemas,
@@ -41,9 +41,28 @@ def test_no_schema_differs() -> None:
     assert differing_schemas(SCHEMA_DIRECTORY) == []
 
 
-def test_no_other_file_in_the_directory_than_schemas_and_test_cases() -> None:
+def test_no_other_file_in_the_directory_than_schemas_test_cases_and_examples() -> None:
     names = sorted(item.name for item in SCHEMA_DIRECTORY.iterdir())
-    assert names == sorted([schema_file_name(name) for name in SCHEMA_MODELS] + ["testcases"])
+    expected = [schema_file_name(name) for name in SCHEMA_MODELS] + ["testcases", "examples"]
+    assert names == sorted(expected)
+
+
+EXAMPLES = sorted((SCHEMA_DIRECTORY / "examples").iterdir())
+
+
+def test_there_are_examples() -> None:
+    assert len(EXAMPLES) == 9
+
+
+@pytest.mark.parametrize("path", EXAMPLES, ids=[item.name for item in EXAMPLES])
+def test_the_examples_are_valid_against_their_schema_and_in_the_written_form(path: Path) -> None:
+    """The examples of the user documentation are documents in the form of the library."""
+    text = path.read_text(encoding="utf-8")
+    data = json.loads(text)
+    name = data["format"].removeprefix("pipwerk.")
+    assert path.name.endswith(f".{name}.json")
+    validator(name).validate(data)
+    assert write_document(read_document(text)) == text
 
 
 @pytest.mark.parametrize("name", sorted(SCHEMA_MODELS))
