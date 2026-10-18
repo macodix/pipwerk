@@ -6,6 +6,7 @@ import { allOrderProperties } from '../model/typeIndex';
 import { comparisons, type Comparison, type ParameterDefinition, type RulePath } from '../document/types';
 import { getRule, setInstanceBinding, updateRule } from '../document/ops';
 import { uniqueName } from '../document/ids';
+import { getOwn, hasOwn, removeOwn, setOwn } from '../document/own';
 import { ExpressionInput } from '../expression/ExpressionInput';
 import { ruleNames } from '../findings/findingsModel';
 import { FindingsList } from '../findings/FindingsList';
@@ -49,11 +50,11 @@ function ParameterDefinitions({ path }: { path: RulePath }) {
         return current;
       }
       const values = { ...(instance.parameter_values ?? {}) };
-      if (old.name in values && name !== old.name) {
-        const moved = values[old.name];
-        delete values[old.name];
+      if (hasOwn(values, old.name) && name !== old.name) {
+        const moved = getOwn(values, old.name);
+        removeOwn(values, old.name);
         if (moved !== undefined) {
-          values[name] = moved;
+          setOwn(values, name, moved);
         }
       }
       const list = (instance.parameters ?? []).map((item, position) =>
@@ -132,7 +133,7 @@ function ParameterDefinitions({ path }: { path: RulePath }) {
                       return current;
                     }
                     const values = { ...(instance.parameter_values ?? {}) };
-                    delete values[definition.name];
+                    removeOwn(values, definition.name);
                     return updateRule(current, path, {
                       parameters: (instance.parameters ?? []).filter((_, position) => position !== index),
                       parameter_values: values,
@@ -252,7 +253,7 @@ export function RuleProperties({ path }: { path: RulePath }) {
             <BindingEditor
               key={spec.key}
               spec={spec}
-              binding={rule.parameter_values?.[spec.key]}
+              binding={getOwn(rule.parameter_values, spec.key)}
               place={{ element: ownerElement, subject, field: `parameter:${spec.key}` }}
               context={{ kind: 'rule', path }}
               onChange={(binding) => {

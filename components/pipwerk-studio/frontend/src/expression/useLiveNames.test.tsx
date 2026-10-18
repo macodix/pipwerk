@@ -154,6 +154,28 @@ describe('useLiveNames', () => {
     expect(pending).toHaveLength(1);
   });
 
+  it('asks again when a binding named x or y changes (only the position of an element is left out)', async () => {
+    const pending = mockCheck();
+    const withX = (text: string) =>
+      setElementBinding(setElementBinding(document, condition.id, 'parameters', 'x', { kind: 'expression', value: text }), condition.id, 'parameters', 'y', {
+        kind: 'expression',
+        value: text,
+      });
+    const { rerender } = renderHook(({ doc }) => useLiveNames(doc), { initialProps: { doc: withX('a') } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(NAMES_DEBOUNCE_MS);
+    });
+    expect(pending).toHaveLength(1);
+
+    rerender({ doc: withX('b') });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(NAMES_DEBOUNCE_MS);
+    });
+
+    expect(pending).toHaveLength(2);
+    expect(pending[1]?.document.elements.find((element) => element.id === condition.id)?.parameters.x?.value).toBe('b');
+  });
+
   it('asks nothing without an open strategy and forgets the names when it is closed', async () => {
     const pending = mockCheck();
     const { result, rerender } = renderHook(({ doc }) => useLiveNames(doc), {

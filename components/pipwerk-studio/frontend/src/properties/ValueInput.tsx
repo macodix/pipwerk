@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Choice, DataType, Scalar } from '../api/elementTypes';
@@ -16,7 +16,8 @@ type ValueInputProps = {
   disabled?: boolean;
 };
 
-const NUMBER = /^-?\d+(\.\d+)?$/;
+/** A number with digits before or after the point (`.5` counts); no exponent. */
+const NUMBER = /^-?(\d+(\.\d+)?|\.\d+)$/;
 const INTEGER = /^-?\d+$/;
 
 /** A decimal text moved by two places, without floating-point error: `7` → `0.07`. */
@@ -24,8 +25,15 @@ export function percentToShare(text: string): number {
   return Number(`${text}e-2`);
 }
 
+/**
+ * A share as percent text, without floating-point error and without exponent
+ * notation, whatever its size: `0.07` → `7`, `1e-7` → `0.00001`. The text
+ * is a number again for the input.
+ */
 export function shareToPercent(share: number): string {
-  return String(Number(`${share}e2`));
+  const [mantissa = '', exponent = '0'] = String(share).split('e');
+  const percent = Number(`${mantissa}e${Number(exponent) + 2}`);
+  return percent.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 20 });
 }
 
 function toText(value: Scalar | undefined, datatype: DataType): string {
@@ -46,6 +54,8 @@ function NumberField({
   onChange,
   disabled,
 }: Pick<ValueInputProps, 'datatype' | 'value' | 'label' | 'onChange' | 'disabled'>) {
+  const { t } = useTranslation();
+  const hintId = useId();
   const [draft, setDraft] = useState(toText(value, datatype));
   const [focused, setFocused] = useState(false);
   const pattern = datatype === 'integer' ? INTEGER : NUMBER;
@@ -65,6 +75,7 @@ function NumberField({
         inputMode={datatype === 'integer' ? 'numeric' : 'decimal'}
         aria-label={label}
         aria-invalid={valid ? undefined : true}
+        aria-describedby={valid ? undefined : hintId}
         value={draft}
         disabled={disabled}
         onFocus={() => {
@@ -85,6 +96,11 @@ function NumberField({
         }}
       />
       {datatype === 'percent' ? <span aria-hidden="true"> %</span> : null}
+      {valid ? null : (
+        <span id={hintId} className="field-hint" role="alert">
+          {t(datatype === 'integer' ? 'properties.integerHint' : 'properties.numberHint')}
+        </span>
+      )}
     </span>
   );
 }

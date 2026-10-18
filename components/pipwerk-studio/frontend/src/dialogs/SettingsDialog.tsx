@@ -57,6 +57,8 @@ export function SettingsDialog({ languageState, onClose }: SettingsDialogProps) 
     try {
       const result = await updateObjectDirectory(path, move);
       queryClient.setQueryData(DIRECTORY_KEY, result);
+      // The lists of the stored templates and of "Open" belong to the directory: ask again, with and without moving.
+      await queryClient.invalidateQueries({ queryKey: ['objects'] });
       setText(null);
       setSave({ phase: 'saved' });
     } catch (error) {

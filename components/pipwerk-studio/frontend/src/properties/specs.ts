@@ -9,6 +9,7 @@ import type {
   TypeDescription,
 } from '../api/elementTypes';
 import { bindingKinds } from '../api/elementTypes';
+import { getOwn } from '../document/own';
 import type { Binding, Bindings, ElementDocument, InstanceDocument, ParameterDefinition } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
 import { labelText, orderSelector, type TypeIndex } from '../model/typeIndex';
@@ -84,7 +85,7 @@ export function orderPropertySpecs(
   if (selector === null) {
     return [];
   }
-  const binding = element.parameters[selector.parameter.id];
+  const binding = getOwn(element.parameters, selector.parameter.id);
   const selected =
     binding !== undefined && binding.kind === 'fixed' && typeof binding.value === 'string'
       ? binding.value
@@ -123,7 +124,7 @@ export function visibleSpecs(specs: readonly BindingSpec[], bindings: Bindings):
     }
     const { name, value } = spec.appliesWhen;
     const other = specs.find((candidate) => candidate.key === name);
-    const binding: Binding | undefined = bindings[name];
+    const binding: Binding | undefined = getOwn(bindings, name);
     if (binding === undefined) {
       return other !== undefined && other.default === value;
     }

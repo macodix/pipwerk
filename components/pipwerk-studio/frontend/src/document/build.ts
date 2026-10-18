@@ -2,6 +2,7 @@ import type { ParameterDescription, TemplateDocument, TypeDescription } from '..
 import type { SupportedLanguage } from '../i18n';
 import { defaultTrigger, holdsInstance, labelText, type TypeIndex } from '../model/typeIndex';
 import { identifierFromName, newUuid, uniqueName } from './ids';
+import { setOwn } from './own';
 import {
   FORMAT_VERSION,
   STRATEGY_FORMAT,
@@ -24,14 +25,14 @@ export function defaultBindings(parameters: readonly ParameterDescription[]): Bi
   const bindings: Bindings = {};
   for (const parameter of parameters) {
     if (parameter.default !== null) {
-      bindings[parameter.id] = { kind: 'fixed', value: parameter.default };
+      setOwn(bindings, parameter.id, { kind: 'fixed', value: parameter.default });
     } else if (
       parameter.required &&
       parameter.bindings.length === 1 &&
       parameter.bindings[0] === 'fixed' &&
       parameter.choices[0] !== undefined
     ) {
-      bindings[parameter.id] = { kind: 'fixed', value: parameter.choices[0].id };
+      setOwn(bindings, parameter.id, { kind: 'fixed', value: parameter.choices[0].id });
     }
   }
   return bindings;

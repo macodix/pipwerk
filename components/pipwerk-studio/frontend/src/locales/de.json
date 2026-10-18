@@ -77,6 +77,8 @@
   },
   "properties": {
     "panel": "Eigenschaften",
+    "numberHint": "Erlaubt ist eine Zahl mit Punkt oder Komma als Dezimaltrenner, ohne Exponent (zum Beispiel 0.5 oder 2,75).",
+    "integerHint": "Erlaubt ist eine Ganzzahl ohne Dezimalstellen und ohne Exponent (zum Beispiel 20).",
     "none": "Es ist keine Strategie geöffnet. Legen Sie mit „Neue Strategie“ eine an oder öffnen Sie eine gespeicherte.",
     "multiple": "{{count}} Elemente ausgewählt.",
     "strategy": "Strategie",

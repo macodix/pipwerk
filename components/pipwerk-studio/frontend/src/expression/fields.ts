@@ -1,4 +1,5 @@
 import type { ExpressionNames } from '../api/objects';
+import { getOwn } from '../document/own';
 import type { ElementDocument, InstanceDocument, StrategyDocument } from '../document/types';
 
 /**
@@ -61,10 +62,10 @@ export function expressionText(document: StrategyDocument, place: ExpressionPlac
       return undefined;
     }
     if (kind === 'parameter') {
-      return textOfBinding(element.parameters[id]);
+      return textOfBinding(getOwn(element.parameters, id));
     }
     if (kind === 'property') {
-      return textOfBinding(element.properties[id]);
+      return textOfBinding(getOwn(element.properties, id));
     }
     return undefined;
   }
@@ -74,7 +75,7 @@ export function expressionText(document: StrategyDocument, place: ExpressionPlac
   }
   switch (kind) {
     case 'parameter':
-      return textOfBinding(instance.parameter_values?.[id]);
+      return textOfBinding(getOwn(instance.parameter_values, id));
     case 'expression':
       return typeof instance.expression === 'string' ? instance.expression : undefined;
     case 'result_expression':

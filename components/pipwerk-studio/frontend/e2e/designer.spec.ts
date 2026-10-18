@@ -115,10 +115,17 @@ test.describe('the object directory of the run (item 15 of the order)', () => {
     expect(stored.title).toBe('Eine Strategie im Browsertest');
     expect(stored.elements).toHaveLength(1);
 
-    // Saving again replaces the file; there is still one.
+    // Saving again replaces the file; there is still one. The test waits for the end of this save
+    // (the answer of the PUT), not for the count of findings, which is shown since the first save.
+    await page.getByLabel('Bezeichnung').fill('Zweiter Stand im Browsertest');
+    const replaced = page.waitForResponse(
+      (response) => response.request().method() === 'PUT' && /\/api\/v1\/strategies\/[^/]+$/.test(response.url()),
+    );
     await page.getByRole('button', { name: 'Speichern' }).click();
-    await expect(page.getByText(/^Befunde: \d+$/)).toBeVisible();
+    expect((await replaced).ok()).toBe(true);
     expect(readdirSync(directory)).toEqual(files);
+    const replacedDocument = JSON.parse(readFileSync(join(directory, files[0] as string), 'utf-8')) as StrategyDocument;
+    expect(replacedDocument.title).toBe('Zweiter Stand im Browsertest');
 
     // Deleting the strategy removes the file.
     await page.getByRole('button', { name: 'Löschen' }).click();

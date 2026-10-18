@@ -70,6 +70,59 @@ describe('the settings', () => {
     expect(within(dialog).getByLabelText('Verzeichnis (absoluter Pfad)')).toHaveValue('/neu/objekte');
   });
 
+  describe('after a change of the directory', () => {
+    const lists = /\/api\/v1\/(indicators|trends|rules|rulesets)$/;
+
+    it.each([
+      ['with moving', 'Ja, Dateien verschieben'],
+      ['without moving', 'Nein, nur das Verzeichnis ändern'],
+    ])('ask again for the lists of the stored templates %s', async (_name, button) => {
+      const { user, backend } = await start();
+      await waitFor(() => {
+        expect(backend.requests('GET', lists)).toHaveLength(4);
+      });
+      const dialog = await openSettings(user);
+
+      await changeDirectory(user, dialog, '/neu/objekte');
+      await user.click(within(dialog).getByRole('button', { name: button }));
+      await within(dialog).findByText('Das Objektverzeichnis wurde geändert.');
+
+      await waitFor(() => {
+        expect(backend.requests('GET', lists)).toHaveLength(8);
+      });
+    });
+
+    it('ask again for the list of "Öffnen"', async () => {
+      const { user, backend } = await start({ strategies: [stored] });
+      const dialog = await openSettings(user);
+      await changeDirectory(user, dialog, '/neu/objekte');
+      await user.click(within(dialog).getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }));
+      await within(dialog).findByText('Das Objektverzeichnis wurde geändert.');
+      await user.click(within(dialog).getByRole('button', { name: 'Schließen' }));
+
+      await menu(user, 'Öffnen');
+
+      await screen.findByRole('button', { name: 'EMA-Trendfolge' });
+      expect(backend.requests('GET', /\/api\/v1\/strategies$/).length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('do not ask again if the change was cancelled or failed (counter-check)', async () => {
+      const { user, backend } = await start({ fail: { directoryWrite: { status: 409, body: { detail: 'conflict' } } } });
+      await waitFor(() => {
+        expect(backend.requests('GET', lists)).toHaveLength(4);
+      });
+      const dialog = await openSettings(user);
+
+      await changeDirectory(user, dialog, '/neu/objekte');
+      await user.click(within(dialog).getByRole('button', { name: 'Abbrechen' }));
+      await user.click(within(dialog).getByRole('button', { name: 'Verzeichnis ändern' }));
+      await user.click(within(dialog).getByRole('button', { name: 'Ja, Dateien verschieben' }));
+      await within(dialog).findByRole('alert');
+
+      expect(backend.requests('GET', lists)).toHaveLength(4);
+    });
+  });
+
   it('change only the setting on "Nein"', async () => {
     const { user, backend } = await start();
     const dialog = await openSettings(user);

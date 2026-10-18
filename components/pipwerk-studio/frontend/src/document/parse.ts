@@ -8,6 +8,7 @@ import {
   ResponseFormatError,
   type JsonRecord,
 } from '../api/http';
+import { setOwn } from './own';
 import {
   STRATEGY_FORMAT,
   type Binding,
@@ -38,7 +39,7 @@ function parseBindings(value: unknown, what: string): Bindings {
   const record = expectRecord(value, what);
   const result: Bindings = {};
   for (const [key, item] of Object.entries(record)) {
-    result[key] = parseBinding(item, `${what}.${key}`);
+    setOwn(result, key, parseBinding(item, `${what}.${key}`));
   }
   return result;
 }

@@ -27,6 +27,8 @@ export type MockBackendOptions = {
       RouteResponse
     >
   >;
+  /** The status of a successful `PUT` of a strategy: 200 (the file is replaced) or 201 (the file was created in the current directory). */
+  replaceStatus?: 200 | 201;
   directory?: { path: string | null; is_default: boolean };
   /** The answer to a write of the directory; by default the new directory. */
   onDirectoryWrite?: (body: { path: string; move: boolean }) => RouteResponse;
@@ -142,7 +144,7 @@ export function mockBackend(options: MockBackendOptions = {}): MockBackend {
           }
           const document = call.body as StrategyDocument;
           strategies.set(id, document);
-          return { status: 200, body: { id, document, findings: findingsFor(document) } };
+          return { status: options.replaceStatus ?? 200, body: { id, document, findings: findingsFor(document) } };
         }
         if (method === 'DELETE') {
           if (options.fail?.delete !== undefined) {

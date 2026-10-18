@@ -489,6 +489,12 @@ textarea {
   outline: 1px solid var(--error);
 }
 
+.field-hint {
+  display: block;
+  color: var(--error);
+  font-size: 0.85em;
+}
+
 /* --- expression input --- */
 
 .expression-input {

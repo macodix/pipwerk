@@ -69,6 +69,22 @@ describe('a new strategy', () => {
     expect((backend.requests('PUT', /strategies\/.+/)[0]?.body as StrategyDocument).id).toBe(id);
   });
 
+  it.each([200, 201] as const)('takes the answer %s of PUT as a successful save', async (status) => {
+    const { user, backend } = await start({ replaceStatus: status, findings: [{ level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} }] });
+    await menu(user, 'Neue Strategie');
+    await menu(user, 'Speichern');
+    await waitFor(() => {
+      expect(backend.requests('POST', /strategies$/)).toHaveLength(1);
+    });
+    await menu(user, 'Speichern');
+
+    await waitFor(() => {
+      expect(backend.requests('PUT', /strategies\/.+/)).toHaveLength(1);
+    });
+    expect(await screen.findByText('Befunde: 1')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('shows the findings of the save without a message to click away: the number, the marked element, the text', async () => {
     const trigger = (document: StrategyDocument): Finding[] => [
       { level: 'error', code: 'parameter.missing', element: document.elements[0]!.id, subject: null, details: { parameter: 'zeiteinheit' } },

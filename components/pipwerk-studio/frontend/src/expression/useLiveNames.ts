@@ -18,9 +18,17 @@ export type LiveNames = {
   namesFor(place: ExpressionPlace, currentText: string): NameOccurrence[] | undefined;
 };
 
-/** The document without the positions: a move on the drawing area does not change any name. */
+/**
+ * The document without the positions of its elements: a move on the drawing
+ * area does not change any name. Only the position fields `x` and `y` of the
+ * elements are left out; a binding named `x` or `y` counts.
+ */
 function semanticKey(document: StrategyDocument): string {
-  return JSON.stringify(document, (key, value: unknown) => (key === 'x' || key === 'y' ? undefined : value));
+  const elements = document.elements.map((element) => {
+    const { x: _x, y: _y, ...rest } = element;
+    return rest;
+  });
+  return JSON.stringify({ ...document, elements });
 }
 
 /**

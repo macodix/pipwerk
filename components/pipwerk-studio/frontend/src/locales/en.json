@@ -77,6 +77,8 @@
   },
   "properties": {
     "panel": "Properties",
+    "numberHint": "Allowed is a number with a point or a comma as decimal separator, without exponent (for example 0.5 or 2,75).",
+    "integerHint": "Allowed is a whole number without decimal places and without exponent (for example 20).",
     "none": "No strategy is open. Create one with “New strategy” or open a stored one.",
     "multiple": "{{count}} elements selected.",
     "strategy": "Strategy",

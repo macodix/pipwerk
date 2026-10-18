@@ -8,6 +8,7 @@ import {
   updateElement,
   updateInstance,
 } from '../document/ops';
+import { getOwn } from '../document/own';
 import type { Binding, Bindings, ElementDocument } from '../document/types';
 import { FindingsList } from '../findings/FindingsList';
 import { hasNameField, holdsInstance, orderSelector, typeName } from '../model/typeIndex';
@@ -85,7 +86,7 @@ function Section({
         <BindingEditor
           key={spec.key}
           spec={spec}
-          binding={bindings[spec.key]}
+          binding={getOwn(bindings, spec.key)}
           readOnly={readOnly}
           onChange={(binding) => {
             onChange(spec.key, binding);

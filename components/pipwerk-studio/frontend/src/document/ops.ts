@@ -11,6 +11,7 @@ import type {
   StrategyParameter,
 } from './types';
 import { uniqueName } from './ids';
+import { removeOwn, setOwn } from './own';
 
 /** Pure operations on the strategy document. Each returns a new document; the argument stays as it is. */
 
@@ -100,9 +101,9 @@ export function removeElements(document: StrategyDocument, ids: ReadonlySet<stri
 export function setBindingIn(bindings: Bindings, key: string, binding: Binding | null): Bindings {
   const next: Bindings = { ...bindings };
   if (binding === null) {
-    delete next[key];
+    removeOwn(next, key);
   } else {
-    next[key] = binding;
+    setOwn(next, key, binding);
   }
   return next;
 }
