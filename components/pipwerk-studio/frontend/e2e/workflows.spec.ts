@@ -1,10 +1,19 @@
 import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
-import { createAndSave, insert, loadedPage, nodeById, objectDirectory, panel, save, useCleanRun } from './support';
+import {
+  createAndSave,
+  insert,
+  loadedPage,
+  nodeById,
+  objectDirectory,
+  panel,
+  restoreObjectDirectory,
+  save,
+  useCleanRun,
+} from './support';
 
 // The workflows of the Strategy Designer in the three browsers, each from the point of view of
 // the user: settings (language and object directory) and findings on the drawing area. The
@@ -35,22 +44,28 @@ async function changeObjectDirectory(page: Page, path: string, answer: string): 
 }
 
 test.describe('settings: the object directory (acceptance criterion 9)', () => {
+  let original: string;
   let target: string;
 
-  test.beforeEach(() => {
-    // A directory of the run, next to the object directory of the backend, not in the standard directory.
-    target = mkdtempSync(join(tmpdir(), 'pipwerk-studio-e2e-target-'));
+  test.beforeEach(async ({ page }, testInfo) => {
+    // The object directory of the run is `objects` inside the temporary directory of the run,
+    // which `e2e/start-backend.mjs` creates and removes at the end. The target is a new
+    // directory in that directory, so that even a run that is killed leaves nothing outside it.
+    original = await objectDirectory(page);
+    testInfo.annotations.push({ type: 'object-directory', description: original });
+    target = mkdtempSync(join(dirname(original), 'target-'));
   });
 
-  test.afterEach(() => {
+  test.afterEach(async ({ request }) => {
+    // First the object directory of the run is restored, then the target is removed, so that
+    // the backend never points to a directory that no longer exists.
+    await restoreObjectDirectory(request, original);
     rmSync(target, { recursive: true, force: true });
   });
 
   test('with "Ja, Dateien verschieben" the strategy stays in the list of "Öffnen", its file is in the new directory', async ({
     page,
-  }, testInfo) => {
-    const original = await objectDirectory(page);
-    testInfo.annotations.push({ type: 'object-directory', description: original });
+  }) => {
     await loadedPage(page);
     await createAndSave(page, 'Mit Verschieben');
     expect(readdirSync(original)).toHaveLength(1);
@@ -71,9 +86,7 @@ test.describe('settings: the object directory (acceptance criterion 9)', () => {
 
   test('with "Nein, nur das Verzeichnis ändern" the strategy is not in the list of "Öffnen"; the next "Speichern" writes to the new directory', async ({
     page,
-  }, testInfo) => {
-    const original = await objectDirectory(page);
-    testInfo.annotations.push({ type: 'object-directory', description: original });
+  }) => {
     await loadedPage(page);
     await createAndSave(page, 'Ohne Verschieben');
 
@@ -101,9 +114,7 @@ test.describe('settings: the object directory (acceptance criterion 9)', () => {
     await page.getByRole('dialog', { name: 'Strategie öffnen' }).getByRole('button', { name: 'Abbrechen' }).click();
   });
 
-  test('"Abbrechen" and a path that is not absolute change nothing', async ({ page }, testInfo) => {
-    const original = await objectDirectory(page);
-    testInfo.annotations.push({ type: 'object-directory', description: original });
+  test('"Abbrechen" and a path that is not absolute change nothing', async ({ page }) => {
     await loadedPage(page);
     const dialog = await openSettings(page);
 

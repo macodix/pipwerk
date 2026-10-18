@@ -979,7 +979,7 @@ Verbinden Sie danach die Elemente der Verwaltung. Es gibt zwei Elemente `Kerzens
 | Verwaltung (Rahmen) | Der Teil des Ablaufs, der nach dem Ausgang „gestellt“ von „Order aufgeben“ läuft und sich um die gestellte Order kümmert. Auf der Zeichenfläche ist sie ein Rahmen unter dem Element. Elemente im Rahmen gehören zur Verwaltung. |
 | Strategieparameter | Ein Wert, den Sie an einer Stelle der Strategie festlegen und überall in ihr verwenden. Ausdrücke sprechen ihn als `Strategie.<Name>` an. |
 | Bindungsart | Die Art, wie ein Parameter oder eine Eigenschaft ihren Wert erhält: „fester Wert“, „Parameter“ (aus einem Strategieparameter), „Ausdruck“ oder „bei der Anwendung“. |
-| Datentyp | Die Art eines Werts: Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Auswahl, Zeiteinheit, Zeitpunkt, Datum oder Ausdruck. |
+| Datentyp | Die Art eines Werts: Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Auswahl, Zeiteinheit, Zeitpunkt, Datum, Ausdruck oder Objekt. |
 | Zeiteinheit | Die Dauer einer Kerze, zum Beispiel M15 (15 Minuten), H1 (1 Stunde) oder D1 (1 Tag). |
 | Regel | Eine Regel prüft oder bestimmt etwas, zum Beispiel das Volumen einer Order. Sie steht in der Eigenschaftenansicht der Strategie oder eines Elements und hat einen Ausdruck. |
 | Ausdruck | Ein kurzer Text in der Formelsprache OpenFormula, der einen Wert berechnet, zum Beispiel `ema20.wert > ema50.wert`. Abschnitt 7 beschreibt die Schreibweise. |

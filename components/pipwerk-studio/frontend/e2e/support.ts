@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 // Helpers shared by the browser tests of the Strategy Designer (`designer.spec.ts`,
 // `testcases.spec.ts`, `workflows.spec.ts`): the documents of the test cases, the
@@ -68,6 +68,12 @@ export async function objectDirectory(page: Page): Promise<string> {
   return ((await response.json()) as { path: string }).path;
 }
 
+/** Sets the object directory back to `path` without moving files (internal endpoint of the Studio, not the Web API). */
+export async function restoreObjectDirectory(request: APIRequestContext, path: string): Promise<void> {
+  const restored = await request.put('/api/studio/settings/object-directory', { data: { path, move: false } });
+  expect(restored.ok()).toBe(true);
+}
+
 /**
  * Registers what every test of a file needs: the language German before the test, and after
  * it the object directory of the run as it was (a test that changes it notes the directory
@@ -83,10 +89,7 @@ export function useCleanRun(): void {
   test.afterEach(async ({ request }, testInfo) => {
     const directory = testInfo.annotations.find((annotation) => annotation.type === 'object-directory')?.description;
     if (directory !== undefined) {
-      const restored = await request.put('/api/studio/settings/object-directory', {
-        data: { path: directory, move: false },
-      });
-      expect(restored.ok()).toBe(true);
+      await restoreObjectDirectory(request, directory);
     }
     const list = (await (await request.get('/api/v1/strategies')).json()) as { items: { id: string }[] };
     for (const item of list.items) {
