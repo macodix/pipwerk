@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-17
+- stand: 2026-10-18
 
 ## Regeln
 
@@ -34,10 +34,10 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Baustein“, „Knoten“ und „Ablaufelement“ werden nicht verwendet. |
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
 | Elementbibliothek | Der Bereich der Oberfläche links, der die verfügbaren Elementtypen, Objekttypen, mitgelieferten und gespeicherten Vorlagen in Gruppen zur Auswahl anbietet. Einträge werden mit der Maus auf die Zeichenfläche gezogen oder mit der Tastatur gewählt und mit der Eingabetaste eingefügt. Alles, was sie anbietet, kommt aus den Typbeschreibungen und den Listen der gespeicherten Vorlagen. |
-| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie oder die Verwaltung einer Order ausgewertet wird: Kerzenschluss einer Zeiteinheit, Tick oder externes Ereignis. Es steht am Anfang des Ablaufs oder der Verwaltung. Eine Strategie kann beliebig viele Auslöser haben, auch keinen; eine neue Strategie hat keinen. |
+| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie oder die Verwaltung einer Order ausgewertet wird: Kerzenschluss einer Zeiteinheit, Tick oder externes Ereignis. Es steht am Anfang des Ablaufs oder der Verwaltung. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order (req-fach-015). Eine neue Strategie hat keinen. |
 | Anwendung einer Strategie | Die Zuordnung einer Strategie zu einem Konto und einem Instrument. Sie besteht, bis der Nutzer sie aufhebt. Dieselbe Strategie auf zwei Instrumenten sind zwei Anwendungen. |
-| Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, ausgelöst durch einen Auslöser, zum Beispiel jeden Kerzenschluss. |
-| Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er läuft mit eigenen Auslösern für genau diese Order und die daraus entstehende Position, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
+| Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, zum Beispiel bei jedem Kerzenschluss, wenn die Strategie einen Auslöser dafür hat. Wie eine Strategie oder Verwaltung ohne Auslöser ausgewertet wird, ist offen (req-fach-015). |
+| Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er gilt für genau diese Order und die daraus entstehende Position, kann eigene Auslöser haben (req-fach-015) und besteht, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
 | Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „nicht gestellt“. |
 | Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. Es hat die Ausgänge „geändert“ und „nicht geändert“. |
 | Order löschen | Das Element, das eine wartende Order löscht. |
@@ -101,6 +101,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-18 | Auslöser, Auswertung und Verwaltung einer Order an die Entscheidung des Auftraggebers vom 2026-10-18 angeglichen: Auslöser optional, Auswertung ohne Auslöser offen (req-fach-015). Befund B1 aus `development/strategiedesign/reviews/requirements-8.md`. |
 | 2026-10-18 | Vorhaben `strategiedesign`, Arbeitspaket `wp02`, Auftrag 01 (Nachtrag): Auslöser sind freiwillig, eine neue Strategie hat keinen; Verwaltung (Rahmen) hängt am Ausgang „gestellt“. |
 | 2026-10-18 | Vorhaben `strategiedesign`, Arbeitspaket `wp02`, Auftrag 03: Typbeschreibung um die Angaben zur Verwaltung am Ausgang, „benannt“, „Strategieparameter“ und die Zeiteinheiten als zulässige Werte ergänzt. |
 | 2026-10-17 | Vorhaben `strategiedesign`, Arbeitspaket `wp01`, Auftrag 03: Index (keine Tabelle in der Datenbank, E5) und Strategiedatei (Objektverzeichnis statt Strategieverzeichnis) berichtigt; Objektverzeichnis und Web-API (öffentliche Web-API unter `/api/v1/`) ergänzt. |
