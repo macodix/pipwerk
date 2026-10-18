@@ -1,89 +1,28 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { basename, dirname, join } from 'node:path';
 
 import { expect, type Locator, type Page, test } from '@playwright/test';
+
+import {
+  center,
+  drag,
+  loadedPage,
+  objectDirectory,
+  openStored,
+  storedStrategies,
+  testcase,
+  useCleanRun,
+  type StrategyDocument,
+} from './support';
 
 // The Strategy Designer in the three browsers: what the unit tests cannot show because jsdom
 // has no layout and no real mouse (dragging, connecting, the object directory of the run).
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
-
-type StrategyDocument = {
-  id: string;
-  title: string;
-  elements: { id: string; type: string; title: string; x: number; y: number; management_of: string | null }[];
-  connections: { source: string; output: string; target: string }[];
-};
-
-function testcase(name: string): StrategyDocument {
-  return JSON.parse(
-    readFileSync(resolve(root, `contracts/strategies/v1/testcases/${name}.strategy.json`), 'utf-8'),
-  ) as StrategyDocument;
-}
-
-test.beforeEach(async ({ request }) => {
-  const response = await request.put('/api/studio/settings/language', { data: { language: 'de' } });
-  expect(response.ok()).toBe(true);
-});
-
-// Every test leaves the object directory of the run empty: the next browser starts clean.
-test.afterEach(async ({ request }) => {
-  const list = (await (await request.get('/api/v1/strategies')).json()) as { items: { id: string }[] };
-  for (const item of list.items) {
-    await request.delete(`/api/v1/strategies/${item.id}`);
-  }
-});
-
-async function objectDirectory(page: Page): Promise<string> {
-  const response = await page.request.get('/api/studio/settings/object-directory');
-  expect(response.ok()).toBe(true);
-  const body = (await response.json()) as { path: string };
-  return body.path;
-}
-
-async function loadedPage(page: Page): Promise<void> {
-  await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Neue Strategie' })).toBeEnabled();
-}
-
-async function storedStrategies(page: Page): Promise<StrategyDocument[]> {
-  const list = (await (await page.request.get('/api/v1/strategies')).json()) as { items: { id: string }[] };
-  const documents: StrategyDocument[] = [];
-  for (const item of list.items) {
-    documents.push((await (await page.request.get(`/api/v1/strategies/${item.id}`)).json()) as StrategyDocument);
-  }
-  return documents;
-}
+useCleanRun();
 
 function node(page: Page, text: string | RegExp): Locator {
   return page.locator('.react-flow__node-element').filter({ hasText: text });
-}
-
-async function center(locator: Locator): Promise<{ x: number; y: number }> {
-  const box = await locator.boundingBox();
-  expect(box).not.toBeNull();
-  return { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
-}
-
-async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(to.x, to.y, { steps: 20 });
-  // The last movement lies on the target and gets a moment to be taken in, so that the release
-  // meets the connector (the browsers differ in how soon they report the element under the pointer).
-  await page.mouse.move(to.x + 1, to.y);
-  await page.waitForTimeout(100);
-  await page.mouse.up();
-}
-
-async function openStored(page: Page, title: string): Promise<void> {
-  await page.getByRole('button', { name: 'Öffnen' }).click();
-  await page.getByRole('dialog', { name: 'Strategie öffnen' }).getByRole('button', { name: title }).click();
-  await expect(page.locator('.react-flow__node-element').first()).toBeVisible();
-  // The view is fitted to the strategy and the elements are laid out.
-  await expect(page.getByText(/^Befunde: \d+$/)).toBeVisible();
 }
 
 test.describe('the object directory of the run (item 15 of the order)', () => {
