@@ -113,6 +113,27 @@ describe('own parameters of an instance', () => {
     expect(specs.find((spec) => spec.key === 'every')?.choices.map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
   });
 
+  it('offer the own choices of an own parameter of an instance, else the time units', () => {
+    const specs = instanceParameterSpecs(
+      {
+        name: 'z',
+        object_type: 'Zork',
+        parameters: [
+          { name: 'own', datatype: 'time_unit', choices: ['k1', 'k2'] },
+          { name: 'every', datatype: 'time_unit' },
+          { name: 'text', datatype: 'text' },
+        ],
+      },
+      inventedTypes.byId.get('Zork'),
+      'de',
+      inventedTypes,
+    );
+
+    expect(specs.find((spec) => spec.key === 'own')?.choices.map((choice) => choice.id)).toEqual(['k1', 'k2']);
+    expect(specs.find((spec) => spec.key === 'every')?.choices.map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
+    expect(specs.find((spec) => spec.key === 'text')?.choices).toEqual([]);
+  });
+
   it('follow the parameters of the type', () => {
     const specs = instanceParameterSpecs(
       { name: 'z', object_type: 'Zork', parameters: [{ name: 'extra', datatype: 'text' }, { name: 'size', datatype: 'text' }] },

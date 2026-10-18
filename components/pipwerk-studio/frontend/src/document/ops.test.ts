@@ -13,6 +13,7 @@ import {
   moveRule,
   removeConnections,
   removeElements,
+  withDatatype,
   removeRule,
   removeStrategyParameter,
   rulesOf,
@@ -212,5 +213,21 @@ describe('rules', () => {
     expect(getInstance(bound, target)?.parameter_values?.periode).toEqual({ kind: 'fixed', value: 9 });
     expect(updateInstance(document, { kind: 'element', id: document.elements.find((e) => e.type === 'flow.condition')!.id }, { name: 'x' })).toBe(document);
     expect(getInstance(document, { kind: 'element', id: 'unknown' })).toBeUndefined();
+  });
+});
+
+describe('withDatatype', () => {
+  it('removes the choices when the datatype changes to another one than choice, and sets the patch', () => {
+    const changed = withDatatype({ name: 'p', datatype: 'choice' as const, choices: ['a'], extra: 1 }, 'time_unit', {});
+
+    expect(changed).toEqual({ name: 'p', datatype: 'time_unit', extra: 1 });
+    expect('choices' in changed).toBe(false);
+  });
+
+  it('keeps the choices for the datatype choice and leaves an unchanged datatype alone', () => {
+    const definition = { name: 'p', datatype: 'time_unit' as const, choices: ['k1'] };
+
+    expect(withDatatype(definition, 'time_unit', { name: 'x' })).toBe(definition);
+    expect(withDatatype(definition, 'choice', {}).choices).toEqual(['k1']);
   });
 });

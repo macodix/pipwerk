@@ -1,4 +1,4 @@
-import type { Scalar } from '../api/elementTypes';
+import type { DataType, Scalar } from '../api/elementTypes';
 import type {
   Binding,
   Bindings,
@@ -14,6 +14,28 @@ import { uniqueName } from './ids';
 import { removeOwn, setOwn } from './own';
 
 /** Pure operations on the strategy document. Each returns a new document; the argument stays as it is. */
+
+/**
+ * Changes the datatype of a definition (strategy parameter, own parameter of a
+ * rule) together with the fields `patch` that depend on it. The user fixes own
+ * `choices` only for the datatype choice: when the datatype changes to another
+ * one, the `choices` of the definition are removed in the same step. A change to
+ * the datatype it already has leaves the definition as it is.
+ */
+export function withDatatype<T extends { datatype: DataType; choices?: string[] }>(
+  definition: T,
+  datatype: DataType,
+  patch: Partial<T>,
+): T {
+  if (definition.datatype === datatype) {
+    return definition;
+  }
+  const changed: T = { ...definition, ...patch, datatype };
+  if (datatype !== 'choice') {
+    removeOwn(changed, 'choices');
+  }
+  return changed;
+}
 
 export function findElement(document: StrategyDocument, id: string): ElementDocument | undefined {
   return document.elements.find((element) => element.id === id);
@@ -53,6 +75,21 @@ export function updateStrategyParameter(
     ...document,
     parameters: document.parameters.map((parameter, position) =>
       position === index ? { ...parameter, ...patch } : parameter,
+    ),
+  };
+}
+
+/** Changes the datatype of a strategy parameter and sets its value; see `withDatatype` for the `choices`. */
+export function changeStrategyParameterType(
+  document: StrategyDocument,
+  index: number,
+  datatype: DataType,
+  value: StrategyParameter['value'],
+): StrategyDocument {
+  return {
+    ...document,
+    parameters: document.parameters.map((parameter, position) =>
+      position === index ? withDatatype(parameter, datatype, { value }) : parameter,
     ),
   };
 }

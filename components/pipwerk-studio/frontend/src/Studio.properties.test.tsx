@@ -708,3 +708,95 @@ describe('the values offered for the datatype time unit, one rule for every inpu
     expect(optionsOf(view, 'own')).toEqual(['k1', 'k2']);
   });
 });
+
+describe('a change of the datatype of a definition removes its own choices', () => {
+  const withChoices: StrategyDocument = {
+    ...stored,
+    id: '00000000-0000-4000-8000-0000000000c2',
+    title: 'ZzChange',
+    elements: [],
+    connections: [],
+    parameters: [{ name: 'sel', datatype: 'choice', choices: ['a', 'b'], value: 'a' }],
+    rules: [
+      {
+        name: 'zz',
+        object_type: 'ZzRule',
+        parameters: [{ name: 'sel', datatype: 'choice', choices: ['a', 'b'], default: 'a' }],
+        parameter_values: { sel: { kind: 'fixed', value: 'a' } },
+      },
+    ],
+  };
+
+  async function openChange() {
+    const user = userEvent.setup();
+    const backend = mockBackend({ elementTypes: inventedWire(), strategies: [withChoices] });
+    renderWithProviders(<App />);
+    await waitForReady();
+    await openStored(user, 'ZzChange');
+    await screen.findByRole('button', { name: 'Regel zz auswählen' });
+    return { user, backend };
+  }
+
+  function optionsOf(view: HTMLElement, name: string): (string | null)[] {
+    return within(within(view).getByRole('combobox', { name })).getAllByRole('option').map((option) => option.textContent);
+  }
+
+  it('offers the time units of the descriptions for a strategy parameter changed from choice to time unit', async () => {
+    const { user, backend } = await openChange();
+    clickEmptyArea();
+    const view = properties();
+    expect(optionsOf(view, 'Wert von sel')).toEqual(['a', 'b']);
+
+    await user.selectOptions(within(view).getByLabelText('Datentyp von sel'), 'Zeiteinheit');
+
+    expect(within(view).queryByLabelText('Werte von sel')).toBeNull();
+    expect(within(view).getByRole('combobox', { name: 'Wert von sel' })).toHaveDisplayValue('bitte wählen');
+    expect(optionsOf(view, 'Wert von sel')).toEqual(['bitte wählen', 'QQ1', 'QQ7']);
+    const document = await saved(user, backend);
+    expect(document.parameters[0]).toEqual({ name: 'sel', datatype: 'time_unit', value: '' });
+    expect('choices' in (document.parameters[0] ?? {})).toBe(false);
+  });
+
+  it('offers the time units for default value and value row of a rule parameter changed from choice to time unit', async () => {
+    const { user, backend } = await openChange();
+    await user.click(screen.getByRole('button', { name: 'Regel zz auswählen' }));
+    await within(properties()).findByRole('heading', { level: 2, name: 'zz' });
+    const view = properties();
+    expect(optionsOf(view, 'Standardwert von sel')).toEqual(['a', 'b']);
+
+    await user.selectOptions(within(view).getByLabelText('Datentyp von sel'), 'Zeiteinheit');
+
+    expect(within(view).queryByLabelText('Werte von sel')).toBeNull();
+    expect(optionsOf(view, 'Standardwert von sel')).toEqual(['bitte wählen', 'QQ1', 'QQ7']);
+    // The value row offers the time units; the value 'a' set before stays shown as the current value until it is changed.
+    expect(optionsOf(view, 'sel')).toEqual(expect.arrayContaining(['QQ1', 'QQ7']));
+    await user.selectOptions(within(view).getByRole('combobox', { name: 'sel' }), 'QQ7');
+    expect(optionsOf(view, 'sel')).toEqual(['QQ1', 'QQ7']);
+    const document = await saved(user, backend);
+    const definition = document.rules?.[0]?.parameters?.[0];
+    expect(definition).toEqual({ name: 'sel', datatype: 'time_unit', default: null });
+    expect('choices' in (definition ?? {})).toBe(false);
+    expect(document.rules?.[0]?.parameter_values?.sel).toEqual({ kind: 'fixed', value: 'qq7' });
+  });
+
+  it('keeps the values on choice to choice, and goes through every datatype without leftovers', async () => {
+    const { user, backend } = await openChange();
+    clickEmptyArea();
+    const view = properties();
+
+    // Counter test: choice to choice is no change.
+    await user.selectOptions(within(view).getByLabelText('Datentyp von sel'), 'Auswahl');
+    expect(optionsOf(view, 'Wert von sel')).toEqual(['a', 'b']);
+    expect(within(view).getByLabelText('Werte von sel')).toBeInTheDocument();
+
+    for (const label of ['Zahl', 'Ganzzahl', 'Prozent', 'Wahrheitswert', 'Text', 'Zeiteinheit', 'Zeitpunkt', 'Datum']) {
+      await user.selectOptions(within(view).getByLabelText('Datentyp von sel'), label);
+      expect(within(view).queryByLabelText('Werte von sel')).toBeNull();
+    }
+    await user.selectOptions(within(view).getByLabelText('Datentyp von sel'), 'Auswahl');
+    expect(within(view).getByLabelText('Werte von sel')).toBeInTheDocument();
+    const document = await saved(user, backend);
+    expect(document.parameters[0]?.datatype).toBe('choice');
+    expect(document.parameters[0]?.choices ?? []).toEqual([]);
+  });
+});

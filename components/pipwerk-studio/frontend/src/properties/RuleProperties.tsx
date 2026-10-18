@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { DataType } from '../api/elementTypes';
 import { allOrderProperties, definitionChoices, timeUnitChoices } from '../model/typeIndex';
 import { comparisons, type Comparison, type ParameterDefinition, type RulePath } from '../document/types';
-import { getRule, setInstanceBinding, updateRule } from '../document/ops';
+import { getRule, setInstanceBinding, updateRule, withDatatype } from '../document/ops';
 import { uniqueName } from '../document/ids';
 import { getOwn, hasOwn, removeOwn, setOwn } from '../document/own';
 import { ExpressionInput } from '../expression/ExpressionInput';
@@ -37,6 +37,19 @@ function ParameterDefinitions({ path }: { path: RulePath }) {
       }
       const list = (instance.parameters ?? []).map((item, position) =>
         position === index ? { ...item, ...patch } : item,
+      );
+      return updateRule(current, path, { parameters: list });
+    });
+  }
+
+  function changeType(index: number, datatype: DataType): void {
+    edit((current) => {
+      const instance = getRule(current, path);
+      if (instance === undefined) {
+        return current;
+      }
+      const list = (instance.parameters ?? []).map((item, position) =>
+        position === index ? withDatatype(item, datatype, { default: null }) : item,
       );
       return updateRule(current, path, { parameters: list });
     });
@@ -84,7 +97,7 @@ function ParameterDefinitions({ path }: { path: RulePath }) {
                 aria-label={t('properties.parameterType', { name: definition.name })}
                 value={definition.datatype}
                 onChange={(event) => {
-                  update(index, { datatype: event.target.value as DataType, default: null });
+                  changeType(index, event.target.value as DataType);
                 }}
               >
                 {strategyParameterTypes.map((datatype) => (

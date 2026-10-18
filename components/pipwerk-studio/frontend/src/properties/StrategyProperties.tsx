@@ -7,6 +7,7 @@ import {
   removeStrategyParameter,
   setStrategyText,
   updateStrategyParameter,
+  changeStrategyParameterType,
 } from '../document/ops';
 import type { StrategyParameter } from '../document/types';
 import { definitionChoices, timeUnitChoices } from '../model/typeIndex';
@@ -105,10 +106,12 @@ export function StrategyProperties() {
                   onChange={(event) => {
                     const datatype = event.target.value as DataType;
                     edit((current) =>
-                      updateStrategyParameter(current, index, {
+                      changeStrategyParameterType(
+                        current,
+                        index,
                         datatype,
-                        value: atApplication ? null : startValue(datatype, choices),
-                      }),
+                        atApplication ? null : startValue(datatype, choices),
+                      ),
                     );
                   }}
                 >
