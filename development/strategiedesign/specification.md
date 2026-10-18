@@ -3,11 +3,13 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-16
+- stand: 2026-10-18
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek), `components/pipwerk-studio` (Backend und Oberfläche), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers; Nachprüfung der Dokumente bestanden in [requirements-7.md](reviews/requirements-7.md). Vorlagen: [Pflichtenheft](../../docs/design/planning/pflichtenheft-strategiedesigner.md) und Arbeitspakete AP2 bis AP9. Wo sie den geltenden Dokumenten widersprechen, folgt diese Spezifikation den geltenden Dokumenten (Abschnitt 1).
 - prüfung: Durchlauf 1 [specification-1.md](reviews/specification-1.md) nicht bestanden, Befunde B1 bis B4 und Hinweise S1 bis S15 eingearbeitet: B1 Abschnitt 3.5, B2 Abschnitt 3.4 und Abschnitt 10 Punkt 8, B3 Abschnitt 3.3 und Abschnitt 10 Punkt 7, B4 Abschnitt 3.3; S1 Abschnitt 3.4, S2 bis S4 und S8 Abschnitte 3.1 und 3.3, S5 und S6 Abschnitte 5.1 und 5.2, S7 und S9 Abschnitt 3.1, S10 Abschnitt 3.6, S11 Abschnitt 4.1, S12 Abschnitt 3.1, S13 Abschnitt 9, S14 Abschnitt 10, S15 Abschnitt 3.7. Durchlauf 2 [specification-2.md](reviews/specification-2.md) bestanden; die Hinweise S16 bis S22 werden in den Aufträgen der Phase 4 erledigt.
 - abstimmung: [specification-1.html](presentations/specification-1.html), Festlegungen 1 bis 3 und 5 bis 8 am 2026-10-16 bestätigt. Einwand zu Festlegung 4 eingearbeitet in Abschnitt 3.4, Abschnitt 3.6 und Abschnitt 10 Punkt 4, Nachprüfung in [specification-3.md](reviews/specification-3.md).
+- ergänzung in Phase 4 (`wp02`): Abschnitt 3.1, Felder der Typbeschreibung „Ausgänge“ mit der Verwaltung, „benannt“, „Vorgabe der neuen Strategie“, „Strategieparameter“ und die Werte der Zeiteinheit. Anlass: Testbericht `strategiedesign/wp02:development/strategiedesign/wp02/tests/01-functiontest-1.md`, Hinweis H1; ohne diese Angaben kann die Oberfläche die Verwaltung nicht am Ausgang `gestellt` zeigen und die Strategieparameter nicht vorschlagen. Prüfung in [specification-4.md](reviews/specification-4.md) bestanden. Vom Auftraggeber am 2026-10-18 bestätigt, ausgenommen „Vorgabe der neuen Strategie“; dieses Feld entfällt. Hinweise aus `specification-4.md`: H1 in Abschnitt 3.1 (höchstens ein Ausgang mit der Verwaltung), H3 entfällt mit dem Feld, H4 teilweise in Abschnitt 3.1 (zulässige Werte bei Eigenschaften; die erlaubten Bindungsarten in der Zeile „Eigenschaften“ bleiben für die nächste passende Gelegenheit), H5 und H6 im Plan, H7 entschieden: Auswahl des Ordertyps und `Order` mit den Eigenschaften aller Ordertypen leitet die Oberfläche weiter aus der Form der Typbeschreibungen ab, ohne eigenes Feld, weil beides ohne Kenntnis eines einzelnen Typs möglich ist (E2). H2 bleibt für die nächste passende Gelegenheit.
+- änderung in Phase 4 (`wp02`) nach Entscheidung des Auftraggebers am 2026-10-18, Auslöser optional (req-fach-015, req-fach-046, req-fach-051, req-ablauf-002): Abschnitt 1 (Tabelle der Abweichungen), 3.3 (Verwaltung), 3.6 (Befund „Strategie ohne Auslöser“ entfällt, `Kerze` ohne Instanz auch ohne Auslöser, Hinweis „kein Element ‚Order aufgeben‘ erreichbar“ nicht für eine Strategie ohne Elemente, Absatz zu Abläufen ohne Auslöser), 5.2 „Strategie anlegen“, 5.3 (keine Verbindung vom Ausgang `gestellt`), Abschnitt 10 (Folge für Abläufe ohne Auslöser). Prüfung der geänderten Stellen in [specification-5.md](reviews/specification-5.md) nicht bestanden, B1 in 3.6 eingearbeitet, Hinweise H1 in Abschnitt 10, H2 in 5.3, H3 in 3.6, H4 im Status, H5 und H6 im Plan; H7 (Glossar) liegt mit `reviews/requirements-8.md` B1 beim Projektleiter. Nachprüfung in [specification-6.md](reviews/specification-6.md).
 
 ## 1. Gegenstand
 
@@ -21,7 +23,7 @@ Abweichungen von den Vorlagen, weil die geltenden Dokumente inzwischen anders fe
 |---|---|---|
 | eigenständig gespeicherte Objekte per Verweis in der Strategie (PH-05) | Instanzen sind Kopien in der Strategie, Vorlagen sind eigene Dateien | req-fach-013a, req-param-005 |
 | Löschschutz verwendeter Objekte (PH-08) | Löschen nach Rückfrage, Anzeige der Verwendungen | req-ablauf-006 |
-| genau ein Auslöser, keine Funktionen in Ausdrücken (PH-05, PH-11) | mindestens ein Auslöser, Auslöser auch in der Verwaltung; OpenFormula mit Funktionen | req-fach-046, req-fach-036 |
+| genau ein Auslöser, keine Funktionen in Ausdrücken (PH-05, PH-11) | beliebig viele Auslöser, auch keiner, in der Strategie und in der Verwaltung; OpenFormula mit Funktionen | req-fach-015, req-fach-046, req-fach-036 |
 | Index in Datenbanktabellen (PH-08) | kein Index in der Datenbank, die Dateien sind die einzige Quelle | req-ui-009, Entscheidung E5 |
 | Indikatoren mit Berechnung (PH-11) | Indikatoren beschreiben Parameter und Eigenschaften, ohne Berechnung | Abschnitt 1, Ausführung nicht Gegenstand |
 
@@ -48,10 +50,14 @@ Jeder Elementtyp und jeder Objekttyp liefert eine Typbeschreibung. Die Oberfläc
 | Art | Auslöser, Element des Ablaufs, Objekttyp (Indikator, Trend, Regel, Regelwerk), Objekt der Anwendung, Ordertyp |
 | Beschriftung | Name und Beschreibung in Deutsch und Englisch |
 | Parameter | Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung; optional die Angabe, bei welchem Wert eines anderen Parameters er gilt (zum Beispiel die Parameter eines Berechnungsverfahrens des Trends, req-param-005) |
-| Eigenschaften | Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen zusätzlich, ob der Anwender sie belegt. `Instrument`, `Konto`, `Order-ID`, `Status` und `Strategie-ID` belegt die Anwendung, nicht der Anwender (req-fach-019, req-fach-053). |
-| Ausgänge | Kennungen und Beschriftungen der Ausgänge eines Elements des Ablaufs, zum Beispiel `wahr` und `falsch` |
+| Eigenschaften | Kennung, Datentyp, MUSS oder KANN, zulässige Werte (bei Auswahl und Zeiteinheit), Beschriftung; bei Ordertypen zusätzlich, ob der Anwender sie belegt. `Instrument`, `Konto`, `Order-ID`, `Status` und `Strategie-ID` belegt die Anwendung, nicht der Anwender (req-fach-019, req-fach-053). |
+| Ausgänge | Kennungen und Beschriftungen der Ausgänge eines Elements des Ablaufs, zum Beispiel `wahr` und `falsch`; je Ausgang, ob an ihm die Verwaltung des Elements hängt (bei „Order aufgeben“ der Ausgang `gestellt`, Abschnitt 3.3); höchstens ein Ausgang je Typ, eine Typbeschreibung mit mehreren solchen Ausgängen ist ungültig und wird nicht angemeldet |
+| benannt | ob ein Element des Ablaufs einen Namen trägt, unter dem Ausdrücke sein Ergebnis ansprechen (Bedingung, Berechnung, Abschnitt 3.2) |
+| Strategieparameter | bei Objekten der Anwendung, ob Ausdrücke über dieses Objekt die Strategieparameter ansprechen (`Strategie`, Abschnitt 3.4) |
 | Regeln zulässig | ob dem Element Regeln und Regelwerke zugeordnet werden können (req-ui-012) |
 | auf Zeichenfläche | ob der Typ als Element auf die Zeichenfläche gelegt werden kann (req-fach-051) |
+
+Die Felder „Ausgänge“ mit der Verwaltung, „benannt“ und „Strategieparameter“ braucht die Oberfläche, weil sie nach E2 keine einzelnen Typen kennt. Parameter und Eigenschaften vom Datentyp Zeiteinheit nennen ihre zulässigen Werte wie eine Auswahl.
 
 Kennungen von Eigenschaften, Parametern und festgelegten Werten werden aus dem deutschen Namen gebildet: Kleinbuchstaben, ä, ö, ü als ae, oe, ue, ß als ss, Leerzeichen und Bindestrich als `_`, andere Zeichen entfallen (req-fach-036, zum Beispiel `trend_intakt`, `punkt_13` aus „Punkt 1/3“, `aufwaerts`, `stop_loss`). Objekte der Anwendung tragen als Kennung ihren Namen aus dem Fachmodell (`Konto`, `Order`). Die vollständigen Listen der Kennungen legen die Aufträge fest.
 
@@ -83,7 +89,7 @@ Element: Kennung, Elementtyp, Bezeichnung beziehungsweise Name, Lage auf der Zei
 
 Instanz (req-fach-013a, req-param-005): Name (ohne Leerzeichen), Herkunft (Objekttyp, Kennung und Bezeichnung der Vorlage oder leer bei Einfügen eines Objekttyps), Parameterwerte und den gesamten übrigen Inhalt der Vorlage nach der Tabelle unten: eigene Parameter, eigene Eigenschaften mit ihren Ausdrücken, enthaltene Instanzen, Regeln, Ausdrücke. Zur Ausführung braucht eine Instanz ihre Vorlage nicht (E4). Eine Instanz ist in der Strategie in vollem Umfang änderbar.
 
-Verbindung: Quelle (Element und Ausgang), Ziel (Element). Eine Verbindung darf zurückführen (req-fach-047). Die Verwaltung einer Order ist der Bereich der Zeichenfläche, der am Ausgang `gestellt` eines Elements „Order aufgeben“ hängt; ihre Elemente, darunter eigene Auslöser, tragen dessen Kennung (req-fach-049a, req-fach-015). Eine Verwaltung kann wieder ein Element „Order aufgeben“ mit eigener Verwaltung enthalten.
+Verbindung: Quelle (Element und Ausgang), Ziel (Element). Eine Verbindung darf zurückführen (req-fach-047). Die Verwaltung einer Order ist der Bereich der Zeichenfläche, der am Ausgang `gestellt` eines Elements „Order aufgeben“ hängt; ihre Elemente, auch ihre Auslöser, falls sie welche hat, tragen dessen Kennung (req-fach-049a, req-fach-015). Eine Verwaltung kann wieder ein Element „Order aufgeben“ mit eigener Verwaltung enthalten.
 
 Vorlagen (req-fach-013a): Kennung, Bezeichnung, Beschreibung, Objekttyp, Standardwerte der Parameter, dazu je Objekttyp:
 
@@ -201,7 +207,6 @@ Die Konsistenzprüfung läuft beim Speichern, auf Anforderung und für Vorlagen 
 
 | Befund | Stufe | Grundlage |
 |---|---|---|
-| Strategie ohne Auslöser | Fehler | req-fach-046 |
 | Auslöser ohne Verbindung in den Ablauf | Fehler | req-ablauf-007 |
 | Element des Ablaufs ohne eingehende Verbindung | Fehler | req-ablauf-007 |
 | fehlerhafter Ausdruck: Schreibfehler, unbekannte Funktion, unbekannter Name, unbekannte Eigenschaft, unpassender Typ, unbekannter Wert einer Auswahl | Fehler | req-ablauf-007, Abschnitt 3.4 |
@@ -212,11 +217,13 @@ Die Konsistenzprüfung läuft beim Speichern, auf Anforderung und für Vorlagen 
 | Regelwerk mit Vorwärtsbezug oder Zirkelbezug | Fehler | req-fach-045 |
 | `Order` oder `Position` im Ablauf außerhalb einer Verwaltung, auch über das Ergebnis einer Regel | Fehler | req-fach-051 |
 | Regel, die `Order` oder `Position` anspricht, in einem Indikator oder Trend, auch in einem Regelwerk darin (Abschnitt 3.4) | Fehler | req-fach-051, Entscheidung des Auftraggebers am 2026-10-16 |
-| `Kerze` ohne Instanz, wenn ein Auslöser außer `Kerzenschluss` die Auswertung startet | Fehler | req-fach-051 |
+| `Kerze` ohne Instanz, wenn ein Auslöser außer `Kerzenschluss` oder kein Auslöser die Auswertung startet: bei einem Element des Ablaufs und seinen Regeln, wenn das Element in seinem Ablauf (Hauptablauf beziehungsweise seine Verwaltung) von keinem Auslöser oder von einem anderen Auslöser als `Kerzenschluss` erreicht wird; eine Verwaltung ohne eigene Auslöser startet kein Auslöser (req-fach-049a). Bei einer Regel der Strategie und bei einer Instanz auf der Zeichenfläche, wenn die Strategie, Hauptablauf und alle Verwaltungen zusammen, keinen Auslöser oder einen anderen als `Kerzenschluss` hat | Fehler | req-fach-051, req-fach-049a |
 | Order ändern, Order löschen, Position ändern oder Position schließen außerhalb einer Verwaltung | Fehler | req-fach-049a |
 | Name doppelt vergeben innerhalb eines Namensraums (Abschnitt 3.3) | Fehler | eindeutige Namen für Ausdrücke, req-fach-036 |
 | unbekannter Elementtyp oder Objekttyp | Fehler | req-ablauf-008 |
-| kein Element „Order aufgeben“ erreichbar | Hinweis | req-ablauf-007 |
+| kein Element „Order aufgeben“ von einem Auslöser des Hauptablaufs erreichbar; nicht gemeldet für eine Strategie ohne Elemente | Hinweis | req-ablauf-007, Plan `wp02` Abnahmekriterium 2 |
+
+Eine Strategie ohne Auslöser ist kein Befund (req-fach-015, req-fach-046). Eine neue, leere Strategie erhält bei „Prüfen“ keinen Befund. Das gibt der Auftraggeber mit dem Abnahmekriterium 2 von `wp02` vor (Meldung des Projektleiters vom 2026-10-18). Deshalb ist die Strategie ohne Elemente die einzige Ausnahme vom Hinweis „kein Element ‚Order aufgeben‘ erreichbar“. Eine Strategie mit Elementen und ohne Auslöser im Hauptablauf erhält den Hinweis, weil von keinem Auslöser aus ein Element erreichbar ist. Wo die Auswertung eines Ablaufs ohne Auslöser beginnt, ist offen (req-fach-047). Bis dahin bleibt es bei req-ablauf-007: Das erste Element eines Hauptablaufs oder einer Verwaltung ohne Auslöser hat keine eingehende Verbindung und wird als „Element des Ablaufs ohne eingehende Verbindung“ gemeldet. Die Testfälle haben in Hauptablauf und Verwaltung Auslöser und sind davon nicht betroffen.
 
 ### 3.7 Dokumente und Schemata
 
@@ -269,7 +276,7 @@ Alle Texte in Deutsch und Englisch, Beschriftungen der Typen aus den Typbeschrei
 
 | Ablauf | Bedienung | Grundlage |
 |---|---|---|
-| Strategie anlegen | „Neue Strategie“ öffnet eine leere Zeichenfläche mit einem Auslöser `Kerzenschluss` ohne Zeiteinheit; gespeichert wird erst mit „Speichern“ | req-ablauf-002 |
+| Strategie anlegen | „Neue Strategie“ öffnet eine leere Zeichenfläche ohne Elemente; Auslöser legt der Anwender bei Bedarf aus der Elementbibliothek darauf; gespeichert wird erst mit „Speichern“ | req-ablauf-002, req-fach-015 |
 | Objekt verwenden | Objekttyp oder Vorlage auf die Zeichenfläche ziehen; Name und Parameter in der Eigenschaftenansicht; „Als Vorlage speichern“ in der Eigenschaftenansicht der Instanz | req-ablauf-003 |
 | Regeln zuordnen | in der Eigenschaftenansicht der Strategie oder eines Elements mit Regeln: Regel, Vorlage einer Regel oder eines Regelwerks aus der Elementbibliothek hinzufügen, Reihenfolge ändern, entfernen; eine Regel kann auch neu in der Strategie entstehen (Objekttyp `Regel`) | req-ui-012, req-fach-044 |
 | Objekt anlegen, öffnen, ändern | „Neues Objekt“ mit Objekttyp, oder Vorlage in der Elementbibliothek öffnen. Die Vorlage erscheint in der Eigenschaftenansicht als eigene Ansicht mit den Schaltflächen „Speichern“, „Prüfen“, „Schließen“ und „Löschen“; die geöffnete Strategie bleibt dahinter unverändert offen. Enthaltene Instanzen, Regeln und Regelwerke fügt der Anwender dort aus der Elementbibliothek hinzu, ändert ihre Reihenfolge oder entfernt sie. Befunde der Vorlage stehen in dieser Ansicht bei dem betroffenen Teil. Beim Schließen mit ungespeicherten Änderungen gilt dieselbe Rückfrage wie bei einer Strategie. | req-ablauf-004, req-ablauf-007, req-ablauf-008, req-ui-011 |
@@ -282,7 +289,7 @@ Alle Texte in Deutsch und Englisch, Beschriftungen der Typen aus den Typbeschrei
 ### 5.3 Zeichenfläche und Eigenschaftenansicht
 
 - Elemente zeigen ihre Bezeichnung beziehungsweise den Namen der Instanz und ihre Ausgänge als Anschlüsse. Verbindungen entstehen von einem Ausgang zu einem Element. Objekte auf der Zeichenfläche haben keine Anschlüsse (req-ablauf-003).
-- Die Verwaltung erscheint als Rahmen, der mit dem Ausgang `gestellt` verbunden ist. Elemente, die in den Rahmen gezogen werden, gehören zur Verwaltung. Der Rahmen lässt sich einklappen (req-ui-002, req-ui-006).
+- Die Verwaltung erscheint als Rahmen, der mit dem Ausgang `gestellt` verbunden ist. Von diesem Ausgang legt die Oberfläche keine Verbindung zu einem Element an; die Zugehörigkeit zur Verwaltung steht am Element (3.3). Elemente, die in den Rahmen gezogen werden, gehören zur Verwaltung. Der Rahmen lässt sich einklappen (req-ui-002, req-ui-006).
 - Die Eigenschaftenansicht entsteht aus der Typbeschreibung: Eingabe je Datentyp, Wahl der Bindungsart je Parameter, Herkunft der Instanz („EMA21, aus Objekttyp EMA“, req-ui-005).
 - Ausdruckseingabe: Nach einem Namen und einem Punkt bietet sie die Eigenschaften dieses Objekts aus den Typbeschreibungen und der Strategie an, auch der Objekte der Anwendung (req-ui-013). Eingegeben wird mit Kennungen. Unter der Eingabe zeigt sie den Ausdruck mit den Namen in der gewählten Sprache; die erkannten Namen liefert `/api/v1/check` (req-fach-036).
 
@@ -348,3 +355,4 @@ Folgen der fachlichen Festlegungen, die erst mit der Abbildung sichtbar werden (
 
 - Die Regel „Risiko je Trade“ prüft bei „Order ändern“ und „Position ändern“ mit dem aktuellen Kapital. Ist das Kapital gesunken, lehnt sie auch eine Änderung ab, die das Risiko verringert, solange der Stop-Loss noch auf der Verlustseite liegt.
 - Legt eine Regel des Elements „Order aufgeben“ eine höhere Risikogrenze fest als die Regel der Strategie, prüft bei „Order ändern“ nur die Regel der Strategie mit der niedrigeren Grenze; die Order lässt sich dann nicht ändern.
+- Auslöser sind optional (req-fach-015). Solange offen ist, wo die Auswertung ohne Auslöser beginnt (req-fach-047), hat ein Hauptablauf oder eine Verwaltung mit Elementen und ohne Auslöser nach req-ablauf-007 den Fehler „Element des Ablaufs ohne eingehende Verbindung“ (3.6). Fehlerfrei ohne Auslöser ist bis dahin nur ein Ablauf ohne Elemente.
