@@ -3,10 +3,10 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-17
+- stand: 2026-10-18
 - komponenten: `packages/domain-core`, `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber am 2026-10-16 mit allen acht Festlegungen ([Präsentation](presentations/specification-1.html), Vermerk der Bestätigung), Stand `main` Commit `fc30c0e25eeda28517b10bd62b64231046f2a467`
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md), bestanden, Bestätigung offen; `wp02` ruht bis zur Bestätigung.
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md), bestanden, vom Auftraggeber am 2026-10-18 bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Änderung von `wp01` und `wp02` am 2026-10-18 nach Entscheidung des Auftraggebers (Auslöser optional, neues Abnahmekriterium 2 von `wp02`) geprüft in [specification-5.md](reviews/specification-5.md).
 
 ## Übersicht
 
@@ -45,7 +45,7 @@ Die gemeinsame Python-Bibliothek kennt alle Typen, Objekte, Ausdrücke und Befun
 
 ### Umgesetzte Teile der Spezifikation
 
-Abschnitt 1 (Teil Dokumente der Testfälle), Abschnitt 2 E1 und E4 bis E8 vollständig, E2 und E3 Teil Bibliothek und Web-API, Abschnitte 3.1 bis 3.7, 4.1, 4.2, Abschnitt 6 (Testfalldokumente), Abschnitt 7 Punkte Bibliothek, Testfalldokumente, Backend und Skripte, Abschnitt 8 ohne den Satz zur Oberfläche, Abschnitt 9 Punkte 1, 2 und 4, Abschnitt 10 Punkte 2 bis 8 in Bibliothek und Dokumentation.
+Abschnitt 1 (Teil Dokumente der Testfälle), Abschnitt 2 E1 und E4 bis E8 vollständig, E2 und E3 Teil Bibliothek und Web-API, Abschnitte 3.1 bis 3.7 (3.1 ohne die in Phase 4 ergänzten Felder, 3.6 in der Fassung vor der Änderung vom 2026-10-18; beides `wp02`), 4.1, 4.2, Abschnitt 6 (Testfalldokumente), Abschnitt 7 Punkte Bibliothek, Testfalldokumente, Backend und Skripte, Abschnitt 8 ohne den Satz zur Oberfläche, Abschnitt 9 Punkte 1, 2 und 4, Abschnitt 10 Punkte 2 bis 8 in Bibliothek und Dokumentation.
 
 ### Abhängigkeiten
 
@@ -79,7 +79,9 @@ Der Anwender gestaltet in pipwerk Studio Strategien auf der Zeichenfläche, spei
 - Zeichenfläche und Eigenschaftenansicht (5.3): Elemente mit Ausgängen, Verbindungen, Verwaltung als einklappbarer Rahmen, Eigenschaftenansicht aus den Typbeschreibungen mit Bindungsarten und Herkunft, Ausdruckseingabe mit Vorschlägen und Anzeige in der gewählten Sprache.
 - Befunde nach 5.4 und Abschnitt 10 Punkt 1.
 - Darstellung eines Elements mit unbekanntem Typ (3.7, zweiter Absatz).
-- Ergänzung der Typbeschreibung nach 3.1 in Bibliothek, Web-API und ihrer Beschreibung: Ausgang mit der Verwaltung, „benannt“, „Vorgabe der neuen Strategie“, „Strategieparameter“, Werte der Zeiteinheit.
+- Ergänzung der Typbeschreibung nach 3.1 in Bibliothek, Web-API und ihrer Beschreibung: Ausgang mit der Verwaltung (höchstens einer je Typ), „benannt“, „Strategieparameter“, zulässige Werte der Zeiteinheit bei Parametern und Eigenschaften.
+- Konsistenzprüfung nach 3.6 in der Fassung vom 2026-10-18 in der Bibliothek: kein Befund für eine Strategie ohne Auslöser, `Kerze` ohne Instanz auch ohne Auslöser, Hinweis „kein Element ‚Order aufgeben‘ erreichbar“ nur mit Auslöser im Hauptablauf.
+- Tests der Bibliothek und des Backends für beide Änderungen (Abschnitt 7); technische Dokumentation der Bibliothek, Beschreibung der Web-API und Eintrag „Typbeschreibung“ im Glossar dazu (Abschnitt 9).
 - Texte nur als Text, nie als HTML (Abschnitt 8).
 - Tests nach Abschnitt 7 für die Oberfläche (Vitest) und Browsertests: beide Testfälle über die Oberfläche aufbauen, speichern, nach Neuladen öffnen und mit dem Testfalldokument vergleichen; Objektverzeichnis ändern.
 - Dokumentation: `docs/user/pipwerk-studio.md` mit den Arbeitsabläufen dieses Pakets Schritt für Schritt, der Schreibweise von Ausdrücken, den Befunden und ihrer Behebung und beiden Testfällen als Anleitung (Abschnitt 9, Punkt 3); `docs/technical/pipwerk-studio.md` zum Aufbau der Oberfläche; Glossar für neue Begriffe der Oberfläche.
@@ -87,11 +89,11 @@ Der Anwender gestaltet in pipwerk Studio Strategien auf der Zeichenfläche, spei
 ### Nicht-Umfang
 
 - Neues Objekt, Ansicht einer Vorlage, Als Vorlage speichern, Löschen einer Vorlage (`wp03`)
-- weitere Änderungen an Bibliothek und Web-API außer der Ergänzung der Typbeschreibung, ausgenommen die Behebung eines Fehlers, den dieses Paket aufdeckt
+- weitere Änderungen an Bibliothek und Web-API außer der Ergänzung der Typbeschreibung und der Änderung der Konsistenzprüfung, ausgenommen die Behebung eines Fehlers, den dieses Paket aufdeckt
 
 ### Umgesetzte Teile der Spezifikation
 
-Abschnitt 1 (Nachweis in der Oberfläche), Abschnitt 2 E2 und E3 Teil Oberfläche, 3.1 die in Phase 4 ergänzten Felder der Typbeschreibung, 3.7 zweiter Absatz Teil Oberfläche, 5.1, 5.2 ohne die Teile von `wp03`, 5.3, 5.4, Abschnitt 6 (Aufbau über die Oberfläche), Abschnitt 7 Punkte Oberfläche und Browsertest ohne „Objekt anlegen“ und „Vorlage löschen“, Abschnitt 8 Satz zur Oberfläche, Abschnitt 9 Punkt 1 (Oberfläche) und Punkte 3 und 4 für dieses Paket, Abschnitt 10 Punkt 1.
+Abschnitt 1 (Nachweis in der Oberfläche), Abschnitt 2 E2 und E3 Teil Oberfläche, 3.1 die in Phase 4 ergänzten Felder der Typbeschreibung, 3.6 in der Fassung vom 2026-10-18, 3.7 zweiter Absatz Teil Oberfläche, 5.1, 5.2 ohne die Teile von `wp03`, 5.3, 5.4, Abschnitt 6 (Aufbau über die Oberfläche), Abschnitt 7 Punkte Oberfläche und Browsertest ohne „Objekt anlegen“ und „Vorlage löschen“, Punkte Bibliothek und Backend für die Änderungen an 3.1 und 3.6, Abschnitt 8 Satz zur Oberfläche, Abschnitt 9 Punkt 1 (Oberfläche), Punkt 2 für die Änderungen an 3.1 und 3.6 und Punkte 3 und 4 für dieses Paket, Abschnitt 10 Punkt 1.
 
 ### Abhängigkeiten
 
@@ -102,7 +104,7 @@ Abschnitt 1 (Nachweis in der Oberfläche), Abschnitt 2 E2 und E3 Teil Oberfläch
 Der Auftraggeber kann in der Testumgebung selbst prüfen:
 
 1. Die Oberfläche zeigt Kopfzeile mit Menü, Elementbibliothek, Zeichenfläche und Eigenschaftenansicht nach 5.1. Die Sprache wird in den Einstellungen gewählt, alle Texte erscheinen in Deutsch und Englisch.
-2. „Neue Strategie“ zeigt eine Zeichenfläche mit einem Auslöser `Kerzenschluss`. Nach „Prüfen“ erscheint der fehlende Wert der Zeiteinheit unter anderem als Befund am Auslöser.
+2. „Neue Strategie“ zeigt eine leere Zeichenfläche. „Prüfen“ meldet dafür keinen Befund.
 3. `str-03` lässt sich nach der Anleitung der Anwenderdokumentation vollständig aufbauen und speichern. Die Konsistenzprüfung meldet keinen Fehler. Nach Neuladen der Seite öffnet „Öffnen“ die Strategie unverändert.
 4. Ebenso `str-01`, einschließlich der Verwaltung als Rahmen am Ausgang `gestellt`, der sich einklappen lässt.
 5. Ein Element mit Fehler ist rot, mit Hinweis orange umrandet. Bei Auswahl steht der Befundtext in der Eigenschaftenansicht. Befunde ohne Element stehen in der Eigenschaftenansicht der Strategie. Keine Meldung muss weggeklickt werden.
@@ -166,7 +168,7 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 | 1 Abweichungen von den Vorlagen | `wp01` (Instanzen als Kopien, Löschen, Auslöser, OpenFormula, kein Index, Indikatoren ohne Berechnung), `wp03` (Löschen in der Oberfläche) |
 | 2 E1, E4 bis E8 | `wp01` |
 | 2 E2, E3 | `wp01` (Typbeschreibungen, Prüfung im Backend), `wp02` (Oberfläche ohne Typkenntnis, Dokument maßgeblich) |
-| 3.1 bis 3.6 | `wp01`; in Phase 4 ergänzte Felder der Typbeschreibung (3.1) `wp02` |
+| 3.1 bis 3.6 | `wp01`; in Phase 4 ergänzte Felder der Typbeschreibung (3.1) und Änderung der Konsistenzprüfung vom 2026-10-18 (3.6) `wp02` |
 | 3.7 Dokumente und Schemata | `wp01`; Darstellung unbekannter Typen `wp02` |
 | 4.1, 4.2 | `wp01` |
 | 5.1 | `wp02`; Schaltfläche „Neues Objekt“ `wp03` |
@@ -176,13 +178,13 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 | 5.2 Objekt anlegen, öffnen, ändern | `wp03` |
 | 5.2 Löschen | `wp02` (Strategie), `wp03` (Vorlage) |
 | 6 Abbildung der Testfälle | `wp01` (Testfalldokumente), `wp02` (Aufbau über die Oberfläche) |
-| 7 Bibliothek, Testfalldokumente, Backend, Skripte | `wp01` |
+| 7 Bibliothek, Testfalldokumente, Backend, Skripte | `wp01`; Tests der Änderungen an 3.1 und 3.6 `wp02` |
 | 7 Oberfläche, Browsertest | `wp02`; „Objekt anlegen“ und „Vorlage löschen“ `wp03` |
 | 8 Sicherheit | `wp01`; Satz zur Oberfläche `wp02`, `wp03` |
 | 9 technische Dokumentation pipwerk Studio | `wp01` (Backend), `wp02`, `wp03` (Oberfläche) |
-| 9 technische Dokumentation der Bibliothek | `wp01` |
+| 9 technische Dokumentation der Bibliothek | `wp01`; Änderungen an 3.1 und 3.6 `wp02` |
 | 9 Anwenderdokumentation | `wp02`, `wp03` |
-| 9 Glossar | `wp01`; neue Begriffe der Oberfläche `wp02`, `wp03` |
+| 9 Glossar | `wp01`; neue Begriffe der Oberfläche und Eintrag „Typbeschreibung“ `wp02`; neue Begriffe `wp03` |
 | 10 Punkt 1 | `wp02` |
 | 10 Punkt 2 | `wp01` (Bibliothek), `wp03` (Oberfläche) |
 | 10 Punkte 3 bis 8 | `wp01` |
@@ -196,3 +198,4 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 | 2026-10-16 | Hinweise aus [plan-1.md](reviews/plan-1.md) eingearbeitet: P1 „Neues Objekt“ in `wp03` und in der Tabelle der Abdeckung; P2 Glossar in `wp03`; P3 zwei Stellen der Anwenderdokumentation in `wp01`; P4 Vergleich ohne Kennung und Zeitpunkte; P5 Ändern des Objektverzeichnisses als Abnahmekriterium nur in `wp02`, in `wp01` als technischer Nachweis; P6 Befund nach „Prüfen“; P7 „kein Fehler“; P8 Kriterien 8 bis 10 von `wp02` ergänzt; P9 Regelvorlage und Ändern einer Vorlage in `wp03`. |
 | 2026-10-17 | `wp01` abgenommen ([Abnahmebericht](wp01/acceptance/1.md)) und mit Commit `cbbebd931b09148b93410e214e495b8b896b1d7e` in `main` übernommen, Stand `done`. |
 | 2026-10-17 | `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1) in Umfang, Nicht-Umfang, umgesetzten Teilen und Tabelle der Abdeckung. Anlass: Lücke der Spezifikation, gefunden im Testbericht `strategiedesign/wp02:development/strategiedesign/wp02/tests/01-functiontest-1.md`, Hinweis H1. Prüfung in [specification-4.md](reviews/specification-4.md), Bestätigung offen. |
+| 2026-10-18 | Ergänzung von `wp02` vom Auftraggeber bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Entscheidung des Auftraggebers: Auslöser optional. `wp02`: Umfang um die Änderung der Konsistenzprüfung (3.6) und die Tests und Dokumentation von Bibliothek und Backend dazu ergänzt (Hinweis H6 aus `specification-4.md`), Nicht-Umfang, umgesetzte Teile, Abnahmekriterium 2 neu, Tabelle der Abdeckung. `wp01`: umgesetzte Teile ohne die Änderungen von `wp02` (Hinweis H5). Prüfung in [specification-5.md](reviews/specification-5.md). |
