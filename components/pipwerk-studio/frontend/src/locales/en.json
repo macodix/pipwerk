@@ -17,7 +17,11 @@
   },
   "canvas": {
     "label": "Designer canvas",
-    "empty": "The canvas is empty."
+    "empty": "The canvas is empty.",
+    "controls": "Canvas view",
+    "management": "Management: {{title}}",
+    "collapse": "Collapse management “{{title}}”",
+    "expand": "Expand management “{{title}}”"
   },
   "backend": {
     "checking": "Backend: checking connection",
@@ -29,5 +33,311 @@
     "unknown": "Revision: unknown",
     "commit": "Commit {{commit}}",
     "commitAt": "Commit {{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}"
+  },
+  "menu": {
+    "label": "Menu",
+    "new": "New strategy",
+    "open": "Open",
+    "save": "Save",
+    "check": "Check",
+    "close": "Close",
+    "delete": "Delete",
+    "settings": "Settings"
+  },
+  "datatype": {
+    "number": "Number",
+    "integer": "Integer",
+    "percent": "Percent",
+    "boolean": "Boolean",
+    "text": "Text",
+    "choice": "Choice",
+    "time_unit": "Time unit",
+    "timestamp": "Point in time",
+    "date": "Date",
+    "expression": "Expression",
+    "object": "Object"
+  },
+  "library": {
+    "label": "Element library",
+    "title": "Element library",
+    "groups": {
+      "triggers": "Triggers",
+      "flow": "Elements of the flow",
+      "applicationObjects": "Objects of the application",
+      "objectTypes": "Object types",
+      "builtinTemplates": "Delivered templates",
+      "storedTemplates": "Stored templates"
+    },
+    "empty": "No entries.",
+    "loadFailed": "The type descriptions could not be loaded. Without them no strategy can be created or opened.",
+    "retry": "Try again",
+    "storedFailed": "The stored templates could not be read.",
+    "unreadable": "not readable",
+    "forRules": "for rules"
+  },
+  "properties": {
+    "panel": "Properties",
+    "numberHint": "Allowed is a number with a point or a comma as decimal separator, without exponent (for example 0.5 or 2,75).",
+    "integerHint": "Allowed is a whole number without decimal places and without exponent (for example 20).",
+    "none": "No strategy is open. Create one with “New strategy” or open a stored one.",
+    "multiple": "{{count}} elements selected.",
+    "strategy": "Strategy",
+    "title": "Title",
+    "description": "Description",
+    "label": "Label",
+    "name": "Name",
+    "parameters": "Parameters",
+    "properties": "Properties",
+    "orderProperties": "Properties of the order",
+    "instanceValues": "Values of the instance",
+    "noParameters": "The strategy has no parameters.",
+    "parameterName": "Name of parameter {{number}}",
+    "parameterType": "Datatype of {{name}}",
+    "parameterChoices": "Values of {{name}}",
+    "choicesHint": "separated by commas",
+    "parameterValue": "Value of {{name}}",
+    "atApplication": "at the application",
+    "removeParameter": "Remove parameter {{name}}",
+    "remove": "Remove",
+    "addParameter": "Add parameter",
+    "newParameterName": "parameter",
+    "unknownType": "Unknown type “{{type}}”. The values are only shown and stay unchanged when saving.",
+    "originType": "{{name}}, from object type {{type}}",
+    "originTemplate": "{{name}}, from template {{title}}",
+    "choose": "please choose",
+    "unset": "not set",
+    "application": "passed at the application",
+    "bindingKindOf": "Kind of binding of {{name}}",
+    "binding": {
+      "fixed": "fixed value",
+      "parameter": "parameter",
+      "expression": "expression",
+      "application": "at the application"
+    }
+  },
+  "rules": {
+    "title": "Rules",
+    "none": "No rules.",
+    "select": "Select rule {{name}}",
+    "up": "Move rule {{name}} up",
+    "down": "Move rule {{name}} down",
+    "remove": "Remove rule {{name}}",
+    "removeShort": "Remove",
+    "errors_one": "{{count}} error",
+    "errors_other": "{{count}} errors",
+    "hints_one": "{{count}} hint",
+    "hints_other": "{{count}} hints",
+    "fromLibrary": "Template from the element library",
+    "add": "Add",
+    "new": "New rule"
+  },
+  "ruleView": {
+    "back": "Back to {{owner}}",
+    "parameterDefinitions": "Parameters of the rule",
+    "parameterValues": "Values of the parameters",
+    "required": "Required",
+    "standardValue": "Standard value of {{name}}",
+    "expression": "Expression",
+    "resultExpression": "Expression for the overall result",
+    "determinedProperty": "Determined property of the order",
+    "checkOnly": "none (checking only)",
+    "comparison": "Comparison when checking",
+    "comparisons": {
+      "hoechstens": "at most",
+      "mindestens": "at least",
+      "gleich": "equal"
+    }
+  },
+  "expression": {
+    "suggestions": "Suggestions",
+    "display": "Display",
+    "result": "Result",
+    "rule": "Rule"
+  },
+  "findings": {
+    "title": "Findings",
+    "ofStrategy": "Findings of the strategy",
+    "ofElement": "Findings of this element",
+    "ofRule": "Findings of this rule",
+    "level": {
+      "error": "Error",
+      "hint": "Hint"
+    },
+    "count_one": "Findings: {{count}}",
+    "count_other": "Findings: {{count}}",
+    "countDetail": "{{errors}} errors, {{hints}} hints",
+    "unknown": "Finding {{code}}",
+    "fields": {
+      "parameter": "parameter “{{name}}”",
+      "property": "property “{{name}}”",
+      "propertyDefinition": "property “{{name}}” of the instance",
+      "expression": "expression",
+      "result_expression": "expression for the overall result"
+    },
+    "issues": {
+      "syntax": "Typing error at position {{start}} to {{end}}: {{syntaxReason}}",
+      "unknown_function": "Unknown function “{{name}}” (position {{start}} to {{end}}).",
+      "unknown_name": "Unknown name “{{name}}” (position {{start}} to {{end}}).",
+      "unknown_property": "“{{object}}” has no property “{{property}}” (position {{start}} to {{end}}).",
+      "type_mismatch": "The type does not fit: expected {{expected}}, found {{found}} (position {{start}} to {{end}}).",
+      "unknown_choice_value": "“{{values}}” is not a value of the choice; allowed are {{allowed}} (position {{start}} to {{end}}).",
+      "argument_count": "The function {{function}} receives {{found}} arguments; {{minimum}} to {{maximum}} are allowed (position {{start}} to {{end}}).",
+      "other": "The expression is invalid at position {{start}} to {{end}}."
+    },
+    "syntax": {
+      "unexpected_end": "the expression ends too early",
+      "unexpected_token": "unexpected character “{{found}}”",
+      "invalid_character": "invalid character “{{found}}”",
+      "invalid_number": "invalid number",
+      "unterminated_string": "text is not closed",
+      "too_long": "the expression is too long",
+      "too_deep": "the expression is nested too deeply"
+    },
+    "connectionReasons": {
+      "unknown_source": "the source is not an element",
+      "unknown_target": "the target is not an element",
+      "unknown_output": "the output does not belong to the element",
+      "target_is_trigger": "a trigger has no input",
+      "across_managements": "the connection leads between the flow and a management or between two managements"
+    },
+    "bindingReasons": {
+      "binding_kind": "this kind of binding is not allowed",
+      "type": "the fixed value has the wrong datatype",
+      "choice_value": "the fixed value is not part of the choice",
+      "value": "the value is not allowed",
+      "unknown_parameter": "the parameter is unknown",
+      "unknown_property": "the property is unknown",
+      "set_by_application": "the application sets this property, not the user"
+    },
+    "resultReasons": {
+      "unknown_property": "the determined property is unknown",
+      "choice_value": "the result is not a value of the choice",
+      "type": "the type of the result does not fit"
+    },
+    "referenceKinds": {
+      "forward": "forward reference",
+      "cycle": "circular reference"
+    },
+    "trigger": {
+      "unconnected": "The trigger is not connected to any element of the flow."
+    },
+    "flow": {
+      "no_incoming": "No connection leads to this element of the flow.",
+      "unending_loop": "Loop without a condition that ends it (on {{elements}} elements).",
+      "management_only": "“{{type}}” may only stand in a management, not in the main flow.",
+      "no_order_reachable": "No element that places an order can be reached from the trigger."
+    },
+    "expression": {
+      "invalid": "The expression in {{field}} is invalid: {{problem}}",
+      "order_outside_management": "The expression in {{field}} uses order or position outside a management."
+    },
+    "rule": {
+      "unresolved_name": "Hint on the expression in {{field}}: {{problem}} The template alone does not know the name; it is checked in every strategy that contains the template.",
+      "result_mismatch": "The result of the rule does not fit the determined property “{{property}}”: {{reason}}.",
+      "order_in_indicator": "The rule uses order or position. That is not allowed in an indicator or trend.",
+      "invalid_type": "This list of rules holds an object of type “{{type}}” that may not stand there.",
+      "comparison_missing": "The determining rule names no comparison for checking."
+    },
+    "parameter": {
+      "missing": "The required parameter “{{parameter}}” has no value.",
+      "binding_invalid": "The value of “{{parameter}}{{property}}” does not fit: {{reason}}."
+    },
+    "order": {
+      "property_missing": "The property “{{property}}” of the order is not set and no determining rule supplies it."
+    },
+    "ruleset": {
+      "reference_order": "Rule set with {{kind}}."
+    },
+    "candle": {
+      "no_instance": "The candle is used, but no candle with a time unit lies on the canvas."
+    },
+    "name": {
+      "duplicate": "The name “{{name}}” is used twice.",
+      "invalid": "The name “{{name}}” contains characters that an expression cannot address."
+    },
+    "type": {
+      "unknown": "The type “{{type}}” is unknown."
+    },
+    "trend": {
+      "direction_missing": "The trend lacks the expression for the property “{{property}}”."
+    },
+    "calculation": {
+      "circular_reference": "Calculations use their results in a circle ({{names}})."
+    },
+    "findings": {
+      "truncated": "There are more findings than are shown (limit {{limit}})."
+    },
+    "connection": {
+      "invalid": "Invalid connection: {{reason}}."
+    },
+    "element": {
+      "rules_not_allowed": "Rules are assigned to this element although “{{type}}” allows none.",
+      "management_invalid": "The element belongs to the management of an element that does not place an order."
+    }
+  },
+  "dialogs": {
+    "unsaved": {
+      "title": "Unsaved changes",
+      "text": "The strategy has changes that are not saved yet.",
+      "save": "Save",
+      "discard": "Discard",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "title": "Delete strategy?",
+      "text": "The strategy “{{title}}” will be deleted.",
+      "textUntitled": "The strategy without a title will be deleted.",
+      "notSaved": "It has not been saved yet; only the open strategy is discarded.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "error": {
+      "ok": "OK"
+    }
+  },
+  "errors": {
+    "http": "The backend rejected the request with status {{status}}.",
+    "timeout": "The backend did not answer in time.",
+    "unexpectedResponse": "The backend sent an unexpected response.",
+    "network": "The backend cannot be reached.",
+    "saveFailed": "The strategy could not be saved.",
+    "openFailed": "The strategy could not be opened.",
+    "deleteFailed": "The strategy could not be deleted.",
+    "checkFailed": "The strategy could not be checked.",
+    "insertFailed": "The entry could not be inserted."
+  },
+  "openDialog": {
+    "title": "Open strategy",
+    "loading": "The strategies are being read.",
+    "loadFailed": "The list of strategies could not be read.",
+    "retry": "Try again",
+    "empty": "No strategies are stored.",
+    "columnTitle": "Title",
+    "columnDescription": "Description",
+    "columnModified": "Last change",
+    "modifiedValue": "{{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}",
+    "unreadable": "not readable",
+    "untitled": "(no title)",
+    "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Settings",
+    "directorySection": "Object directory",
+    "directoryLoading": "The object directory is being read.",
+    "directoryLoadFailed": "The object directory could not be read.",
+    "directoryNotSet": "No object directory is set and no default can be determined.",
+    "directoryIsDefault": "The default directory is in use.",
+    "directoryIsSet": "The directory has been set.",
+    "directory": "Directory (absolute path)",
+    "directoryChange": "Change directory",
+    "moveQuestion": "Move files?",
+    "moveYes": "Yes, move the files",
+    "moveNo": "No, only change the directory",
+    "moveCancel": "Cancel",
+    "directorySaved": "The object directory has been changed.",
+    "directoryFailed": "The object directory could not be changed.",
+    "moveFailureFrom": "Old directory: {{directory}}",
+    "moveFailureTo": "New directory; it holds the files that could not be brought back: {{directory}}",
+    "close": "Close"
   }
 }

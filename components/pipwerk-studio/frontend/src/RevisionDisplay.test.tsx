@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 import { RevisionDisplay } from './RevisionDisplay';
+import { switchLanguage } from './testing/actions';
 import { mockFetchRoutes, mockFetchResponse, renderWithProviders } from './test-utils';
 
 const COMMIT = '0123456789abcdef0123456789abcdef01234567';
@@ -278,16 +279,15 @@ describe('RevisionDisplay in the footer', () => {
       'title',
       `Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`,
     );
-    await screen.findByDisplayValue('Deutsch');
 
-    await user.selectOptions(screen.getByLabelText('Sprache'), 'English');
+    await switchLanguage(user, 'English');
 
     const english = await screen.findByText('Revision: 0123456');
     expect(english).toHaveAttribute('title', `Commit ${COMMIT} from 2026-10-09 14:52`);
     expect(english).toHaveAccessibleDescription(`Commit ${COMMIT} from 2026-10-09 14:52`);
     expect(screen.queryByText('Stand: 0123456')).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText('Language'), 'Deutsch');
+    await switchLanguage(user, 'Deutsch');
 
     const german = await screen.findByText('Stand: 0123456');
     expect(german).toHaveAttribute('title', `Commit ${COMMIT} vom 09.10.2026, 14:52 Uhr`);
