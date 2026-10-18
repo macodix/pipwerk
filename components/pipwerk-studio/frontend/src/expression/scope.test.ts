@@ -380,3 +380,47 @@ describe('strategy parameters of the real descriptions', () => {
     expect(findMember(members, 'Strategie')?.children().map((member) => member.id)).toContain('neu');
   });
 });
+
+describe('the other details shown with a suggestion', () => {
+  const holder = instance('holder', 'Zork', { rules: [instance('inner', 'ZzRule')] });
+  const lost = instance('lost', 'NoSuchType');
+  const doc: StrategyDocument = {
+    ...strategy,
+    elements: [
+      objectElement('00000000-0000-4000-8000-0000000000d1', holder),
+      objectElement('00000000-0000-4000-8000-0000000000d2', lost),
+    ],
+    rules: [instance('r1', 'ZzRule')],
+  };
+  const shown = (language: 'de' | 'en') => {
+    const roots = rootMembers(doc, inventedTypes, language, { kind: 'element', elementId: 'x' });
+    const inside = findMember(roots, 'holder')!.children();
+    return {
+      rule: findMember(roots, 'r1')?.detail,
+      result: findMember(findMember(roots, 'r1')!.children(), 'ergebnis')?.detail,
+      resultLabel: findMember(findMember(roots, 'r1')!.children(), 'ergebnis')?.label,
+      innerRule: findMember(inside, 'inner')?.detail,
+      instance: findMember(roots, 'holder')?.detail,
+      unknownType: findMember(roots, 'lost')?.detail,
+    };
+  };
+
+  it('are in German and in English, the object type by its label from the description', () => {
+    expect(shown('de')).toEqual({
+      rule: 'Regel',
+      result: 'Ergebnis',
+      resultLabel: 'Ergebnis',
+      innerRule: 'Regel',
+      instance: 'Zork (de)',
+      unknownType: 'NoSuchType',
+    });
+    expect(shown('en')).toEqual({
+      rule: 'Rule',
+      result: 'Result',
+      resultLabel: 'Result',
+      innerRule: 'Rule',
+      instance: 'Zork (en)',
+      unknownType: 'NoSuchType',
+    });
+  });
+});

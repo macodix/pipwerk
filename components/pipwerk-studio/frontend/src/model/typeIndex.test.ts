@@ -5,6 +5,7 @@ import { realTypes } from '../testing/fixtures';
 import {
   allOrderProperties,
   commonOrderObject,
+  definitionChoices,
   hasNameField,
   holdsInstance,
   isManagementOwnerType,
@@ -87,5 +88,24 @@ describe('what the interface derives from the type descriptions', () => {
     );
     // No invented object has the properties of the invented order types in common.
     expect(commonOrderObject(inventedTypes)).toBeUndefined();
+  });
+});
+
+describe('the values offered for a value of a parameter definition', () => {
+  const units = timeUnitChoices(inventedTypes);
+
+  it('are the own choices of the definition, whatever the datatype', () => {
+    expect(definitionChoices('time_unit', ['k1', 'k2'], units).map((choice) => choice.id)).toEqual(['k1', 'k2']);
+    expect(definitionChoices('choice', ['a'], units).map((choice) => choice.id)).toEqual(['a']);
+  });
+
+  it('are the time units of the descriptions for a time unit without own choices', () => {
+    expect(definitionChoices('time_unit', undefined, units).map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
+    expect(definitionChoices('time_unit', [], units).map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
+  });
+
+  it('are none for another datatype without own choices', () => {
+    expect(definitionChoices('text', undefined, units)).toEqual([]);
+    expect(definitionChoices('choice', [], units)).toEqual([]);
   });
 });

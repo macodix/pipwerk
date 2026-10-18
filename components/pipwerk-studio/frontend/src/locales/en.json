@@ -150,7 +150,9 @@
   },
   "expression": {
     "suggestions": "Suggestions",
-    "display": "Display"
+    "display": "Display",
+    "result": "Result",
+    "rule": "Rule"
   },
   "findings": {
     "title": "Findings",

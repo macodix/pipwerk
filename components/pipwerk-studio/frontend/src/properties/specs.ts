@@ -12,7 +12,7 @@ import { bindingKinds } from '../api/elementTypes';
 import { getOwn } from '../document/own';
 import type { Binding, Bindings, ElementDocument, InstanceDocument, ParameterDefinition } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
-import { labelText, orderSelector, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
+import { definitionChoices, labelText, orderSelector, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
 
 /**
  * What the property view shows for an element, an instance or a rule: one row
@@ -110,10 +110,7 @@ export function definitionSpecs(definitions: readonly ParameterDefinition[], tim
     required: definition.required === true,
     must: false,
     default: definition.default ?? null,
-    choices:
-      definition.datatype === 'time_unit' && (definition.choices ?? []).length === 0
-        ? [...timeUnits]
-        : (definition.choices ?? []).map((id) => ({ id, label: { de: id, en: id } })),
+    choices: definitionChoices(definition.datatype, definition.choices, timeUnits),
     bindings: bindingKinds,
     appliesWhen: null,
   }));

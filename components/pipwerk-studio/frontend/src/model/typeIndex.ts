@@ -112,7 +112,8 @@ export function hasNameField(type: TypeDescription | undefined): boolean {
 /**
  * The values of the datatype time unit. The descriptions list them as the
  * choices of every parameter or property of this datatype; the first one that
- * does is taken. Strategy parameters and parameters of rules use these values.
+ * does is taken. `definitionChoices` offers them wherever a value of this
+ * datatype is entered and the definition names no `choices` of its own.
  */
 export function timeUnitChoices(index: TypeIndex): Choice[] {
   for (const type of index.list) {
@@ -123,6 +124,25 @@ export function timeUnitChoices(index: TypeIndex): Choice[] {
     }
   }
   return [];
+}
+
+/**
+ * The single rule for the values offered when a value of a parameter definition
+ * is entered (value of a strategy parameter, default value and value row of an
+ * own parameter of a rule or an instance): if the definition names `choices`,
+ * exactly these; otherwise, for the datatype time unit, the time units of the
+ * type descriptions (`timeUnits`, see `timeUnitChoices`); otherwise none.
+ */
+export function definitionChoices(
+  datatype: string,
+  ownChoices: readonly string[] | undefined,
+  timeUnits: readonly Choice[],
+): Choice[] {
+  const own = ownChoices ?? [];
+  if (own.length > 0) {
+    return own.map((id) => ({ id, label: { de: id, en: id } }));
+  }
+  return datatype === 'time_unit' ? [...timeUnits] : [];
 }
 
 /** Whether an element of the type shows an object and so holds an instance. */

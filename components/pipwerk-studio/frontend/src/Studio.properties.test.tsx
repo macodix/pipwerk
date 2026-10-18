@@ -643,3 +643,68 @@ describe('properties built from types the interface cannot know', () => {
     expect(body.elements.find((candidate) => candidate.type === 'Zork')?.instance?.parameter_values?.size).toEqual({ kind: 'fixed', value: 4 });
   });
 });
+
+describe('the values offered for the datatype time unit, one rule for every input', () => {
+  const ownChoices = ['k1', 'k2'];
+  const withUnits: StrategyDocument = {
+    ...stored,
+    id: '00000000-0000-4000-8000-0000000000c1',
+    title: 'ZzUnits',
+    elements: [],
+    connections: [],
+    parameters: [
+      { name: 'plain', datatype: 'time_unit', value: 'qq1' },
+      { name: 'own', datatype: 'time_unit', choices: ownChoices, value: 'k1' },
+    ],
+    rules: [
+      {
+        name: 'zz',
+        object_type: 'ZzRule',
+        parameters: [
+          { name: 'plain', datatype: 'time_unit', default: 'qq1' },
+          { name: 'own', datatype: 'time_unit', choices: ownChoices, default: 'k1' },
+        ],
+        parameter_values: {
+          plain: { kind: 'fixed', value: 'qq1' },
+          own: { kind: 'fixed', value: 'k1' },
+        },
+      },
+    ],
+  };
+
+  async function openUnits() {
+    const user = userEvent.setup();
+    mockBackend({ elementTypes: inventedWire(), strategies: [withUnits] });
+    renderWithProviders(<App />);
+    await waitForReady();
+    await openStored(user, 'ZzUnits');
+    await screen.findByRole('button', { name: 'Regel zz auswählen' });
+    return { user };
+  }
+
+  function optionsOf(view: HTMLElement, name: string): (string | null)[] {
+    // The values are set, so the select offers no "please choose".
+    return within(within(view).getByRole('combobox', { name })).getAllByRole('option').map((option) => option.textContent);
+  }
+
+  it('offers for the value of a strategy parameter its own choices, else the time units of the descriptions', async () => {
+    await openUnits();
+    clickEmptyArea();
+    const view = properties();
+
+    expect(optionsOf(view, 'Wert von plain')).toEqual(['QQ1', 'QQ7']);
+    expect(optionsOf(view, 'Wert von own')).toEqual(['k1', 'k2']);
+  });
+
+  it('offers for the default value and the value row of a parameter of a rule the same, with and without own choices', async () => {
+    const { user } = await openUnits();
+    await user.click(screen.getByRole('button', { name: 'Regel zz auswählen' }));
+    await within(properties()).findByRole('heading', { level: 2, name: 'zz' });
+    const view = properties();
+
+    expect(optionsOf(view, 'Standardwert von plain')).toEqual(['QQ1', 'QQ7']);
+    expect(optionsOf(view, 'plain')).toEqual(['QQ1', 'QQ7']);
+    expect(optionsOf(view, 'Standardwert von own')).toEqual(['k1', 'k2']);
+    expect(optionsOf(view, 'own')).toEqual(['k1', 'k2']);
+  });
+});

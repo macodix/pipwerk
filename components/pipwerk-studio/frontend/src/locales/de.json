@@ -150,7 +150,9 @@
   },
   "expression": {
     "suggestions": "Vorschläge",
-    "display": "Anzeige"
+    "display": "Anzeige",
+    "result": "Ergebnis",
+    "rule": "Regel"
   },
   "findings": {
     "title": "Befunde",

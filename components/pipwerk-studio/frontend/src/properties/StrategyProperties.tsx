@@ -9,7 +9,7 @@ import {
   updateStrategyParameter,
 } from '../document/ops';
 import type { StrategyParameter } from '../document/types';
-import { timeUnitChoices } from '../model/typeIndex';
+import { definitionChoices, timeUnitChoices } from '../model/typeIndex';
 import { FindingsList } from '../findings/FindingsList';
 import { useStudio } from '../state/StudioContext';
 import { ChoicesInput } from './ChoicesInput';
@@ -132,11 +132,7 @@ export function StrategyProperties() {
                   <ValueInput
                     datatype={parameter.datatype}
                     value={parameter.value}
-                    choices={
-                      parameter.datatype === 'time_unit'
-                        ? timeUnitChoices(types)
-                        : choices.map((id) => ({ id, label: { de: id, en: id } }))
-                    }
+                    choices={definitionChoices(parameter.datatype, choices, timeUnitChoices(types))}
                     language={language}
                     label={t('properties.parameterValue', { name: parameter.name })}
                     onChange={(value) => {

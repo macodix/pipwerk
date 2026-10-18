@@ -35,12 +35,16 @@ export type ExpressionContext =
  * The type descriptions of rules and rule sets list no properties; the
  * specification names the result (3.3, 3.4: `regel.Ergebnis`).
  */
-const RESULT_PROPERTY = { id: 'ergebnis', label: { de: 'Ergebnis', en: 'Result' } } as const;
+const RESULT_ID = 'ergebnis';
 
 /** The name of a datatype in the language of the interface (`datatype.*`); an unknown one stays as written. */
 function datatypeLabel(datatype: string, language: SupportedLanguage): string {
   const names: Readonly<Record<string, string>> = resources[language].translation.datatype;
   return getOwn(names, datatype) ?? datatype;
+}
+
+function labelOfType(type: TypeDescription | undefined, id: string, language: SupportedLanguage): string {
+  return type === undefined ? id : labelText(type.name, language);
 }
 
 function propertyMember(
@@ -74,9 +78,9 @@ function propertyMembers(
 
 function resultMember(language: SupportedLanguage): Member {
   return {
-    id: RESULT_PROPERTY.id,
-    label: RESULT_PROPERTY.label[language],
-    detail: 'result',
+    id: RESULT_ID,
+    label: resources[language].translation.expression.result,
+    detail: resources[language].translation.expression.result,
     children: () => [],
   };
 }
@@ -85,7 +89,7 @@ function ruleMember(rule: InstanceDocument, types: TypeIndex, language: Supporte
   return {
     id: rule.name,
     label: rule.name,
-    detail: 'rule',
+    detail: resources[language].translation.expression.rule,
     children: () => [resultMember(language), ...containedMembers(rule, types, language)],
   };
 }
@@ -107,7 +111,8 @@ function instanceMember(instance: InstanceDocument, types: TypeIndex, language: 
   return {
     id: instance.name,
     label: instance.name,
-    detail: instance.object_type,
+    // The label of the object type in the chosen language; an unknown type stays as its identifier.
+    detail: labelOfType(types.byId.get(instance.object_type), instance.object_type, language),
     children: () => {
       const type = types.byId.get(instance.object_type);
       const members: Member[] = [];
