@@ -378,20 +378,15 @@ class ObjectService:
             if loaded.status == "unreadable":
                 raise ObjectUnreadableError("The object file cannot be read.")
             created = loaded.status == "missing"
-            if created:
-                # a symbolic link under the name (read as "missing") blocks saving, whatever
-                # it points to; the link and its target stay unchanged
-                if self._store.is_link(checked_kind, object_id):
-                    raise ObjectNameTakenError("The file name of the object is taken.")
-                for other in OBJECT_KINDS:
-                    # a file (or a symbolic link) under this identifier blocks saving
-                    if other != checked_kind and (
-                        self._store.is_link(other, object_id)
-                        or self._store.read_bytes(other, object_id, 0).status != "missing"
-                    ):
-                        raise ObjectKindConflictError(
-                            "An object of another kind has this identifier."
-                        )
+            if created and self._store.has_entry(checked_kind, object_id):
+                # an entry that is no readable regular file (symbolic link with or without
+                # target, directory) is read as "missing" and still takes the name
+                raise ObjectNameTakenError("The file name of the object is taken.")
+            for other in OBJECT_KINDS:
+                # any entry under this identifier with another kind blocks saving, when
+                # creating and when replacing; links are never followed
+                if other != checked_kind and self._store.has_entry(other, object_id):
+                    raise ObjectKindConflictError("An object of another kind has this identifier.")
             self._write(checked_kind, object_id, text)
         return SavedObject(object_id, text, findings, created)
 

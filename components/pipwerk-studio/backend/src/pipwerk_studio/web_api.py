@@ -104,11 +104,12 @@ OBJECT_UNREADABLE_TEXT = (
     "The object file cannot be read or does not fit the document schema. It is left unchanged."
 )
 OBJECT_KIND_CONFLICT_TEXT = (
-    "An object of another kind has this identifier in the object directory. Nothing was written."
+    "An entry of another kind (a file, a symbolic link or a directory) has this identifier in "
+    "the object directory. Nothing was written."
 )
 OBJECT_NAME_TAKEN_TEXT = (
-    "A symbolic link lies under the file name of the object in the object directory. "
-    "Nothing was written."
+    "A symbolic link or a directory lies under the file name of the object in the object "
+    "directory. Nothing was written."
 )
 BUILTIN_OBJECT_TEXT = "A delivered template cannot be changed or deleted."
 DOCUMENT_INVALID_TEXT = "The document does not fit the document schema."
@@ -527,8 +528,8 @@ def _error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
         403: ("A delivered template cannot be changed or deleted.", ApiError),
         404: ("There is no such object.", ApiError),
         409: (
-            "The file of the object is not readable, or saving found an object of another "
-            "kind or a symbolic link under the file name; it is left unchanged.",
+            "The file of the object is not readable, or saving found an entry of another "
+            "kind, a symbolic link or a directory under the file name; it is left unchanged.",
             ApiError,
         ),
         413: ("The request body or the document is too large (limit 2 MiB).", ApiError),
@@ -668,9 +669,11 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
             "missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are "
             "saved in the normalized spelling. The answer names the saved document and the "
             "findings of the consistency check; findings do not prevent saving. A delivered "
-            "template cannot be changed (HTTP 403). If a file with this identifier of another "
-            "kind or a symbolic link of any kind under the file name lies in the object "
-            "directory, nothing is written (HTTP 409)."
+            "template cannot be changed (HTTP 403). The same rule holds for creating and "
+            "replacing: if a file of this kind under the file name is not readable, or a "
+            "symbolic link (with or without target) or a directory lies under it, or any entry "
+            "(file, symbolic link or directory) of the same identifier with another kind lies "
+            "in the object directory, nothing is written (HTTP 409). Links are never followed."
         ),
         response_model=None,
         responses={

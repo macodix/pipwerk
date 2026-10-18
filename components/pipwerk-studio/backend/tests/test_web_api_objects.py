@@ -349,8 +349,8 @@ def test_put_on_a_missing_file_is_refused_if_a_file_of_another_kind_has_the_iden
     assert response.status_code == 409
     assert response.json() == {
         "detail": (
-            "An object of another kind has this identifier in the object directory. "
-            "Nothing was written."
+            "An entry of another kind (a file, a symbolic link or a directory) has this "
+            "identifier in the object directory. Nothing was written."
         )
     }
     assert {name: (objects / name).read_bytes() for name in files(objects)} == before

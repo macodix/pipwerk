@@ -461,13 +461,13 @@ class ObjectStore:
             _synchronize_directory(directory)
             return True
 
-    def is_link(self, kind: str, object_id: str) -> bool:
-        """Tell whether a symbolic link (of any kind, also a dangling one) lies under the
-        name of the object. The link is not followed."""
+    def has_entry(self, kind: str, object_id: str) -> bool:
+        """Tell whether any entry (file, directory or symbolic link, also a dangling one)
+        lies under the name of the object. A link is not followed."""
         name = object_file_name(kind, object_id)
         with self.lock:
             directory = self._directory()
-            return directory is not None and os.path.islink(directory / name)
+            return directory is not None and os.path.lexists(directory / name)
 
     def list_objects(self, kind: str) -> list[ObjectEntry]:
         """List the objects of one kind with the time of their last change."""
