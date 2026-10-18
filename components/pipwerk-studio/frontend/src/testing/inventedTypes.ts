@@ -5,6 +5,7 @@ import type {
   ElementKind,
   ElementTypesResponse,
   Label,
+  OutputDescription,
   ParameterDescription,
   PropertyDescription,
   TypeDescription,
@@ -61,6 +62,17 @@ export function property(
   };
 }
 
+/** An output of an element of the flow; `holdsManagement` marks the one the management hangs at. */
+export function output(id: string, de: string, en = de, holdsManagement = false): OutputDescription {
+  return { id, label: label(de, en), holdsManagement };
+}
+
+/** The time units of the invented descriptions: not those of any real type. */
+export const inventedTimeUnits: Choice[] = [
+  { id: 'qq1', label: label('QQ1') },
+  { id: 'qq7', label: label('QQ7') },
+];
+
 export function choices(...ids: string[]): Choice[] {
   return ids.map((id) => ({ id, label: label(`${id} (de)`, `${id} (en)`) }));
 }
@@ -79,6 +91,8 @@ export function typeOf(
     parameters: [],
     properties: [],
     outputs: [],
+    named: false,
+    strategyParameters: false,
     rulesAllowed: false,
     onCanvas: true,
     builtin: false,
@@ -89,15 +103,12 @@ export function typeOf(
 
 export const inventedList: TypeDescription[] = [
   typeOf('zz.pulse', 'trigger', {
-    outputs: [{ id: 'go', label: label('los', 'go') }],
-    parameters: [parameter('period', 'time_unit', { required: true })],
+    outputs: [output('go', 'los', 'go')],
+    parameters: [parameter('period', 'time_unit', { required: true, choices: inventedTimeUnits })],
   }),
   typeOf('zz.gate', 'flow', {
-    outputs: [
-      { id: 'yes', label: label('ja', 'yes') },
-      { id: 'no', label: label('nein', 'no') },
-      { id: 'maybe', label: label('vielleicht', 'maybe') },
-    ],
+    named: true,
+    outputs: [output('yes', 'ja', 'yes'), output('no', 'nein', 'no'), output('maybe', 'vielleicht', 'maybe')],
     parameters: [
       parameter('formula', 'expression', { required: true, bindings: ['expression'] }),
       parameter('limit', 'percent'),
@@ -111,10 +122,7 @@ export const inventedList: TypeDescription[] = [
     properties: [property('verdict', 'boolean')],
   }),
   typeOf('zz.launch', 'flow', {
-    outputs: [
-      { id: 'sent', label: label('gesendet', 'sent') },
-      { id: 'refused', label: label('abgelehnt', 'refused') },
-    ],
+    outputs: [output('refused', 'abgelehnt', 'refused'), output('sent', 'gesendet', 'sent', true)],
     parameters: [
       parameter('shape', 'choice', {
         required: true,
@@ -124,7 +132,7 @@ export const inventedList: TypeDescription[] = [
     ],
     rulesAllowed: true,
   }),
-  typeOf('zz.sweep', 'flow', { outputs: [{ id: 'next', label: label('weiter', 'next') }] }),
+  typeOf('zz.sweep', 'flow', { outputs: [output('next', 'weiter', 'next')] }),
   typeOf('ZzOrderA', 'order_type', {
     onCanvas: false,
     properties: [
@@ -139,10 +147,14 @@ export const inventedList: TypeDescription[] = [
   }),
   typeOf('Zork', 'object_type', {
     category: 'indicator',
-    parameters: [parameter('size', 'integer', { required: true }), parameter('unit', 'time_unit', { required: true })],
+    parameters: [
+      parameter('size', 'integer', { required: true }),
+      parameter('unit', 'time_unit', { required: true, choices: inventedTimeUnits }),
+    ],
     properties: [property('level', 'number', { setByUser: false })],
   }),
   typeOf('Planet', 'application_object', {
+    strategyParameters: true,
     properties: [property('mass', 'number', { setByUser: false })],
   }),
   typeOf('ZzRule', 'object_type', { category: 'rule', onCanvas: false }),
@@ -207,7 +219,13 @@ export function inventedWire(): Record<string, unknown> {
         applies_when: condition(property.appliesWhen),
         object_type: property.objectType,
       })),
-      outputs: type.outputs,
+      outputs: type.outputs.map((output) => ({
+        id: output.id,
+        label: output.label,
+        holds_management: output.holdsManagement,
+      })),
+      named: type.named,
+      strategy_parameters: type.strategyParameters,
       rules_allowed: type.rulesAllowed,
       on_canvas: type.onCanvas,
       builtin: type.builtin,

@@ -21,6 +21,18 @@ export async function openStored(user: UserEvent, title: string): Promise<void> 
   await user.click(await within(dialog).findByRole('button', { name: title }));
 }
 
+/** Puts an entry of the element library onto the drawing area with the keyboard (select it, press Enter). */
+export async function insertFromLibrary(user: UserEvent, name: string | RegExp): Promise<void> {
+  const library = screen.getByRole('complementary', { name: /^(Elementbibliothek|Element library)$/ });
+  await user.click(within(library).getByRole('option', { name }));
+  await user.keyboard('{Enter}');
+}
+
+/** Clicks the empty drawing area: the property view of the strategy is shown. */
+export function clickEmptyArea(): void {
+  fireEvent.click(document.querySelector('.react-flow__pane') as HTMLElement);
+}
+
 /** The nodes of the drawing area that are elements (not frames). */
 export function elementNodes(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>('.react-flow__node-element'));

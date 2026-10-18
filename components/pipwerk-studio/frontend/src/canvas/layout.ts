@@ -59,7 +59,8 @@ export function elementOutputs(
   const outputs: OutputHandle[] = (type?.outputs ?? []).map((output) => ({
     id: output.id,
     label: label(output.id, output.label),
-    connectable: true,
+    // No connection starts at the output that holds the management (specification 5.3).
+    connectable: !output.holdsManagement,
     stored: false,
   }));
   const known = new Set(outputs.map((output) => output.id));
@@ -88,15 +89,15 @@ export function elementHasInput(
 // --- managements -----------------------------------------------------------------------
 
 /**
- * The elements that have a frame: the elements whose type places an order
- * (from the type description) and every existing element that another element
- * names as its management.
+ * The elements that have a frame: the elements whose type has an output that
+ * holds the management (from the type description) and every existing element
+ * that another element names as its management.
  */
 export function ownerIds(document: StrategyDocument, index: TypeIndex): Set<string> {
   const ids = new Set<string>();
   const existing = new Set(document.elements.map((element) => element.id));
   for (const element of document.elements) {
-    if (isManagementOwnerType(index, index.byId.get(element.type))) {
+    if (isManagementOwnerType(index.byId.get(element.type))) {
       ids.add(element.id);
     }
     if (element.management_of !== null && existing.has(element.management_of)) {

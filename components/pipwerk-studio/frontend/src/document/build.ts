@@ -1,6 +1,6 @@
 import type { ParameterDescription, TemplateDocument, TypeDescription } from '../api/elementTypes';
 import type { SupportedLanguage } from '../i18n';
-import { defaultTrigger, holdsInstance, labelText, type TypeIndex } from '../model/typeIndex';
+import { holdsInstance, labelText } from '../model/typeIndex';
 import { identifierFromName, newUuid, uniqueName } from './ids';
 import { setOwn } from './own';
 import {
@@ -208,9 +208,13 @@ export function newElementForType(
   return holdsInstance(type) ? newObjectElement(document, type, options) : newFlowElement(type, options);
 }
 
-/** A new strategy: an empty drawing area with one trigger that has no time unit yet (specification 5.2). */
-export function newStrategy(index: TypeIndex, language: SupportedLanguage): StrategyDocument {
-  const document: StrategyDocument = {
+/**
+ * A new strategy: an empty drawing area without elements (specification 5.2).
+ * The user places triggers from the element library; the user interface neither
+ * creates one nor chooses a type.
+ */
+export function newStrategy(): StrategyDocument {
+  return {
     format: STRATEGY_FORMAT,
     format_version: FORMAT_VERSION,
     id: newUuid(),
@@ -221,10 +225,4 @@ export function newStrategy(index: TypeIndex, language: SupportedLanguage): Stra
     elements: [],
     connections: [],
   };
-  const trigger = defaultTrigger(index);
-  if (trigger !== null) {
-    const element = baseElement(trigger, { x: 40, y: 40, language });
-    document.elements.push(element);
-  }
-  return document;
 }

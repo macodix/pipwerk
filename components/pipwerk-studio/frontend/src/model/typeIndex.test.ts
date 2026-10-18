@@ -1,26 +1,38 @@
 import { describe, expect, it } from 'vitest';
 
-import { inventedTypes } from '../testing/inventedTypes';
+import { inventedTypes, property, typeOf } from '../testing/inventedTypes';
 import { realTypes } from '../testing/fixtures';
 import {
   allOrderProperties,
   commonOrderObject,
-  defaultTrigger,
   hasNameField,
   holdsInstance,
   isManagementOwnerType,
+  managementOutput,
   nodeKindOf,
   orderSelector,
+  timeUnitChoices,
   typeName,
 } from './typeIndex';
 
 describe('what the interface derives from the type descriptions', () => {
-  it('finds the element that places an order by its parameter and not by its name', () => {
-    const real = [...realTypes.list].filter((type) => isManagementOwnerType(realTypes, type)).map((type) => type.id);
-    const invented = [...inventedTypes.list].filter((type) => isManagementOwnerType(inventedTypes, type)).map((type) => type.id);
+  it('finds the element with a management and its output by the field of the output and not by a name', () => {
+    const real = [...realTypes.list].filter((type) => isManagementOwnerType(type)).map((type) => type.id);
+    const invented = [...inventedTypes.list].filter((type) => isManagementOwnerType(type)).map((type) => type.id);
 
     expect(real).toEqual(['flow.place_order']);
     expect(invented).toEqual(['zz.launch']);
+    expect(managementOutput(realTypes.byId.get('flow.place_order'))?.id).toBe('gestellt');
+    // The invented element lists the output with the management second; it is found nevertheless.
+    expect(managementOutput(inventedTypes.byId.get('zz.launch'))?.id).toBe('sent');
+    expect(managementOutput(inventedTypes.byId.get('zz.gate'))).toBeNull();
+    expect(managementOutput(undefined)).toBeNull();
+  });
+
+  it('reads the time units from the choices of a parameter of the datatype, whatever the values are', () => {
+    expect(timeUnitChoices(inventedTypes).map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
+    expect(timeUnitChoices(realTypes).map((choice) => choice.id)).toEqual(expect.arrayContaining(['m1', 'h1', 'mn1']));
+    expect(timeUnitChoices({ ...inventedTypes, list: [] })).toEqual([]);
   });
 
   it('knows the order types a selector offers', () => {
@@ -37,18 +49,19 @@ describe('what the interface derives from the type descriptions', () => {
     expect(orderSelector(inventedTypes, inventedTypes.byId.get('Zork')!)).toBeNull();
   });
 
-  it('chooses the trigger of a new strategy by its time unit', () => {
-    expect(defaultTrigger(realTypes)?.id).toBe('trigger.candle_close');
-    expect(defaultTrigger(inventedTypes)?.id).toBe('zz.pulse');
-  });
-
-  it('gives a name to elements of the flow that have properties', () => {
+  it('gives a name to the elements whose type says so (field named)', () => {
     expect(hasNameField(realTypes.byId.get('flow.condition'))).toBe(true);
     expect(hasNameField(realTypes.byId.get('flow.calculation'))).toBe(true);
     expect(hasNameField(realTypes.byId.get('flow.place_order'))).toBe(false);
     expect(hasNameField(realTypes.byId.get('flow.delete_order'))).toBe(false);
     expect(hasNameField(inventedTypes.byId.get('zz.gate'))).toBe(true);
+    expect(hasNameField(inventedTypes.byId.get('zz.sweep'))).toBe(false);
     expect(hasNameField(undefined)).toBe(false);
+    // The field decides, not the form: an element without properties that is named, and one with properties that is not.
+    const named = typeOf('zz.named', 'flow', { named: true });
+    const unnamed = typeOf('zz.unnamed', 'flow', { properties: [property('p', 'text')] });
+    expect(hasNameField(named)).toBe(true);
+    expect(hasNameField(unnamed)).toBe(false);
   });
 
   it('knows the kind of node and whether an element holds an instance', () => {

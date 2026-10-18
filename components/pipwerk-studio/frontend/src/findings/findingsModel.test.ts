@@ -48,12 +48,12 @@ describe('indexFindings', () => {
 
   it('puts findings without an element at the strategy, but not those of one of its rules', () => {
     const index = indexFindings([
-      finding('error', 'strategy.no_trigger', null),
+      finding('error', 'flow.no_order_reachable', null),
       finding('error', 'expression.invalid', null, 'risiko'),
       finding('hint', 'x.y', condition.id),
     ]);
 
-    expect(index.ofStrategy(document).map((item) => item.code)).toEqual(['strategy.no_trigger']);
+    expect(index.ofStrategy(document).map((item) => item.code)).toEqual(['flow.no_order_reachable']);
     expect(index.ofRule(document, { owner: { kind: 'strategy' }, indices: [0] }).map((item) => item.code)).toEqual(['expression.invalid']);
   });
 

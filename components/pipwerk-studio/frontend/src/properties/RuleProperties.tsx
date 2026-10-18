@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { DataType } from '../api/elementTypes';
-import { allOrderProperties } from '../model/typeIndex';
+import { allOrderProperties, timeUnitChoices } from '../model/typeIndex';
 import { comparisons, type Comparison, type ParameterDefinition, type RulePath } from '../document/types';
 import { getRule, setInstanceBinding, updateRule } from '../document/ops';
 import { uniqueName } from '../document/ids';
@@ -22,7 +22,7 @@ import { ValueInput } from './ValueInput';
 /** The own parameters of a rule: name, datatype, required, standard value (item 6 of the order). */
 function ParameterDefinitions({ path }: { path: RulePath }) {
   const { t } = useTranslation();
-  const { document, language, edit } = useStudio();
+  const { document, types, language, edit } = useStudio();
   const rule = getRule(document, path);
   if (rule === undefined) {
     return null;
@@ -116,7 +116,11 @@ function ParameterDefinitions({ path }: { path: RulePath }) {
               <ValueInput
                 datatype={definition.datatype}
                 value={definition.default}
-                choices={choices.map((id) => ({ id, label: { de: id, en: id } }))}
+                choices={
+                  definition.datatype === 'time_unit'
+                    ? timeUnitChoices(types)
+                    : choices.map((id) => ({ id, label: { de: id, en: id } }))
+                }
                 language={language}
                 label={t('ruleView.standardValue', { name: definition.name })}
                 onChange={(value) => {

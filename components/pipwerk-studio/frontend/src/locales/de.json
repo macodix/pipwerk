@@ -216,9 +216,6 @@
       "forward": "Vorwärtsbezug",
       "cycle": "Zirkelbezug"
     },
-    "strategy": {
-      "no_trigger": "Die Strategie hat keinen Auslöser."
-    },
     "trigger": {
       "unconnected": "Der Auslöser ist mit keinem Element des Ablaufs verbunden."
     },

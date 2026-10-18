@@ -50,7 +50,9 @@ describe('the identifiers of the findings', () => {
   const codes = codesInDocumentation();
 
   it('are the ones the library defines', () => {
-    expect(codes.length).toBeGreaterThanOrEqual(27);
+    expect(codes.length).toBeGreaterThanOrEqual(26);
+    // The finding "strategy without trigger" is gone from the library and from the documentation (specification 3.6).
+    expect(codes).not.toContain('strategy.no_trigger');
     expect([...codes].sort()).toEqual([...codesInLibrary()].sort());
   });
 
@@ -70,13 +72,19 @@ describe('the identifiers of the findings', () => {
     const i18n = createI18n('de');
 
     expect(missingFindingTexts([...codes, 'vendor.fantasy'], (key) => i18n.exists(key))).toEqual(['findings.vendor.fantasy']);
-    expect(missingFindingTexts(['strategy.no_trigger'], () => false)).toEqual(['findings.strategy.no_trigger']);
+    expect(missingFindingTexts(['trigger.unconnected'], () => false)).toEqual(['findings.trigger.unconnected']);
     // A copy of the German texts without one text: the check names it.
-    const damaged = JSON.parse(JSON.stringify(resources.de.translation)) as { findings: { strategy: Record<string, string> } };
-    delete damaged.findings.strategy.no_trigger;
+    const damaged = JSON.parse(JSON.stringify(resources.de.translation)) as { findings: { trigger: Record<string, string> } };
+    delete damaged.findings.trigger.unconnected;
     const has = (key: string): boolean =>
       key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], damaged) !== undefined;
-    expect(missingFindingTexts(codes, has)).toEqual(['findings.strategy.no_trigger']);
+    expect(missingFindingTexts(codes, has)).toEqual(['findings.trigger.unconnected']);
+  });
+
+  it.each(supportedLanguages)('have no text for the finding that no longer exists, in %s', (language) => {
+    const i18n = createI18n(language);
+
+    expect(i18n.exists('findings.strategy.no_trigger')).toBe(false);
   });
 
   it.each(supportedLanguages)('give a text without a gap in %s, even if the finding brings no data', (language) => {
@@ -117,10 +125,14 @@ describe('the identifiers of the findings', () => {
 
 describe('the text of a finding', () => {
   it('has the same words in the two languages for the same finding, in the language asked for', () => {
-    const missing = finding('strategy.no_trigger');
+    const unconnected = finding('trigger.unconnected');
 
-    expect(textOf('de', missing)).toBe('Die Strategie hat keinen Auslöser.');
-    expect(textOf('en', missing)).toBe('The strategy has no trigger.');
+    expect(textOf('de', unconnected)).toBe('Der Auslöser ist mit keinem Element des Ablaufs verbunden.');
+    expect(textOf('en', unconnected)).toMatch(/^The trigger/);
+  });
+
+  it('shows an identifier that is unknown, also the one that was removed, with the general text and the identifier', () => {
+    expect(textOf('de', finding('strategy.no_trigger'))).toBe('Befund strategy.no_trigger');
   });
 
   it('uses the data of the finding', () => {

@@ -84,7 +84,7 @@ export function applyEdgeChangesToState(
   };
 }
 
-/** Whether a connection may start where the user drew it: from a connectable output of an element to an element. */
+/** Whether a connection may start where the user drew it: from an output of an element that is not the one holding the management, to an element. */
 export function isValidConnection(
   document: StrategyDocument,
   types: TypeIndex,
@@ -99,7 +99,8 @@ export function isValidConnection(
   if (type === undefined) {
     return false;
   }
-  return type.outputs.some((output) => output.id === connection.sourceHandle);
+  // No connection starts at the output that holds the management (specification 5.3).
+  return type.outputs.some((output) => output.id === connection.sourceHandle && !output.holdsManagement);
 }
 
 /** Adds the connection the user drew. Returns the document unchanged if the connection is not allowed or exists. */

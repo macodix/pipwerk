@@ -2,7 +2,7 @@ import { MarkerType, type Edge, type Node } from '@xyflow/react';
 
 import type { SupportedLanguage } from '../i18n';
 import type { ConnectionDocument, ElementDocument, StrategyDocument } from '../document/types';
-import { labelText, nodeKindOf, type NodeKind, type TypeIndex } from '../model/typeIndex';
+import { labelText, managementOutput, nodeKindOf, type NodeKind, type TypeIndex } from '../model/typeIndex';
 import {
   FRAME_HEADER_HEIGHT,
   NODE_WIDTH,
@@ -48,6 +48,12 @@ export type ElementNodeData = {
   hasInput: boolean;
   /** The element has a frame (a management). */
   isOwner: boolean;
+  /**
+   * The connector at which the frame hangs: the output that holds the
+   * management, or, for an element whose type has none but that another
+   * element names as its management, the extra connector at the bottom.
+   */
+  managementHandle: string | null;
   severity: Severity | null;
   /** The management the element belongs to when the node was derived. */
   container: string | null;
@@ -81,7 +87,11 @@ export type FlowModel = {
   withoutEdge: number[];
 };
 
-/** Identifier of the connector at the bottom of an element that carries the frame of its management. */
+/**
+ * Identifier of the extra connector at the bottom of an element that carries
+ * the frame of its management when its type has no output that holds it (an
+ * element that another element names as its management in the document).
+ */
 export const MANAGEMENT_HANDLE = 'management';
 
 export type FlowContext = {
@@ -215,6 +225,7 @@ export function documentToFlow(document: StrategyDocument, ctx: FlowContext): Fl
         outputs,
         hasInput: elementHasInput(document, element, nodeKind),
         isOwner: owners.has(element.id),
+        managementHandle: owners.has(element.id) ? (managementOutput(type)?.id ?? MANAGEMENT_HANDLE) : null,
         severity: ctx.severities.get(element.id) ?? null,
         container,
         anchor: { abs: { x: element.x, y: element.y }, rel, parentAbs: origin },
@@ -257,7 +268,7 @@ export function documentToFlow(document: StrategyDocument, ctx: FlowContext): Fl
       edges.push({
         id: `management:${ownerId}`,
         source: ownerId,
-        sourceHandle: MANAGEMENT_HANDLE,
+        sourceHandle: managementOutput(ctx.types.byId.get(byId.get(ownerId)?.type ?? ''))?.id ?? MANAGEMENT_HANDLE,
         target: frameNodeId(ownerId),
         className: 'management-edge',
         selectable: false,

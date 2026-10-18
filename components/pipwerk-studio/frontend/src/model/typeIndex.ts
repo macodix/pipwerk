@@ -1,5 +1,7 @@
 import type {
+  Choice,
   ElementTypesResponse,
+  OutputDescription,
   FunctionDescription,
   Label,
   ParameterDescription,
@@ -63,11 +65,11 @@ export type OrderSelector = {
 };
 
 /**
- * Finds out from the type description whether a type is one that places an
- * order: it is an element of the flow with a parameter of the datatype choice
- * whose values are all identifiers of types of the kind order type. The
- * description names neither the type nor the output that carries the
- * management; see "Stellen nach Punkt 4" in the technical documentation.
+ * Finds out from the type description which parameter of an element of the flow
+ * selects an order type: a parameter of the datatype choice whose values are
+ * all identifiers of types of the kind order type. The description has no field
+ * for this (specification 3.1, hint H7); it follows from the form of the
+ * descriptions without knowing a single type.
  */
 export function orderSelector(index: TypeIndex, type: TypeDescription): OrderSelector | null {
   if (type.kind !== 'flow') {
@@ -92,30 +94,35 @@ export function orderSelector(index: TypeIndex, type: TypeDescription): OrderSel
   return null;
 }
 
-export function isManagementOwnerType(index: TypeIndex, type: TypeDescription | undefined): boolean {
-  return type !== undefined && orderSelector(index, type) !== null;
+/** The output at which the management of an element of the type hangs (specification 3.1), or `null`. */
+export function managementOutput(type: TypeDescription | undefined): OutputDescription | null {
+  return type?.outputs.find((output) => output.holdsManagement) ?? null;
 }
 
-/**
- * The trigger of a new strategy: a trigger with a required parameter of the
- * datatype time unit (it starts at the close of a candle); otherwise the first
- * trigger. The description does not name the type.
- */
-export function defaultTrigger(index: TypeIndex): TypeDescription | null {
-  const triggers = index.list.filter((type) => type.kind === 'trigger' && type.byUser && type.onCanvas);
-  return (
-    triggers.find((type) => type.parameters.some((p) => p.datatype === 'time_unit' && p.required)) ??
-    triggers[0] ??
-    null
-  );
+/** Whether an element of the type has a management (a frame): the description has an output that holds it. */
+export function isManagementOwnerType(type: TypeDescription | undefined): boolean {
+  return managementOutput(type) !== null;
 }
 
-/**
- * Whether an element of the type has a name under which expressions address
- * its result: an element of the flow whose type has properties.
- */
+/** Whether an element of the type has a name under which expressions address its result (field `named`). */
 export function hasNameField(type: TypeDescription | undefined): boolean {
-  return type !== undefined && type.kind === 'flow' && type.properties.length > 0;
+  return type !== undefined && type.named;
+}
+
+/**
+ * The values of the datatype time unit. The descriptions list them as the
+ * choices of every parameter or property of this datatype; the first one that
+ * does is taken. Strategy parameters and parameters of rules use these values.
+ */
+export function timeUnitChoices(index: TypeIndex): Choice[] {
+  for (const type of index.list) {
+    for (const entry of [...type.parameters, ...type.properties]) {
+      if (entry.datatype === 'time_unit' && entry.choices.length > 0) {
+        return entry.choices;
+      }
+    }
+  }
+  return [];
 }
 
 /** Whether an element of the type shows an object and so holds an instance. */

@@ -102,7 +102,7 @@ test.describe('the object directory of the run (item 15 of the order)', () => {
     await loadedPage(page);
 
     await page.getByRole('button', { name: 'Neue Strategie' }).click();
-    await expect(page.locator('.react-flow__node-element')).toHaveCount(1);
+    await expect(page.locator('.react-flow__node-element')).toHaveCount(0);
     expect(existsSync(directory) ? readdirSync(directory) : []).toEqual([]);
     await page.getByLabel('Bezeichnung').fill('Eine Strategie im Browsertest');
     await page.getByRole('button', { name: 'Speichern' }).click();
@@ -113,7 +113,7 @@ test.describe('the object directory of the run (item 15 of the order)', () => {
     expect(files[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.strategy\.json$/);
     const stored = JSON.parse(readFileSync(join(directory, files[0] as string), 'utf-8')) as StrategyDocument;
     expect(stored.title).toBe('Eine Strategie im Browsertest');
-    expect(stored.elements).toHaveLength(1);
+    expect(stored.elements).toEqual([]);
 
     // Saving again replaces the file; there is still one. The test waits for the end of this save
     // (the answer of the PUT), not for the count of findings, which is shown since the first save.
@@ -135,13 +135,54 @@ test.describe('the object directory of the run (item 15 of the order)', () => {
   });
 });
 
+test.describe('the new strategy (item 26 of the order)', () => {
+  test('shows an empty drawing area, and "Prüfen" reports no finding and the number 0', async ({ page }) => {
+    await loadedPage(page);
+
+    await page.getByRole('button', { name: 'Neue Strategie' }).click();
+
+    await expect(page.getByRole('heading', { level: 2, name: 'Strategie' })).toBeVisible();
+    await expect(page.locator('.react-flow__node')).toHaveCount(0);
+    const checked = page.waitForResponse(
+      (response) => response.request().method() === 'POST' && /\/api\/v1\/check$/.test(response.url()),
+    );
+    await page.getByRole('button', { name: 'Prüfen' }).click();
+    expect((await checked).ok()).toBe(true);
+    await expect(page.getByText('Befunde: 0')).toBeVisible();
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await expect(page.locator('.findings-list li')).toHaveCount(0);
+    // The user places a trigger from the library; nothing is placed otherwise.
+    await expect(page.locator('.react-flow__node-element')).toHaveCount(0);
+    await page.getByRole('option', { name: /^Kerzenschluss/ }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.react-flow__node-element')).toHaveCount(1);
+  });
+
+  test('offers the strategy parameters after "Strategie" and a point in an expression', async ({ page }) => {
+    await loadedPage(page);
+    await page.getByRole('button', { name: 'Neue Strategie' }).click();
+    await page.getByRole('button', { name: 'Parameter hinzufügen' }).click();
+    await page.getByRole('textbox', { name: 'Name des Parameters 1' }).fill('abstand');
+    await page.getByRole('option', { name: /^Bedingung/ }).focus();
+    await page.keyboard.press('Enter');
+    const expression = page.getByRole('combobox', { name: 'Ausdruck' });
+
+    await expression.pressSequentially('Strategie.');
+
+    await expect(page.getByRole('listbox', { name: 'Vorschläge' }).getByRole('option', { name: /abstand/ })).toBeVisible();
+  });
+});
+
 test.describe('the drawing area', () => {
   test('inserts from the library with the keyboard and with the mouse, and connects with the mouse', async ({ page }) => {
     await loadedPage(page);
     await page.getByRole('button', { name: 'Neue Strategie' }).click();
-    await expect(page.locator('.react-flow__node-element')).toHaveCount(1);
+    await expect(page.locator('.react-flow__node-element')).toHaveCount(0);
 
-    // Keyboard: choose the entry and press Enter.
+    // Keyboard: choose the entries and press Enter. The trigger is placed by the user.
+    await page.getByRole('option', { name: /^Kerzenschluss/ }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.react-flow__node-element')).toHaveCount(1);
     await page.getByRole('option', { name: /^Bedingung/ }).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('.react-flow__node-element')).toHaveCount(2);

@@ -5,7 +5,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import type { Finding } from './api/objects';
 import type { StrategyDocument } from './document/types';
-import { clickNode, elementNodes, menu, nodeByTitle, openStored, waitForReady } from './testing/actions';
+import {
+  clickEmptyArea,
+  clickNode,
+  elementNodes,
+  insertFromLibrary,
+  menu,
+  nodeByTitle,
+  openStored,
+  waitForReady,
+} from './testing/actions';
 import { mockBackend } from './testing/backend';
 import { loadTestcase } from './testing/fixtures';
 import { renderWithProviders } from './test-utils';
@@ -30,22 +39,56 @@ async function typeTitle(user: ReturnType<typeof userEvent.setup>, text: string)
 }
 
 describe('a new strategy', () => {
-  it('shows an empty drawing area with one trigger and stores nothing yet', async () => {
+  it('shows an empty drawing area without any element and stores nothing yet', async () => {
     const { user, backend } = await start();
 
     await menu(user, 'Neue Strategie');
 
-    expect(elementNodes()).toHaveLength(1);
-    expect(nodeByTitle('Kerzenschluss')).toHaveTextContent('Kerzenschluss');
+    expect(elementNodes()).toHaveLength(0);
+    expect(document.querySelectorAll('.react-flow__node')).toHaveLength(0);
     expect(screen.getByRole('heading', { name: 'Strategie' })).toBeInTheDocument();
-    expect(screen.queryByText('Die Arbeitsfläche ist leer.')).toBeNull();
     expect(backend.requests('POST', /strategies$/)).toHaveLength(0);
     expect(backend.requests('PUT', /strategies/)).toHaveLength(0);
+    expect(backend.requests('POST', /check$/)).toHaveLength(0);
+  });
+
+  it('places no trigger by itself and chooses no type: a trigger is there only after the user takes it from the library', async () => {
+    const { user, backend } = await start();
+    await menu(user, 'Neue Strategie');
+    await menu(user, 'Speichern');
+    await waitFor(() => {
+      expect(backend.requests('POST', /strategies$/)).toHaveLength(1);
+    });
+    expect((backend.requests('POST', /strategies$/)[0]?.body as StrategyDocument).elements).toEqual([]);
+
+    await insertFromLibrary(user, /^Kerzenschluss/);
+
+    await waitFor(() => {
+      expect(elementNodes()).toHaveLength(1);
+    });
+    expect(nodeByTitle('Kerzenschluss')).toHaveTextContent('Kerzenschluss');
+  });
+
+  it('is checked without a finding: "Prüfen" of the empty strategy shows the number 0 and no text', async () => {
+    const { user, backend } = await start();
+    await menu(user, 'Neue Strategie');
+
+    await menu(user, 'Prüfen');
+
+    expect(await screen.findByText('Befunde: 0')).toBeInTheDocument();
+    expect(backend.requests('POST', /\/api\/v1\/check$/).length).toBeGreaterThan(0);
+    expect((backend.requests('POST', /\/api\/v1\/check$/)[0]?.body as StrategyDocument).elements).toEqual([]);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    const properties = screen.getByRole('complementary', { name: 'Eigenschaften' });
+    expect(within(properties).queryByText(/Auslöser/)).toBeNull();
   });
 
   it('is saved with POST the first time and with PUT afterwards, and always', async () => {
     const { user, backend } = await start();
     await menu(user, 'Neue Strategie');
+    await insertFromLibrary(user, /^Kerzenschluss/);
+    clickEmptyArea();
     await typeTitle(user, 'Meine Strategie');
 
     await menu(user, 'Speichern');
@@ -92,6 +135,8 @@ describe('a new strategy', () => {
     ];
     const { user } = await start({ findings: trigger });
     await menu(user, 'Neue Strategie');
+    await insertFromLibrary(user, /^Kerzenschluss/);
+    clickEmptyArea();
     expect(screen.queryByText(/^Befunde:/)).toBeNull();
 
     await menu(user, 'Speichern');
@@ -115,6 +160,7 @@ describe('a new strategy', () => {
       findings: (document) => [{ level: 'hint', code: 'trigger.unconnected', element: document.elements[0]!.id, subject: null, details: {} }],
     });
     await menu(user, 'Neue Strategie');
+    await insertFromLibrary(user, /^Kerzenschluss/);
 
     await menu(user, 'Prüfen');
 
@@ -126,7 +172,7 @@ describe('a new strategy', () => {
 
   it('is checked with "Prüfen": POST to the check with the open document, findings shown, nothing stored', async () => {
     const { user, backend } = await start({
-      findings: [{ level: 'error', code: 'strategy.no_trigger', element: null, subject: null, details: {} }],
+      findings: [{ level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} }],
     });
     await menu(user, 'Neue Strategie');
 
@@ -135,7 +181,7 @@ describe('a new strategy', () => {
     expect(await screen.findByText('Befunde: 1')).toBeInTheDocument();
     expect(backend.requests('POST', /\/api\/v1\/check$/).length).toBeGreaterThan(0);
     expect(backend.requests('POST', /strategies$/)).toHaveLength(0);
-    expect(screen.getByText('Die Strategie hat keinen Auslöser.')).toBeInTheDocument();
+    expect(screen.getByText('Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt.')).toBeInTheDocument();
   });
 });
 
@@ -285,7 +331,7 @@ describe('unsaved changes', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(titleField()).toHaveValue('Geändert');
-    expect(elementNodes()).toHaveLength(1);
+    expect(elementNodes()).toHaveLength(0);
   });
 
   it('Escape is the same as "Abbrechen"', async () => {
@@ -324,7 +370,7 @@ describe('unsaved changes', () => {
     await waitFor(() => {
       expect(titleField()).toHaveValue('');
     });
-    expect(elementNodes()).toHaveLength(1);
+    expect(elementNodes()).toHaveLength(0);
   });
 
   it('"Speichern" saves first and then does what was asked: opens the chosen strategy', async () => {
@@ -354,7 +400,7 @@ describe('unsaved changes', () => {
     expect(within(alert).getByText('The document is too large to be stored.')).toBeInTheDocument();
     await user.click(within(alert).getByRole('button', { name: 'OK' }));
     expect(titleField()).toHaveValue('Geändert');
-    expect(elementNodes()).toHaveLength(1);
+    expect(elementNodes()).toHaveLength(0);
     expect(backend.strategies.size).toBe(1);
   });
 });

@@ -216,9 +216,6 @@
       "forward": "forward reference",
       "cycle": "circular reference"
     },
-    "strategy": {
-      "no_trigger": "The strategy has no trigger."
-    },
     "trigger": {
       "unconnected": "The trigger is not connected to any element of the flow."
     },

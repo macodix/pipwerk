@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { loadTestcase, realTypes } from '../testing/fixtures';
+import { inventedTypes } from '../testing/inventedTypes';
 import type { ElementDocument, StrategyDocument } from '../document/types';
 import {
   assignManagement,
@@ -33,6 +34,25 @@ describe('connections', () => {
     const base = { source: calculation.id, target: owner.id, sourceHandle: 'weiter' as string | null };
 
     expect(isValidConnection(document, realTypes, { ...base, ...change })).toBe(false);
+  });
+
+  it('may not start at the output that holds the management, but at the other outputs of the element (specification 5.3)', () => {
+    const base = { source: owner.id, target: calculation.id };
+
+    expect(isValidConnection(document, realTypes, { ...base, sourceHandle: 'gestellt' })).toBe(false);
+    expect(isValidConnection(document, realTypes, { ...base, sourceHandle: 'nicht_gestellt' })).toBe(true);
+    expect(connect(document, realTypes, { ...base, sourceHandle: 'gestellt', targetHandle: null })).toBe(document);
+  });
+
+  it('knows that output from the description of an invented type, not from a name', () => {
+    const launch: ElementDocument = { ...calculation, id: 'launch', type: 'zz.launch' };
+    const next = { ...document, elements: [...document.elements, launch] };
+    const base = { source: 'launch', target: owner.id };
+
+    expect(isValidConnection(next, inventedTypes, { ...base, sourceHandle: 'sent' })).toBe(false);
+    expect(isValidConnection(next, inventedTypes, { ...base, sourceHandle: 'refused' })).toBe(true);
+    // Counter test: an output of the real type with the same name is no output of the invented type.
+    expect(isValidConnection(next, inventedTypes, { ...base, sourceHandle: 'gestellt' })).toBe(false);
   });
 
   it('may not start at an element of an unknown type', () => {

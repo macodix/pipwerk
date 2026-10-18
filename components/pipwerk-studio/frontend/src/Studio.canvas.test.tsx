@@ -98,12 +98,13 @@ describe('the element library', () => {
     const { user, backend } = await start();
     await menu(user, 'Neue Strategie');
 
+    expect(elementNodes()).toHaveLength(0);
     await user.click(entry(/^Bedingung/));
     expect(entry(/^Bedingung/)).toHaveAttribute('aria-selected', 'true');
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(elementNodes()).toHaveLength(2);
+      expect(elementNodes()).toHaveLength(1);
     });
     expect(nodeByTitle('Bedingung')).toBeInTheDocument();
     // The new element is selected: its property view is shown.
@@ -133,7 +134,7 @@ describe('the element library', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(elementNodes()).toHaveLength(3);
+      expect(elementNodes()).toHaveLength(2);
     });
     const saved = await lastSaved(user, backend);
     const emas = saved.elements.filter((element) => element.type === 'EMA');
@@ -151,7 +152,7 @@ describe('the element library', () => {
     drop(dataTransfer({ kind: 'type', typeId: 'flow.calculation' }), 640, 480);
 
     await waitFor(() => {
-      expect(elementNodes()).toHaveLength(2);
+      expect(elementNodes()).toHaveLength(1);
     });
     const saved = await lastSaved(user, backend);
     const calculation = saved.elements.find((element) => element.type === 'flow.calculation')!;
@@ -170,7 +171,7 @@ describe('the element library', () => {
     drop(dataTransfer({ kind: 'type', typeId: 'Regel' }), 10, 10);
 
     // An entry for rules does not belong on the drawing area either.
-    expect(elementNodes()).toHaveLength(1);
+    expect(elementNodes()).toHaveLength(0);
   });
 
   it('puts an element dropped into a frame into that management, and one dropped outside into the main flow', async () => {
@@ -214,7 +215,7 @@ describe('the element library', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(elementNodes()).toHaveLength(2);
+      expect(elementNodes()).toHaveLength(1);
     });
     expect(backend.requests('GET', /\/api\/v1\/indicators\/aaaaaaaa/)).toHaveLength(1);
     const saved = await lastSaved(user, backend);
@@ -243,7 +244,7 @@ describe('the element library', () => {
     const alert = await screen.findByRole('alertdialog', { name: 'Der Eintrag konnte nicht eingefügt werden.' });
     expect(within(alert).getByText(/cannot be read/)).toBeInTheDocument();
     await user.click(within(alert).getByRole('button', { name: 'OK' }));
-    expect(elementNodes()).toHaveLength(1);
+    expect(elementNodes()).toHaveLength(0);
   });
 });
 
@@ -279,8 +280,11 @@ describe('the elements on the drawing area', () => {
     const frame = document.querySelector<HTMLElement>('.react-flow__node-management')!;
     expect(frame).toHaveTextContent('Verwaltung: Order aufgeben');
     expect(within(nodeByTitle('Order aufgeben')).getByText('gestellt')).toBeInTheDocument();
-    // The owner has the connector at the bottom that carries the frame.
-    expect(nodeByTitle('Order aufgeben').querySelectorAll('.react-flow__handle.source')).toHaveLength(3);
+    // The frame hangs at the output "gestellt" (no connector of its own); no connection can start there.
+    const owner = nodeByTitle('Order aufgeben');
+    expect(owner.querySelectorAll('.react-flow__handle.source')).toHaveLength(2);
+    expect(owner.querySelector('.react-flow__handle[data-handleid="gestellt"]')).not.toHaveClass('connectable');
+    expect(owner.querySelector('.react-flow__handle[data-handleid="nicht_gestellt"]')).toHaveClass('connectable');
   });
 
   it('collapse and expand the frame; the elements stay in the document and the document is not changed', async () => {

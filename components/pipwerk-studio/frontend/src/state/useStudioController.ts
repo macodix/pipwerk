@@ -302,13 +302,13 @@ export function useStudioController() {
       } else if (action.kind === 'new') {
         if (types !== null) {
           strategyToken.current += 1;
-          dispatch({ type: 'loaded', document: newStrategy(types, language), persisted: false, findings: null });
+          dispatch({ type: 'loaded', document: newStrategy(), persisted: false, findings: null });
         }
       } else {
         await openById(action.id);
       }
     },
-    [language, openById, types],
+    [openById, types],
   );
 
   /** "Neue Strategie", "Schließen" and "Öffnen" ask first if there are unsaved changes. */

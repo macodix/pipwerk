@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import type { Finding } from './api/objects';
 import type { ElementDocument, StrategyDocument } from './document/types';
-import { clickNode, elementNodes, menu, nodeByTitle, openStored, waitForReady } from './testing/actions';
+import { clickEmptyArea, clickNode, elementNodes, menu, nodeByTitle, openStored, waitForReady } from './testing/actions';
 import { mockBackend, type MockBackendOptions } from './testing/backend';
 import { loadTestcase } from './testing/fixtures';
 import { inventedWire } from './testing/inventedTypes';
@@ -404,13 +404,13 @@ describe('rules', () => {
   it('shows a rule with its origin, parameters, expression and findings', async () => {
     const findings: Finding[] = [
       { level: 'error', code: 'rule.comparison_missing', element: null, subject: 'risiko', details: {} },
-      { level: 'hint', code: 'strategy.no_trigger', element: null, subject: null, details: {} },
+      { level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} },
     ];
     const { user } = await openStrategy({ strategies: [stored], findings });
     // The findings are known after the opening: the rule shows its own count, the strategy the other one.
     const view = properties();
     expect(await within(view).findByText('1 Fehler')).toBeInTheDocument();
-    expect(within(view).getAllByText('Die Strategie hat keinen Auslöser.')).toHaveLength(1);
+    expect(within(view).getAllByText('Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt.')).toHaveLength(1);
 
     await user.click(within(view).getByRole('button', { name: 'Regel risiko auswählen' }));
 
@@ -496,11 +496,63 @@ describe('properties built from types the interface cannot know', () => {
   it('offers the library and the new strategy from the descriptions', async () => {
     await inventedStrategy();
 
-    expect(nodeByTitle('zz.pulse (de)')).toBeInTheDocument();
+    // The new strategy is empty, whatever triggers the descriptions have.
+    expect(elementNodes()).toHaveLength(0);
     for (const name of ['zz.pulse (de)', 'zz.gate (de)', 'zz.launch (de)', 'zz.sweep (de)', 'Planet (de)', 'Zork (de)', 'Zz limit']) {
       expect(screen.getAllByRole('option', { name: new RegExp(`^${name.replace(/[.()]/g, '\\$&')}`) }).length).toBeGreaterThan(0);
     }
     expect(screen.queryByRole('option', { name: /Kerzenschluss/ })).toBeNull();
+  });
+
+  it('offers as time units the values the description lists, nothing else', async () => {
+    const { user } = await inventedStrategy();
+    await user.click(screen.getByRole('option', { name: /^zz\.pulse \(de\)/ }));
+    await user.keyboard('{Enter}');
+    await screen.findByRole('heading', { level: 2, name: 'zz.pulse (de)' });
+    const view = properties();
+
+    await user.selectOptions(within(view).getByLabelText('Bindungsart von period (de)'), 'fester Wert');
+
+    const select = within(view).getByRole('combobox', { name: 'period (de)' });
+    expect(within(select).getAllByRole('option').map((option) => option.textContent)).toEqual(['bitte wählen', 'QQ1', 'QQ7']);
+    expect(within(select).queryByRole('option', { name: 'H1' })).toBeNull();
+  });
+
+  it('offers the same time units for a strategy parameter of the datatype time unit', async () => {
+    const { user } = await inventedStrategy();
+    clickEmptyArea();
+    await user.click(screen.getByRole('button', { name: 'Parameter hinzufügen' }));
+    const view = properties();
+    await user.selectOptions(within(view).getByRole('combobox', { name: 'Datentyp von parameter' }), 'Zeiteinheit');
+
+    const select = within(view).getByRole('combobox', { name: 'Wert von parameter' });
+    expect(within(select).getAllByRole('option').map((option) => option.textContent)).toEqual(['bitte wählen', 'QQ1', 'QQ7']);
+  });
+
+  it('gives a name field to the element whose description says it is named, and to no other', async () => {
+    const { user } = await inventedStrategy();
+    await user.click(screen.getByRole('option', { name: /^zz\.gate \(de\)/ }));
+    await user.keyboard('{Enter}');
+    await screen.findByRole('heading', { level: 2, name: 'zz.gate (de)' });
+    expect(within(properties()).getByLabelText('Name')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('option', { name: /^zz\.sweep \(de\)/ }));
+    await user.keyboard('{Enter}');
+    await screen.findByRole('heading', { level: 2, name: 'zz.sweep (de)' });
+    expect(within(properties()).queryByLabelText('Name')).toBeNull();
+  });
+
+  it('hangs the frame at the output of the description and lets no connection start there', async () => {
+    const { user } = await inventedStrategy();
+    await user.click(screen.getByRole('option', { name: /^zz\.launch \(de\)/ }));
+    await user.keyboard('{Enter}');
+    await screen.findByRole('heading', { level: 2, name: 'zz.launch (de)' });
+
+    const owner = nodeByTitle('zz.launch (de)');
+    expect(owner.querySelectorAll('.react-flow__handle.source')).toHaveLength(2);
+    expect(owner.querySelector('.react-flow__handle[data-handleid="sent"]')).not.toHaveClass('connectable');
+    expect(owner.querySelector('.react-flow__handle[data-handleid="refused"]')).toHaveClass('connectable');
+    expect(document.querySelectorAll('.react-flow__node-management')).toHaveLength(1);
   });
 
   it('builds one input per parameter by its datatype, with the kinds of binding it allows', async () => {

@@ -14,7 +14,7 @@ import { NODE_TOP, OUTPUT_ROW_HEIGHT } from './layout';
 export function ElementNode({ id, data }: NodeProps<ElementFlowNode>) {
   const { t } = useTranslation();
   const updateNodeInternals = useUpdateNodeInternals();
-  const signature = `${data.hasInput}|${data.isOwner}|${data.outputs.map((output) => output.id).join('|')}`;
+  const signature = `${data.hasInput}|${data.managementHandle ?? ''}|${data.outputs.map((output) => output.id).join('|')}`;
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -51,7 +51,7 @@ export function ElementNode({ id, data }: NodeProps<ElementFlowNode>) {
           <Handle type="source" id={output.id} position={Position.Right} isConnectable={output.connectable} />
         </div>
       ))}
-      {data.isOwner ? (
+      {data.managementHandle === MANAGEMENT_HANDLE ? (
         <Handle type="source" id={MANAGEMENT_HANDLE} position={Position.Bottom} isConnectable={false} />
       ) : null}
     </div>

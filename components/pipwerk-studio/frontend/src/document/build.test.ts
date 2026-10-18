@@ -13,8 +13,8 @@ import {
 } from './build';
 
 describe('newStrategy', () => {
-  it('is an empty strategy with one trigger that has no time unit (specification 5.2)', () => {
-    const document = newStrategy(realTypes, 'de');
+  it('is an empty strategy without any element: the user places the triggers (specification 5.2)', () => {
+    const document = newStrategy();
 
     expect(document).toMatchObject({
       format: 'pipwerk.strategy',
@@ -26,30 +26,11 @@ describe('newStrategy', () => {
       connections: [],
     });
     expect(document.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-    expect(document.elements).toHaveLength(1);
-    expect(document.elements[0]).toMatchObject({
-      type: 'trigger.candle_close',
-      title: 'Kerzenschluss',
-      parameters: {},
-      management_of: null,
-    });
+    expect(document.elements).toEqual([]);
   });
 
-  it('names the trigger in the language', () => {
-    expect(newStrategy(realTypes, 'en').elements[0]?.title).toBe('Candle close');
-  });
-
-  it('takes the trigger from the type descriptions: a trigger with a required time unit, whatever it is called', () => {
-    const document = newStrategy(inventedTypes, 'de');
-
-    expect(document.elements.map((element) => element.type)).toEqual(['zz.pulse']);
-    expect(document.elements[0]?.title).toBe('zz.pulse (de)');
-  });
-
-  it('has no element if the descriptions have no trigger', () => {
-    const none = { ...inventedTypes, list: inventedTypes.list.filter((type) => type.kind !== 'trigger') };
-
-    expect(newStrategy(none, 'de').elements).toEqual([]);
+  it('gets a new identifier each time', () => {
+    expect(newStrategy().id).not.toBe(newStrategy().id);
   });
 });
 

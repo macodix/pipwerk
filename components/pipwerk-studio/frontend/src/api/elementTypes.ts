@@ -95,7 +95,8 @@ export type PropertyDescription = {
   objectType: string | null;
 };
 
-export type OutputDescription = { id: string; label: Label };
+/** An output of an element of the flow. The management of the element hangs at the output with `holdsManagement`. */
+export type OutputDescription = { id: string; label: Label; holdsManagement: boolean };
 
 export type TypeDescription = {
   id: string;
@@ -106,6 +107,10 @@ export type TypeDescription = {
   parameters: ParameterDescription[];
   properties: PropertyDescription[];
   outputs: OutputDescription[];
+  /** An element of the flow has a name under which expressions address its result. */
+  named: boolean;
+  /** An object of the application: expressions address the strategy parameters through it. */
+  strategyParameters: boolean;
   rulesAllowed: boolean;
   onCanvas: boolean;
   builtin: boolean;
@@ -133,6 +138,11 @@ export type ElementTypesResponse = {
   templates: TemplateDocument[];
   functions: FunctionDescription[];
 };
+
+/** A flag that a description may leave out: it then counts as not set. */
+function optionalBoolean(value: unknown, what: string): boolean {
+  return value === undefined ? false : expectBoolean(value, what);
+}
 
 function parseLabel(value: unknown, what: string): Label {
   const record = expectRecord(value, what);
@@ -239,8 +249,11 @@ function parseType(value: unknown, what: string): TypeDescription {
       return {
         id: expectString(output.id, `${what}.outputs[${index}].id`),
         label: parseLabel(output.label, `${what}.outputs[${index}].label`),
+        holdsManagement: optionalBoolean(output.holds_management, `${what}.outputs[${index}].holds_management`),
       };
     }),
+    named: optionalBoolean(record.named, `${what}.named`),
+    strategyParameters: optionalBoolean(record.strategy_parameters, `${what}.strategy_parameters`),
     rulesAllowed: expectBoolean(record.rules_allowed, `${what}.rules_allowed`),
     onCanvas: expectBoolean(record.on_canvas, `${what}.on_canvas`),
     builtin: expectBoolean(record.builtin, `${what}.builtin`),

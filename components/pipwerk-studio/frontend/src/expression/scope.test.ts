@@ -276,10 +276,50 @@ describe('names in the language of the interface', () => {
 
 describe('names of types it cannot know', () => {
   it('are offered from the descriptions too', () => {
-    const empty: StrategyDocument = { ...strategy, elements: [], rules: [] };
+    const empty: StrategyDocument = { ...strategy, elements: [], rules: [], parameters: [] };
     const members = rootMembers(empty, inventedTypes, 'en', { kind: 'element', elementId: 'x' });
 
     expect(members.map((member) => member.id)).toEqual(['Planet']);
     expect(findMember(members, 'Planet')?.children().map((member) => member.id)).toEqual(['mass']);
+  });
+
+  it('offer the strategy parameters after the object that the description marks for them, whatever it is called', () => {
+    const withParameters: StrategyDocument = {
+      ...strategy,
+      elements: [],
+      rules: [],
+      parameters: [
+        { name: 'speed', datatype: 'number', value: 1 },
+        { name: 'x', datatype: 'text', value: 'a' },
+      ],
+    };
+    const members = rootMembers(withParameters, inventedTypes, 'en', { kind: 'element', elementId: 'x' });
+    const planet = findMember(members, 'Planet')!;
+
+    expect(planet.children().map((member) => member.id)).toEqual(['mass', 'speed', 'x']);
+    expect(planet.children().find((member) => member.id === 'speed')?.detail).toBe('number');
+    // Counter test: the same names of the strategy are not offered after an object that is not marked.
+    const withoutMark = {
+      ...inventedTypes,
+      list: inventedTypes.list.map((type) => (type.id === 'Planet' ? { ...type, strategyParameters: false } : type)),
+    };
+    const unmarked = rootMembers(withParameters, withoutMark, 'en', { kind: 'element', elementId: 'x' });
+    expect(findMember(unmarked, 'Planet')?.children().map((member) => member.id)).toEqual(['mass']);
+  });
+});
+
+describe('strategy parameters of the real descriptions', () => {
+  it('follow "Strategie" and a point, from the parameters of the open strategy', () => {
+    // The object has properties of its own too (the description lists them); the strategy parameters come with them.
+    expect(ids('Strategie.')).toEqual(expect.arrayContaining(strategy.parameters.map((parameter) => parameter.name)));
+    expect(strategy.parameters.length).toBeGreaterThan(0);
+    expect(ids('Strategie.zeit')).toEqual(['zeiteinheit']);
+  });
+
+  it('follow a point after a change of the parameters', () => {
+    const changed: StrategyDocument = { ...strategy, parameters: [...strategy.parameters, { name: 'neu', datatype: 'number', value: 2 }] };
+    const members = rootMembers(changed, realTypes, 'de', { kind: 'element', elementId: strategy.elements[0]!.id });
+
+    expect(findMember(members, 'Strategie')?.children().map((member) => member.id)).toContain('neu');
   });
 });

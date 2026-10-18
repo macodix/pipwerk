@@ -123,7 +123,7 @@ describe('saving', () => {
   });
 
   it('shows the findings of a check', () => {
-    const finding = { level: 'error' as const, code: 'strategy.no_trigger', element: null, subject: null, details: {} };
+    const finding = { level: 'error' as const, code: 'flow.no_order_reachable', element: null, subject: null, details: {} };
 
     expect(run(opened(), { type: 'checked', findings: [finding] }).findings).toEqual([finding]);
   });

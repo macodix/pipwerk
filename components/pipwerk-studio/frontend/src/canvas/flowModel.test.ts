@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ElementDocument, StrategyDocument } from '../document/types';
 import { loadTestcase, realTypes } from '../testing/fixtures';
+import { inventedTypes } from '../testing/inventedTypes';
 import {
   absolutePosition,
   documentToFlow,
@@ -86,8 +87,13 @@ describe.each(['str-01', 'str-03'] as const)('document → drawing area → docu
     expect(frame.data.ownerId).toBe(owner.id);
     expect(frame.id).toBe(frameNodeId(owner.id));
     const frameEdge = flow.edges.find((edge) => edge.data?.kind === 'management');
-    expect(frameEdge).toMatchObject({ source: owner.id, target: frame.id, sourceHandle: MANAGEMENT_HANDLE });
-    expect(elementNode(flow, owner.id).data.isOwner).toBe(true);
+    // The frame hangs at the output that the type description names, not at a connector of its own.
+    expect(frameEdge).toMatchObject({ source: owner.id, target: frame.id, sourceHandle: 'gestellt' });
+    const ownerNode = elementNode(flow, owner.id);
+    expect(ownerNode.data.isOwner).toBe(true);
+    expect(ownerNode.data.managementHandle).toBe('gestellt');
+    expect(ownerNode.data.outputs.find((output) => output.id === 'gestellt')?.connectable).toBe(false);
+    expect(ownerNode.data.outputs.filter((output) => output.connectable).map((output) => output.id)).toEqual(['nicht_gestellt']);
     // The elements of the management are inside the frame, the others are not.
     for (const element of document.elements) {
       const node = elementNode(flow, element.id);
@@ -437,6 +443,51 @@ describe('unknown types', () => {
       x: 1,
       y: 2,
     });
+  });
+});
+
+describe('the management of invented types', () => {
+  const base = loadTestcase('str-03');
+  const template = base.elements[0]!;
+  const launch: ElementDocument = { ...template, id: 'launch', type: 'zz.launch', title: 'Launch', management_of: null, rules: [] };
+  const inner: ElementDocument = { ...template, id: 'inner', type: 'zz.sweep', title: 'Sweep', management_of: 'launch', rules: [] };
+  const plain: ElementDocument = { ...template, id: 'plain', type: 'zz.sweep', title: 'Plain', management_of: null, rules: [] };
+  const document: StrategyDocument = { ...base, elements: [launch, inner, plain], connections: [] };
+  const inventedContext = context({ types: inventedTypes });
+
+  it('hangs the frame at the output the description names, which is not the first one', () => {
+    const flow = documentToFlow(document, inventedContext);
+
+    expect(flow.edges.find((edge) => edge.data?.kind === 'management')).toMatchObject({
+      source: 'launch',
+      target: frameNodeId('launch'),
+      sourceHandle: 'sent',
+    });
+    const node = elementNode(flow, 'launch');
+    expect(node.data.managementHandle).toBe('sent');
+    expect(node.data.outputs.map((output) => [output.id, output.connectable])).toEqual([
+      ['refused', true],
+      ['sent', false],
+    ]);
+    expect(elementNode(flow, 'inner').parentId).toBe(frameNodeId('launch'));
+    expect(flowToDocument(document, flow)).toBe(document);
+  });
+
+  it('uses a connector of its own for an element whose type has no such output but that another element names', () => {
+    const named: StrategyDocument = { ...document, elements: [launch, inner, { ...plain, management_of: 'inner' }] };
+
+    const flow = documentToFlow(named, inventedContext);
+
+    const edge = flow.edges.find((candidate) => candidate.data?.kind === 'management' && candidate.source === 'inner');
+    expect(edge).toMatchObject({ target: frameNodeId('inner'), sourceHandle: MANAGEMENT_HANDLE });
+    expect(elementNode(flow, 'inner').data.managementHandle).toBe(MANAGEMENT_HANDLE);
+    expect(elementNode(flow, 'plain').data.managementHandle).toBeNull();
+  });
+
+  it('has no frame for a type without an output that holds the management', () => {
+    const flow = documentToFlow({ ...document, elements: [plain] }, inventedContext);
+
+    expect(flow.nodes.filter(isFrameNode)).toEqual([]);
   });
 });
 

@@ -9,6 +9,7 @@ import {
   updateStrategyParameter,
 } from '../document/ops';
 import type { StrategyParameter } from '../document/types';
+import { timeUnitChoices } from '../model/typeIndex';
 import { FindingsList } from '../findings/FindingsList';
 import { useStudio } from '../state/StudioContext';
 import { ChoicesInput } from './ChoicesInput';
@@ -46,7 +47,7 @@ function startValue(datatype: DataType, choices: readonly string[]): StrategyPar
 /** The property view of the strategy (item 5 of the order): title, description, parameters, rules and findings. */
 export function StrategyProperties() {
   const { t } = useTranslation();
-  const { document, language, findings, edit } = useStudio();
+  const { document, types, language, findings, edit } = useStudio();
   const titleId = useId();
   const descriptionId = useId();
 
@@ -131,7 +132,11 @@ export function StrategyProperties() {
                   <ValueInput
                     datatype={parameter.datatype}
                     value={parameter.value}
-                    choices={choices.map((id) => ({ id, label: { de: id, en: id } }))}
+                    choices={
+                      parameter.datatype === 'time_unit'
+                        ? timeUnitChoices(types)
+                        : choices.map((id) => ({ id, label: { de: id, en: id } }))
+                    }
                     language={language}
                     label={t('properties.parameterValue', { name: parameter.name })}
                     onChange={(value) => {

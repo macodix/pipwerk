@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import type { Choice, DataType, Scalar } from '../api/elementTypes';
 import type { SupportedLanguage } from '../i18n';
-import { TIME_UNITS, timeUnitLabel } from '../model/timeUnits';
 
 type ValueInputProps = {
   datatype: DataType;
@@ -127,6 +126,8 @@ export function ValueInput(props: ValueInputProps) {
           }}
         />
       );
+    // The values of a time unit are listed in the type descriptions like those of a choice.
+    case 'time_unit':
     case 'choice':
       return (
         <select
@@ -145,28 +146,6 @@ export function ValueInput(props: ValueInputProps) {
           {choices.map((choice) => (
             <option key={choice.id} value={choice.id}>
               {choice.label[language]}
-            </option>
-          ))}
-        </select>
-      );
-    case 'time_unit':
-      return (
-        <select
-          aria-label={label}
-          value={typeof value === 'string' ? value : ''}
-          disabled={disabled}
-          onChange={(event) => {
-            onChange(event.target.value);
-          }}
-        >
-          {typeof value !== 'string' || !TIME_UNITS.includes(value) ? (
-            <option value={typeof value === 'string' ? value : ''}>
-              {typeof value === 'string' && value !== '' ? value : t('properties.choose')}
-            </option>
-          ) : null}
-          {TIME_UNITS.map((unit) => (
-            <option key={unit} value={unit}>
-              {timeUnitLabel(unit)}
             </option>
           ))}
         </select>

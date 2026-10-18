@@ -119,7 +119,7 @@ function instanceMember(instance: InstanceDocument, types: TypeIndex, language: 
   };
 }
 
-function applicationMembers(types: TypeIndex, language: SupportedLanguage): Member[] {
+function applicationMembers(document: StrategyDocument, types: TypeIndex, language: SupportedLanguage): Member[] {
   const order = commonOrderObject(types);
   return types.list
     .filter((type) => type.kind === 'application_object')
@@ -129,6 +129,17 @@ function applicationMembers(types: TypeIndex, language: SupportedLanguage): Memb
       detail: labelText(type.name, language),
       children: () => {
         const members = propertyMembers(type, types, language);
+        if (type.strategyParameters) {
+          // The object that stands for the strategy: after the point come the strategy parameters (field `strategy_parameters`).
+          members.push(
+            ...document.parameters.map((parameter) => ({
+              id: parameter.name,
+              label: parameter.name,
+              detail: parameter.datatype,
+              children: () => [],
+            })),
+          );
+        }
         if (type !== order) {
           return members;
         }
@@ -151,7 +162,7 @@ function strategyMembers(document: StrategyDocument, types: TypeIndex, language:
       members.push(instanceMember(element.instance, types, language));
     }
     const type = types.byId.get(element.type);
-    if (element.name !== null && element.name !== '' && type !== undefined && type.properties.length > 0) {
+    if (element.name !== null && element.name !== '' && type !== undefined && type.named) {
       members.push({
         id: element.name,
         label: element.name,
@@ -195,7 +206,7 @@ export function rootMembers(
   language: SupportedLanguage,
   context: ExpressionContext,
 ): Member[] {
-  const application = applicationMembers(types, language);
+  const application = applicationMembers(document, types, language);
   if (context.kind === 'element') {
     return dedupe([...strategyMembers(document, types, language), ...application]);
   }
