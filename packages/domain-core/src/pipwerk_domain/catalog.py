@@ -64,8 +64,8 @@ def _choice(de: str, en: str | None = None) -> Choice:
     return Choice(identifier_from_name(de), _label(de, en))
 
 
-def _out(de: str, en: str) -> OutputDescription:
-    return OutputDescription(identifier_from_name(de), _label(de, en))
+def _out(de: str, en: str, *, management: bool = False) -> OutputDescription:
+    return OutputDescription(identifier_from_name(de), _label(de, en), management)
 
 
 def _par(
@@ -211,6 +211,7 @@ def _flow() -> list[TypeDescription]:
             properties=(_prop("Ergebnis", "Result", DataType.BOOLEAN, must=True),),
             outputs=(_out("wahr", "true"), _out("falsch", "false")),
             on_canvas=True,
+            named=True,
         ),
         TypeDescription(
             FLOW_CALCULATION,
@@ -224,6 +225,7 @@ def _flow() -> list[TypeDescription]:
             properties=(_prop("Ergebnis", "Result", DataType.EXPRESSION, must=True),),
             outputs=next_output,
             on_canvas=True,
+            named=True,
         ),
         TypeDescription(
             FLOW_SET_PARAMETER,
@@ -265,7 +267,10 @@ def _flow() -> list[TypeDescription]:
                     bindings=_FIXED_ONLY,
                 ),
             ),
-            outputs=(_out("gestellt", "placed"), _out("nicht gestellt", "not placed")),
+            outputs=(
+                _out("gestellt", "placed", management=True),
+                _out("nicht gestellt", "not placed"),
+            ),
             rules_allowed=True,
             on_canvas=True,
         ),
@@ -561,6 +566,7 @@ def _application_objects() -> list[TypeDescription]:
                 _prop("wartende Orders", "Pending orders", DataType.INTEGER, must=True),
                 _prop("offene Positionen", "Open positions", DataType.INTEGER, must=True),
             ),
+            strategy_parameters=True,
         ),
     ]
 

@@ -85,26 +85,32 @@ def test_findings_have_level_code_element_subject_and_details() -> None:
     }
 
 
-# Strategie ohne Auslöser ----------------------------------------------------------------
+# Strategie ohne Auslöser (kein Befund, Spezifikation 3.6, req-fach-015) -------------------------
 
 
-def test_strategy_without_trigger() -> None:
+def test_an_empty_strategy_has_no_finding() -> None:
+    assert check(strategy_with()) == []
+
+
+def test_a_strategy_without_trigger_has_no_finding_about_the_missing_trigger() -> None:
     strategy = strategy_with(place_order(2))
-    found = only(check(strategy), fc.STRATEGY_NO_TRIGGER)
-    assert len(found) == 1
-    assert found[0].level is Level.ERROR
-    assert found[0].element is None
+    found = codes(check(strategy))
+    assert "strategy.no_trigger" not in found
+    # everything else stays: the first element of a flow without trigger has no incoming connection
+    assert found == [fc.FLOW_NO_INCOMING, fc.FLOW_NO_ORDER_REACHABLE]
 
 
-def test_a_trigger_of_a_management_is_no_trigger_of_the_strategy() -> None:
+def test_the_finding_strategy_no_trigger_does_not_exist() -> None:
+    assert not hasattr(fc, "STRATEGY_NO_TRIGGER")
+
+
+def test_a_trigger_of_a_management_does_not_start_the_main_flow() -> None:
     strategy = with_management()
     strategy.elements.remove(strategy.elements[0])
     strategy.connections.pop(0)
-    assert only(check(strategy), fc.STRATEGY_NO_TRIGGER)
-
-
-def test_strategy_with_a_trigger_has_the_trigger() -> None:
-    assert only(check(valid_strategy()), fc.STRATEGY_NO_TRIGGER) == []
+    found = check(strategy)
+    assert only(found, fc.FLOW_NO_ORDER_REACHABLE)  # no trigger of the main flow
+    assert only(found, fc.FLOW_NO_INCOMING)[0].element == uid(2)
 
 
 # Auslöser ohne Verbindung --------------------------------------------------------------
@@ -840,6 +846,21 @@ def test_no_order_element_reachable_is_a_hint() -> None:
     assert found[0].level is Level.HINT
 
 
+def test_no_order_hint_for_an_empty_strategy() -> None:
+    assert only(check(strategy_with()), fc.FLOW_NO_ORDER_REACHABLE) == []
+
+
+def test_no_order_hint_for_elements_without_trigger() -> None:
+    strategy = strategy_with(condition(5, "TRUE()"))
+    found = only(check(strategy), fc.FLOW_NO_ORDER_REACHABLE)
+    assert len(found) == 1
+    assert found[0].level is Level.HINT
+
+
+def test_no_order_hint_for_a_strategy_with_a_trigger_only() -> None:
+    assert only(check(strategy_with(trigger(1))), fc.FLOW_NO_ORDER_REACHABLE)
+
+
 def test_an_order_element_that_is_not_connected_is_not_reachable() -> None:
     strategy = valid_strategy()
     strategy.connections.clear()
@@ -959,6 +980,158 @@ def test_candle_in_a_rule_of_the_strategy_with_a_tick_trigger() -> None:
     assert [(item.element, item.subject) for item in found] == [(None, "r")]
 
 
+def candle_found(strategy: Strategy) -> list[tuple[str | None, str | None]]:
+    return [(item.element, item.subject) for item in only(check(strategy), fc.CANDLE_NO_INSTANCE)]
+
+
+def candle_instance(number: int) -> Element:
+    return element(
+        number,
+        "Kerze",
+        instance=Instance(
+            name="kerze_h1",
+            object_type="Kerze",
+            origin=Origin("Kerze"),
+            parameter_values={"zeiteinheit": fixed("h1")},
+        ),
+    )
+
+
+def test_candle_at_an_element_without_trigger_in_the_main_flow() -> None:
+    strategy = strategy_with(condition(5, "Kerze.schluss > 1"))
+    assert candle_found(strategy) == [(uid(5), None)]
+    # counter sample: a candle close trigger reaches the element
+    strategy = strategy_with(
+        trigger(1), condition(5, "Kerze.schluss > 1"), connections=[connect(1, "weiter", 5)]
+    )
+    assert candle_found(strategy) == []
+    # counter sample: a candle instance with a time unit
+    strategy = strategy_with(condition(5, "Kerze.schluss > 1"), candle_instance(6))
+    assert candle_found(strategy) == []
+
+
+def test_candle_in_a_rule_of_an_element_without_trigger_in_the_main_flow() -> None:
+    from tests.helpers import rule
+
+    order = place_order(2, rules=[rule("r", "Kerze.schluss > 0")])
+    assert candle_found(strategy_with(order)) == [(uid(2), "r")]
+    reached = place_order(2, rules=[rule("r", "Kerze.schluss > 0")])
+    strategy = strategy_with(trigger(1), reached, connections=[connect(1, "weiter", 2)])
+    assert candle_found(strategy) == []
+
+
+def management_with(management_elements: list[Element]) -> Strategy:
+    """Main flow with a candle close trigger and an order, plus elements of its management."""
+    strategy = valid_strategy()
+    strategy.elements.extend(management_elements)
+    return strategy
+
+
+def test_candle_in_a_management_without_own_trigger() -> None:
+    strategy = management_with([condition(4, "Kerze.schluss > 0", management_of=uid(2))])
+    # the main flow has the candle close trigger and does not reach the management
+    assert candle_found(strategy) == [(uid(4), None)]
+    # counter sample: the management has a candle close trigger of its own
+    strategy = management_with(
+        [trigger(3, management_of=uid(2)), condition(4, "Kerze.schluss > 0", management_of=uid(2))]
+    )
+    strategy.connections.append(connect(3, "weiter", 4))
+    assert candle_found(strategy) == []
+
+
+def test_candle_in_a_rule_of_an_element_of_a_management_without_trigger() -> None:
+    from tests.helpers import rule
+
+    strategy = management_with(
+        [place_order(4, management_of=uid(2), rules=[rule("r", "Kerze.schluss > 0")])]
+    )
+    assert candle_found(strategy) == [(uid(4), "r")]
+
+
+def test_candle_in_a_management_with_a_tick_trigger_next_to_a_candle_close_main_flow() -> None:
+    strategy = management_with(
+        [
+            element(3, catalog.TRIGGER_TICK, management_of=uid(2)),
+            condition(4, "Kerze.schluss > 0", management_of=uid(2)),
+        ]
+    )
+    strategy.connections.append(connect(3, "weiter", 4))
+    assert candle_found(strategy) == [(uid(4), None)]
+
+
+def test_candle_at_an_element_reached_by_two_kinds_of_trigger() -> None:
+    strategy = candle_strategy(catalog.TRIGGER_CANDLE_CLOSE)
+    strategy.elements.append(element(7, catalog.TRIGGER_TICK))
+    strategy.connections.append(connect(7, "weiter", 5))
+    assert candle_found(strategy) == [(uid(5), None)]
+
+
+def strategy_rule_case(*triggers: Element, instance_on_canvas: bool = False) -> Strategy:
+    from tests.helpers import rule
+
+    strategy = strategy_with(*triggers)
+    strategy.rules.append(rule("r", "Kerze.schluss > 0"))
+    if instance_on_canvas:
+        strategy.elements.append(candle_instance(60))
+    return strategy
+
+
+def test_candle_in_a_rule_of_the_strategy_without_trigger() -> None:
+    assert candle_found(strategy_rule_case()) == [(None, "r")]
+    # counter sample: only candle close triggers
+    assert candle_found(strategy_rule_case(trigger(1))) == []
+    # counter sample: a candle instance with a time unit
+    assert candle_found(strategy_rule_case(instance_on_canvas=True)) == []
+
+
+def test_candle_in_a_rule_of_the_strategy_with_a_tick_trigger_in_a_management() -> None:
+    def with_management_trigger(management_trigger: Element) -> Strategy:
+        # str-01: the main flow has candle close, a management has its own trigger
+        strategy = strategy_rule_case()
+        strategy.elements.extend(
+            [trigger(1), place_order(2), management_trigger, place_order(4, management_of=uid(2))]
+        )
+        strategy.connections += [connect(1, "weiter", 2), connect(3, "weiter", 4)]
+        return strategy
+
+    tick = element(3, catalog.TRIGGER_TICK, management_of=uid(2))
+    assert candle_found(with_management_trigger(tick)) == [(None, "r")]
+    # counter sample: candle close triggers in main flow and management
+    assert candle_found(with_management_trigger(trigger(3, management_of=uid(2)))) == []
+
+
+def test_candle_at_an_instance_on_the_canvas() -> None:
+    def instance_element() -> Element:
+        return element(
+            50,
+            "EMA",
+            instance=Instance(
+                name="ema_kerze",
+                object_type="EMA",
+                origin=Origin("EMA"),
+                parameter_values={
+                    "zeiteinheit": fixed("h1"),
+                    "periode": expr("Kerze.schluss"),
+                },
+            ),
+        )
+
+    # no trigger
+    assert candle_found(strategy_with(instance_element())) == [(uid(50), "ema_kerze")]
+    # a tick trigger
+    tick = strategy_with(element(1, catalog.TRIGGER_TICK), instance_element())
+    assert candle_found(tick) == [(uid(50), "ema_kerze")]
+    # counter sample: only candle close
+    assert candle_found(strategy_with(trigger(1), instance_element())) == []
+    # counter sample: a candle instance with a time unit
+    assert (
+        candle_found(
+            strategy_with(element(1, catalog.TRIGGER_TICK), instance_element(), candle_instance(51))
+        )
+        == []
+    )
+
+
 # Verbindungen und Verwaltungen (weitere Befunde) --------------------------------------------------
 
 
@@ -1014,7 +1187,7 @@ def test_invalid_names() -> None:
 def test_level_of_each_finding_code() -> None:
     hints = {fc.FLOW_NO_ORDER_REACHABLE, fc.RULE_UNRESOLVED_NAME}
     assert Level.HINT.value == "hint"
-    assert all(code not in hints for code in (fc.STRATEGY_NO_TRIGGER, fc.NAME_DUPLICATE))
+    assert all(code not in hints for code in (fc.FLOW_NO_INCOMING, fc.NAME_DUPLICATE))
 
 
 # Strategien der größten zulässigen Größe ---------------------------------------------------------

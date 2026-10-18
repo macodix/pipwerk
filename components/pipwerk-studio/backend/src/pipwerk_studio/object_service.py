@@ -82,6 +82,10 @@ class ObjectUnreadableError(ObjectServiceError):
     """The file of the object cannot be read or does not fit the document schema."""
 
 
+class ObjectKindConflictError(ObjectServiceError):
+    """A file of the same identifier but another kind lies in the object directory."""
+
+
 class BuiltinObjectError(ObjectServiceError):
     """The object is a delivered template; it cannot be changed or deleted (E6)."""
 
@@ -139,6 +143,8 @@ class SavedObject:
     object_id: str
     text: str
     findings: list[Finding]
+    created: bool = True
+    """Whether the file was created (``True``) or an existing file was replaced."""
 
 
 @dataclass(frozen=True)
@@ -344,10 +350,15 @@ class ObjectService:
     def replace(self, kind: str, object_id: str, document: AnyDocument) -> SavedObject:
         """Save a document under the identifier of the path, with the findings of the check.
 
+        The file is written in the current object directory also if no file with this
+        identifier lies there (``created`` of the result tells it); a missing directory is
+        created. A file of the same identifier of another kind is not touched and
+        nothing is written.
+
         Raises ``BuiltinObjectError``, ``DocumentKindError``, ``DocumentIdentifierError``,
-        ``ObjectNotFoundError``, ``ObjectUnreadableError``, ``DocumentError`` (the text
-        cannot be written), ``DocumentTooLargeError``, ``ObjectDirectoryMissingError`` and
-        ``ObjectWriteFailedError``.
+        ``ObjectUnreadableError``, ``ObjectKindConflictError``, ``DocumentError`` (the
+        text cannot be written), ``DocumentTooLargeError``, ``ObjectDirectoryMissingError``
+        and ``ObjectWriteFailedError``.
         """
         checked_kind = check_object_kind(kind)
         object_id = check_object_id(object_id)
@@ -359,9 +370,21 @@ class ObjectService:
             raise DocumentIdentifierError("The identifier of the document differs from the path.")
         text, findings = self._prepare(document)
         with self._store.lock:
-            self._require(checked_kind, object_id)  # exists and is readable
+            loaded = self._load(checked_kind, object_id)
+            if loaded.status == "unreadable":
+                raise ObjectUnreadableError("The object file cannot be read.")
+            created = loaded.status == "missing"
+            if created:
+                for other in OBJECT_KINDS:
+                    # a file under this identifier of any content blocks saving
+                    if other != checked_kind and (
+                        self._store.read_bytes(other, object_id, 0).status != "missing"
+                    ):
+                        raise ObjectKindConflictError(
+                            "An object of another kind has this identifier."
+                        )
             self._write(checked_kind, object_id, text)
-        return SavedObject(object_id, text, findings)
+        return SavedObject(object_id, text, findings, created)
 
     def delete(self, kind: str, object_id: str) -> None:
         """Delete an object.

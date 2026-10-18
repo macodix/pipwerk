@@ -126,10 +126,16 @@ class PropertyDescription:
 
 @dataclass(frozen=True, slots=True)
 class OutputDescription:
-    """An output of a flow element, for example ``wahr`` and ``falsch``."""
+    """An output of a flow element, for example ``wahr`` and ``falsch``.
+
+    ``holds_management`` states that the management of the element hangs at this output
+    (specification 3.1, 3.3: the output ``gestellt`` of "Order aufgeben"). At most one output
+    of a type has it.
+    """
 
     id: str
     label: Label
+    holds_management: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +155,12 @@ class TypeDescription:
     builtin: bool = True
     by_user: bool = True
     """Whether the user can choose the type, for example as order type of "Order aufgeben"."""
+    named: bool = False
+    """Whether an element of the flow carries a name under which expressions address its
+    result (condition, calculation)."""
+    strategy_parameters: bool = False
+    """For objects of the application: whether expressions over this object address the
+    strategy parameters (``Strategie``)."""
 
     def parameter(self, parameter_id: str) -> ParameterDescription | None:
         for item in self.parameters:
@@ -165,6 +177,13 @@ class TypeDescription:
     def output(self, output_id: str) -> OutputDescription | None:
         for item in self.outputs:
             if item.id == output_id:
+                return item
+        return None
+
+    def management_output(self) -> OutputDescription | None:
+        """The output at which the management of the element hangs, if any."""
+        for item in self.outputs:
+            if item.holds_management:
                 return item
         return None
 

@@ -329,7 +329,7 @@ def test_removed_trigger(name: str) -> None:
     strategy.elements.remove(trigger)
     strategy.connections = [item for item in strategy.connections if item.source != trigger.id]
     codes = {item.code for item in check_strategy(strategy)}
-    assert "strategy.no_trigger" in codes
+    assert "strategy.no_trigger" not in codes  # a strategy without trigger is no finding
     assert "flow.no_incoming" in codes
 
 

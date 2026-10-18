@@ -170,7 +170,9 @@ def test_a_symbolic_link_is_neither_listed_nor_read_nor_deleted(
     assert client.delete(f"/api/v1/rules/{BAD_ID}").status_code == 404
     document: dict[str, Any] = rule_document()
     document["id"] = BAD_ID
-    assert put(client, "rules", BAD_ID, document).status_code == 404
+    # saving never follows or replaces the link: nothing is written
+    assert put(client, "rules", BAD_ID, document).status_code == 500
+    assert (objects / f"{BAD_ID}.rule.json").is_symlink()
     assert target.read_bytes() == valid_rule_text(BAD_ID)
 
 

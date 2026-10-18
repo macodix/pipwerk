@@ -15,7 +15,6 @@ class Level(StrEnum):
 
 
 # Identifiers of the findings of the table in specification 3.6
-STRATEGY_NO_TRIGGER = "strategy.no_trigger"
 TRIGGER_UNCONNECTED = "trigger.unconnected"
 FLOW_NO_INCOMING = "flow.no_incoming"
 EXPRESSION_INVALID = "expression.invalid"

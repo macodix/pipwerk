@@ -255,7 +255,8 @@ class Checker:
         self._closed = application_scope(registry)
         self._candle_uses: dict[tuple[str | None, str | None], None] = {}
         self._management_scopes: dict[str | None, Scope] = {}
-        self._non_candle_reach: set[str] = set()
+        self._candle_only_reach: set[str] = set()
+        self._strategy_candle_only = False
         self._strategy = Strategy(id="", title="")
         self._strategy_scope = Scope()
         self._strategy_params: dict[str, _Param] = {}
@@ -1414,8 +1415,6 @@ class Checker:
         main_triggers = [
             item.id for item in strategy.main_elements() if kinds[item.id] is ElementKind.TRIGGER
         ]
-        if not main_triggers:
-            self._add(Level.ERROR, fc.STRATEGY_NO_TRIGGER)
         for item in strategy.elements:
             if kinds[item.id] is ElementKind.TRIGGER and not edges[item.id]:
                 self._add(Level.ERROR, fc.TRIGGER_UNCONNECTED, item.id)
@@ -1424,17 +1423,26 @@ class Checker:
         self._check_loops(strategy, kinds, edges)
         successors = {node: [target for _, target in pairs] for node, pairs in edges.items()}
         reached = reachable(main_triggers, successors)
-        if not any(elements[node].type == catalog.FLOW_PLACE_ORDER for node in reached):
+        # a strategy without elements is the one exception to the hint (specification 3.6)
+        if strategy.elements and not any(
+            elements[node].type == catalog.FLOW_PLACE_ORDER for node in reached
+        ):
             self._add(Level.HINT, fc.FLOW_NO_ORDER_REACHABLE)
-        self._non_candle_reach = reachable(
-            [
-                item.id
-                for item in strategy.elements
-                if kinds[item.id] is ElementKind.TRIGGER
-                and item.type != catalog.TRIGGER_CANDLE_CLOSE
-            ],
-            successors,
+        candle_triggers = [
+            item.id for item in strategy.elements if item.type == catalog.TRIGGER_CANDLE_CLOSE
+        ]
+        other_triggers = [
+            item.id
+            for item in strategy.elements
+            if kinds[item.id] is ElementKind.TRIGGER and item.type != catalog.TRIGGER_CANDLE_CLOSE
+        ]
+        # Only elements that a trigger of their own flow reaches, and only
+        # `trigger.candle_close` does, are evaluated at the close of a candle. Connections
+        # never lead from a flow into another one, so the reach stays inside the flow.
+        self._candle_only_reach = reachable(candle_triggers, successors) - reachable(
+            other_triggers, successors
         )
+        self._strategy_candle_only = not other_triggers and bool(candle_triggers)
 
     def _connection_problem(
         self,
@@ -1494,22 +1502,16 @@ class Checker:
         )
         if has_instance:
             return
-        other_trigger = any(
-            item.type != catalog.TRIGGER_CANDLE_CLOSE and self._is_trigger(item.type)
-            for item in strategy.elements
-        )
-        reported: set[tuple[str | None, str | None]] = set()
+        flow_ids = {item.id for item in strategy.elements if item.id and item.instance is None}
         for element_id, subject in self._candle_uses:
-            if (element_id, subject) in reported:
-                continue
-            affected = element_id in self._non_candle_reach if element_id else other_trigger
+            if element_id in flow_ids:
+                # an element of the flow and its rules: judged by the triggers of its flow
+                affected = element_id not in self._candle_only_reach
+            else:
+                # a rule of the strategy or an instance on the canvas: judged by all triggers
+                affected = not self._strategy_candle_only
             if affected:
-                reported.add((element_id, subject))
                 self._add(Level.ERROR, fc.CANDLE_NO_INSTANCE, element_id, subject)
-
-    def _is_trigger(self, type_id: str) -> bool:
-        description = self.registry.get(type_id)
-        return description is not None and description.kind is ElementKind.TRIGGER
 
 
 def _is_order_object(symbol: Symbol) -> bool:
