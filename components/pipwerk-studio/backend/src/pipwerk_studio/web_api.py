@@ -528,8 +528,10 @@ def _error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
         403: ("A delivered template cannot be changed or deleted.", ApiError),
         404: ("There is no such object.", ApiError),
         409: (
-            "The file of the object is not readable, or saving found an entry of another "
-            "kind, a symbolic link or a directory under the file name; it is left unchanged.",
+            "The file of the object is not readable, or saving found an entry under the "
+            "file name that is no readable regular file of this kind (for example a symbolic "
+            "link or a directory), or any entry of another kind with this identifier (for "
+            "example a file, a symbolic link or a directory); it is left unchanged.",
             ApiError,
         ),
         413: ("The request body or the document is too large (limit 2 MiB).", ApiError),
@@ -670,10 +672,11 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
             "saved in the normalized spelling. The answer names the saved document and the "
             "findings of the consistency check; findings do not prevent saving. A delivered "
             "template cannot be changed (HTTP 403). The same rule holds for creating and "
-            "replacing: if a file of this kind under the file name is not readable, or a "
-            "symbolic link (with or without target) or a directory lies under it, or any entry "
-            "(file, symbolic link or directory) of the same identifier with another kind lies "
-            "in the object directory, nothing is written (HTTP 409). Links are never followed."
+            "replacing: if an entry lies under the file name of this kind that is no readable "
+            "regular file (for example a file that is not readable, a symbolic link with or "
+            "without target, or a directory), or if any entry of the same identifier with "
+            "another kind lies in the object directory (for example a file, a symbolic link "
+            "or a directory), nothing is written (HTTP 409). Links are never followed."
         ),
         response_model=None,
         responses={

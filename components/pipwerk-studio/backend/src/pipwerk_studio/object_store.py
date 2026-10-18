@@ -462,8 +462,9 @@ class ObjectStore:
             return True
 
     def has_entry(self, kind: str, object_id: str) -> bool:
-        """Tell whether any entry (file, directory or symbolic link, also a dangling one)
-        lies under the name of the object. A link is not followed."""
+        """Tell whether any entry lies under the name of the object, whatever it is (for
+        example a file, a directory or a symbolic link, also a dangling one). A link is
+        not followed."""
         name = object_file_name(kind, object_id)
         with self.lock:
             directory = self._directory()

@@ -85,7 +85,8 @@ class ObjectUnreadableError(ObjectServiceError):
 class ObjectKindConflictError(ObjectServiceError):
     """An entry of the same identifier but another kind lies in the object directory.
 
-    Any entry blocks saving: a file (readable or not), a symbolic link or a directory.
+    Any entry blocks saving, whatever it is (for example a file, readable or not, a
+    symbolic link or a directory).
     """
 
 
@@ -388,8 +389,9 @@ class ObjectService:
                 raise ObjectUnreadableError("The object file cannot be read.")
             created = loaded.status == "missing"
             if created and self._store.has_entry(checked_kind, object_id):
-                # an entry that is no readable regular file (symbolic link with or without
-                # target, directory) is read as "missing" and still takes the name
+                # an entry that is no readable regular file (for example a symbolic link
+                # with or without target, or a directory) is read as "missing" and still
+                # takes the name
                 raise ObjectNameTakenError("The file name of the object is taken.")
             for other in OBJECT_KINDS:
                 # any entry under this identifier with another kind blocks saving, when
