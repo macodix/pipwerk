@@ -59,6 +59,8 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Pflichtparameter | Ein Parameter, der einen Wert haben muss, damit die Konsistenzprüfung keinen Fehler meldet. Welche Parameter Pflicht sind, legt der Objekttyp fest. Alle anderen Parameter sind optional. |
 | Standardwert | Der Wert eines Parameters, den eine Vorlage vorgibt. Er wird beim Einfügen in eine Strategie von der Instanz übernommen und dort geändert. |
 | Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Kennung des Befunds, dem betroffenen Element, der betroffenen Instanz oder Regel (oder keinem) und Angaben für den Text. Die Texte stehen in der Oberfläche, nicht in der Bibliothek. |
+| Zeiteinheit | Die Dauer einer Kerze, zum Beispiel M15 (15 Minuten), H1 (1 Stunde) oder D1 (1 Tag). Parameter und Eigenschaften vom Datentyp Zeiteinheit bieten alle Zeiteinheiten der Typbeschreibungen als Werte an. |
+| Datentyp | Die Art eines Werts eines Parameters oder einer Eigenschaft: Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Auswahl, Zeiteinheit, Zeitpunkt, Datum, Ausdruck oder Objekt. Die Oberfläche wählt danach die Eingabe in der Eigenschaftenansicht. |
 | Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
 
 ## Technische Begriffe
@@ -101,6 +103,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-18 | Vorhaben `strategiedesign`, Arbeitspaket `wp02`, Auftrag 02: Zeiteinheit und Datentyp ergänzt (Begriffe der Anwenderdokumentation). |
 | 2026-10-18 | Auslöser, Auswertung und Verwaltung einer Order an die Entscheidung des Auftraggebers vom 2026-10-18 angeglichen: Auslöser optional, Auswertung ohne Auslöser offen (req-fach-015). Befund B1 aus `development/strategiedesign/reviews/requirements-8.md`. |
 | 2026-10-18 | Vorhaben `strategiedesign`, Arbeitspaket `wp02`, Auftrag 01 (Nachtrag): Auslöser sind freiwillig, eine neue Strategie hat keinen; Verwaltung (Rahmen) hängt am Ausgang „gestellt“. |
 | 2026-10-18 | Vorhaben `strategiedesign`, Arbeitspaket `wp02`, Auftrag 03: Typbeschreibung um die Angaben zur Verwaltung am Ausgang, „benannt“, „Strategieparameter“ und die Zeiteinheiten als zulässige Werte ergänzt. |
