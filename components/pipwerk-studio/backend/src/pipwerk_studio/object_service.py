@@ -82,6 +82,22 @@ class ObjectUnreadableError(ObjectServiceError):
     """The file of the object cannot be read or does not fit the document schema."""
 
 
+class ObjectKindConflictError(ObjectServiceError):
+    """An entry of the same identifier but another kind lies in the object directory.
+
+    Any entry blocks saving, whatever it is (for example a file, readable or not, a
+    symbolic link or a directory).
+    """
+
+
+class ObjectNameTakenError(ObjectServiceError):
+    """The file name of the object is taken by an entry that is no readable regular file.
+
+    The entry (for example a symbolic link with or without target, or a directory) is
+    neither followed nor replaced.
+    """
+
+
 class BuiltinObjectError(ObjectServiceError):
     """The object is a delivered template; it cannot be changed or deleted (E6)."""
 
@@ -139,6 +155,8 @@ class SavedObject:
     object_id: str
     text: str
     findings: list[Finding]
+    created: bool = True
+    """Whether the file was created (``True``) or an existing file was replaced."""
 
 
 @dataclass(frozen=True)
@@ -344,10 +362,17 @@ class ObjectService:
     def replace(self, kind: str, object_id: str, document: AnyDocument) -> SavedObject:
         """Save a document under the identifier of the path, with the findings of the check.
 
+        The file is written in the current object directory also if no file with this
+        identifier lies there (``created`` of the result tells it); a missing directory is
+        created. The name ``<id>.<kind>.json`` is taken if an entry lies under it that is no
+        readable regular file of this kind, or if any entry lies under the name of the same
+        identifier with another kind; then nothing is written, when creating and when
+        replacing. Links are never followed.
+
         Raises ``BuiltinObjectError``, ``DocumentKindError``, ``DocumentIdentifierError``,
-        ``ObjectNotFoundError``, ``ObjectUnreadableError``, ``DocumentError`` (the text
-        cannot be written), ``DocumentTooLargeError``, ``ObjectDirectoryMissingError`` and
-        ``ObjectWriteFailedError``.
+        ``ObjectUnreadableError``, ``ObjectKindConflictError``, ``ObjectNameTakenError``,
+        ``DocumentError`` (the text cannot be written), ``DocumentTooLargeError``,
+        ``ObjectDirectoryMissingError`` and ``ObjectWriteFailedError``.
         """
         checked_kind = check_object_kind(kind)
         object_id = check_object_id(object_id)
@@ -359,9 +384,22 @@ class ObjectService:
             raise DocumentIdentifierError("The identifier of the document differs from the path.")
         text, findings = self._prepare(document)
         with self._store.lock:
-            self._require(checked_kind, object_id)  # exists and is readable
+            loaded = self._load(checked_kind, object_id)
+            if loaded.status == "unreadable":
+                raise ObjectUnreadableError("The object file cannot be read.")
+            created = loaded.status == "missing"
+            if created and self._store.has_entry(checked_kind, object_id):
+                # an entry that is no readable regular file (for example a symbolic link
+                # with or without target, or a directory) is read as "missing" and still
+                # takes the name
+                raise ObjectNameTakenError("The file name of the object is taken.")
+            for other in OBJECT_KINDS:
+                # any entry under this identifier with another kind blocks saving, when
+                # creating and when replacing; links are never followed
+                if other != checked_kind and self._store.has_entry(other, object_id):
+                    raise ObjectKindConflictError("An object of another kind has this identifier.")
             self._write(checked_kind, object_id, text)
-        return SavedObject(object_id, text, findings)
+        return SavedObject(object_id, text, findings, created)
 
     def delete(self, kind: str, object_id: str) -> None:
         """Delete an object.

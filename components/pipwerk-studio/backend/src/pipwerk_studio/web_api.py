@@ -67,6 +67,8 @@ from pipwerk_studio.object_service import (
     ListEntry,
     ObjectDirectoryMissingError,
     ObjectDirectoryUnreadableError,
+    ObjectKindConflictError,
+    ObjectNameTakenError,
     ObjectNotFoundError,
     ObjectService,
     ObjectUnreadableError,
@@ -100,6 +102,14 @@ ART_OF_KIND: dict[KindName, ArtName] = {
 OBJECT_NOT_FOUND_TEXT = "The object does not exist."
 OBJECT_UNREADABLE_TEXT = (
     "The object file cannot be read or does not fit the document schema. It is left unchanged."
+)
+OBJECT_KIND_CONFLICT_TEXT = (
+    "An entry of another kind has this identifier in the object directory (any entry, for "
+    "example a file, a symbolic link or a directory). Nothing was written."
+)
+OBJECT_NAME_TAKEN_TEXT = (
+    "The file name of the object in the object directory is taken by an entry that is no "
+    "readable regular file (for example a symbolic link or a directory). Nothing was written."
 )
 BUILTIN_OBJECT_TEXT = "A delivered template cannot be changed or deleted."
 DOCUMENT_INVALID_TEXT = "The document does not fit the document schema."
@@ -197,6 +207,7 @@ class OutputModel(_Model):
 
     id: str
     label: LabelModel
+    holds_management: bool
 
 
 class TypeDescriptionModel(_Model):
@@ -215,6 +226,8 @@ class TypeDescriptionModel(_Model):
     on_canvas: bool
     builtin: bool
     by_user: bool
+    named: bool
+    strategy_parameters: bool
 
 
 class FunctionParameterModel(_Model):
@@ -444,6 +457,19 @@ def request_validation_response(error: RequestValidationError) -> JSONResponse:
     return invalid_request(REQUEST_INVALID_TEXT, error)
 
 
+def _log_failure(text: str, error: BaseException) -> None:
+    """Log a fixed text with the class of the original exception and its error number, if
+    there is one. Neither the text of the exception nor a path nor the call stack is logged."""
+    cause = error
+    while cause.__cause__ is not None:
+        cause = cause.__cause__
+    number = getattr(cause, "errno", None)
+    detail = type(cause).__name__
+    if isinstance(number, int):
+        detail += f", errno {number}"
+    logger.error("%s (%s)", text, detail)
+
+
 def _guarded(call: Callable[[], Response]) -> Response:
     """Run an endpoint and answer the errors of the object service with fixed texts."""
     try:
@@ -452,6 +478,10 @@ def _guarded(call: Callable[[], Response]) -> Response:
         return _error(404, OBJECT_NOT_FOUND_TEXT)
     except ObjectUnreadableError:
         return _error(409, OBJECT_UNREADABLE_TEXT)
+    except ObjectKindConflictError:
+        return _error(409, OBJECT_KIND_CONFLICT_TEXT)
+    except ObjectNameTakenError:
+        return _error(409, OBJECT_NAME_TAKEN_TEXT)
     except BuiltinObjectError:
         return _error(403, BUILTIN_OBJECT_TEXT)
     except DocumentKindError:
@@ -470,10 +500,10 @@ def _guarded(call: Callable[[], Response]) -> Response:
         logger.error("%s", error)
         return _error(503, STORED_OBJECT_DIRECTORY_INVALID_TEXT)
     except ObjectDirectoryUnreadableError as error:
-        logger.error("The object directory cannot be read.", exc_info=error)
+        _log_failure("The object directory cannot be read.", error)
         return _error(500, DIRECTORY_UNREADABLE_TEXT)
     except ObjectWriteFailedError as error:
-        logger.error("An object file could not be written or deleted.", exc_info=error)
+        _log_failure("An object file could not be written or deleted.", error)
         return _error(500, WRITE_FAILED_TEXT)
 
 
@@ -497,7 +527,13 @@ def _error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
     texts = {
         403: ("A delivered template cannot be changed or deleted.", ApiError),
         404: ("There is no such object.", ApiError),
-        409: ("The file of the object is not readable; it is left unchanged.", ApiError),
+        409: (
+            "The file of the object is not readable, or saving found an entry under the "
+            "file name that is no readable regular file of this kind (for example a symbolic "
+            "link or a directory), or any entry of another kind with this identifier (for "
+            "example a file, a symbolic link or a directory); it is left unchanged.",
+            ApiError,
+        ),
         413: ("The request body or the document is too large (limit 2 MiB).", ApiError),
         415: ("The request body is not JSON.", ApiError),
         422: ("The request or the document does not fit the schema.", InvalidRequest),
@@ -627,16 +663,26 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         tags=tags,
         summary=f"Save an object of the kind {kind}",
         description=(
-            "Replaces the object. The identifier in the path is authoritative; a different "
-            "identifier in the document is answered with HTTP 422. The expressions are saved "
-            "in the normalized spelling. The answer names the saved document and the findings "
-            "of the consistency check; findings do not prevent saving. A delivered template "
-            "cannot be changed (HTTP 403)."
+            "Saves the object under the identifier of the path in the current object "
+            "directory. The identifier in the path is authoritative; a different identifier "
+            "in the document is answered with HTTP 422. If no file with this identifier lies "
+            "in the current object directory (for example after the directory was changed "
+            "without moving the files), the file is created, and the directory too if it is "
+            "missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are "
+            "saved in the normalized spelling. The answer names the saved document and the "
+            "findings of the consistency check; findings do not prevent saving. A delivered "
+            "template cannot be changed (HTTP 403). The same rule holds for creating and "
+            "replacing: if an entry lies under the file name of this kind that is no readable "
+            "regular file (for example a file that is not readable, a symbolic link with or "
+            "without target, or a directory), or if any entry of the same identifier with "
+            "another kind lies in the object directory (for example a file, a symbolic link "
+            "or a directory), nothing is written (HTTP 409). Links are never followed."
         ),
         response_model=None,
         responses={
-            200: {"description": "The object was saved.", "model": saved_model},
-            **_error_responses(403, 404, 409, 413, 415, 422, 500, 503),
+            200: {"description": "The existing object was replaced.", "model": saved_model},
+            201: {"description": "The object was created.", "model": saved_model},
+            **_error_responses(403, 409, 413, 415, 422, 500, 503),
         },
         openapi_extra=_document_body(_ref(document_model), body_text),
     )
@@ -644,7 +690,9 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         def run() -> Response:
             document = parse_document(body)
             saved = service.replace(kind, str(object_id), document)
-            return JSONResponse(content=_saved_body(saved))
+            return JSONResponse(
+                status_code=201 if saved.created else 200, content=_saved_body(saved)
+            )
 
         return _guarded(run)
 

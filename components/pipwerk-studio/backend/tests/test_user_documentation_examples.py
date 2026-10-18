@@ -30,6 +30,7 @@ CHANGED_TEMPLATE_FILE = "regel-vorlage-geaendert.rule.json"
 PLACEHOLDER = "<Kennung der Vorlage>"
 
 CONDITION = "7e1ab090-5a18-5414-9f00-5541c0e4b325"  # the element "Kreuzen" of str-03
+STOP_CALCULATION = "d68f936b-4e65-5d0c-a4eb-a1438baaa470"  # the element "Stop-Loss" of str-03
 MAIN_TRIGGER = "fd3b87fb-a152-51fa-bd12-4579eba0a33d"
 NEW_A = "00000000-0000-4000-8000-0000000000aa"
 NEW_B = "00000000-0000-4000-8000-0000000000bb"
@@ -100,9 +101,9 @@ CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
         "str-03-ohne-ausloeser.strategy.json",
         remove_the_trigger,
         [
-            ("error", "strategy.no_trigger", None),
             ("error", "flow.no_incoming", CONDITION),
             ("hint", "flow.no_order_reachable", None),
+            ("error", "candle.no_instance", STOP_CALCULATION),
         ],
     ),
     (

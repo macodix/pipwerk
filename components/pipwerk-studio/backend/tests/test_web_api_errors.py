@@ -7,6 +7,7 @@ document and its error type.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -412,6 +413,31 @@ def test_a_directory_that_cannot_be_written_is_500_with_a_fixed_text(
     assert listing.json() == {"detail": "The object directory of pipwerk Studio cannot be read."}
     assert str(tmp_path) not in listing.text
     assert client.get("/api/v1/rules/11111111-2222-4333-8444-555555555555").status_code == 404
+
+
+def test_the_log_of_a_500_has_a_fixed_text_with_the_class_and_the_error_number(
+    client: TestClient, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("x", encoding="utf-8")
+    client.put("/api/studio/settings/object-directory", json={"path": str(blocker), "move": False})
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        assert post(client, "rules", rule_document()).status_code == 500
+        assert client.get("/api/v1/rules").status_code == 500
+    records = [record for record in caplog.records if record.levelno >= logging.ERROR]
+    assert len(records) == 2  # the entries are written
+    messages = [record.getMessage() for record in records]
+    assert messages[0].startswith("An object file could not be written or deleted. (")
+    assert "errno" in messages[0]
+    assert messages[1].startswith("The object directory cannot be read. (")
+    assert all(record.exc_info is None for record in records)
+    for text in (caplog.text, *messages):
+        assert str(tmp_path) not in text
+        assert "file/" not in text
+        assert "Traceback" not in text
+        assert "Not a directory" not in text
+        assert "Errno" not in text
 
 
 def test_without_an_object_directory_writing_is_503_and_reading_is_empty(

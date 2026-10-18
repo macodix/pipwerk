@@ -74,17 +74,23 @@ Jeder Elementtyp und jeder Objekttyp liefert eine `TypeDescription`. Die Oberfl�
 | `name`, `description` | Name und Beschreibung, je `Label(de, en)` |
 | `parameters` | Parameter: `id`, `datatype`, `label`, `required` (Pflicht), `default` (Standardwert), `choices` (zulässige Werte einer Auswahl, je `id` und `label`), `bindings` (erlaubte Bindungsarten), `applies_when` (gilt nur bei einem Wert eines anderen Parameters: `Condition(name, value)`), `object_type` |
 | `properties` | Eigenschaften: `id`, `datatype`, `label`, `must` (MUSS, sonst KANN), `set_by_user` (bei Ordertypen: ob der Anwender sie belegt), `default`, `choices`, `applies_when`, `object_type` |
-| `outputs` | Ausgänge eines Elements des Ablaufs: `id` und `label` |
+| `outputs` | Ausgänge eines Elements des Ablaufs: `id`, `label` und `holds_management` (ob an diesem Ausgang die Verwaltung des Elements hängt) |
 | `rules_allowed` | ob dem Element Regeln und Regelwerke zugeordnet werden können |
 | `on_canvas` | ob der Typ als Element auf die Zeichenfläche gelegt werden kann |
 | `builtin` | mitgeliefert; mitgelieferte Typen und die Regelvorlage „Risiko je Trade“ lassen sich nicht ändern oder löschen (E6) |
 | `by_user` | ob der Anwender den Typ wählen kann; `CloseOrder` entsteht nur über „Position schließen“ und ist deshalb nicht wählbar |
+| `named` | ob ein Element des Ablaufs einen Namen trägt, unter dem Ausdrücke sein Ergebnis ansprechen (`flow.condition`, `flow.calculation`) |
+| `strategy_parameters` | bei Objekten der Anwendung: ob Ausdrücke über dieses Objekt die Strategieparameter ansprechen (`Strategie`) |
+
+Die Felder `holds_management`, `named` und `strategy_parameters` sind Daten der Typbeschreibung mit dem Standardwert „nicht gesetzt“ (`False`); ein über den Einstiegspunkt angemeldeter Typ ohne diese Felder gilt unverändert. Gesetzt sind sie bei den mitgelieferten Typen so: `holds_management` nur beim Ausgang `gestellt` von `flow.place_order`, `named` bei `flow.condition` und `flow.calculation`, `strategy_parameters` beim Objekt `Strategie`. Die Oberfläche braucht sie, weil sie keine einzelnen Typen kennt. Ein Feld „Vorgabe der neuen Strategie“ gibt es nicht.
+
+Höchstens ein Ausgang eines Typs hat `holds_management`. `TypeDescription.management_output()` liefert ihn oder `None`. Eine Typbeschreibung mit mehr als einem solchen Ausgang ist ungültig: `ElementRegistry.register` wirft `RegistryError`, ein Einstiegspunkt mit einer solchen Beschreibung meldet nichts an und wird wie jeder fehlerhafte Einstiegspunkt protokolliert (Abschnitt 3.3).
 
 Datentypen (`DataType`): `number` (Zahl), `integer` (Ganzzahl), `percent` (Prozent; im Ausdruck ein Anteil, 1 % ist 0,01, ein fester Wert wird als `0.01` gespeichert), `boolean` (Wahrheitswert), `text`, `choice` (Auswahl mit festen Werten und Kennungen), `time_unit` (Zeiteinheit), `timestamp` (Zeitpunkt, ISO 8601), `date` (Datum, ISO 8601), `expression` (Ausdruck) und `object`.
 
 Der Datentyp `object` ist eine Festlegung der Umsetzung: Die Spezifikation 3.1 nennt keinen Datentyp für Eigenschaften, deren Wert ein Objekt der Anwendung ist (`Order.konto`, `Order.instrument`, `Position.instrument`, `CloseOrder.position`). Solche Eigenschaften haben den Datentyp `object` und im Feld `object_type` den Objekttyp; in Ausdrücken lassen sich ihre Eigenschaften weiter ansprechen (`Order.konto.kapital`).
 
-Zeiteinheiten (`time_unit`): alle Zeiteinheiten von MetaTrader 5, mit Kennungen nach der Bildungsregel aus ihrem Namen: `m1`, `m2`, `m3`, `m4`, `m5`, `m6`, `m10`, `m12`, `m15`, `m20`, `m30`, `h1`, `h2`, `h3`, `h4`, `h6`, `h8`, `h12`, `d1`, `w1`, `mn1`. Beschriftungen sind `M1` bis `MN1`.
+Zeiteinheiten (`time_unit`): alle Zeiteinheiten von MetaTrader 5, mit Kennungen nach der Bildungsregel aus ihrem Namen: `m1`, `m2`, `m3`, `m4`, `m5`, `m6`, `m10`, `m12`, `m15`, `m20`, `m30`, `h1`, `h2`, `h3`, `h4`, `h6`, `h8`, `h12`, `d1`, `w1`, `mn1`. Beschriftungen sind `M1` bis `MN1`. Parameter und Eigenschaften vom Datentyp `time_unit` nennen in `choices` alle diese Zeiteinheiten mit Kennung und Beschriftung (`typedesc.TIME_UNITS`). Das Register setzt sie bei der Abfrage ein, wenn die Beschreibung keine eigenen Werte nennt; das gilt auch für Typen, die über den Einstiegspunkt angemeldet sind.
 
 Bindungsarten (`BindingKind`): `fixed` (fester Wert), `parameter` (Strategieparameter oder, innerhalb einer Vorlage, Parameter der Vorlage), `expression` (Ausdruck), `application` (bei der Anwendung übergeben). Parameter vom Datentyp `expression` (der Ausdruck einer Bedingung oder Berechnung) lassen nur `expression` zu; der Ordertyp und der Strategieparameter von „Parameter setzen“ nur `fixed`.
 
@@ -96,9 +102,9 @@ Objekttypen und Elementtypen tragen eine feste Kennung (Abschnitt 4): die Objekt
 
 ### 3.3 Elementregister
 
-`ElementRegistry` führt alle Typbeschreibungen: `register(beschreibung)` meldet einen Typ an (eine Kennung nur einmal, sonst `RegistryError`), `get(kennung)` fragt nach der Kennung, `list(art=None)` liefert die Typen in der Reihenfolge der Anmeldung, optional einer Art.
+`ElementRegistry` führt alle Typbeschreibungen: `register(beschreibung)` meldet einen Typ an (eine Kennung nur einmal und höchstens ein Ausgang mit `holds_management`, sonst `RegistryError`), `get(kennung)` fragt nach der Kennung, `list(art=None)` liefert die Typen in der Reihenfolge der Anmeldung, optional einer Art.
 
-Zwei Beschreibungen vervollständigt das Register bei der Abfrage aus anderen Anmeldungen:
+Bei jeder Abfrage setzt das Register in jeder Beschreibung die Zeiteinheiten als `choices` der Parameter und Eigenschaften vom Datentyp `time_unit` ein (Abschnitt 3.1). Zwei Beschreibungen vervollständigt es außerdem aus anderen Anmeldungen:
 
 - `Trend`: Der Parameter `berechnungsverfahren` hat als Werte die Kennungen aller angemeldeten Typen der Art `trend_method`. Deren Parameter erscheinen zusätzlich beim `Trend`, mit `applies_when` auf den Wert von `berechnungsverfahren` (req-param-005). Mitgeliefert ist `trend_method.expression` (Verfahren „Ausdruck“) ohne eigene Parameter.
 - `flow.place_order`: Der Parameter `ordertyp` hat als Werte die Kennungen aller angemeldeten Ordertypen mit `by_user`.
@@ -111,7 +117,7 @@ Weitere Pakete melden Typen über den Einstiegspunkt `pipwerk.element_types` an 
 - eine Folge von Typbeschreibungen, oder
 - eine Funktion, die ein Objekt mit der Methode `register(beschreibung)` erhält und dort anmeldet.
 
-`ElementRegistry.load_entry_points()` lädt alle Einstiegspunkte der Gruppe, `create_registry()` ruft sie auf. Ein fehlerhafter Einstiegspunkt (Ladefehler, Ausnahme beim Anmelden, `SystemExit` beim Laden, falscher Rückgabetyp, doppelte Kennung) verhindert das Laden der übrigen nicht. Die Einstiegspunkte werden für jedes installierte Paket einzeln gelesen (`importlib.metadata.distributions()`, je Paket in einem eigenen Schutz). Fehlerhafte Metadaten eines Pakets (zum Beispiel eine Zeile ohne `=` in `entry_points.txt`, auch in einer anderen Gruppe, oder unlesbare Metadaten) schließen nur dieses Paket aus; die gültigen Einstiegspunkte aller anderen Pakete werden geladen, und die mitgelieferten Typen sind immer vorhanden. Das ausgeschlossene Paket erscheint in einer Warnung nur mit seinem Namen und der Klasse der Ausnahme. Ein fehlerhafter Einstiegspunkt meldet nichts an – auch nichts von dem, was er vor dem Fehler angemeldet hätte – und wird mit dem Namen des Einstiegspunkts und der Klasse der Ausnahme protokolliert (Logger `pipwerk_domain.registry`, Stufe `WARNING`), ohne Ausnahmetext, ohne Rückverfolgung und ohne Pfad. Der Rückgabewert `LoadReport` nennt die geladenen und die fehlgeschlagenen Einstiegspunkte. Zum Testen lässt sich eine Liste nachgebildeter Einstiegspunkte (Objekte mit `name` und `load()`) übergeben.
+`ElementRegistry.load_entry_points()` lädt alle Einstiegspunkte der Gruppe, `create_registry()` ruft sie auf. Ein fehlerhafter Einstiegspunkt (Ladefehler, Ausnahme beim Anmelden, `SystemExit` beim Laden, falscher Rückgabetyp, doppelte Kennung, Typbeschreibung mit mehr als einem Ausgang mit der Verwaltung) verhindert das Laden der übrigen nicht. Die Einstiegspunkte werden für jedes installierte Paket einzeln gelesen (`importlib.metadata.distributions()`, je Paket in einem eigenen Schutz). Fehlerhafte Metadaten eines Pakets (zum Beispiel eine Zeile ohne `=` in `entry_points.txt`, auch in einer anderen Gruppe, oder unlesbare Metadaten) schließen nur dieses Paket aus; die gültigen Einstiegspunkte aller anderen Pakete werden geladen, und die mitgelieferten Typen sind immer vorhanden. Das ausgeschlossene Paket erscheint in einer Warnung nur mit seinem Namen und der Klasse der Ausnahme. Ein fehlerhafter Einstiegspunkt meldet nichts an – auch nichts von dem, was er vor dem Fehler angemeldet hätte – und wird mit dem Namen des Einstiegspunkts und der Klasse der Ausnahme protokolliert (Logger `pipwerk_domain.registry`, Stufe `WARNING`), ohne Ausnahmetext, ohne Rückverfolgung und ohne Pfad. Der Rückgabewert `LoadReport` nennt die geladenen und die fehlgeschlagenen Einstiegspunkte. Zum Testen lässt sich eine Liste nachgebildeter Einstiegspunkte (Objekte mit `name` und `load()`) übergeben.
 
 ## 4. Mitgelieferte Typen und Kennungen
 
@@ -372,7 +378,6 @@ Die Regelvorlage „Risiko je Trade“ fängt `Position` mit `ISNA` ab (Spezifik
 
 | Kennung | Stufe | Befund | betroffen | Angaben |
 | --- | --- | --- | --- | --- |
-| `strategy.no_trigger` | Fehler | Strategie ohne Auslöser (im Hauptablauf) | – | – |
 | `trigger.unconnected` | Fehler | Auslöser ohne Verbindung in den Ablauf | der Auslöser | – |
 | `flow.no_incoming` | Fehler | Element des Ablaufs ohne eingehende Verbindung | das Element | – |
 | `expression.invalid` | Fehler | fehlerhafter Ausdruck: Schreibfehler, unbekannte Funktion, unbekannter Name, unbekannte Eigenschaft, unpassender Typ, unbekannter Wert einer Auswahl | Element (leer bei einer Regel der Strategie oder einer Vorlage), Instanz oder Regel | `field` (welcher Ausdruck: `parameter:<kennung>`, `property:<kennung>`, `expression`, `result_expression`, `property_definition:<name>`), `start`, `end`, `issue` (die `kind` aus Abschnitt 7.3), `reason` und die Angaben des Befunds im Ausdruck |
@@ -383,16 +388,22 @@ Die Regelvorlage „Risiko je Trade“ fängt `Position` mit `ISNA` ab (Spezifik
 | `ruleset.reference_order` | Fehler | Regelwerk mit Vorwärtsbezug oder Zirkelbezug | die Regel | `kind` (`forward` oder `cycle`), `list`, bei `forward` `rule` und `refers_to`, bei `cycle` `rules` |
 | `expression.order_outside_management` | Fehler | `Order` oder `Position` im Ablauf außerhalb einer Verwaltung, auch über das Ergebnis einer Regel | Element, Instanz | `field`, `context` (`main_flow` oder `indicator`) |
 | `rule.order_in_indicator` | Fehler | Regel, die `Order` oder `Position` anspricht, in einem Indikator oder Trend, auch in einem Regelwerk darin | Element, Regel (`instanz.regel`) | – |
-| `candle.no_instance` | Fehler | `Kerze` ohne Instanz mit gesetzter Zeiteinheit, wenn ein Auslöser außer `Kerzenschluss` die Auswertung startet | Element oder Regel der Strategie | – |
+| `candle.no_instance` | Fehler | `Kerze` ohne Instanz mit gesetzter Zeiteinheit, wenn ein Auslöser außer `Kerzenschluss` oder kein Auslöser die Auswertung startet | Element, Instanz oder Regel der Strategie (`element` und `subject` wie beim Ausdruck) | – |
 | `flow.management_only` | Fehler | Order ändern, Order löschen, Position ändern oder Position schließen außerhalb einer Verwaltung | das Element | `type` |
 | `name.duplicate` | Fehler | Name doppelt vergeben innerhalb eines Namensraums | das zweite Element, die zweite Instanz oder Regel | `name`, `namespace` (`strategy`, `strategy_parameters`, `element_rules`, `rule_parameters`, `ruleset`, `template`) |
 | `type.unknown` | Fehler | unbekannter Elementtyp oder Objekttyp | das Element, die Instanz | `kind` (`element` oder `object`), `type` |
-| `flow.no_order_reachable` | Hinweis | kein Element „Order aufgeben“ erreichbar (vom Auslöser des Hauptablaufs) | – | – |
+| `flow.no_order_reachable` | Hinweis | kein Element „Order aufgeben“ von einem Auslöser des Hauptablaufs erreichbar; nicht gemeldet für eine Strategie ohne Elemente | – | – |
+
+Eine Strategie ohne Auslöser ist kein Befund (req-fach-015, req-fach-046); der Befund `strategy.no_trigger` entfällt. Eine Strategie ohne Elemente, auch eine neue, leere, erhält von der Prüfung keinen Befund. Eine Strategie mit Elementen und ohne Auslöser im Hauptablauf erhält den Hinweis `flow.no_order_reachable`. Das erste Element eines Ablaufs oder einer Verwaltung ohne Auslöser hat keine eingehende Verbindung und wird wie bisher als `flow.no_incoming` gemeldet; wo die Auswertung eines Ablaufs ohne Auslöser beginnt, ist offen (req-fach-047).
 
 Einzelheiten der Befunde:
 
 - `flow.unending_loop`: Ein Kreis ist beendet, wenn auf ihm eine Bedingung liegt, von der ein Ausgang aus dem Kreis hinausführt oder ohne Fortsetzung endet. Die Prüfung arbeitet auf den stark zusammenhängenden Gruppen des Ablaufs; eine Gruppe ohne eine solche Bedingung ist ein Befund. Der Ablauf und jede Verwaltung werden getrennt geprüft.
-- `candle.no_instance`: Die Prüfung gilt für ein Element, das von einem Auslöser außer `trigger.candle_close` erreicht wird und `Kerze` unter dem Namen des Objekttyps verwendet, solange kein Element `Kerze` mit gesetzter `zeiteinheit` auf der Zeichenfläche liegt; und für eine Regel der Strategie, die `Kerze` verwendet, sobald ein solcher Auslöser vorhanden ist.
+- `candle.no_instance`: Die Prüfung gilt für jeden Ausdruck, der `Kerze` unter dem Namen des Objekttyps verwendet, solange kein Element `Kerze` mit gesetzter `zeiteinheit` auf der Zeichenfläche liegt. Fehler ist es
+  - bei einem Element des Ablaufs und seinen Regeln, wenn das Element in seinem Ablauf (Hauptablauf beziehungsweise seine Verwaltung) von keinem Auslöser oder von einem anderen Auslöser als `trigger.candle_close` erreicht wird. Die Auslöser des Hauptablaufs erreichen keine Elemente einer Verwaltung (Verbindungen zwischen Abläufen sind ungültig, `connection.invalid`); eine Verwaltung ohne eigene Auslöser wird von keinem Auslöser erreicht, auch wenn der Hauptablauf `trigger.candle_close` hat. Wird ein Element von `trigger.candle_close` und von einem anderen Auslöser erreicht, ist es ein Fehler.
+  - bei einer Regel der Strategie und bei einer Instanz auf der Zeichenfläche (eigene Eigenschaften, Parameter), wenn die Strategie, Hauptablauf und alle Verwaltungen zusammen, keinen Auslöser oder mindestens einen anderen als `trigger.candle_close` hat. In `str-01` ist deshalb wegen `trigger.tick` in der Verwaltung eine Regel der Strategie mit `Kerze` ohne Instanz ein Fehler (Hinweis N4, Lesart nach req-fach-051).
+
+  Wird ein Element nur von `trigger.candle_close` erreicht und hat die Strategie nur solche Auslöser, bleibt alles ohne Befund.
 - `order.property_missing`: Zählt nur Eigenschaften mit `set_by_user`; eine Eigenschaft mit Standardwert (`gueltigkeit`) gilt als belegt; `ablaufzeit` und `datum` zählen nur bei dem zugehörigen Wert von `gueltigkeit`. Die Belegung mit der Bindungsart `application` zählt als Belegung. Eine bestimmende Regel (`determined_property`) der Strategie oder des Elements, auch in einem Regelwerk, ersetzt die Belegung.
 - `ruleset.reference_order`: Ein Vorwärtsbezug (die Regel verwendet das Ergebnis einer späteren) und ein Zirkelbezug werden in einem Regelwerk gemeldet; ein Zirkelbezug auch in jeder anderen Liste von Regeln (Strategie, Element, Vorlage).
 - `expression.order_outside_management` und `rule.order_in_indicator` erkennen `Order` und `Position` auch über das Ergebnis einer Regel, auch über mehrere Regeln.
@@ -506,6 +517,7 @@ Die Tests (pytest) umfassen:
 | `test_identifiers.py` | Bildungsregel |
 | `test_registry.py` | Register, Einstiegspunkt mit nachgebildeten Einstiegspunkten und mit einem Testpaket, auch fehlerhaft, Protokoll ohne Ausnahmetext und Pfad, Berechnungsverfahren und Ordertypen |
 | `test_catalog.py` | alle mitgelieferten Typen, Beschriftungen, Kennungen nach der Bildungsregel, von der Anwendung belegte Eigenschaften, Funktionsliste |
+| `test_type_fields.py` | die Felder `holds_management`, `named` und `strategy_parameters` bei den mitgelieferten Typen mit Gegenprobe, Standardwerte bei einem über den Einstiegspunkt angemeldeten Typ, ein Typ mit zwei Ausgängen mit der Verwaltung (`register`, Einstiegspunkt, Protokoll), Zeiteinheiten in `choices` |
 | `test_parser.py` | Zerlegung: Werte, Operatoren, Rangfolge, Funktionen, Schreibfehler mit Stelle, Begrenzungen |
 | `test_expression_check.py` | Typprüfung mit gültigen und fehlerhaften Fällen je Regel, Auswahlwerte, erkannte Namen, Normalisierung |
 | `test_consistency_flow.py` | Befunde des Ablaufs, der Parameter, der Belegungen, von `Order`/`Position`, der Typen und der Kerze, jeweils mit Gegenprobe |

@@ -156,14 +156,11 @@ def test_create_list_read_replace_and_delete_for_every_kind(
 
 
 @pytest.mark.parametrize("art", list(ARTS))
-def test_an_unknown_identifier_is_404_for_read_replace_delete_and_usages(
+def test_an_unknown_identifier_is_404_for_read_delete_and_usages(
     client: TestClient, art: str
 ) -> None:
     unknown = str(uuid4())
-    document = sample(art)
-    document["id"] = unknown
     assert client.get(f"/api/v1/{art}/{unknown}").status_code == 404
-    assert put(client, art, unknown, document).status_code == 404
     assert client.delete(f"/api/v1/{art}/{unknown}").status_code == 404
     assert client.get(f"/api/v1/{art}/{unknown}/usages").status_code == 404
     answer = client.get(f"/api/v1/{art}/{unknown}")
@@ -257,11 +254,132 @@ def test_the_identifier_of_the_path_is_authoritative(client: TestClient, objects
     assert (objects / f"{object_id}.strategy.json").read_bytes() == before
 
 
-def test_replacing_never_creates_an_object(client: TestClient, objects: Path) -> None:
+# --- saving with PUT creates a missing file (specification 4.1, 5.2) ---------------------------
+
+
+@pytest.mark.parametrize("art", list(ARTS))
+def test_put_on_a_missing_file_creates_it_with_201_and_the_findings(
+    client: TestClient, objects: Path, art: str
+) -> None:
+    unknown = str(uuid4())
+    document = sample(art)
+    document["id"] = unknown
+    assert not objects.exists()  # the directory is created like at the first writing
+    response = put(client, art, unknown, document)
+    assert response.status_code == 201, response.text
+    answer = response.json()
+    assert set(answer) == {"id", "document", "findings"}
+    assert answer["id"] == unknown
+    assert answer["document"]["id"] == unknown
+    assert isinstance(answer["findings"], list)
+    assert files(objects) == [f"{unknown}.{ARTS[art]}.json"]
+    assert client.get(f"/api/v1/{art}/{unknown}").json() == answer["document"]
+
+
+def test_put_on_a_missing_file_answers_the_findings_of_the_check(
+    client: TestClient, objects: Path
+) -> None:
     document = load_case("str-03")
+    _misspell(document)
     response = put(client, "strategies", document["id"], document)
-    assert response.status_code == 404
+    assert response.status_code == 201
+    assert "expression.invalid" in codes(response.json()["findings"])
+    assert files(objects) == [f"{document['id']}.strategy.json"]
+
+
+def test_put_on_an_existing_file_is_200_and_a_second_put_too(
+    client: TestClient, objects: Path
+) -> None:
+    document = load_case("str-03")
+    assert put(client, "strategies", document["id"], document).status_code == 201
+    document["title"] = "Zweite Fassung"
+    response = put(client, "strategies", document["id"], document)
+    assert response.status_code == 200
+    assert response.json()["document"]["title"] == "Zweite Fassung"
+    assert files(objects) == [f"{document['id']}.strategy.json"]
+
+
+def test_put_creates_the_missing_directory_below_missing_parents(
+    client: TestClient, objects: Path
+) -> None:
     assert not objects.exists()
+    document = load_case("str-01")
+    assert put(client, "strategies", document["id"], document).status_code == 201
+    assert objects.is_dir()
+
+
+def test_save_after_changing_the_object_directory_without_moving_writes_to_the_new_one(
+    client: TestClient, objects: Path, tmp_path: Path
+) -> None:
+    """Finding B1 of the function test: create, change the directory without moving, save."""
+    created = post(client, "strategies", load_case("str-03")).json()
+    object_id = created["id"]
+    old_text = (objects / f"{object_id}.strategy.json").read_bytes()
+    new = tmp_path / "new-objects"
+    changed = client.put(
+        "/api/studio/settings/object-directory", json={"path": str(new), "move": False}
+    )
+    assert changed.status_code == 200
+
+    document = copy.deepcopy(created["document"])
+    document["title"] = "Im neuen Verzeichnis"
+    response = put(client, "strategies", object_id, document)
+
+    assert response.status_code == 201
+    assert response.json()["findings"] == []
+    assert files(new) == [f"{object_id}.strategy.json"]
+    assert json.loads((new / f"{object_id}.strategy.json").read_text("utf-8"))["title"] == (
+        "Im neuen Verzeichnis"
+    )
+    assert (objects / f"{object_id}.strategy.json").read_bytes() == old_text  # left unchanged
+    assert client.get(f"/api/v1/strategies/{object_id}").json()["title"] == "Im neuen Verzeichnis"
+    again = put(client, "strategies", object_id, document)
+    assert again.status_code == 200  # now it exists in the new directory
+
+
+def test_put_on_a_missing_file_is_refused_if_a_file_of_another_kind_has_the_identifier(
+    client: TestClient, objects: Path
+) -> None:
+    created = post(client, "rules", rule_document()).json()
+    object_id = created["id"]
+    other = indicator_document()
+    other["id"] = object_id
+    before = {name: (objects / name).read_bytes() for name in files(objects)}
+    response = put(client, "indicators", object_id, other)
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": (
+            "An entry of another kind has this identifier in the object directory (any "
+            "entry, for example a file, a symbolic link or a directory). Nothing was written."
+        )
+    }
+    assert {name: (objects / name).read_bytes() for name in files(objects)} == before
+    assert files(objects) == [f"{object_id}.rule.json"]
+
+
+def test_put_is_refused_if_an_unreadable_file_of_another_kind_has_the_identifier(
+    client: TestClient, objects: Path
+) -> None:
+    object_id = str(uuid4())
+    objects.mkdir(parents=True)
+    (objects / f"{object_id}.ruleset.json").write_bytes(b"{")
+    other = rule_document()
+    other["id"] = object_id
+    assert put(client, "rules", object_id, other).status_code == 409
+    assert files(objects) == [f"{object_id}.ruleset.json"]
+    assert (objects / f"{object_id}.ruleset.json").read_bytes() == b"{"
+
+
+def test_put_on_an_unreadable_file_of_the_same_kind_is_still_409(
+    client: TestClient, objects: Path
+) -> None:
+    object_id = str(uuid4())
+    objects.mkdir(parents=True)
+    (objects / f"{object_id}.rule.json").write_bytes(b"{")
+    other = rule_document()
+    other["id"] = object_id
+    assert put(client, "rules", object_id, other).status_code == 409
+    assert (objects / f"{object_id}.rule.json").read_bytes() == b"{"
 
 
 # --- changed versions of a test case ------------------------------------------------------
@@ -335,7 +453,7 @@ def _unknown_element_type(document: dict[str, Any]) -> None:
 
 
 CHANGES: list[tuple[str, Callable[[dict[str, Any]], None], str]] = [
-    ("removed trigger", _remove_trigger, "strategy.no_trigger"),
+    ("removed trigger", _remove_trigger, "flow.no_incoming"),
     ("misspelling", _misspell, "expression.invalid"),
     ("unknown name", _unknown_name, "expression.invalid"),
     ("order in the main flow", _order_in_main_flow, "expression.order_outside_management"),
@@ -412,7 +530,8 @@ def test_put_with_findings_still_answers_200_and_post_with_findings_201(
     _remove_trigger(document)
     created = post(client, "strategies", document)
     assert created.status_code == 201
-    assert "strategy.no_trigger" in codes(created.json()["findings"])
+    assert "flow.no_incoming" in codes(created.json()["findings"])
+    assert "strategy.no_trigger" not in codes(created.json()["findings"])
     assert client.get(f"/api/v1/strategies/{created.json()['id']}").status_code == 200
 
 
