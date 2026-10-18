@@ -68,6 +68,7 @@ from pipwerk_studio.object_service import (
     ObjectDirectoryMissingError,
     ObjectDirectoryUnreadableError,
     ObjectKindConflictError,
+    ObjectNameTakenError,
     ObjectNotFoundError,
     ObjectService,
     ObjectUnreadableError,
@@ -104,6 +105,10 @@ OBJECT_UNREADABLE_TEXT = (
 )
 OBJECT_KIND_CONFLICT_TEXT = (
     "An object of another kind has this identifier in the object directory. Nothing was written."
+)
+OBJECT_NAME_TAKEN_TEXT = (
+    "A symbolic link lies under the file name of the object in the object directory. "
+    "Nothing was written."
 )
 BUILTIN_OBJECT_TEXT = "A delivered template cannot be changed or deleted."
 DOCUMENT_INVALID_TEXT = "The document does not fit the document schema."
@@ -451,6 +456,19 @@ def request_validation_response(error: RequestValidationError) -> JSONResponse:
     return invalid_request(REQUEST_INVALID_TEXT, error)
 
 
+def _log_failure(text: str, error: BaseException) -> None:
+    """Log a fixed text with the class of the original exception and its error number, if
+    there is one. Neither the text of the exception nor a path nor the call stack is logged."""
+    cause = error
+    while cause.__cause__ is not None:
+        cause = cause.__cause__
+    number = getattr(cause, "errno", None)
+    detail = type(cause).__name__
+    if isinstance(number, int):
+        detail += f", errno {number}"
+    logger.error("%s (%s)", text, detail)
+
+
 def _guarded(call: Callable[[], Response]) -> Response:
     """Run an endpoint and answer the errors of the object service with fixed texts."""
     try:
@@ -461,6 +479,8 @@ def _guarded(call: Callable[[], Response]) -> Response:
         return _error(409, OBJECT_UNREADABLE_TEXT)
     except ObjectKindConflictError:
         return _error(409, OBJECT_KIND_CONFLICT_TEXT)
+    except ObjectNameTakenError:
+        return _error(409, OBJECT_NAME_TAKEN_TEXT)
     except BuiltinObjectError:
         return _error(403, BUILTIN_OBJECT_TEXT)
     except DocumentKindError:
@@ -479,10 +499,10 @@ def _guarded(call: Callable[[], Response]) -> Response:
         logger.error("%s", error)
         return _error(503, STORED_OBJECT_DIRECTORY_INVALID_TEXT)
     except ObjectDirectoryUnreadableError as error:
-        logger.error("The object directory cannot be read.", exc_info=error)
+        _log_failure("The object directory cannot be read.", error)
         return _error(500, DIRECTORY_UNREADABLE_TEXT)
     except ObjectWriteFailedError as error:
-        logger.error("An object file could not be written or deleted.", exc_info=error)
+        _log_failure("An object file could not be written or deleted.", error)
         return _error(500, WRITE_FAILED_TEXT)
 
 
@@ -508,7 +528,7 @@ def _error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
         404: ("There is no such object.", ApiError),
         409: (
             "The file of the object is not readable, or saving found an object of another "
-            "kind with the same identifier; it is left unchanged.",
+            "kind or a symbolic link under the file name; it is left unchanged.",
             ApiError,
         ),
         413: ("The request body or the document is too large (limit 2 MiB).", ApiError),
@@ -649,7 +669,8 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
             "saved in the normalized spelling. The answer names the saved document and the "
             "findings of the consistency check; findings do not prevent saving. A delivered "
             "template cannot be changed (HTTP 403). If a file with this identifier of another "
-            "kind lies in the object directory, nothing is written (HTTP 409)."
+            "kind or a symbolic link of any kind under the file name lies in the object "
+            "directory, nothing is written (HTTP 409)."
         ),
         response_model=None,
         responses={

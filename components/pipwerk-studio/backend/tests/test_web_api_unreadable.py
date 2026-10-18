@@ -31,6 +31,15 @@ BAD_ID = "0badf11e-0000-4000-8000-000000000001"
 TEXT = "The object file cannot be read or does not fit the document schema. It is left unchanged."
 
 
+LINK_TEXT = (
+    "A symbolic link lies under the file name of the object in the object directory. "
+    "Nothing was written."
+)
+CONFLICT_TEXT = (
+    "An object of another kind has this identifier in the object directory. Nothing was written."
+)
+
+
 def place(objects: Path, name: str, content: bytes) -> Path:
     objects.mkdir(parents=True, exist_ok=True)
     path = objects / name
@@ -171,9 +180,46 @@ def test_a_symbolic_link_is_neither_listed_nor_read_nor_deleted(
     document: dict[str, Any] = rule_document()
     document["id"] = BAD_ID
     # saving never follows or replaces the link: nothing is written
-    assert put(client, "rules", BAD_ID, document).status_code == 500
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": LINK_TEXT}
     assert (objects / f"{BAD_ID}.rule.json").is_symlink()
     assert target.read_bytes() == valid_rule_text(BAD_ID)
+    assert sorted(path.name for path in objects.iterdir()) == [f"{BAD_ID}.rule.json"]
+
+
+@pytest.mark.parametrize("dangling", [False, True])
+def test_a_symbolic_link_of_another_kind_blocks_saving(
+    client: TestClient, objects: Path, tmp_path: Path, dangling: bool
+) -> None:
+    target = tmp_path / "target.json"
+    if not dangling:
+        target.write_bytes(valid_rule_text(BAD_ID))
+    objects.mkdir(parents=True)
+    os.symlink(target, objects / f"{BAD_ID}.ruleset.json")
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": CONFLICT_TEXT}
+    assert (objects / f"{BAD_ID}.ruleset.json").is_symlink()
+    assert sorted(path.name for path in objects.iterdir()) == [f"{BAD_ID}.ruleset.json"]
+    assert target.exists() is not dangling
+    if not dangling:
+        assert target.read_bytes() == valid_rule_text(BAD_ID)
+
+
+def test_a_dangling_symbolic_link_of_the_same_kind_blocks_saving(
+    client: TestClient, objects: Path, tmp_path: Path
+) -> None:
+    objects.mkdir(parents=True)
+    os.symlink(tmp_path / "missing.json", objects / f"{BAD_ID}.rule.json")
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": LINK_TEXT}
+    assert not (tmp_path / "missing.json").exists()
 
 
 def test_a_file_that_becomes_readable_is_read_at_once(client: TestClient, objects: Path) -> None:
