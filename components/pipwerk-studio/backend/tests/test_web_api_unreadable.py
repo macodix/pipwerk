@@ -18,17 +18,30 @@ from fastapi.testclient import TestClient
 from web_api_support import (
     JSON,
     body,
+    indicator_document,
     instance_of,
     load_case,
     post,
     put,
     rule_document,
+    ruleset_document,
+    trend_document,
 )
 
 from pipwerk_studio.object_service import MAX_STORED_FILE_BYTES
 
 BAD_ID = "0badf11e-0000-4000-8000-000000000001"
 TEXT = "The object file cannot be read or does not fit the document schema. It is left unchanged."
+
+
+LINK_TEXT = (
+    "The file name of the object in the object directory is taken by an entry that is no "
+    "readable regular file (for example a symbolic link or a directory). Nothing was written."
+)
+CONFLICT_TEXT = (
+    "An entry of another kind has this identifier in the object directory (any entry, for "
+    "example a file, a symbolic link or a directory). Nothing was written."
+)
 
 
 def place(objects: Path, name: str, content: bytes) -> Path:
@@ -170,8 +183,168 @@ def test_a_symbolic_link_is_neither_listed_nor_read_nor_deleted(
     assert client.delete(f"/api/v1/rules/{BAD_ID}").status_code == 404
     document: dict[str, Any] = rule_document()
     document["id"] = BAD_ID
-    assert put(client, "rules", BAD_ID, document).status_code == 404
+    # saving never follows or replaces the link: nothing is written
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": LINK_TEXT}
+    assert (objects / f"{BAD_ID}.rule.json").is_symlink()
     assert target.read_bytes() == valid_rule_text(BAD_ID)
+    assert sorted(path.name for path in objects.iterdir()) == [f"{BAD_ID}.rule.json"]
+
+
+@pytest.mark.parametrize("dangling", [False, True])
+def test_a_symbolic_link_of_another_kind_blocks_saving(
+    client: TestClient, objects: Path, tmp_path: Path, dangling: bool
+) -> None:
+    target = tmp_path / "target.json"
+    if not dangling:
+        target.write_bytes(valid_rule_text(BAD_ID))
+    objects.mkdir(parents=True)
+    os.symlink(target, objects / f"{BAD_ID}.ruleset.json")
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": CONFLICT_TEXT}
+    assert (objects / f"{BAD_ID}.ruleset.json").is_symlink()
+    assert sorted(path.name for path in objects.iterdir()) == [f"{BAD_ID}.ruleset.json"]
+    assert target.exists() is not dangling
+    if not dangling:
+        assert target.read_bytes() == valid_rule_text(BAD_ID)
+
+
+def test_a_dangling_symbolic_link_of_the_same_kind_blocks_saving(
+    client: TestClient, objects: Path, tmp_path: Path
+) -> None:
+    objects.mkdir(parents=True)
+    os.symlink(tmp_path / "missing.json", objects / f"{BAD_ID}.rule.json")
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": LINK_TEXT}
+    assert not (tmp_path / "missing.json").exists()
+
+
+def snapshot(directory: Path) -> dict[str, tuple[str, bytes | str]]:
+    """Every entry of the directory without following links: the type and the content
+    (bytes of a file, target of a link, nothing for a directory)."""
+    result: dict[str, tuple[str, bytes | str]] = {}
+    for path in sorted(directory.iterdir()):
+        if path.is_symlink():
+            result[path.name] = ("link", os.readlink(path))
+        elif path.is_dir():
+            result[path.name] = ("directory", b"")
+        else:
+            result[path.name] = ("file", path.read_bytes())
+    return result
+
+
+def valid_document_text(kind: str, object_id: str) -> bytes:
+    """The content of a readable, valid file of the given kind."""
+    documents: dict[str, dict[str, Any]] = {
+        "rule": rule_document(),
+        "indicator": indicator_document(),
+        "ruleset": ruleset_document("Regelwerk", []),
+        "trend": trend_document(),
+        "strategy": load_case("str-01"),
+    }
+    document = dict(documents[kind])
+    document["id"] = object_id
+    return body(document)
+
+
+def make_entry(path: Path, entry: str, target: Path, kind: str = "rule") -> None:
+    """Put an entry of the given type under the name ``path``. A valid file is a valid
+    document of ``kind``, the kind of the file name."""
+    if entry == "bad file":
+        path.write_bytes(b"{")
+    elif entry == "valid file":
+        path.write_bytes(valid_document_text(kind, BAD_ID))
+    elif entry == "link":
+        target.write_bytes(valid_rule_text(BAD_ID))
+        os.symlink(target, path)
+    elif entry == "dangling link":
+        os.symlink(target, path)
+    else:
+        assert entry == "directory"
+        path.mkdir()
+
+
+ENTRIES = ["valid file", "bad file", "link", "dangling link", "directory"]
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symbolic links need extra rights on Windows")
+@pytest.mark.parametrize("entry", ENTRIES)
+@pytest.mark.parametrize("other_kind", ["indicator", "ruleset", "strategy", "trend"])
+@pytest.mark.parametrize("replacing", [False, True])
+def test_any_entry_of_another_kind_blocks_creating_and_replacing(
+    client: TestClient,
+    objects: Path,
+    tmp_path: Path,
+    entry: str,
+    other_kind: str,
+    replacing: bool,
+) -> None:
+    objects.mkdir(parents=True)
+    if replacing:
+        place(objects, f"{BAD_ID}.rule.json", valid_rule_text(BAD_ID))
+    target = tmp_path / "target.json"
+    make_entry(objects / f"{BAD_ID}.{other_kind}.json", entry, target, other_kind)
+    before = snapshot(objects)
+    target_before = target.read_bytes() if target.exists() else None
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": CONFLICT_TEXT}
+    assert snapshot(objects) == before
+    assert (target.read_bytes() if target.exists() else None) == target_before
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symbolic links need extra rights on Windows")
+@pytest.mark.parametrize("entry", ["link", "dangling link", "directory"])
+def test_a_link_or_a_directory_under_the_name_of_the_path_blocks_saving(
+    client: TestClient, objects: Path, tmp_path: Path, entry: str
+) -> None:
+    objects.mkdir(parents=True)
+    target = tmp_path / "target.json"
+    make_entry(objects / f"{BAD_ID}.rule.json", entry, target)
+    before = snapshot(objects)
+    target_before = target.read_bytes() if target.exists() else None
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": LINK_TEXT}
+    assert snapshot(objects) == before
+    assert (target.read_bytes() if target.exists() else None) == target_before
+
+
+def test_a_file_that_is_not_readable_under_the_name_of_the_path_blocks_saving(
+    client: TestClient, objects: Path
+) -> None:
+    place(objects, f"{BAD_ID}.rule.json", b"{")
+    before = snapshot(objects)
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    response = put(client, "rules", BAD_ID, document)
+    assert response.status_code == 409
+    assert response.json() == {"detail": TEXT}
+    assert snapshot(objects) == before
+
+
+def test_a_missing_file_is_created_and_a_valid_one_is_replaced(
+    client: TestClient, objects: Path
+) -> None:
+    document: dict[str, Any] = rule_document()
+    document["id"] = BAD_ID
+    created = put(client, "rules", BAD_ID, document)
+    assert created.status_code == 201
+    assert sorted(snapshot(objects)) == [f"{BAD_ID}.rule.json"]
+    replaced = put(client, "rules", BAD_ID, document)
+    assert replaced.status_code == 200
+    assert sorted(snapshot(objects)) == [f"{BAD_ID}.rule.json"]
 
 
 def test_a_file_that_becomes_readable_is_read_at_once(client: TestClient, objects: Path) -> None:

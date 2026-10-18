@@ -7,10 +7,13 @@ from importlib.metadata import distributions
 from typing import Any, Protocol
 
 from pipwerk_domain.typedesc import (
+    TIME_UNITS,
     Choice,
     Condition,
+    DataType,
     ElementKind,
     ParameterDescription,
+    PropertyDescription,
     TypeDescription,
 )
 
@@ -75,6 +78,7 @@ class ElementRegistry:
             raise RegistryError("empty identifier")
         if description.id in self._types:
             raise RegistryError(f"identifier already registered: {description.id}")
+        _check_valid(description)
         self._types[description.id] = description
 
     def get(self, type_id: str) -> TypeDescription | None:
@@ -137,6 +141,7 @@ class ElementRegistry:
                 raise RegistryError("not a type description")
             if description.id in self._types or description.id in seen or not description.id:
                 raise RegistryError("identifier empty or already registered")
+            _check_valid(description)
             seen.add(description.id)
         for description in descriptions:
             self.register(description)
@@ -145,10 +150,10 @@ class ElementRegistry:
         """Complete the descriptions whose choices depend on other registrations: the
         calculation methods of the trend and the order types of "Order aufgeben"."""
         if description.id == TREND_TYPE_ID:
-            return self._with_methods(description)
-        if description.id == PLACE_ORDER_TYPE_ID:
-            return self._with_order_types(description)
-        return description
+            description = self._with_methods(description)
+        elif description.id == PLACE_ORDER_TYPE_ID:
+            description = self._with_order_types(description)
+        return _with_time_units(description)
 
     def _with_order_types(self, element: TypeDescription) -> TypeDescription:
         order_types = tuple(
@@ -186,6 +191,28 @@ class ElementRegistry:
                     )
                 )
         return replace(trend, parameters=tuple(parameters))
+
+
+def _check_valid(description: TypeDescription) -> None:
+    """At most one output of a type carries the management (specification 3.1)."""
+    if sum(1 for item in description.outputs if item.holds_management) > 1:
+        raise RegistryError("more than one output holds the management")
+
+
+def _fill_time_unit[T: (ParameterDescription, PropertyDescription)](item: T) -> T:
+    if item.datatype is DataType.TIME_UNIT and not item.choices:
+        return replace(item, choices=TIME_UNITS)
+    return item
+
+
+def _with_time_units(description: TypeDescription) -> TypeDescription:
+    """Name all time units as ``choices`` of the parameters and properties of the data type
+    time unit (specification 3.1)."""
+    return replace(
+        description,
+        parameters=tuple(_fill_time_unit(item) for item in description.parameters),
+        properties=tuple(_fill_time_unit(item) for item in description.properties),
+    )
 
 
 def _installed_entry_points() -> list[EntryPointLike]:

@@ -68,7 +68,7 @@ def test_the_finding_identifiers_of_the_documentation_are_those_of_the_code() ->
         for name, value in vars(findings_module).items()
         if name.isupper() and isinstance(value, str) and re.match(r"^[a-z_]+\.[a-z_]+$", value)
     }
-    assert len(codes) == 27
+    assert len(codes) == 26
     documented = set(first_cells(section("9", "10")))
     assert documented == codes
 
@@ -76,7 +76,6 @@ def test_the_finding_identifiers_of_the_documentation_are_those_of_the_code() ->
 def test_the_table_of_the_specification_is_complete() -> None:
     table = set(first_cells(section("9", "10").split("### 9.2")[0]))
     assert table == {
-        "strategy.no_trigger",
         "trigger.unconnected",
         "flow.no_incoming",
         "expression.invalid",

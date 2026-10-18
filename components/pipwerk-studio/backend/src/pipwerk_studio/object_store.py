@@ -215,8 +215,10 @@ def _synchronize_directory(directory: Path) -> None:
 def _write_file(directory: Path, name: str, payload: bytes) -> None:
     """Write ``payload`` to ``directory/name`` through a temporary file.
 
-    The old file stays unchanged until the new one is complete. A file other
-    than a regular file under the name (a symbolic link) is not replaced.
+    The old file stays unchanged until the new one is complete. Any entry under
+    the name that is not a regular file (for example a symbolic link or a
+    directory) is not replaced; ``ObjectWriteError`` is raised and nothing is
+    written.
     """
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     target = directory / name
@@ -460,6 +462,15 @@ class ObjectStore:
                 raise ObjectWriteError("The object file cannot be deleted.") from error
             _synchronize_directory(directory)
             return True
+
+    def has_entry(self, kind: str, object_id: str) -> bool:
+        """Tell whether any entry lies under the name of the object, whatever it is (for
+        example a file, a directory or a symbolic link, also a dangling one). A link is
+        not followed."""
+        name = object_file_name(kind, object_id)
+        with self.lock:
+            directory = self._directory()
+            return directory is not None and os.path.lexists(directory / name)
 
     def list_objects(self, kind: str) -> list[ObjectEntry]:
         """List the objects of one kind with the time of their last change."""
