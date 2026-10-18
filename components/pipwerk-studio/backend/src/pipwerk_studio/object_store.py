@@ -215,8 +215,10 @@ def _synchronize_directory(directory: Path) -> None:
 def _write_file(directory: Path, name: str, payload: bytes) -> None:
     """Write ``payload`` to ``directory/name`` through a temporary file.
 
-    The old file stays unchanged until the new one is complete. A file other
-    than a regular file under the name (a symbolic link) is not replaced.
+    The old file stays unchanged until the new one is complete. Any entry under
+    the name that is not a regular file (for example a symbolic link or a
+    directory) is not replaced; ``ObjectWriteError`` is raised and nothing is
+    written.
     """
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     target = directory / name
