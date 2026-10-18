@@ -12,7 +12,7 @@ import { bindingKinds } from '../api/elementTypes';
 import { getOwn } from '../document/own';
 import type { Binding, Bindings, ElementDocument, InstanceDocument, ParameterDefinition } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
-import { labelText, orderSelector, type TypeIndex } from '../model/typeIndex';
+import { labelText, orderSelector, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
 
 /**
  * What the property view shows for an element, an instance or a rule: one row
@@ -97,8 +97,12 @@ export function orderPropertySpecs(
   return orderType.properties.filter((property) => property.setByUser).map((property) => specOfProperty(property, language));
 }
 
-/** The rows of the own parameters that an instance defines. */
-export function definitionSpecs(definitions: readonly ParameterDefinition[]): BindingSpec[] {
+/**
+ * The rows of the own parameters that an instance defines. A parameter of the
+ * datatype time unit without `choices` of its own offers the time units of the
+ * type descriptions (`timeUnits`, see `timeUnitChoices`).
+ */
+export function definitionSpecs(definitions: readonly ParameterDefinition[], timeUnits: readonly Choice[]): BindingSpec[] {
   return definitions.map((definition) => ({
     key: definition.name,
     label: definition.name,
@@ -106,7 +110,10 @@ export function definitionSpecs(definitions: readonly ParameterDefinition[]): Bi
     required: definition.required === true,
     must: false,
     default: definition.default ?? null,
-    choices: (definition.choices ?? []).map((id) => ({ id, label: { de: id, en: id } })),
+    choices:
+      definition.datatype === 'time_unit' && (definition.choices ?? []).length === 0
+        ? [...timeUnits]
+        : (definition.choices ?? []).map((id) => ({ id, label: { de: id, en: id } })),
     bindings: bindingKinds,
     appliesWhen: null,
   }));
@@ -169,8 +176,9 @@ export function instanceParameterSpecs(
   instance: InstanceDocument,
   type: TypeDescription | undefined,
   language: SupportedLanguage,
+  index: TypeIndex,
 ): BindingSpec[] {
-  const own = definitionSpecs(instance.parameters ?? []);
+  const own = definitionSpecs(instance.parameters ?? [], timeUnitChoices(index));
   const fromType = type === undefined ? [] : parameterSpecs(type, language);
   const known = new Set(fromType.map((spec) => spec.key));
   return [...fromType, ...own.filter((spec) => !known.has(spec.key))];

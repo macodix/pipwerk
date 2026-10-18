@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { DataType } from '../api/elementTypes';
 import type { ElementDocument, InstanceDocument, StrategyDocument } from '../document/types';
 import { loadTestcase, realTypes } from '../testing/fixtures';
 import { inventedTypes } from '../testing/inventedTypes';
@@ -297,7 +298,7 @@ describe('names of types it cannot know', () => {
     const planet = findMember(members, 'Planet')!;
 
     expect(planet.children().map((member) => member.id)).toEqual(['mass', 'speed', 'x']);
-    expect(planet.children().find((member) => member.id === 'speed')?.detail).toBe('number');
+    expect(planet.children().find((member) => member.id === 'speed')?.detail).toBe('Number');
     // Counter test: the same names of the strategy are not offered after an object that is not marked.
     const withoutMark = {
       ...inventedTypes,
@@ -305,6 +306,62 @@ describe('names of types it cannot know', () => {
     };
     const unmarked = rootMembers(withParameters, withoutMark, 'en', { kind: 'element', elementId: 'x' });
     expect(findMember(unmarked, 'Planet')?.children().map((member) => member.id)).toEqual(['mass']);
+  });
+});
+
+describe('the datatype shown with a suggestion', () => {
+  const rule = instance('r1', 'ZzRule', {
+    parameters: [{ name: 'limit', datatype: 'time_unit' }],
+  });
+  const holder = instance('holder', 'ZzRule', { properties: [{ name: 'extra', datatype: 'integer', expression: '1' }] });
+  const withAll: StrategyDocument = {
+    ...strategy,
+    elements: [objectElement('00000000-0000-4000-8000-0000000000aa', holder)],
+    rules: [rule],
+    parameters: [{ name: 'speed', datatype: 'number', value: 1 }],
+  };
+  const details = (language: 'de' | 'en') => {
+    const outside = rootMembers(withAll, inventedTypes, language, { kind: 'element', elementId: 'x' });
+    const insideRule = rootMembers(withAll, inventedTypes, language, {
+      kind: 'rule',
+      path: { owner: { kind: 'strategy' }, indices: [0] },
+    });
+    const planet = findMember(outside, 'Planet')!.children();
+    return {
+      typeProperty: findMember(planet, 'mass')?.detail,
+      strategyParameter: findMember(planet, 'speed')?.detail,
+      ownProperty: findMember(findMember(outside, 'holder')!.children(), 'extra')?.detail,
+      ruleParameter: findMember(insideRule, 'limit')?.detail,
+    };
+  };
+
+  it('is in German and in English, at every place', () => {
+    expect(details('de')).toEqual({
+      typeProperty: 'Zahl',
+      strategyParameter: 'Zahl',
+      ownProperty: 'Ganzzahl',
+      ruleParameter: 'Zeiteinheit',
+    });
+    expect(details('en')).toEqual({
+      typeProperty: 'Number',
+      strategyParameter: 'Number',
+      ownProperty: 'Integer',
+      ruleParameter: 'Time unit',
+    });
+  });
+
+  it('stays as written for a datatype without a translation, also one named like a field of every object', () => {
+    const odd = instance('odd', 'ZzRule', {
+      properties: [
+        { name: 'a', datatype: 'constructor' as DataType, expression: '1' },
+        { name: 'b', datatype: 'mystery' as DataType, expression: '1' },
+      ],
+    });
+    const other: StrategyDocument = { ...withAll, elements: [objectElement('00000000-0000-4000-8000-0000000000bb', odd)] };
+    const members = findMember(rootMembers(other, inventedTypes, 'de', { kind: 'element', elementId: 'x' }), 'odd')!.children();
+
+    expect(findMember(members, 'a')?.detail).toBe('constructor');
+    expect(findMember(members, 'b')?.detail).toBe('mystery');
   });
 });
 

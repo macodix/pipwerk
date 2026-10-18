@@ -370,6 +370,24 @@ describe('rules', () => {
     });
   });
 
+  it('offers the time units of the descriptions for the value of an own parameter of a rule', async () => {
+    const { user, backend } = await openStrategy();
+    await user.click(within(properties()).getByRole('button', { name: 'Neue Regel' }));
+    const view = properties();
+    await within(view).findByRole('heading', { level: 2, name: 'regel' });
+    await user.click(within(view).getByRole('button', { name: 'Parameter hinzufügen' }));
+    await user.selectOptions(within(view).getByRole('combobox', { name: 'Datentyp von parameter' }), 'Zeiteinheit');
+
+    await user.selectOptions(within(view).getByRole('combobox', { name: 'Bindungsart von parameter' }), 'fester Wert');
+
+    const select = within(view).getByRole('combobox', { name: 'parameter' });
+    const options = within(select).getAllByRole('option').map((option) => option.textContent);
+    expect(options).toEqual(expect.arrayContaining(['M1', 'H1']));
+    await user.selectOptions(select, 'H1');
+    const result = await saved(user, backend);
+    expect(result.rules.at(-1)?.parameter_values).toEqual({ parameter: { kind: 'fixed', value: 'h1' } });
+  });
+
   it('adds a rule to an element', async () => {
     const { user, backend } = await openStrategy();
     await select('Order aufgeben');

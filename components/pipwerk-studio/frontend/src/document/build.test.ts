@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { TemplateDocument } from '../api/elementTypes';
 import { inventedTypes } from '../testing/inventedTypes';
 import { loadTestcase, realTypes } from '../testing/fixtures';
 import {
@@ -119,6 +120,30 @@ describe('instances', () => {
     const instance = instanceFromTemplate(realTypes.templates[0]!, 'risiko');
 
     expect(instance).toEqual(stored);
+  });
+
+  it('sets the standard value of own parameters named like fields of every object, and keeps the prototype', () => {
+    const names = ['constructor', 'toString', '__proto__'];
+    const template = {
+      ...realTypes.templates[0]!,
+      parameters: names.map((name) => ({ name, datatype: 'number', default: 3 })),
+      parameter_values: {},
+    } as unknown as TemplateDocument;
+
+    const instance = instanceFromTemplate(template, 'x1');
+
+    const values = instance.parameter_values as Record<string, unknown>;
+    for (const name of names) {
+      expect(Object.prototype.hasOwnProperty.call(values, name)).toBe(true);
+      expect(Object.getOwnPropertyDescriptor(values, name)?.value).toEqual({ kind: 'fixed', value: 3 });
+    }
+    expect(Object.getPrototypeOf(values)).toBe(Object.prototype);
+    // Counter test: a value that the template sets stays as it is.
+    const set = instanceFromTemplate(
+      { ...template, parameter_values: JSON.parse('{"__proto__": {"kind": "fixed", "value": 9}}') } as unknown as TemplateDocument,
+      'x2',
+    );
+    expect(Object.getOwnPropertyDescriptor(set.parameter_values, '__proto__')?.value).toEqual({ kind: 'fixed', value: 9 });
   });
 
   it('makes a new rule from the object type that is a rule, with an empty expression', () => {

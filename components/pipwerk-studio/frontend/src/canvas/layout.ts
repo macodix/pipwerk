@@ -1,4 +1,5 @@
 import type { TypeDescription } from '../api/elementTypes';
+import { getOwn, setOwn } from '../document/own';
 import type { ElementDocument, StrategyDocument } from '../document/types';
 import { isManagementOwnerType, type NodeKind, type TypeIndex } from '../model/typeIndex';
 
@@ -244,14 +245,14 @@ export function syncFrames(
         if (box !== undefined) {
           members.push(box);
         }
-        const inner = result[element.id];
+        const inner = getOwn(result, element.id);
         if (inner !== undefined) {
           members.push(inner);
         }
       }
     }
     const ownerBox = boxes.get(ownerId) ?? { x: 0, y: 0, width: NODE_WIDTH, height: NODE_MIN_HEIGHT };
-    let rect = stored[ownerId] ?? fitFrame(members, ownerBox);
+    let rect = getOwn(stored, ownerId) ?? fitFrame(members, ownerBox);
     for (const member of grow ? members : []) {
       if (!contains(rect, member)) {
         rect = union(rect, {
@@ -262,7 +263,7 @@ export function syncFrames(
         });
       }
     }
-    result[ownerId] = rect;
+    setOwn(result, ownerId, rect);
   }
   return result;
 }

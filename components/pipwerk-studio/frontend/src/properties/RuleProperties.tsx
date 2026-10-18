@@ -204,7 +204,7 @@ export function RuleProperties({ path }: { path: RulePath }) {
   const parentPath: RulePath | null =
     path.indices.length > 1 ? { owner: path.owner, indices: path.indices.slice(0, -1) } : null;
   const parentName = ownerElement === null ? t('properties.strategy') : (document.elements.find((e) => e.id === ownerElement)?.title ?? '');
-  const specs = visibleSpecs(definitionSpecs(rule.parameters ?? []), rule.parameter_values ?? {});
+  const specs = visibleSpecs(definitionSpecs(rule.parameters ?? [], timeUnitChoices(types)), rule.parameter_values ?? {});
   const origin = rule.origin;
   const determinable = allOrderProperties(types).filter((property) => property.setByUser);
 

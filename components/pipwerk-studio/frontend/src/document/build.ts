@@ -2,7 +2,7 @@ import type { ParameterDescription, TemplateDocument, TypeDescription } from '..
 import type { SupportedLanguage } from '../i18n';
 import { holdsInstance, labelText } from '../model/typeIndex';
 import { identifierFromName, newUuid, uniqueName } from './ids';
-import { setOwn } from './own';
+import { hasOwn, setOwn } from './own';
 import {
   FORMAT_VERSION,
   STRATEGY_FORMAT,
@@ -115,8 +115,8 @@ export function instanceFromTemplate(template: TemplateDocument, name: string): 
   const definitions = (copy.parameters ?? []) as NonNullable<InstanceDocument['parameters']>;
   for (const definition of definitions) {
     const standard = definition.default;
-    if (standard !== undefined && standard !== null && !(definition.name in parameterValues)) {
-      parameterValues[definition.name] = { kind: 'fixed', value: standard };
+    if (standard !== undefined && standard !== null && !hasOwn(parameterValues, definition.name)) {
+      setOwn(parameterValues, definition.name, { kind: 'fixed', value: standard });
     }
   }
   instance.parameter_values = parameterValues;

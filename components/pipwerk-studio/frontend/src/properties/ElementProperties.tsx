@@ -150,7 +150,7 @@ export function ElementProperties({ elementId }: { elementId: string }) {
     type === undefined
       ? []
       : instanceBased && element.instance !== undefined && element.instance !== null
-        ? instanceParameterSpecs(element.instance, type, language)
+        ? instanceParameterSpecs(element.instance, type, language, types)
         : parameterSpecs(type, language);
   const propertyRows = orderPropertySpecs(types, type, element, language);
 

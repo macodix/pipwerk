@@ -1,7 +1,8 @@
 import type { PropertyDescription, TypeDescription } from '../api/elementTypes';
 import { findElement, getRule } from '../document/ops';
 import type { InstanceDocument, RulePath, StrategyDocument } from '../document/types';
-import type { SupportedLanguage } from '../i18n';
+import { getOwn } from '../document/own';
+import { resources, type SupportedLanguage } from '../i18n';
 import { allOrderProperties, commonOrderObject, labelText, type TypeIndex } from '../model/typeIndex';
 
 /**
@@ -36,6 +37,12 @@ export type ExpressionContext =
  */
 const RESULT_PROPERTY = { id: 'ergebnis', label: { de: 'Ergebnis', en: 'Result' } } as const;
 
+/** The name of a datatype in the language of the interface (`datatype.*`); an unknown one stays as written. */
+function datatypeLabel(datatype: string, language: SupportedLanguage): string {
+  const names: Readonly<Record<string, string>> = resources[language].translation.datatype;
+  return getOwn(names, datatype) ?? datatype;
+}
+
 function propertyMember(
   property: PropertyDescription,
   types: TypeIndex,
@@ -45,7 +52,7 @@ function propertyMember(
   return {
     id: property.id,
     label: labelText(property.label, language),
-    detail: property.datatype,
+    detail: datatypeLabel(property.datatype, language),
     children: () => {
       if (property.datatype !== 'object' || property.objectType === null || depth > 4) {
         return [];
@@ -108,7 +115,7 @@ function instanceMember(instance: InstanceDocument, types: TypeIndex, language: 
         members.push(...propertyMembers(type, types, language));
       }
       for (const own of instance.properties ?? []) {
-        members.push({ id: own.name, label: own.name, detail: own.datatype, children: () => [] });
+        members.push({ id: own.name, label: own.name, detail: datatypeLabel(own.datatype, language), children: () => [] });
       }
       if (isRuleLike(instance, types)) {
         members.push(resultMember(language));
@@ -135,7 +142,7 @@ function applicationMembers(document: StrategyDocument, types: TypeIndex, langua
             ...document.parameters.map((parameter) => ({
               id: parameter.name,
               label: parameter.name,
-              detail: parameter.datatype,
+              detail: datatypeLabel(parameter.datatype, language),
               children: () => [],
             })),
           );
@@ -177,11 +184,11 @@ function strategyMembers(document: StrategyDocument, types: TypeIndex, language:
   return members;
 }
 
-function parameterMembers(instance: InstanceDocument | undefined): Member[] {
+function parameterMembers(instance: InstanceDocument | undefined, language: SupportedLanguage): Member[] {
   return (instance?.parameters ?? []).map((parameter) => ({
     id: parameter.name,
     label: parameter.name,
-    detail: parameter.datatype,
+    detail: datatypeLabel(parameter.datatype, language),
     children: () => [],
   }));
 }
@@ -224,10 +231,10 @@ export function rootMembers(
   }
   if (insideRuleset) {
     // A rule in a rule set sees its own parameters, the rules of the rule set and the objects of the application.
-    return dedupe([...parameterMembers(rule), ...siblingMembers, ...application]);
+    return dedupe([...parameterMembers(rule, language), ...siblingMembers, ...application]);
   }
   return dedupe([
-    ...parameterMembers(rule),
+    ...parameterMembers(rule, language),
     ...siblingMembers,
     ...strategyMembers(document, types, language),
     ...application,

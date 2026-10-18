@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { realTypes } from '../testing/fixtures';
+import { timeUnitChoices } from '../model/typeIndex';
 import { inventedTypes } from '../testing/inventedTypes';
 import {
   definitionSpecs,
@@ -70,11 +71,46 @@ describe('rows of the properties of an order', () => {
 
 describe('own parameters of an instance', () => {
   it('become rows with the name as label and all kinds of binding', () => {
-    const specs = definitionSpecs([{ name: 'cap', datatype: 'number', required: true, default: 5 }, { name: 'mode', datatype: 'choice', choices: ['a', 'b'] }]);
+    const specs = definitionSpecs(
+      [
+        { name: 'cap', datatype: 'number', required: true, default: 5 },
+        { name: 'mode', datatype: 'choice', choices: ['a', 'b'] },
+      ],
+      [],
+    );
 
     expect(specs[0]).toMatchObject({ key: 'cap', label: 'cap', required: true, default: 5 });
     expect(specs[1]?.choices.map((choice) => choice.id)).toEqual(['a', 'b']);
     expect(specs[1]?.bindings).toHaveLength(4);
+  });
+
+  it('offer the time units of the descriptions for the datatype time unit, if the definition names no choices', () => {
+    const units = timeUnitChoices(inventedTypes);
+    const specs = definitionSpecs(
+      [
+        { name: 'every', datatype: 'time_unit' },
+        { name: 'own', datatype: 'time_unit', choices: ['k1'] },
+        { name: 'text', datatype: 'text' },
+      ],
+      units,
+    );
+
+    expect(units.map((unit) => unit.id)).toEqual(['qq1', 'qq7']);
+    expect(specs[0]?.choices.map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
+    // Counter tests: choices of the definition itself win; other datatypes get none.
+    expect(specs[1]?.choices.map((choice) => choice.id)).toEqual(['k1']);
+    expect(specs[2]?.choices).toEqual([]);
+  });
+
+  it('offer them for an own parameter of an instance as well', () => {
+    const specs = instanceParameterSpecs(
+      { name: 'z', object_type: 'Zork', parameters: [{ name: 'every', datatype: 'time_unit' }] },
+      inventedTypes.byId.get('Zork'),
+      'de',
+      inventedTypes,
+    );
+
+    expect(specs.find((spec) => spec.key === 'every')?.choices.map((choice) => choice.id)).toEqual(['qq1', 'qq7']);
   });
 
   it('follow the parameters of the type', () => {
@@ -82,6 +118,7 @@ describe('own parameters of an instance', () => {
       { name: 'z', object_type: 'Zork', parameters: [{ name: 'extra', datatype: 'text' }, { name: 'size', datatype: 'text' }] },
       inventedTypes.byId.get('Zork'),
       'de',
+      inventedTypes,
     );
 
     // The parameter of the type wins over an own parameter with the same name.

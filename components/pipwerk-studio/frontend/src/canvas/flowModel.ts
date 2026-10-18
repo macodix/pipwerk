@@ -1,5 +1,6 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 
+import { getOwn, setOwn } from '../document/own';
 import type { SupportedLanguage } from '../i18n';
 import type { ConnectionDocument, ElementDocument, StrategyDocument } from '../document/types';
 import { labelText, managementOutput, nodeKindOf, type NodeKind, type TypeIndex } from '../model/typeIndex';
@@ -157,12 +158,12 @@ export function documentToFlow(document: StrategyDocument, ctx: FlowContext): Fl
 
   for (const ownerId of owners) {
     const owner = byId.get(ownerId);
-    const rect = rects[ownerId];
+    const rect = getOwn(rects, ownerId);
     if (owner === undefined || rect === undefined) {
       continue;
     }
     const container = containerById.get(ownerId) ?? null;
-    const parentRect = container === null ? undefined : rects[container];
+    const parentRect = container === null ? undefined : getOwn(rects, container);
     const origin = parentRect === undefined ? { x: 0, y: 0 } : { x: parentRect.x, y: parentRect.y };
     const collapsed = ctx.collapsed.has(ownerId);
     const node: FrameFlowNode = {
@@ -201,7 +202,7 @@ export function documentToFlow(document: StrategyDocument, ctx: FlowContext): Fl
     const nodeKind = nodeKindOf(type);
     const outputs = elementOutputs(document, element, type, label);
     const container = containerById.get(element.id) ?? null;
-    const parentRect = container === null ? undefined : rects[container];
+    const parentRect = container === null ? undefined : getOwn(rects, container);
     const origin = parentRect === undefined ? { x: 0, y: 0 } : { x: parentRect.x, y: parentRect.y };
     const height = nodeHeight(outputs.length);
     const rel = { x: element.x - origin.x, y: element.y - origin.y };
@@ -264,7 +265,7 @@ export function documentToFlow(document: StrategyDocument, ctx: FlowContext): Fl
     });
   });
   for (const ownerId of owners) {
-    if (byId.has(ownerId) && rects[ownerId] !== undefined) {
+    if (byId.has(ownerId) && getOwn(rects, ownerId) !== undefined) {
       edges.push({
         id: `management:${ownerId}`,
         source: ownerId,
@@ -365,13 +366,13 @@ export function flowToFrames(flow: FlowModel, stored: FrameRects): FrameRects {
       continue;
     }
     const abs = absolutePosition(node, nodes);
-    const known = stored[node.data.ownerId];
-    result[node.data.ownerId] = {
+    const known = getOwn(stored, node.data.ownerId);
+    setOwn(result, node.data.ownerId, {
       x: abs.x,
       y: abs.y,
       width: known?.width ?? node.data.size.width,
       height: known?.height ?? node.data.size.height,
-    };
+    });
   }
   return result;
 }

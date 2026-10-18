@@ -1,5 +1,6 @@
 import type { Finding } from '../api/objects';
 import type { FrameRects } from '../canvas/layout';
+import { getOwn } from '../document/own';
 import { serializeDocument } from '../document/parse';
 import { getRule } from '../document/ops';
 import type { RulePath, StrategyDocument } from '../document/types';
@@ -74,8 +75,8 @@ function sameFrames(a: FrameRects, b: FrameRects): boolean {
     return false;
   }
   return keys.every((key) => {
-    const left = a[key];
-    const right = b[key];
+    const left = getOwn(a, key);
+    const right = getOwn(b, key);
     return (
       left !== undefined &&
       right !== undefined &&
