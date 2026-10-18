@@ -330,7 +330,7 @@ Erlaubt der Typ nur eine Bindungsart (bei „Bedingung“ und „Berechnung“ n
 **Verwaltung einer Order.**
 
 1. Legen Sie „Order aufgeben“ auf die Zeichenfläche. Unter dem Element erscheint ein Rahmen mit der Aufschrift „Verwaltung: Order aufgeben“ (der Text folgt der Bezeichnung des Elements). Er hängt am Ausgang „gestellt“ des Elements. Von diesem Ausgang ziehen Sie keine Verbindung. Welche Elemente zur Verwaltung gehören, bestimmt der Rahmen.
-2. Die Verwaltung braucht eigene Auslöser, zum Beispiel „Tick“ oder „Kerzenschluss“, und die Elemente, die sich um die Order kümmern. „Order ändern“, „Order löschen“, „Position ändern“ und „Position schließen“ stehen nur in einer Verwaltung.
+2. Die Verwaltung kann eigene Auslöser haben, zum Beispiel „Tick“ oder „Kerzenschluss“; Auslöser sind auch hier freiwillig. Dazu kommen die Elemente, die sich um die Order kümmern. „Order ändern“, „Order löschen“, „Position ändern“ und „Position schließen“ stehen nur in einer Verwaltung.
 3. Legen Sie ein Element in den Rahmen: Ziehen Sie einen Eintrag der Elementbibliothek auf eine Stelle im Rahmen, oder ziehen Sie ein vorhandenes Element in den Rahmen. Das Element gehört zur Verwaltung, wenn seine Mitte im Rahmen liegt. Der Rahmen wächst mit, wenn ein Element hineingelegt wird. Er wird nie kleiner.
 4. Ziehen Sie ein Element aus dem Rahmen heraus, gehört es wieder zum Hauptablauf.
 5. Ziehen Sie den Rahmen an seiner Kopfzeile, wandern alle Elemente darin mit.
