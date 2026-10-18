@@ -79,7 +79,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
   4. Der Projektleiter erstellt eine Präsentation der wichtigsten Aussagen. Sie enthält die Befunde, die nur der Auftraggeber entscheiden kann, als Fragen mit Vorschlag. Beide stimmen die Präsentation ab. Der Projektleiter arbeitet die Entscheidungen in die Dokumente ein.
 - Ergebnis: fortgeschriebene Dokumente des Auftraggebers, Prüfbericht der QA, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
 - Schleifen: Prüfung durch die QA und Korrektur durch den Projektleiter nach [Grenze der Durchläufe](#grenze-der-durchläufe). Befunde, die nur der Auftraggeber entscheiden kann, gehen sofort an ihn. Die Nachprüfung nach der Abstimmung ist der erste Schritt von Phase 2.
-- Rückkopplung: Die Dokumente des Auftraggebers sind lebende Dokumente. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück und wird vor der Präsentation erneut von der QA geprüft, beschränkt auf die geänderten Stellen.
+- Rückkopplung: Die Dokumente des Auftraggebers sind lebende Dokumente. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück und wird vor der Präsentation erneut von der QA geprüft, beschränkt auf die geänderten Stellen. Vorgelegt wird nur nach [Fragen an den Auftraggeber](#fragen-an-den-auftraggeber); ein Arbeitspaket ruht nur, solange eine solche Entscheidung aussteht.
 
 ### Phase 2 – Konzeption
 
@@ -251,6 +251,16 @@ Diese Regeln gelten für jede Prüfung durch QA und Tester, in allen Phasen:
 - **Erster Durchlauf vollständig.** Der erste Durchlauf meldet alle Befunde auf einmal. Jeder weitere Durchlauf ist eine Nachprüfung: Er prüft nur, ob die Befunde behoben sind und ob die dafür geänderten Stellen neue Fehler enthalten.
 - **Nur blockierende Befunde.** Ein Befund verhindert das Bestehen nur, wenn er einer Anforderung oder einem Abnahmekriterium widerspricht, die Funktion beeinträchtigt oder eine Sicherheitslücke ist. Alles andere steht im Bericht als Hinweis. Hinweise verhindern das Bestehen nicht und werden bei der nächsten passenden Gelegenheit erledigt oder verworfen.
 
+### Fragen an den Auftraggeber
+
+Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann: Arbeitsabläufe, Bedienablauf, Objekte, Regeln und Abnahme, die in keinem geltenden Dokument festgelegt sind. Alles andere erledigen die Rollen selbst, ohne Frage, ohne Präsentation und ohne Pause eines Arbeitspakets:
+
+- **Folgt aus einer Festlegung.** Ergibt sich die Korrektur eindeutig aus einer bestehenden Festlegung oder Entscheidung des Auftraggebers, zum Beispiel das Angleichen von Glossar, Folgesätzen oder Verweisen, korrigiert der Projektleiter die Dokumente des Auftraggebers und der Softwarearchitekt die technischen Dokumente einschließlich Glossar. Vermerk im Änderungsnachweis mit Verweis auf die Festlegung.
+- **Sache der Spezifikation.** Betrifft ein Befund, wie eine Anforderung umgesetzt, dargestellt oder geprüft wird, entscheidet der Softwarearchitekt in der Spezifikation.
+- **Offener Punkt.** Ist eine Frage in den Dokumenten des Auftraggebers als offen gekennzeichnet und für die laufende Arbeit nicht nötig, bleibt sie offen. Sie wird nicht vorgelegt.
+
+Die QA ordnet jeden Befund zu Dokumenten des Auftraggebers einer dieser Gruppen oder der Gruppe „Entscheidung des Auftraggebers“ zu und stellt Fragen nur in dieser Gruppe. Ein Prüfbericht ohne Befund in dieser Gruppe geht nicht an den Auftraggeber. Ist die Zuordnung nicht eindeutig, entscheidet der Softwarearchitekt; nur wenn er sie nicht treffen kann, gilt der Befund als Entscheidung des Auftraggebers.
+
 ### Grenze der Durchläufe
 
 Die Grenze einer Prüfschleife richtet sich nach ihrem Fortschritt, nicht nach einer festen Zahl von Durchläufen:
@@ -411,6 +421,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-18 | Fragen an den Auftraggeber: nur zu Entscheidungen, die nur er treffen kann. Korrekturen, die aus einer Festlegung folgen (auch Glossar), Fragen der Spezifikation und als offen gekennzeichnete Punkte erledigen die Rollen ohne Vorlage und ohne Pause; die QA ordnet ihre Befunde zu. Anlass: Rückfragen in `development/strategiedesign/reviews/requirements-8.md`, die alle ohne Auftraggeber zu klären waren. Forderung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-18 | Rein technische Ergänzungen der Spezifikation oder des Plans in Phase 4 entscheidet der Softwarearchitekt nach Prüfung durch die QA selbst, ohne Pause des Pakets; `present` nur bei Berührung von Dokumenten des Auftraggebers, bestätigten Festlegungen, Abnahmekriterien oder Umfang. Anlass: `wp02` ruhte 14 Stunden für eine rein technische Ergänzung (`development/strategiedesign/reviews/specification-4.md`). Entscheidung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-17 | Aufruf von `agentrun` an den Stand auf dem Entwicklungsrechner angeglichen: `--permission-mode dontAsk` (`scripts/agentrun`, `devteam/start.conf`). Freigaben in `devteam/settings.json` auf den Bedarf der Rollen eingeengt und je Rolle mit Probelauf geprüft (Bericht `transfer/20261017-freigaben-pruefen-bericht.md`). |
 | 2026-10-17 | Freigabe für HTTP-Anfragen mit `curl` an die Testumgebung auf dem eigenen Rechner. Anlass: Frage `strategiedesign/questions/wp01-03.md`. Entscheidung des Auftraggebers im Chat am 2026-10-17. |

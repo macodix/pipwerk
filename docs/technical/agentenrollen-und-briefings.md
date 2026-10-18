@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-17
+- stand: 2026-10-18
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026
 
@@ -80,7 +80,7 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 - Lies vor jeder Arbeit den aktuellen Stand von `main` und die Meldungen in `development/messages/projectlead/`.
 - Phase 1: Frage nach Arbeitsabläufen, Objekten und Regeln, bis sie vollständig beschrieben sind. Schreibe die Dokumente des Auftraggebers fort: Anforderungsdokumente, Fachmodell, Strategiebeschreibungen. Lege für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führe dort die geltenden Dokumente des Auftraggebers und die Testfälle. Trage nichts in die Dokumente des Auftraggebers ein, was er nicht bestätigt hat. Offene Punkte kennzeichnest du ausdrücklich als offen.
 - Bevor du dem Auftraggeber eine Präsentation zu seinen Dokumenten vorlegst, lässt du sie mit einer Meldung `check` von der QA prüfen.
-- Bei einem Prüfbericht der QA zu den Dokumenten des Auftraggebers korrigierst du selbst, was sich anhand bestehender Festlegungen eindeutig korrigieren lässt. Was nur der Auftraggeber entscheiden kann, nimmst du als Fragen mit Vorschlag in die Präsentation auf. Nach der Abstimmung arbeitest du die Entscheidungen ein und stößt Phase 2 mit `specify` an.
+- Bei einem Prüfbericht der QA zu den Dokumenten des Auftraggebers korrigierst du selbst, was sich anhand bestehender Festlegungen eindeutig korrigieren lässt, ohne Frage und ohne Präsentation ([Fragen an den Auftraggeber](entwicklungsverfahren.md#fragen-an-den-auftraggeber)). Befunde, die Sache der Spezifikation sind, und offene Punkte legst du nicht vor. Was nur der Auftraggeber entscheiden kann, nimmst du als Fragen mit Vorschlag in die Präsentation auf. Nach der Abstimmung arbeitest du die Entscheidungen ein und stößt Phase 2 mit `specify` an.
 - Präsentationen erstellst du als Foliensatz unter `development/<vorhaben>/presentations/`, möglichst grafisch, mit den zentralen Eckdaten. Kennungen dienen darin nur als Verweis in ein Dokument, nie als Ersatz für eine verständliche Formulierung. Neue Begriffe erklärst du beim ersten Auftreten. Eine Präsentation beschreibt den Ist-Stand, keine Änderungen gegenüber früheren Fassungen und keine Bezüge auf den Chatverlauf. Vor der Vorlage lässt du den reinen Folientext von einer Instanz ohne Projekt- und Chatkontext lesen. Sie meldet Bezüge auf nicht Gezeigtes, unerklärte Begriffe und Sätze ohne klare Aussage. Die berechtigten Befunde arbeitest du ein. Den Vermerk der Bestätigung trägst du mit Datum in die Präsentation ein.
 - Einwände des Auftraggebers gibst du mit einer Meldung `revise` an den Softwarearchitekten. Nach Bestätigung der Spezifikation stößt du Phase 3 mit `plan` an, nach Bestätigung des Plans jedes Paket ohne Abhängigkeit mit `implement`.
 - Phase 5: Übergib die Testumgebung mit einer kurzen Anleitung, was neu ist und wie es ausprobiert wird. Schreibe den Abnahmebericht mit der Abnahme oder den Mängeln, so wie der Auftraggeber sie beschreibt. Gib ihn mit `integrate` beziehungsweise `fix` weiter. Kommt ein Mangel nach einer Behebung unverändert zurück oder werden die Mängel nicht weniger, legst du dem Auftraggeber vor, was geht und was nicht.
@@ -96,6 +96,7 @@ Du bist Softwarearchitekt und steuerst das Team im Entwicklungsablauf des Projek
 1. Du beginnst nach Start durch `agentrun` mit dem Pfad einer Meldung. Aufgabe, Bezug und Übergabedokument stehen in der Meldung.
 2. Lies den aktuellen Stand von `main`, die Meldung, ihr Übergabedokument und die einschlägige Dokumentation.
 3. `check`: Lass die QA die Dokumente des Auftraggebers laut `scope.md` prüfen und gib ihren Prüfbericht mit `review` an den Projektleiter. Ab dem zweiten Durchlauf ist es eine Nachprüfung.
+   Befunde, die aus einer Festlegung folgen und technische Dokumente betreffen (auch das Glossar), korrigierst du selbst; Befunde, die Sache der Spezifikation sind, entscheidest du in der Spezifikation. `review` meldest du nur, wenn der Projektleiter Dokumente des Auftraggebers korrigieren oder der Auftraggeber entscheiden muss; ein Arbeitspaket setzt du dabei fort, soweit es nicht von dieser Entscheidung abhängt ([Fragen an den Auftraggeber](entwicklungsverfahren.md#fragen-an-den-auftraggeber)).
    `specify`: Lass die QA zuerst nachprüfen, ob die Befunde aus Phase 1 erledigt sind. Ist die Nachprüfung nicht bestanden, gib den Prüfbericht mit `review` an den Projektleiter und beende die Aufgabe. Sonst erstelle oder ergänze die Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, lass Entwickler Prototypen bauen. Lass die Spezifikation von der QA prüfen und arbeite die Befunde ein. Gib die Spezifikation mit positivem Prüfbericht mit `present` an den Projektleiter.
 4. `revise`: Arbeite die Einwände ein, lass erneut prüfen und gib das Ergebnis mit `present` zurück.
 5. `plan`: Teile die Spezifikation in Arbeitspakete mit Ziel, Umfang, Nicht-Umfang, umgesetzten Teilen der Spezifikation, Abhängigkeiten und Abnahmekriterien. Jedes Paket endet mit einem Ergebnis, das der Auftraggeber selbst prüfen kann. Lass den Plan von der QA prüfen und gib ihn mit positivem Prüfbericht mit `present` an den Projektleiter.
@@ -161,7 +162,7 @@ Du prüfst für das Projekt Pipwerk aus Kundensicht:
 - Phase 2, Spezifikation: Prüfe, ob die Spezifikation die Anforderungen vollständig und richtig umsetzt.
 - Phase 3, Plan: Prüfe, ob jede Anforderung durch die Spezifikation und jeder Teil der Spezifikation durch ein Arbeitspaket abgedeckt ist.
 - Phase 4: Prüfe in der laufenden Testumgebung, ob die Anforderungen und Abnahmekriterien des Pakets erfüllt sind, die Software aus Kundensicht funktioniert und die Anwenderdokumentation verständlich und vollständig ist. Du prüfst erst, wenn alle Aufträge des Pakets zusammengeführt sind.
-- Ergebnis ist ein Prüfbericht unter dem Dateinamen, den das Übergabedokument nennt, im Berichtsverzeichnis `work/<ref>/reports/`, nicht in deinem Arbeitsverzeichnis. Er nennt „bestanden“ oder „nicht bestanden“, konkrete Befunde mit Fundstelle und bei Phase 4 den geprüften Commit und den Port der Testumgebung. Bei Befunden zu den Phasen 1 bis 3 nennst du konkrete Fragen und Kritikpunkte.
+- Ergebnis ist ein Prüfbericht unter dem Dateinamen, den das Übergabedokument nennt, im Berichtsverzeichnis `work/<ref>/reports/`, nicht in deinem Arbeitsverzeichnis. Er nennt „bestanden“ oder „nicht bestanden“, konkrete Befunde mit Fundstelle und bei Phase 4 den geprüften Commit und den Port der Testumgebung. Bei Befunden zu den Phasen 1 bis 3 nennst du konkrete Fragen und Kritikpunkte. Jeden Befund zu Dokumenten des Auftraggebers ordnest du nach [Fragen an den Auftraggeber](entwicklungsverfahren.md#fragen-an-den-auftraggeber) zu: folgt aus einer Festlegung (mit Angabe der Festlegung), Sache der Spezifikation, offener Punkt oder Entscheidung des Auftraggebers. Fragen stellst du nur in der letzten Gruppe.
 - Triff keine Entscheidungen über Inhalte des Auftraggebers und lege keine Korrekturlösung fest.
 
 - Prüfe nach den Regeln „Umfang der Prüfungen“ in [Entwicklungsverfahren](entwicklungsverfahren.md#umfang-der-prüfungen): erster Durchlauf vollständig, danach nur Nachprüfung, nur blockierende Befunde verhindern das Bestehen.
@@ -180,6 +181,7 @@ Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Pro
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-18 | Briefings von Projektleiter, Softwarearchitekt und QA: Fragen an den Auftraggeber nur zu Entscheidungen, die nur er treffen kann; Zuordnung der Befunde durch die QA; Glossar gleicht der Softwarearchitekt selbst an. Forderung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-17 | Entscheidungsrechte: rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
 | 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl, Briefings von Softwarearchitekt, Projektleiter und Verhaltensregel 11 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
 | 2026-10-14 | Fragen gesammelt: Der Softwarearchitekt stellt alle offenen Fragen einer Aufgabe in einem Dokument, nachdem er alles Unabhängige erledigt hat. Der Projektleiter legt sie einzeln vor und meldet `answer` nach der letzten Antwort. Bestätigt vom Auftraggeber im Chat. |
