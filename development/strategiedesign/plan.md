@@ -6,7 +6,7 @@
 - stand: 2026-10-18
 - komponenten: `packages/domain-core`, `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber am 2026-10-16 mit allen acht Festlegungen ([Präsentation](presentations/specification-1.html), Vermerk der Bestätigung), Stand `main` Commit `fc30c0e25eeda28517b10bd62b64231046f2a467`
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md), bestanden, vom Auftraggeber am 2026-10-18 bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Änderung von `wp01` und `wp02` am 2026-10-18 nach Entscheidung des Auftraggebers (Auslöser optional, neues Abnahmekriterium 2 von `wp02`) geprüft in [specification-5.md](reviews/specification-5.md).
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md), bestanden, vom Auftraggeber am 2026-10-18 bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Änderung von `wp01` und `wp02` am 2026-10-18 nach Entscheidung des Auftraggebers (Auslöser optional, neues Abnahmekriterium 2 von `wp02`) geprüft in [specification-5.md](reviews/specification-5.md) und [specification-6.md](reviews/specification-6.md).
 
 ## Übersicht
 
@@ -80,7 +80,7 @@ Der Anwender gestaltet in pipwerk Studio Strategien auf der Zeichenfläche, spei
 - Befunde nach 5.4 und Abschnitt 10 Punkt 1.
 - Darstellung eines Elements mit unbekanntem Typ (3.7, zweiter Absatz).
 - Ergänzung der Typbeschreibung nach 3.1 in Bibliothek, Web-API und ihrer Beschreibung: Ausgang mit der Verwaltung (höchstens einer je Typ), „benannt“, „Strategieparameter“, zulässige Werte der Zeiteinheit bei Parametern und Eigenschaften.
-- Konsistenzprüfung nach 3.6 in der Fassung vom 2026-10-18 in der Bibliothek: kein Befund für eine Strategie ohne Auslöser, `Kerze` ohne Instanz auch ohne Auslöser, Hinweis „kein Element ‚Order aufgeben‘ erreichbar“ nur mit Auslöser im Hauptablauf.
+- Konsistenzprüfung nach 3.6 in der Fassung vom 2026-10-18 in der Bibliothek: kein Befund für eine Strategie ohne Auslöser, `Kerze` ohne Instanz auch ohne Auslöser, Hinweis „kein Element ‚Order aufgeben‘ erreichbar“ nicht für eine Strategie ohne Elemente.
 - Tests der Bibliothek und des Backends für beide Änderungen (Abschnitt 7); technische Dokumentation der Bibliothek, Beschreibung der Web-API und Eintrag „Typbeschreibung“ im Glossar dazu (Abschnitt 9).
 - Texte nur als Text, nie als HTML (Abschnitt 8).
 - Tests nach Abschnitt 7 für die Oberfläche (Vitest) und Browsertests: beide Testfälle über die Oberfläche aufbauen, speichern, nach Neuladen öffnen und mit dem Testfalldokument vergleichen; Objektverzeichnis ändern.
@@ -116,7 +116,7 @@ Der Auftraggeber kann in der Testumgebung selbst prüfen:
 11. Eine Strategie mit einem unbekannten Elementtyp, angelegt über die Schnittstellenbeschreibung, öffnet sich. Das Element ist rot umrandet und zeigt die Kennung seines Typs, seine Belegungen sind nur lesbar und bleiben beim Speichern erhalten.
 12. Die Anwenderdokumentation beschreibt die Arbeitsabläufe dieses Pakets, die Schreibweise von Ausdrücken mit „leer“ und „nicht verfügbar“, die Befunde und beide Testfälle verständlich und vollständig.
 
-Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests der Oberfläche und die Browsertests in Chromium, Firefox und WebKit. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
+Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests der Bibliothek und des Backends zu den Änderungen an 3.1 und 3.6, die Tests der Oberfläche und die Browsertests in Chromium, Firefox und WebKit. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
 
 ## wp03 – Vorlagen in der Oberfläche
 
@@ -165,7 +165,7 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 | Teil der Spezifikation | Paket |
 |---|---|
 | 1 Gegenstand, Nachweis mit `str-01` und `str-03` | `wp01` (Dokumente), `wp02` (Oberfläche) |
-| 1 Abweichungen von den Vorlagen | `wp01` (Instanzen als Kopien, Löschen, Auslöser, OpenFormula, kein Index, Indikatoren ohne Berechnung), `wp03` (Löschen in der Oberfläche) |
+| 1 Abweichungen von den Vorlagen | `wp01` (Instanzen als Kopien, Löschen, Auslöser, OpenFormula, kein Index, Indikatoren ohne Berechnung), `wp02` (Strategie ohne Auslöser), `wp03` (Löschen in der Oberfläche) |
 | 2 E1, E4 bis E8 | `wp01` |
 | 2 E2, E3 | `wp01` (Typbeschreibungen, Prüfung im Backend), `wp02` (Oberfläche ohne Typkenntnis, Dokument maßgeblich) |
 | 3.1 bis 3.6 | `wp01`; in Phase 4 ergänzte Felder der Typbeschreibung (3.1) und Änderung der Konsistenzprüfung vom 2026-10-18 (3.6) `wp02` |
@@ -198,4 +198,4 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 | 2026-10-16 | Hinweise aus [plan-1.md](reviews/plan-1.md) eingearbeitet: P1 „Neues Objekt“ in `wp03` und in der Tabelle der Abdeckung; P2 Glossar in `wp03`; P3 zwei Stellen der Anwenderdokumentation in `wp01`; P4 Vergleich ohne Kennung und Zeitpunkte; P5 Ändern des Objektverzeichnisses als Abnahmekriterium nur in `wp02`, in `wp01` als technischer Nachweis; P6 Befund nach „Prüfen“; P7 „kein Fehler“; P8 Kriterien 8 bis 10 von `wp02` ergänzt; P9 Regelvorlage und Ändern einer Vorlage in `wp03`. |
 | 2026-10-17 | `wp01` abgenommen ([Abnahmebericht](wp01/acceptance/1.md)) und mit Commit `cbbebd931b09148b93410e214e495b8b896b1d7e` in `main` übernommen, Stand `done`. |
 | 2026-10-17 | `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1) in Umfang, Nicht-Umfang, umgesetzten Teilen und Tabelle der Abdeckung. Anlass: Lücke der Spezifikation, gefunden im Testbericht `strategiedesign/wp02:development/strategiedesign/wp02/tests/01-functiontest-1.md`, Hinweis H1. Prüfung in [specification-4.md](reviews/specification-4.md), Bestätigung offen. |
-| 2026-10-18 | Ergänzung von `wp02` vom Auftraggeber bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Entscheidung des Auftraggebers: Auslöser optional. `wp02`: Umfang um die Änderung der Konsistenzprüfung (3.6) und die Tests und Dokumentation von Bibliothek und Backend dazu ergänzt (Hinweis H6 aus `specification-4.md`), Nicht-Umfang, umgesetzte Teile, Abnahmekriterium 2 neu, Tabelle der Abdeckung. `wp01`: umgesetzte Teile ohne die Änderungen von `wp02` (Hinweis H5). Prüfung in [specification-5.md](reviews/specification-5.md). |
+| 2026-10-18 | Ergänzung von `wp02` vom Auftraggeber bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Entscheidung des Auftraggebers: Auslöser optional. `wp02`: Umfang um die Änderung der Konsistenzprüfung (3.6) und die Tests und Dokumentation von Bibliothek und Backend dazu ergänzt (Hinweis H6 aus `specification-4.md`), Nicht-Umfang, umgesetzte Teile, Abnahmekriterium 2 neu, Tabelle der Abdeckung. `wp01`: umgesetzte Teile ohne die Änderungen von `wp02` (Hinweis H5). Prüfung in [specification-5.md](reviews/specification-5.md) nicht bestanden; B1 in der Spezifikation 3.6 und im Umfang von `wp02`, Hinweise H5 (technische Nachweise von `wp02`) und H6 (Tabelle der Abdeckung, Zeile „1 Abweichungen“) eingearbeitet. Nachprüfung in [specification-6.md](reviews/specification-6.md). |
