@@ -18,11 +18,14 @@ from fastapi.testclient import TestClient
 from web_api_support import (
     JSON,
     body,
+    indicator_document,
     instance_of,
     load_case,
     post,
     put,
     rule_document,
+    ruleset_document,
+    trend_document,
 )
 
 from pipwerk_studio.object_service import MAX_STORED_FILE_BYTES
@@ -32,12 +35,12 @@ TEXT = "The object file cannot be read or does not fit the document schema. It i
 
 
 LINK_TEXT = (
-    "A symbolic link or a directory lies under the file name of the object in the object "
-    "directory. Nothing was written."
+    "The file name of the object in the object directory is taken by an entry that is no "
+    "readable regular file (for example a symbolic link or a directory). Nothing was written."
 )
 CONFLICT_TEXT = (
-    "An entry of another kind (a file, a symbolic link or a directory) has this identifier in "
-    "the object directory. Nothing was written."
+    "An entry of another kind has this identifier in the object directory (any entry, for "
+    "example a file, a symbolic link or a directory). Nothing was written."
 )
 
 
@@ -237,12 +240,27 @@ def snapshot(directory: Path) -> dict[str, tuple[str, bytes | str]]:
     return result
 
 
-def make_entry(path: Path, entry: str, target: Path) -> None:
-    """Put an entry of the given type under the name ``path``."""
+def valid_document_text(kind: str, object_id: str) -> bytes:
+    """The content of a readable, valid file of the given kind."""
+    documents: dict[str, dict[str, Any]] = {
+        "rule": rule_document(),
+        "indicator": indicator_document(),
+        "ruleset": ruleset_document("Regelwerk", []),
+        "trend": trend_document(),
+        "strategy": load_case("str-01"),
+    }
+    document = dict(documents[kind])
+    document["id"] = object_id
+    return body(document)
+
+
+def make_entry(path: Path, entry: str, target: Path, kind: str = "rule") -> None:
+    """Put an entry of the given type under the name ``path``. A valid file is a valid
+    document of ``kind``, the kind of the file name."""
     if entry == "bad file":
         path.write_bytes(b"{")
     elif entry == "valid file":
-        path.write_bytes(valid_rule_text(BAD_ID))
+        path.write_bytes(valid_document_text(kind, BAD_ID))
     elif entry == "link":
         target.write_bytes(valid_rule_text(BAD_ID))
         os.symlink(target, path)
@@ -253,12 +271,12 @@ def make_entry(path: Path, entry: str, target: Path) -> None:
         path.mkdir()
 
 
-ENTRIES = ["bad file", "link", "dangling link", "directory"]
+ENTRIES = ["valid file", "bad file", "link", "dangling link", "directory"]
 
 
 @pytest.mark.skipif(os.name == "nt", reason="symbolic links need extra rights on Windows")
 @pytest.mark.parametrize("entry", ENTRIES)
-@pytest.mark.parametrize("other_kind", ["indicator", "ruleset", "strategy"])
+@pytest.mark.parametrize("other_kind", ["indicator", "ruleset", "strategy", "trend"])
 @pytest.mark.parametrize("replacing", [False, True])
 def test_any_entry_of_another_kind_blocks_creating_and_replacing(
     client: TestClient,
@@ -272,7 +290,7 @@ def test_any_entry_of_another_kind_blocks_creating_and_replacing(
     if replacing:
         place(objects, f"{BAD_ID}.rule.json", valid_rule_text(BAD_ID))
     target = tmp_path / "target.json"
-    make_entry(objects / f"{BAD_ID}.{other_kind}.json", entry, target)
+    make_entry(objects / f"{BAD_ID}.{other_kind}.json", entry, target, other_kind)
     before = snapshot(objects)
     target_before = target.read_bytes() if target.exists() else None
     document: dict[str, Any] = rule_document()

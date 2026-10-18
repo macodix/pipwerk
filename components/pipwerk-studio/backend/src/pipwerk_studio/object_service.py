@@ -83,11 +83,18 @@ class ObjectUnreadableError(ObjectServiceError):
 
 
 class ObjectKindConflictError(ObjectServiceError):
-    """A file of the same identifier but another kind lies in the object directory."""
+    """An entry of the same identifier but another kind lies in the object directory.
+
+    Any entry blocks saving: a file (readable or not), a symbolic link or a directory.
+    """
 
 
 class ObjectNameTakenError(ObjectServiceError):
-    """A symbolic link lies under the file name of the object; it is not replaced."""
+    """The file name of the object is taken by an entry that is no readable regular file.
+
+    The entry (for example a symbolic link with or without target, or a directory) is
+    neither followed nor replaced.
+    """
 
 
 class BuiltinObjectError(ObjectServiceError):
@@ -356,8 +363,10 @@ class ObjectService:
 
         The file is written in the current object directory also if no file with this
         identifier lies there (``created`` of the result tells it); a missing directory is
-        created. A file of the same identifier of another kind is not touched and
-        nothing is written.
+        created. The name ``<id>.<kind>.json`` is taken if an entry lies under it that is no
+        readable regular file of this kind, or if any entry lies under the name of the same
+        identifier with another kind; then nothing is written, when creating and when
+        replacing. Links are never followed.
 
         Raises ``BuiltinObjectError``, ``DocumentKindError``, ``DocumentIdentifierError``,
         ``ObjectUnreadableError``, ``ObjectKindConflictError``, ``ObjectNameTakenError``,

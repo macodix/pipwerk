@@ -104,12 +104,12 @@ OBJECT_UNREADABLE_TEXT = (
     "The object file cannot be read or does not fit the document schema. It is left unchanged."
 )
 OBJECT_KIND_CONFLICT_TEXT = (
-    "An entry of another kind (a file, a symbolic link or a directory) has this identifier in "
-    "the object directory. Nothing was written."
+    "An entry of another kind has this identifier in the object directory (any entry, for "
+    "example a file, a symbolic link or a directory). Nothing was written."
 )
 OBJECT_NAME_TAKEN_TEXT = (
-    "A symbolic link or a directory lies under the file name of the object in the object "
-    "directory. Nothing was written."
+    "The file name of the object in the object directory is taken by an entry that is no "
+    "readable regular file (for example a symbolic link or a directory). Nothing was written."
 )
 BUILTIN_OBJECT_TEXT = "A delivered template cannot be changed or deleted."
 DOCUMENT_INVALID_TEXT = "The document does not fit the document schema."
