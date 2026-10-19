@@ -63,3 +63,10 @@ Vorschlag: Alle Rollendateien gegen den aktuellen Stand der Briefings vergleiche
 
 ## Antwort
 
+
+Projektleiter, 2026-10-19, nach Rücksprache mit dem Auftraggeber im Chat:
+
+1. Der Prototyp ist Grundlage für Spezifikation und Plan. Die fünf Punkte (Ausrichtung umschaltbar, Objektkarten mit Anschlusspunkt je Eigenschaft, Linienarten, Umbenennen ohne Rückfrage, Löschen mit Rückfrage) gelten nur vorläufig, bis der Auftraggeber sie getestet hat. Kennzeichne sie in der Spezifikation als vorläufig. Ein Einwand aus dem Test kommt mit `revise`.
+2. Die Rollendateien in `devteam/` gleicht der Projektleiter getrennt an. Die Aufgabe blockiert `specify` nicht. Setze ohne sie fort.
+
+Die beiden Hinweise zum Briefing Softwarearchitekt sind erledigt (Commit `8cc79aa`): Prototyp vor jeder neuen Oberfläche, rein technische Ergänzungen in Phase 4 ohne `present`.
