@@ -19,6 +19,7 @@ Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er
 | Depth | Mindestanzahl Kerzen zwischen zwei Wendepunkten | 12 |
 | Deviation | Mindestbewegung in Punkten für einen neuen Wendepunkt | 5 |
 | Backstep | Mindestabstand in Kerzen zwischen einem Hoch und einem Tief | 3 |
+| Durchbruch gilt bei | `Schlusskurs`: eine Kerze der Zeiteinheit des Indikators schließt jenseits des Punkts. `Kurs`: irgendein Kurs liegt jenseits des Punkts. Gilt für 4.2 und 4.3. | `Schlusskurs` |
 
 Die Parameter sind die des in MetaTrader 5 mitgelieferten ZigZag-Indikators. Der Indikator rechnet nach demselben Verfahren und liefert bei gleichen Kursdaten und Parametern dieselben Wendepunkte.
 
@@ -49,15 +50,15 @@ Ein Aufwärtstrend besteht aus den Punkten 1, 2 und 3:
 
 Steigt der Kurs danach über Punkt 2, wird Punkt 3 zum Punkt 1 des nächsten Abschnitts. Deshalb heißt das jeweils letzte Korrekturtief `Punkt 1/3`.
 
-`Trendrichtung` ist `aufwärts`, wenn die letzten drei endgültigen oder vorläufigen Wendepunkte ein Tief, ein höheres Hoch und ein höheres Tief bilden oder der Kurs danach über das Hoch gestiegen ist. `Punkt 2` ist das jüngste Hoch dieser Folge, `Punkt 1/3` das jüngste Tief. Liegt weder ein Aufwärts- noch ein Abwärtstrend vor, ist die Trendrichtung `kein Trend` und die Punkte sind nicht belegt.
+`Trendrichtung` ist `aufwärts`, sobald die letzten drei Wendepunkte ein Tief (Punkt 1), das folgende Hoch (Punkt 2) und ein Tief über Punkt 1 (Punkt 3) bilden. Ein Ausbruch über Punkt 2 ist dafür nicht nötig. Der vorläufige jüngste Wendepunkt zählt mit, `Punkt 1/3 endgültig` zeigt, ob er sich noch verschieben kann. `Punkt 2` ist das jüngste Hoch dieser Folge, `Punkt 1/3` das jüngste Tief. Liegt weder ein Aufwärts- noch ein Abwärtstrend vor, ist die Trendrichtung `kein Trend` und die Punkte sind nicht belegt.
 
 ### 4.2 Trend intakt
 
-Der Aufwärtstrend ist intakt, solange der Kurs nicht unter `Punkt 1/3` gefallen ist. Fällt der Kurs unter Punkt 1/3, ist `Trend intakt` gleich `nein`, bis ein neuer Trend nach 4.1 entstanden ist.
+Der Aufwärtstrend ist intakt, solange `Punkt 1/3` nicht nach dem Parameter `Durchbruch gilt bei` unterschritten ist. Ist er unterschritten, ist `Trend intakt` gleich `nein`, bis ein neuer Trend nach 4.1 entstanden ist.
 
 ### 4.3 Phase
 
-`Bewegung`: Der Kurs ist über `Punkt 2` gestiegen und der ZigZag hat seitdem kein neues Hoch gesetzt.
+`Bewegung`: `Punkt 2` ist nach dem Parameter `Durchbruch gilt bei` überschritten und der ZigZag hat seitdem kein neues Hoch gesetzt.
 
 `Korrektur`: Der ZigZag hat nach `Punkt 2` ein Hoch gesetzt und der Kurs liegt unter diesem Hoch und über `Punkt 1/3`. Dieses Hoch ist dann der neue `Punkt 2`.
 
@@ -67,7 +68,7 @@ Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeit
 
 ## 6. Offen
 
-Die Bestimmung in Abschnitt 4 ist vom Projektleiter aus der Markttechnik nach Voigt abgeleitet und vom Auftraggeber noch nicht bestätigt. Insbesondere offen: ob für `aufwärts` ein vollständiger 1-2-3-Abschnitt verlangt wird oder bereits ein höheres Hoch und ein höheres Tief genügen, und ob der Durchbruch unter Punkt 1/3 auf Schlusskurs- oder Tick-Basis gilt.
+Keine offenen Punkte.
 
 ## 7. Änderungsnachweis
 
@@ -77,3 +78,4 @@ Die Bestimmung in Abschnitt 4 ist vom Projektleiter aus der Markttechnik nach Vo
 | 2026-10-15 | Parameter Zeiteinheit, Trendrichtung auf beiden Zeiteinheiten im Punkt-2-Ausbruch. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
 | 2026-10-19 | Bezeichnung in der Oberfläche „1-2-3-Trend (Markttechnik)“, Gruppe Trends, Grundlage `ZigZag`. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9): Parameter `Instrument` (Fachmodell req-fach-053, B5), rechnet selbst nach dem Verfahren des `ZigZag` (H9). |
+| 2026-10-19 | Bestimmung bestätigt: Aufwärtstrend ab vollständigem 1-2-3-Abschnitt ohne Ausbruch über Punkt 2, vorläufiger Wendepunkt zählt mit. Neuer Parameter `Durchbruch gilt bei` (Schlusskurs oder Kurs). Entscheidung des Auftraggebers im Chat am 2026-10-19. |

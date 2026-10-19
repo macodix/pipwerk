@@ -14,7 +14,7 @@ Dieses Dokument enthält die Anforderungen an zwei Funktionen:
 - **Strategietester:** Eine Strategie läuft an historischen Kursdaten Schritt für Schritt ab. Der Anwender sieht dabei Ablauf, Werte der Objekte und Chart und prüft so, ob die Strategie arbeitet wie gedacht.
 - **Backtester:** Eine Strategie läuft an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen.
 
-Die historischen Kursdaten, ihre Beschaffung und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Ob die beiden Funktionen eine oder zwei Hauptkomponenten bilden, ist offen (Abschnitt 5).
+Die historischen Kursdaten, ihre Beschaffung und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Beide Funktionen gehören zu einer Hauptkomponente, dem Strategietester (Gesamtsystem req-system-001, Modul pipwerk backtest im Projektziel), als zwei Betriebsarten.
 
 ## 2. Gemeinsame Anforderungen
 
@@ -58,9 +58,15 @@ Die Angaben zum Instrument (Kontraktgröße, Volumenschritte, Swap, Margin-Anfor
 
 Ein Testlauf verwendet genau ein Testkonto. Ändert der Anwender im Testlauf einen Wert, bleibt das gespeicherte Testkonto unverändert, außer er speichert die Änderung ausdrücklich.
 
+Ein Testkonto ist an kein Instrument gebunden und speichert keine Angaben zum Instrument. Geänderte Angaben zum Instrument gelten nur für den laufenden Testlauf. Jeder neue Testlauf beginnt mit den Angaben aus dem Datenbestand.
+
 ### req-test-006 -- Testbarkeit
 
 Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategietester und im Backtester testbar.
+
+### req-test-007 -- Strategieparameter je Testlauf
+
+Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Hat die Strategie einen Strategieparameter Instrument, setzt ihn das nach req-test-001 gewählte Instrument.
 
 ## 3. Strategietester
 
@@ -81,7 +87,15 @@ Beim Start läuft der Strategietester bis zur ersten handelnden Stelle im Testze
 Von dort kann der Anwender:
 
 - mit einem Einzelschritt zum nächsten Element des Ablaufs gehen. Das gerade ausgeführte Element ist hervorgehoben.
-- zur nächsten handelnden Stelle springen. Der Strategietester hält dort wie beim Start am ersten Element des Ablaufs an.
+- zur nächsten handelnden Stelle springen. Der Strategietester hält dort wie beim Start am ersten Element des Ablaufs an. Liegt vorher ein Haltepunkt (req-test-013), hält er dort.
+
+### req-test-013 -- Haltepunkte
+
+Der Anwender kann an jedem Element einen Haltepunkt setzen und entfernen. Beim Sprung nach req-test-012 hält der Strategietester an der nächsten handelnden Stelle oder am nächsten Haltepunkt, je nachdem, was zuerst erreicht wird. Haltepunkte gelten nur für den laufenden Testlauf und werden nicht in der Strategie gespeichert.
+
+### req-test-014 -- Anzeige der Werte
+
+Wählt der Anwender ein Element an, zeigt die Eigenschaftenansicht wie im Strategiedesigner dessen Parameter, Eigenschaften und Ergebnisse mit den Werten des aktuellen Schritts. Beim Überfahren eines Elements mit der Maus erscheinen seine wichtigsten Werte als kurze Einblendung. Werte, die sich seit dem letzten Schritt geändert haben, sind hervorgehoben.
 
 ## 4. Backtester
 
@@ -100,20 +114,14 @@ Das Ergebnis eines Backtests zeigt:
 
 ### req-test-022 -- Backtest speichern und vergleichen
 
-Ein Backtest wird nur gespeichert, wenn der Anwender es ausdrücklich verlangt. Gespeichert werden eine Kopie der getesteten Strategie, das Testkonto mit den verwendeten Werten, Instrument, Testzeitraum und Ergebnis. Die getestete Fassung der Strategie lässt sich im Strategiedesigner ansehen.
+Ein Backtest wird nur gespeichert, wenn der Anwender es ausdrücklich verlangt. Gespeichert werden eine Kopie der getesteten Strategie, die verwendeten Werte der Strategieparameter, das Testkonto mit den verwendeten Werten, Instrument mit den verwendeten Angaben zum Instrument, Testzeitraum und Ergebnis. Die getestete Fassung der Strategie lässt sich im Strategiedesigner ansehen.
 
 Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder mehr davon nebeneinander vergleichen, mit den Kennzahlen und mit übereinandergelegten Kontokurven.
 
 ## 5. Noch offene Punkte
 
-1. Ob Strategietester und Backtester eine oder zwei Hauptkomponenten bilden. Gesamtsystem req-system-001 führt beide Funktionen derzeit unter `Strategietester`.
-2. Haltepunkte an Elementen, an denen der Strategietester zusätzlich anhält.
-3. Wie die Werte der Objekte angezeigt werden, zum Beispiel beim Überfahren mit der Maus.
-4. Ob Strategieparameter je Testlauf gesetzt werden.
-5. Ob ein Testkonto auch geänderte Angaben zum Instrument speichert.
-6. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
-7. Auswertung einer Strategie ohne Auslöser, zum Beispiel durch Start von Hand (Fachmodell req-fach-015). Wird mit den Anforderungen an das Handelssystem geklärt. Ist sie dort möglich, ist sie nach req-test-006 auch testbar.
-8. Bestimmung von Trend, Phase und Punkten im Indikator 1-2-3-Trend (Markttechnik).
+1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
+2. Auswertung einer Strategie ohne Auslöser, zum Beispiel durch Start von Hand (Fachmodell req-fach-015). Wird mit den Anforderungen an das Handelssystem geklärt. Ist sie dort möglich, ist sie nach req-test-006 auch testbar.
 
 ## 6. Änderungsnachweis
 
@@ -121,3 +129,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | --- | --- |
 | 2026-10-19 | Erstanlage: Testlauf, Testzeitraum, Kursdaten eines Testlaufs, interne Abwicklung, Testkonto, schrittweiser Ablauf im Strategietester, Ergebnis, Speichern und Vergleich im Backtester. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | req-test-006 Testbarkeit. Strategie ohne Auslöser an das Handelssystem verwiesen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | Offene Punkte entschieden: eine Hauptkomponente mit zwei Betriebsarten, req-test-007 Strategieparameter je Testlauf, req-test-013 Haltepunkte, req-test-014 Anzeige der Werte, Angaben zum Instrument nicht im Testkonto (req-test-005), Umfang eines gespeicherten Backtests (req-test-022). Bestimmung im Indikator 1-2-3-Trend nach `indikator-markttechnik.md` verschoben. Festlegungen des Auftraggebers im Chat am 2026-10-19. |

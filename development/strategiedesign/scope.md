@@ -32,7 +32,6 @@ Aus der Zeit vor dem Entwicklungsverfahren liegen ein Pflichtenheft und Arbeitsp
 Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Phase 2:
 
 - Fachmodell: OrderBuilder, weitere Funktionen der ersten Auswahl und deutsche Funktionsnamen (req-fach-036), Objekt Kurs für Strategien ohne Kerzen (req-fach-051), externes Ereignis als Auslöser (req-fach-053), weitere mitgelieferte Indikatoren und Expert Advisors (req-fach-054).
-- Indikator Markttechnik: Bestimmung von Trend und Phase, erst für die Berechnung im Strategietester nötig.
 - Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR, ZigZag und Markttechnik hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
 - Fachmodell und Strategiedesigner: Auswertung einer Strategie oder Verwaltung ohne Auslöser, zum Beispiel Start von Hand (req-fach-015, req-fach-046), betrifft die Ausführung.
 - Aus den Nachprüfungen, alle die Ausführung betreffend: Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Maßnahme nach der Prüfung mit dem Ausführungspreis (req-fach-021), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
@@ -46,3 +45,5 @@ Phase 4, `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1, [specificati
 2026-10-19: `wp02` nicht abgenommen ([Abnahmebericht](wp02/acceptance/1.md), Mängel M1 bis M17). Neue und geänderte Anforderungen: req-system-024 (`anforderungen-gesamtsystem.md`); req-fach-015, req-ui-014 bis req-ui-017, req-ablauf-003, req-ablauf-007 (`anforderungen-strategiedesigner.md`); req-fach-046, req-fach-053, req-fach-054 (`fachmodell.md`); `indikator-markttechnik.md`. Entscheidung des Auftraggebers: zuerst diese Änderungen, danach `wp03`. Rückweg in Phase 1 mit `check`, danach Phase 2 mit klickbarem Prototyp der gesamten Oberfläche einschließlich der Teile von `wp03`, danach Spezifikation und neuer Plan.
 
 2026-10-19: Prüfung der geänderten Stellen [requirements-9.md](reviews/requirements-9.md) nicht bestanden (5 blockierende Befunde, alle Folge einer Festlegung). Vom Projektleiter bearbeitet ([requirements-9-response.md](reviews/requirements-9-response.md)), Nachprüfung mit `check`. Durchläufe 10 und 11 bestanden, Hinweise bearbeitet ([requirements-11-response.md](reviews/requirements-11-response.md)). Phase 2 mit `specify`: Prototyp, danach Spezifikation und neuer Plan.
+
+2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, neuer Parameter `Durchbruch gilt bei`. Der Parameter gilt auch für dieses Vorhaben (Eigenschaftenansicht, Vorlage).
