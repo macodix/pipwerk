@@ -99,7 +99,31 @@ Mehrere Hauptkomponenten oder Komponenten dürfen denselben physischen Speicher 
 
 Wenn mehrere Komponenten einen Speicher gemeinsam verwenden, müssen ihre Datenbestände voneinander abgrenzbar sein. Die konkrete Art dieser Abgrenzung ist abhängig vom verwendeten Speicher-Backend und wird nicht allgemein festgelegt.
 
-## 3. Dokumentation
+## 3. Historische Kursdaten
+
+### req-system-025 -- Datenbestand historischer Kursdaten
+
+pipwerk führt einen eigenen Datenbestand historischer Kursdaten. Er enthält:
+
+- Kerzen je Instrument und Zeiteinheit, so wie der Broker sie liefert, einschließlich des Spreads je Kerze, soweit der Broker ihn liefert
+- Ticks je Instrument, soweit verfügbar
+- Angaben zum Instrument je Broker: Kontraktgröße, Volumenschritte, Swap und Margin-Anforderung
+
+pipwerk berechnet keine Kerzen aus Ticks. Strategietester und Backtester lesen Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
+
+### req-system-026 -- Import
+
+Der Import liest Dateien in einem festgelegten Dateiformat (JSON oder CSV), prüft sie und übernimmt die Daten in den Datenbestand historischer Kursdaten. Der Anwender kann Dateien von Hand importieren lassen, zum Beispiel einen Export aus MetaTrader oder eine Datei von seiner Festplatte.
+
+### req-system-027 -- Beschaffung
+
+Die Beschaffung holt Kursdaten und Angaben zum Instrument aus einer Quelle und liefert sie als Dateien im Dateiformat des Imports. Weitere Quellen lassen sich ergänzen, ohne den Import zu ändern.
+
+Die erste Quelle ist MetaTrader 5. Die Beschaffung für MetaTrader 5 läuft auf dem Rechner, auf dem MetaTrader 5 läuft, und lässt sich von pipwerk anstoßen.
+
+Fehlen für einen Testlauf Daten im Datenbestand, werden sie automatisch beschafft und importiert (Anforderungen Strategietester und Backtester req-test-003). Der Anwender kann die Beschaffung auch von Hand anstoßen.
+
+## 4. Dokumentation
 
 ### req-system-019 -- Dokumentation als Bestandteil jeder Änderung
 
@@ -125,7 +149,7 @@ Marketing-Sprache und vermeidbarer Fachjargon werden nicht verwendet. Fachbegrif
 
 Verständlichkeit und Vollständigkeit haben Vorrang vor möglichst kurzer Formulierung. Kürzungen dürfen keine Informationen entfernen, die zum Verständnis des beschriebenen Sachverhalts erforderlich sind.
 
-## 4. Technische Vorgaben des Auftraggebers
+## 5. Technische Vorgaben des Auftraggebers
 
 Die Anforderungen dieses Abschnitts legen technische Mittel fest. Sie sind bewusste Vorgaben des Auftraggebers und keine Entscheidungen des Softwarearchitekten. Sie gelten wie alle anderen Anforderungen dieses Dokuments und werden in der Prüfung der Anforderungsdokumente nicht als Umsetzungsdetails beanstandet.
 
@@ -195,13 +219,13 @@ Bei einer systemweiten Installation unter Unix-artigen Betriebssystemen werden d
 
 Die maschinenlesbaren Definitionen ersetzen nicht ihre für Menschen bestimmte technische Dokumentation. Die Bedeutung, Verwendung und Inhalte der Definitionen werden vollständig unter `docs/technical` beschrieben.
 
-## 5. Abgrenzung
+## 6. Abgrenzung
 
 Die Festlegung eigenständig lauffähiger Hauptkomponenten bestimmt die Systemstruktur, aber nicht, auf wie viele Rechner die Komponenten in einer konkreten Installation verteilt werden. Mehrere Hauptkomponenten dürfen auf demselben Rechner betrieben werden.
 
 Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktionen mehrerer Hauptkomponenten zugänglich macht. Die fachlichen Verantwortlichkeiten und die eigenständige Ausführbarkeit der Komponenten bleiben davon unberührt.
 
-## 6. Änderungsnachweis
+## 7. Änderungsnachweis
 
 | Datum | Änderung |
 | --- | --- |
@@ -218,3 +242,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-15 | req-system-012 und req-system-015: Objektspeicher für Strategien und Vorlagen getrennt von den übrigen Daten, Ablage als Einstellung wahlfrei (Verzeichnis oder Datenbank), erste Ausbaustufe Verzeichnis. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`, Nachprüfung der QA). |
 | 2026-10-16 | req-system-015: „Vorhaben strategiedesign“ statt „erste Ausbaustufe“, Begriff Objektverzeichnis. Nachprüfung der QA, Durchlauf 3. |
 | 2026-10-19 | req-system-024 neu: Anpassung jeder Benutzeroberfläche an die Fenstergröße. Festlegung des Auftraggebers im Chat am 2026-10-19. Anlass: Abnahme `strategiedesign/wp02`, Mangel M2. |
+| 2026-10-19 | Abschnitt 3 neu: Datenbestand historischer Kursdaten, Import und Beschaffung (req-system-025 bis req-system-027). Folgende Abschnitte neu nummeriert, Kennungen unverändert. Festlegungen des Auftraggebers im Chat am 2026-10-19. |

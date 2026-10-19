@@ -63,6 +63,16 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Standardwert | Der Wert eines Parameters, den eine Vorlage vorgibt. Er wird beim Einfügen in eine Strategie von der Instanz übernommen und dort geändert. |
 | Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Kennung des Befunds, dem betroffenen Element, der betroffenen Instanz oder Regel (oder keinem) und Angaben für den Text. Die Texte stehen in der Oberfläche, nicht in der Bibliothek. |
 | Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
+| Strategietester | Funktion, in der eine Strategie an historischen Kursdaten Schritt für Schritt abläuft, um zu prüfen, ob sie arbeitet wie gedacht (Anforderungen Strategietester und Backtester). |
+| Backtester | Funktion, in der eine Strategie an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum abläuft. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen. Ein einzelner solcher Lauf heißt Backtest. |
+| Testlauf | Anwendung einer Strategie auf ein Instrument in einem Testzeitraum mit einem Testkonto, im Strategietester oder im Backtester (req-test-001). |
+| Testzeitraum | Zeitraum der historischen Kursdaten, über den ein Testlauf geht (req-test-002). |
+| Testkonto | Benannter, gespeicherter Satz von Kontowerten für die Abwicklung eines Testlaufs: Anfangskapital, Kontowährung, Hebel, Spread, Kommission (req-test-005). |
+| Interne Order | Order im Strategietester oder Backtester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
+| Handelnde Stelle | Auswertung im Strategietester, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
+| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem Strategietester und Backtester lesen (req-system-025). |
+| Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten (req-system-026). |
+| Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). |
 
 ## Technische Begriffe
 
@@ -104,6 +114,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-19 | Strategietester, Backtester, Testlauf, Testzeitraum, Testkonto, Interne Order, Handelnde Stelle, Datenbestand historischer Kursdaten, Import, Beschaffung ergänzt. |
 | 2026-10-19 | Eingang auch unverbunden, Parameter als Eingang (req-ui-014, req-ablauf-007; Hinweis N2 aus `development/strategiedesign/reviews/requirements-10.md`). Auslöser mit Parameter `Instrument`, Anwendung mit weiteren Instrumenten (req-fach-053, Entscheidung des Auftraggebers vom 2026-10-19; Hinweis N5 aus `development/strategiedesign/reviews/requirements-11.md`). Satzfolge im Eintrag „Auslöser“ (Hinweis N6 aus `development/strategiedesign/reviews/requirements-12.md`). |
 | 2026-10-19 | An die Festlegungen des Auftraggebers vom 2026-10-19 angeglichen: Verbindung als Ablaufverbindung oder Datenverbindung, Ausgang und Eingang ergänzt (req-ui-014, Befund B4); „Baustein“ als Teil einer Bedingung (req-ui-015, Hinweis H3); Strategieparameter auch als Objekt (req-fach-046, Hinweis H10); Name statt Bezeichnung bei Herkunft und Index (req-ui-016, Befund B3). Alle aus `development/strategiedesign/reviews/requirements-9.md`. |
 | 2026-10-18 | Auslöser, Auswertung und Verwaltung einer Order an die Entscheidung des Auftraggebers vom 2026-10-18 angeglichen: Auslöser optional, Auswertung ohne Auslöser offen (req-fach-015). Befund B1 aus `development/strategiedesign/reviews/requirements-8.md`. |
