@@ -5,7 +5,7 @@
 - status: `draft`
 - abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-10-16`
+- zuletzt aktualisiert: `2026-10-19`
 
 ## 1. Systemaufteilung
 
@@ -72,6 +72,10 @@ Die Erreichbarkeit und Berechtigungen der Web-APIs müssen konfigurierbar sein. 
 Jede Benutzeroberfläche einer Hauptkomponente wird von Beginn an so umgesetzt, dass sie in mehreren Sprachen verwendet werden kann. Dazu gehören insbesondere Menüs, Beschriftungen, Erläuterungen und Meldungen. Vom Nutzer vergebene Namen und frei eingegebene Texte werden durch einen Sprachwechsel nicht übersetzt. Ein Sprachwechsel verändert keine gespeicherten Inhalte.
 
 Deutsch und Englisch sind die ersten bereitgestellten Sprachen. Weitere Sprachen müssen ohne Änderung der fachlichen Logik ergänzt werden können. Die Auswahl und Speicherung der Sprache regelt das Anforderungsdokument der jeweiligen Komponente.
+
+### req-system-024 -- Anpassung an die Fenstergröße
+
+Jede Benutzeroberfläche einer Hauptkomponente passt sich der Größe des Browserfensters an, vom Smartphone über Tablet bis zum großen Bildschirm, im Hoch- und Querformat. Bei jeder Größe liegen keine Inhalte übereinander, kein Bereich wird auf Breite oder Höhe null verkleinert, und alle Funktionen bleiben erreichbar und bedienbar. Bereiche dürfen dafür ein- und ausgeklappt, umgeordnet oder nacheinander statt nebeneinander gezeigt werden. Die geprüften Fenstergrößen legt die Spezifikation des jeweiligen Vorhabens fest.
 
 ## 2. Datenspeicherung
 
@@ -213,3 +217,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-15 | req-system-011: „extern zugänglich“ festgelegt, Anmeldung grundsätzlich vorgesehen, Zeitpunkt offen. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
 | 2026-10-15 | req-system-012 und req-system-015: Objektspeicher für Strategien und Vorlagen getrennt von den übrigen Daten, Ablage als Einstellung wahlfrei (Verzeichnis oder Datenbank), erste Ausbaustufe Verzeichnis. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`, Nachprüfung der QA). |
 | 2026-10-16 | req-system-015: „Vorhaben strategiedesign“ statt „erste Ausbaustufe“, Begriff Objektverzeichnis. Nachprüfung der QA, Durchlauf 3. |
+| 2026-10-19 | req-system-024 neu: Anpassung jeder Benutzeroberfläche an die Fenstergröße. Festlegung des Auftraggebers im Chat am 2026-10-19. Anlass: Abnahme `strategiedesign/wp02`, Mangel M2. |
