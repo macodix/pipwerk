@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-18
+- stand: 2026-10-19
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
 
@@ -87,7 +87,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Eingabe: abgestimmte Dokumente des Auftraggebers laut `scope.md`, Prüfbericht der QA aus Phase 1
 - Tätigkeit:
   1. Die QA prüft nach, ob die Befunde aus Phase 1 erledigt sind und ob die dafür geänderten Stellen neue Fehler enthalten. Ist die Nachprüfung nicht bestanden, geht der Prüfbericht über den Softwarearchitekten an den Projektleiter zurück in Phase 1.
-  2. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen.
+  2. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Für jede neue oder wesentlich geänderte Benutzeroberfläche lässt er vor der Spezifikation der Oberfläche einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens ohne Anleitung durchspielen kann, in den Fenstergrößen nach req-system-024. Die Oberfläche wird erst spezifiziert und umgesetzt, wenn der Auftraggeber den Prototyp bestätigt hat.
   3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers.
   4. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
 - Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
@@ -101,7 +101,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Ergebnis: Arbeitspaketplan, positiver Prüfbericht, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
 - Schleifen: Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, nach [Grenze der Durchläufe](#grenze-der-durchläufe). Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
-Ein Arbeitspaket enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der Spezifikation, Abhängigkeiten und Abnahmekriterien. Der Plan führt je Paket den Stand `open` oder `done`.
+Ein Arbeitspaket enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der Spezifikation, Abhängigkeiten und Abnahmekriterien. Ein Paket mit Benutzeroberfläche hat mindestens ein Abnahmekriterium zur Bedienbarkeit: Der Auftraggeber führt einen Testfall ohne Anleitung aus und hält sich dabei an den bestätigten Prototyp. Der Plan führt je Paket den Stand `open` oder `done`.
 
 ### Phase 4 – Umsetzung eines Arbeitspakets
 
@@ -421,6 +421,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-19 | Phase 2: klickbarer Prototyp vor Spezifikation und Umsetzung jeder neuen oder wesentlich geänderten Oberfläche, Bestätigung durch den Auftraggeber. Phase 3: Abnahmekriterium zur Bedienbarkeit für jedes Paket mit Oberfläche. Anlass: `strategiedesign/wp02` nicht abgenommen, Bedienung ohne Anleitung nicht erschließbar. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-18 | Fragen an den Auftraggeber: nur zu Entscheidungen, die nur er treffen kann. Korrekturen, die aus einer Festlegung folgen (auch Glossar), Fragen der Spezifikation und als offen gekennzeichnete Punkte erledigen die Rollen ohne Vorlage und ohne Pause; die QA ordnet ihre Befunde zu. Anlass: Rückfragen in `development/strategiedesign/reviews/requirements-8.md`, die alle ohne Auftraggeber zu klären waren. Forderung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-18 | Rein technische Ergänzungen der Spezifikation oder des Plans in Phase 4 entscheidet der Softwarearchitekt nach Prüfung durch die QA selbst, ohne Pause des Pakets; `present` nur bei Berührung von Dokumenten des Auftraggebers, bestätigten Festlegungen, Abnahmekriterien oder Umfang. Anlass: `wp02` ruhte 14 Stunden für eine rein technische Ergänzung (`development/strategiedesign/reviews/specification-4.md`). Entscheidung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-17 | Aufruf von `agentrun` an den Stand auf dem Entwicklungsrechner angeglichen: `--permission-mode dontAsk` (`scripts/agentrun`, `devteam/start.conf`). Freigaben in `devteam/settings.json` auf den Bedarf der Rollen eingeengt und je Rolle mit Probelauf geprüft (Bericht `transfer/20261017-freigaben-pruefen-bericht.md`). |
