@@ -319,6 +319,16 @@ Ausdrücke dürfen Eigenschaften weiterhin auch direkt über den Namen anspreche
 
 Offen für die Spezifikation: Darstellung der Ein- und Ausgänge, Bündelung vieler Ausgänge eines Objekts, Verhalten beim Umbenennen und Löschen eines verbundenen Objekts.
 
+### req-ui-015 -- Bedingungen und Berechnungen ohne Formeltext
+
+Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne Formeln zu schreiben: Werte wählt er aus verbundenen Objekten, Strategieparametern oder festen Werten, Vergleiche und Verknüpfungen aus Listen in Händlersprache, zum Beispiel „EMA 20 kreuzt EMA 50 nach oben“, „ist größer als“, „und“, „oder“, „vorheriger Wert von“. Die Zeichenfläche und die Eigenschaftenansicht zeigen die Bedingung als lesbaren Satz. Die Schreibweise als Ausdruck bleibt als Ansicht für Fortgeschrittene erhalten, mit einem Editor mit mehrzeiliger Eingabe, Hervorhebung, Vorschlägen und Fehleranzeige an der Stelle; beide Ansichten zeigen dieselbe Bedingung.
+
+### req-ui-016 -- Bedienerführung
+
+Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie die Kursquelle eines EMA. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
+
+Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „Stop-Abstand“, „EMA 20“). Ein Objekt, ein Element und ein Strategieparameter haben genau einen Namen; eine getrennte Bezeichnung entfällt. Interne Kennungen bildet die Anwendung selbst und zeigt sie nicht.
+
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
 
 Der Strategiedesigner bietet folgende Arbeitsabläufe:
@@ -472,3 +482,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-18 | Entscheidung des Auftraggebers im Chat am 2026-10-18: Auslöser sind optional, für die Strategie und für die Verwaltung einer Order (req-fach-015); „Neue Strategie“ öffnet eine leere Zeichenfläche (req-ablauf-002). Grundsatz: keine Einschränkung ohne klare Notwendigkeit. Auswertung ohne Auslöser offen. Anlass: Ergänzung der Spezifikation in Phase 4 (`strategiedesign/wp02`, `development/strategiedesign/reviews/specification-4.md`). |
 | 2026-10-18 | Vom Projektleiter, Folge der Entscheidung vom selben Tag: Sätze zum Start und zur Wiederholung der Auswertung auf Strategien mit Auslösern beschränkt (req-fach-015). Hinweis H1 aus `development/strategiedesign/reviews/requirements-8.md`. |
 | 2026-10-19 | req-ui-014 neu: Werte von Objekten als Datenverbindungen zu Eingängen anderer Elemente, Ausdrücke mit Namen bleiben zulässig; req-ablauf-003 und req-ablauf-007 angepasst. Entscheidung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`): „Der Sinn von Indikatoren ist, dass sie Werte liefern.“ |
+| 2026-10-19 | req-ui-015 neu: Bedingungen und Berechnungen aus Bausteinen ohne Formeltext, Ausdruck als Ansicht für Fortgeschrittene mit Editor. req-ui-016 neu: Bedienerführung, freie Namen, ein Name statt Name und Bezeichnung. Festlegungen des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`). |
