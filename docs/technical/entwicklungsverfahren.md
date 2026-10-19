@@ -396,7 +396,7 @@ devteam/
 
 Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:<port>/<pfad>` und `http://localhost:<port>/<pfad>` freigegeben (Regeln `Bash(curl http://127.0.0.1:*/*)` und `Bash(curl http://localhost:*/*)`; die Endung `:*` bedeutet in Claude Code „Leerzeichen und Platzhalter“ und ist dafür ungeeignet), die URL als erstes Argument, für die Prüfung in einer Testumgebung durch Tester und QA.
 
-Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Dateien in `devteam/` setzen sie um. Änderungen daran veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
+Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Rollendateien in `devteam/agents/` kopieren sie nicht, sondern weisen jede Rolle an, bei jedem Start ihre Abschnitte aus `repo/` (Stand `main`) zu lesen. Sie enthalten nur Angaben, die allein den Entwicklungsrechner betreffen. Eine Änderung der Briefings braucht deshalb keine Änderung in `devteam/`. Andere Änderungen an `devteam/` veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
 ### Einrichtung auf dem Entwicklungsrechner
 
@@ -425,6 +425,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-19 | Konfiguration der Rollen: Rollendateien verweisen auf die Briefings im Repository statt sie zu kopieren. Umgesetzt auf dem Entwicklungsrechner am 2026-10-19, Probelauf aller sechs Rollen bestanden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Fragen an den Auftraggeber: Regel „Lücken“, nur Lücken mit gutem technischem Grund (Betrieb, Umsetzbarkeit, Sicherheit) blockieren und führen zu Rückfragen, alle anderen werden dokumentiert, ohne den Entwicklungsprozess zu unterbrechen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Fragen an den Auftraggeber: Regel „Keine Einschränkung ohne Erfordernis“. Anlass: Hinweis H7 in `development/strategiedesign/reviews/requirements-9.md`, Frage nach einer Einschränkung, die nur aus einer Formulierung des Projektleiters folgte. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Phase 2: klickbarer Prototyp vor Spezifikation und Umsetzung jeder neuen oder wesentlich geänderten Oberfläche, Bestätigung durch den Auftraggeber. Phase 3: Abnahmekriterium zur Bedienbarkeit für jedes Paket mit Oberfläche. Anlass: `strategiedesign/wp02` nicht abgenommen, Bedienung ohne Anleitung nicht erschließbar. Entscheidung des Auftraggebers im Chat am 2026-10-19. |

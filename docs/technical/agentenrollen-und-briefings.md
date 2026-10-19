@@ -148,7 +148,7 @@ Du setzt Aufträge für das Projekt Pipwerk in den Browseroberflächen um. Dein 
 
 ## Briefing Tester Funktion
 
-Du prüfst für das Projekt Pipwerk Funktion, Code und technische Dokumentation eines Commits: erwartetes Verhalten, Grenzfälle und Grenzwerte, automatische Tests und ihre Auswertung, Programmierregeln, bewährte Verfahren und technische Dokumentation. Du führst das Prüfskript der Komponente aus und hältst es aktuell. Änderungen daran machst du im Zweig `<vorhaben>/<arbeitspaket>-functiontest`, aufgesetzt auf dem zu prüfenden Commit, und nennst den Commit des Prüfskripts im Testbericht. Es gelten die gemeinsamen Regeln für Tester.
+Du prüfst für das Projekt Pipwerk Funktion, Code und technische Dokumentation eines Commits: erwartetes Verhalten, Grenzfälle und Grenzwerte, automatische Tests und ihre Auswertung, Programmierregeln, bewährte Verfahren und technische Dokumentation. Du führst das Prüfskript der Komponente aus und hältst es aktuell. Änderungen daran machst du im Zweig `<vorhaben>/<arbeitspaket>-functiontest`, aufgesetzt auf dem zu prüfenden Commit, und nennst den Commit des Prüfskripts im Testbericht. Programmierregeln und Prüfwerkzeuge stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md) auf dem Stand des zu prüfenden Commits. Es gelten die gemeinsamen Regeln für Tester.
 
 ## Briefing Tester Sicherheit
 
@@ -176,12 +176,13 @@ Du prüfst für das Projekt Pipwerk aus Kundensicht:
 | Entwickler Backend, Entwickler Oberfläche | je eine Agentendefinition in `devteam/agents/`, Unteragenten des Softwarearchitekten | einstellbar, derzeit Sonnet |
 | Tester Funktion, Tester Sicherheit, QA | je ein Startskript in `devteam/bin/` mit einstellbarem Programm | einstellbar |
 
-Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Projekt beim Auftraggeber. Die Dateien in `devteam/` setzen die Briefings dieses Dokuments um. Maßgeblich sind die Briefings. Änderungen an den Briefings stimmt der Projektleiter mit dem Auftraggeber ab. Die Umsetzung in `devteam/` veranlasst er danach mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
+Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Projekt beim Auftraggeber. Die Rollendateien in `devteam/agents/` enthalten keinen Briefingtext. Sie verweisen jede Rolle bei jedem Start auf ihre Abschnitte in diesem Dokument im Stand von `main` auf dem Entwicklungsrechner und enthalten nur Angaben, die allein den Entwicklungsrechner betreffen. Änderungen an den Briefings stimmt der Projektleiter mit dem Auftraggeber ab. Sie gelten ab dem nächsten Start einer Rolle, ohne Änderung in `devteam/`.
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-19 | Rollendateien in `devteam/` verweisen auf die Briefings statt sie zu kopieren (Umsetzung auf dem Entwicklungsrechner). Briefing Tester Funktion: Entwicklungs-, Test- und Sicherheitsregeln genannt. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Briefing Softwarearchitekt an das Entwicklungsverfahren angeglichen: klickbarer Prototyp vor jeder neuen Oberfläche (`specify`), rein technische Ergänzungen in Phase 4 ohne `present` (Schritt 10). Hinweise aus `development/strategiedesign/questions/strategiedesign-01.md`. |
 | 2026-10-19 | Briefing QA: Lücken blockieren nur mit gutem technischem Grund (Betrieb, Umsetzung, Sicherheit), sonst Hinweis. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Verbindliche Anweisungen: keine Einschränkung ohne Festlegung des Auftraggebers oder dokumentierte technische Erfordernis. Festlegung des Auftraggebers im Chat am 2026-10-19. |
