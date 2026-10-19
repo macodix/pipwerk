@@ -259,6 +259,8 @@ Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann: Arbeitsabläuf
 - **Sache der Spezifikation.** Betrifft ein Befund, wie eine Anforderung umgesetzt, dargestellt oder geprüft wird, entscheidet der Softwarearchitekt in der Spezifikation.
 - **Offener Punkt.** Ist eine Frage in den Dokumenten des Auftraggebers als offen gekennzeichnet und für die laufende Arbeit nicht nötig, bleibt sie offen. Sie wird nicht vorgelegt.
 
+**Keine Einschränkung ohne Erfordernis.** Was die Dokumente des Auftraggebers nicht einschränken, ist erlaubt. Eine Einschränkung braucht eine ausdrückliche Festlegung des Auftraggebers oder eine begründete technische Erfordernis, die in der Spezifikation mit Begründung dokumentiert ist. Eine Lücke ist kein Anlass für eine Frage, ob eingeschränkt werden soll. Ein Text, der ohne eine solche Grundlage einschränkt, ist ein Befund, der aus dieser Regel folgt, und wird ohne Vorlage korrigiert.
+
 Die QA ordnet jeden Befund zu Dokumenten des Auftraggebers einer dieser Gruppen oder der Gruppe „Entscheidung des Auftraggebers“ zu und stellt Fragen nur in dieser Gruppe. Ein Prüfbericht ohne Befund in dieser Gruppe geht nicht an den Auftraggeber. Ist die Zuordnung nicht eindeutig, entscheidet der Softwarearchitekt; nur wenn er sie nicht treffen kann, gilt der Befund als Entscheidung des Auftraggebers.
 
 ### Grenze der Durchläufe
@@ -421,6 +423,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-19 | Fragen an den Auftraggeber: Regel „Keine Einschränkung ohne Erfordernis“. Anlass: Hinweis H7 in `development/strategiedesign/reviews/requirements-9.md`, Frage nach einer Einschränkung, die nur aus einer Formulierung des Projektleiters folgte. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Phase 2: klickbarer Prototyp vor Spezifikation und Umsetzung jeder neuen oder wesentlich geänderten Oberfläche, Bestätigung durch den Auftraggeber. Phase 3: Abnahmekriterium zur Bedienbarkeit für jedes Paket mit Oberfläche. Anlass: `strategiedesign/wp02` nicht abgenommen, Bedienung ohne Anleitung nicht erschließbar. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-18 | Fragen an den Auftraggeber: nur zu Entscheidungen, die nur er treffen kann. Korrekturen, die aus einer Festlegung folgen (auch Glossar), Fragen der Spezifikation und als offen gekennzeichnete Punkte erledigen die Rollen ohne Vorlage und ohne Pause; die QA ordnet ihre Befunde zu. Anlass: Rückfragen in `development/strategiedesign/reviews/requirements-8.md`, die alle ohne Auftraggeber zu klären waren. Forderung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-18 | Rein technische Ergänzungen der Spezifikation oder des Plans in Phase 4 entscheidet der Softwarearchitekt nach Prüfung durch die QA selbst, ohne Pause des Pakets; `present` nur bei Berührung von Dokumenten des Auftraggebers, bestätigten Festlegungen, Abnahmekriterien oder Umfang. Anlass: `wp02` ruhte 14 Stunden für eine rein technische Ergänzung (`development/strategiedesign/reviews/specification-4.md`). Entscheidung des Auftraggebers im Chat am 2026-10-18. |

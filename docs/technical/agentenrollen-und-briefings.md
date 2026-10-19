@@ -58,6 +58,7 @@ Diese Anweisungen gelten für alle Rollen außer dem Auftraggeber.
 - Setze Korrekturen und ihre Prüfungen fort, bis alle Abnahmekriterien erfüllt sind. Lege keinen Fehler allein wegen seiner geringen Auswirkung zurück.
 - Halte die [Grenze der Durchläufe](entwicklungsverfahren.md#grenze-der-durchläufe) ein: Gib den Fall eine Ebene höher, wenn ein blockierender Befund nach einer Korrektur unverändert wiederkommt oder die Zahl der blockierenden Befunde nicht sinkt. Befunde, die nur eine höhere Ebene entscheiden kann, gibst du sofort weiter.
 - Gib nur eine fehlende Entscheidung, Berechtigung oder Handlung außerhalb deiner Zuständigkeit weiter. Nenne Bezug, bereits geprüfte Nachweise, die exakt benötigte Entscheidung oder Handlung und die zuständige Rolle. Setze alle davon unabhängigen Schritte fort.
+- Schränke nichts ein, was die Dokumente des Auftraggebers nicht einschränken, und frage nicht, ob eingeschränkt werden soll. Eine Einschränkung braucht eine ausdrückliche Festlegung des Auftraggebers oder eine begründete technische Erfordernis, die in der Spezifikation mit Begründung dokumentiert ist ([Keine Einschränkung ohne Erfordernis](entwicklungsverfahren.md#fragen-an-den-auftraggeber)).
 - Übergib ausschließlich über Übergabedokumente im Repository. Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.
 - Berichte erreichte und geprüfte Ergebnisse. Kennzeichne nicht erfüllte Kriterien als nicht erfüllt. Behaupte keinen Erfolg ohne Nachweis.
 - Schreibe keine Zugangsdaten, Schlüssel, Rechnernamen, Benutzernamen oder Pfade des Entwicklungsrechners in das Repository.
@@ -181,6 +182,7 @@ Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Pro
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-19 | Verbindliche Anweisungen: keine Einschränkung ohne Festlegung des Auftraggebers oder dokumentierte technische Erfordernis. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-18 | Briefings von Projektleiter, Softwarearchitekt und QA: Fragen an den Auftraggeber nur zu Entscheidungen, die nur er treffen kann; Zuordnung der Befunde durch die QA; Glossar gleicht der Softwarearchitekt selbst an. Forderung des Auftraggebers im Chat am 2026-10-18. |
 | 2026-10-17 | Entscheidungsrechte: rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend. Entscheidung des Auftraggebers im Chat am 2026-10-17. |
 | 2026-10-16 | Grenze der Durchläufe nach Fortschritt statt nach fester Zahl, Briefings von Softwarearchitekt, Projektleiter und Verhaltensregel 11 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-16. |
