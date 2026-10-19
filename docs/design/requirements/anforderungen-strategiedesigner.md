@@ -321,7 +321,7 @@ Offen für die Spezifikation: Darstellung der Ein- und Ausgänge, Bündelung vie
 
 ### req-ui-015 -- Bedingungen und Berechnungen ohne Formeltext
 
-Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne Formeln zu schreiben: Werte wählt er aus verbundenen Objekten, Strategieparametern oder festen Werten, Vergleiche und Verknüpfungen aus Listen in Händlersprache, zum Beispiel „EMA 20 kreuzt EMA 50 nach oben“, „ist größer als“, „und“, „oder“, „vorheriger Wert von“. Die Zeichenfläche und die Eigenschaftenansicht zeigen die Bedingung als lesbaren Satz. Die Schreibweise als Ausdruck bleibt als Ansicht für Fortgeschrittene erhalten, mit einem Editor mit mehrzeiliger Eingabe, Hervorhebung, Vorschlägen und Fehleranzeige an der Stelle; beide Ansichten zeigen dieselbe Bedingung.
+Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne Formeln zu schreiben: Werte wählt er aus verbundenen Objekten, Strategieparametern oder festen Werten, Vergleiche und Verknüpfungen aus Listen in Händlersprache, zum Beispiel „EMA 20 kreuzt EMA 50 nach oben“, „ist größer als“, „und“, „oder“, „vorheriger Wert von“. Die Zeichenfläche und die Eigenschaftenansicht zeigen die Bedingung als lesbaren Satz. Die Schreibweise als Ausdruck bleibt als Ansicht für Fortgeschrittene erhalten, mit einem Formeleditor: mehrzeilige Eingabe, farbige Hervorhebung von Namen, Funktionen und Werten, Markierung zusammengehöriger Klammern, Fehler unterstrichen an der Stelle mit Erklärung beim Zeigen, nach `Objekt.` die Liste der Eigenschaften mit Datentyp und kurzer Erklärung, bei Funktionen die Erklärung der Argumente während der Eingabe; beide Ansichten zeigen dieselbe Bedingung.
 
 ### req-ui-016 -- Bedienerführung
 
