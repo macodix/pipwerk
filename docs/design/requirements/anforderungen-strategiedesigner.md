@@ -329,6 +329,14 @@ Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den näc
 
 Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „Stop-Abstand“, „EMA 20“). Ein Objekt, ein Element und ein Strategieparameter haben genau einen Namen; eine getrennte Bezeichnung entfällt. Interne Kennungen bildet die Anwendung selbst und zeigt sie nicht.
 
+### req-ui-017 -- Anordnung auf der Zeichenfläche
+
+Der Ablauf verläuft senkrecht von oben nach unten. Jedes Element hat seinen Eingang oben und seine Ausgänge unten; bei einer Bedingung liegen `wahr` und `falsch` unten nebeneinander. Die Anwendung ordnet die Elemente selbst an, sodass Linien sich möglichst nicht kreuzen; der Anwender kann sie verschieben.
+
+Objekte ohne Ablaufverbindung (Indikatoren, Trends, Markt und Konto) liegen nicht frei auf der Zeichenfläche, sondern geordnet in einem eigenen Bereich neben dem Ablauf; ihre Datenverbindungen (req-ui-014) führen von dort zu den Elementen, die sie verwenden.
+
+Auch eine einfache Strategie bleibt auf einen Blick überschaubar: Zusammengehörige Schritte lassen sich zu einem benannten Abschnitt zusammenfassen und einklappen (req-ui-006), zum Beispiel „Einstieg“, „Order“, „Verwaltung“. Offen für den Prototyp: ob die Ausrichtung umschaltbar ist (waagerecht für breite Bildschirme).
+
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
 
 Der Strategiedesigner bietet folgende Arbeitsabläufe:
@@ -483,3 +491,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-18 | Vom Projektleiter, Folge der Entscheidung vom selben Tag: Sätze zum Start und zur Wiederholung der Auswertung auf Strategien mit Auslösern beschränkt (req-fach-015). Hinweis H1 aus `development/strategiedesign/reviews/requirements-8.md`. |
 | 2026-10-19 | req-ui-014 neu: Werte von Objekten als Datenverbindungen zu Eingängen anderer Elemente, Ausdrücke mit Namen bleiben zulässig; req-ablauf-003 und req-ablauf-007 angepasst. Entscheidung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`): „Der Sinn von Indikatoren ist, dass sie Werte liefern.“ |
 | 2026-10-19 | req-ui-015 neu: Bedingungen und Berechnungen aus Bausteinen ohne Formeltext, Ausdruck als Ansicht für Fortgeschrittene mit Editor. req-ui-016 neu: Bedienerführung, freie Namen, ein Name statt Name und Bezeichnung. Festlegungen des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`). |
+| 2026-10-19 | req-ui-017 neu: senkrechter Ablauf mit Eingang oben und Ausgängen unten, automatische Anordnung, eigener Bereich für Objekte ohne Ablaufverbindung, zusammenfassbare Abschnitte. Festlegung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`). |
