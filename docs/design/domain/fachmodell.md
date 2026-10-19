@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
-- zuletzt aktualisiert: `2026-10-18`
+- zuletzt aktualisiert: `2026-10-19`
 - abgestimmt: [Präsentation Fachmodell: Orders und Regelwerke](praesentation-fachmodell.html), bestätigt vom Auftraggeber im Chat am 14. Oktober 2026. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -427,13 +427,16 @@ Das Instrument kommt aus der Anwendung der Strategie. Ein externes Ereignis komm
 
 ### req-fach-054 -- Mitgelieferte Indikatoren
 
-Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR` und `Markttechnik`. Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat den Parameter `Zeiteinheit`, das Instrument kommt aus der Anwendung der Strategie.
+Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR`, `ZigZag` und `Markttechnik`. Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat den Parameter `Zeiteinheit`, das Instrument kommt aus der Anwendung der Strategie.
 
 | Indikator | Parameter | Eigenschaften |
 |---|---|---|
 | `EMA` (exponentieller gleitender Durchschnitt) | `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Kursquelle` (Standard Schlusskurs) | `Wert` |
 | `ATR` (Average True Range) | `Zeiteinheit`, `Periode` | `Wert` |
+| `ZigZag` | `Zeiteinheit`, `Depth` (Standard 12), `Deviation` (Standard 5), `Backstep` (Standard 3); Verfahren des in MetaTrader 5 mitgelieferten ZigZag | die Wendepunkte, je Wendepunkt Kurs, Hoch oder Tief und ob endgültig. Offen: wie viele zurückliegende Wendepunkte Ausdrücke ansprechen können. |
 | `Markttechnik` | siehe [Indikator Markttechnik](indikator-markttechnik.md) | siehe dort |
+
+In der Oberfläche heißt `Markttechnik` „1-2-3-Trend (Markttechnik)“ und steht wie selbst angelegte Trends in der Gruppe der Trends. Er baut auf `ZigZag` auf.
 
 Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors als Objekte.
 
@@ -474,3 +477,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-16 | Abstimmung der Spezifikation (`strategiedesign`), Entscheidung des Auftraggebers zu Festlegung 4, vom Projektleiter: Eine Regel mit `Order` oder `Position` steht nur als Regel der Strategie, an „Order aufgeben“ oder in dessen Verwaltung; in Indikator oder Trend ist das Einfügen ein Fehler (req-fach-051, Hinweis S26 aus `development/strategiedesign/reviews/specification-3.md`). |
 | 2026-10-18 | Entscheidung des Auftraggebers im Chat am 2026-10-18: Auslöser sind optional, für die Strategie und für die Verwaltung einer Order (req-fach-046, req-fach-047, req-fach-049a); `Kerze` ohne Instanz auch ohne Auslöser nur mit Instanz auf der Zeichenfläche (req-fach-051). Auswertung ohne Auslöser offen. |
 | 2026-10-18 | Vom Projektleiter, Folge der Entscheidung vom selben Tag: Durchlauf der Verwaltung beim Stellen der Order auf Verwaltungen mit eigenen Auslösern beschränkt (req-fach-049, req-fach-049a). Hinweis H1 aus `development/strategiedesign/reviews/requirements-8.md`. |
+| 2026-10-19 | req-fach-054: `ZigZag` als eigener mitgelieferter Indikator; `Markttechnik` heißt in der Oberfläche „1-2-3-Trend (Markttechnik)“, steht bei den Trends und baut auf `ZigZag` auf. Entscheidung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`). |
