@@ -108,7 +108,7 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 4. Ob Strategieparameter je Testlauf gesetzt werden.
 5. Ob ein Testkonto auch geänderte Angaben zum Instrument speichert.
 6. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
-7. Offene Fragen im Fachmodell zur Ausführung: Bezug von `VORHER` bei mehreren Auslösern (req-fach-014), Auswertung einer Strategie ohne Auslöser (req-fach-015), Bestimmung von Trend, Phase und Punkten im Indikator 1-2-3-Trend (Markttechnik).
+7. Offene Fragen im Fachmodell zur Ausführung: Bezug von `VORHER` bei Werten ohne eigene Zeiteinheit (req-fach-014), Auswertung einer Strategie ohne Auslöser (req-fach-015), Bestimmung von Trend, Phase und Punkten im Indikator 1-2-3-Trend (Markttechnik).
 
 ## 6. Änderungsnachweis
 

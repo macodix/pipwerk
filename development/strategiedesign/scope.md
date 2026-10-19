@@ -35,7 +35,7 @@ Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Pha
 - Indikator Markttechnik: Bestimmung von Trend und Phase, erst für die Berechnung im Strategietester nötig.
 - Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR, ZigZag und Markttechnik hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
 - Fachmodell und Strategiedesigner: Auswertung einer Strategie oder Verwaltung ohne Auslöser, zum Beispiel Start von Hand (req-fach-015, req-fach-046), betrifft die Ausführung.
-- Aus den Nachprüfungen, alle die Ausführung betreffend: Bezug von `VORHER` bei mehreren Auslösern (req-fach-014), Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Maßnahme nach der Prüfung mit dem Ausführungspreis (req-fach-021), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
+- Aus den Nachprüfungen, alle die Ausführung betreffend: Bezug von `VORHER` bei Werten ohne eigene Zeiteinheit (req-fach-014), Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Maßnahme nach der Prüfung mit dem Ausführungspreis (req-fach-021), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
 
 ## Stand
 
