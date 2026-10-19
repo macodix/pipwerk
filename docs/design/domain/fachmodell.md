@@ -431,7 +431,7 @@ Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR`, `ZigZag` und `Markt
 
 | Indikator | Parameter | Eigenschaften |
 |---|---|---|
-| `EMA` (exponentieller gleitender Durchschnitt) | `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Kursquelle` (Standard Schlusskurs) | `Wert` |
+| `EMA` (exponentieller gleitender Durchschnitt) | `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Anwenden auf` (Kurs der Kerze, aus dem der Durchschnitt berechnet wird, wie in MetaTrader 5; Standard Schlusskurs) | `Wert` |
 | `ATR` (Average True Range) | `Zeiteinheit`, `Periode` | `Wert` |
 | `ZigZag` | `Zeiteinheit`, `Depth` (Standard 12), `Deviation` (Standard 5), `Backstep` (Standard 3); Verfahren des in MetaTrader 5 mitgelieferten ZigZag | die Wendepunkte, je Wendepunkt Kurs, Hoch oder Tief und ob endgültig. Offen: wie viele zurückliegende Wendepunkte Ausdrücke ansprechen können. |
 | `Markttechnik` | siehe [Indikator Markttechnik](indikator-markttechnik.md) | siehe dort |
@@ -479,3 +479,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-18 | Vom Projektleiter, Folge der Entscheidung vom selben Tag: Durchlauf der Verwaltung beim Stellen der Order auf Verwaltungen mit eigenen Auslösern beschränkt (req-fach-049, req-fach-049a). Hinweis H1 aus `development/strategiedesign/reviews/requirements-8.md`. |
 | 2026-10-19 | req-fach-054: `ZigZag` als eigener mitgelieferter Indikator; `Markttechnik` heißt in der Oberfläche „1-2-3-Trend (Markttechnik)“, steht bei den Trends und baut auf `ZigZag` auf. Entscheidung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`). |
 | 2026-10-19 | req-fach-046, req-fach-053: Strategieparameter können Objekte sein, zum Beispiel ein `Instrument`; Instrument, Kerze, Tick und Indikatoren haben den Parameter `Instrument`, vorbelegt mit dem Instrument der Anwendung. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | req-fach-054: Parameter `Kursquelle` des EMA heißt `Anwenden auf` wie in MetaTrader 5. Feststellung des Auftraggebers im Chat am 2026-10-19: „Kursquelle“ war erfunden und falsch. |

@@ -325,7 +325,7 @@ Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne F
 
 ### req-ui-016 -- Bedienerführung
 
-Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie die Kursquelle eines EMA. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
+Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
 
 Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „Stop-Abstand“, „EMA 20“). Ein Objekt, ein Element und ein Strategieparameter haben genau einen Namen; eine getrennte Bezeichnung entfällt. Interne Kennungen bildet die Anwendung selbst und zeigt sie nicht.
 
