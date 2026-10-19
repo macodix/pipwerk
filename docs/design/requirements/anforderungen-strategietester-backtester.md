@@ -58,6 +58,10 @@ Die Angaben zum Instrument (Kontraktgröße, Volumenschritte, Swap, Margin-Anfor
 
 Ein Testlauf verwendet genau ein Testkonto. Ändert der Anwender im Testlauf einen Wert, bleibt das gespeicherte Testkonto unverändert, außer er speichert die Änderung ausdrücklich.
 
+### req-test-006 -- Testbarkeit
+
+Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategietester und im Backtester testbar.
+
 ## 3. Strategietester
 
 ### req-test-010 -- Darstellung
@@ -108,10 +112,12 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 4. Ob Strategieparameter je Testlauf gesetzt werden.
 5. Ob ein Testkonto auch geänderte Angaben zum Instrument speichert.
 6. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
-7. Offene Fragen im Fachmodell zur Ausführung: Auswertung einer Strategie ohne Auslöser (req-fach-015), Bestimmung von Trend, Phase und Punkten im Indikator 1-2-3-Trend (Markttechnik).
+7. Auswertung einer Strategie ohne Auslöser, zum Beispiel durch Start von Hand (Fachmodell req-fach-015). Wird mit den Anforderungen an das Handelssystem geklärt. Ist sie dort möglich, ist sie nach req-test-006 auch testbar.
+8. Bestimmung von Trend, Phase und Punkten im Indikator 1-2-3-Trend (Markttechnik).
 
 ## 6. Änderungsnachweis
 
 | Datum | Änderung |
 | --- | --- |
 | 2026-10-19 | Erstanlage: Testlauf, Testzeitraum, Kursdaten eines Testlaufs, interne Abwicklung, Testkonto, schrittweiser Ablauf im Strategietester, Ergebnis, Speichern und Vergleich im Backtester. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | req-test-006 Testbarkeit. Strategie ohne Auslöser an das Handelssystem verwiesen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
