@@ -18,7 +18,7 @@ Alle blockierenden Befunde folgen aus Festlegungen des Auftraggebers vom 2026-10
 | H2, H5, H6 | Spezifikation. |
 | H3 | Durch den Softwarearchitekten im Glossar erledigt (Eintrag „Element“). |
 | H4 | req-ablauf-007: „Eingang ohne Wert“ als eigener Punkt, ausgenommen optionale Parameter und Parameter, deren Wert erst bei der Anwendung übergeben wird. Kreise über Datenverbindungen: Spezifikation. |
-| H7 | Entscheidung des Auftraggebers, für die Testfälle nicht nötig. In req-fach-053 und `scope.md` als offen gekennzeichnet. |
+| H7 | Entscheidung des Auftraggebers im Chat am 2026-10-19: keine Einschränkung, weil keine Notwendigkeit besteht. req-fach-053: Auslöser `Kerzenschluss` und `Tick` haben den Parameter `Instrument`, eine Order kann auf jedem Instrument aufgegeben werden. |
 | H8 | `ZigZag` in Abschnitt 9 Punkt 9 und in `scope.md` ergänzt. |
 | H9 | Erste Lesart festgehalten (req-fach-054, `indikator-markttechnik.md` Abschnitt 1): `Markttechnik` rechnet selbst nach dem Verfahren des `ZigZag`, ohne eigene ZigZag-Instanz. Namen der ZigZag-Eigenschaften: Spezifikation. |
 | H10 | req-fach-046: Belegung über eine Datenverbindung ergänzt. Glossar bereits durch den Softwarearchitekten. |

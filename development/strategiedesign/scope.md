@@ -31,7 +31,7 @@ Aus der Zeit vor dem Entwicklungsverfahren liegen ein Pflichtenheft und Arbeitsp
 
 Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Phase 2:
 
-- Fachmodell: OrderBuilder, weitere Funktionen der ersten Auswahl und deutsche Funktionsnamen (req-fach-036), Objekt Kurs für Strategien ohne Kerzen (req-fach-051), Auslöser und Order auf einem anderen Instrument als dem der Anwendung (req-fach-053), externes Ereignis als Auslöser (req-fach-053), weitere mitgelieferte Indikatoren und Expert Advisors (req-fach-054).
+- Fachmodell: OrderBuilder, weitere Funktionen der ersten Auswahl und deutsche Funktionsnamen (req-fach-036), Objekt Kurs für Strategien ohne Kerzen (req-fach-051), externes Ereignis als Auslöser (req-fach-053), weitere mitgelieferte Indikatoren und Expert Advisors (req-fach-054).
 - Indikator Markttechnik: Bestimmung von Trend und Phase, erst für die Berechnung im Strategietester nötig.
 - Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR, ZigZag und Markttechnik hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
 - Fachmodell und Strategiedesigner: Auswertung einer Strategie oder Verwaltung ohne Auslöser, zum Beispiel Start von Hand (req-fach-015, req-fach-046), betrifft die Ausführung.
