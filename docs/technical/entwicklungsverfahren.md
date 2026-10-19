@@ -261,6 +261,8 @@ Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann: Arbeitsabläuf
 
 **Keine Einschränkung ohne Erfordernis.** Was die Dokumente des Auftraggebers nicht einschränken, ist erlaubt. Eine Einschränkung braucht eine ausdrückliche Festlegung des Auftraggebers oder eine begründete technische Erfordernis, die in der Spezifikation mit Begründung dokumentiert ist. Eine Lücke ist kein Anlass für eine Frage, ob eingeschränkt werden soll. Ein Text, der ohne eine solche Grundlage einschränkt, ist ein Befund, der aus dieser Regel folgt, und wird ohne Vorlage korrigiert.
 
+**Lücken.** Eine Lücke in den Dokumenten des Auftraggebers muss nur geschlossen werden, wenn es dafür einen guten technischen Grund gibt: Ohne sie lässt sich die Software nicht sicher betreiben oder nicht umsetzen, oder die Sicherheit der Software ist beeinträchtigt. Nur dann ist sie ein blockierender Befund, und nur dann gibt es eine Rückfrage. Jede andere Lücke dokumentiert die QA als Hinweis, der Projektleiter kennzeichnet sie bei Bedarf als offenen Punkt. Sie unterbricht den Entwicklungsprozess nicht.
+
 Die QA ordnet jeden Befund zu Dokumenten des Auftraggebers einer dieser Gruppen oder der Gruppe „Entscheidung des Auftraggebers“ zu und stellt Fragen nur in dieser Gruppe. Ein Prüfbericht ohne Befund in dieser Gruppe geht nicht an den Auftraggeber. Ist die Zuordnung nicht eindeutig, entscheidet der Softwarearchitekt; nur wenn er sie nicht treffen kann, gilt der Befund als Entscheidung des Auftraggebers.
 
 ### Grenze der Durchläufe
@@ -423,6 +425,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-19 | Fragen an den Auftraggeber: Regel „Lücken“, nur Lücken mit gutem technischem Grund (Betrieb, Umsetzbarkeit, Sicherheit) blockieren und führen zu Rückfragen, alle anderen werden dokumentiert, ohne den Entwicklungsprozess zu unterbrechen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Fragen an den Auftraggeber: Regel „Keine Einschränkung ohne Erfordernis“. Anlass: Hinweis H7 in `development/strategiedesign/reviews/requirements-9.md`, Frage nach einer Einschränkung, die nur aus einer Formulierung des Projektleiters folgte. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Phase 2: klickbarer Prototyp vor Spezifikation und Umsetzung jeder neuen oder wesentlich geänderten Oberfläche, Bestätigung durch den Auftraggeber. Phase 3: Abnahmekriterium zur Bedienbarkeit für jedes Paket mit Oberfläche. Anlass: `strategiedesign/wp02` nicht abgenommen, Bedienung ohne Anleitung nicht erschließbar. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-18 | Fragen an den Auftraggeber: nur zu Entscheidungen, die nur er treffen kann. Korrekturen, die aus einer Festlegung folgen (auch Glossar), Fragen der Spezifikation und als offen gekennzeichnete Punkte erledigen die Rollen ohne Vorlage und ohne Pause; die QA ordnet ihre Befunde zu. Anlass: Rückfragen in `development/strategiedesign/reviews/requirements-8.md`, die alle ohne Auftraggeber zu klären waren. Forderung des Auftraggebers im Chat am 2026-10-18. |
