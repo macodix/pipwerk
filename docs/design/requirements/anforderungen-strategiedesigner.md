@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-18`
+- zuletzt aktualisiert: `2026-10-19`
 - abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -311,6 +311,14 @@ Bei der Eingabe eines Ausdrucks zeigt der Designer nach einem Objektnamen und ei
 
 ## 7. Arbeitsabläufe
 
+### req-ui-014 -- Werte als Datenverbindungen
+
+Objekte liefern Werte. Jede Eigenschaft eines Objekts auf der Zeichenfläche, zum Beispiel `Wert` eines EMA oder `Trendrichtung` des 1-2-3-Trends, ist ein Ausgang, den der Anwender per Linie mit einem Eingang eines anderen Elements verbindet, zum Beispiel mit einer Bedingung, einer Berechnung, „Order aufgeben“ oder dem Parameter eines anderen Objekts. Ein verbundener Eingang erscheint im Ausdruck des Elements unter seinem Namen. Datenverbindungen sind von Ablaufverbindungen sichtbar unterschieden: Ablaufverbindungen legen die Reihenfolge fest, Datenverbindungen den Weg eines Werts.
+
+Ausdrücke dürfen Eigenschaften weiterhin auch direkt über den Namen ansprechen (`ema20.Wert`); beide Wege führen zum selben Ergebnis. Wird ein Name nur im Ausdruck verwendet, zeigt die Zeichenfläche die Verwendung trotzdem als Datenverbindung an.
+
+Offen für die Spezifikation: Darstellung der Ein- und Ausgänge, Bündelung vieler Ausgänge eines Objekts, Verhalten beim Umbenennen und Löschen eines verbundenen Objekts.
+
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
 
 Der Strategiedesigner bietet folgende Arbeitsabläufe:
@@ -328,7 +336,7 @@ Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenflä
 
 Der Anwender zieht einen Objekttyp oder eine gespeicherte Vorlage aus der Elementbibliothek auf die Zeichenfläche. Es entsteht eine Instanz mit den Standardwerten des Objekttyps beziehungsweise der Vorlage. In der Eigenschaftenansicht gibt der Anwender der Instanz einen Namen (zum Beispiel `EMA21`), unter dem sie in Ausdrücken dieser Strategie angesprochen wird, und setzt ihre Parameter. Zwei Instanzen aus derselben Vorlage sind zwei Objekte der Strategie. Die Instanz wird mit der Strategie gespeichert. Auf Wunsch speichert der Anwender sie als neue Vorlage, die danach in der Elementbibliothek für andere Strategien zur Verfügung steht.
 
-Die Objekte der Anwendung (Fachmodell req-fach-051) sind in Ausdrücken verfügbar; Order und Position bezeichnen in einer Regel die Order beziehungsweise Position, auf die die Regel angewendet wird, und im Ablauf die Order und Position der Verwaltung. Konto, Instrument, Kerze und Tick stehen zusätzlich in der Elementbibliothek und können wie andere Objekte als Instanz auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen, zum Beispiel die Zeiteinheit einer Kerze. Eine Strategie kann mehrere Instanzen davon verwenden. Sie brauchen keine Ablaufverbindung, ebenso wenig wie Indikatoren und Trends.
+Die Objekte der Anwendung (Fachmodell req-fach-051) sind in Ausdrücken verfügbar; Order und Position bezeichnen in einer Regel die Order beziehungsweise Position, auf die die Regel angewendet wird, und im Ablauf die Order und Position der Verwaltung. Konto, Instrument, Kerze und Tick stehen zusätzlich in der Elementbibliothek und können wie andere Objekte als Instanz auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen, zum Beispiel die Zeiteinheit einer Kerze. Eine Strategie kann mehrere Instanzen davon verwenden. Sie brauchen keine Ablaufverbindung, ebenso wenig wie Indikatoren und Trends; ihre Werte geben sie über Datenverbindungen weiter (req-ui-014).
 
 ### req-ablauf-004 -- Objekt anlegen (vorläufig)
 
@@ -347,7 +355,8 @@ Eine Strategie wird nach Rückfrage gelöscht. Eine Vorlage wird nach Rückfrage
 Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage (Regel, Regelwerk, Indikator, Trend) und auf Anforderung. Sie findet mindestens:
 
 - Auslöser ohne Verbindung in den Ablauf (Fehler)
-- Element des Ablaufs ohne Verbindung (Fehler). Für Objekte auf der Zeichenfläche (Indikatoren, Trends, Objekte der Anwendung) gilt das nicht, sie werden über Ausdrücke verwendet.
+- Element des Ablaufs ohne Verbindung (Fehler). Für Objekte auf der Zeichenfläche (Indikatoren, Trends, Objekte der Anwendung) gilt das nicht, sie geben ihre Werte über Datenverbindungen oder Ausdrücke weiter.
+- Datenverbindung zwischen unverträglichen Datentypen oder Eingang ohne Wert (Fehler)
 - Fehlerhafter Ausdruck, zum Beispiel Schreibfehler, unbekannte Funktion oder unbekannte Eigenschaft (Fehler)
 - Ergebnis einer bestimmenden Regel passt nicht zur Eigenschaft, die sie bestimmt (Fehler)
 - Rückführung im Ablauf ohne Bedingung, die sie beendet (Fehler)
@@ -462,3 +471,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-16 | Nachprüfung der QA (`strategiedesign`, Durchlauf 6). Entscheidung des Auftraggebers im Chat am 2026-10-16: Regelvorlage „Risiko je Trade“ in req-core-002 auf die fachliche Festlegung zurückgeführt, die Abbildung im Ausdruck ist Sache der Spezifikation. |
 | 2026-10-18 | Entscheidung des Auftraggebers im Chat am 2026-10-18: Auslöser sind optional, für die Strategie und für die Verwaltung einer Order (req-fach-015); „Neue Strategie“ öffnet eine leere Zeichenfläche (req-ablauf-002). Grundsatz: keine Einschränkung ohne klare Notwendigkeit. Auswertung ohne Auslöser offen. Anlass: Ergänzung der Spezifikation in Phase 4 (`strategiedesign/wp02`, `development/strategiedesign/reviews/specification-4.md`). |
 | 2026-10-18 | Vom Projektleiter, Folge der Entscheidung vom selben Tag: Sätze zum Start und zur Wiederholung der Auswertung auf Strategien mit Auslösern beschränkt (req-fach-015). Hinweis H1 aus `development/strategiedesign/reviews/requirements-8.md`. |
+| 2026-10-19 | req-ui-014 neu: Werte von Objekten als Datenverbindungen zu Eingängen anderer Elemente, Ausdrücke mit Namen bleiben zulässig; req-ablauf-003 und req-ablauf-007 angepasst. Entscheidung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`): „Der Sinn von Indikatoren ist, dass sie Werte liefern.“ |
