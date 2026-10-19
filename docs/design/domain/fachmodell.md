@@ -225,7 +225,7 @@ Eine Strategie erzeugt selbst keine konkrete Order. Wenn der Strategieablauf nac
 Eine Regel besitzt mindestens folgende fachliche Eigenschaften:
 
 - `Regel-ID` -- eindeutige Identifikation der Regel.
-- `Bezeichnung` -- fachlich verständliche Benennung der Regel.
+- `Name` -- fachlich verständliche Benennung der Regel. Eine Instanz erhält in der Strategie ihren eigenen Namen (req-fach-013a), eine Regel hat also immer genau einen Namen.
 - `fachlicher Ausdruck` -- Definition der fachlichen Berechnung beziehungsweise Prüfung der Regel.
 - `Parameter` -- 0..n; Werte, die bei jeder Verwendung der Regel belegt werden können, zum Beispiel ein Prozentsatz. Der fachliche Ausdruck verwendet sie wie konstante Werte.
 
@@ -248,7 +248,7 @@ Die verfügbaren Funktionen sind eine Auswahl aus OpenFormula. Ihre Bedeutung ri
 
 Die erste Auswahl umfasst mindestens Abrunden und Aufrunden auf eine Schrittweite, Minimum, Maximum, Betrag und die Fallunterscheidung (`IF`). Dazu kommt die eigene Funktion `PREVIOUS` für frühere Werte (req-fach-014), weil OpenFormula keine entsprechende Funktion enthält. Offen: welche weiteren Funktionen die erste Auswahl umfasst und ob die Oberfläche Funktionsnamen in der gewählten Sprache anzeigt, zum Beispiel `ABRUNDEN` statt `ROUNDDOWN` oder `WENN` statt `IF`.
 
-Objekte und Eigenschaften werden in der Punkt-Schreibweise angesprochen: `Objekt.Eigenschaft`. Objekte der Anwendung (req-fach-051) heißen im Ausdruck wie sie heißen: `Konto`, `Instrument`, `Kerze`, `Tick`, `Order`, `Position`, `Strategie`. Instanzen in einer Strategie tragen den vom Anwender vergebenen Namen ohne Leerzeichen, zum Beispiel `markttechnik_h1.trend_intakt`. Jede Eigenschaft hat eine sprachneutrale Kennung ohne Leerzeichen und Sonderzeichen, zum Beispiel `trend_intakt`, `punkt_13`. Gespeichert wird die Kennung, die Oberfläche zeigt den Namen in der gewählten Sprache. Das gilt ebenso für die Namen der Objekttypen der Anwendung und für festgelegte Werte von Eigenschaften wie `aufwärts`, `Bewegung` oder `ausgeführt`. Die in diesem Dokument verwendeten Namen mit Leerzeichen (`Trend intakt`, `Punkt 1/3`) sind die Anzeigenamen.
+Objekte und Eigenschaften werden in der Punkt-Schreibweise angesprochen: `Objekt.Eigenschaft`. Objekte der Anwendung (req-fach-051) heißen im Ausdruck wie sie heißen: `Konto`, `Instrument`, `Kerze`, `Tick`, `Order`, `Position`, `Strategie`. Instanzen in einer Strategie spricht ein Ausdruck unter dem Namen an, den der Anwender vergeben hat. Namen dürfen Leerzeichen und Umlaute enthalten (Anforderungen Strategiedesigner req-ui-016). Offen für die Spezifikation: wie ein solcher Name im Ausdruck geschrieben und gespeichert wird. Jede Eigenschaft hat eine sprachneutrale Kennung ohne Leerzeichen und Sonderzeichen, zum Beispiel `trend_intakt`, `punkt_13`. Gespeichert wird die Kennung, die Oberfläche zeigt den Namen in der gewählten Sprache. Das gilt ebenso für die Namen der Objekttypen der Anwendung und für festgelegte Werte von Eigenschaften wie `aufwärts`, `Bewegung` oder `ausgeführt`. Die in diesem Dokument verwendeten Namen mit Leerzeichen (`Trend intakt`, `Punkt 1/3`) sind die Anzeigenamen.
 
 ### req-fach-037 -- Prüfen und Bestimmen durch Regeln
 
@@ -317,13 +317,13 @@ Die Reihenfolge wird nicht selbsttätig geändert. Der Nutzer legt sie fest. Erk
 
 Eine Strategie besitzt mindestens:
 
-- `Strategie-ID` -- eindeutige, von der Bezeichnung unabhängige Identifikation,
-- `Bezeichnung` -- vom Nutzer änderbare fachliche Benennung,
+- `Strategie-ID` -- eindeutige, vom Namen unabhängige Identifikation,
+- `Name` -- vom Anwender änderbare fachliche Benennung,
 - `Beschreibung` -- freie Beschreibung beziehungsweise Anmerkung,
 - `Auslöser` -- 0..n Auslöser, die festlegen, bei welchem Ereignis die Strategie ausgewertet werden soll,
 - `Ablauf` -- die im Designer festgelegte fachliche Abfolge,
 - strategiebezogene `Regeln` -- soweit Regeln für die Strategie als Ganzes gelten, einzeln oder als Regelwerk.
-- `Strategieparameter` -- 0..n; Werte, die an einer Stelle festgelegt werden und überall in der Strategie verwendbar sind, zum Beispiel `Strategie.Handelszeiteinheit`. Ein Strategieparameter kann im Ablauf mit dem Element `Parameter setzen` geändert werden (req-fach-047). Sein Wert kann in der Strategie festgelegt oder erst bei der Anwendung übergeben werden. Ein Strategieparameter kann auch ein Objekt sein, zum Beispiel ein `Instrument`; Ausdrücke sprechen dann dessen Eigenschaften an (`Strategie.Filterinstrument.Spread`), und Kerzen, Ticks und Indikatoren können es als ihr Instrument verwenden.
+- `Strategieparameter` -- 0..n; Werte, die an einer Stelle festgelegt werden und überall in der Strategie verwendbar sind, zum Beispiel `Strategie.Handelszeiteinheit`. Ein Strategieparameter kann im Ablauf mit dem Element `Parameter setzen` geändert werden (req-fach-047). Sein Wert kann in der Strategie festgelegt oder erst bei der Anwendung übergeben werden. Ein Strategieparameter kann auch ein Objekt sein, zum Beispiel ein `Instrument`; Ausdrücke sprechen dann dessen Eigenschaften an (`Strategie.Filterinstrument.Spread`), und Instrumente, Kerzen, Ticks und Indikatoren können es als Wert ihres Parameters `Instrument` verwenden (req-fach-053).
 - `wartende Orders` und `offene Positionen` -- Anzahl der Orders und Positionen, die diese Strategie auf dem Konto und Instrument gestellt beziehungsweise eröffnet hat, auf dem sie gerade läuft. Diese Eigenschaften sind nur bei der Ausführung belegt und dienen Bedingungen im Ablauf. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Sie wird mit den Testfällen erprobt.
 
 Regeln der Strategie gelten für jede Order, die die Strategie aufgibt. Zusätzlich kann jedes Element im Ablauf eigene Regeln haben, insbesondere ein Element `Order aufgeben` für seine Order. Dieselbe Regel kann an beiden Stellen verwendet werden. Bestimmen mehrere Regeln dieselbe Eigenschaft einer Order, gilt der Wert der zuletzt angewendeten, gleich ob es dieselbe oder eine andere Regel ist. Zuerst übernimmt die Order die Werte, die ihr direkt übergeben werden, zum Beispiel Ergebnisse von Berechnungen im Ablauf (req-fach-021). Danach werden die Regeln der Strategie angewendet, dann die Regeln der Elemente in der Reihenfolge des Ablaufs. Eine bestimmende Regel der Strategie kann daher direkt übergebene Werte verwenden, aber keine Werte, die erst eine Regel eines Elements bestimmt. So kann eine Strategie grundsätzlich mit 1 % Risiko arbeiten und für eine bestimmte Order 2 % festlegen. Prüfende Regeln ändern die Order nicht und heben einander daher nicht auf. Sie prüfen die Order, nachdem alle Eigenschaften bestimmt sind (req-fach-021). Die Order muss jede Prüfung bestehen. Für Regeln der Strategie und Regeln der Elemente gilt gleichermaßen: Eine Regel, die eine Eigenschaft voraussetzt, die der Ordertyp nicht hat, wird auf diese Order nicht angewendet, ohne Fehler oder Meldung; eine Risikoregel mit Stop-Loss gilt deshalb nicht für eine `CloseOrder` (req-fach-032). Die Strategie legt die Regeln fest. Angewendet werden sie vom Strategietester und vom Handelssystem, nicht vom Strategiedesigner.
@@ -332,7 +332,7 @@ Eine Strategie kann Auslöser haben, muss aber nicht. Eine Obergrenze besteht ni
 
 Eine eigene Versionsangabe der Strategie wird derzeit nicht vorausgesetzt. Eine zentrale, vom Ablauf getrennte Liste aller verwendeten Objekte wird ebenfalls nicht vorausgesetzt. Die verwendeten Objekte sind Bestandteil des Ablaufs dort, wo sie verwendet werden.
 
-Parameter und Eigenschaften verwendeter Objekte und Parameter von Elementen, zum Beispiel die Zeiteinheit eines Auslösers, können mit einem festen Wert, mit einem Strategieparameter, durch eine Berechnung beziehungsweise eine Regel oder erst bei der Anwendung der Strategie zur Laufzeit belegt werden.
+Parameter und Eigenschaften verwendeter Objekte und Parameter von Elementen, zum Beispiel die Zeiteinheit eines Auslösers, können mit einem festen Wert, mit einem Strategieparameter, über eine Datenverbindung aus einer Eigenschaft eines anderen Objekts (Anforderungen Strategiedesigner req-ui-014), durch eine Berechnung beziehungsweise eine Regel oder erst bei der Anwendung der Strategie zur Laufzeit belegt werden.
 
 ### req-fach-047 -- Ablauf einer Strategie
 
@@ -391,9 +391,9 @@ Objekte der Anwendung sind Objekte wie alle anderen: Sie können Parameter haben
 | Objekt | Parameter und Eigenschaften |
 |---|---|
 | `Konto` | `Kapital` (Kontostand einschließlich der Gewinne und Verluste offener Positionen), `freie Margin`, `Währung` |
-| `Instrument` | `Bezeichnung`, `Tickgröße`, `Tickwert`, `Punkt`, `Pip`, `Spread`, `Mindestvolumen`, `Volumenschritt` |
-| `Kerze` | Parameter `Zeiteinheit`; Eigenschaften `Eröffnung`, `Hoch`, `Tief`, `Schluss`, `Volumen`, `Zeitpunkt` der jeweils letzten abgeschlossenen Kerze dieser Zeiteinheit |
-| `Tick` | `Geld`, `Brief`, `Zeitpunkt` des jeweils letzten Ticks |
+| `Instrument` | Parameter `Instrument` (req-fach-053); Eigenschaften `Bezeichnung`, `Tickgröße`, `Tickwert`, `Punkt`, `Pip`, `Spread`, `Mindestvolumen`, `Volumenschritt` |
+| `Kerze` | Parameter `Instrument` (req-fach-053), `Zeiteinheit`; Eigenschaften `Eröffnung`, `Hoch`, `Tief`, `Schluss`, `Volumen`, `Zeitpunkt` der jeweils letzten abgeschlossenen Kerze dieser Zeiteinheit |
+| `Tick` | Parameter `Instrument` (req-fach-053); Eigenschaften `Geld`, `Brief`, `Zeitpunkt` des jeweils letzten Ticks |
 | `Order`, `Position` | in einer Regel die Order beziehungsweise Position, auf die die Regel angewendet wird; in der Verwaltung einer Order die eigene Order und die daraus entstandene Position (req-fach-019, req-fach-052, req-fach-049a), jede Verwaltung hat ihre eigene |
 | `Strategie` | die eigene Strategie mit ihren Strategieparametern und Eigenschaften (req-fach-046) |
 
@@ -423,20 +423,20 @@ Ein Auslöser ist das Ereignis, bei dem der Ablauf einer Strategie oder die Verw
 | `Tick` | -- | den neuen `Tick` |
 | `externes Ereignis` | offen | offen |
 
-Das Instrument kommt aus der Anwendung der Strategie, sofern die Strategie kein anderes festlegt: `Instrument`, `Kerze`, `Tick` und jeder Indikator haben den Parameter `Instrument`, vorbelegt mit dem Instrument der Anwendung; belegt werden kann er auch mit einem Strategieparameter vom Objekttyp `Instrument` oder einem festen Instrument. So kann eine Strategie mehrere Instrumente betrachten. Offen: wie ein festes Instrument bezeichnet wird (Symbol des Brokers oder eigene Bezeichnung), betrifft die Kontoverwaltung. Ein externes Ereignis kommt von außerhalb der Anwendung über eine Schnittstelle, zum Beispiel als Nachricht oder Aufruf eines externen Programms, eines externen Indikators oder eines Agenten, der Nachrichten auswertet. Offen: welche Daten ein externes Ereignis mitbringt und wie es die Strategie erreicht. Für das Vorhaben `strategiedesign` werden `Kerzenschluss` und `Tick` umgesetzt.
+Das Instrument kommt aus der Anwendung der Strategie, sofern die Strategie kein anderes festlegt: `Instrument`, `Kerze`, `Tick` und jeder Indikator haben den Parameter `Instrument`, vorbelegt mit dem Instrument der Anwendung; belegt werden kann er auch mit einem Strategieparameter vom Objekttyp `Instrument` oder einem festen Instrument. So kann eine Strategie mehrere Instrumente betrachten. Offen: ob sich ein Auslöser `Kerzenschluss` oder `Tick` auf ein anderes Instrument als das der Anwendung beziehen kann und ob eine Strategie eine Order auf einem anderen Instrument aufgeben darf. Beide Testfälle arbeiten nur mit dem Instrument der Anwendung. Offen: wie ein festes Instrument bezeichnet wird (Symbol des Brokers oder eigene Bezeichnung), betrifft die Kontoverwaltung. Ein externes Ereignis kommt von außerhalb der Anwendung über eine Schnittstelle, zum Beispiel als Nachricht oder Aufruf eines externen Programms, eines externen Indikators oder eines Agenten, der Nachrichten auswertet. Offen: welche Daten ein externes Ereignis mitbringt und wie es die Strategie erreicht. Für das Vorhaben `strategiedesign` werden `Kerzenschluss` und `Tick` umgesetzt.
 
 ### req-fach-054 -- Mitgelieferte Indikatoren
 
-Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR`, `ZigZag` und `Markttechnik`. Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat den Parameter `Zeiteinheit`, das Instrument kommt aus der Anwendung der Strategie.
+Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR`, `ZigZag` und `Markttechnik`. Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat die Parameter `Instrument` (req-fach-053) und `Zeiteinheit`.
 
 | Indikator | Parameter | Eigenschaften |
 |---|---|---|
-| `EMA` (exponentieller gleitender Durchschnitt) | `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Anwenden auf` (Kurs der Kerze, aus dem der Durchschnitt berechnet wird, wie in MetaTrader 5; Standard Schlusskurs) | `Wert` |
-| `ATR` (Average True Range) | `Zeiteinheit`, `Periode` | `Wert` |
-| `ZigZag` | `Zeiteinheit`, `Depth` (Standard 12), `Deviation` (Standard 5), `Backstep` (Standard 3); Verfahren des in MetaTrader 5 mitgelieferten ZigZag | die Wendepunkte, je Wendepunkt Kurs, Hoch oder Tief und ob endgültig. Offen: wie viele zurückliegende Wendepunkte Ausdrücke ansprechen können. |
+| `EMA` (exponentieller gleitender Durchschnitt) | `Instrument`, `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Anwenden auf` (Kurs der Kerze, aus dem der Durchschnitt berechnet wird, wie in MetaTrader 5; Standard Schlusskurs) | `Wert` |
+| `ATR` (Average True Range) | `Instrument`, `Zeiteinheit`, `Periode` | `Wert` |
+| `ZigZag` | `Instrument`, `Zeiteinheit`, `Depth` (Standard 12), `Deviation` (Standard 5), `Backstep` (Standard 3); Verfahren des in MetaTrader 5 mitgelieferten ZigZag | die Wendepunkte, je Wendepunkt Kurs, Hoch oder Tief und ob endgültig. Offen: wie viele zurückliegende Wendepunkte Ausdrücke ansprechen können. |
 | `Markttechnik` | siehe [Indikator Markttechnik](indikator-markttechnik.md) | siehe dort |
 
-In der Oberfläche heißt `Markttechnik` „1-2-3-Trend (Markttechnik)“ und steht wie selbst angelegte Trends in der Gruppe der Trends. Er baut auf `ZigZag` auf.
+In der Oberfläche heißt `Markttechnik` „1-2-3-Trend (Markttechnik)“ und steht wie selbst angelegte Trends in der Gruppe der Trends. Er baut auf `ZigZag` auf: Er rechnet selbst nach dessen Verfahren und hat dessen Parameter ([Indikator Markttechnik](indikator-markttechnik.md), Abschnitt 2), eine eigene Instanz von `ZigZag` braucht er nicht.
 
 Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors als Objekte.
 
@@ -480,3 +480,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-19 | req-fach-054: `ZigZag` als eigener mitgelieferter Indikator; `Markttechnik` heißt in der Oberfläche „1-2-3-Trend (Markttechnik)“, steht bei den Trends und baut auf `ZigZag` auf. Entscheidung des Auftraggebers im Chat am 2026-10-19 (Abnahme `strategiedesign/wp02`). |
 | 2026-10-19 | req-fach-046, req-fach-053: Strategieparameter können Objekte sein, zum Beispiel ein `Instrument`; Instrument, Kerze, Tick und Indikatoren haben den Parameter `Instrument`, vorbelegt mit dem Instrument der Anwendung. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | req-fach-054: Parameter `Kursquelle` des EMA heißt `Anwenden auf` wie in MetaTrader 5. Feststellung des Auftraggebers im Chat am 2026-10-19: „Kursquelle“ war erfunden und falsch. |
+| 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9), Folge der Festlegungen vom selben Tag: Namen mit Leerzeichen, Schreibweise im Ausdruck offen für die Spezifikation (req-fach-036, B2); `Name` statt `Bezeichnung` bei Regel und Strategie (req-fach-035, req-fach-046, B3); Parameter `Instrument` in req-fach-046, req-fach-051 und req-fach-054 wie in req-fach-053 (B5); Belegung über Datenverbindung (req-fach-046, H10); Auslöser und Order auf anderem Instrument als offen gekennzeichnet (req-fach-053, H7); `Markttechnik` rechnet selbst nach dem Verfahren des `ZigZag` (req-fach-054, H9). |

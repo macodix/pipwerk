@@ -8,12 +8,13 @@
 
 ## 1. Zweck
 
-Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er wird vom Punkt-2-Ausbruch (`str-01`) benötigt. Er wird einmal angelegt und kann auf verschiedenen Zeiteinheiten verwendet werden. In der Oberfläche heißt er „1-2-3-Trend (Markttechnik)“ und steht bei den Trends. Er baut auf dem mitgelieferten Indikator `ZigZag` auf (Fachmodell req-fach-054).
+Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er wird vom Punkt-2-Ausbruch (`str-01`) benötigt. Er wird einmal angelegt und kann auf verschiedenen Zeiteinheiten verwendet werden. In der Oberfläche heißt er „1-2-3-Trend (Markttechnik)“ und steht bei den Trends. Er baut auf dem mitgelieferten Indikator `ZigZag` auf (Fachmodell req-fach-054): Er rechnet selbst nach dessen Verfahren und hat dessen Parameter (Abschnitt 2), eine eigene Instanz von `ZigZag` braucht er nicht.
 
 ## 2. Parameter
 
 | Parameter | Bedeutung | Standardwert |
 |---|---|---|
+| Instrument | Instrument, auf dem der Indikator rechnet (Fachmodell req-fach-053) | Instrument der Anwendung |
 | Zeiteinheit | Zeiteinheit der Kerzen, auf denen der Indikator rechnet (Fachmodell req-fach-054) | -- |
 | Depth | Mindestanzahl Kerzen zwischen zwei Wendepunkten | 12 |
 | Deviation | Mindestbewegung in Punkten für einen neuen Wendepunkt | 5 |
@@ -75,3 +76,4 @@ Die Bestimmung in Abschnitt 4 ist vom Projektleiter aus der Markttechnik nach Vo
 | 2026-10-14 | Erstfassung. Eigenschaften mit dem Auftraggeber im Chat abgestimmt, Bestimmung als Entwurf. |
 | 2026-10-15 | Parameter Zeiteinheit, Trendrichtung auf beiden Zeiteinheiten im Punkt-2-Ausbruch. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
 | 2026-10-19 | Bezeichnung in der Oberfläche „1-2-3-Trend (Markttechnik)“, Gruppe Trends, Grundlage `ZigZag`. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9): Parameter `Instrument` (Fachmodell req-fach-053, B5), rechnet selbst nach dem Verfahren des `ZigZag` (H9). |
