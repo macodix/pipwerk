@@ -121,7 +121,6 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 ## 5. Noch offene Punkte
 
 1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
-2. Auswertung einer Strategie ohne Auslöser, zum Beispiel durch Start von Hand (Fachmodell req-fach-015). Wird mit den Anforderungen an das Handelssystem geklärt. Ist sie dort möglich, ist sie nach req-test-006 auch testbar.
 
 ## 6. Änderungsnachweis
 
@@ -130,3 +129,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-19 | Erstanlage: Testlauf, Testzeitraum, Kursdaten eines Testlaufs, interne Abwicklung, Testkonto, schrittweiser Ablauf im Strategietester, Ergebnis, Speichern und Vergleich im Backtester. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | req-test-006 Testbarkeit. Strategie ohne Auslöser an das Handelssystem verwiesen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Offene Punkte entschieden: eine Hauptkomponente mit zwei Betriebsarten, req-test-007 Strategieparameter je Testlauf, req-test-013 Haltepunkte, req-test-014 Anzeige der Werte, Angaben zum Instrument nicht im Testkonto (req-test-005), Umfang eines gespeicherten Backtests (req-test-022). Bestimmung im Indikator 1-2-3-Trend nach `indikator-markttechnik.md` verschoben. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-20 | Offener Punkt „Auswertung ohne Auslöser“ erledigt: Auslöser „Start von Hand“ (Anforderungen an den Strategiedesigner req-fach-015, Fachmodell req-fach-053). Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |

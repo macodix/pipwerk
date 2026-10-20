@@ -132,7 +132,7 @@ Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als 
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Hat eine Strategie Auslöser, starten diese ihren Ablauf beziehungsweise werten ihn erneut aus. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Offen: wie eine Strategie oder Verwaltung ohne Auslöser ausgewertet wird, zum Beispiel durch Start von Hand. Die Frage wird mit den Anforderungen an das Handelssystem geklärt. Der Aufbau darf die Auswertung ohne Auslöser nicht ausschließen. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen und ihre Parameter legt das Fachmodell fest (req-fach-053): Kerzenschluss, Tick und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
+Hat eine Strategie Auslöser, starten diese ihren Ablauf beziehungsweise werten ihn erneut aus. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Jede Auswertung beginnt an einem Auslöser. Für den Start von Hand gibt es den Auslöser „Start von Hand“. Eine Strategie ohne Auslöser lässt sich speichern, wird aber nicht ausgewertet. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen und ihre Parameter legt das Fachmodell fest (req-fach-053): Kerzenschluss, Tick, Start von Hand und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
 
 Bei einer Strategie mit Auslösern ergibt sich die Wiederholung einer Strategieauswertung aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -383,6 +383,7 @@ Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage 
 - Bedingung, die eine Eigenschaft verwendet, die das Objekt nicht hat (Fehler)
 - Regelwerk, dessen Reihenfolge nicht auswertbar ist: Vorwärtsbezug oder Zirkelbezug nach req-fach-045 (Fehler)
 - Kein Element „Order aufgeben“ erreichbar (Hinweis)
+- Strategie ohne Auslöser, sie startet nie (Hinweis)
 
 Speichern ist immer möglich, auch bei Fehlern. Eine Strategie mit Fehlern kann nicht ausgeführt werden. Die Anzeige der Befunde regelt req-ui-011.
 
@@ -496,3 +497,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9), Folge der Festlegungen vom selben Tag: Wertquellen der Bausteine wie in Ausdrücken (req-ui-015, B1); Name statt Bezeichnung (req-param-005, req-ui-003, req-ui-005, req-ablauf-002, req-ablauf-004, req-ablauf-008, B3); Bereich für Objekte ohne Ablaufverbindung gehört zur Zeichenfläche, Objekte der Anwendung statt „Markt und Konto“ (req-ui-017, H1); Eingang ohne Wert ausgenommen optionale und bei der Anwendung übergebene Parameter (req-ablauf-007, H4); `ZigZag` in Abschnitt 9 Punkt 9 (H8). |
 | 2026-10-19 | Vom Projektleiter nach den Hinweisen der QA (`strategiedesign`, Durchläufe 10 und 11): eigener Bereich nur für Objekte der Anwendung, die auf der Zeichenfläche liegen können (req-ui-017), Wertquellen als Beispiele, mit Ergebnissen von Regeln (req-ui-015), Parameter der Auslöser nach dem Fachmodell (req-fach-015). |
 | 2026-10-19 | Auswertung ohne Auslöser wird mit den Anforderungen an das Handelssystem geklärt und darf durch den Aufbau nicht ausgeschlossen werden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-20 | req-fach-015: Auslöser „Start von Hand“, jede Auswertung beginnt an einem Auslöser; req-ablauf-007: Hinweis bei einer Strategie ohne Auslöser. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
