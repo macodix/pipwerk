@@ -121,6 +121,7 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 ## 5. Noch offene Punkte
 
 1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
+2. An welcher Stelle eines Testlaufs der Auslöser „Start von Hand“ eintritt (Fachmodell req-fach-053), zum Beispiel einmal zu Beginn des Testzeitraums. Nicht zu verwechseln mit dem Start des Testlaufs (req-test-012).
 
 ## 6. Änderungsnachweis
 
@@ -131,3 +132,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-19 | Offene Punkte entschieden: eine Hauptkomponente mit zwei Betriebsarten, req-test-007 Strategieparameter je Testlauf, req-test-013 Haltepunkte, req-test-014 Anzeige der Werte, Angaben zum Instrument nicht im Testkonto (req-test-005), Umfang eines gespeicherten Backtests (req-test-022). Bestimmung im Indikator 1-2-3-Trend nach `indikator-markttechnik.md` verschoben. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | Offener Punkt „Auswertung ohne Auslöser“ erledigt: Auslöser „Start von Hand“ (Anforderungen an den Strategiedesigner req-fach-015, Fachmodell req-fach-053). Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
 | 2026-10-20 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1), vom Projektleiter: Instrumente des Testlaufs einschließlich weiterer Instrumente der Strategie (req-test-001, -003, -005, -007; B4), Angaben zum Instrument nach req-system-025 (B1), Auswahl von Instrument und Testzeitraum (H8). |
+| 2026-10-20 | Offener Punkt 2: Eintreten von „Start von Hand“ im Testlauf. Vom Projektleiter nach den Hinweisen T1-H1 bis T1-H6 aus `development/strategiedesign/reviews/specification-9.md`, Folge der Entscheidungen vom selben Tag. |
