@@ -384,6 +384,7 @@ Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage 
 - Regelwerk, dessen Reihenfolge nicht auswertbar ist: Vorwärtsbezug oder Zirkelbezug nach req-fach-045 (Fehler)
 - Kein Element „Order aufgeben“ erreichbar (Hinweis)
 - Strategie ohne Auslöser, sie startet nie (Hinweis)
+- Festes Instrument mit ungültiger Bezeichnung (Fehler, Fachmodell req-fach-053)
 
 Speichern ist immer möglich, auch bei Fehlern. Eine Strategie mit Fehlern kann nicht ausgeführt werden. Die Anzeige der Befunde regelt req-ui-011.
 
@@ -498,3 +499,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-19 | Vom Projektleiter nach den Hinweisen der QA (`strategiedesign`, Durchläufe 10 und 11): eigener Bereich nur für Objekte der Anwendung, die auf der Zeichenfläche liegen können (req-ui-017), Wertquellen als Beispiele, mit Ergebnissen von Regeln (req-ui-015), Parameter der Auslöser nach dem Fachmodell (req-fach-015). |
 | 2026-10-19 | Auswertung ohne Auslöser wird mit den Anforderungen an das Handelssystem geklärt und darf durch den Aufbau nicht ausgeschlossen werden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | req-fach-015: Auslöser „Start von Hand“, jede Auswertung beginnt an einem Auslöser; req-ablauf-007: Hinweis bei einer Strategie ohne Auslöser. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
+| 2026-10-20 | req-ablauf-007: Prüfung der Bezeichnung fester Instrumente. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkte 16 und 19). |
