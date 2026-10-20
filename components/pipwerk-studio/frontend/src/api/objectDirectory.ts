@@ -52,31 +52,33 @@ export type MoveFailure = {
 /** The cause of a failed request to the backend as far as the answer names it. */
 export type ErrorCause = {
   status: number | null;
-  /** The fixed text of the backend. */
-  detail: string | null;
   moveFailure: MoveFailure | null;
 };
 
-export function causeOf(error: unknown): ErrorCause {
-  if (!(error instanceof HttpError)) {
-    return { status: null, detail: null, moveFailure: null };
-  }
-  let moveFailure: MoveFailure | null = null;
+/** The directories and files of a failed move: in the data of the answer (`params`), or in the answer itself. */
+function moveFailureOf(source: unknown): MoveFailure | null {
   if (
-    isRecord(error.body) &&
-    typeof error.body.source_directory === 'string' &&
-    typeof error.body.target_directory === 'string' &&
-    Array.isArray(error.body.files)
+    isRecord(source) &&
+    typeof source.source_directory === 'string' &&
+    typeof source.target_directory === 'string' &&
+    Array.isArray(source.files)
   ) {
     try {
-      moveFailure = {
-        sourceDirectory: expectString(error.body.source_directory, 'source_directory'),
-        targetDirectory: expectString(error.body.target_directory, 'target_directory'),
-        files: expectArray(error.body.files, 'files').map((file) => expectString(file, 'file')),
+      return {
+        sourceDirectory: expectString(source.source_directory, 'source_directory'),
+        targetDirectory: expectString(source.target_directory, 'target_directory'),
+        files: expectArray(source.files, 'files').map((file) => expectString(file, 'file')),
       };
     } catch {
-      moveFailure = null;
+      return null;
     }
   }
-  return { status: error.status, detail: error.detail, moveFailure };
+  return null;
+}
+
+export function causeOf(error: unknown): ErrorCause {
+  if (!(error instanceof HttpError)) {
+    return { status: null, moveFailure: null };
+  }
+  return { status: error.status, moveFailure: moveFailureOf(error.params) ?? moveFailureOf(error.body) };
 }

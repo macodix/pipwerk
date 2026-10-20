@@ -1,18 +1,22 @@
 import type { BindingKind, DataType, Scalar } from '../api/elementTypes';
 
 /**
- * The strategy document (format `pipwerk.strategy`, `contracts/strategies/v1/`).
- * It is the state of an open strategy; the model of React Flow is derived from
- * it (specification E3). Every type carries an index signature: fields that the
- * user interface does not know stay as they are (item 3 of the order).
+ * The strategy document (format `pipwerk.strategy`, format version 2.0,
+ * `contracts/strategies/v2/`). It is the state of an open strategy; the
+ * presentation on the drawing area is derived from it (specification E3). Every
+ * type carries an index signature: fields that the user interface does not know
+ * stay as they are.
  */
 
 export const STRATEGY_FORMAT = 'pipwerk.strategy';
-export const FORMAT_VERSION = '1.0';
+export const FORMAT_VERSION = '2.0';
+
+/** The value of an assignment by data connection: a property of an instance on the drawing area. */
+export type ConnectionValue = { instance: string; property: string };
 
 export type Binding = {
   kind: BindingKind;
-  value?: Scalar;
+  value?: Scalar | ConnectionValue;
   [field: string]: unknown;
 };
 
@@ -21,13 +25,16 @@ export type Bindings = Record<string, Binding>;
 export type Origin = {
   object_type: string;
   template_id?: string | null;
-  template_title?: string | null;
+  /** The name of an own template at the time of insertion; mentioned templates and object types store only the identifier. */
+  template_name?: string | null;
   [field: string]: unknown;
 };
 
 export type ParameterDefinition = {
+  key: string;
   name: string;
   datatype: DataType;
+  object_type?: string | null;
   required?: boolean;
   default?: Scalar;
   choices?: string[];
@@ -35,6 +42,7 @@ export type ParameterDefinition = {
 };
 
 export type PropertyDefinition = {
+  key: string;
   name: string;
   datatype: DataType;
   expression: string;
@@ -42,12 +50,9 @@ export type PropertyDefinition = {
   [field: string]: unknown;
 };
 
-export type Comparison = 'hoechstens' | 'mindestens' | 'gleich';
-
-export const comparisons: readonly Comparison[] = ['hoechstens', 'mindestens', 'gleich'];
-
 export type InstanceDocument = {
   name: string;
+  key: string;
   object_type: string;
   origin?: Origin | null;
   parameter_values?: Bindings;
@@ -57,20 +62,28 @@ export type InstanceDocument = {
   rules?: InstanceDocument[];
   expression?: string | null;
   determined_property?: string | null;
-  comparison?: Comparison | null;
+  comparison?: string | null;
   result_expression?: string | null;
   [field: string]: unknown;
 };
 
+/** An input of an element: a property of an instance on the drawing area that the user connected with the element. */
+export type InputDocument = { instance: string; property: string; [field: string]: unknown };
+
+export type Position = { x: number; y: number };
+
 export type ElementDocument = {
   id: string;
   type: string;
-  title: string;
-  name: string | null;
-  x: number;
-  y: number;
+  /** The name of an element that shows no object; an element with an instance has the name of the instance. */
+  name?: string | null;
+  /** The identifier in expressions of a condition or calculation. */
+  key?: string | null;
+  /** The position the user gave by moving the element; `null` if the user interface arranges it. */
+  position: Position | null;
   parameters: Bindings;
   properties: Bindings;
+  inputs: InputDocument[];
   rules: InstanceDocument[];
   management_of: string | null;
   instance?: InstanceDocument | null;
@@ -78,48 +91,59 @@ export type ElementDocument = {
 };
 
 export type ConnectionDocument = {
+  id: string;
   source: string;
   output: string;
   target: string;
   [field: string]: unknown;
 };
 
+export type SectionDocument = {
+  id: string;
+  name: string;
+  /** The element "place order" whose management the section belongs to, or `null` for the main flow. */
+  flow: string | null;
+  elements: string[];
+  collapsed: boolean;
+  [field: string]: unknown;
+};
+
 export type StrategyParameter = {
+  key: string;
   name: string;
   datatype: DataType;
+  object_type?: string | null;
   value?: Scalar;
   at_application?: boolean;
   choices?: string[];
   [field: string]: unknown;
 };
 
+export type Orientation = 'vertical' | 'horizontal';
+
 export type StrategyDocument = {
   format: typeof STRATEGY_FORMAT;
   format_version: string;
   id: string;
-  title: string;
+  name: string;
   description: string;
   parameters: StrategyParameter[];
   rules: InstanceDocument[];
   elements: ElementDocument[];
   connections: ConnectionDocument[];
+  sections: SectionDocument[];
+  orientation: Orientation;
+  collapsed_managements: string[];
   [field: string]: unknown;
 };
 
-/** Where the rules of a rule list stand: in the strategy or at an element. */
-export type RuleOwner = { kind: 'strategy' } | { kind: 'element'; id: string };
-
-/** A rule or rule set: the list of its owner and the position in that list, then the position in a rule set, and so on. */
-export type RulePath = { owner: RuleOwner; indices: number[] };
-
-export function sameRuleOwner(a: RuleOwner, b: RuleOwner): boolean {
-  return a.kind === b.kind && (a.kind === 'strategy' || (b.kind === 'element' && a.id === b.id));
-}
-
-export function sameRulePath(a: RulePath, b: RulePath): boolean {
+export function isConnectionValue(value: unknown): value is ConnectionValue {
   return (
-    sameRuleOwner(a.owner, b.owner) &&
-    a.indices.length === b.indices.length &&
-    a.indices.every((index, position) => index === b.indices[position])
+    typeof value === 'object' &&
+    value !== null &&
+    'instance' in value &&
+    'property' in value &&
+    typeof value.instance === 'string' &&
+    typeof value.property === 'string'
   );
 }

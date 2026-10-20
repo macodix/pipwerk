@@ -3,13 +3,14 @@ import type { i18n as I18n, TFunction } from 'i18next';
 import type { Finding } from '../api/objects';
 import type { StrategyDocument } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
+import { elementName } from '../model/elements';
 import { labelText, orderSelector, typeName, type TypeIndex } from '../model/typeIndex';
 
 /**
- * The text of a finding in the language of the interface. The texts stand in
- * the translation files under `findings.<identifier of the finding>`; the
- * data of the finding is inserted. A finding with an identifier that has no
- * text appears with a general text and its identifier (specification 5.4).
+ * The text of a finding in the language of the interface, with the way to fix it (specification 3.6, 5.5). The texts
+ * stand in the translation files under `findings.<identifier of the finding>` and `findingFixes.<identifier>`; the
+ * data of the finding is inserted. A finding with an identifier that has no text appears with a general text and its
+ * identifier.
  */
 
 export type FindingTextContext = {
@@ -18,7 +19,7 @@ export type FindingTextContext = {
   language: SupportedLanguage;
 };
 
-/** The kinds of problems in an expression (`details.issue` of `expression.invalid`), by the documentation of the library, section 7.3. */
+/** The kinds of problems in an expression (`details.issue` of `expression.invalid`). */
 export const EXPRESSION_ISSUES = [
   'syntax',
   'unknown_function',
@@ -119,12 +120,7 @@ function plain(value: unknown): string {
   return '';
 }
 
-function labelOfId(
-  ctx: FindingTextContext,
-  finding: Finding,
-  kind: 'parameter' | 'property',
-  id: string,
-): string {
+function labelOfId(ctx: FindingTextContext, finding: Finding, kind: 'parameter' | 'property', id: string): string {
   if (ctx.document === null || ctx.types === null || finding.element === null) {
     return id;
   }
@@ -154,11 +150,7 @@ function labelOfId(
 /** Codes whose `type` is an identifier the user interface does not translate. */
 const RAW_TYPE_CODES = new Set(['type.unknown', 'rule.invalid_type']);
 
-export function findingParams(
-  t: TFunction,
-  finding: Finding,
-  ctx: FindingTextContext,
-): Record<string, string> {
+export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextContext): Record<string, string> {
   const params: Record<string, string> = {};
   for (const key of knownDetails) {
     params[key] = plain(finding.details[key]);
@@ -166,7 +158,8 @@ export function findingParams(
   params.code = finding.code;
   params.subject = finding.subject ?? '';
   const element = ctx.document?.elements.find((candidate) => candidate.id === finding.element);
-  params.element = element === undefined ? '' : element.title !== '' ? element.title : element.type;
+  params.element =
+    element === undefined ? '' : ctx.types === null ? element.type : elementName(element, ctx.types, ctx.language);
   if (typeof finding.details.parameter === 'string') {
     params.parameter = labelOfId(ctx, finding, 'parameter', finding.details.parameter);
   }
@@ -211,21 +204,31 @@ export function findingParams(
   return params;
 }
 
-/** The keys of the findings that have no text, for a list of identifiers. `has` tells whether a key exists. */
+/** The keys of the texts that are missing for a list of identifiers. `has` tells whether a key exists. */
 export function missingFindingTexts(codes: readonly string[], has: (key: string) => boolean): string[] {
-  return codes.map((code) => `findings.${code}`).filter((key) => !has(key));
+  return codes.flatMap((code) => [`findings.${code}`, `findingFixes.${code}`]).filter((key) => !has(key));
 }
 
-export function findingText(t: TFunction, i18n: I18n, finding: Finding, ctx: FindingTextContext): string {
+const issueCodes = new Set(['expression.invalid', 'rule.unresolved_name']);
+
+export type FindingTexts = { message: string; fix: string };
+
+/** The text of a finding and the way to fix it. */
+export function findingTexts(t: TFunction, i18n: I18n, finding: Finding, ctx: FindingTextContext): FindingTexts {
   const params = findingParams(t, finding, ctx);
   const key = `findings.${finding.code}`;
+  const fixKey = `findingFixes.${finding.code}`;
   if (!i18n.exists(key)) {
-    return t('findings.unknown', params);
+    return { message: t('findings.unknown', params), fix: t('findingFixes.unknown', params) };
   }
-  if (finding.code === 'expression.invalid' || finding.code === 'rule.unresolved_name') {
+  if (issueCodes.has(finding.code)) {
     const issueKey = `findings.issues.${params.issue ?? ''}`;
     const problem = i18n.exists(issueKey) ? t(issueKey, params) : t('findings.issues.other', params);
-    return t(key, { ...params, problem });
+    const issueFix = `findingFixes.issues.${params.issue ?? ''}`;
+    return {
+      message: t(key, { ...params, problem }),
+      fix: i18n.exists(issueFix) ? t(issueFix, params) : t('findingFixes.issues.other', params),
+    };
   }
-  return t(key, params);
+  return { message: t(key, params), fix: i18n.exists(fixKey) ? t(fixKey, params) : t('findingFixes.unknown', params) };
 }

@@ -18,7 +18,7 @@
 // Playwright stops this process with SIGTERM (see `gracefulShutdown` in
 // playwright.config.ts); the temporary directory is then removed.
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,6 +64,23 @@ try {
   cleanup();
   process.exit(1);
 }
+
+// The strategies the browser tests open: the saved strategy of the client "EMA-Trendfolge" (format 1.0, as saved; the
+// backend converts it when it reads it) and a strategy with an element of an unknown type. The files lie in the object
+// directory under the name the backend expects: the identifier of the strategy and the kind.
+function placeStrategy(source) {
+  const document = JSON.parse(readFileSync(source, 'utf-8'));
+  mkdirSync(objectDirectory, { recursive: true });
+  writeFileSync(join(objectDirectory, `${document.id}.strategy.json`), JSON.stringify(document, null, 2), 'utf-8');
+}
+
+const here = dirname(fileURLToPath(import.meta.url));
+// The repository root lies four levels above this directory (components/pipwerk-studio/frontend/e2e).
+const repositoryRoot = resolve(here, '../../../..');
+placeStrategy(resolve(repositoryRoot, 'development/strategiedesign/wp02/acceptance/ema-trendfolge-auftraggeber.strategy.json'));
+placeStrategy(resolve(here, 'unknown-type.strategy.json'));
+// a file that cannot be read: the list marks it and does not offer it for opening
+writeFileSync(join(objectDirectory, '00000000-0000-4000-8000-0000000000ff.strategy.json'), '{ damaged', 'utf-8');
 
 const child = spawn(
   'uv',

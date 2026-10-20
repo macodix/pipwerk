@@ -3,14 +3,16 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-18
+- stand: 2026-10-20
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu pipwerk Studio dient
 
 pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Mit ihm werden Handelsstrategien auf einer Zeichenfläche zusammengestellt und bearbeitet.
 
-Der derzeitige Stand: In der Oberfläche können Strategien angelegt, auf der Zeichenfläche gestaltet, geprüft, gespeichert, geöffnet, geschlossen und gelöscht werden; Sprache und Objektverzeichnis stellen Sie in den Einstellungen ein. Vorlagen (Indikator, Trend, Regel, Regelwerk) lassen sich in der Oberfläche noch nicht anlegen, ansehen oder löschen; das geht bisher nur über die Web-API (Abschnitt 2, „Web-API ausprobieren“). Strategien werden nicht ausgeführt.
+Hinweis: pipwerk Studio hat eine neue Oberfläche. Die Beschreibung der neuen Oberfläche (Abschnitte 3, 6, 7.4, 9 und 10) folgt; bis dahin enthalten diese Abschnitte nur einen Vermerk. Die übrigen Abschnitte gelten weiter.
+
+Der derzeitige Stand: In der Oberfläche können Strategien angelegt, geprüft, gespeichert, geöffnet, geschlossen und gelöscht und auf der Zeichenfläche angesehen, angeordnet und verbunden werden; Sprache und Objektverzeichnis stellen Sie in den Einstellungen ein. Vorlagen (Indikator, Trend, Regel, Regelwerk) lassen sich in der Oberfläche noch nicht anlegen, ansehen oder löschen; das geht bisher nur über die Web-API (Abschnitt 2, „Web-API ausprobieren“). Strategien werden nicht ausgeführt.
 
 Wo Sie was finden:
 
@@ -19,11 +21,11 @@ Wo Sie was finden:
 | pipwerk Studio starten | 2 |
 | die Oberfläche kennenlernen | 3 |
 | Sprache oder Objektverzeichnis einstellen | 5 |
-| eine Strategie anlegen, speichern, prüfen, schließen, öffnen oder löschen, Regeln zuordnen | 6 |
+| eine Strategie anlegen, speichern, prüfen, schließen, öffnen oder löschen, Regeln zuordnen (Beschreibung folgt) | 6 |
 | einen Ausdruck schreiben und verstehen, was „leer“ und „nicht verfügbar“ bedeuten | 7 |
 | einen Befund der Konsistenzprüfung verstehen und beheben | 8 |
-| den Testfall `str-03` (EMA-Trendfolge) selbst aufbauen | 9 |
-| den Testfall `str-01` (Scalping Punkt 2 Ausbruch) selbst aufbauen | 10 |
+| den Testfall `str-03` (EMA-Trendfolge) selbst aufbauen (Anleitung folgt) | 9 |
+| den Testfall `str-01` (Scalping Punkt 2 Ausbruch) selbst aufbauen (Anleitung folgt) | 10 |
 
 Begriffe, die Sie ohne Vorwissen vielleicht nicht kennen, erklärt das Glossar in Abschnitt 12, zum Beispiel Oberfläche, Zeichenfläche und Datenbank.
 
@@ -128,15 +130,7 @@ Nach dem Start wird pipwerk Studio in einem Webbrowser unter der Adresse `http:/
 
 ## 3. Aufbau der Oberfläche
 
-Die Oberfläche besteht aus der Kopfzeile oben, drei Bereichen in der Mitte (Elementbibliothek, Zeichenfläche, Eigenschaftenansicht) und der Fußzeile unten. Dieser Abschnitt beschreibt, was Sie sehen. Wie Sie damit arbeiten, steht in Abschnitt 6.
-
-Oben steht die Kopfzeile. Sie zeigt links den Namen „pipwerk Studio“ und das Menü mit den Einträgen „Neue Strategie“, „Öffnen“, „Speichern“, „Prüfen“, „Schließen“, „Löschen“ und „Einstellungen“. Ohne geöffnete Strategie sind nur „Neue Strategie“, „Öffnen“ und „Einstellungen“ bedienbar. Rechts steht, sobald die Strategie geprüft oder gespeichert wurde, die Zahl der Befunde („Befunde: 3“; ein Hinweistext nennt Fehler und Hinweise getrennt), und die Schaltfläche „Über pipwerk Studio“ (auf Englisch „About pipwerk Studio“). Sie öffnet den Dialog, den Abschnitt 4 beschreibt. Der Name lautet in Deutsch und in Englisch gleich. Auch der Titel der Seite im Browser lautet „pipwerk Studio“. Die Auswahl der Sprache steht nicht mehr in der Kopfzeile, sondern in den Einstellungen (Abschnitt 5).
-
-Links liegt die Elementbibliothek mit den Gruppen „Auslöser“, „Elemente des Ablaufs“, „Objekte der Anwendung“, „Objekttypen“, „Mitgelieferte Vorlagen“ und „Gespeicherte Vorlagen“. Einträge ziehen Sie mit der Maus auf die Zeichenfläche. Mit der Tastatur wählen Sie einen Eintrag (Tabulatortaste, Leertaste) und fügen ihn mit der Eingabetaste in die Mitte der sichtbaren Zeichenfläche ein. Einträge mit der Marke „für Regeln“ gehören nicht auf die Zeichenfläche, sondern zu den Regeln der Strategie oder eines Elements.
-
-In der Mitte liegt die Zeichenfläche. Sie ist mit einem Punktraster hinterlegt. Ohne geöffnete Strategie steht oben links der Hinweis „Die Arbeitsfläche ist leer.“ Die Zeichenfläche kann mit der Maus verschoben und mit dem Mausrad vergrößert oder verkleinert werden. Elemente zeigen ihre Bezeichnung (Objekte den Namen ihrer Instanz) und, wenn der Typ Ausgänge hat, Anschlüsse: den Eingang links und die Ausgänge rechts. Eine Verbindung ziehen Sie von einem Ausgang zu einem Element, auch zurück zu einem früheren. Verbindungen und Elemente löschen Sie, indem Sie sie auswählen und die Entf-Taste drücken. Eine neue Strategie hat eine leere Zeichenfläche: pipwerk Studio legt keinen Auslöser an, Auslöser (Auslöser sind freiwillig) legen Sie wie alle anderen Elemente aus der Elementbibliothek auf die Zeichenfläche. „Prüfen“ meldet für die leere Strategie keinen Befund, in der Kopfzeile steht „Befunde: 0“. Die Verwaltung einer Order erscheint als Rahmen unterhalb von „Order aufgeben“; er hängt am Ausgang „gestellt“ des Elements. Von diesem Ausgang ziehen Sie keine Verbindung zu einem Element; welche Elemente zur Verwaltung gehören, bestimmt der Rahmen. Ein Element, das Sie in den Rahmen ziehen, gehört zu dieser Verwaltung, eines, das Sie herausziehen, nicht mehr. Der Rahmen lässt sich mit dem Pfeil in seiner Kopfzeile ein- und aufklappen; eingeklappt sind seine Elemente verborgen und bleiben in der Strategie. Ein Element mit Fehler ist rot, eines mit Hinweis orange umrandet (zusätzlich steht das Wort „Fehler“ beziehungsweise „Hinweis“ am Element). Ein Element, dessen Typ pipwerk Studio nicht kennt, ist rot umrandet und zeigt die Kennung seines Typs; es lässt sich verschieben, als Ziel verbinden und löschen, seine Werte sind nur lesbar und bleiben beim Speichern unverändert.
-
-Rechts liegt die Eigenschaftenansicht. Sie zeigt das ausgewählte Element, die ausgewählte Regel oder, nach einem Klick auf die leere Zeichenfläche, die Strategie (Bezeichnung, Beschreibung, Parameter, Regeln). Die Eingaben entstehen aus der Beschreibung des Typs: je Parameter eine Eingabe nach dem Datentyp (zum Beispiel Zahl, Prozent, Wahrheitswert, Auswahl, Zeiteinheit, Datum) und die Wahl der Bindungsart (fester Wert, Parameter, Ausdruck, bei der Anwendung). Zahlen schreiben Sie mit Punkt oder Komma als Dezimaltrenner, auch ohne Ziffer vor dem Trenner (`.5`), aber ohne Exponent (`1e3` gilt nicht); gilt eine Eingabe nicht, ist das Feld markiert, und darunter steht, welche Schreibweise gilt. Parameter, die nur bei einem bestimmten Wert eines anderen gelten, erscheinen erst dann. Bei einer Order stehen nur die Eigenschaften, die Sie belegen. Eine Instanz nennt ihre Herkunft („ema20, aus Objekttyp EMA“). Bei der Eingabe eines Ausdrucks schlägt pipwerk Studio nach einem Namen und einem Punkt die Eigenschaften dieses Objekts vor, nach `Strategie.` die Strategieparameter der geöffneten Strategie (mit den Pfeiltasten und der Eingabetaste oder mit der Maus); darunter steht der Ausdruck mit den Namen in der gewählten Sprache. Geschrieben wird immer die Kennung. Befunde zu einem Element stehen bei dessen Eigenschaften, Befunde zu einer Regel bei der Regel, Befunde ohne Element bei der Strategie.
+Die Oberfläche besteht aus der Kopfzeile oben, dem Streifen der Strategieparameter, der Elementbibliothek, der Zeichenfläche, der Eigenschaftenansicht und der Fußzeile unten. In breiten Fenstern liegen Bibliothek, Zeichenfläche und Eigenschaften nebeneinander, in mittleren liegen Zeichenfläche und ein Seitenbereich mit zwei Reitern nebeneinander, in schmalen steht ein Bereich nach dem anderen und Sie wechseln über die Leiste unten. Die ausführliche Beschreibung der neuen Oberfläche folgt; dieser Abschnitt beschreibt vorerst nur die Fußzeile.
 
 Unten steht die Fußzeile. Sie zeigt links, ob pipwerk Studio seinen Hintergrunddienst erreicht, und rechts daneben den Stand, aus dem pipwerk Studio läuft. Der Hintergrunddienst ist der Teil von pipwerk Studio, der außerhalb des Browsers läuft (siehe Glossar in Abschnitt 12).
 
@@ -260,140 +254,7 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 
 ## 6. Arbeitsabläufe
 
-Dieser Abschnitt beschreibt jeden Arbeitsablauf Schritt für Schritt. Er setzt voraus, dass pipwerk Studio läuft und im Browser geöffnet ist (Abschnitt 2). Die Namen der Menüeinträge und Felder stehen hier in der deutschen Anzeige. Bei englischer Anzeige gelten die englischen Namen (Abschnitt 5). Das Menü steht oben links in der Kopfzeile.
-
-### 6.1 Strategie anlegen
-
-1. Wählen Sie im Menü „Neue Strategie“. Die Zeichenfläche ist leer. pipwerk Studio legt kein Element an, auch keinen Auslöser. Rechts zeigt die Eigenschaftenansicht die Strategie (Überschrift „Strategie“). Gespeichert ist noch nichts.
-2. Tragen Sie im Feld „Bezeichnung“ den Namen der Strategie ein. Im Feld „Beschreibung“ können Sie einen Text eintragen.
-3. Legen Sie die Strategieparameter an. Ein Strategieparameter ist ein Wert, den Sie an einer Stelle festlegen und in der ganzen Strategie verwenden, zum Beispiel die Handelszeiteinheit (siehe Glossar in Abschnitt 12).
-   1. Wählen Sie unter „Parameter“ die Schaltfläche „Parameter hinzufügen“. Es erscheint eine Zeile.
-   2. Tragen Sie im Feld „Name des Parameters 1“ den Namen ein. Ein Name besteht aus Buchstaben ohne Umlaute (`A` bis `Z`, `a` bis `z`), Ziffern und `_` und beginnt mit einem Buchstaben oder `_`.
-   3. Wählen Sie im Feld „Datentyp von …“ den Datentyp: Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Auswahl, Zeiteinheit, Zeitpunkt oder Datum. Bei „Auswahl“ tragen Sie im Feld „Werte von …“ die erlaubten Werte durch Komma getrennt ein.
-   4. Tragen Sie im Feld „Wert von …“ den Wert ein oder wählen Sie ihn. Prozent geben Sie als Prozent ein (`1` bedeutet 1 %). Setzen Sie stattdessen den Haken „bei der Anwendung“, wenn der Wert erst bei der Anwendung der Strategie angegeben wird.
-   5. „Entfernen“ löscht den Parameter.
-4. Legen Sie Elemente auf die Zeichenfläche (Abschnitt 6.2). Auslöser sind freiwillig. Sie legen einen Auslöser wie jedes andere Element aus der Elementbibliothek auf die Zeichenfläche, wenn Sie ihn brauchen.
-5. Wählen Sie „Speichern“ (Abschnitt 6.4). Bis dahin liegt die Strategie nur im Browser.
-
-### 6.2 Elemente und Objekte verwenden
-
-**Elementbibliothek.** Links stehen die Einträge in Gruppen:
-
-| Gruppe | Inhalt |
-| --- | --- |
-| Auslöser | Kerzenschluss, Tick |
-| Elemente des Ablaufs | Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen |
-| Objekte der Anwendung | Konto, Instrument, Kerze, Tick |
-| Objekttypen | zum Beispiel EMA, ATR, Markttechnik, Trend; die Einträge mit der Marke „für Regeln“ (Regel, Regelwerk) gehören nicht auf die Zeichenfläche, sondern zu den Regeln (Abschnitt 6.3) |
-| Mitgelieferte Vorlagen | „Risiko je Trade“ (für Regeln) |
-| Gespeicherte Vorlagen | Vorlagen aus dem Objektverzeichnis; Sie legen sie bisher über die Web-API an (Abschnitt 2) |
-
-**Auf die Zeichenfläche legen.**
-
-1. Mit der Maus: Ziehen Sie einen Eintrag der Elementbibliothek auf die Stelle der Zeichenfläche, an der das Element liegen soll, und lassen Sie die Maustaste los.
-2. Mit der Tastatur: Gehen Sie mit der Tabulatortaste zum Eintrag und drücken Sie die Eingabetaste. Das Element erscheint in der Mitte der sichtbaren Zeichenfläche an einer freien Stelle.
-3. Das neue Element ist ausgewählt. Rechts stehen seine Eigenschaften. Ein neues Element liegt nie auf einem anderen.
-
-**Auswählen, verschieben, löschen.** Ein Klick wählt ein Element aus. Ein Klick auf die leere Zeichenfläche wählt die Strategie aus. Ziehen Sie ein Element an eine andere Stelle, um es zu verschieben. Zum Löschen wählen Sie ein Element oder eine Verbindung aus und drücken die Entf-Taste. Löschen Sie ein Element, verschwinden auch die Verbindungen, die zu ihm führen oder von ihm ausgehen. Löschen Sie „Order aufgeben“, verschwindet sein Rahmen, und die Elemente seiner Verwaltung gehören danach zum Hauptablauf. Die Zeichenfläche verschieben Sie mit der Maus; das Mausrad vergrößert und verkleinert die Ansicht. Die Schaltflächen links unten vergrößern und verkleinern die Ansicht ebenfalls und zeigen auf Wunsch die ganze Strategie.
-
-**Verbindungen.** Ein Element des Ablaufs hat links einen Eingang und rechts einen oder mehrere Ausgänge. Jeder Ausgang trägt seinen Namen, zum Beispiel „weiter“ bei einem Auslöser oder „wahr“ und „falsch“ bei einer Bedingung. Ziehen Sie mit der Maus vom Ausgang (Punkt am rechten Rand) zum Element, das danach folgen soll. Es entsteht eine Linie. Eine Verbindung darf auch zu einem früheren Element zurückführen. Ein Auslöser hat keinen Eingang. Objekte (zum Beispiel eine Instanz von EMA) haben weder Eingang noch Ausgang; ihre Eigenschaften sprechen Sie in Ausdrücken an (Abschnitt 7).
-
-**Eigenschaftenansicht eines Elements.** Rechts steht für das ausgewählte Element:
-
-- „Bezeichnung“: der Text, den das Element auf der Zeichenfläche zeigt.
-- „Name“ bei Bedingung, Berechnung und bei einem Objekt: der Name, unter dem Ausdrücke es ansprechen. Bei einer Berechnung `einstieg` spricht ein Ausdruck das Ergebnis als `einstieg.ergebnis` an. Bei einem Objekt ist der Name der Name der Instanz.
-- „Parameter“: eine Zeile je Parameter des Typs. Ein Stern kennzeichnet einen Pflichtparameter. Pflichtparameter brauchen einen Wert, sonst meldet die Konsistenzprüfung einen Fehler (Abschnitt 8).
-- „Eigenschaften der Order“ bei „Order aufgeben“: nur die Eigenschaften, die Sie belegen. Welche das sind, hängt vom gewählten Ordertyp ab.
-- „Regeln“ bei Elementen, die Regeln zulassen (Abschnitt 6.3).
-- Befunde zum Element (Abschnitt 8).
-
-**Bindungsart.** Bei den meisten Zeilen wählen Sie im Feld „Bindungsart von …“, wie der Wert entsteht:
-
-| Bindungsart | Bedeutung |
-| --- | --- |
-| nicht belegt | Die Zeile hat keinen Wert. |
-| fester Wert | Sie tragen den Wert ein. Die Eingabe richtet sich nach dem Datentyp: Zahl, Ganzzahl und Prozent als Text (Punkt oder Komma als Dezimaltrenner, auch `.5`, kein Exponent wie `1e3`; bei einer unzulässigen Eingabe ist das Feld markiert und darunter steht, welche Schreibweise gilt), Wahrheitswert als Haken, Auswahl und Zeiteinheit als Liste, Zeitpunkt und Datum als Datumsfeld. |
-| Parameter | Sie wählen einen Strategieparameter. Der Wert der Zeile ist dann der Wert dieses Parameters. |
-| Ausdruck | Sie schreiben einen Ausdruck (Abschnitt 7). |
-| bei der Anwendung | Der Wert wird erst bei der Anwendung der Strategie übergeben. |
-
-Erlaubt der Typ nur eine Bindungsart (bei „Bedingung“ und „Berechnung“ nur „Ausdruck“, bei „Ordertyp“ nur „fester Wert“), fehlt das Feld „Bindungsart von …“ und die Eingabe steht sofort da. Parameter, die nur bei einem bestimmten Wert eines anderen Parameters gelten, zum Beispiel „Ablaufzeit“ bei der Gültigkeit „bis Zeitpunkt“, erscheinen erst bei diesem Wert.
-
-**Objekt verwenden.**
-
-1. Ziehen Sie einen Objekttyp (zum Beispiel „EMA“) auf die Zeichenfläche. Es entsteht ein Element, das eine Instanz des Objekttyps zeigt (siehe Glossar in Abschnitt 12). Die Instanz ist eine vollständige Kopie. Sie braucht den Objekttyp nicht mehr.
-2. Tragen Sie unter „Name“ den Namen der Instanz ein, zum Beispiel `ema20`, und unter „Bezeichnung“ den Text für die Zeichenfläche, zum Beispiel `EMA 20`.
-3. Belegen Sie die Parameter. Parameter mit einem Standardwert haben ihn schon.
-4. Die Eigenschaftenansicht nennt die Herkunft der Instanz: „ema20, aus Objekttyp EMA“. Stammt die Instanz aus einer Vorlage, steht dort „…, aus Vorlage <Bezeichnung>“.
-5. Eine Instanz als neue Vorlage speichern („Als Vorlage speichern“) kann pipwerk Studio noch nicht.
-
-**Verwaltung einer Order.**
-
-1. Legen Sie „Order aufgeben“ auf die Zeichenfläche. Unter dem Element erscheint ein Rahmen mit der Aufschrift „Verwaltung: Order aufgeben“ (der Text folgt der Bezeichnung des Elements). Er hängt am Ausgang „gestellt“ des Elements. Von diesem Ausgang ziehen Sie keine Verbindung. Welche Elemente zur Verwaltung gehören, bestimmt der Rahmen.
-2. Die Verwaltung kann eigene Auslöser haben, zum Beispiel „Tick“ oder „Kerzenschluss“; Auslöser sind auch hier freiwillig. Dazu kommen die Elemente, die sich um die Order kümmern. „Order ändern“, „Order löschen“, „Position ändern“ und „Position schließen“ stehen nur in einer Verwaltung.
-3. Legen Sie ein Element in den Rahmen: Ziehen Sie einen Eintrag der Elementbibliothek auf eine Stelle im Rahmen, oder ziehen Sie ein vorhandenes Element in den Rahmen. Das Element gehört zur Verwaltung, wenn seine Mitte im Rahmen liegt. Der Rahmen wächst mit, wenn ein Element hineingelegt wird. Er wird nie kleiner.
-4. Ziehen Sie ein Element aus dem Rahmen heraus, gehört es wieder zum Hauptablauf.
-5. Ziehen Sie den Rahmen an seiner Kopfzeile, wandern alle Elemente darin mit.
-6. Mit dem Pfeil in der Kopfzeile klappen Sie den Rahmen ein („Verwaltung „Order aufgeben“ einklappen“) und wieder auf („… aufklappen“). Eingeklappt sind die Elemente in ihm verborgen. Sie bleiben in der Strategie.
-7. Verbindungen gibt es nur innerhalb des Hauptablaufs oder innerhalb einer Verwaltung, nicht dazwischen.
-
-**Unbekannter Typ.** Hat eine Strategie ein Element, dessen Typ pipwerk Studio nicht kennt (zum Beispiel weil das Dokument von einem anderen Programm stammt), ist das Element rot umrandet und zeigt die Kennung seines Typs. Sie können es verschieben, als Ziel einer Verbindung verwenden und löschen. Seine Werte sind nur lesbar und bleiben beim Speichern unverändert.
-
-### 6.3 Regeln zuordnen
-
-Eine Regel prüft oder bestimmt etwas, zum Beispiel das Volumen einer Order. Regeln stehen in der Eigenschaftenansicht der Strategie und bei jedem Element, das Regeln zulässt (zum Beispiel „Order aufgeben“). Der Abschnitt „Regeln“ listet sie in der Reihenfolge, in der sie ausgewertet werden.
-
-1. Eine Vorlage hinzufügen: Wählen Sie im Feld „Vorlage aus der Elementbibliothek“ einen Eintrag, zum Beispiel „Risiko je Trade“, und die Schaltfläche „Hinzufügen“. Mit der Tastatur gehen Sie in der Elementbibliothek zu einem Eintrag mit der Marke „für Regeln“ und drücken die Eingabetaste. Der Eintrag geht an das ausgewählte Element, wenn es Regeln zulässt, sonst an die Strategie. Mit der Maus können Sie den Eintrag auch auf den Abschnitt „Regeln“ ziehen. Es entsteht eine Instanz der Vorlage.
-2. Eine neue Regel anlegen: Wählen Sie „Neue Regel“. Es entsteht eine Regel vom Objekttyp „Regel“.
-3. Danach zeigt die Eigenschaftenansicht die Regel. Sie zeigt die Herkunft (zum Beispiel „…, aus Vorlage Risiko je Trade“), den „Namen“, die „Parameter der Regel“ (Name, Datentyp, Pflicht, Standardwert; „Parameter hinzufügen“ legt einen an), die „Werte der Parameter“, den „Ausdruck“, die „Bestimmte Eigenschaft der Order“ und den „Vergleich beim Prüfen“. Die Schaltfläche „Zurück zu …“ führt zur Strategie beziehungsweise zum Element zurück.
-   - Eine Regel mit einer „Bestimmten Eigenschaft der Order“ (zum Beispiel „Volumen“) bestimmt diese Eigenschaft: Ihr Ausdruck liefert den Wert, den die Eigenschaft bei „Order aufgeben“ erhält. Der „Vergleich beim Prüfen“ legt fest, wie später geprüft wird, ob der aktuelle Wert der Eigenschaft zum Ergebnis des Ausdrucks passt: „höchstens“ heißt, der aktuelle Wert darf nicht größer sein als das Ergebnis, „mindestens“, er darf nicht kleiner sein, „gleich“, er muss gleich sein. Ohne Vergleich meldet die Konsistenzprüfung einen Fehler.
-   - Eine Regel mit der Einstellung „keine (nur prüfend)“ prüft nur: Ihr Ausdruck muss „wahr“ ergeben.
-4. Die Reihenfolge ändern Sie mit den Pfeilen neben der Regel („Regel … nach oben“, „Regel … nach unten“).
-5. „Entfernen“ neben der Regel entfernt sie.
-6. Wählen Sie eine Regel in der Liste („Regel … auswählen“), um ihre Eigenschaften zu sehen und ihre Befunde. Befunde einer Regel stehen bei der Regel: Am Eintrag steht ihre Zahl („1 Fehler“), in der Ansicht der Regel der Text.
-
-### 6.4 Speichern
-
-1. Wählen Sie „Speichern“. Beim ersten Mal legt pipwerk Studio die Strategie neu an, danach ersetzt es die gespeicherte Fassung. Es speichert immer, auch wenn die Konsistenzprüfung Befunde meldet.
-2. Danach steht in der Kopfzeile die Zahl der Befunde („Befunde: 0“).
-3. Gespeichert wird als Datei im Objektverzeichnis (Abschnitt 5).
-4. Scheitert das Speichern, erscheint eine Meldung mit der Ursache. Bestätigen Sie sie mit „OK“. Die Strategie bleibt geöffnet und unverändert.
-
-### 6.5 Prüfen
-
-1. Wählen Sie „Prüfen“. pipwerk Studio prüft die geöffnete Strategie auf Widersprüche, ohne zu speichern.
-2. In der Kopfzeile steht die Zahl der Befunde. Ein Hinweistext, den Sie mit dem Mauszeiger über der Zahl sehen, nennt Fehler und Hinweise getrennt. Eine neue, leere Strategie hat keinen Befund: „Befunde: 0“.
-3. Wo die Befunde stehen: Ein Element mit einem Fehler ist rot umrandet und trägt das Wort „Fehler“. Ein Element mit einem Hinweis ist orange umrandet und trägt das Wort „Hinweis“. Wählen Sie das Element aus, steht der Text des Befunds in der Eigenschaftenansicht bei den Eigenschaften. Befunde einer Regel stehen bei der Regel. Befunde ohne Element stehen in der Eigenschaftenansicht der Strategie (Klick auf die leere Zeichenfläche). Keine dieser Anzeigen müssen Sie wegklicken. Eine Meldung zum Bestätigen erscheint nur, wenn das Prüfen, Speichern, Öffnen oder Löschen selbst scheitert.
-4. Was die Befunde bedeuten und wie Sie sie beheben, steht in Abschnitt 8.
-
-### 6.6 Schließen
-
-1. Wählen Sie „Schließen“. Die Strategie verschwindet von der Zeichenfläche. Die gespeicherte Datei bleibt.
-2. Hat die Strategie ungespeicherte Änderungen, fragt pipwerk Studio „Ungespeicherte Änderungen“ und bietet „Speichern“, „Verwerfen“ und „Abbrechen“ an:
-   - „Speichern“ speichert, dann wird geschlossen. Scheitert das Speichern, bleibt die Strategie geöffnet.
-   - „Verwerfen“ schließt, ohne zu speichern. Die Änderungen gehen verloren.
-   - „Abbrechen“ (oder die Escape-Taste) lässt alles, wie es war.
-3. Dieselbe Frage erscheint vor „Neue Strategie“ und vor dem Öffnen einer Strategie (nach Ihrer Wahl in der Liste von „Öffnen“). Ungespeicherte Änderungen sind Änderungen am Dokument seit dem letzten Speichern, Öffnen oder Anlegen. Einklappen eines Rahmens, Auswählen und Verschieben der Ansicht zählen nicht dazu.
-
-### 6.7 Öffnen
-
-1. Wählen Sie „Öffnen“. Es erscheint die Liste der gespeicherten Strategien mit „Bezeichnung“, „Beschreibung“ und „Letzte Änderung“ (Datum und Uhrzeit in der Ortszeit Ihres Browsers).
-2. Wählen Sie die Bezeichnung der Strategie. Hat die geöffnete Strategie ungespeicherte Änderungen, kommt vorher die Frage aus Abschnitt 6.6.
-3. Die Strategie erscheint vollständig auf der Zeichenfläche. pipwerk Studio prüft sie und zeigt die Zahl der Befunde.
-4. Eine Datei, die sich nicht lesen lässt, steht in der Liste mit der Kennzeichnung „nicht lesbar“. Sie lässt sich nicht öffnen. pipwerk Studio verändert sie nie. Entfernen Sie sie im Dateisystem.
-5. Sind keine Strategien gespeichert, steht in der Liste „Es sind keine Strategien gespeichert.“
-6. „Abbrechen“ schließt die Liste.
-
-### 6.8 Löschen
-
-1. Wählen Sie „Löschen“. pipwerk Studio fragt „Strategie löschen?“ und nennt die Strategie.
-2. „Löschen“ im Fragedialog löscht die gespeicherte Datei und schließt die Strategie. „Abbrechen“ lässt alles, wie es war.
-3. Eine Strategie, die Sie noch nie gespeichert haben, wird nur verworfen. Der Dialog sagt das.
-4. Löschen lässt sich nicht rückgängig machen.
-
-### 6.9 Einstellungen
-
-Sprache und Objektverzeichnis stellen Sie im Menü unter „Einstellungen“ ein. Die Schritte stehen in Abschnitt 5.
+Die Beschreibung der Arbeitsabläufe mit der neuen Oberfläche (Strategie anlegen, Elemente und Objekte verwenden, Regeln zuordnen, Speichern, Prüfen, Schließen, Öffnen, Löschen) folgt. Die frühere Beschreibung gehörte zur alten Oberfläche und ist entfernt. Die Einstellungen beschreibt Abschnitt 5.
 
 ## 7. Ausdrücke schreiben
 
@@ -457,12 +318,9 @@ Ein innerer Name verdeckt einen äußeren mit demselben Namen. Zwei Namen dersel
 
 Die Funktionsnamen stehen immer in dieser englischen Schreibweise. Deutsche Namen gibt es nicht. Die Eingabe bietet die Funktionen mit ihrer Beschreibung an.
 
-### 7.4 Vorschläge beim Eingeben
+### 7.4 Eingabe von Ausdrücken
 
-1. Tippen Sie einen Namen und einen Punkt. Unter dem Feld erscheinen die Eigenschaften des Objekts mit ihrem Datentyp. Nach dem Namen einer Instanz mit enthaltenen Instanzen oder Regeln bietet die Eingabe auch diese an, nach `Strategie.` die Strategieparameter der geöffneten Strategie.
-2. Ohne Punkt bietet die Eingabe nach dem ersten getippten Zeichen die sichtbaren Namen und die Funktionen an.
-3. Wählen Sie einen Vorschlag mit den Pfeiltasten und übernehmen Sie ihn mit der Eingabetaste oder der Tabulatortaste, oder klicken Sie ihn an. Die Escape-Taste schließt die Liste.
-4. Der Vorschlag setzt die Kennung ein.
+Die Eingabe von Ausdrücken mit Vorschlägen gehört zur alten Oberfläche. In der neuen Oberfläche zeigt die Eigenschaftenansicht einen Ausdruck zunächst nur lesend, als Satz und als Formel. Die Beschreibung der Eingabe folgt.
 
 ### 7.5 „Leer“ und „nicht verfügbar“
 
@@ -494,7 +352,7 @@ Beispiel: In `str-01` steht die Bedingung `mt_handel.trendrichtung = mt_signal.t
 
 Die Konsistenzprüfung läuft bei „Speichern“, bei „Prüfen“ und nach „Öffnen“. Sie meldet Befunde. Ein Befund hat die Stufe „Fehler“ oder „Hinweis“. Ein Fehler macht die Strategie unvollständig oder widersprüchlich. Ein Hinweis weist auf etwas hin, das Sie prüfen sollten. Befunde verhindern das Speichern nicht.
 
-Die Stelle eines Befunds: Fehler sind rot, Hinweise orange. Der Befund steht beim Element, bei der Regel oder, wenn er sich auf kein Element bezieht, bei der Strategie (Abschnitt 6.5). Ein Befund mit einer Kennung, die diese Fassung nicht kennt, erscheint als „Befund <Kennung>“.
+Die Stelle eines Befunds: Fehler sind rot, Hinweise orange. Der Befund steht beim Element, bei der Regel oder, wenn er sich auf kein Element bezieht, bei der Strategie. Ein Befund mit einer Kennung, die diese Fassung nicht kennt, erscheint als „Befund <Kennung>“.
 
 Die Tabelle nennt die Texte, wie sie in der Oberfläche erscheinen. Drei Punkte („…“) stehen dort, wo pipwerk Studio eine Angabe einsetzt.
 
@@ -503,7 +361,7 @@ Die Tabelle nennt die Texte, wie sie in der Oberfläche erscheinen. Drei Punkte 
 | `trigger.unconnected` | Fehler | Der Auslöser ist mit keinem Element des Ablaufs verbunden. | Ziehen Sie eine Verbindung vom Ausgang des Auslösers zu einem Element, oder löschen Sie den Auslöser. |
 | `flow.no_incoming` | Fehler | Zu diesem Element des Ablaufs führt keine Verbindung. | Ziehen Sie eine Verbindung von einem Ausgang eines Auslösers oder eines anderen Elements zu diesem Element. Das gilt auch für das erste Element eines Ablaufs ohne Auslöser. Legen Sie dann einen Auslöser davor. |
 | `flow.unending_loop` | Fehler | Rückführung ohne Bedingung, die sie beendet (an … Elementen). | Eine Verbindung führt im Kreis zurück, und kein Ausgang einer Bedingung im Kreis führt hinaus. Fügen Sie im Kreis eine Bedingung ein, von der ein Ausgang aus dem Kreis hinausführt, oder entfernen Sie die Rückführung. |
-| `flow.management_only` | Fehler | „…“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf. | Ziehen Sie das Element in den Rahmen einer Verwaltung (Abschnitt 6.2). |
+| `flow.management_only` | Fehler | „…“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf. | Ziehen Sie das Element in den Rahmen einer Verwaltung. |
 | `flow.no_order_reachable` | Hinweis | Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt. | Verbinden Sie den Ablauf vom Auslöser bis zu „Order aufgeben“, oder lassen Sie den Hinweis stehen, wenn die Strategie keine Order aufgeben soll. Eine Strategie ohne Elemente hat diesen Hinweis nicht. |
 | `parameter.missing` | Fehler | Der Pflichtparameter „…“ hat keinen Wert. | Wählen Sie bei dem Parameter eine Bindungsart und geben Sie einen Wert an, oder wählen Sie „bei der Anwendung“. |
 | `parameter.binding_invalid` | Fehler | Die Belegung von „…“ passt nicht: … | Ändern Sie die Belegung nach dem genannten Grund (siehe unten). |
@@ -554,394 +412,11 @@ Die Strategien `str-01` und `str-03` haben keinen Befund. Mit den Beispieldokume
 
 ## 9. Testfall `str-03` (EMA-Trendfolge) aufbauen
 
-Dieser Testfall ist eine einfache Strategie: Sie kauft oder verkauft mit einer Marktorder in Richtung des Kreuzens zweier exponentieller gleitender Durchschnitte (EMA, kurz und lang). Den Stop-Loss zieht sie nach. Kreuzen die Durchschnitte gegen die Position, schließt sie die Position. Die Anleitung baut die Strategie aus der leeren Zeichenfläche auf. Am Ende ist sie, bis auf die Kennungen und die Lage der Elemente, dieselbe wie das Dokument `contracts/strategies/v1/testcases/str-03.strategy.json` im Arbeitsverzeichnis.
-
-Voraussetzung: pipwerk Studio läuft in der Testumgebung (Abschnitt 2), die Anzeige ist Deutsch (Abschnitt 5). Machen Sie das Browserfenster groß, damit die Zeichenfläche Platz hat. Die Texte in `diesen Zeichen` tippen Sie genau so ein. Ausdrücke stehen in eigenen Kästen, die Sie abschreiben oder kopieren können. Die Reihenfolge der Schritte ist die Reihenfolge, in der die Elemente im Dokument stehen.
-
-### 9.1 Strategie und Strategieparameter
-
-1. Wählen Sie „Neue Strategie“.
-2. Tragen Sie ein: Bezeichnung `EMA-Trendfolge`, Beschreibung `Testfall str-03: Marktorder in Richtung des Kreuzens zweier exponentieller gleitender Durchschnitte, Stop-Loss nachziehen, Position bei Gegenkreuzen schließen.`
-3. Legen Sie zwei Strategieparameter an (Abschnitt 6.1, Schritt 3):
-
-| Name | Datentyp | Wert |
-| --- | --- | --- |
-| `zeiteinheit` | Zeiteinheit | `H1` |
-| `stop_abstand` | Zahl | `2` |
-
-4. Fügen Sie die Regel `risiko` hinzu. Klicken Sie dazu unter „Regeln“ im Feld „Vorlage aus der Elementbibliothek“ auf „Risiko je Trade“ und auf „Hinzufügen“. Tragen Sie unter „Name“ `risiko` ein. Der Parameter „risikogrenze“ bleibt bei 1 %. Wählen Sie „Zurück zu Strategie“.
-
-### 9.2 Elemente des Hauptablaufs
-
-Legen Sie die Elemente nacheinander aus der Elementbibliothek auf die Zeichenfläche (Abschnitt 6.2), in einer Reihe oder in zwei Reihen mit Platz zwischen den Elementen. Lassen Sie unter dem Element „Order aufgeben“ viel Platz, denn dort entsteht der Rahmen der Verwaltung. Das jeweils neue Element ist ausgewählt; tragen Sie seine Eigenschaften gleich ein.
-
-1. Gruppe „Objekttypen“, Eintrag „EMA“.
-   - Bezeichnung `EMA 20`, Name `ema20`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `zeiteinheit`.
-   - „Periode“: Bindungsart „fester Wert“, Wert `20`.
-   - „Verschiebung“ (`0`) und „Kursquelle“ („Schlusskurs“) sind voreingestellt. Lassen Sie sie.
-2. Gruppe „Objekttypen“, Eintrag „EMA“.
-   - Bezeichnung `EMA 50`, Name `ema50`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `zeiteinheit`.
-   - „Periode“: Bindungsart „fester Wert“, Wert `50`.
-3. Gruppe „Objekttypen“, Eintrag „ATR“.
-   - Bezeichnung `ATR 14`, Name `atr14`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `zeiteinheit`.
-   - „Periode“: Bindungsart „fester Wert“, Wert `14`.
-4. Gruppe „Auslöser“, Eintrag „Kerzenschluss“.
-   - Bezeichnung `Kerzenschluss`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `zeiteinheit`.
-5. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Kreuzen`. Das Feld „Name“ bleibt leer.
-   - „Ausdruck“:
-
-   ```ausdruck
-   OR(AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert); AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert))
-   ```
-
-6. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Richtung`, Name `richtung`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(ema20.wert > ema50.wert; "buy"; "sell")
-   ```
-
-7. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Stop-Loss`, Name `stop`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(richtung.ergebnis = "buy"; Kerze.schluss - Strategie.stop_abstand * atr14.wert; Kerze.schluss + Strategie.stop_abstand * atr14.wert)
-   ```
-
-8. Gruppe „Elemente des Ablaufs“, Eintrag „Order aufgeben“.
-   - Bezeichnung `Order aufgeben`.
-   - „Ordertyp“: „Marktorder“. Das ist voreingestellt.
-   - Unter „Eigenschaften der Order“ belegen Sie zwei Eigenschaften. Wählen Sie jeweils die Bindungsart „Ausdruck“. „Richtung“:
-
-   ```ausdruck
-   richtung.ergebnis
-   ```
-
-   - „Stop-Loss“:
-
-   ```ausdruck
-   stop.ergebnis
-   ```
-
-   - Alle anderen Eigenschaften der Order, auch „Take-Profit“, bleiben „nicht belegt“. Das Volumen bestimmt die Regel `risiko`.
-   - Regel des Elements: Wählen Sie unter „Regeln“ die Schaltfläche „Neue Regel“. Tragen Sie unter „Name“ `mindestvolumen` ein und im Feld „Ausdruck“:
-
-   ```ausdruck
-   Order.volumen >= Instrument.mindestvolumen
-   ```
-
-   - „Bestimmte Eigenschaft der Order“ und „Vergleich beim Prüfen“ bleiben unverändert („keine (nur prüfend)“, „nicht belegt“). Wählen Sie „Zurück zu Order aufgeben“.
-
-Unter „Order aufgeben“ ist jetzt der Rahmen „Verwaltung: Order aufgeben“ erschienen.
-
-### 9.3 Verbindungen des Hauptablaufs
-
-Ziehen Sie mit der Maus vom Ausgang (Punkt am rechten Rand) des ersten Elements zum zweiten Element (Abschnitt 6.2, „Verbindungen“):
-
-| Von (Ausgang) | Nach |
-| --- | --- |
-| `Kerzenschluss` („weiter“) | `Kreuzen` |
-| `Kreuzen` („wahr“) | `Richtung` |
-| `Richtung` („weiter“) | `Stop-Loss` |
-| `Stop-Loss` („weiter“) | `Order aufgeben` |
-
-Die drei Objekte `EMA 20`, `EMA 50` und `ATR 14` haben keine Verbindungen. Die Ausdrücke sprechen ihre Eigenschaften an.
-
-### 9.4 Verwaltung der Order
-
-Ziehen Sie die folgenden Einträge der Elementbibliothek nacheinander in den Rahmen „Verwaltung: Order aufgeben“ (Abschnitt 6.2, „Verwaltung einer Order“). Lassen Sie die Maustaste im Rahmen los. Der Rahmen wächst mit.
-
-1. Gruppe „Auslöser“, Eintrag „Kerzenschluss“.
-   - Bezeichnung `Kerzenschluss`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `zeiteinheit`.
-2. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Order ausgeführt`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   Order.status = "ausgefuehrt"
-   ```
-
-3. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Kreuzen gegen die Position`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   OR(AND(Position.richtung = "buy"; PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert); AND(Position.richtung = "sell"; PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert))
-   ```
-
-4. Gruppe „Elemente des Ablaufs“, Eintrag „Position schließen“.
-   - Bezeichnung `Position schließen`. Das Volumen bleibt „nicht belegt“: Die Position wird ganz geschlossen.
-5. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Neuer Stop-Loss`, Name `stop_neu`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(Position.richtung = "buy"; Kerze.schluss - Strategie.stop_abstand * atr14.wert; Kerze.schluss + Strategie.stop_abstand * atr14.wert)
-   ```
-
-6. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Stop-Loss verbessert`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(Position.richtung = "buy"; stop_neu.ergebnis > Position.stop_loss; stop_neu.ergebnis < Position.stop_loss)
-   ```
-
-7. Gruppe „Elemente des Ablaufs“, Eintrag „Position ändern“.
-   - Bezeichnung `Position ändern`.
-   - „Stop-Loss“: Bindungsart „Ausdruck“:
-
-   ```ausdruck
-   stop_neu.ergebnis
-   ```
-
-   - „Take-Profit“ bleibt „nicht belegt“.
-
-Verbinden Sie danach die Elemente der Verwaltung:
-
-| Von (Ausgang) | Nach |
-| --- | --- |
-| `Kerzenschluss` („weiter“), der in der Verwaltung | `Order ausgeführt` |
-| `Order ausgeführt` („wahr“) | `Kreuzen gegen die Position` |
-| `Kreuzen gegen die Position` („wahr“) | `Position schließen` |
-| `Kreuzen gegen die Position` („falsch“) | `Neuer Stop-Loss` |
-| `Neuer Stop-Loss` („weiter“) | `Stop-Loss verbessert` |
-| `Stop-Loss verbessert` („wahr“) | `Position ändern` |
-
-### 9.5 Prüfen, speichern, neu laden, öffnen
-
-1. Wählen Sie „Prüfen“. Die Kopfzeile zeigt „Befunde: 0“. Kein Element ist rot oder orange umrandet. Sonst steht der Befund in der Eigenschaftenansicht des Elements; Abschnitt 8 nennt die Behebung.
-2. Probieren Sie das Einklappen: Wählen Sie den Pfeil im Rahmen („Verwaltung „Order aufgeben“ einklappen“). Die Elemente der Verwaltung verschwinden. Klappen Sie den Rahmen wieder auf.
-3. Wählen Sie „Speichern“. Die Kopfzeile zeigt „Befunde: 0“.
-4. Laden Sie die Seite im Browser neu. Wählen Sie „Öffnen“ und in der Liste „EMA-Trendfolge“. Die Strategie erscheint unverändert, mit „Befunde: 0“.
+Die Anleitung zum Aufbau des Testfalls mit der neuen Oberfläche folgt. Die frühere Anleitung gehörte zur alten Oberfläche und ist entfernt.
 
 ## 10. Testfall `str-01` (Scalping Punkt 2 Ausbruch) aufbauen
 
-Dieser Testfall handelt in Richtung eines intakten Trends. Er steigt am Punkt 2 der Handelszeiteinheit mit einer Stop-Order ein. Die Verwaltung löscht die wartende Order, wenn der Kurs Punkt 1/3 durchbricht, und zieht Stop-Loss und Take-Profit nach. Am Ende ist die Strategie, bis auf die Kennungen und die Lage der Elemente, dieselbe wie das Dokument `contracts/strategies/v1/testcases/str-01.strategy.json` im Arbeitsverzeichnis. Die Voraussetzungen und die Schreibweise sind dieselben wie in Abschnitt 9.
-
-### 10.1 Strategie und Strategieparameter
-
-1. Wählen Sie „Neue Strategie“.
-2. Tragen Sie ein: Bezeichnung `Scalping Punkt 2 Ausbruch – einfache Strategie` (mit dem langen Gedankenstrich), Beschreibung `Testfall str-01: Handel in Richtung eines intakten Trends, Einstieg am Punkt 2 der Handelszeiteinheit mit einer Stop-Order.`
-3. Legen Sie vier Strategieparameter an (Abschnitt 6.1, Schritt 3):
-
-| Name | Datentyp | Wert |
-| --- | --- | --- |
-| `signalzeiteinheit` | Zeiteinheit | `H1` |
-| `handelszeiteinheit` | Zeiteinheit | `M15` |
-| `entry_puffer` | Zahl | `3` |
-| `stop_puffer` | Zahl | `3` |
-
-4. Fügen Sie die Regel `risiko` hinzu, wie in Abschnitt 9.1, Schritt 4: Eintrag „Risiko je Trade“, „Hinzufügen“, Name `risiko`, „Zurück zu Strategie“.
-
-### 10.2 Elemente des Hauptablaufs
-
-Legen Sie die Elemente nacheinander aus der Elementbibliothek auf die Zeichenfläche (Abschnitt 9.2). Lassen Sie unter „Order aufgeben“ viel Platz für den Rahmen der Verwaltung.
-
-1. Gruppe „Objekttypen“, Eintrag „Markttechnik“.
-   - Bezeichnung `Markttechnik Signal`, Name `mt_signal`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `signalzeiteinheit`.
-   - „Depth“ (`12`), „Deviation“ (`5`) und „Backstep“ (`3`) sind voreingestellt. Lassen Sie sie.
-2. Gruppe „Objekttypen“, Eintrag „Markttechnik“.
-   - Bezeichnung `Markttechnik Handel`, Name `mt_handel`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `handelszeiteinheit`.
-3. Gruppe „Auslöser“, Eintrag „Kerzenschluss“.
-   - Bezeichnung `Kerzenschluss`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `handelszeiteinheit`.
-4. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Intakter Trend in der Bewegung`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   AND(mt_signal.trend_intakt; mt_signal.phase = "bewegung")
-   ```
-
-5. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Handelszeiteinheit in Trendrichtung`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   mt_handel.trendrichtung = mt_signal.trendrichtung
-   ```
-
-6. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Keine Order und keine Position`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   Strategie.wartende_orders + Strategie.offene_positionen = 0
-   ```
-
-7. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Einstieg`, Name `einstieg`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(mt_signal.trendrichtung = "aufwaerts"; mt_handel.punkt_2 + Instrument.spread + Strategie.entry_puffer * Instrument.pip; mt_handel.punkt_2 - Strategie.entry_puffer * Instrument.pip)
-   ```
-
-8. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Stop-Loss`, Name `stop`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(mt_signal.trendrichtung = "aufwaerts"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)
-   ```
-
-9. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Take-Profit`, Name `ziel`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(mt_signal.trendrichtung = "aufwaerts"; einstieg.ergebnis + (einstieg.ergebnis - stop.ergebnis) + Instrument.spread; einstieg.ergebnis - (stop.ergebnis - einstieg.ergebnis) - Instrument.spread)
-   ```
-
-10. Gruppe „Elemente des Ablaufs“, Eintrag „Order aufgeben“.
-    - Bezeichnung `Order aufgeben`.
-    - „Ordertyp“: „Stop-Order“.
-    - Unter „Eigenschaften der Order“ belegen Sie fünf Eigenschaften. Wählen Sie jeweils die Bindungsart „Ausdruck“, außer bei „Gültigkeit“. „Richtung“:
-
-    ```ausdruck
-    IF(mt_signal.trendrichtung = "aufwaerts"; "buy"; "sell")
-    ```
-
-    - „Preis“:
-
-    ```ausdruck
-    einstieg.ergebnis
-    ```
-
-    - „Stop-Loss“:
-
-    ```ausdruck
-    stop.ergebnis
-    ```
-
-    - „Take-Profit“:
-
-    ```ausdruck
-    ziel.ergebnis
-    ```
-
-    - „Gültigkeit“: Bindungsart „fester Wert“, Wert „bis auf Widerruf“.
-    - Alle anderen Eigenschaften der Order bleiben „nicht belegt“. Das Volumen bestimmt die Regel `risiko`.
-    - Regel des Elements: Wählen Sie unter „Regeln“ die Schaltfläche „Neue Regel“. Tragen Sie unter „Name“ `mindestvolumen` ein und im Feld „Ausdruck“:
-
-    ```ausdruck
-    Order.volumen >= Instrument.mindestvolumen
-    ```
-
-    - Wählen Sie „Zurück zu Order aufgeben“.
-
-### 10.3 Verbindungen des Hauptablaufs
-
-| Von (Ausgang) | Nach |
-| --- | --- |
-| `Kerzenschluss` („weiter“) | `Intakter Trend in der Bewegung` |
-| `Intakter Trend in der Bewegung` („wahr“) | `Handelszeiteinheit in Trendrichtung` |
-| `Handelszeiteinheit in Trendrichtung` („wahr“) | `Keine Order und keine Position` |
-| `Keine Order und keine Position` („wahr“) | `Einstieg` |
-| `Einstieg` („weiter“) | `Stop-Loss` |
-| `Stop-Loss` („weiter“) | `Take-Profit` |
-| `Take-Profit` („weiter“) | `Order aufgeben` |
-
-Die beiden Objekte `Markttechnik Signal` und `Markttechnik Handel` haben keine Verbindungen.
-
-### 10.4 Verwaltung der Order
-
-Ziehen Sie die folgenden Einträge nacheinander in den Rahmen „Verwaltung: Order aufgeben“ (Abschnitt 9.4).
-
-1. Gruppe „Auslöser“, Eintrag „Tick“.
-   - Bezeichnung `Tick`.
-2. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Kurs durchbricht Punkt 1/3`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   AND(Order.status = "wartend"; IF(Order.richtung = "buy"; Tick.geld < mt_handel.punkt_13; Tick.brief > mt_handel.punkt_13))
-   ```
-
-3. Gruppe „Elemente des Ablaufs“, Eintrag „Order löschen“.
-   - Bezeichnung `Order löschen`.
-4. Gruppe „Auslöser“, Eintrag „Kerzenschluss“.
-   - Bezeichnung `Kerzenschluss`.
-   - „Zeiteinheit“: Bindungsart „Parameter“, Parameter `handelszeiteinheit`.
-5. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Order wartet`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   Order.status = "wartend"
-   ```
-
-6. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Neuer Stop-Loss`, Name `stop_neu`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(Order.richtung = "buy"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)
-   ```
-
-7. Gruppe „Elemente des Ablaufs“, Eintrag „Bedingung“.
-   - Bezeichnung `Stop-Loss weicht ab`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   stop_neu.ergebnis <> Order.stop_loss
-   ```
-
-8. Gruppe „Elemente des Ablaufs“, Eintrag „Berechnung“.
-   - Bezeichnung `Neuer Take-Profit`, Name `ziel_neu`.
-   - „Ausdruck“:
-
-   ```ausdruck
-   IF(Order.richtung = "buy"; Order.preis + (Order.preis - stop_neu.ergebnis) + Instrument.spread; Order.preis - (stop_neu.ergebnis - Order.preis) - Instrument.spread)
-   ```
-
-9. Gruppe „Elemente des Ablaufs“, Eintrag „Order ändern“.
-   - Bezeichnung `Order ändern`.
-   - „Stop-Loss“: Bindungsart „Ausdruck“:
-
-   ```ausdruck
-   stop_neu.ergebnis
-   ```
-
-   - „Take-Profit“: Bindungsart „Ausdruck“:
-
-   ```ausdruck
-   ziel_neu.ergebnis
-   ```
-
-10. Gruppe „Elemente des Ablaufs“, Eintrag „Order löschen“.
-    - Bezeichnung `Order löschen`.
-
-Verbinden Sie danach die Elemente der Verwaltung. Es gibt zwei Elemente `Kerzenschluss` und zwei Elemente `Order löschen`: Das erste `Order löschen` ist das hinter `Kurs durchbricht Punkt 1/3`, das zweite das hinter `Order ändern`.
-
-| Von (Ausgang) | Nach |
-| --- | --- |
-| `Tick` („weiter“) | `Kurs durchbricht Punkt 1/3` |
-| `Kurs durchbricht Punkt 1/3` („wahr“) | das erste `Order löschen` |
-| `Kerzenschluss` („weiter“), der in der Verwaltung | `Order wartet` |
-| `Order wartet` („wahr“) | `Neuer Stop-Loss` |
-| `Neuer Stop-Loss` („weiter“) | `Stop-Loss weicht ab` |
-| `Stop-Loss weicht ab` („wahr“) | `Neuer Take-Profit` |
-| `Neuer Take-Profit` („weiter“) | `Order ändern` |
-| `Order ändern` („nicht geändert“) | das zweite `Order löschen` |
-
-### 10.5 Prüfen, einklappen, speichern, neu laden, öffnen
-
-1. Wählen Sie „Prüfen“. Die Kopfzeile zeigt „Befunde: 0“. Kein Element ist rot oder orange umrandet.
-2. Klappen Sie die Verwaltung mit dem Pfeil im Rahmen ein („Verwaltung „Order aufgeben“ einklappen“). Die Elemente der Verwaltung verschwinden und bleiben in der Strategie. Klappen Sie den Rahmen wieder auf.
-3. Wählen Sie „Speichern“. Die Kopfzeile zeigt „Befunde: 0“.
-4. Laden Sie die Seite neu. Wählen Sie „Öffnen“ und in der Liste die Strategie `Scalping Punkt 2 Ausbruch – einfache Strategie`. Die Strategie erscheint unverändert, mit „Befunde: 0“.
+Die Anleitung zum Aufbau des Testfalls mit der neuen Oberfläche folgt. Die frühere Anleitung gehörte zur alten Oberfläche und ist entfernt.
 
 ## 11. Bekannte Einschränkungen
 
@@ -954,7 +429,7 @@ Verbinden Sie danach die Elemente der Verwaltung. Es gibt zwei Elemente `Kerzens
 - In der Testumgebung entfernt `testenv stop` auch die gespeicherten Strategien und Vorlagen, solange das Objektverzeichnis unter `components/pipwerk-studio/.testenv/` liegt. Wurde es auf ein anderes Verzeichnis geändert, bleiben die Dateien dort erhalten.
 - Im Entwicklungsbetrieb kann der Stand im Dialog und in der Fußzeile vom laufenden Code abweichen (Abschnitt 4).
 - Strategien werden nicht ausgeführt. Die Konsistenzprüfung prüft nur.
-- Die Konsistenzprüfung meldet für Strategien in diesem Stand keinen Hinweis, der ein einzelnes Element betrifft. Die Oberfläche würde ein solches Element orange umranden (Abschnitt 6.5). Heute tritt dieser Fall in einer Strategie nicht auf: Der Hinweis „Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt“ hat kein Element, und der Hinweis zu einem unbekannten Namen in einem Ausdruck gilt nur für Vorlagen.
+- Die Konsistenzprüfung meldet für Strategien in diesem Stand keinen Hinweis, der ein einzelnes Element betrifft. Die Oberfläche würde ein solches Element orange umranden. Heute tritt dieser Fall in einer Strategie nicht auf: Der Hinweis „Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt“ hat kein Element, und der Hinweis zu einem unbekannten Namen in einem Ausdruck gilt nur für Vorlagen.
 
 ## 12. Glossar
 

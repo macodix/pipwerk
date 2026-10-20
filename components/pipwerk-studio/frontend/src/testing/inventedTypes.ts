@@ -1,237 +1,226 @@
-import type {
-  BindingKind,
-  Choice,
-  DataType,
-  ElementKind,
-  ElementTypesResponse,
-  Label,
-  OutputDescription,
-  ParameterDescription,
-  PropertyDescription,
-  TypeDescription,
-} from '../api/elementTypes';
-import { createTypeIndex } from '../model/typeIndex';
+import { parseElementTypes } from '../api/elementTypes';
+import { createTypeIndex, type TypeIndex } from '../model/typeIndex';
+import { newUuid } from '../document/ids';
+import { newStrategy } from '../document/build';
+import type { ElementDocument, StrategyDocument } from '../document/types';
 
 /**
- * Types that the user interface cannot know: they exist only here. Tests build
- * the library, the elements and the property view from them to show that the
- * interface needs nothing but the type descriptions (specification E2).
+ * Type descriptions that no mitgeliefert type of the product uses: the tests of the interface build the whole drawing
+ * area, the library and the properties view from them and so show that the interface knows no single type (specification
+ * E2). The groups are the identifiers of the specification, everything else is invented.
  */
 
-export function label(de: string, en = de): Label {
-  return { de, en };
-}
+const label = (de: string, en: string) => ({ de, en });
 
-const allBindings: BindingKind[] = ['fixed', 'parameter', 'expression', 'application'];
-
-export function parameter(
-  id: string,
-  datatype: DataType,
-  options: Partial<ParameterDescription> = {},
-): ParameterDescription {
+function parameter(id: string, datatype: string, de: string, en: string, extra: Record<string, unknown> = {}) {
   return {
     id,
     datatype,
-    label: label(`${id} (de)`, `${id} (en)`),
+    label: label(de, en),
+    explanation: label(`Erklärung ${de}`, `Explanation ${en}`),
     required: false,
     default: null,
     choices: [],
-    bindings: allBindings,
-    appliesWhen: null,
-    objectType: null,
-    ...options,
+    bindings: ['fixed', 'parameter', 'connection', 'expression', 'application'],
+    applies_when: null,
+    object_type: null,
+    ...extra,
   };
 }
 
-export function property(
-  id: string,
-  datatype: DataType,
-  options: Partial<PropertyDescription> = {},
-): PropertyDescription {
+function property(id: string, datatype: string, de: string, en: string, extra: Record<string, unknown> = {}) {
   return {
     id,
     datatype,
-    label: label(`${id} (de)`, `${id} (en)`),
+    label: label(de, en),
+    explanation: label(`Erklärung ${de}`, `Explanation ${en}`),
     must: false,
-    setByUser: true,
+    set_by_user: true,
     default: null,
     choices: [],
-    appliesWhen: null,
-    objectType: null,
-    ...options,
+    bindings: ['fixed', 'parameter', 'connection', 'expression', 'application'],
+    applies_when: null,
+    object_type: null,
+    ...extra,
   };
 }
 
-/** An output of an element of the flow; `holdsManagement` marks the one the management hangs at. */
-export function output(id: string, de: string, en = de, holdsManagement = false): OutputDescription {
-  return { id, label: label(de, en), holdsManagement };
-}
-
-/** The time units of the invented descriptions: not those of any real type. */
-export const inventedTimeUnits: Choice[] = [
-  { id: 'qq1', label: label('QQ1') },
-  { id: 'qq7', label: label('QQ7') },
-];
-
-export function choices(...ids: string[]): Choice[] {
-  return ids.map((id) => ({ id, label: label(`${id} (de)`, `${id} (en)`) }));
-}
-
-export function typeOf(
-  id: string,
-  kind: ElementKind,
-  options: Partial<TypeDescription> = {},
-): TypeDescription {
+function type(id: string, kind: string, de: string, en: string, extra: Record<string, unknown>) {
   return {
     id,
     kind,
-    name: label(`${id} (de)`, `${id} (en)`),
-    description: label(`${id} beschreibt`, `${id} describes`),
+    name: label(de, en),
+    description: label(`Beschreibung ${de}`, `Description ${en}`),
+    explanation: label(`Erklärung ${de}`, `Explanation ${en}`),
     category: null,
+    group: null,
     parameters: [],
     properties: [],
     outputs: [],
+    rules_allowed: false,
+    on_canvas: true,
+    builtin: true,
+    by_user: true,
     named: false,
-    strategyParameters: false,
-    rulesAllowed: false,
-    onCanvas: true,
-    builtin: false,
-    byUser: true,
-    ...options,
+    strategy_parameters: false,
+    ...extra,
   };
 }
 
-export const inventedList: TypeDescription[] = [
-  typeOf('zz.pulse', 'trigger', {
-    outputs: [output('go', 'los', 'go')],
-    parameters: [parameter('period', 'time_unit', { required: true, choices: inventedTimeUnits })],
-  }),
-  typeOf('zz.gate', 'flow', {
-    named: true,
-    outputs: [output('yes', 'ja', 'yes'), output('no', 'nein', 'no'), output('maybe', 'vielleicht', 'maybe')],
-    parameters: [
-      parameter('formula', 'expression', { required: true, bindings: ['expression'] }),
-      parameter('limit', 'percent'),
-      parameter('count', 'integer', { default: 3 }),
-      parameter('flag', 'boolean'),
-      parameter('note', 'text'),
-      parameter('mode', 'choice', { choices: choices('fast', 'slow'), default: 'fast' }),
-      parameter('since', 'timestamp', { appliesWhen: { name: 'mode', value: 'slow' } }),
-      parameter('day', 'date'),
-    ],
-    properties: [property('verdict', 'boolean')],
-  }),
-  typeOf('zz.launch', 'flow', {
-    outputs: [output('refused', 'abgelehnt', 'refused'), output('sent', 'gesendet', 'sent', true)],
-    parameters: [
-      parameter('shape', 'choice', {
-        required: true,
-        bindings: ['fixed'],
-        choices: choices('ZzOrderA', 'ZzOrderB'),
-      }),
-    ],
-    rulesAllowed: true,
-  }),
-  typeOf('zz.sweep', 'flow', { outputs: [output('next', 'weiter', 'next')] }),
-  typeOf('ZzOrderA', 'order_type', {
-    onCanvas: false,
-    properties: [
-      property('serial', 'text', { setByUser: false, must: true }),
-      property('amount', 'number', { must: true }),
-      property('reason', 'text'),
-    ],
-  }),
-  typeOf('ZzOrderB', 'order_type', {
-    onCanvas: false,
-    properties: [property('amount', 'number', { must: true }), property('trigger_price', 'number')],
-  }),
-  typeOf('Zork', 'object_type', {
-    category: 'indicator',
-    parameters: [
-      parameter('size', 'integer', { required: true }),
-      parameter('unit', 'time_unit', { required: true, choices: inventedTimeUnits }),
-    ],
-    properties: [property('level', 'number', { setByUser: false })],
-  }),
-  typeOf('Planet', 'application_object', {
-    strategyParameters: true,
-    properties: [property('mass', 'number', { setByUser: false })],
-  }),
-  typeOf('ZzRule', 'object_type', { category: 'rule', onCanvas: false }),
-  typeOf('ZzRuleset', 'object_type', { category: 'ruleset', onCanvas: false }),
-];
+const next = [{ id: 'next', label: label('weiter', 'next'), explanation: label('', ''), holds_management: false }];
 
-export function inventedResponse(): ElementTypesResponse {
+export const inventedTypesJson = {
+  types: [
+    type('zz.start', 'trigger', 'Beginn', 'Start', {
+      group: 'when',
+      parameters: [parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true, choices: [{ id: 'fast', label: label('schnell', 'fast') }, { id: 'slow', label: label('langsam', 'slow') }], bindings: ['fixed', 'parameter', 'connection'] })],
+      outputs: next,
+    }),
+    type('zz.when', 'flow', 'Weiche', 'Switch', {
+      group: 'actions',
+      named: true,
+      parameters: [parameter('formel', 'expression', 'Formel', 'Formula', { required: true, bindings: ['expression'] })],
+      properties: [property('ausgang', 'boolean', 'Ausgang', 'Result', { must: true })],
+      outputs: [
+        { id: 'yes', label: label('ja', 'yes'), explanation: label('', ''), holds_management: false },
+        { id: 'no', label: label('nein', 'no'), explanation: label('', ''), holds_management: false },
+      ],
+    }),
+    type('zz.do', 'flow', 'Tun', 'Do', {
+      group: 'actions',
+      parameters: [parameter('menge', 'number', 'Menge', 'Amount', { default: 1 })],
+      outputs: next,
+    }),
+    type('zz.place', 'flow', 'Ausführen', 'Execute', {
+      group: 'actions',
+      rules_allowed: true,
+      parameters: [
+        parameter('sorte', 'choice', 'Sorte', 'Kind', {
+          required: true,
+          choices: [
+            { id: 'zz.kind_a', label: label('Sorte A', 'Kind A') },
+            { id: 'zz.kind_b', label: label('Sorte B', 'Kind B') },
+          ],
+          bindings: ['fixed'],
+        }),
+      ],
+      outputs: [
+        { id: 'done', label: label('erledigt', 'done'), explanation: label('', ''), holds_management: true },
+        { id: 'failed', label: label('misslungen', 'failed'), explanation: label('', ''), holds_management: false },
+      ],
+    }),
+    type('zz.kind_a', 'order_type', 'Sorte A', 'Kind A', {
+      on_canvas: false,
+      properties: [
+        property('wunsch', 'text', 'Wunsch', 'Wish', { must: true }),
+        property('stufe', 'choice', 'Stufe', 'Level', { default: 'low', choices: [{ id: 'low', label: label('niedrig', 'low') }, { id: 'high', label: label('hoch', 'high') }] }),
+      ],
+    }),
+    type('zz.kind_b', 'order_type', 'Sorte B', 'Kind B', {
+      on_canvas: false,
+      properties: [property('wunsch', 'text', 'Wunsch', 'Wish', { must: true }), property('extra', 'number', 'Extra', 'Extra', { default: 5 })],
+    }),
+    type('zz.world', 'application_object', 'Welt', 'World', {
+      group: 'market',
+      properties: [property('wetter', 'text', 'Wetter', 'Weather'), property('temperatur', 'number', 'Temperatur', 'Temperature')],
+    }),
+    type('zz.meter', 'object_type', 'Messer', 'Meter', {
+      group: 'indicators',
+      category: 'indicator',
+      parameters: [
+        parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true, choices: [{ id: 'fast', label: label('schnell', 'fast') }, { id: 'slow', label: label('langsam', 'slow') }] }),
+        parameter('laenge', 'integer', 'Länge', 'Length', { required: true }),
+        parameter('ziel', 'object', 'Ziel', 'Target', { object_type: 'zz.target', default: 'zz.own_target', choices: [{ id: 'zz.own_target', label: label('das eigene Ziel', 'the own target') }] }),
+      ],
+      properties: [property('stand', 'number', 'Stand', 'Reading', { must: true }), property('trend', 'text', 'Tendenz', 'Tendency'), property('hoch', 'number', 'Höchststand', 'Peak'), property('tief', 'number', 'Tiefststand', 'Low')],
+    }),
+    type('zz.chain', 'object_type', 'Kette', 'Chain', {
+      group: 'trends',
+      category: 'trend',
+      parameters: [parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true })],
+      properties: [property('richtung', 'text', 'Richtung', 'Direction', { must: true })],
+    }),
+    type('zz.rule', 'object_type', 'Regel', 'Rule', { group: 'rules', category: 'rule', on_canvas: false }),
+    type('zz.ruleset', 'object_type', 'Regelsatz', 'Rule set', { group: 'rules', category: 'ruleset', on_canvas: false }),
+  ],
+  templates: [
+    {
+      id: 'tpl-1',
+      name: { de: 'Vorgabe Regel', en: 'Rule template' },
+      description: 'Eine mitgelieferte Regel.',
+      object_type: 'zz.rule',
+      format: 'pipwerk.rule',
+      format_version: '2.0',
+      parameter_values: {},
+      parameters: [],
+      properties: [],
+      instances: [],
+      rules: [],
+      expression: 'x',
+      determined_property: null,
+      comparison: null,
+      result_expression: null,
+    },
+  ],
+  functions: [],
+};
+
+export function inventedTypes(): TypeIndex {
+  return createTypeIndex(parseElementTypes(inventedTypesJson));
+}
+
+/** An element of the flow for the tests: all fields a document needs. */
+export function stepElement(type: string, name: string, extra: Partial<ElementDocument> = {}): ElementDocument {
   return {
-    types: inventedList,
-    templates: [
-      {
-        id: '11111111-1111-4111-8111-111111111111',
-        title: 'Zz limit',
-        description: 'A rule template',
-        object_type: 'ZzRule',
-        parameter_values: {},
-        parameters: [{ name: 'cap', datatype: 'number', required: true, default: 5, choices: [] }],
-        properties: [],
-        instances: [],
-        rules: [],
-        expression: 'cap',
-        determined_property: null,
-        comparison: null,
-        result_expression: null,
-      },
-    ],
-    functions: [],
+    id: newUuid(),
+    type,
+    name,
+    key: null,
+    position: null,
+    parameters: {},
+    properties: {},
+    inputs: [],
+    rules: [],
+    management_of: null,
+    ...extra,
   };
 }
 
-export const inventedTypes = createTypeIndex(inventedResponse());
+/** An element that shows an object of the invented meter. */
+export function meterElement(name: string, key: string, extra: Partial<ElementDocument> = {}): ElementDocument {
+  return stepElement('zz.meter', '', {
+    name: null,
+    instance: {
+      name,
+      key,
+      object_type: 'zz.meter',
+      origin: { object_type: 'zz.meter', template_id: null },
+      parameter_values: { takt: { kind: 'fixed', value: 'fast' }, laenge: { kind: 'fixed', value: 10 } },
+      parameters: [],
+      properties: [],
+      instances: [],
+      rules: [],
+    },
+    ...extra,
+  });
+}
 
-/** The same descriptions as the backend sends them (the field names of the wire), for tests that run the application. */
-export function inventedWire(): Record<string, unknown> {
-  const condition = (value: { name: string; value: string } | null) => value;
-  return {
-    types: inventedList.map((type) => ({
-      id: type.id,
-      kind: type.kind,
-      name: type.name,
-      description: type.description,
-      category: type.category,
-      parameters: type.parameters.map((parameter) => ({
-        id: parameter.id,
-        datatype: parameter.datatype,
-        label: parameter.label,
-        required: parameter.required,
-        default: parameter.default,
-        choices: parameter.choices,
-        bindings: parameter.bindings,
-        applies_when: condition(parameter.appliesWhen),
-        object_type: parameter.objectType,
-      })),
-      properties: type.properties.map((property) => ({
-        id: property.id,
-        datatype: property.datatype,
-        label: property.label,
-        must: property.must,
-        set_by_user: property.setByUser,
-        default: property.default,
-        choices: property.choices,
-        applies_when: condition(property.appliesWhen),
-        object_type: property.objectType,
-      })),
-      outputs: type.outputs.map((output) => ({
-        id: output.id,
-        label: output.label,
-        holds_management: output.holdsManagement,
-      })),
-      named: type.named,
-      strategy_parameters: type.strategyParameters,
-      rules_allowed: type.rulesAllowed,
-      on_canvas: type.onCanvas,
-      builtin: type.builtin,
-      by_user: type.byUser,
-    })),
-    templates: inventedResponse().templates,
-    functions: [],
-  };
+/** A small strategy of the invented types: a start, a switch and an action in the main flow, an execution with a management. */
+export function inventedStrategy(): StrategyDocument {
+  const document = newStrategy('Erfundene Strategie');
+  const start = stepElement('zz.start', 'Beginn', { parameters: { takt: { kind: 'fixed', value: 'fast' } } });
+  const when = stepElement('zz.when', 'Weiche', { key: 'weiche', parameters: { formel: { kind: 'expression', value: 'messer.stand > 1' } } });
+  const doIt = stepElement('zz.do', 'Tun');
+  const place = stepElement('zz.place', 'Ausführen', { parameters: { sorte: { kind: 'fixed', value: 'zz.kind_a' } } });
+  const inside = stepElement('zz.start', 'Beginn innen', { management_of: place.id, parameters: { takt: { kind: 'fixed', value: 'slow' } } });
+  const insideDo = stepElement('zz.do', 'Tun innen', { management_of: place.id });
+  const meter = meterElement('Messer', 'messer');
+  document.elements = [meter, start, when, doIt, place, inside, insideDo];
+  document.connections = [
+    { id: newUuid(), source: start.id, output: 'next', target: when.id },
+    { id: newUuid(), source: when.id, output: 'yes', target: doIt.id },
+    { id: newUuid(), source: doIt.id, output: 'next', target: place.id },
+    { id: newUuid(), source: inside.id, output: 'next', target: insideDo.id },
+  ];
+  return document;
 }

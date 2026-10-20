@@ -1,385 +1,492 @@
-import { MarkerType, type Edge, type Node } from '@xyflow/react';
+import type { Edge, Node } from '@xyflow/react';
+import type { TFunction } from 'i18next';
 
-import { getOwn, setOwn } from '../document/own';
-import type { SupportedLanguage } from '../i18n';
-import type { ConnectionDocument, ElementDocument, StrategyDocument } from '../document/types';
-import { labelText, managementOutput, nodeKindOf, type NodeKind, type TypeIndex } from '../model/typeIndex';
 import {
-  FRAME_HEADER_HEIGHT,
-  NODE_WIDTH,
-  containers,
-  depthOf,
-  elementHasInput,
-  elementOutputs,
-  frameNodeId,
-  hiddenByCollapse,
-  nodeHeight,
-  ownerIds,
-  syncFrames,
-  type FrameRects,
-  type OutputHandle,
-  type Point,
-} from './layout';
+  CARD_HEAD,
+  CARD_W,
+  LANE_GAP,
+  ROW_H,
+  pathThrough,
+  wirePath,
+  type Box,
+  type Dir,
+  type Pt,
+  type Scene,
+} from '../arrange/scene';
+import type { StrategyDocument } from '../document/types';
+import type { IndexedFindings } from '../findings/findingsModel';
+import type { SupportedLanguage } from '../i18n';
+import { cardSubtitle, stepSummary, type DescribeContext } from '../model/describe';
+import { elementName, isCardElement, outputsOf, propertyRows } from '../model/elements';
+import { iconOf, kindClassOf, labelText, type KindClass, type TypeIndex } from '../model/typeIndex';
+import type { Selection, WireMode } from '../state/studioState';
 
 /**
- * The model of React Flow for the drawing area. It is derived from the strategy
- * document and from the view state (which frames are collapsed, where the
- * frames stand); `flowToDocument` is the way back (specification E3). Both are
- * pure functions.
+ * The drawing area as React Flow shows it (specification E8, 5.3). The arrangement computes the places; React Flow
+ * shows them and takes dragging, connecting, zoom and fitting. The nodes and edges are views of the document, never
+ * its state (rules for React Flow in the development rules).
  */
 
-/**
- * How a node was derived. If its position in the flow is still the derived one
- * and so is the position of its frame, the document position is taken over
- * unchanged; this keeps fractional coordinates exact (adding and subtracting
- * the origin of a frame is not exact in floating-point numbers).
- */
-export type Anchor = { abs: Point; rel: Point; parentAbs: Point };
+export const WIRE_COLORS = ['#2f6fb0', '#c2410c', '#15803d', '#a21caf', '#0e7490', '#b45309', '#be123c', '#4d7c0f'] as const;
 
-export type Severity = 'error' | 'hint';
+export type Level = 'error' | 'hint' | null;
 
-export type ElementNodeData = {
-  kind: 'element';
-  elementId: string;
-  typeId: string;
-  nodeKind: NodeKind;
-  title: string;
-  subtitle: string;
-  outputs: OutputHandle[];
-  hasInput: boolean;
-  /** The element has a frame (a management). */
-  isOwner: boolean;
-  /**
-   * The connector at which the frame hangs: the output that holds the
-   * management, or, for an element whose type has none but that another
-   * element names as its management, the extra connector at the bottom.
-   */
-  managementHandle: string | null;
-  severity: Severity | null;
-  /** The management the element belongs to when the node was derived. */
-  container: string | null;
-  anchor: Anchor;
+export type StepOutput = { id: string; label: string; management: boolean; used: boolean; explanation: string };
+
+export type StepData = {
+  element: string;
+  name: string;
+  typeName: string;
+  icon: string;
+  cls: KindClass;
+  summary: string;
+  trigger: boolean;
+  unknown: boolean;
+  level: Level;
+  selected: boolean;
+  /** The output of this step that was clicked, if any. */
+  armed: string | null;
+  /** Another step is waiting for a successor: this step can be clicked to become it. */
+  armable: boolean;
+  outputs: StepOutput[];
+  wireCount: number;
+  dir: Dir;
+  width: number;
+  height: number;
 };
 
-export type FrameNodeData = {
-  kind: 'management';
-  ownerId: string;
+export type CardRow = { id: string; label: string; datatype: string; explanation: string; used: boolean; y: number };
+
+export type CardData = {
+  element: string;
+  name: string;
+  typeName: string;
+  subtitle: string;
+  icon: string;
+  cls: KindClass;
+  level: Level;
+  selected: boolean;
+  rows: CardRow[];
+  /** All properties of the object, shown and hidden. */
+  total: number;
+  open: boolean;
+  wireCount: number;
+  color: string;
+  dir: Dir;
+  width: number;
+  height: number;
+};
+
+export type FrameData = {
+  owner: string;
   title: string;
   collapsed: boolean;
-  /** Size of the frame when it is open. */
-  size: { width: number; height: number };
-  anchor: Anchor;
+  empty: boolean;
+  selected: boolean;
+  count: number;
+  dir: Dir;
 };
 
-export type ElementFlowNode = Node<ElementNodeData, 'element'>;
-export type FrameFlowNode = Node<FrameNodeData, 'management'>;
-export type FlowNode = ElementFlowNode | FrameFlowNode;
+export type BandData = { section: string; name: string; selected: boolean };
 
-export type FlowEdgeData =
-  | { kind: 'connection'; index: number }
-  | { kind: 'management'; ownerId: string };
+export type SectionNodeData = { section: string; name: string; count: number; level: Level; selected: boolean; dir: Dir };
 
-export type FlowEdge = Edge<FlowEdgeData>;
-
-export type FlowModel = {
-  nodes: FlowNode[];
-  edges: FlowEdge[];
-  /** Connections without an edge (an end that is not an element). They are never removed by a change of the flow. */
-  withoutEdge: number[];
+export type FlowEdgeData = {
+  kind: 'flow' | 'management';
+  path: string;
+  connection: string | null;
+  selected: boolean;
+  midpoint: Pt;
+  deletable: boolean;
 };
 
-/**
- * Identifier of the extra connector at the bottom of an element that carries
- * the frame of its management when its type has no output that holds it (an
- * element that another element names as its management in the document).
- */
-export const MANAGEMENT_HANDLE = 'management';
+export type WireEdgeData = {
+  path: string;
+  color: string;
+  solid: boolean;
+  related: boolean;
+  dimmed: boolean;
+  count: number;
+  midpoint: Pt;
+  stubs: Pt[][];
+  end: Pt;
+  label: string;
+};
 
-export type FlowContext = {
+export type StudioNode = Node<
+  StepData | CardData | FrameData | BandData | SectionNodeData | { empty?: boolean },
+  'step' | 'card' | 'frame' | 'band' | 'section' | 'lane'
+>;
+
+export type StudioEdge = Edge<FlowEdgeData | WireEdgeData, 'flow' | 'wire'>;
+
+export type FlowInput = {
+  document: StrategyDocument;
   types: TypeIndex;
+  scene: Scene;
+  dir: Dir;
   language: SupportedLanguage;
-  frames: FrameRects;
-  collapsed: ReadonlySet<string>;
-  selectedNodes: ReadonlySet<string>;
-  selectedEdges: ReadonlySet<string>;
-  severities: ReadonlyMap<string, Severity>;
+  t: TFunction;
+  describe: DescribeContext;
+  findings: IndexedFindings;
+  selection: Selection;
+  armed: { from: string; output: string } | null;
+  wires: WireMode;
+  selectedEdge: string | null;
+  openCards: ReadonlySet<string>;
 };
 
-export function isElementNode(node: FlowNode): node is ElementFlowNode {
-  return node.data.kind === 'element';
+/** Where the note "objects belong here" stands while the drawing area has no object. */
+export function emptyLanePlace(dir: Dir): Box {
+  return dir === 'v' ? { x: -(CARD_W + LANE_GAP) - 14, y: -44, w: 262, h: 112 } : { x: -14, y: -170, w: 262, h: 112 };
 }
 
-export function isFrameNode(node: FlowNode): node is FrameFlowNode {
-  return node.data.kind === 'management';
+function levelOf(findings: IndexedFindings, id: string): Level {
+  return findings.levelOfElement(id);
 }
 
-function elementTitle(element: ElementDocument, ctx: FlowContext): string {
-  const type = ctx.types.byId.get(element.type);
-  // An element that holds an instance shows the name of the instance, whatever its type.
-  if (element.instance !== undefined && element.instance !== null && element.instance.name !== '') {
-    return element.instance.name;
+function worst(levels: Level[]): Level {
+  return levels.includes('error') ? 'error' : levels.includes('hint') ? 'hint' : null;
+}
+
+/** The nodes and edges React Flow shows for a document and its arrangement. */
+export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: StudioEdge[] } {
+  const { document, types, scene, dir, language, t, describe, findings, selection, armed, wires, selectedEdge } = input;
+  const nodes: StudioNode[] = [];
+  const edges: StudioEdge[] = [];
+  const selectedElement = selection.kind === 'element' ? selection.id : null;
+  const rep = (id: string): string => scene.rep.get(id) ?? id;
+  const wireCountTo = new Map<string, number>();
+  for (const wire of scene.wires) {
+    const target = rep(wire.dst);
+    wireCountTo.set(target, (wireCountTo.get(target) ?? 0) + 1);
   }
-  if (element.title !== '') {
-    return element.title;
-  }
-  return type === undefined ? element.type : labelText(type.name, ctx.language);
-}
+  const cardIndex = new Map([...scene.cards.keys()].map((id, index) => [id, index]));
 
-function elementSubtitle(element: ElementDocument, ctx: FlowContext): string {
-  const type = ctx.types.byId.get(element.type);
-  const typeText = type === undefined ? element.type : labelText(type.name, ctx.language);
-  if (element.name !== null && element.name !== '') {
-    return `${typeText} · ${element.name}`;
-  }
-  return typeText;
-}
-
-function uniqueEdgeId(base: string, used: Set<string>): string {
-  let id = base;
-  for (let counter = 2; used.has(id); counter += 1) {
-    id = `${base}#${counter}`;
-  }
-  used.add(id);
-  return id;
-}
-
-/** Document → drawing area. */
-export function documentToFlow(document: StrategyDocument, ctx: FlowContext): FlowModel {
-  const label = (_id: string, text: { de: string; en: string }): string => text[ctx.language];
-  const owners = ownerIds(document, ctx.types);
-  const containerById = containers(document, owners);
-  const rects = syncFrames(document, ctx.types, ctx.frames, label);
-  const hidden = hiddenByCollapse(document, owners, ctx.collapsed);
-  const byId = new Map(document.elements.map((element) => [element.id, element]));
-
-  type Entry = { depth: number; frame: boolean; order: number; node: FlowNode };
-  const entries: Entry[] = [];
-  let order = 0;
-
-  for (const ownerId of owners) {
-    const owner = byId.get(ownerId);
-    const rect = getOwn(rects, ownerId);
-    if (owner === undefined || rect === undefined) {
-      continue;
-    }
-    const container = containerById.get(ownerId) ?? null;
-    const parentRect = container === null ? undefined : getOwn(rects, container);
-    const origin = parentRect === undefined ? { x: 0, y: 0 } : { x: parentRect.x, y: parentRect.y };
-    const collapsed = ctx.collapsed.has(ownerId);
-    const node: FrameFlowNode = {
-      id: frameNodeId(ownerId),
-      type: 'management',
-      position: { x: rect.x - origin.x, y: rect.y - origin.y },
-      width: rect.width,
-      height: collapsed ? FRAME_HEADER_HEIGHT : rect.height,
-      measured: { width: rect.width, height: collapsed ? FRAME_HEADER_HEIGHT : rect.height },
-      dragHandle: '.management-header',
-      deletable: false,
+  // --- lane, frames, bands: the background ---
+  if (scene.lane !== null) {
+    nodes.push({
+      id: 'lane',
+      type: 'lane',
+      position: { x: scene.lane.x, y: scene.lane.y },
+      data: {},
+      width: scene.lane.w,
+      height: scene.lane.h,
+      measured: { width: scene.lane.w, height: scene.lane.h },
+      draggable: false,
       selectable: false,
       focusable: false,
-      hidden: hidden.owners.has(ownerId),
-      data: {
-        kind: 'management',
-        ownerId,
-        title: elementTitle(owner, ctx),
-        collapsed,
-        size: { width: rect.width, height: rect.height },
-        anchor: {
-          abs: { x: rect.x, y: rect.y },
-          rel: { x: rect.x - origin.x, y: rect.y - origin.y },
-          parentAbs: origin,
-        },
-      },
-    };
-    if (container !== null && parentRect !== undefined) {
-      node.parentId = frameNodeId(container);
+      connectable: false,
+      zIndex: 0,
+      className: 'rf-passive',
+    });
+  } else if (document.elements.length > 0) {
+    // no object yet: the area says what belongs there
+    const place = emptyLanePlace(dir);
+    nodes.push({
+      id: 'lane',
+      type: 'lane',
+      position: { x: place.x, y: place.y },
+      data: { empty: true },
+      width: place.w,
+      height: place.h,
+      measured: { width: place.w, height: place.h },
+      draggable: false,
+      selectable: false,
+      focusable: false,
+      connectable: false,
+      zIndex: 0,
+      className: 'rf-passive',
+    });
+  }
+  for (const frame of scene.frames) {
+    const owner = document.elements.find((candidate) => candidate.id === frame.owner);
+    if (owner === undefined) {
+      continue;
     }
-    entries.push({ depth: depthOf(containerById, ownerId), frame: true, order: order++, node });
+    const data: FrameData = {
+      owner: frame.owner,
+      title: elementName(owner, types, language),
+      collapsed: frame.collapsed,
+      empty: frame.empty,
+      selected: selection.kind === 'frame' && selection.id === frame.owner,
+      count: document.elements.filter((candidate) => candidate.management_of === frame.owner).length,
+      dir,
+    };
+    nodes.push({
+      id: `frame:${frame.owner}`,
+      type: 'frame',
+      position: { x: frame.x, y: frame.y },
+      data,
+      width: frame.w,
+      height: frame.h,
+      measured: { width: frame.w, height: frame.h },
+      draggable: false,
+      selectable: true,
+      focusable: false,
+      connectable: false,
+      zIndex: 0,
+    });
+  }
+  for (const band of scene.bands) {
+    const section = document.sections.find((candidate) => candidate.id === band.id);
+    if (section === undefined) {
+      continue;
+    }
+    nodes.push({
+      id: `band:${band.id}`,
+      type: 'band',
+      position: { x: band.x, y: band.y },
+      data: { section: band.id, name: section.name, selected: selection.kind === 'section' && selection.id === band.id },
+      width: band.w,
+      height: band.h,
+      measured: { width: band.w, height: band.h },
+      draggable: false,
+      selectable: false,
+      focusable: false,
+      connectable: false,
+      zIndex: 1,
+      className: 'rf-passive',
+    });
   }
 
-  for (const element of document.elements) {
-    const type = ctx.types.byId.get(element.type);
-    const nodeKind = nodeKindOf(type);
-    const outputs = elementOutputs(document, element, type, label);
-    const container = containerById.get(element.id) ?? null;
-    const parentRect = container === null ? undefined : getOwn(rects, container);
-    const origin = parentRect === undefined ? { x: 0, y: 0 } : { x: parentRect.x, y: parentRect.y };
-    const height = nodeHeight(outputs.length);
-    const rel = { x: element.x - origin.x, y: element.y - origin.y };
-    const node: ElementFlowNode = {
-      id: element.id,
-      type: 'element',
-      position: rel,
-      width: NODE_WIDTH,
-      height,
-      measured: { width: NODE_WIDTH, height },
-      ariaLabel: elementTitle(element, ctx),
-      selected: ctx.selectedNodes.has(element.id),
-      hidden: hidden.elements.has(element.id),
+  // --- collapsed sections ---
+  for (const [id, box] of scene.secNodes) {
+    const section = document.sections.find((candidate) => `sec:${candidate.id}` === id);
+    if (section === undefined) {
+      continue;
+    }
+    nodes.push({
+      id,
+      type: 'section',
+      position: { x: box.x, y: box.y },
       data: {
-        kind: 'element',
-        elementId: element.id,
-        typeId: element.type,
-        nodeKind,
-        title: elementTitle(element, ctx),
-        subtitle: elementSubtitle(element, ctx),
+        section: section.id,
+        name: section.name,
+        count: section.elements.length,
+        level: worst(section.elements.map((element) => levelOf(findings, element))),
+        selected: selection.kind === 'section' && selection.id === section.id,
+        dir,
+      },
+      width: box.w,
+      height: box.h,
+      measured: { width: box.w, height: box.h },
+      draggable: false,
+      selectable: true,
+      focusable: true,
+      zIndex: 3,
+    });
+  }
+
+  // --- steps and cards ---
+  const usedOutputs = new Set(document.connections.map((connection) => `${connection.source}|${connection.output}`));
+  document.elements.forEach((element) => {
+    const type = types.byId.get(element.type);
+    const box = scene.nodes.get(element.id);
+    if (box !== undefined) {
+      const trigger = type?.kind === 'trigger';
+      const outputs = outputsOf(element, type, document, language).map((output) => ({
+        id: output.id,
+        label: output.label,
+        explanation: output.explanation,
+        management: output.management,
+        used: output.management || usedOutputs.has(`${element.id}|${output.id}`),
+      }));
+      const data: StepData = {
+        element: element.id,
+        name: elementName(element, types, language),
+        typeName: type === undefined ? element.type : labelText(type.name, language),
+        icon: iconOf(type),
+        cls: kindClassOf(type),
+        summary: stepSummary(element, type, describe),
+        trigger,
+        unknown: type === undefined,
+        level: levelOf(findings, element.id),
+        selected: selectedElement === element.id,
+        armed: armed !== null && armed.from === element.id ? armed.output : null,
+        armable: armed !== null && armed.from !== element.id && type !== undefined && !trigger,
         outputs,
-        hasInput: elementHasInput(document, element, nodeKind),
-        isOwner: owners.has(element.id),
-        managementHandle: owners.has(element.id) ? (managementOutput(type)?.id ?? MANAGEMENT_HANDLE) : null,
-        severity: ctx.severities.get(element.id) ?? null,
-        container,
-        anchor: { abs: { x: element.x, y: element.y }, rel, parentAbs: origin },
-      },
-    };
-    if (container !== null && parentRect !== undefined) {
-      node.parentId = frameNodeId(container);
-    }
-    entries.push({ depth: depthOf(containerById, element.id), frame: false, order: order++, node });
-  }
-
-  // A frame comes before the elements inside it, frames before elements of the same depth.
-  entries.sort((a, b) => a.depth - b.depth || Number(b.frame) - Number(a.frame) || a.order - b.order);
-
-  const edges: FlowEdge[] = [];
-  const withoutEdge: number[] = [];
-  const usedIds = new Set<string>();
-  document.connections.forEach((connection, index) => {
-    const source = byId.get(connection.source);
-    const target = byId.get(connection.target);
-    if (source === undefined || target === undefined) {
-      withoutEdge.push(index);
+        wireCount: wireCountTo.get(element.id) ?? 0,
+        dir,
+        width: box.w,
+        height: box.h,
+      };
+      nodes.push({
+        id: element.id,
+        type: 'step',
+        position: { x: box.x, y: box.y },
+        data,
+        width: box.w,
+        height: box.h,
+        measured: { width: box.w, height: box.h },
+        draggable: true,
+        selectable: true,
+        focusable: true,
+        zIndex: 3,
+        ariaLabel: `${data.typeName}: ${data.name}`,
+      });
       return;
     }
-    const id = uniqueEdgeId(`c:${connection.source}:${connection.output}:${connection.target}`, usedIds);
+    const geo = scene.cards.get(element.id);
+    if (geo !== undefined && isCardElement(element, types)) {
+      const properties = propertyRows(type, element.instance, language);
+      const used = new Set(scene.usage.filter((usage) => usage.src === element.id).map((usage) => usage.prop));
+      const rows: CardRow[] = geo.rows.flatMap((id) => {
+        const property = properties.find((candidate) => candidate.id === id);
+        const y = geo.rowY.get(id);
+        if (property === undefined || y === undefined) {
+          return [];
+        }
+        return [
+          {
+            id,
+            label: property.label,
+            datatype: t(`datatype.${property.datatype}`),
+            explanation: property.explanation,
+            used: used.has(id),
+            y: y - geo.y,
+          },
+        ];
+      });
+      const data: CardData = {
+        element: element.id,
+        name: elementName(element, types, language),
+        typeName: type === undefined ? element.type : labelText(type.name, language),
+        subtitle: cardSubtitle(element, type, describe),
+        icon: iconOf(type),
+        cls: kindClassOf(type),
+        level: levelOf(findings, element.id),
+        selected: selectedElement === element.id,
+        rows,
+        total: properties.length,
+        open: input.openCards.has(element.id),
+        wireCount: wireCountTo.get(element.id) ?? 0,
+        color: WIRE_COLORS[(cardIndex.get(element.id) ?? 0) % WIRE_COLORS.length] ?? WIRE_COLORS[0],
+        dir,
+        width: geo.w,
+        height: geo.h,
+      };
+      nodes.push({
+        id: element.id,
+        type: 'card',
+        position: { x: geo.x, y: geo.y },
+        data,
+        width: geo.w,
+        height: geo.h,
+        measured: { width: geo.w, height: geo.h },
+        draggable: true,
+        selectable: true,
+        focusable: true,
+        zIndex: 3,
+        ariaLabel: `${data.typeName}: ${data.name}`,
+      });
+    }
+  });
+
+  // --- the lines of the flow ---
+  for (const edge of scene.edges) {
+    if (edge.hidden) {
+      continue;
+    }
+    const source = rep(edge.from);
+    const target = edge.to.startsWith('frame:') ? edge.to : rep(edge.to);
+    if (source === target) {
+      continue;
+    }
+    const middle = edge.pts[Math.floor(edge.pts.length / 2) - (edge.pts.length % 2 === 0 ? 1 : 0)];
+    const next = edge.pts[Math.floor(edge.pts.length / 2)];
+    const midpoint: Pt = middle !== undefined && next !== undefined ? { x: (middle.x + next.x) / 2, y: (middle.y + next.y) / 2 } : { x: 0, y: 0 };
+    const sourceIsSection = source.startsWith('sec:');
+    const id = edge.connection !== null ? `e:${edge.connection}` : `m:${edge.from}`;
+    const related = selectedElement !== null && (edge.from === selectedElement || edge.to === selectedElement);
     edges.push({
       id,
-      source: connection.source,
-      sourceHandle: connection.output,
-      target: connection.target,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      ariaLabel: `${elementTitle(source, ctx)} → ${elementTitle(target, ctx)}`,
-      selected: ctx.selectedEdges.has(id),
-      hidden: hidden.elements.has(connection.source) || hidden.elements.has(connection.target),
-      data: { kind: 'connection', index },
+      type: 'flow',
+      source,
+      target,
+      sourceHandle: sourceIsSection ? 'out' : edge.out,
+      targetHandle: 'in',
+      zIndex: 2,
+      selectable: edge.connection !== null,
+      focusable: false,
+      data: {
+        kind: edge.mgmt ? 'management' : 'flow',
+        path: pathThrough(edge.pts, dir),
+        connection: edge.connection,
+        selected: selectedEdge === id || related,
+        midpoint,
+        deletable: edge.connection !== null && selectedEdge === id,
+      },
     });
-  });
-  for (const ownerId of owners) {
-    if (byId.has(ownerId) && getOwn(rects, ownerId) !== undefined) {
+  }
+
+  // --- the lines of the values ---
+  if (wires !== 'off') {
+    for (const wire of scene.wires) {
+      const related = selectedElement !== null && (wire.src === selectedElement || wire.dst === selectedElement);
+      if (wires === 'selection' && !related) {
+        continue;
+      }
+      const target = rep(wire.dst);
+      const firstProp = wire.props[0];
+      if (firstProp === undefined) {
+        continue;
+      }
+      const source = document.elements.find((candidate) => candidate.id === wire.src);
+      const targetElement = document.elements.find((candidate) => candidate.id === wire.dst);
+      const sourceType = source === undefined ? undefined : types.byId.get(source.type);
+      const labels = wire.props.map((prop) => {
+        const row = source === undefined ? undefined : propertyRows(sourceType, source.instance, language).find((candidate) => candidate.id === prop);
+        return row === undefined ? prop : row.label;
+      });
+      const a = wire.pts[0];
+      const b = wire.pts[1];
+      if (a === undefined || b === undefined) {
+        continue;
+      }
       edges.push({
-        id: `management:${ownerId}`,
-        source: ownerId,
-        sourceHandle: managementOutput(ctx.types.byId.get(byId.get(ownerId)?.type ?? ''))?.id ?? MANAGEMENT_HANDLE,
-        target: frameNodeId(ownerId),
-        className: 'management-edge',
+        id: `w:${wire.key}`,
+        type: 'wire',
+        source: wire.src,
+        target,
+        sourceHandle: `prop:${firstProp}`,
+        targetHandle: 'data',
+        zIndex: 2,
         selectable: false,
-        deletable: false,
         focusable: false,
-        hidden: hidden.elements.has(ownerId) || hidden.owners.has(ownerId),
-        data: { kind: 'management', ownerId },
+        data: {
+          path: wirePath(wire, dir),
+          color: WIRE_COLORS[(cardIndex.get(wire.src) ?? 0) % WIRE_COLORS.length] ?? WIRE_COLORS[0],
+          solid: wire.solid,
+          related,
+          dimmed: selectedElement !== null && !related,
+          count: wire.props.length,
+          midpoint: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+          stubs: wire.stubs,
+          end: b,
+          label: `${source === undefined ? '' : elementName(source, types, language)} → ${
+            targetElement === undefined ? '' : elementName(targetElement, types, language)
+          }: ${labels.join(', ')}${wire.solid ? '' : ` (${t('canvas.wireOnlyExpression')})`}`,
+        },
       });
     }
   }
-
-  return { nodes: entries.map((entry) => entry.node), edges, withoutEdge };
+  return { nodes, edges };
 }
 
-/** Absolute position of a node, from its position in the flow and the position of its frame. */
-export function absolutePosition(node: FlowNode, nodes: ReadonlyMap<string, FlowNode>): Point {
-  const seen = new Set<string>();
-  function resolve(current: FlowNode): Point {
-    if (seen.has(current.id)) {
-      return { x: current.position.x, y: current.position.y };
-    }
-    seen.add(current.id);
-    const parent = current.parentId === undefined ? undefined : nodes.get(current.parentId);
-    const parentAbs = parent === undefined ? { x: 0, y: 0 } : resolve(parent);
-    const anchor = current.data.anchor;
-    if (
-      current.position.x === anchor.rel.x &&
-      current.position.y === anchor.rel.y &&
-      parentAbs.x === anchor.parentAbs.x &&
-      parentAbs.y === anchor.parentAbs.y
-    ) {
-      return anchor.abs;
-    }
-    return { x: current.position.x + parentAbs.x, y: current.position.y + parentAbs.y };
-  }
-  return resolve(node);
+/** The box of a card or step at a place, for tests and for the drop. */
+export function boxContains(box: Box, point: Pt): boolean {
+  return point.x >= box.x && point.x <= box.x + box.w && point.y >= box.y && point.y <= box.y + box.h;
 }
 
-/**
- * Drawing area → document. Takes over the positions, the management of each
- * element (the frame it lies in), the connections that still have an edge, and
- * drops the elements that are no longer nodes. Everything else of the document
- * stays as it is.
- */
-export function flowToDocument(base: StrategyDocument, flow: FlowModel): StrategyDocument {
-  const nodes = new Map(flow.nodes.map((node) => [node.id, node]));
-  const elements: ElementDocument[] = [];
-  for (const element of base.elements) {
-    const node = nodes.get(element.id);
-    if (node === undefined || !isElementNode(node)) {
-      continue;
-    }
-    const abs = absolutePosition(node, nodes);
-    const parent = node.parentId === undefined ? undefined : nodes.get(node.parentId);
-    const frameOwner = parent !== undefined && isFrameNode(parent) ? parent.data.ownerId : null;
-    const owner = frameOwner !== null && nodes.has(frameOwner) ? frameOwner : null;
-    // A management that did not change keeps its stored value, even a reference that leads nowhere.
-    const managementOf = owner === node.data.container ? element.management_of : owner;
-    if (abs.x === element.x && abs.y === element.y && managementOf === element.management_of) {
-      elements.push(element);
-    } else {
-      elements.push({ ...element, x: abs.x, y: abs.y, management_of: managementOf });
+/** The step under a point of the drawing area, or `undefined`. */
+export function stepAt(scene: Scene, point: Pt): string | undefined {
+  for (const [id, box] of scene.nodes) {
+    if (boxContains(box, point)) {
+      return id;
     }
   }
-  const kept = new Set<number>(flow.withoutEdge);
-  for (const edge of flow.edges) {
-    if (edge.data?.kind === 'connection') {
-      kept.add(edge.data.index);
-    }
-  }
-  const present = new Set(elements.map((element) => element.id));
-  const connections: ConnectionDocument[] = base.connections.filter(
-    (connection, index) =>
-      kept.has(index) &&
-      (flow.withoutEdge.includes(index) || (present.has(connection.source) && present.has(connection.target))),
-  );
-  const sameElements =
-    elements.length === base.elements.length && elements.every((element, i) => element === base.elements[i]);
-  const sameConnections =
-    connections.length === base.connections.length &&
-    connections.every((connection, i) => connection === base.connections[i]);
-  if (sameElements && sameConnections) {
-    return base;
-  }
-  return { ...base, elements, connections };
+  return undefined;
 }
 
-/** Drawing area → frames: the absolute position of each frame. The size stays the one stored. */
-export function flowToFrames(flow: FlowModel, stored: FrameRects): FrameRects {
-  const nodes = new Map(flow.nodes.map((node) => [node.id, node]));
-  const result: FrameRects = {};
-  for (const node of flow.nodes) {
-    if (!isFrameNode(node)) {
-      continue;
-    }
-    const abs = absolutePosition(node, nodes);
-    const known = getOwn(stored, node.data.ownerId);
-    setOwn(result, node.data.ownerId, {
-      x: abs.x,
-      y: abs.y,
-      width: known?.width ?? node.data.size.width,
-      height: known?.height ?? node.data.size.height,
-    });
-  }
-  return result;
-}
-
-export function selectedIds(flow: FlowModel): { nodes: string[]; edges: string[] } {
-  return {
-    nodes: flow.nodes.filter((node) => node.selected === true && isElementNode(node)).map((node) => node.id),
-    edges: flow.edges.filter((edge) => edge.selected === true).map((edge) => edge.id),
-  };
-}
+export { CARD_HEAD, ROW_H };

@@ -35,7 +35,7 @@ type SaveState =
  * strategy stays open (specification 4.1).
  */
 export function SettingsDialog({ languageState, onClose }: SettingsDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const titleId = useId();
   const pathId = useId();
@@ -83,10 +83,7 @@ export function SettingsDialog({ languageState, onClose }: SettingsDialogProps) 
         {directory.isError ? (
           <div role="alert">
             <p>{t('settings.directoryLoadFailed')}</p>
-            <p>{describeCause(t, directory.error).summary}</p>
-            {describeCause(t, directory.error).backendText !== null ? (
-              <p lang="en">{describeCause(t, directory.error).backendText}</p>
-            ) : null}
+            <p>{describeCause(t, i18n, directory.error).summary}</p>
           </div>
         ) : null}
         {current !== undefined ? (
@@ -160,8 +157,7 @@ export function SettingsDialog({ languageState, onClose }: SettingsDialogProps) 
         {save.phase === 'failed' ? (
           <div role="alert" className="settings-error">
             <p>{t('settings.directoryFailed')}</p>
-            <p>{describeCause(t, save.error).summary}</p>
-            {save.cause.detail !== null ? <p lang="en">{save.cause.detail}</p> : null}
+            <p>{describeCause(t, i18n, save.error).summary}</p>
             {save.cause.moveFailure !== null ? (
               <div className="move-failure">
                 <p>{t('settings.moveFailureFrom', { directory: save.cause.moveFailure.sourceDirectory })}</p>

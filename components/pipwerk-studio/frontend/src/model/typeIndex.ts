@@ -1,11 +1,12 @@
 import type {
   Choice,
+  DataType,
   ElementTypesResponse,
-  OutputDescription,
   FunctionDescription,
+  GroupId,
   Label,
+  OutputDescription,
   ParameterDescription,
-  PropertyDescription,
   TemplateDocument,
   TypeDescription,
 } from '../api/elementTypes';
@@ -40,22 +41,6 @@ export function labelText(label: Label, language: SupportedLanguage): string {
 export function typeName(index: TypeIndex, typeId: string, language: SupportedLanguage): string {
   const type = index.byId.get(typeId);
   return type === undefined ? typeId : labelText(type.name, language);
-}
-
-/** What the drawing area shows for an element: it decides the connectors. */
-export type NodeKind = 'trigger' | 'flow' | 'object' | 'unknown';
-
-export function nodeKindOf(type: TypeDescription | undefined): NodeKind {
-  if (type === undefined) {
-    return 'unknown';
-  }
-  if (type.kind === 'trigger') {
-    return 'trigger';
-  }
-  if (type.kind === 'flow') {
-    return 'flow';
-  }
-  return 'object';
 }
 
 /** The parameter that selects an order type, with the order types it offers. */
@@ -104,16 +89,15 @@ export function isManagementOwnerType(type: TypeDescription | undefined): boolea
   return managementOutput(type) !== null;
 }
 
-/** Whether an element of the type has a name under which expressions address its result (field `named`). */
-export function hasNameField(type: TypeDescription | undefined): boolean {
-  return type !== undefined && type.named;
+/** Whether an element of the type shows an object and so holds an instance. */
+export function holdsInstance(type: TypeDescription | undefined): boolean {
+  return type !== undefined && (type.kind === 'object_type' || type.kind === 'application_object');
 }
 
 /**
  * The values of the datatype time unit. The descriptions list them as the
  * choices of every parameter or property of this datatype; the first one that
- * does is taken. `definitionChoices` offers them wherever a value of this
- * datatype is entered and the definition names no `choices` of its own.
+ * does is taken.
  */
 export function timeUnitChoices(index: TypeIndex): Choice[] {
   for (const type of index.list) {
@@ -127,11 +111,37 @@ export function timeUnitChoices(index: TypeIndex): Choice[] {
 }
 
 /**
- * The single rule for the values offered when a value of a parameter definition
- * is entered (value of a strategy parameter, default value and value row of an
- * own parameter of a rule or an instance): if the definition names `choices`,
- * exactly these; otherwise, for the datatype time unit, the time units of the
- * type descriptions (`timeUnits`, see `timeUnitChoices`); otherwise none.
+ * The values the type descriptions name for the datatype object of an object type (for example the value that stands
+ * for "the one of the application"). The first parameter or property of that object type that lists values is taken.
+ */
+export function objectTypeChoices(index: TypeIndex, objectType: string | null): Choice[] {
+  for (const type of index.list) {
+    for (const entry of [...type.parameters, ...type.properties]) {
+      if (entry.datatype === 'object' && entry.objectType === objectType && entry.choices.length > 0) {
+        return entry.choices;
+      }
+    }
+  }
+  return [];
+}
+
+/** The object types a strategy parameter can have: the object types the type descriptions name for the datatype object. */
+export function objectTypesInUse(index: TypeIndex): string[] {
+  const found = new Set<string>();
+  for (const type of index.list) {
+    for (const entry of [...type.parameters, ...type.properties]) {
+      if (entry.datatype === 'object' && entry.objectType !== null) {
+        found.add(entry.objectType);
+      }
+    }
+  }
+  return [...found];
+}
+
+/**
+ * The values offered for a value of a definition: the definition's own
+ * `choices`, otherwise, for the datatype time unit, the time units of the type
+ * descriptions; otherwise none.
  */
 export function definitionChoices(
   datatype: string,
@@ -145,56 +155,88 @@ export function definitionChoices(
   return datatype === 'time_unit' ? [...timeUnits] : [];
 }
 
-/** Whether an element of the type shows an object and so holds an instance. */
-export function holdsInstance(type: TypeDescription | undefined): boolean {
-  return type !== undefined && (type.kind === 'object_type' || type.kind === 'application_object');
-}
+/** The class of the colour of an element on the drawing area, derived from the description only. */
+export type KindClass = 'trg' | 'cond' | 'calc' | 'order' | 'act' | 'app' | 'ind' | 'trend' | 'rule' | 'unknown';
 
-/**
- * The object of the application that stands for "the order" in expressions: the
- * one whose properties all belong to every order type (it is the common part of
- * all order types). In an expression it also offers the properties of the
- * order types (specification 3.4: in a rule, `Order` has the properties of all
- * order types). The description of the object does not list them.
- */
-export function commonOrderObject(index: TypeIndex): TypeDescription | undefined {
-  const orders = index.list.filter((type) => type.kind === 'order_type');
-  if (orders.length === 0) {
-    return undefined;
+export function kindClassOf(type: TypeDescription | undefined): KindClass {
+  if (type === undefined) {
+    return 'unknown';
   }
-  return index.list.find(
-    (type) =>
-      type.kind === 'application_object' &&
-      type.properties.length > 0 &&
-      orders.every((order) =>
-        type.properties.every((property) => order.properties.some((candidate) => candidate.id === property.id)),
-      ),
-  );
-}
-
-/** The properties of the order types together, each identifier once (the first description wins). */
-export function allOrderProperties(index: TypeIndex): PropertyDescription[] {
-  const result: PropertyDescription[] = [];
-  const seen = new Set<string>();
-  for (const type of index.list) {
-    if (type.kind !== 'order_type') {
-      continue;
-    }
-    for (const property of type.properties) {
-      if (!seen.has(property.id)) {
-        seen.add(property.id);
-        result.push(property);
-      }
-    }
+  if (type.kind === 'trigger') {
+    return 'trg';
   }
-  return result;
+  if (type.kind === 'flow') {
+    if (isManagementOwnerType(type)) {
+      return 'order';
+    }
+    if (type.named) {
+      return type.outputs.length > 1 ? 'cond' : 'calc';
+    }
+    return 'act';
+  }
+  if (type.kind === 'application_object') {
+    return 'app';
+  }
+  if (type.category === 'trend') {
+    return 'trend';
+  }
+  if (type.category === 'rule' || type.category === 'ruleset') {
+    return 'rule';
+  }
+  return 'ind';
 }
 
-/** Order types that carry the properties the user sets (all kinds of orders). */
-export function orderTypes(index: TypeIndex): TypeDescription[] {
-  return index.list.filter((type) => type.kind === 'order_type');
+/** The symbol of an element, derived from the description only. */
+export function iconOf(type: TypeDescription | undefined): string {
+  return iconOfClass(kindClassOf(type));
 }
 
-export function userProperties(type: TypeDescription): PropertyDescription[] {
-  return type.properties.filter((property) => property.setByUser);
+/** The symbol that belongs to a class of elements. */
+export function iconOfClass(kindClass: KindClass): string {
+  switch (kindClass) {
+    case 'trg':
+      return 'clock';
+    case 'cond':
+      return 'diamond';
+    case 'calc':
+      return 'calc';
+    case 'order':
+      return 'order';
+    case 'act':
+      return 'bolt';
+    case 'app':
+      return 'wallet';
+    case 'trend':
+      return 'trend';
+    case 'rule':
+      return 'shield';
+    case 'ind':
+      return 'wave';
+    case 'unknown':
+      return 'warn';
+  }
+}
+
+/** The group of the element library a stored template of an object type belongs to. */
+export function groupOfCategory(category: TypeDescription['category']): GroupId | null {
+  switch (category) {
+    case 'indicator':
+      return 'indicators';
+    case 'trend':
+      return 'trends';
+    case 'rule':
+    case 'ruleset':
+      return 'rules';
+    default:
+      return null;
+  }
+}
+
+/** The data types whose values can replace each other in a data connection. */
+export function compatibleDataTypes(a: DataType, b: DataType): boolean {
+  const numeric: readonly DataType[] = ['number', 'integer', 'percent'];
+  if (numeric.includes(a) && numeric.includes(b)) {
+    return true;
+  }
+  return a === b;
 }

@@ -15,14 +15,6 @@
     "unknown": "unbekannt",
     "close": "Schließen"
   },
-  "canvas": {
-    "label": "Designer-Arbeitsfläche",
-    "empty": "Die Arbeitsfläche ist leer.",
-    "controls": "Ansicht der Arbeitsfläche",
-    "management": "Verwaltung: {{title}}",
-    "collapse": "Verwaltung „{{title}}“ einklappen",
-    "expand": "Verwaltung „{{title}}“ aufklappen"
-  },
   "backend": {
     "checking": "Backend: Verbindung wird geprüft",
     "connected": "Backend: verbunden",
@@ -34,6 +26,23 @@
     "commit": "Commit {{commit}}",
     "commitAt": "Commit {{commit}} vom {{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr"
   },
+  "common": {
+    "cancel": "Abbrechen"
+  },
+  "layout": {
+    "sideArea": "Seitenbereich",
+    "areas": "Bereiche",
+    "canvas": "Fläche",
+    "library": "Bibliothek",
+    "properties": "Eigenschaften"
+  },
+  "strategy": {
+    "newName": "Neue Strategie"
+  },
+  "values": {
+    "yes": "ja",
+    "no": "nein"
+  },
   "menu": {
     "label": "Menü",
     "new": "Neue Strategie",
@@ -42,7 +51,16 @@
     "check": "Prüfen",
     "close": "Schließen",
     "delete": "Löschen",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "tips": {
+      "new": "Legt eine neue, leere Strategie an.",
+      "open": "Zeigt die gespeicherten Strategien zum Öffnen.",
+      "save": "Speichert die Strategie und prüft sie. Speichern geht immer, auch bei Befunden.",
+      "check": "Sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.",
+      "close": "Schließt die Strategie. Bei ungespeicherten Änderungen fragt Studio nach.",
+      "delete": "Löscht die geöffnete Strategie nach Rückfrage.",
+      "settings": "Sprache und Speicherort der Objekte."
+    }
   },
   "datatype": {
     "number": "Zahl",
@@ -57,120 +75,226 @@
     "expression": "Ausdruck",
     "object": "Objekt"
   },
+  "binding": {
+    "unset": "nicht belegt",
+    "fixed": "Fester Wert",
+    "parameter": "Strategieparameter",
+    "connection": "Wert eines Objekts",
+    "expression": "Ausdruck",
+    "application": "Bei der Anwendung übergeben",
+    "atApplicationShort": "bei der Anwendung"
+  },
   "library": {
-    "label": "Elementbibliothek",
     "title": "Elementbibliothek",
+    "hint": "Klicken fügt ein Element hinter dem gewählten Schritt ein. Sie können es auch auf die Fläche ziehen.",
+    "search": "Suchen …",
+    "searchLabel": "Elementbibliothek durchsuchen",
     "groups": {
-      "triggers": "Auslöser",
-      "flow": "Elemente des Ablaufs",
-      "applicationObjects": "Objekte der Anwendung",
-      "objectTypes": "Objekttypen",
-      "builtinTemplates": "Mitgelieferte Vorlagen",
-      "storedTemplates": "Gespeicherte Vorlagen"
+      "when": "Wann wird gerechnet",
+      "actions": "Bedingungen und Aktionen",
+      "market": "Markt und Konto",
+      "indicators": "Indikatoren",
+      "trends": "Trends",
+      "rules": "Regeln"
     },
-    "empty": "Keine Einträge.",
-    "loadFailed": "Die Typbeschreibungen konnten nicht geladen werden. Ohne sie lässt sich keine Strategie anlegen oder öffnen.",
-    "retry": "Erneut versuchen",
-    "storedFailed": "Die gespeicherten Vorlagen konnten nicht gelesen werden.",
+    "own": "eigene",
     "unreadable": "nicht lesbar",
-    "forRules": "für Regeln"
+    "loading": "Die Elemente werden geladen.",
+    "loadFailed": "Die Elemente konnten nicht geladen werden. Ohne sie lässt sich keine Strategie anlegen oder öffnen.",
+    "retry": "Erneut versuchen",
+    "empty": "Keine Einträge.",
+    "nothingFound": "Nichts gefunden. Versuchen Sie einen anderen Suchbegriff.",
+    "storedFailed": "Die gespeicherten Vorlagen konnten nicht gelesen werden."
+  },
+  "params": {
+    "title": "Strategieparameter",
+    "name": "Name des Strategieparameters",
+    "remove": "Strategieparameter entfernen",
+    "datatype": "Datentyp",
+    "value": "Wert",
+    "atApplication": "Wert erst bei der Anwendung übergeben",
+    "atApplicationNote": "wird bei der Anwendung übergeben",
+    "newName": "Neuer Strategieparameter",
+    "openFirst": "Öffnen Sie eine Strategie, um ihre Parameter zu sehen.",
+    "none": "Noch keine. Mit „Neu“ legen Sie den ersten an, zum Beispiel die Zeiteinheit.",
+    "clickToChange": "Klicken zum Ändern",
+    "new": "Neu",
+    "newTip": "Neuen Strategieparameter anlegen",
+    "done": "Fertig",
+    "statusTip": "Zur Eigenschaftenansicht der Strategie: Name, Beschreibung, Befunde",
+    "unsaved": "ungespeichert",
+    "saved": "gespeichert"
+  },
+  "fields": {
+    "choose": "Wert wählen …",
+    "otherObject": "Anderes …",
+    "otherObjectPlaceholder": "Bezeichnung eingeben",
+    "otherObjectLabel": "Bezeichnung",
+    "noParameterYet": "Es ist noch kein Strategieparameter angelegt. Legen Sie hier den ersten an.",
+    "noParameterFits": "Kein angelegter Strategieparameter passt zu diesem Feld. Legen Sie einen passenden an.",
+    "chooseParameter": "Strategieparameter wählen",
+    "chooseParameterOption": "Strategieparameter wählen …",
+    "newParameterOption": "+ Neuer Strategieparameter …",
+    "newParameterName": "Name des neuen Strategieparameters",
+    "create": "Anlegen",
+    "noObject": "Auf der Zeichenfläche liegt noch kein Objekt. Fügen Sie aus der Elementbibliothek einen Indikator oder ein anderes Objekt ein.",
+    "chooseObject": "Objekt wählen",
+    "chooseObjectOption": "Objekt wählen …",
+    "chooseProperty": "Eigenschaft wählen",
+    "choosePropertyOption": "Eigenschaft wählen …",
+    "noFittingProperty": "Dieses Objekt liefert keinen Wert, der zu dem Feld passt.",
+    "unsetRequired": "Pflichtangabe: Wählen Sie eine Belegung.",
+    "unsetOptional": "Optional. Ohne Wert bleibt die Angabe leer.",
+    "application": "Der Wert wird erst übergeben, wenn die Strategie angewendet wird.",
+    "required": "Pflicht",
+    "explanation": "Erklärung",
+    "assignment": "Belegung"
+  },
+  "expression": {
+    "empty": "Noch leer.",
+    "hasError": "Der Ausdruck hat einen Fehler und lässt sich nicht als Satz zeigen.",
+    "formula": "Formel",
+    "readOnly": "Hier wird der Ausdruck nur angezeigt."
+  },
+  "canvas": {
+    "noStrategyTitle": "Keine Strategie geöffnet",
+    "noStrategyText": "Nächster Schritt: Legen Sie mit „Neue Strategie“ eine leere Strategie an oder öffnen Sie eine gespeicherte.",
+    "emptyTitle": "Die Zeichenfläche ist leer",
+    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Sie finden ihn in der Elementbibliothek in der Gruppe „Wann wird gerechnet“.",
+    "openLibrary": "Elementbibliothek zeigen",
+    "wiresArrive": "{{count}} Wertlinie(n) enden hier",
+    "portManagement": "Hier beginnt die Verwaltung dieser Order. Haben Sie in der Verwaltung keinen eigenen Auslöser, ziehen Sie von hier auf ihren ersten Schritt.",
+    "portReconnect": "Zum Umverbinden auf einen anderen Schritt ziehen",
+    "portConnect": "Zum nächsten Schritt ziehen, oder anklicken und dann den nächsten Schritt anklicken",
+    "portValue": "Ziehen Sie von hier auf ein Element, um diesen Wert zu verbinden",
+    "fewerProperties": "weniger Eigenschaften",
+    "allProperties": "alle {{count}} Eigenschaften",
+    "expandManagement": "Verwaltung ausklappen",
+    "collapseManagement": "Verwaltung einklappen",
+    "management": "Verwaltung · {{name}}",
+    "steps_one": "{{count}} Schritt",
+    "steps_other": "{{count}} Schritte",
+    "managementEmpty": "Noch leer. Wählen Sie diesen Rahmen und fügen Sie einen Auslöser aus der Elementbibliothek ein.",
+    "collapseSection": "Abschnitt einklappen",
+    "expandSection": "Abschnitt ausklappen",
+    "sectionName": "Name des Abschnitts",
+    "lane": "Objekte und ihre Werte",
+    "laneEmpty": "Hier erscheinen Indikatoren, Trends und Objekte des Marktes. Ihre Werte verbinden Sie per Linie mit Schritten.",
+    "deleteConnection": "Verbindung löschen",
+    "wireOnlyExpression": "nur im Ausdruck verwendet",
+    "unknownTypeSummary": "Unbekannter Typ „{{type}}“",
+    "expressionEmpty": "Noch leer – die Bedingung oder Berechnung wird später aus Bausteinen gebildet.",
+    "orientation": "Ausrichtung",
+    "orientVerticalTip": "Ablauf senkrecht: Eingang oben, Ausgänge unten",
+    "orientHorizontalTip": "Ablauf waagerecht von links nach rechts, für breite Bildschirme",
+    "vertical": "Senkrecht",
+    "horizontal": "Waagerecht",
+    "wires": "Wertlinien",
+    "wiresTip": {
+      "all": "Alle Wertlinien zeigen",
+      "selection": "Nur die Wertlinien des gewählten Elements zeigen",
+      "off": "Wertlinien ausblenden"
+    },
+    "wiresMode": {
+      "all": "Alle",
+      "selection": "Auswahl",
+      "off": "Aus"
+    },
+    "zoom": "Zoom",
+    "zoomOut": "Verkleinern",
+    "zoomIn": "Vergrößern",
+    "showAll": "Alles zeigen",
+    "showAllTip": "Die ganze Strategie auf einmal zeigen (verkleinert)",
+    "toStart": "Zum Anfang",
+    "toStartTip": "Ansicht an den Anfang der Strategie setzen, in lesbarer Größe",
+    "arrange": "Neu anordnen",
+    "arrangeTip": "Alle Elemente wieder automatisch anordnen",
+    "armed": "Klicken Sie jetzt den Schritt an, der als Nächstes folgt.",
+    "legend": "Legende",
+    "legendFlow": "Ablauf: legt die Reihenfolge fest",
+    "legendManagement": "Verwaltung einer Order (grün, gepunktet)",
+    "legendWire": "Wert: Weg eines Werts (farbig, gestrichelt)",
+    "legendWireExpression": "Wert, nur im Ausdruck verwendet (gepunktet)",
+    "properties": "Eigenschaften"
   },
   "properties": {
     "panel": "Eigenschaften",
-    "numberHint": "Erlaubt ist eine Zahl mit Punkt oder Komma als Dezimaltrenner, ohne Exponent (zum Beispiel 0.5 oder 2,75).",
-    "integerHint": "Erlaubt ist eine Ganzzahl ohne Dezimalstellen und ohne Exponent (zum Beispiel 20).",
-    "none": "Es ist keine Strategie geöffnet. Legen Sie mit „Neue Strategie“ eine an oder öffnen Sie eine gespeicherte.",
-    "multiple": "{{count}} Elemente ausgewählt.",
+    "none": "Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an, „Öffnen“ zeigt gespeicherte Strategien.",
     "strategy": "Strategie",
-    "title": "Bezeichnung",
+    "strategyName": "Name der Strategie",
     "description": "Beschreibung",
-    "label": "Bezeichnung",
+    "descriptionPlaceholder": "Worum geht es in dieser Strategie?",
+    "rulesOfStrategy": "Regeln der Strategie",
+    "rulesOfStrategyHint": "Diese Regeln gelten für jede Order der Strategie.",
+    "findings": "Befunde der Prüfung",
+    "notChecked": "Noch nicht geprüft. „Prüfen“ sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.",
+    "noFindings": "Keine Befunde. Die Strategie ist in sich stimmig.",
+    "findingsGeneral": "Diese Befunde gehören zu keinem einzelnen Element.",
+    "findingsMarked": "Rot und orange umrandete Elemente auf der Fläche haben einen Befund. „Zur Stelle“ führt dorthin.",
+    "management": "Verwaltung",
+    "managementOfName": "der Order „{{name}}“",
+    "managementText": "Die Verwaltung läuft für jede gestellte Order einzeln: zuerst für die wartende Order, nach der Ausführung für die Position.",
+    "managementEmpty": "Der Rahmen ist noch leer. Fügen Sie aus der Elementbibliothek zuerst einen Auslöser ein. Weitere Schritte hängen sich daran.",
+    "managementInsert": "Was Sie jetzt aus der Elementbibliothek einfügen, kommt in diesen Rahmen.",
+    "section": "Abschnitt",
+    "sectionName": "Name des Abschnitts",
+    "stepsOfSection_one": "{{count}} Schritt",
+    "stepsOfSection_other": "{{count}} Schritte",
+    "sectionHint": "Auf der Fläche klappt der Abschnitt mit dem Knopf an seinem Titel ein und aus.",
+    "dissolveSection": "Abschnitt auflösen",
     "name": "Name",
-    "parameters": "Parameter",
-    "properties": "Eigenschaften",
-    "orderProperties": "Eigenschaften der Order",
-    "instanceValues": "Werte der Instanz",
-    "noParameters": "Die Strategie hat keine Parameter.",
-    "parameterName": "Name des Parameters {{number}}",
-    "parameterType": "Datentyp von {{name}}",
-    "parameterChoices": "Werte von {{name}}",
-    "choicesHint": "durch Komma getrennt",
-    "parameterValue": "Wert von {{name}}",
-    "atApplication": "bei der Anwendung",
-    "removeParameter": "Parameter {{name}} entfernen",
+    "unknownType": "Der Typ „{{type}}“ ist unbekannt. Die Belegungen werden nur angezeigt und bleiben beim Speichern unverändert.",
+    "storedAssignments": "Gespeicherte Belegungen",
+    "noAssignments": "Keine Belegungen.",
     "remove": "Entfernen",
-    "addParameter": "Parameter hinzufügen",
-    "newParameterName": "parameter",
-    "unknownType": "Unbekannter Typ „{{type}}“. Die Belegungen werden nur angezeigt und bleiben beim Speichern unverändert.",
+    "settings": "Einstellungen",
+    "settingsOfObject": "Einstellungen des Objekts",
+    "orderProperties": "Eigenschaften der Order",
+    "orderPropertiesHint": "Diese Werte bekommt die Order. Fehlt eine Pflichtangabe wie das Volumen, muss eine Regel sie bestimmen.",
+    "delivers": "Liefert",
+    "deliversHint": "Jeder Wert ist ein Ausgang für eine Linie",
+    "inputs": "Eingänge",
+    "inputsHint": "Werte von Objekten, die mit diesem Element verbunden sind.",
+    "noInputs": "Noch kein Wert verbunden. Wählen Sie unten einen Wert oder ziehen Sie auf der Fläche eine Linie von der Eigenschaft eines Objekts hierher.",
+    "removeInput": "Eingang entfernen",
+    "connectValue": "Wert verbinden",
+    "connectValueOption": "+ Wert verbinden …",
+    "rulesOfElement": "Regeln dieses Elements",
+    "rulesOfElementHint": "Diese Regeln gelten zusätzlich zu den Regeln der Strategie nur für dieses Element.",
+    "noRules": "Keine Regeln.",
+    "removeRule": "Regel „{{name}}“ entfernen",
+    "noSection": "– keinem Abschnitt zugeordnet –",
+    "newSection": "+ Neuen Abschnitt bilden …",
+    "sectionNamePlaceholder": "Name des Abschnitts, zum Beispiel „Einstieg“",
+    "createSection": "Bilden",
+    "sectionInfo": "Abschnitte fassen zusammengehörige Schritte zusammen. Sie lassen sich auf der Fläche einklappen.",
+    "belongsTo": "Gehört zu",
+    "mainFlow": "Hauptablauf",
+    "managementOf": "Verwaltung von „{{name}}“",
+    "belongsToHint": "Hier legen Sie fest, ob der Schritt zum Hauptablauf oder zur Verwaltung einer Order gehört, ohne ihn zu ziehen.",
+    "placeInArea": "Stelle im Bereich der Objekte",
+    "up": "Nach oben",
+    "down": "Nach unten",
     "originType": "{{name}}, aus Objekttyp {{type}}",
-    "originTemplate": "{{name}}, aus Vorlage {{title}}",
-    "choose": "bitte wählen",
-    "unset": "nicht belegt",
-    "application": "bei der Anwendung übergeben",
-    "bindingKindOf": "Bindungsart von {{name}}",
-    "binding": {
-      "fixed": "fester Wert",
-      "parameter": "Parameter",
-      "expression": "Ausdruck",
-      "application": "bei der Anwendung"
-    }
-  },
-  "rules": {
-    "title": "Regeln",
-    "none": "Keine Regeln.",
-    "select": "Regel {{name}} auswählen",
-    "up": "Regel {{name}} nach oben",
-    "down": "Regel {{name}} nach unten",
-    "remove": "Regel {{name}} entfernen",
-    "removeShort": "Entfernen",
-    "errors_one": "{{count}} Fehler",
-    "errors_other": "{{count}} Fehler",
-    "hints_one": "{{count}} Hinweis",
-    "hints_other": "{{count}} Hinweise",
-    "fromLibrary": "Vorlage aus der Elementbibliothek",
-    "add": "Hinzufügen",
-    "new": "Neue Regel"
-  },
-  "ruleView": {
-    "back": "Zurück zu {{owner}}",
-    "parameterDefinitions": "Parameter der Regel",
-    "parameterValues": "Werte der Parameter",
-    "required": "Pflicht",
-    "standardValue": "Standardwert von {{name}}",
-    "expression": "Ausdruck",
-    "resultExpression": "Ausdruck für das Gesamtergebnis",
-    "determinedProperty": "Bestimmte Eigenschaft der Order",
-    "checkOnly": "keine (nur prüfend)",
-    "comparison": "Vergleich beim Prüfen",
-    "comparisons": {
-      "hoechstens": "höchstens",
-      "mindestens": "mindestens",
-      "gleich": "gleich"
-    }
-  },
-  "expression": {
-    "suggestions": "Vorschläge",
-    "display": "Anzeige",
-    "result": "Ergebnis",
-    "rule": "Regel"
+    "originTemplate": "{{name}}, aus Vorlage {{template}}, Objekttyp {{type}}"
   },
   "findings": {
     "title": "Befunde",
-    "ofStrategy": "Befunde der Strategie",
-    "ofElement": "Befunde dieses Elements",
-    "ofRule": "Befunde dieser Regel",
+    "howToFix": "So beheben Sie es: ",
+    "goto": "Zur Stelle",
     "level": {
       "error": "Fehler",
       "hint": "Hinweis"
     },
-    "count_one": "Befunde: {{count}}",
-    "count_other": "Befunde: {{count}}",
-    "countDetail": "{{errors}} Fehler, {{hints}} Hinweise",
+    "count_one": "{{count}} Befund",
+    "count_other": "{{count}} Befunde",
+    "none": "keine Befunde",
+    "countTip": "{{errors}} Fehler, {{hints}} Hinweise. Ein Klick zeigt die Befunde.",
     "unknown": "Befund {{code}}",
     "fields": {
       "parameter": "Parameter „{{name}}“",
       "property": "Eigenschaft „{{name}}“",
-      "propertyDefinition": "Eigenschaft „{{name}}“ der Instanz",
+      "propertyDefinition": "Eigenschaft „{{name}}“ des Objekts",
       "expression": "Ausdruck",
       "result_expression": "Ausdruck für das Gesamtergebnis"
     },
@@ -181,7 +305,7 @@
       "unknown_property": "„{{object}}“ hat keine Eigenschaft „{{property}}“ (Stelle {{start}} bis {{end}}).",
       "type_mismatch": "Der Typ passt nicht: erwartet {{expected}}, gefunden {{found}} (Stelle {{start}} bis {{end}}).",
       "unknown_choice_value": "„{{values}}“ ist kein Wert der Auswahl; erlaubt sind {{allowed}} (Stelle {{start}} bis {{end}}).",
-      "argument_count": "Die Funktion {{function}} erhält {{found}} Argumente; erlaubt sind {{minimum}} bis {{maximum}} (Stelle {{start}} bis {{end}}).",
+      "argument_count": "Die Funktion {{function}} erhält {{found}} Angaben; erlaubt sind {{minimum}} bis {{maximum}} (Stelle {{start}} bis {{end}}).",
       "other": "Der Ausdruck ist an Stelle {{start}} bis {{end}} fehlerhaft."
     },
     "syntax": {
@@ -201,7 +325,7 @@
       "across_managements": "die Verbindung führt zwischen dem Ablauf und einer Verwaltung oder zwischen zwei Verwaltungen"
     },
     "bindingReasons": {
-      "binding_kind": "diese Bindungsart ist nicht erlaubt",
+      "binding_kind": "diese Art der Belegung ist nicht erlaubt",
       "type": "der feste Wert hat den falschen Datentyp",
       "choice_value": "der feste Wert gehört nicht zur Auswahl",
       "value": "der Wert ist nicht zulässig",
@@ -275,20 +399,120 @@
       "management_invalid": "Das Element gehört zur Verwaltung eines Elements, das keine Order aufgibt."
     }
   },
+  "findingFixes": {
+    "unknown": "Prüfen Sie das betroffene Element und seine Angaben. Zeigt der Befund keine Ursache, melden Sie die Kennung des Befunds.",
+    "issues": {
+      "syntax": "Korrigieren Sie die Schreibweise an der genannten Stelle.",
+      "unknown_function": "Wählen Sie eine Funktion, die es gibt.",
+      "unknown_name": "Wählen Sie einen Wert, den es gibt: ein Objekt auf der Zeichenfläche, einen Strategieparameter oder das Ergebnis eines Schritts.",
+      "unknown_property": "Wählen Sie eine Eigenschaft, die das Objekt liefert.",
+      "type_mismatch": "Verwenden Sie einen Wert vom passenden Datentyp.",
+      "unknown_choice_value": "Wählen Sie einen der erlaubten Werte.",
+      "argument_count": "Geben Sie die passende Zahl von Angaben an.",
+      "other": "Korrigieren Sie den Ausdruck an der genannten Stelle."
+    },
+    "trigger": {
+      "unconnected": "Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn."
+    },
+    "flow": {
+      "no_incoming": "Verbinden Sie einen vorherigen Schritt mit diesem Schritt oder entfernen Sie ihn.",
+      "unending_loop": "Legen Sie in die Rückführung eine Bedingung, von der ein Ausgang aus der Rückführung hinausführt.",
+      "management_only": "Verschieben Sie den Schritt in die Verwaltung einer Order oder entfernen Sie ihn.",
+      "no_order_reachable": "Verbinden Sie den Ablauf mit einem Schritt, der eine Order aufgibt."
+    },
+    "expression": {
+      "invalid": "Korrigieren Sie den Ausdruck.",
+      "order_outside_management": "Verwenden Sie Order und Position nur in der Verwaltung einer Order."
+    },
+    "rule": {
+      "unresolved_name": "Prüfen Sie den Namen im Ausdruck der Vorlage.",
+      "result_mismatch": "Ändern Sie den Ausdruck der Regel oder wählen Sie eine andere bestimmte Eigenschaft.",
+      "order_in_indicator": "Entfernen Sie die Regel aus dem Indikator oder Trend und ordnen Sie sie der Strategie oder einem Element zu.",
+      "invalid_type": "Entfernen Sie das Objekt aus dieser Liste.",
+      "comparison_missing": "Wählen Sie den Vergleich beim Prüfen."
+    },
+    "parameter": {
+      "missing": "Geben Sie dem Parameter einen Wert, wählen Sie einen Strategieparameter oder „bei der Anwendung“.",
+      "binding_invalid": "Wählen Sie eine passende Belegung."
+    },
+    "order": {
+      "property_missing": "Belegen Sie die Eigenschaft oder ordnen Sie dem Element oder der Strategie eine Regel zu, die sie bestimmt."
+    },
+    "ruleset": {
+      "reference_order": "Ändern Sie die Reihenfolge der Regeln, sodass jede Regel nur frühere Ergebnisse verwendet."
+    },
+    "candle": {
+      "no_instance": "Legen Sie eine Kerze mit Zeiteinheit auf die Zeichenfläche und verwenden Sie ihre Werte."
+    },
+    "name": {
+      "duplicate": "Geben Sie einem der beiden einen anderen Namen.",
+      "invalid": "Ändern Sie den Namen."
+    },
+    "type": {
+      "unknown": "Entfernen Sie das Element oder installieren Sie die Erweiterung, die den Typ liefert."
+    },
+    "trend": {
+      "direction_missing": "Geben Sie den Ausdruck für die Richtung des Trends an."
+    },
+    "calculation": {
+      "circular_reference": "Ändern Sie eine der Berechnungen, sodass sie nicht auf sich selbst zurückführt."
+    },
+    "findings": {
+      "truncated": "Beheben Sie die angezeigten Befunde und prüfen Sie erneut."
+    },
+    "connection": {
+      "invalid": "Löschen Sie die Verbindung und ziehen Sie sie neu."
+    },
+    "element": {
+      "rules_not_allowed": "Entfernen Sie die Regeln von diesem Element.",
+      "management_invalid": "Verschieben Sie das Element in den Hauptablauf oder in die Verwaltung einer Order."
+    }
+  },
+  "notices": {
+    "openFirst": "Öffnen Sie zuerst eine Strategie oder legen Sie eine neue an.",
+    "ruleForStrategy": "Die Regel gilt für die ganze Strategie.",
+    "ruleForElement": "Die Regel gilt für das gewählte Element.",
+    "inserted": "„{{name}}“ ist eingefügt. Sie sehen es auf der Zeichenfläche.",
+    "inputAdded": "Der Wert ist jetzt ein Eingang des Elements.",
+    "toMainFlow": "Das Element gehört jetzt zum Hauptablauf.",
+    "toManagement": "Das Element gehört jetzt zur Verwaltung dieser Order.",
+    "connection": {
+      "unknown_element": "Das Element gibt es nicht mehr.",
+      "same_element": "Ein Schritt lässt sich nicht mit sich selbst verbinden.",
+      "target_is_trigger": "Ein Auslöser hat keinen Eingang.",
+      "instance": "Objekte werden nicht im Ablauf verbunden. Ihre Werte verbinden Sie mit einer Linie von ihrer Karte.",
+      "unknown_type": "Von einem Element mit unbekanntem Typ gehen keine neuen Verbindungen aus.",
+      "unknown_output": "Dieser Ausgang gehört nicht zum Schritt.",
+      "across_flows": "Die Verwaltung einer Order ist vom Hauptablauf getrennt: Verbinden Sie nur Schritte im selben Rahmen.",
+      "management_has_triggers": "Die Verwaltung hat eigene Auslöser. Von „gestellt“ führt dann keine Verbindung."
+    }
+  },
   "dialogs": {
     "unsaved": {
       "title": "Ungespeicherte Änderungen",
-      "text": "Die Strategie hat Änderungen, die noch nicht gespeichert sind.",
+      "text": "„{{name}}“ hat Änderungen, die noch nicht gespeichert sind. Was soll geschehen?",
       "save": "Speichern",
       "discard": "Verwerfen",
       "cancel": "Abbrechen"
     },
     "delete": {
       "title": "Strategie löschen?",
-      "text": "Die Strategie „{{title}}“ wird gelöscht.",
-      "textUntitled": "Die Strategie ohne Bezeichnung wird gelöscht.",
+      "text": "Die Strategie „{{name}}“ wird gelöscht. Das lässt sich nicht rückgängig machen.",
       "notSaved": "Sie wurde noch nicht gespeichert; es wird nur die geöffnete Strategie verworfen.",
       "confirm": "Löschen",
+      "cancel": "Abbrechen"
+    },
+    "removeElement": {
+      "title": "Element entfernen?",
+      "text": "„{{name}}“ wird entfernt.",
+      "managed": "Mit der Order wird ihre Verwaltung entfernt:",
+      "confirm": "Entfernen",
+      "cancel": "Abbrechen"
+    },
+    "removeParameter": {
+      "title": "Strategieparameter entfernen?",
+      "text": "Der Strategieparameter „{{name}}“ wird entfernt. Belegungen, die ihn verwenden, sind danach leer, und die Prüfung meldet sie.",
+      "confirm": "Entfernen",
       "cancel": "Abbrechen"
     },
     "error": {
@@ -297,6 +521,7 @@
   },
   "errors": {
     "http": "Das Backend hat die Anfrage mit dem Status {{status}} abgelehnt.",
+    "httpCode": "Das Backend hat die Anfrage abgelehnt (Status {{status}}, Ursache {{code}}).",
     "timeout": "Das Backend hat nicht rechtzeitig geantwortet.",
     "unexpectedResponse": "Das Backend hat eine unerwartete Antwort geschickt.",
     "network": "Das Backend ist nicht erreichbar.",
@@ -304,20 +529,25 @@
     "openFailed": "Die Strategie konnte nicht geöffnet werden.",
     "deleteFailed": "Die Strategie konnte nicht gelöscht werden.",
     "checkFailed": "Die Strategie konnte nicht geprüft werden.",
-    "insertFailed": "Der Eintrag konnte nicht eingefügt werden."
+    "insertFailed": "Der Eintrag konnte nicht eingefügt werden.",
+    "codes": {
+      "object_directory": {
+        "not_absolute": "Das Objektverzeichnis muss ein absoluter Pfad sein."
+      }
+    }
   },
   "openDialog": {
     "title": "Strategie öffnen",
     "loading": "Die Strategien werden gelesen.",
     "loadFailed": "Die Liste der Strategien konnte nicht gelesen werden.",
     "retry": "Erneut versuchen",
-    "empty": "Es sind keine Strategien gespeichert.",
-    "columnTitle": "Bezeichnung",
+    "empty": "Es sind keine Strategien gespeichert. Schließen Sie dieses Fenster und legen Sie mit „Neue Strategie“ eine an.",
+    "columnName": "Name",
     "columnDescription": "Beschreibung",
     "columnModified": "Letzte Änderung",
     "modifiedValue": "{{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr",
     "unreadable": "nicht lesbar",
-    "untitled": "(ohne Bezeichnung)",
+    "untitled": "(ohne Name)",
     "cancel": "Abbrechen"
   },
   "settings": {
