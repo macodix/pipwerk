@@ -7,6 +7,7 @@
 - komponenten: `packages/domain-core`, `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md) in der Fassung nach der Abnahme von `wp02`, abgestimmt mit dem Auftraggeber am 2026-10-20 ([Präsentation](presentations/specification-2.html), Vermerk der Bestätigung mit Nachtrag), Abschnitt 10 Punkte 9 bis 13 vorläufig bis zu seinem Test. `wp01` beruht auf der Fassung vom 2026-10-16 ([Präsentation](presentations/specification-1.html)).
 - prüfung: Fassung vom 2026-10-16: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden. Neufassung von `wp02` und `wp03` vom 2026-10-20: Durchlauf 3 [plan-3.md](reviews/plan-3.md) bestanden, Hinweise H1 bis H5 und H7 eingearbeitet, H6 in der Spezifikation, ohne weitere Prüfung.
+- bestätigung: Neufassung von `wp02` und `wp03` vom Auftraggeber im Chat am 2026-10-20 bestätigt, ohne eigene Präsentation (Abnahmekriterien im Chat vorgelegt). Der Auftraggeber prüft bei der Abnahme nach eigenem Ermessen, die Abnahmekriterien sind keine abschließende Liste.
 
 ## Übersicht
 
