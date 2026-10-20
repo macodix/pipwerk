@@ -35,7 +35,7 @@ from tests.helpers import (
     valid_strategy,
 )
 
-HEAD = f'"format": "pipwerk.strategy", "format_version": "1.0", "id": "{uid(1)}"'
+HEAD = f'"format": "pipwerk.strategy", "format_version": "2.0", "id": "{uid(1)}"'
 
 
 def make_package(root: Path, name: str, entry_points_text: str, module: str | None = None) -> None:
@@ -158,7 +158,7 @@ def test_hints_and_errors_of_one_expression_count_together() -> None:
 
 
 def document_with_title(title_json: str) -> str:
-    return "{" + HEAD + ', "title": ' + title_json + "}"
+    return "{" + HEAD + ', "name": ' + title_json + "}"
 
 
 @pytest.mark.parametrize("escape", ["\\ud800", "\\udbff", "\\udc00", "\\udfff", "a\\ud83db"])
@@ -168,10 +168,10 @@ def test_a_single_surrogate_as_an_escape_is_rejected(escape: str) -> None:
         parse_document(text)
     with pytest.raises(DocumentError):
         read_document(text.encode())
-    in_key = "{" + HEAD + ', "title": "t", "' + escape + '": 1}'
+    in_key = "{" + HEAD + ', "name": "t", "' + escape + '": 1}'
     with pytest.raises(DocumentError):
         parse_document(in_key)
-    nested = "{" + HEAD + ', "title": "t", "elements": [{"id": "' + uid(2) + '", "type": "a'
+    nested = "{" + HEAD + ', "name": "t", "elements": [{"id": "' + uid(2) + '", "type": "a'
     with pytest.raises(DocumentError):
         parse_document(nested + escape + '"}]}')
 
@@ -182,27 +182,27 @@ def test_a_single_surrogate_as_a_character_is_rejected(char: str) -> None:
         parse_document(document_with_title('"a' + char + '"'))
     with pytest.raises(DocumentError):
         parse_document(
-            {"format": "pipwerk.strategy", "format_version": "1.0", "id": uid(1), "title": char}
+            {"format": "pipwerk.strategy", "format_version": "2.0", "id": uid(1), "name": char}
         )
 
 
 def test_a_valid_pair_is_read_and_written() -> None:
     text = document_with_title('"\\ud83d\\ude00 ä"')
     document = parse_document(text)
-    assert document.title == "\U0001f600 ä"
+    assert document.name == "\U0001f600 ä"
     assert write_document(read_document(text)).encode("utf-8")
 
 
 def test_writing_a_single_surrogate_is_a_validation_error() -> None:
     strategy = valid_strategy()
-    strategy.title = "a\ud800"
+    strategy.name = "a\ud800"
     with pytest.raises(DocumentError):
         write_document(strategy)
 
 
 def test_bytes_must_be_utf_8_without_a_byte_order_mark() -> None:
     text = document_with_title('"tä"')
-    assert parse_document(text.encode("utf-8")).title == "tä"
+    assert parse_document(text.encode("utf-8")).name == "tä"
     rejected = [
         b"\xef\xbb\xbf" + text.encode("utf-8"),
         text.encode("utf-16"),
@@ -267,12 +267,18 @@ def test_previous_of_a_result_is_no_forward_reference_and_no_cycle_of_rules() ->
     assert [item.details["kind"] for item in found] == ["cycle"]
 
 
-def test_previous_in_a_ruleset_template() -> None:
+def test_previous_around_the_result_of_a_rule_is_an_error_but_no_dependency() -> None:
+    """The fachmodell defines an earlier value for properties of objects with a time unit,
+    of ``Tick`` and for the result of a condition or calculation, not for the result of a rule
+    (specification 3.4). The name in ``PREVIOUS`` is no dependency in the ruleset."""
     value = template(
         catalog.TYPE_RULESET,
         rules=[rule("a", "PREVIOUS(b.ergebnis)"), rule("b", "a.ergebnis")],
     )
-    assert check_template(value) == []
+    found = check_template(value)
+    assert [item.code for item in found] == [fc.EXPRESSION_INVALID]
+    assert found[0].details["issue"] == "previous_argument"
+    assert found[0].details["reason"] == "no_earlier_value"
 
 
 # N3 of the function test, N2 of the security test: the normalization is cheap
@@ -288,7 +294,7 @@ def hostile_strategy(count: int) -> Strategy:
     for number in range(2, count + 2):
         elements.append(calculation(number, f"c{number}", many_names(2048)))
         connections.append(connect(number - 1, "weiter", number))
-    return Strategy(id=uid(900), title="gross", elements=elements, connections=connections)
+    return Strategy(id=uid(900), name="gross", elements=elements, connections=connections)
 
 
 def test_the_normalization_collects_no_findings() -> None:

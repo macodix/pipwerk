@@ -4,6 +4,10 @@
 environment. It returns the findings with position, the recognized names with position and
 identifier (what the check endpoint of the web API needs) and the normalized spelling.
 Nothing is evaluated.
+
+An expression is read either in the stored form (names are keys) or in the display form
+(names are the names of the user and the labels in either language, in square brackets if
+they are no simple names).
 """
 
 import re
@@ -18,8 +22,10 @@ from pipwerk_domain.expressions.nodes import (
     Call,
     Group,
     Name,
+    NameSegment,
     Node,
     Number,
+    Slot,
     String,
     Unary,
     names_and_calls,
@@ -34,7 +40,7 @@ _ORDERING = ("<", "<=", ">", ">=")
 _ARITHMETIC = ("+", "-", "*", "/", "^")
 
 
-def _result_texts(node: Node) -> list[String]:
+def result_texts(node: Node) -> list[String]:
     """The fixed texts that can be the result of ``node``: the node itself if it is a text,
     inside parentheses and in the value branches of ``IF`` and ``IFNA``."""
     found: list[String] = []
@@ -65,6 +71,8 @@ class IssueKind(StrEnum):
     TYPE_MISMATCH = "type_mismatch"
     UNKNOWN_CHOICE_VALUE = "unknown_choice_value"
     ARGUMENT_COUNT = "argument_count"
+    PREVIOUS_ARGUMENT = "previous_argument"
+    INVALID_INSTRUMENT = "invalid_instrument"
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,7 +101,8 @@ class RecognizedSegment:
 class RecognizedName:
     """A name in an expression. ``identifier`` is the spelling of the identifiers, joined
     with points. ``resolved`` is true if the whole name was recognized;
-    otherwise ``segments`` are the recognized first parts."""
+    otherwise ``segments`` are the recognized first parts. ``written`` are all parts of the
+    name as the node holds them."""
 
     start: int
     end: int
@@ -104,6 +113,7 @@ class RecognizedName:
     previous: bool = False
     """True for the name in ``PREVIOUS(name)``: it stands for the value of an earlier
     evaluation and is no dependency on the result of the current one."""
+    written: tuple[NameSegment, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +138,12 @@ class Analysis:
     """True if the expression had more findings than ``MAX_FINDINGS_PER_EXPRESSION``."""
     parsed_ok: bool = False
     """True if the expression has no syntax problem (also after :meth:`release`)."""
+    types: dict[int, ExprType] = field(default_factory=dict)
+    """The type of every node of the tree, by ``id`` of the node."""
+    slots: list[tuple[int, int]] = field(default_factory=list)
+    """Start and end of every empty place."""
+    display: bool = False
+    """Whether the source was read in the display form."""
 
     def __post_init__(self) -> None:
         self.parsed_ok = self.tree is not None
@@ -137,11 +153,12 @@ class Analysis:
         return not self.issues
 
     def release(self) -> None:
-        """Drop the syntax tree and the recognized names and functions, which take most of
-        the memory, once the findings of the expression have been used."""
+        """Drop the syntax tree, the types and the recognized names and functions, which take
+        most of the memory, once the findings of the expression have been used."""
         self.tree = None
         self.names = []
         self.functions = []
+        self.types = {}
 
 
 def analyze(
@@ -149,12 +166,15 @@ def analyze(
     environment: Environment,
     expected: ExprType | None = None,
     parsed: ParseResult | None = None,
+    *,
+    display: bool = False,
 ) -> Analysis:
     """Parse and check an expression.
 
     ``expected`` is the type the result must have (for example the data type of the
     property that a rule determines); fixed texts are checked against the values of a
     choice. ``parsed`` is the result of ``parse(source)`` if the caller has it already.
+    ``display`` reads the names in the display form.
     """
     parsed = parse(source) if parsed is None else parsed
     if parsed.tree is None or parsed.issue is not None:
@@ -172,8 +192,9 @@ def analyze(
             [],
             et.UNKNOWN,
             source,
+            display=display,
         )
-    checker = _Checker(source, environment)
+    checker = _Checker(source, environment, display)
     return checker.run(parsed.tree, expected)
 
 
@@ -204,11 +225,11 @@ def analyze_spelling(source: str, environment: Environment) -> Analysis:
     replacements: list[tuple[int, int, str]] = []
     names, calls = names_and_calls(parsed.tree)
     for node in names:
-        written = source[node.start : node.end]
+        texts = tuple(segment.text for segment in node.segments)
         for segment, name in zip(
-            node.segments, _canonical_spelling(written, environment, spelled), strict=False
+            node.segments, _canonical_spelling(texts, environment, spelled), strict=False
         ):
-            if segment.text != name:
+            if segment.text != name or segment.bracketed:
                 replacements.append((segment.start, segment.end, name))
     for call in calls:
         signature = find_function(call.name)
@@ -223,30 +244,28 @@ def analyze_spelling(source: str, environment: Environment) -> Analysis:
 
 
 _STRING_TEXT = re.compile(r'"(?:[^"]|"")*"')
-_NAME_TEXT = re.compile(
-    r"(?<![A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)(\s*\()?"
-)
+_NAME_TEXT = re.compile(r"(?<![\w.])([^\W\d]\w*(?:\.[^\W\d]\w*)*)(\s*\()?")
 
 
 def _canonical_spelling(
-    written: str, environment: Environment, cache: dict[str, list[str]]
+    texts: tuple[str, ...], environment: Environment, cache: dict[str, list[str]]
 ) -> list[str]:
     """The spelling of the recognized parts of a name; the parts after the first one that is
     not recognized are left out."""
-    found = cache.get(written)
+    cache_key = "\x00".join(texts)
+    found = cache.get(cache_key)
     if found is None:
         found = []
-        parts = written.split(".")
-        current = environment.resolve(parts[0])
+        current = environment.resolve(texts[0])
         if current is not None:
             found.append(current.name)
-            for part in parts[1:]:
+            for part in texts[1:]:
                 member = current.member(part)
                 if member is None:
                     break
                 found.append(member.name)
                 current = member
-        cache[written] = found
+        cache[cache_key] = found
     return found
 
 
@@ -254,14 +273,17 @@ def _would_change(source: str, environment: Environment, cache: dict[str, list[s
     """Whether a name or function in the text, found without parsing it, is written
     differently from its spelling. A cheap scan; it may say yes for a text that cannot be
     parsed, never no for one that can."""
+    if "[" in source:
+        return True  # a name in brackets is written out as its key
     for found in _NAME_TEXT.finditer(_STRING_TEXT.sub('""', source)):
         written = found.group(1)
         if found.group(2) is not None and "." not in written:
             signature = find_function(written)
             if signature is not None and signature.name != written:
                 return True
-        spelling = _canonical_spelling(written, environment, cache)
-        if any(part != name for part, name in zip(written.split("."), spelling, strict=False)):
+        parts = tuple(written.split("."))
+        spelling = _canonical_spelling(parts, environment, cache)
+        if any(part != name for part, name in zip(parts, spelling, strict=False)):
             return True
     return False
 
@@ -274,14 +296,18 @@ def normalize_expression(source: str, environment: Environment) -> str:
 
 
 class _Checker:
-    def __init__(self, source: str, environment: Environment) -> None:
+    def __init__(self, source: str, environment: Environment, display: bool) -> None:
         self.source = source
         self.environment = environment
+        self.display = display
         self.issues: list[ExpressionIssue] = []
         self.names: list[RecognizedName] = []
         self.functions: list[RecognizedFunction] = []
         self.replacements: list[tuple[int, int, str]] = []
         self.types: dict[int, ExprType] = {}
+        self.slots: list[tuple[int, int]] = []
+        self.name_symbols: dict[int, Symbol] = {}
+        self.name_identifiers: dict[int, str] = {}
         self.truncated = False
         self.previous_names: set[int] = set()
 
@@ -303,6 +329,7 @@ class _Checker:
         self.issues.sort(key=lambda item: (item.start, item.end))
         self.names.sort(key=lambda item: item.start)
         self.functions.sort(key=lambda item: item.start)
+        self.slots.sort()
         return Analysis(
             self.source,
             tree,
@@ -312,6 +339,9 @@ class _Checker:
             result,
             self._normalized(),
             self.truncated,
+            types=self.types,
+            slots=self.slots,
+            display=self.display,
         )
 
     def _normalized(self) -> str:
@@ -347,6 +377,8 @@ class _Checker:
             return
         if mismatch.reason == "choice_value":
             self._report_choice_value(tree, mismatch, "result")
+        elif mismatch.reason == "instrument":
+            self._report_instrument(tree, mismatch)
         else:
             self._mismatch(tree, "result", expected.describe(), result)
 
@@ -358,6 +390,9 @@ class _Checker:
                 return et.INTEGER if isinstance(value, int) else et.NUMBER
             case String(value=value):
                 return ExprType(DataType.TEXT, literals=frozenset({value}))
+            case Slot():
+                self.slots.append((node.start, node.end))
+                return et.UNKNOWN
             case Name():
                 return self._name(node)
             case Group(inner=inner):
@@ -378,17 +413,19 @@ class _Checker:
     def _name(self, node: Name) -> ExprType:
         segments = node.segments
         first = segments[0]
-        symbol = self.environment.resolve(first.text)
+        symbol = self.environment.resolve(first.text, self.display)
         if symbol is None:
             self._issue(IssueKind.UNKNOWN_NAME, first.start, first.end, name=first.text)
-            self.names.append(RecognizedName(node.start, node.end, "", (), False, ()))
+            self.names.append(
+                RecognizedName(node.start, node.end, "", (), False, (), written=segments)
+            )
             return et.UNKNOWN
         path = [symbol]
         recognized = [RecognizedSegment(first.start, first.end, symbol.name)]
         self.replacements.append((first.start, first.end, symbol.name))
         current = symbol
         for segment in segments[1:]:
-            member = current.member(segment.text)
+            member = current.member(segment.text, self.display)
             if member is None:
                 self._issue(
                     IssueKind.UNKNOWN_PROPERTY,
@@ -404,6 +441,8 @@ class _Checker:
             self.replacements.append((segment.start, segment.end, member.name))
             current = member
         self._remember_name(node, path, recognized, resolved=True)
+        self.name_symbols[id(node)] = current
+        self.name_identifiers[id(node)] = ".".join(item.identifier for item in recognized)
         value_type = current.value_type
         if value_type is None:
             self._issue(
@@ -435,6 +474,7 @@ class _Checker:
                 resolved,
                 tuple(path),
                 id(node) in self.previous_names,
+                node.segments,
             )
         )
 
@@ -498,7 +538,7 @@ class _Checker:
         """Report a text that is no value of the choice, at the text itself: a text that
         stands for the result of ``node`` (also in the branches of ``IF``)."""
         bad = set(mismatch.values)
-        targets: list[Node] = [item for item in _result_texts(node) if item.value in bad]
+        targets: list[Node] = [item for item in result_texts(node) if item.value in bad]
         if not targets:
             targets = [node]
         for target in targets:
@@ -511,6 +551,16 @@ class _Checker:
                 values=values,
                 allowed=list(mismatch.allowed),
             )
+
+    def _report_instrument(self, node: Node, mismatch: et.Mismatch) -> None:
+        """Report a fixed text in the place of an instrument that is no valid designation."""
+        bad = set(mismatch.values)
+        targets: list[Node] = [item for item in result_texts(node) if item.value in bad]
+        if not targets:
+            targets = [node]
+        for target in targets:
+            values = [target.value] if isinstance(target, String) else list(mismatch.values)
+            self._issue(IssueKind.INVALID_INSTRUMENT, target.start, target.end, values=values)
 
     # functions ----------------------------------------------------------------------
 
@@ -550,8 +600,7 @@ class _Checker:
         if kind is ArgumentKind.ANY:
             return
         if kind is ArgumentKind.NAME:
-            if not isinstance(node, Name):
-                self._mismatch(node, "argument", "name", found, function=function, index=index)
+            self._check_previous_argument(function, node)
             return
         if found.is_unknown:
             return
@@ -563,6 +612,29 @@ class _Checker:
             ok = ok and isinstance(node.value, int) and node.value >= 1 and not node.percent
         if not ok:
             self._mismatch(node, "argument", kind.value, found, function=function, index=index)
+
+    def _check_previous_argument(self, function: str, node: Node) -> None:
+        """The first argument of ``PREVIOUS`` is a name for which the fachmodell defines an
+        earlier value (specification 3.4); every other argument is an error."""
+        if isinstance(node, Slot):
+            return  # an empty place is reported as such
+        if not isinstance(node, Name):
+            self._issue(
+                IssueKind.PREVIOUS_ARGUMENT, node.start, node.end, "not_a_name", function=function
+            )
+            return
+        symbol = self.name_symbols.get(id(node))
+        if symbol is None:
+            return  # an unknown name is reported as such
+        if not symbol.previous_value:
+            self._issue(
+                IssueKind.PREVIOUS_ARGUMENT,
+                node.start,
+                node.end,
+                "no_earlier_value",
+                function=function,
+                name=self.name_identifiers.get(id(node), ""),
+            )
 
     def _call_result(
         self, node: Call, function: str, result: ResultKind, arg_types: list[ExprType]

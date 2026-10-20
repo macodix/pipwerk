@@ -27,10 +27,16 @@ class String(Node):
 
 
 @dataclass(slots=True, eq=False)
+class Slot(Node):
+    """An empty place (``[]``): a value that is missing and has to be chosen."""
+
+
+@dataclass(slots=True, eq=False)
 class NameSegment:
     text: str
     start: int
     end: int
+    bracketed: bool = False
 
 
 @dataclass(slots=True, eq=False)
@@ -62,6 +68,8 @@ class Call(Node):
     name_start: int
     name_end: int
     args: tuple[Node, ...]
+    arg_separators: tuple[int, ...] = ()
+    """Positions of the separators ``;`` between the arguments."""
 
 
 def children(node: Node) -> tuple[Node, ...]:

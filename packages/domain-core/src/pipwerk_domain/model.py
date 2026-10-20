@@ -2,7 +2,10 @@
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from uuid import uuid4
 
+from pipwerk_domain.catalog import FLOW_CALCULATION, FLOW_CONDITION
+from pipwerk_domain.identifiers import identifier_from_name
 from pipwerk_domain.typedesc import BindingKind, DataType, Scalar
 
 
@@ -14,39 +17,61 @@ class Comparison(StrEnum):
     EQUAL = "gleich"
 
 
+class Orientation(StrEnum):
+    """Direction of the flow on the drawing area (specification 3.3, 5.3)."""
+
+    VERTICAL = "vertical"
+    HORIZONTAL = "horizontal"
+
+
+@dataclass(frozen=True, slots=True)
+class DataLink:
+    """The value of a data connection: a property of an instance on the drawing area, by the
+    keys of the instance and of the property (specification 3.1, 3.3)."""
+
+    instance: str
+    property: str
+
+
 @dataclass(slots=True)
 class Binding:
     """The value of a parameter or property with its kind of binding.
 
-    ``fixed``: ``value`` is the fixed value; ``parameter``: ``value`` is the name of a
+    ``fixed``: ``value`` is the fixed value; ``parameter``: ``value`` is the key of a
     strategy parameter or, within a template, of a parameter of the template;
-    ``expression``: ``value`` is the expression; ``application``: no value, the
-    application passes it.
+    ``connection``: ``value`` is a :class:`DataLink`; ``expression``: ``value`` is the
+    expression; ``application``: no value, the application passes it.
     """
 
     kind: BindingKind
-    value: Scalar | None = None
+    value: Scalar | DataLink | None = None
 
 
 @dataclass(slots=True)
 class Origin:
-    """Origin of an instance: object type and, if it was made from a template,
-    its identifier and title at the time of insertion."""
+    """Origin of an instance: object type and, if it was made from a template, its identifier
+    and, for a template of the user, its name at the time of insertion (specification 3.7)."""
 
     object_type: str
     template_id: str | None = None
-    template_title: str | None = None
+    template_name: str | None = None
 
 
 @dataclass(slots=True)
 class ParameterDefinition:
-    """Own parameter of a template or instance (name, data type, mandatory, default)."""
+    """Own parameter of a template or instance (key, name, data type, mandatory, default)."""
 
     name: str
     datatype: DataType
     required: bool = False
     default: Scalar | None = None
     choices: tuple[str, ...] = ()
+    key: str = ""
+    object_type: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            self.key = identifier_from_name(self.name)
 
 
 @dataclass(slots=True)
@@ -57,6 +82,12 @@ class PropertyDefinition:
     datatype: DataType
     expression: str
     choices: tuple[str, ...] = ()
+    key: str = ""
+    object_type: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            self.key = identifier_from_name(self.name)
 
 
 @dataclass(slots=True)
@@ -68,6 +99,12 @@ class StrategyParameter:
     value: Scalar | None = None
     at_application: bool = False
     choices: tuple[str, ...] = ()
+    key: str = ""
+    object_type: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            self.key = identifier_from_name(self.name)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -88,10 +125,19 @@ class ObjectContent:
 
 @dataclass(kw_only=True, slots=True)
 class Instance(ObjectContent):
-    """A complete copy of a template or object type inside a strategy or template."""
+    """A complete copy of a template or object type inside a strategy or template.
+
+    ``key`` is the key in an expression; if it is not given it is formed from the name
+    (without a check against other keys: the factory functions of
+    :mod:`pipwerk_domain.operations` make it unique)."""
 
     name: str
+    key: str = ""
     origin: Origin | None = None
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            self.key = identifier_from_name(self.name)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -99,25 +145,61 @@ class Template(ObjectContent):
     """A stored indicator, trend, rule or ruleset (glossary "Vorlage")."""
 
     id: str
-    title: str
+    name: str
     description: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class Position:
+    """The place of an element on the drawing area, set by the user (specification 3.3)."""
+
+    x: float
+    y: float
+
+
+@dataclass(frozen=True, slots=True)
+class ElementInput:
+    """An input of an element: a value that the user has connected to the element, by the keys
+    of an instance on the drawing area and of its property (specification 3.3)."""
+
+    instance: str
+    property: str
 
 
 @dataclass(kw_only=True, slots=True)
 class Element:
-    """An element on the drawing area."""
+    """An element on the drawing area.
+
+    ``name`` is set for an element without an instance; an element with an instance has the
+    name of the instance. ``key`` is the key of a condition or calculation in an expression.
+    ``position`` is set only if the user moved the element."""
 
     id: str
     type: str
-    title: str = ""
     name: str | None = None
-    x: float = 0.0
-    y: float = 0.0
+    key: str | None = None
+    position: Position | None = None
     parameters: dict[str, Binding] = field(default_factory=dict)
     properties: dict[str, Binding] = field(default_factory=dict)
+    inputs: list[ElementInput] = field(default_factory=list)
     rules: list[Instance] = field(default_factory=list)
     management_of: str | None = None
     instance: Instance | None = None
+
+    def __post_init__(self) -> None:
+        named = self.type in (FLOW_CONDITION, FLOW_CALCULATION)
+        if self.key is None and named and self.name and self.instance is None:
+            self.key = identifier_from_name(self.name) or None
+
+    @property
+    def shown_name(self) -> str | None:
+        """The name the user sees: the name of the instance or of the element."""
+        return self.instance.name if self.instance is not None else self.name
+
+
+def new_id() -> str:
+    """A new identifier (UUID) of a strategy, element, connection or section."""
+    return str(uuid4())
 
 
 @dataclass(slots=True)
@@ -127,6 +209,20 @@ class Connection:
     source: str
     output: str
     target: str
+    id: str = field(default_factory=new_id)
+
+
+@dataclass(slots=True)
+class Section:
+    """A section: a named group of elements of one flow that can be collapsed
+    (specification 3.3). ``flow`` is the identifier of the element "Order aufgeben" whose
+    management the section belongs to, or ``None`` for the main flow."""
+
+    name: str
+    flow: str | None = None
+    elements: list[str] = field(default_factory=list)
+    collapsed: bool = False
+    id: str = field(default_factory=new_id)
 
 
 @dataclass(slots=True)
@@ -143,12 +239,15 @@ class Strategy:
     """A strategy (specification 3.3)."""
 
     id: str
-    title: str
+    name: str
     description: str = ""
     parameters: list[StrategyParameter] = field(default_factory=list)
     rules: list[Instance] = field(default_factory=list)
     elements: list[Element] = field(default_factory=list)
     connections: list[Connection] = field(default_factory=list)
+    sections: list[Section] = field(default_factory=list)
+    orientation: Orientation = Orientation.VERTICAL
+    collapsed_managements: list[str] = field(default_factory=list)
 
     def element(self, element_id: str) -> Element | None:
         for item in self.elements:

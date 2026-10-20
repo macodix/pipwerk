@@ -27,7 +27,7 @@ def load(name: str) -> Strategy:
 def small_strategy(text: str) -> Strategy:
     return Strategy(
         id=uid(900),
-        title="Test",
+        name="Test",
         elements=[trigger(1), condition(2, text), place_order(3)],
         connections=[connect(1, "weiter", 2), connect(2, "wahr", 3)],
     )
@@ -115,7 +115,12 @@ def test_the_names_of_a_template_are_returned() -> None:
     assert result.findings == check_template(template)
     assert [item.field for item in result.expressions] == ["expression"]
     identifiers = {found.identifier for found in result.expressions[0].names}
-    assert {"Order.volumen", "Konto.kapital", "risikogrenze", "Instrument.tickwert"} <= identifiers
+    assert {
+        "Order.volumen",
+        "Konto.kapital",
+        "risikogrenze",
+        "Order.instrument.tickwert",
+    } <= identifiers
     assert all(item.element is None for item in result.expressions)
 
 
@@ -150,7 +155,7 @@ def test_the_limit_is_a_documented_constant() -> None:
 def test_the_calculation_names_are_collected_before_their_trees_are_released() -> None:
     strategy = Strategy(
         id=uid(900),
-        title="Test",
+        name="Test",
         elements=[
             trigger(1),
             calculation(2, "a", "Kerze.schluss * 2"),

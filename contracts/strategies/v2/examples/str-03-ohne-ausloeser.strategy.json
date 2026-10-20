@@ -1,0 +1,539 @@
+{
+  "format": "pipwerk.strategy",
+  "format_version": "2.0",
+  "id": "1b331995-f375-5276-9544-b4e0cbfc2f3f",
+  "name": "EMA-Trendfolge",
+  "description": "Testfall str-03: Marktorder in Richtung des Kreuzens zweier exponentieller gleitender Durchschnitte, Stop-Loss nachziehen, Position bei Gegenkreuzen schließen.",
+  "parameters": [
+    {
+      "key": "zeiteinheit",
+      "name": "Zeiteinheit",
+      "datatype": "time_unit",
+      "object_type": null,
+      "value": "h1",
+      "at_application": false,
+      "choices": []
+    },
+    {
+      "key": "stop_abstand",
+      "name": "Stop-Abstand",
+      "datatype": "number",
+      "object_type": null,
+      "value": 2,
+      "at_application": false,
+      "choices": []
+    }
+  ],
+  "rules": [
+    {
+      "name": "Risiko",
+      "key": "risiko",
+      "object_type": "Regel",
+      "origin": {
+        "object_type": "Regel",
+        "template_id": "7c1d4e2a-5b3f-4a86-9d27-e1f0a3c8b645",
+        "template_name": null
+      },
+      "parameter_values": {
+        "risikogrenze": {
+          "kind": "fixed",
+          "value": 0.01
+        }
+      },
+      "parameters": [
+        {
+          "key": "risikogrenze",
+          "name": "Risikogrenze",
+          "datatype": "percent",
+          "object_type": null,
+          "required": true,
+          "default": 0.01,
+          "choices": []
+        }
+      ],
+      "properties": [],
+      "instances": [],
+      "rules": [],
+      "expression": "IF(ISNA(Position.volumen);\n   IF(IF(Order.richtung = \"buy\"; IFNA(Order.limitpreis; Order.preis) - Order.stop_loss; Order.stop_loss - IFNA(Order.limitpreis; Order.preis)) <= 0;\n      Order.volumen;\n      FLOOR(risikogrenze * Konto.kapital\n              / (IF(Order.richtung = \"buy\"; IFNA(Order.limitpreis; Order.preis) - Order.stop_loss; Order.stop_loss - IFNA(Order.limitpreis; Order.preis)) / Order.instrument.tickgroesse * Order.instrument.tickwert);\n            Order.instrument.volumenschritt));\n   IF(IF(Position.richtung = \"buy\"; Position.einstiegspreis - Position.stop_loss; Position.stop_loss - Position.einstiegspreis) <= 0;\n      Position.volumen;\n      FLOOR(risikogrenze * Konto.kapital\n              / (IF(Position.richtung = \"buy\"; Position.einstiegspreis - Position.stop_loss; Position.stop_loss - Position.einstiegspreis) / Order.instrument.tickgroesse * Order.instrument.tickwert);\n            Order.instrument.volumenschritt)))",
+      "determined_property": "volumen",
+      "comparison": "hoechstens",
+      "result_expression": null
+    }
+  ],
+  "elements": [
+    {
+      "id": "d1f1e433-ae5d-535e-9ccd-3d161adeff73",
+      "type": "EMA",
+      "name": null,
+      "key": null,
+      "position": null,
+      "parameters": {},
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": {
+        "name": "EMA 20",
+        "key": "ema20",
+        "object_type": "EMA",
+        "origin": {
+          "object_type": "EMA",
+          "template_id": null,
+          "template_name": null
+        },
+        "parameter_values": {
+          "zeiteinheit": {
+            "kind": "parameter",
+            "value": "zeiteinheit"
+          },
+          "periode": {
+            "kind": "fixed",
+            "value": 20
+          },
+          "verschiebung": {
+            "kind": "fixed",
+            "value": 0
+          },
+          "anwenden_auf": {
+            "kind": "fixed",
+            "value": "schlusskurs"
+          },
+          "instrument": {
+            "kind": "fixed",
+            "value": "instrument_der_anwendung"
+          }
+        },
+        "parameters": [],
+        "properties": [],
+        "instances": [],
+        "rules": [],
+        "expression": null,
+        "determined_property": null,
+        "comparison": null,
+        "result_expression": null
+      }
+    },
+    {
+      "id": "900c1154-8f44-5c91-8216-2749c149df73",
+      "type": "EMA",
+      "name": null,
+      "key": null,
+      "position": null,
+      "parameters": {},
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": {
+        "name": "EMA 50",
+        "key": "ema50",
+        "object_type": "EMA",
+        "origin": {
+          "object_type": "EMA",
+          "template_id": null,
+          "template_name": null
+        },
+        "parameter_values": {
+          "zeiteinheit": {
+            "kind": "parameter",
+            "value": "zeiteinheit"
+          },
+          "periode": {
+            "kind": "fixed",
+            "value": 50
+          },
+          "verschiebung": {
+            "kind": "fixed",
+            "value": 0
+          },
+          "anwenden_auf": {
+            "kind": "fixed",
+            "value": "schlusskurs"
+          },
+          "instrument": {
+            "kind": "fixed",
+            "value": "instrument_der_anwendung"
+          }
+        },
+        "parameters": [],
+        "properties": [],
+        "instances": [],
+        "rules": [],
+        "expression": null,
+        "determined_property": null,
+        "comparison": null,
+        "result_expression": null
+      }
+    },
+    {
+      "id": "bf0ee57e-a6d5-5085-a67c-6eaa9b46d979",
+      "type": "ATR",
+      "name": null,
+      "key": null,
+      "position": null,
+      "parameters": {},
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": {
+        "name": "ATR 14",
+        "key": "atr14",
+        "object_type": "ATR",
+        "origin": {
+          "object_type": "ATR",
+          "template_id": null,
+          "template_name": null
+        },
+        "parameter_values": {
+          "zeiteinheit": {
+            "kind": "parameter",
+            "value": "zeiteinheit"
+          },
+          "periode": {
+            "kind": "fixed",
+            "value": 14
+          },
+          "instrument": {
+            "kind": "fixed",
+            "value": "instrument_der_anwendung"
+          }
+        },
+        "parameters": [],
+        "properties": [],
+        "instances": [],
+        "rules": [],
+        "expression": null,
+        "determined_property": null,
+        "comparison": null,
+        "result_expression": null
+      }
+    },
+    {
+      "id": "7e1ab090-5a18-5414-9f00-5541c0e4b325",
+      "type": "flow.condition",
+      "name": "Kreuzen",
+      "key": "kreuzen",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "OR(AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert); AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert))"
+        }
+      },
+      "properties": {},
+      "inputs": [
+        {
+          "instance": "ema20",
+          "property": "wert"
+        },
+        {
+          "instance": "ema50",
+          "property": "wert"
+        }
+      ],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "81ddf1b2-15f1-54f0-8a7e-7387b4dd119f",
+      "type": "flow.calculation",
+      "name": "Richtung",
+      "key": "richtung",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "IF(ema20.wert > ema50.wert; \"buy\"; \"sell\")"
+        }
+      },
+      "properties": {},
+      "inputs": [
+        {
+          "instance": "ema20",
+          "property": "wert"
+        },
+        {
+          "instance": "ema50",
+          "property": "wert"
+        }
+      ],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "d68f936b-4e65-5d0c-a4eb-a1438baaa470",
+      "type": "flow.calculation",
+      "name": "Stop-Loss",
+      "key": "stop",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "IF(richtung.ergebnis = \"buy\"; Kerze.schluss - Strategie.stop_abstand * atr14.wert; Kerze.schluss + Strategie.stop_abstand * atr14.wert)"
+        }
+      },
+      "properties": {},
+      "inputs": [
+        {
+          "instance": "atr14",
+          "property": "wert"
+        }
+      ],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "type": "flow.place_order",
+      "name": "Order aufgeben",
+      "key": null,
+      "position": null,
+      "parameters": {
+        "ordertyp": {
+          "kind": "fixed",
+          "value": "MarketOrder"
+        }
+      },
+      "properties": {
+        "richtung": {
+          "kind": "expression",
+          "value": "richtung.ergebnis"
+        },
+        "stop_loss": {
+          "kind": "expression",
+          "value": "stop.ergebnis"
+        },
+        "instrument": {
+          "kind": "fixed",
+          "value": "instrument_der_anwendung"
+        }
+      },
+      "inputs": [],
+      "rules": [
+        {
+          "name": "Mindestvolumen",
+          "key": "mindestvolumen",
+          "object_type": "Regel",
+          "origin": {
+            "object_type": "Regel",
+            "template_id": null,
+            "template_name": null
+          },
+          "parameter_values": {},
+          "parameters": [],
+          "properties": [],
+          "instances": [],
+          "rules": [],
+          "expression": "Order.volumen >= Order.instrument.mindestvolumen",
+          "determined_property": null,
+          "comparison": null,
+          "result_expression": null
+        }
+      ],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "5789f3a0-a3ba-57ff-b961-58884dc593d4",
+      "type": "trigger.candle_close",
+      "name": "Kerzenschluss",
+      "key": null,
+      "position": null,
+      "parameters": {
+        "zeiteinheit": {
+          "kind": "parameter",
+          "value": "zeiteinheit"
+        },
+        "instrument": {
+          "kind": "fixed",
+          "value": "instrument_der_anwendung"
+        }
+      },
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    },
+    {
+      "id": "70518e48-0a73-51c3-9c69-e7559bb7510d",
+      "type": "flow.condition",
+      "name": "Order ausgeführt",
+      "key": "order_ausgefuehrt",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "Order.status = \"ausgefuehrt\""
+        }
+      },
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    },
+    {
+      "id": "79519848-4389-5b9a-a576-784ab363fce3",
+      "type": "flow.condition",
+      "name": "Kreuzen gegen die Position",
+      "key": "kreuzen_gegen_die_position",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "OR(AND(Position.richtung = \"buy\"; PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert); AND(Position.richtung = \"sell\"; PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert))"
+        }
+      },
+      "properties": {},
+      "inputs": [
+        {
+          "instance": "ema20",
+          "property": "wert"
+        },
+        {
+          "instance": "ema50",
+          "property": "wert"
+        }
+      ],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    },
+    {
+      "id": "37e7dd94-7a0d-5ed3-b79d-e777b1657640",
+      "type": "flow.close_position",
+      "name": "Position schließen",
+      "key": null,
+      "position": null,
+      "parameters": {},
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    },
+    {
+      "id": "8c541e77-1e34-5548-8f18-7124951deee6",
+      "type": "flow.calculation",
+      "name": "Neuer Stop-Loss",
+      "key": "stop_neu",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "IF(Position.richtung = \"buy\"; Kerze.schluss - Strategie.stop_abstand * atr14.wert; Kerze.schluss + Strategie.stop_abstand * atr14.wert)"
+        }
+      },
+      "properties": {},
+      "inputs": [
+        {
+          "instance": "atr14",
+          "property": "wert"
+        }
+      ],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    },
+    {
+      "id": "38c5cfb3-4dad-50e3-a9d6-14e9c9fad294",
+      "type": "flow.condition",
+      "name": "Stop-Loss verbessert",
+      "key": "stop_loss_verbessert",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "IF(Position.richtung = \"buy\"; stop_neu.ergebnis > Position.stop_loss; stop_neu.ergebnis < Position.stop_loss)"
+        }
+      },
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    },
+    {
+      "id": "55f3696e-e43a-5bdd-ac61-16c0fe7646c7",
+      "type": "flow.modify_position",
+      "name": "Position ändern",
+      "key": null,
+      "position": null,
+      "parameters": {
+        "stop_loss": {
+          "kind": "expression",
+          "value": "stop_neu.ergebnis"
+        }
+      },
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": "7896d1ad-8c07-517d-b451-80fe53d46681",
+      "instance": null
+    }
+  ],
+  "connections": [
+    {
+      "id": "3f7c01bf-84ec-577e-952c-fa31099f0448",
+      "source": "7e1ab090-5a18-5414-9f00-5541c0e4b325",
+      "output": "wahr",
+      "target": "81ddf1b2-15f1-54f0-8a7e-7387b4dd119f"
+    },
+    {
+      "id": "e475ee27-ee2a-5d41-bbc8-d2faa64df8a5",
+      "source": "81ddf1b2-15f1-54f0-8a7e-7387b4dd119f",
+      "output": "weiter",
+      "target": "d68f936b-4e65-5d0c-a4eb-a1438baaa470"
+    },
+    {
+      "id": "f1a46e8c-35ae-568a-8e20-42bcdef14f75",
+      "source": "d68f936b-4e65-5d0c-a4eb-a1438baaa470",
+      "output": "weiter",
+      "target": "7896d1ad-8c07-517d-b451-80fe53d46681"
+    },
+    {
+      "id": "6d1a3bf3-f044-5f15-837c-264b22909cc8",
+      "source": "5789f3a0-a3ba-57ff-b961-58884dc593d4",
+      "output": "weiter",
+      "target": "70518e48-0a73-51c3-9c69-e7559bb7510d"
+    },
+    {
+      "id": "83980046-c2c2-5c18-a980-5bb9e940d830",
+      "source": "70518e48-0a73-51c3-9c69-e7559bb7510d",
+      "output": "wahr",
+      "target": "79519848-4389-5b9a-a576-784ab363fce3"
+    },
+    {
+      "id": "b7bbaaee-ff6a-5312-a139-bdda4805d369",
+      "source": "79519848-4389-5b9a-a576-784ab363fce3",
+      "output": "wahr",
+      "target": "37e7dd94-7a0d-5ed3-b79d-e777b1657640"
+    },
+    {
+      "id": "8ec25886-d7ce-5794-b785-d92d1445b070",
+      "source": "79519848-4389-5b9a-a576-784ab363fce3",
+      "output": "falsch",
+      "target": "8c541e77-1e34-5548-8f18-7124951deee6"
+    },
+    {
+      "id": "4ba4b190-2ec8-5579-ae17-b9e61de95fa8",
+      "source": "8c541e77-1e34-5548-8f18-7124951deee6",
+      "output": "weiter",
+      "target": "38c5cfb3-4dad-50e3-a9d6-14e9c9fad294"
+    },
+    {
+      "id": "a1f21f07-62dd-5a9a-9d4d-6ae7a28aab7c",
+      "source": "38c5cfb3-4dad-50e3-a9d6-14e9c9fad294",
+      "output": "wahr",
+      "target": "55f3696e-e43a-5bdd-ac61-16c0fe7646c7"
+    }
+  ],
+  "sections": [],
+  "orientation": "vertical",
+  "collapsed_managements": []
+}

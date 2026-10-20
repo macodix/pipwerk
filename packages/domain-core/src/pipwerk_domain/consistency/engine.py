@@ -25,7 +25,16 @@ from pipwerk_domain.expressions import Analysis, analyze
 from pipwerk_domain.expressions import exprtypes as et
 from pipwerk_domain.expressions.checker import IssueKind, analyze_spelling
 from pipwerk_domain.expressions.exprtypes import ExprType, type_of
-from pipwerk_domain.expressions.symbols import Environment, Scope, Symbol, SymbolKind
+from pipwerk_domain.expressions.functions import list_functions
+from pipwerk_domain.expressions.symbols import (
+    Environment,
+    Scope,
+    Symbol,
+    SymbolKind,
+    normalized_name,
+)
+from pipwerk_domain.identifiers import is_valid_key
+from pipwerk_domain.instruments import is_valid_designation
 from pipwerk_domain.limits import (
     MAX_FINDINGS_PER_CHECK,
     MAX_FINDINGS_PER_EXPRESSION,
@@ -34,6 +43,7 @@ from pipwerk_domain.limits import (
 from pipwerk_domain.model import (
     Binding,
     Connection,
+    DataLink,
     Element,
     Instance,
     ObjectContent,
@@ -47,18 +57,21 @@ from pipwerk_domain.namespaces import (
     RESULT_PROPERTY,
     application_scope,
     instance_symbol,
-    is_valid_name,
     order_symbol,
     parameter_symbol,
     property_type,
 )
+from pipwerk_domain.pointers import below, pointer
 from pipwerk_domain.registry import ORDER_TYPE_PARAMETER, TREND_TYPE_ID, ElementRegistry
 from pipwerk_domain.typedesc import (
     ALL_BINDINGS,
+    INSTRUMENT_TYPE,
     BindingKind,
+    Choice,
     Condition,
     DataType,
     ElementKind,
+    Label,
     ObjectCategory,
     ParameterDescription,
     PropertyDescription,
@@ -68,11 +81,22 @@ from pipwerk_domain.typedesc import (
 )
 
 _TEXTS = re.compile(r'"(?:[^"]|"")*"')
-_PREVIOUS_NAME = re.compile(r"(?<![A-Za-z0-9_.])PREVIOUS\s*\(\s*[A-Za-z_][A-Za-z0-9_.]*", re.I)
-_NAME_BEFORE_POINT = re.compile(r"(?<![A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*)\.")
+_PREVIOUS_NAME = re.compile(r"(?<![\w.])PREVIOUS\s*\(\s*[^\W\d]\w*(?:\.[^\W\d]\w*)*", re.I)
+_NAME_BEFORE_POINT = re.compile(r"(?<![\w.])([^\W\d]\w*)\.")
 _MAIN_FLOW = "main_flow"
 _INDICATOR = "indicator"
 _ORDER_OBJECTS = (catalog.OBJECT_ORDER, catalog.OBJECT_POSITION)
+_RESULT_LABEL = Label("Ergebnis", "Result")
+_RESULT_EXPLANATION = Label(
+    "Das Ergebnis dieses Schritts. Spätere Schritte können es verwenden.",
+    "The result of this step. Later steps can use it.",
+)
+
+
+def _choices_of(datatype: DataType, choices: tuple[Choice, ...]) -> tuple[str, ...]:
+    """The identifiers of the allowed values of a parameter or property."""
+    known = choice_ids(datatype, choices)
+    return known if known is not None else tuple(item.id for item in choices)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,33 +111,37 @@ class _Param:
     bindings: tuple[BindingKind, ...]
     when: Condition | None = None
     object_type: str | None = None
+    labels: tuple[Label, ...] | None = None
 
     @property
     def expected(self) -> ExprType:
-        return type_of(self.datatype, self.choices, self.object_type)
+        return type_of(self.datatype, self.choices, self.object_type, self.labels)
 
 
 def _param_of_description(item: ParameterDescription) -> _Param:
     return _Param(
         item.id,
         item.datatype,
-        choice_ids(item.datatype, item.choices) or (),
+        _choices_of(item.datatype, item.choices),
         item.required,
         item.default,
         item.bindings,
         item.applies_when,
         item.object_type,
+        tuple(choice.label for choice in item.choices) or None,
     )
 
 
 def _param_of_definition(item: ParameterDefinition) -> _Param:
     return _Param(
-        item.name,
+        item.key,
         item.datatype,
         choice_ids(item.datatype, ()) or item.choices,
         item.required,
         item.default,
         ALL_BINDINGS,
+        None,
+        item.object_type,
     )
 
 
@@ -121,23 +149,26 @@ def _param_of_property(item: PropertyDescription) -> _Param:
     return _Param(
         item.id,
         item.datatype,
-        choice_ids(item.datatype, item.choices) or (),
+        _choices_of(item.datatype, item.choices),
         False,
         item.default,
         ALL_BINDINGS,
         None,
         item.object_type,
+        tuple(choice.label for choice in item.choices) or None,
     )
 
 
 def _param_of_strategy_parameter(item: StrategyParameter) -> _Param:
     return _Param(
-        item.name,
+        item.key,
         item.datatype,
         choice_ids(item.datatype, ()) or item.choices,
         True,
         None,
         (BindingKind.FIXED,),
+        None,
+        item.object_type,
     )
 
 
@@ -148,7 +179,8 @@ class _FindingLimit(Exception):  # noqa: N818 - ends the check, is no error cond
 @dataclass(slots=True)
 class _Ctx:
     """Where an instance or expression stands: its names, parameters, and whether
-    ``Order`` and ``Position`` are available."""
+    ``Order`` and ``Position`` are available. ``path`` is the JSON pointer of the owner in
+    the document (an empty text for the strategy or the template itself)."""
 
     element_id: str | None
     subject: str
@@ -159,9 +191,27 @@ class _Ctx:
     rule_order_error: bool
     rule_template: bool = False
     in_template: bool = False
+    path: str = ""
 
     def below(self, name: str) -> str:
         return f"{self.subject}.{name}" if self.subject else name
+
+
+@dataclass(slots=True)
+class ExpressionContext:
+    """The context of an expression at a place of a document (what ``/api/v1/expressions``
+    needs): the namespace, the expected type and where the expression stands."""
+
+    pointer: str
+    env: Environment
+    expected: ExprType | None
+    element_id: str | None
+    subject: str | None
+    order_error: bool
+    rule_template: bool
+    in_template: bool
+    order_context: str
+    field: str
 
 
 class _RuleItem:
@@ -182,7 +232,14 @@ class _RuleItem:
             scope = Scope(self.parent)
             for definition in self.content.parameters:
                 scope.add(
-                    parameter_symbol(definition.name, definition.datatype, definition.choices)
+                    parameter_symbol(
+                        definition.key,
+                        definition.datatype,
+                        definition.choices,
+                        shown=definition.name,
+                        object_type=definition.object_type,
+                        registry=self.checker.registry,
+                    )
                 )
             self._env = scope
         return self._env
@@ -232,17 +289,22 @@ class Checker:
         *,
         spelling_only: bool = False,
         collect_names: bool = False,
+        record_contexts: bool = False,
     ) -> None:
         """``spelling_only`` is for the normalization: the expressions are only parsed and
         their names and functions spelled, nothing is checked and no finding is kept.
         ``collect_names`` keeps the recognized names of every expression (``expression_names``,
-        at most ``MAX_NAMES_PER_CHECK`` of them) for the check endpoint of the web API."""
+        at most ``MAX_NAMES_PER_CHECK`` of them) for the check endpoint of the web API.
+        ``record_contexts`` keeps the context of every place of an expression by its JSON
+        pointer (``contexts``) for the endpoint of the expressions."""
         self.registry = registry
         self.max_findings = max_findings
         self.spelling_only = spelling_only
         self.collect_names = collect_names
+        self.record_contexts = record_contexts
         self.findings: list[Finding] = []
         self.expression_names: list[ExpressionNames] = []
+        self.contexts: dict[str, ExpressionContext] = {}
         self.names_truncated = False
         self._name_count = 0
         self._analyses: dict[tuple[int, str], Analysis] = {}
@@ -255,11 +317,14 @@ class Checker:
         self._closed = application_scope(registry)
         self._candle_uses: dict[tuple[str | None, str | None], None] = {}
         self._management_scopes: dict[str | None, Scope] = {}
-        self._candle_only_reach: set[str] = set()
-        self._strategy_candle_only = False
-        self._strategy = Strategy(id="", title="")
+        self._other_trigger_reach: set[str] = set()
+        self._has_other_trigger = False
+        self._strategy = Strategy(id="", name="")
         self._strategy_scope = Scope()
         self._strategy_params: dict[str, _Param] = {}
+        self._used_inputs: dict[str, set[tuple[str, str]]] = {}
+        self._reserved_names = _reserved_names(registry)
+        self._reserved_keys = _reserved_keys(registry)
 
     # ------------------------------------------------------------------------------
     # entry points
@@ -301,31 +366,36 @@ class Checker:
         scope = Scope(application_scope(self.registry, strategy.parameters))
         self._strategy_scope = scope
         self._strategy_params = {
-            item.name.lower(): _param_of_strategy_parameter(item) for item in strategy.parameters
+            item.key.lower(): _param_of_strategy_parameter(item) for item in strategy.parameters
         }
-        entries: list[tuple[str, str | None, str | None]] = []
+        entries: list[_Entry] = []
         for element in strategy.elements:
             symbol = self._element_symbol(element)
             if symbol is not None:
                 scope.add(symbol)
-                entries.append((symbol.name, element.id, symbol.name))
+                entries.append(
+                    _Entry(symbol.shown or symbol.name, symbol.name, element.id, symbol.name)
+                )
         for rule in strategy.rules:
             scope.add(self._rule_symbol(rule, scope))
-            entries.append((rule.name, None, rule.name))
-        self._duplicates(entries, "strategy")
+            entries.append(_Entry(rule.name, rule.key, None, rule.key))
+        self._duplicates(entries, "strategy", against_application=True)
         self._check_strategy_parameters(strategy)
         self._analyze_calculations(strategy)
-        for element in strategy.elements:
-            self._check_element(element)
+        for index, element in enumerate(strategy.elements):
+            self._check_element(element, index)
         self._check_rule_list(
             strategy.rules,
             self._strategy_ctx(None, order_error=False),
             list_scope=scope,
             ordered=False,
             list_name="strategy",
+            list_path=pointer("rules"),
         )
         self._check_flow(strategy)
+        self._check_layout(strategy)
         self._check_candle_uses(strategy)
+        self._check_inputs_used(strategy)
 
     def _check_template(self, template: Template) -> None:
         description = self.registry.get(template.object_type)
@@ -340,9 +410,9 @@ class Checker:
         if category is ObjectCategory.RULE:
             item = self._item(template, self._closed)
             ctx.rule_template = True
-            self._check_rule(template, item, ctx, None)
+            self._check_rule(template, item, ctx, None, "")
         elif category is ObjectCategory.RULESET:
-            self._check_rule(template, self._item(template, self._closed), ctx, None)
+            self._check_rule(template, self._item(template, self._closed), ctx, None, "")
         else:
             self._check_object(template, description, ctx)
 
@@ -351,13 +421,14 @@ class Checker:
         result it uses. That keeps long chains of calculations out of the recursion; a cycle
         between results is a finding."""
         calculations = {
-            item.name.lower(): item
+            item.key.lower(): item
             for item in strategy.elements
             if item.type == catalog.FLOW_CALCULATION
-            and item.name
+            and item.key
             and item.instance is None
             and item.id
         }
+        indexes = {item.id: position for position, item in enumerate(strategy.elements)}
         edges: dict[str, list[str]] = {}
         for key, element in calculations.items():
             edges[key] = self._used_calculations(element, calculations)
@@ -368,9 +439,9 @@ class Checker:
                     Level.ERROR,
                     fc.CALCULATION_CIRCULAR,
                     members[0].id,
-                    members[0].name,
+                    members[0].key,
                     elements=[item.id for item in members],
-                    names=[str(item.name) for item in members],
+                    names=[str(item.key) for item in members],
                 )
             for element in members:
                 binding = element.parameters.get("ausdruck")
@@ -388,6 +459,13 @@ class Checker:
                     None,
                 )
                 ctx = self._strategy_ctx(element, order_error=element.management_of is None)
+                ctx.path = pointer("elements", indexes[element.id])
+                self._record(
+                    below(ctx.path, "parameters", "ausdruck", "value"),
+                    ctx,
+                    None,
+                    "parameter:ausdruck",
+                )
                 self._report(binding, "parameter:ausdruck", analysis, ctx)
                 analysis.release()
 
@@ -425,22 +503,70 @@ class Checker:
             raise _FindingLimit
         self.findings.append(Finding(level, code, element, subject, dict(details)))
 
-    def _duplicates(
-        self, entries: Iterable[tuple[str, str | None, str | None]], space: str
-    ) -> None:
-        """Report names that occur twice on the same level (the second and further ones)."""
-        seen: Counter[str] = Counter()
-        for name, element, subject in entries:
-            key = name.lower()
-            seen[key] += 1
-            if seen[key] > 1:
-                self._add(
-                    Level.ERROR, fc.NAME_DUPLICATE, element, subject, name=name, namespace=space
-                )
+    def _record(self, pointer: str, ctx: _Ctx, expected: ExprType | None, field: str) -> None:
+        """Keep the context of the place ``pointer`` of an expression."""
+        if self.record_contexts:
+            self.contexts[pointer] = ExpressionContext(
+                pointer,
+                ctx.env,
+                expected,
+                ctx.element_id,
+                ctx.subject or None,
+                ctx.order_error,
+                ctx.rule_template,
+                ctx.in_template,
+                ctx.order_context,
+                field,
+            )
 
-    def _check_name(self, name: str, element: str | None, subject: str | None, what: str) -> None:
-        if not is_valid_name(name):
-            self._add(Level.ERROR, fc.NAME_INVALID, element, subject, name=name, what=what)
+    def _duplicates(
+        self,
+        entries: Iterable[_Entry],
+        space: str,
+        *,
+        against_application: bool = False,
+        existing: Iterable[_Entry] = (),
+    ) -> None:
+        """Report names and keys that occur twice on the same level (the second and further
+        ones). With ``against_application`` a name that is also the name of an object of the
+        application in either language, and a key that is the identifier of one or the name of
+        a function, is reported too: the display form could not tell them apart. ``existing``
+        are entries of the level that are counted but not reported (the parameters that a type
+        brings along)."""
+        names: Counter[str] = Counter()
+        keys: Counter[str] = Counter()
+        for entry in existing:
+            names[normalized_name(entry.name)] += 1
+            keys[entry.key.lower()] += 1
+        for entry in entries:
+            name_key = normalized_name(entry.name)
+            key_key = entry.key.lower()
+            names[name_key] += 1
+            keys[key_key] += 1
+            # one finding for an entry: a double name first, then a double key
+            if names[name_key] > 1:
+                what, application = "name", False
+            elif against_application and name_key in self._reserved_names:
+                what, application = "name", True
+            elif keys[key_key] > 1:
+                what, application = "key", False
+            elif against_application and key_key in self._reserved_keys:
+                what, application = "key", True
+            else:
+                continue
+            details: dict[str, object] = {
+                "name": entry.name,
+                "key": entry.key,
+                "namespace": space,
+                "what": what,
+            }
+            if application:
+                details["with_application_object"] = True
+            self._add(Level.ERROR, fc.NAME_DUPLICATE, entry.element, entry.subject, **details)
+
+    def _check_key(self, key: str, element: str | None, subject: str | None, what: str) -> None:
+        if not is_valid_key(key):
+            self._add(Level.ERROR, fc.KEY_INVALID, element, subject, key=key, what=what)
 
     def analyze_cached(
         self,
@@ -499,6 +625,18 @@ class Checker:
         subject = ctx.subject or None
         if self.collect_names:
             self._collect_names(field, analysis, ctx.element_id, subject)
+        source = analysis.source
+        if not source.strip():
+            self._expression_finding(
+                key,
+                Level.ERROR,
+                fc.EXPRESSION_EMPTY,
+                ctx.element_id,
+                subject,
+                field=field,
+                reason="missing",
+            )
+            return
         for issue in analysis.issues:
             data: dict[str, object] = {
                 "field": field,
@@ -508,7 +646,11 @@ class Checker:
                 "reason": issue.reason,
                 **issue.details,
             }
-            if ctx.rule_template and issue.kind is IssueKind.UNKNOWN_NAME:
+            if issue.kind is IssueKind.INVALID_INSTRUMENT:
+                self._expression_finding(
+                    key, Level.ERROR, fc.INSTRUMENT_INVALID, ctx.element_id, subject, **data
+                )
+            elif ctx.rule_template and issue.kind is IssueKind.UNKNOWN_NAME:
                 self._expression_finding(
                     key, Level.HINT, fc.RULE_UNRESOLVED_NAME, ctx.element_id, subject, **data
                 )
@@ -518,6 +660,18 @@ class Checker:
                 )
         if analysis.truncated:  # the analysis dropped findings of its own
             self._expression_overflow(key, ctx.element_id, subject)
+        for start, end in analysis.slots:
+            self._expression_finding(
+                key,
+                Level.ERROR,
+                fc.EXPRESSION_EMPTY,
+                ctx.element_id,
+                subject,
+                field=field,
+                reason="slot",
+                start=start,
+                end=end,
+            )
         for name in analysis.names:
             if ctx.in_template and any(
                 symbol.kind is SymbolKind.UNRESOLVED for symbol in name.symbols
@@ -540,6 +694,14 @@ class Checker:
                 and name.symbols[0].object_type == catalog.OBJECT_CANDLE
             ):
                 self._candle_uses[(ctx.element_id, subject)] = None
+            if (
+                ctx.element_id is not None
+                and len(name.symbols) >= 2
+                and name.symbols[0].kind is SymbolKind.INSTANCE
+            ):
+                self._used_inputs.setdefault(ctx.element_id, set()).add(
+                    (name.symbols[0].name.lower(), name.symbols[1].name.lower())
+                )
         if ctx.order_error and self.analysis_uses_order(analysis):
             self._expression_finding(
                 key,
@@ -628,6 +790,61 @@ class Checker:
             instance=subject,
         )
 
+    def context_findings(self, context: ExpressionContext, analysis: Analysis) -> list[Finding]:
+        """The findings of one analyzed expression at a place, as the check reports them:
+        what ``/api/v1/expressions`` answers. Positions refer to the analyzed text."""
+        found: list[Finding] = []
+        subject = context.subject
+        element = context.element_id
+        field = context.field
+        if not analysis.source.strip():
+            found.append(
+                Finding(
+                    Level.ERROR,
+                    fc.EXPRESSION_EMPTY,
+                    element,
+                    subject,
+                    {"field": field, "reason": "missing"},
+                )
+            )
+            return found
+        for issue in analysis.issues[:MAX_FINDINGS_PER_EXPRESSION]:
+            data: dict[str, object] = {
+                "field": field,
+                "start": issue.start,
+                "end": issue.end,
+                "issue": issue.kind.value,
+                "reason": issue.reason,
+                **issue.details,
+            }
+            if issue.kind is IssueKind.INVALID_INSTRUMENT:
+                found.append(Finding(Level.ERROR, fc.INSTRUMENT_INVALID, element, subject, data))
+            elif context.rule_template and issue.kind is IssueKind.UNKNOWN_NAME:
+                found.append(Finding(Level.HINT, fc.RULE_UNRESOLVED_NAME, element, subject, data))
+            else:
+                found.append(Finding(Level.ERROR, fc.EXPRESSION_INVALID, element, subject, data))
+        for start, end in analysis.slots:
+            found.append(
+                Finding(
+                    Level.ERROR,
+                    fc.EXPRESSION_EMPTY,
+                    element,
+                    subject,
+                    {"field": field, "reason": "slot", "start": start, "end": end},
+                )
+            )
+        if context.order_error and self.analysis_uses_order(analysis):
+            found.append(
+                Finding(
+                    Level.ERROR,
+                    fc.EXPRESSION_ORDER_OUTSIDE_MANAGEMENT,
+                    element,
+                    subject,
+                    {"field": field, "context": context.order_context},
+                )
+            )
+        return found
+
     # ------------------------------------------------------------------------------
     # symbols of rules
 
@@ -665,7 +882,7 @@ class Checker:
 
     def _rule_symbol(self, rule: Instance, parent: Scope | None = None) -> Symbol:
         """The symbol of a rule or ruleset in a list of the namespace ``parent``:
-        ``name.ergebnis`` is its result; the rules of a ruleset are addressed as
+        ``key.ergebnis`` is its result; the rules of a ruleset are addressed as
         ``regelwerk.regel``."""
         item = self._item(rule, parent)
         cached = self._rule_symbols.get(id(rule))
@@ -676,7 +893,7 @@ class Checker:
 
             def ruleset_members() -> dict[str, Symbol]:
                 result = {
-                    child.content.name.lower(): self._rule_symbol(child.content)
+                    child.content.key.lower(): self._rule_symbol(child.content)
                     for child in item.contained
                     if isinstance(child.content, Instance)
                 }
@@ -686,19 +903,22 @@ class Checker:
                         SymbolKind.PROPERTY,
                         type_factory=lambda: self._ruleset_result_type(item),
                         payload=item,
+                        label=_RESULT_LABEL,
+                        explanation=_RESULT_EXPLANATION,
                     )
                 return result
 
             symbol = Symbol(
-                rule.name,
+                rule.key,
                 SymbolKind.RULESET,
                 object_type=rule.object_type,
                 members_factory=ruleset_members,
                 payload=item,
+                shown=rule.name,
             )
         elif rule.object_type == catalog.TYPE_RULE:
             symbol = Symbol(
-                rule.name,
+                rule.key,
                 SymbolKind.RULE,
                 object_type=rule.object_type,
                 members_factory=lambda: {
@@ -707,12 +927,16 @@ class Checker:
                         SymbolKind.PROPERTY,
                         type=self._rule_result_type(rule),
                         payload=item,
+                        label=_RESULT_LABEL,
+                        explanation=_RESULT_EXPLANATION,
+                        datatype=self._rule_result_type(rule).datatype,
                     )
                 },
                 payload=item,
+                shown=rule.name,
             )
         else:
-            symbol = instance_symbol(self.registry, rule)
+            symbol = instance_symbol(self.registry, rule, self._rule_symbol)
         self._rule_symbols[id(rule)] = symbol
         return symbol
 
@@ -726,29 +950,42 @@ class Checker:
 
     def _element_symbol(self, element: Element) -> Symbol | None:
         if element.instance is not None:
-            return instance_symbol(self.registry, element.instance)
-        name = element.name
-        if not name:
+            return instance_symbol(self.registry, element.instance, self._rule_symbol)
+        key = element.key
+        if not key:
             return None
         if element.type == catalog.FLOW_CONDITION:
             return Symbol(
-                name,
+                key,
                 SymbolKind.CONDITION,
                 members_factory=lambda: {
-                    RESULT_PROPERTY: Symbol(RESULT_PROPERTY, SymbolKind.PROPERTY, type=et.BOOLEAN)
+                    RESULT_PROPERTY: Symbol(
+                        RESULT_PROPERTY,
+                        SymbolKind.PROPERTY,
+                        type=et.BOOLEAN,
+                        label=_RESULT_LABEL,
+                        explanation=_RESULT_EXPLANATION,
+                        datatype=DataType.BOOLEAN,
+                        previous_value=True,
+                    )
                 },
+                shown=element.name,
             )
         if element.type == catalog.FLOW_CALCULATION:
             return Symbol(
-                name,
+                key,
                 SymbolKind.CALCULATION,
                 members_factory=lambda: {
                     RESULT_PROPERTY: Symbol(
                         RESULT_PROPERTY,
                         SymbolKind.PROPERTY,
                         type_factory=lambda: self._calculation_type(element),
+                        label=_RESULT_LABEL,
+                        explanation=_RESULT_EXPLANATION,
+                        previous_value=True,
                     )
                 },
+                shown=element.name,
             )
         return None
 
@@ -800,41 +1037,54 @@ class Checker:
 
     def _check_strategy_parameters(self, strategy: Strategy) -> None:
         self._duplicates(
-            [(item.name, None, item.name) for item in strategy.parameters], "strategy_parameters"
+            [_Entry(item.name, item.key, None, item.key) for item in strategy.parameters],
+            "strategy_parameters",
         )
         for item in strategy.parameters:
-            self._check_name(item.name, None, item.name, "strategy_parameter")
+            self._check_key(item.key, None, item.key, "strategy_parameter")
             if item.value is None:
                 if not item.at_application:
                     self._add(
                         Level.ERROR,
                         fc.PARAMETER_MISSING,
                         None,
-                        item.name,
-                        parameter=item.name,
+                        item.key,
+                        parameter=item.key,
                         scope="strategy",
                     )
                 continue
             problem = _fixed_problem(_param_of_strategy_parameter(item), item.value)
             if problem is not None:
-                self._add(
-                    Level.ERROR,
-                    fc.PARAMETER_BINDING_INVALID,
-                    None,
-                    item.name,
-                    parameter=item.name,
-                    scope="strategy",
-                    reason=problem[0],
-                    **problem[1],
-                )
+                if problem[0] == "instrument":
+                    self._add(
+                        Level.ERROR,
+                        fc.INSTRUMENT_INVALID,
+                        None,
+                        item.key,
+                        parameter=item.key,
+                        scope="strategy",
+                        value=item.value,
+                    )
+                else:
+                    self._add(
+                        Level.ERROR,
+                        fc.PARAMETER_BINDING_INVALID,
+                        None,
+                        item.key,
+                        parameter=item.key,
+                        scope="strategy",
+                        reason=problem[0],
+                        **problem[1],
+                    )
 
-    def _check_element(self, element: Element) -> None:
+    def _check_element(self, element: Element, index: int) -> None:
         description = self.registry.get(element.type)
         if description is None:
             self._add(
                 Level.ERROR, fc.TYPE_UNKNOWN, element.id, None, kind="element", type=element.type
             )
             return
+        path = pointer("elements", index)
         in_main_flow = element.management_of is None
         if not in_main_flow:
             owner = self._strategy.element(element.management_of or "")
@@ -847,8 +1097,9 @@ class Checker:
                     owner=element.management_of,
                 )
         ctx = self._strategy_ctx(element, order_error=in_main_flow)
-        if element.name is not None:
-            self._check_name(element.name, element.id, None, "element")
+        ctx.path = path
+        if element.key is not None:
+            self._check_key(element.key, element.id, element.key, "element")
         if not description.rules_allowed and element.rules:
             self._add(
                 Level.ERROR, fc.ELEMENT_RULES_NOT_ALLOWED, element.id, None, type=element.type
@@ -859,20 +1110,90 @@ class Checker:
             self._check_instance_element(element, ctx)
         elif description.kind in (ElementKind.TRIGGER, ElementKind.FLOW):
             self._check_flow_element(element, description, ctx)
+        self._check_element_inputs(element, ctx)
         if element.rules:
             list_scope = Scope(self._strategy_scope)
             for rule in element.rules:
                 list_scope.add(self._rule_symbol(rule, list_scope))
             self._duplicates(
-                [(rule.name, element.id, rule.name) for rule in element.rules], "element_rules"
+                [_Entry(rule.name, rule.key, element.id, rule.key) for rule in element.rules],
+                "element_rules",
             )
             self._check_rule_list(
                 element.rules,
-                self._strategy_ctx(element, order_error=False),
+                replace(self._strategy_ctx(element, order_error=False), path=path),
                 list_scope=list_scope,
                 ordered=False,
                 list_name="element",
+                list_path=below(path, "rules"),
             )
+
+    def _check_element_inputs(self, element: Element, ctx: _Ctx) -> None:
+        """An input names an instance on the drawing area and a property of it that exist
+        (specification 3.3, 3.6)."""
+        for entry in element.inputs:
+            symbol = self._strategy_scope.resolve(entry.instance)
+            if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
+                self._add(
+                    Level.ERROR,
+                    fc.DATA_UNKNOWN,
+                    element.id,
+                    None,
+                    where="input",
+                    reason="unknown_instance",
+                    instance=entry.instance,
+                    property=entry.property,
+                )
+                continue
+            member = symbol.member(entry.property)
+            if member is None or member.kind is not SymbolKind.PROPERTY:
+                self._add(
+                    Level.ERROR,
+                    fc.DATA_UNKNOWN,
+                    element.id,
+                    None,
+                    where="input",
+                    reason="unknown_property",
+                    instance=entry.instance,
+                    property=entry.property,
+                )
+
+    def _check_inputs_used(self, strategy: Strategy) -> None:
+        """An input that no expression of the element or of its rules uses is a hint."""
+        for element in strategy.elements:
+            used = self._used_inputs.get(element.id, set())
+            for entry in element.inputs:
+                symbol = self._strategy_scope.resolve(entry.instance)
+                if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
+                    continue  # reported as an input that does not exist
+                member = symbol.member(entry.property)
+                if member is None or member.kind is not SymbolKind.PROPERTY:
+                    continue  # reported as an input that does not exist
+                if (symbol.name.lower(), entry.property.lower()) in used:
+                    continue
+                if self._connection_binding_uses(element, symbol.name, entry.property):
+                    continue
+                self._add(
+                    Level.HINT,
+                    fc.INPUT_UNUSED,
+                    element.id,
+                    None,
+                    instance=entry.instance,
+                    property=entry.property,
+                )
+
+    @staticmethod
+    def _connection_binding_uses(element: Element, instance: str, prop: str) -> bool:
+        for binding in (*element.parameters.values(), *element.properties.values()):
+            link = binding.value
+            if (
+                binding.kind is BindingKind.CONNECTION
+                and isinstance(link, DataLink)
+                and link.instance.lower() == instance.lower()
+                and link.property.lower() == prop.lower()
+            ):
+                return True
+        return False
 
     def _check_instance_element(self, element: Element, ctx: _Ctx) -> None:
         instance = element.instance
@@ -883,13 +1204,17 @@ class Checker:
                 Level.ERROR,
                 fc.TYPE_UNKNOWN,
                 element.id,
-                instance.name,
+                instance.key,
                 kind="object",
                 type=instance.object_type,
             )
             return
-        self._check_name(instance.name, element.id, instance.name, "instance")
-        self._check_object(instance, description, replace(ctx, subject=instance.name))
+        self._check_key(instance.key, element.id, instance.key, "instance")
+        self._check_object(
+            instance,
+            description,
+            replace(ctx, subject=instance.key, path=below(ctx.path, "instance")),
+        )
 
     def _check_flow_element(
         self, element: Element, description: TypeDescription, ctx: _Ctx
@@ -912,7 +1237,7 @@ class Checker:
                     )
                 else:
                     expected_for["ausdruck"] = found.expected
-        self._check_parameters(params, element.parameters, ctx, expected_for)
+        self._check_parameters(params, element.parameters, ctx, expected_for, "parameters")
         if element.type == catalog.FLOW_PLACE_ORDER:
             self._check_order_properties(element, ctx)
         else:
@@ -971,7 +1296,7 @@ class Checker:
                     property=item.id,
                     order_type=description.id,
                 )
-        self._check_bindings(params, values, ctx, {}, "property")
+        self._check_bindings(params, values, ctx, {}, "property", "properties")
 
     # ------------------------------------------------------------------------------
     # parameters and bindings
@@ -982,6 +1307,7 @@ class Checker:
         values: dict[str, Binding],
         ctx: _Ctx,
         expected_for: dict[str, ExprType] | None = None,
+        section: str = "parameter_values",
     ) -> None:
         known = {item.id for item in params}
         for name in values:
@@ -1000,7 +1326,7 @@ class Checker:
                     ctx.subject or None,
                     parameter=item.id,
                 )
-        self._check_bindings(applicable, values, ctx, expected_for or {}, "parameter")
+        self._check_bindings(applicable, values, ctx, expected_for or {}, "parameter", section)
 
     def _check_bindings(
         self,
@@ -1009,8 +1335,16 @@ class Checker:
         ctx: _Ctx,
         expected_for: dict[str, ExprType],
         label: str,
+        section: str,
     ) -> None:
         for item in params:
+            if self.record_contexts and BindingKind.EXPRESSION in item.bindings:
+                self._record(
+                    below(ctx.path, section, item.id, "value"),
+                    ctx,
+                    expected_for.get(item.id, item.expected),
+                    f"{label}:{item.id}",
+                )
             binding = values.get(item.id)
             if binding is not None:
                 self._check_binding(item, binding, ctx, expected_for, label)
@@ -1046,10 +1380,23 @@ class Checker:
         if binding.kind is BindingKind.FIXED:
             problem = _fixed_problem(item, binding.value)
             if problem is not None:
-                self._invalid(ctx, label, item.id, problem[0], **problem[1])
+                if problem[0] == "instrument":
+                    self._add(
+                        Level.ERROR,
+                        fc.INSTRUMENT_INVALID,
+                        ctx.element_id,
+                        ctx.subject or None,
+                        **{label: item.id},
+                        value=binding.value,
+                    )
+                else:
+                    self._invalid(ctx, label, item.id, problem[0], **problem[1])
             return
         if binding.kind is BindingKind.PARAMETER:
             self._check_parameter_binding(item, binding, ctx, label)
+            return
+        if binding.kind is BindingKind.CONNECTION:
+            self._check_connection_binding(item, binding, ctx, label)
             return
         text = binding.value
         if not isinstance(text, str):
@@ -1080,6 +1427,60 @@ class Checker:
                 name=name,
                 expected=item.datatype.value,
                 found=target.datatype.value,
+            )
+
+    def _check_connection_binding(
+        self, item: _Param, binding: Binding, ctx: _Ctx, label: str
+    ) -> None:
+        """A data connection names an instance and a property of it that exist, and the
+        property fits the data type of the parameter or property (specification 3.6)."""
+        link = binding.value
+        if not isinstance(link, DataLink):
+            self._invalid(ctx, label, item.id, "value")
+            return
+        symbol = ctx.env.resolve(link.instance)
+        if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
+            self._add(
+                Level.ERROR,
+                fc.DATA_UNKNOWN,
+                ctx.element_id,
+                ctx.subject or None,
+                where="binding",
+                reason="unknown_instance",
+                instance=link.instance,
+                property=link.property,
+                target=item.id,
+                target_kind=label,
+            )
+            return
+        member = symbol.member(link.property)
+        if member is None or member.kind is not SymbolKind.PROPERTY:
+            self._add(
+                Level.ERROR,
+                fc.DATA_UNKNOWN,
+                ctx.element_id,
+                ctx.subject or None,
+                where="binding",
+                reason="unknown_property",
+                instance=link.instance,
+                property=link.property,
+                target=item.id,
+                target_kind=label,
+            )
+            return
+        found = member.value_type
+        if found is not None and et.mismatch_with(item.expected, found) is not None:
+            self._add(
+                Level.ERROR,
+                fc.DATA_TYPE_MISMATCH,
+                ctx.element_id,
+                ctx.subject or None,
+                instance=link.instance,
+                property=link.property,
+                expected=item.datatype.value,
+                found=found.describe(),
+                target=item.id,
+                target_kind=label,
             )
 
     # ------------------------------------------------------------------------------
@@ -1113,20 +1514,48 @@ class Checker:
         if description.id == TREND_TYPE_ID:
             self._check_trend_direction(content, ctx)
         scope = Scope(self._closed)
-        entries: list[tuple[str, str | None, str | None]] = []
-        for item in all_params:
-            scope.add(parameter_symbol(item.id, item.datatype, item.choices))
-            entries.append((item.id, ctx.element_id, subject))
+        entries: list[_Entry] = []
+        for item in params:
+            symbol = parameter_symbol(
+                item.id,
+                item.datatype,
+                item.choices,
+                object_type=item.object_type,
+                registry=self.registry,
+            )
+            description_item = description.parameter(item.id)
+            if description_item is not None:
+                symbol.label = description_item.label
+                symbol.explanation = description_item.explanation
+            scope.add(symbol)
+            entries.append(_Entry(item.id, item.id, ctx.element_id, subject))
+        fixed_entries = list(entries)
         for definition in content.parameters:
-            self._check_name(definition.name, ctx.element_id, subject, "parameter")
+            scope.add(
+                parameter_symbol(
+                    definition.key,
+                    definition.datatype,
+                    definition.choices,
+                    shown=definition.name,
+                    object_type=definition.object_type,
+                    registry=self.registry,
+                )
+            )
+            entries.append(_Entry(definition.name, definition.key, ctx.element_id, subject))
+            self._check_key(definition.key, ctx.element_id, subject, "parameter")
         for child in content.instances:
-            scope.add(instance_symbol(self.registry, child))
-            entries.append((child.name, ctx.element_id, ctx.below(child.name)))
-            self._check_name(child.name, ctx.element_id, ctx.below(child.name), "instance")
+            scope.add(instance_symbol(self.registry, child, self._rule_symbol))
+            entries.append(_Entry(child.name, child.key, ctx.element_id, ctx.below(child.key)))
+            self._check_key(child.key, ctx.element_id, ctx.below(child.key), "instance")
         for rule in content.rules:
             scope.add(self._rule_symbol(rule, scope))
-            entries.append((rule.name, ctx.element_id, ctx.below(rule.name)))
-        self._duplicates(entries, "template")
+            entries.append(_Entry(rule.name, rule.key, ctx.element_id, ctx.below(rule.key)))
+        self._duplicates(
+            entries[len(fixed_entries) :],
+            "template",
+            against_application=True,
+            existing=fixed_entries,
+        )
         self._check_parameters(all_params, content.parameter_values, ctx)
         inner = replace(
             ctx,
@@ -1136,13 +1565,26 @@ class Checker:
             order_context=_INDICATOR,
             rule_order_error=True,
         )
-        for child in content.instances:
-            self._check_nested_instance(child, inner)
+        for index, child in enumerate(content.instances):
+            self._check_nested_instance(
+                child, replace(inner, path=below(ctx.path, "instances", index))
+            )
         self._check_rule_list(
-            content.rules, inner, list_scope=scope, ordered=False, list_name="template"
+            content.rules,
+            inner,
+            list_scope=scope,
+            ordered=False,
+            list_name="template",
+            list_path=below(ctx.path, "rules"),
         )
-        for own_property in content.properties:
-            self._check_property_definition(own_property, inner)
+        for index, own_property in enumerate(content.properties):
+            self._check_property_definition(
+                own_property, inner, below(ctx.path, "properties", index, "expression")
+            )
+        self._duplicates(
+            [_Entry(item.name, item.key, ctx.element_id, subject) for item in content.properties],
+            "template_properties",
+        )
 
     def _check_trend_direction(self, content: ObjectContent, ctx: _Ctx) -> None:
         """A trend with the calculation method "Ausdruck" needs an expression for the
@@ -1151,7 +1593,7 @@ class Checker:
         method = catalog.TREND_METHOD_EXPRESSION
         if binding is not None and binding.kind is BindingKind.FIXED:
             method = str(binding.value)
-        has_direction = any(item.name.lower() == "richtung" for item in content.properties)
+        has_direction = any(item.key.lower() == "richtung" for item in content.properties)
         if method == catalog.TREND_METHOD_EXPRESSION and not has_direction:
             self._add(
                 Level.ERROR,
@@ -1162,7 +1604,7 @@ class Checker:
             )
 
     def _check_nested_instance(self, instance: Instance, ctx: _Ctx) -> None:
-        subject = ctx.below(instance.name)
+        subject = ctx.below(instance.key)
         description = self.registry.get(instance.object_type)
         if description is None:
             self._add(
@@ -1176,15 +1618,14 @@ class Checker:
             return
         self._check_object(instance, description, replace(ctx, subject=subject))
 
-    def _check_property_definition(self, definition: PropertyDefinition, ctx: _Ctx) -> None:
-        field = f"property_definition:{definition.name}"
-        analysis = self.analyze_cached(
-            definition,
-            field,
-            definition.expression,
-            ctx.env,
-            type_of(definition.datatype, definition.choices),
-        )
+    def _check_property_definition(
+        self, definition: PropertyDefinition, ctx: _Ctx, pointer: str
+    ) -> None:
+        field = f"property_definition:{definition.key}"
+        expected = type_of(definition.datatype, definition.choices, definition.object_type)
+        self._record(pointer, ctx, expected, field)
+        self._check_key(definition.key, ctx.element_id, ctx.subject or None, "property")
+        analysis = self.analyze_cached(definition, field, definition.expression, ctx.env, expected)
         self._report(definition, field, analysis, ctx)
         analysis.release()
 
@@ -1199,21 +1640,22 @@ class Checker:
         list_scope: Scope,
         ordered: bool,
         list_name: str,
+        list_path: str,
     ) -> None:
         items: list[_RuleItem] = []
         for rule in rules:
             item = self._item(rule, list_scope)
             item.parent = list_scope
             items.append(item)
-        for rule, item in zip(rules, items, strict=True):
-            self._check_rule(rule, item, ctx, rule.name)
+        for index, (rule, item) in enumerate(zip(rules, items, strict=True)):
+            self._check_rule(rule, item, ctx, rule.key, below(list_path, index))
         self._check_cycles(rules, items, ordered=ordered, list_name=list_name, ctx=ctx)
 
     def _check_rule(
-        self, rule: ObjectContent, item: _RuleItem, ctx: _Ctx, name: str | None
+        self, rule: ObjectContent, item: _RuleItem, ctx: _Ctx, name: str | None, path: str
     ) -> None:
         subject = ctx.below(name) if name is not None else (ctx.subject or None)
-        rule_ctx = replace(ctx, subject=subject or "")
+        rule_ctx = replace(ctx, subject=subject or "", path=path)
         description = self.registry.get(rule.object_type)
         if description is None:
             self._add(
@@ -1236,7 +1678,7 @@ class Checker:
             )
             return
         if name is not None:
-            self._check_name(name, ctx.element_id, subject, "rule")
+            self._check_key(name, ctx.element_id, subject, "rule")
         if description.category is ObjectCategory.RULE:
             if ctx.rule_order_error and item.uses_order():
                 self._expression_finding(
@@ -1252,9 +1694,12 @@ class Checker:
 
     def _check_regel(self, rule: ObjectContent, item: _RuleItem, ctx: _Ctx) -> None:
         for entry in rule.parameters:
-            self._check_name(entry.name, ctx.element_id, ctx.subject or None, "parameter")
+            self._check_key(entry.key, ctx.element_id, ctx.subject or None, "parameter")
         self._duplicates(
-            [(entry.name, ctx.element_id, ctx.subject or None) for entry in rule.parameters],
+            [
+                _Entry(entry.name, entry.key, ctx.element_id, ctx.subject or None)
+                for entry in rule.parameters
+            ],
             "rule_parameters",
         )
         definitions = [_param_of_definition(entry) for entry in rule.parameters]
@@ -1262,8 +1707,15 @@ class Checker:
         self._check_parameters(definitions, rule.parameter_values, outer)
         rule_ctx = replace(ctx, env=item.env(), order_error=False)
         analysis = item.expression_analysis()
+        self._record(
+            below(ctx.path, "expression"), rule_ctx, self._rule_expected(rule), "expression"
+        )
         self._report(rule, "expression", analysis, rule_ctx)
         self._check_result(rule, analysis, ctx)
+
+    def _rule_expected(self, rule: ObjectContent) -> ExprType:
+        """The type the expression of a rule must have."""
+        return self._rule_result_type(rule)
 
     def _check_result(self, rule: ObjectContent, analysis: Analysis, ctx: _Ctx) -> None:
         subject = ctx.subject or None
@@ -1307,15 +1759,24 @@ class Checker:
         assert inner_scope is not None  # noqa: S101 - created with the item of a ruleset
         inner_ctx = replace(ctx, env=inner_scope, params={}, order_error=False)
         self._duplicates(
-            [(child.name, ctx.element_id, ctx.below(child.name)) for child in rule.rules],
+            [
+                _Entry(child.name, child.key, ctx.element_id, ctx.below(child.key))
+                for child in rule.rules
+            ],
             "ruleset",
         )
         self._check_rule_list(
-            rule.rules, inner_ctx, list_scope=inner_scope, ordered=True, list_name="ruleset"
+            rule.rules,
+            inner_ctx,
+            list_scope=inner_scope,
+            ordered=True,
+            list_name="ruleset",
+            list_path=below(ctx.path, "rules"),
         )
         if rule.result_expression is not None:
             analysis = item.result_analysis()
             assert analysis is not None  # noqa: S101 - the inner namespace exists
+            self._record(below(ctx.path, "result_expression"), inner_ctx, None, "result_expression")
             self._report(rule, "result_expression", analysis, inner_ctx)
             if ctx.rule_order_error and self._names_order_directly(analysis):
                 self._expression_finding(
@@ -1363,10 +1824,10 @@ class Checker:
                     Level.ERROR,
                     fc.RULESET_REFERENCE_ORDER,
                     ctx.element_id,
-                    ctx.below(rules[first].name),
+                    ctx.below(rules[first].key),
                     kind="cycle",
                     list=list_name,
-                    rules=[rules[int(node)].name for node in component],
+                    rules=[rules[int(node)].key for node in component],
                 )
         if not ordered:
             return
@@ -1378,11 +1839,11 @@ class Checker:
                         Level.ERROR,
                         fc.RULESET_REFERENCE_ORDER,
                         ctx.element_id,
-                        ctx.below(rules[position].name),
+                        ctx.below(rules[position].key),
                         kind="forward",
                         list=list_name,
-                        rule=rules[position].name,
-                        refers_to=rules[target].name,
+                        rule=rules[position].key,
+                        refers_to=rules[target].key,
                     )
 
     # ------------------------------------------------------------------------------
@@ -1394,7 +1855,6 @@ class Checker:
         for item in strategy.elements:
             description = self.registry.get(item.type)
             kinds[item.id] = None if description is None else description.kind
-        incoming: set[str] = set()
         edges: dict[str, list[tuple[str, str]]] = {item.id: [] for item in strategy.elements}
         for connection in strategy.connections:
             problem = self._connection_problem(connection, elements, kinds)
@@ -1410,39 +1870,37 @@ class Checker:
                     target=connection.target,
                 )
                 continue
-            incoming.add(connection.target)
             edges[connection.source].append((connection.output, connection.target))
-        main_triggers = [
-            item.id for item in strategy.main_elements() if kinds[item.id] is ElementKind.TRIGGER
-        ]
+        triggers = [item.id for item in strategy.elements if kinds[item.id] is ElementKind.TRIGGER]
+        successors = {node: [target for _, target in pairs] for node, pairs in edges.items()}
+        reached = reachable(triggers, successors)
         for item in strategy.elements:
             if kinds[item.id] is ElementKind.TRIGGER and not edges[item.id]:
                 self._add(Level.ERROR, fc.TRIGGER_UNCONNECTED, item.id)
-            if kinds[item.id] is ElementKind.FLOW and item.id not in incoming:
-                self._add(Level.ERROR, fc.FLOW_NO_INCOMING, item.id)
+            # an element of an unknown type is no element of the flow for this finding
+            if kinds[item.id] is ElementKind.FLOW and item.id not in reached:
+                self._add(Level.ERROR, fc.FLOW_NOT_REACHED, item.id)
         self._check_loops(strategy, kinds, edges)
-        successors = {node: [target for _, target in pairs] for node, pairs in edges.items()}
-        reached = reachable(main_triggers, successors)
-        # a strategy without elements is the one exception to the hint (specification 3.6)
-        if strategy.elements and not any(
-            elements[node].type == catalog.FLOW_PLACE_ORDER for node in reached
-        ):
-            self._add(Level.HINT, fc.FLOW_NO_ORDER_REACHABLE)
-        candle_triggers = [
-            item.id for item in strategy.elements if item.type == catalog.TRIGGER_CANDLE_CLOSE
-        ]
+        main_triggers = [item for item in triggers if elements[item].management_of is None]
+        if not main_triggers:
+            self._add(Level.HINT, fc.FLOW_MAIN_WITHOUT_TRIGGER)
+        else:
+            main_reached = reachable(main_triggers, successors)
+            if not any(
+                elements[node].type == catalog.FLOW_PLACE_ORDER
+                and elements[node].management_of is None
+                for node in main_reached
+            ):
+                self._add(Level.HINT, fc.FLOW_NO_ORDER_REACHABLE)
+        # Only `trigger.candle_close` evaluates at the close of a candle: any other trigger that
+        # reaches an element makes `Kerze` without an instance ambiguous there.
         other_triggers = [
             item.id
             for item in strategy.elements
             if kinds[item.id] is ElementKind.TRIGGER and item.type != catalog.TRIGGER_CANDLE_CLOSE
         ]
-        # Only elements that a trigger of their own flow reaches, and only
-        # `trigger.candle_close` does, are evaluated at the close of a candle. Connections
-        # never lead from a flow into another one, so the reach stays inside the flow.
-        self._candle_only_reach = reachable(candle_triggers, successors) - reachable(
-            other_triggers, successors
-        )
-        self._strategy_candle_only = not other_triggers and bool(candle_triggers)
+        self._other_trigger_reach = reachable(other_triggers, successors)
+        self._has_other_trigger = bool(other_triggers)
 
     def _connection_problem(
         self,
@@ -1456,13 +1914,25 @@ class Checker:
             return "unknown_source"
         if target is None:
             return "unknown_target"
-        if source.management_of != target.management_of:
-            return "across_managements"
-        if kinds[target.id] is ElementKind.TRIGGER:
-            return "target_is_trigger"
+        if _is_instance(source, kinds) or _is_instance(target, kinds):
+            return "instance_connection"
         description = self.registry.get(source.type)
         if description is not None and description.output(connection.output) is None:
             return "unknown_output"
+        if kinds[target.id] is ElementKind.TRIGGER:
+            return "target_is_trigger"
+        managing = description.management_output() if description is not None else None
+        if managing is not None and managing.id == connection.output:
+            # the connection that begins the management of an order without triggers of its own
+            if target.management_of != source.id:
+                return "management_output_outside"
+            has_triggers = any(
+                item.management_of == source.id and kinds[item.id] is ElementKind.TRIGGER
+                for item in elements.values()
+            )
+            return "management_output_with_triggers" if has_triggers else None
+        if source.management_of != target.management_of:
+            return "across_managements"
         return None
 
     def _check_loops(
@@ -1491,8 +1961,62 @@ class Checker:
             for group in unending_loops(members, local_edges, conditions, free):
                 self._add(Level.ERROR, fc.FLOW_UNENDING_LOOP, group[0], None, elements=list(group))
 
+    def _check_layout(self, strategy: Strategy) -> None:
+        """Sections and collapsed managements name elements that exist, and a section holds only
+        elements of its own flow, each element in at most one section (specification 3.3)."""
+        elements = {item.id: item for item in strategy.elements}
+        placed: set[str] = set()
+        for section in strategy.sections:
+            flow = section.flow
+            if flow is not None and (
+                flow not in elements or elements[flow].type != catalog.FLOW_PLACE_ORDER
+            ):
+                self._add(
+                    Level.ERROR,
+                    fc.LAYOUT_INVALID,
+                    None,
+                    None,
+                    part="section",
+                    reason="unknown_flow",
+                    section=section.id,
+                    flow=flow,
+                )
+            for element_id in section.elements:
+                item = elements.get(element_id)
+                if item is None:
+                    reason = "unknown_element"
+                elif element_id in placed:
+                    reason = "element_twice"
+                elif item.management_of != flow:
+                    reason = "other_flow"
+                else:
+                    reason = ""
+                if reason:
+                    self._add(
+                        Level.ERROR,
+                        fc.LAYOUT_INVALID,
+                        element_id if item is not None else None,
+                        None,
+                        part="section",
+                        reason=reason,
+                        section=section.id,
+                        element_id=element_id,
+                    )
+                placed.add(element_id)
+        for flow in strategy.collapsed_managements:
+            if flow not in elements or elements[flow].type != catalog.FLOW_PLACE_ORDER:
+                self._add(
+                    Level.ERROR,
+                    fc.LAYOUT_INVALID,
+                    None,
+                    None,
+                    part="collapsed_management",
+                    reason="unknown_flow",
+                    flow=flow,
+                )
+
     def _check_candle_uses(self, strategy: Strategy) -> None:
-        if not self._candle_uses:
+        if not self._candle_uses or not self._has_other_trigger:
             return
         has_instance = any(
             item.instance is not None
@@ -1503,15 +2027,65 @@ class Checker:
         if has_instance:
             return
         flow_ids = {item.id for item in strategy.elements if item.id and item.instance is None}
+        with_rules = {
+            item.id
+            for item in strategy.elements
+            if (description := self.registry.get(item.type)) is not None
+            and description.rules_allowed
+        }
         for element_id, subject in self._candle_uses:
             if element_id in flow_ids:
-                # an element of the flow and its rules: judged by the triggers of its flow
-                affected = element_id not in self._candle_only_reach
+                # an element of the flow and its rules: judged by the triggers that reach it
+                affected = element_id in self._other_trigger_reach
+            elif element_id is None:
+                # a rule of the strategy: judged by the elements it is applied to
+                affected = any(node in self._other_trigger_reach for node in with_rules)
             else:
-                # a rule of the strategy or an instance on the canvas: judged by all triggers
-                affected = not self._strategy_candle_only
+                # an instance on the canvas: judged by all triggers of the strategy
+                affected = True
             if affected:
                 self._add(Level.ERROR, fc.CANDLE_NO_INSTANCE, element_id, subject)
+
+
+@dataclass(frozen=True, slots=True)
+class _Entry:
+    """A name and key of a level for the check of doubles, with where to report it."""
+
+    name: str
+    key: str
+    element: str | None
+    subject: str | None
+
+
+def _reserved_names(registry: ElementRegistry) -> set[str]:
+    """The names of the objects of the application in both languages, normalized."""
+    result: set[str] = set()
+    for description in registry.list(ElementKind.APPLICATION_OBJECT):
+        result.add(normalized_name(description.name.de))
+        result.add(normalized_name(description.name.en))
+        result.add(normalized_name(description.id))
+    return result
+
+
+def _reserved_keys(registry: ElementRegistry) -> set[str]:
+    """The identifiers of the objects of the application and the names of the functions, in
+    lower case."""
+    result = {
+        description.id.lower() for description in registry.list(ElementKind.APPLICATION_OBJECT)
+    }
+    result.update(item.name.lower() for item in list_functions())
+    return result
+
+
+def _is_instance(element: Element, kinds: dict[str, ElementKind | None]) -> bool:
+    """Whether the element shows an object (an instance) and has no connection of the flow."""
+    kind = kinds.get(element.id)
+    return element.instance is not None or kind in (
+        ElementKind.OBJECT_TYPE,
+        ElementKind.APPLICATION_OBJECT,
+        ElementKind.ORDER_TYPE,
+        ElementKind.TREND_METHOD,
+    )
 
 
 def _is_order_object(symbol: Symbol) -> bool:
@@ -1534,9 +2108,14 @@ def _condition_holds(
     return False
 
 
-def _fixed_problem(item: _Param, value: Scalar | None) -> tuple[str, dict[str, object]] | None:
-    """Why a fixed value does not fit the data type, or ``None``."""
+def _fixed_problem(
+    item: _Param, value: Scalar | DataLink | None
+) -> tuple[str, dict[str, object]] | None:
+    """Why a fixed value does not fit the data type, or ``None``. The reason ``instrument``
+    stands for a text that is no designation of an instrument (specification 3.1)."""
     datatype = item.datatype
+    if isinstance(value, DataLink):
+        return "type", {"expected": datatype.value}
     if datatype in (DataType.NUMBER, DataType.PERCENT):
         ok = (
             isinstance(value, int | float)
@@ -1551,6 +2130,12 @@ def _fixed_problem(item: _Param, value: Scalar | None) -> tuple[str, dict[str, o
         ok = isinstance(value, str)
     elif datatype in (DataType.TIMESTAMP, DataType.DATE):
         ok = isinstance(value, str) and _is_iso(datatype, value)
+    elif datatype is DataType.OBJECT and item.object_type == INSTRUMENT_TYPE:
+        if not isinstance(value, str):
+            return "type", {"expected": datatype.value}
+        if value in item.choices or is_valid_designation(value):
+            return None
+        return "instrument", {"value": value}
     else:
         ok = False
     if not ok:

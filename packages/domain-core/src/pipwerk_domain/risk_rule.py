@@ -9,14 +9,23 @@ from pipwerk_domain.model import (
     ParameterDefinition,
     Template,
 )
-from pipwerk_domain.typedesc import BindingKind, DataType
+from pipwerk_domain.typedesc import BindingKind, DataType, Label
 
 RISK_PER_TRADE_RULE_ID = "7c1d4e2a-5b3f-4a86-9d27-e1f0a3c8b645"
 """Fixed identifier of the delivered rule template "Risiko je Trade". Every installation
 has the same one, so instances in strategies name their origin the same way."""
 
-RISK_PER_TRADE_TITLE = "Risiko je Trade"
+RISK_PER_TRADE_NAME = "Risiko je Trade"
+RISK_PER_TRADE_LABEL = Label("Risiko je Trade", "Risk per trade")
+"""The name of the template in German and English (specification 3.5)."""
+
+RISK_PER_TRADE_EXPLANATION = Label(
+    "Begrenzt den Verlust bis zum Stop-Loss auf einen Anteil des Kapitals und bestimmt daraus "
+    "das Volumen.",
+    "Limits the loss up to the stop loss to a share of the equity and derives the volume from it.",
+)
 RISK_LIMIT_PARAMETER = "risikogrenze"
+RISK_LIMIT_NAME = "Risikogrenze"
 RISK_LIMIT_DEFAULT = 0.01
 """Default value of the risk limit: 1 % (a percentage is a share, 1 % is 0.01)."""
 
@@ -33,13 +42,13 @@ RISK_PER_TRADE_EXPRESSION = f"""IF(ISNA(Position.volumen);
    IF({_DISTANCE_ORDER} <= 0;
       Order.volumen;
       FLOOR({RISK_LIMIT_PARAMETER} * Konto.kapital
-              / ({_DISTANCE_ORDER} / Instrument.tickgroesse * Instrument.tickwert);
-            Instrument.volumenschritt));
+              / ({_DISTANCE_ORDER} / Order.instrument.tickgroesse * Order.instrument.tickwert);
+            Order.instrument.volumenschritt));
    IF({_DISTANCE_POSITION} <= 0;
       Position.volumen;
       FLOOR({RISK_LIMIT_PARAMETER} * Konto.kapital
-              / ({_DISTANCE_POSITION} / Instrument.tickgroesse * Instrument.tickwert);
-            Instrument.volumenschritt)))"""
+              / ({_DISTANCE_POSITION} / Order.instrument.tickgroesse * Order.instrument.tickwert);
+            Order.instrument.volumenschritt)))"""
 """The expression of specification 3.5 in the normalized spelling. The distance from the
 price to the stop loss is written out at both places."""
 
@@ -52,7 +61,11 @@ RISK_PER_TRADE_DESCRIPTION = (
 
 def _definition() -> ParameterDefinition:
     return ParameterDefinition(
-        RISK_LIMIT_PARAMETER, DataType.PERCENT, required=True, default=RISK_LIMIT_DEFAULT
+        RISK_LIMIT_NAME,
+        DataType.PERCENT,
+        required=True,
+        default=RISK_LIMIT_DEFAULT,
+        key=RISK_LIMIT_PARAMETER,
     )
 
 
@@ -61,7 +74,7 @@ def risk_per_trade_template() -> Template:
     default 1 %), determined property ``volumen``, comparison ``hoechstens``."""
     return Template(
         id=RISK_PER_TRADE_RULE_ID,
-        title=RISK_PER_TRADE_TITLE,
+        name=RISK_PER_TRADE_NAME,
         description=RISK_PER_TRADE_DESCRIPTION,
         object_type=TYPE_RULE,
         parameters=[_definition()],
@@ -72,14 +85,18 @@ def risk_per_trade_template() -> Template:
 
 
 def risk_per_trade_instance(
-    name: str = "risiko", risk_limit: float = RISK_LIMIT_DEFAULT
+    name: str = RISK_PER_TRADE_NAME,
+    risk_limit: float = RISK_LIMIT_DEFAULT,
+    key: str = "",
 ) -> Instance:
     """An instance of "Risiko je Trade" with the given name and risk limit, a complete copy
-    of the template (E4) with its origin."""
+    of the template (E4) with its origin. The origin names no template name: the template is
+    a delivered one (specification 3.7)."""
     return Instance(
         name=name,
+        key=key,
         object_type=TYPE_RULE,
-        origin=Origin(TYPE_RULE, RISK_PER_TRADE_RULE_ID, RISK_PER_TRADE_TITLE),
+        origin=Origin(TYPE_RULE, RISK_PER_TRADE_RULE_ID),
         parameter_values={RISK_LIMIT_PARAMETER: Binding(BindingKind.FIXED, risk_limit)},
         parameters=[_definition()],
         expression=RISK_PER_TRADE_EXPRESSION,

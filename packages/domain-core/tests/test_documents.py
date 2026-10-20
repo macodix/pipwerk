@@ -1,4 +1,4 @@
-"""Documents (specification 3.7): writing and reading, strict models, limits."""
+"""Documents of the format 2.0 (specification 3.7): writing and reading, strict models, limits."""
 
 import json
 from typing import Any
@@ -22,11 +22,17 @@ from pipwerk_domain.documents import (
 from pipwerk_domain.model import (
     Binding,
     Comparison,
+    Connection,
+    DataLink,
     Element,
+    ElementInput,
     Instance,
+    Orientation,
     Origin,
     ParameterDefinition,
+    Position,
     PropertyDefinition,
+    Section,
     Strategy,
     StrategyParameter,
     Template,
@@ -54,9 +60,9 @@ UUID = uid(1)
 def strategy_dict(**changes: Any) -> dict[str, Any]:
     data: dict[str, Any] = {
         "format": "pipwerk.strategy",
-        "format_version": "1.0",
+        "format_version": "2.0",
         "id": UUID,
-        "title": "t",
+        "name": "t",
     }
     data.update(changes)
     return data
@@ -65,9 +71,9 @@ def strategy_dict(**changes: Any) -> dict[str, Any]:
 def template_dict(format_name: str, object_type: Any, **changes: Any) -> dict[str, Any]:
     data: dict[str, Any] = {
         "format": format_name,
-        "format_version": "1.0",
+        "format_version": "2.0",
         "id": UUID,
-        "title": "t",
+        "name": "t",
         "object_type": object_type,
     }
     data.update(changes)
@@ -75,7 +81,7 @@ def template_dict(format_name: str, object_type: Any, **changes: Any) -> dict[st
 
 
 def instance_dict(name: str = "i", **changes: Any) -> dict[str, Any]:
-    data: dict[str, Any] = {"name": name, "object_type": "EMA"}
+    data: dict[str, Any] = {"name": name, "key": name, "object_type": "EMA"}
     data.update(changes)
     return data
 
@@ -84,6 +90,10 @@ def element_dict(number: int = 2, **changes: Any) -> dict[str, Any]:
     data: dict[str, Any] = {"id": uid(number), "type": "flow.delete_order"}
     data.update(changes)
     return data
+
+
+def connection_dict(source: int = 1, target: int = 2, number: int = 50) -> dict[str, Any]:
+    return {"id": uid(number), "source": uid(source), "output": "weiter", "target": uid(target)}
 
 
 def rejects(data: dict[str, Any]) -> None:
@@ -111,13 +121,15 @@ def full_strategy() -> Strategy:
         properties={
             "richtung": expr('IF(wert.ergebnis > 1; "buy"; "sell")'),
             "volumen": fixed(1.5),
+            "instrument": fixed("EURUSD"),
         },
-        title="Order",
-        rules=[rule("mindestvolumen", "Order.volumen >= Instrument.mindestvolumen")],
+        name="Order",
+        rules=[rule("mindestvolumen", "Order.volumen >= Order.instrument.mindestvolumen")],
+        inputs=[ElementInput("ema21", "wert")],
     )
     return Strategy(
         id=uid(900),
-        title="Strategie ü ä ß Anführung",
+        name="Strategie ü ä ß Anführung",
         description="Beschreibung\nmit Zeilenumbruch",
         parameters=[
             StrategyParameter("zeit", DataType.TIME_UNIT, "h1"),
@@ -125,6 +137,9 @@ def full_strategy() -> Strategy:
             StrategyParameter("modus", DataType.CHOICE, "a", choices=("a", "b")),
             StrategyParameter("offen", DataType.INTEGER, at_application=True),
             StrategyParameter("an", DataType.BOOLEAN, True),
+            StrategyParameter(
+                "Filter-Instrument", DataType.OBJECT, "GBPUSD", object_type="Instrument"
+            ),
         ],
         rules=[
             risk_per_trade_instance("risiko"),
@@ -135,35 +150,34 @@ def full_strategy() -> Strategy:
             ),
         ],
         elements=[
-            trigger(1, x=10.5, y=-3.0, title="Auslöser"),
+            trigger(1, position=Position(10.5, -3.0), name="Auslöser"),
             order,
-            calculation(3, "wert", "1 + 1", x=1, y=2),
+            calculation(3, "wert", "1 + 1", position=Position(1, 2)),
             Element(
                 id=uid(4),
                 type="EMA",
-                title="EMA 21",
-                x=5.0,
-                y=6.0,
                 instance=ema("ema21", 21),
             ),
             Element(
                 id=uid(5),
                 type="Trend",
                 instance=Instance(
-                    name="trend_h1",
+                    name="Trend H1",
+                    key="trend_h1",
                     object_type="Trend",
                     origin=Origin("Trend", uid(777), "Mein Trend"),
                     parameter_values={
                         "zeiteinheit": param("zeiteinheit"),
                         "berechnungsverfahren": fixed("trend_method.expression"),
+                        "instrument": Binding(BindingKind.CONNECTION, DataLink("ema21", "wert")),
                     },
                     parameters=[
-                        ParameterDefinition("faktor", DataType.NUMBER, True, 2, ()),
-                        ParameterDefinition("modus", DataType.CHOICE, False, "a", ("a", "b")),
+                        ParameterDefinition("Faktor", DataType.NUMBER, True, 2, ()),
+                        ParameterDefinition("Modus", DataType.CHOICE, False, "a", ("a", "b")),
                     ],
                     properties=[
-                        PropertyDefinition("richtung", DataType.TEXT, '"aufwaerts"'),
-                        PropertyDefinition("wahl", DataType.CHOICE, '"a"', ("a", "b")),
+                        PropertyDefinition("Richtung", DataType.TEXT, '"aufwaerts"'),
+                        PropertyDefinition("Wahl", DataType.CHOICE, '"a"', ("a", "b")),
                     ],
                     instances=[ema("ema20")],
                     rules=[rule("r", "TRUE()", comparison=Comparison.EQUAL)],
@@ -177,6 +191,12 @@ def full_strategy() -> Strategy:
             ),
         ],
         connections=[connect(1, "weiter", 2), connect(1, "weiter", 3)],
+        sections=[
+            Section("Abschnitt", None, [uid(3)], True),
+            Section("Verwaltung", uid(2), [uid(6)], False),
+        ],
+        orientation=Orientation.HORIZONTAL,
+        collapsed_managements=[uid(2)],
     )
 
 
@@ -189,7 +209,7 @@ def test_strategy_round_trip() -> None:
 
 
 def test_strategy_with_the_risk_rule_round_trip() -> None:
-    original = Strategy(id=uid(900), title="t", rules=[risk_per_trade_instance("risiko", 0.02)])
+    original = Strategy(id=uid(900), name="t", rules=[risk_per_trade_instance("risiko", 0.02)])
     assert read_document(write_document(original)) == original
 
 
@@ -200,8 +220,8 @@ def test_strategy_with_the_risk_rule_round_trip() -> None:
         template(
             catalog.TYPE_INDICATOR,
             description="Beschreibung",
-            parameters=[ParameterDefinition("p", DataType.PERCENT, True, 0.01, ())],
-            properties=[PropertyDefinition("e", DataType.NUMBER, "p * 2")],
+            parameters=[ParameterDefinition("P", DataType.PERCENT, True, 0.01, ())],
+            properties=[PropertyDefinition("E", DataType.NUMBER, "p * 2")],
             instances=[ema("ema20")],
             rules=[rule("r", "TRUE()")],
         ),
@@ -216,11 +236,11 @@ def test_strategy_with_the_risk_rule_round_trip() -> None:
                 "berechnungsverfahren": fixed("trend_method.expression"),
             },
             instances=[ema("ema20")],
-            properties=[PropertyDefinition("richtung", DataType.TEXT, '"aufwaerts"')],
+            properties=[PropertyDefinition("Richtung", DataType.TEXT, '"aufwaerts"')],
         ),
         template(
             catalog.TYPE_RULE,
-            parameters=[ParameterDefinition("g", DataType.NUMBER, True, 5, ())],
+            parameters=[ParameterDefinition("G", DataType.NUMBER, True, 5, ())],
             expression="Order.volumen <= g",
             determined_property="volumen",
             comparison=Comparison.AT_LEAST,
@@ -260,7 +280,7 @@ def test_the_format_follows_the_object_type() -> None:
         text = write_document(template(object_type))
         data = json.loads(text)
         assert data["format"] == format_name
-        assert data["format_version"] == FORMAT_VERSION == "1.0"
+        assert data["format_version"] == FORMAT_VERSION == "2.0"
         assert isinstance(parse_document(text), model)
     assert set(DOCUMENT_MODELS) == {
         "pipwerk.strategy",
@@ -275,25 +295,49 @@ def test_the_written_text_is_json_with_the_head_first_and_a_final_line_feed() ->
     text = write_document(full_strategy())
     assert text.endswith("}\n")
     data = json.loads(text)
-    assert list(data)[:5] == ["format", "format_version", "id", "title", "description"]
+    assert list(data)[:5] == ["format", "format_version", "id", "name", "description"]
     assert "ü ä ß" in text  # no escaping of non-ASCII characters
     template_data = json.loads(write_document(risk_per_trade_template()))
     assert list(template_data)[:6] == [
         "format",
         "format_version",
         "id",
-        "title",
+        "name",
         "description",
         "object_type",
     ]
     instance = data["rules"][0]
-    assert list(instance)[:3] == ["name", "object_type", "origin"]
+    assert list(instance)[:4] == ["name", "key", "object_type", "origin"]
+    assert "title" not in data
+    assert data["orientation"] == "horizontal"
+    assert data["sections"][0]["collapsed"] is True
+    assert data["collapsed_managements"] == [uid(2)]
+
+
+def test_the_fields_of_the_format_two_are_written() -> None:
+    data = json.loads(write_document(full_strategy()))
+    order = data["elements"][1]
+    assert order["inputs"] == [{"instance": "ema21", "property": "wert"}]
+    assert order["name"] == "Order"
+    assert data["elements"][0]["position"] == {"x": 10.5, "y": -3.0}
+    assert data["elements"][1]["position"] is None
+    assert data["elements"][3]["name"] is None  # an element with an instance has no name
+    assert data["elements"][2]["key"] == "wert"
+    binding = data["elements"][4]["instance"]["parameter_values"]["instrument"]
+    assert binding == {"kind": "connection", "value": {"instance": "ema21", "property": "wert"}}
+    assert data["elements"][4]["instance"]["origin"] == {
+        "object_type": "Trend",
+        "template_id": uid(777),
+        "template_name": "Mein Trend",
+    }
+    assert all(set(item) == {"id", "source", "output", "target"} for item in data["connections"])
+    assert data["parameters"][5]["object_type"] == "Instrument"
 
 
 def test_numbers_keep_their_kind() -> None:
     original = Strategy(
         id=uid(900),
-        title="t",
+        name="t",
         parameters=[
             StrategyParameter("a", DataType.NUMBER, 1),
             StrategyParameter("b", DataType.NUMBER, 1.0),
@@ -309,32 +353,53 @@ def test_numbers_keep_their_kind() -> None:
 # strict models -------------------------------------------------------------------------------
 
 
+def parameter_dict(**changes: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {"key": "a", "name": "A", "datatype": "number"}
+    data.update(changes)
+    return data
+
+
 @pytest.mark.parametrize(
     "data",
     [
         strategy_dict(extra=1),
-        strategy_dict(parameters=[{"name": "a", "datatype": "number", "extra": 1}]),
+        strategy_dict(parameters=[parameter_dict(extra=1)]),
         strategy_dict(rules=[instance_dict(extra=1)]),
         strategy_dict(rules=[instance_dict(origin={"object_type": "EMA", "extra": 1})]),
         strategy_dict(
             rules=[instance_dict(parameter_values={"a": {"kind": "fixed", "value": 1, "extra": 1}})]
         ),
-        strategy_dict(
-            rules=[instance_dict(parameters=[{"name": "a", "datatype": "number", "extra": 1}])]
-        ),
+        strategy_dict(rules=[instance_dict(parameters=[parameter_dict(extra=1)])]),
         strategy_dict(
             rules=[
                 instance_dict(
-                    properties=[{"name": "a", "datatype": "number", "expression": "1", "extra": 1}]
+                    properties=[parameter_dict(expression="1", extra=1)],
                 )
             ]
         ),
         strategy_dict(elements=[element_dict(extra=1)]),
         strategy_dict(elements=[element_dict(instance=instance_dict(extra=1))]),
         strategy_dict(elements=[element_dict(rules=[instance_dict(extra=1)])]),
+        strategy_dict(elements=[element_dict(position={"x": 1, "y": 2, "z": 3})]),
+        strategy_dict(elements=[element_dict(inputs=[{"instance": "a", "property": "b", "x": 1}])]),
         strategy_dict(
-            connections=[{"source": uid(1), "output": "a", "target": uid(2), "extra": 1}]
+            parameters=[{"key": "a", "name": "A", "datatype": "number", "title": "x"}],
         ),
+        strategy_dict(
+            elements=[
+                element_dict(
+                    parameters={
+                        "a": {
+                            "kind": "connection",
+                            "value": {"instance": "a", "property": "b", "x": 1},
+                        }
+                    }
+                )
+            ]
+        ),
+        strategy_dict(connections=[{**connection_dict(), "extra": 1}]),
+        strategy_dict(sections=[{"id": uid(60), "name": "s", "extra": 1}]),
+        strategy_dict(title="alt"),  # the field of the format 1.0
         template_dict("pipwerk.indicator", "Indikator", extra=1),
         template_dict("pipwerk.trend", "Trend", extra=1),
         template_dict("pipwerk.rule", "Regel", extra=1),
@@ -346,13 +411,16 @@ def test_an_additional_field_is_rejected(data: dict[str, Any]) -> None:
 
 
 def test_a_missing_required_field_is_rejected() -> None:
-    for key in ("id", "title"):
+    for key in ("id", "name"):
         data = strategy_dict()
         del data[key]
         rejects(data)
     rejects(strategy_dict(elements=[{"id": uid(2)}]))
     rejects(strategy_dict(connections=[{"source": uid(1)}]))
+    rejects(strategy_dict(connections=[{"source": uid(1), "output": "a", "target": uid(2)}]))
     rejects(strategy_dict(rules=[{"name": "a"}]))
+    rejects(strategy_dict(parameters=[{"name": "a", "datatype": "number"}]))  # no key
+    rejects(strategy_dict(sections=[{"name": "s"}]))
     rejects(template_dict("pipwerk.rule", "Regel", id=None))
 
 
@@ -372,9 +440,11 @@ def test_the_head_fields_are_required() -> None:
     rejects(data)
 
 
-def test_coordinates_may_be_whole_numbers() -> None:
-    accepts(strategy_dict(elements=[element_dict(x=5, y=-3)]))
-    accepts(strategy_dict(elements=[element_dict(x=5.5, y=-3.25)]))
+def test_a_position_may_be_whole_numbers_or_missing() -> None:
+    accepts(strategy_dict(elements=[element_dict(position={"x": 5, "y": -3})]))
+    accepts(strategy_dict(elements=[element_dict(position={"x": 5.5, "y": -3.25})]))
+    accepts(strategy_dict(elements=[element_dict(position=None)]))
+    accepts(strategy_dict(elements=[element_dict()]))
 
 
 def test_a_minimal_document_with_defaults_is_accepted() -> None:
@@ -384,32 +454,46 @@ def test_a_minimal_document_with_defaults_is_accepted() -> None:
     assert isinstance(document, StrategyDocument)
     assert document.elements == []
     assert document.description == ""
+    assert document.sections == []
+    assert document.orientation == "vertical"
+    assert document.collapsed_managements == []
 
 
 @pytest.mark.parametrize(
     "data",
     [
-        strategy_dict(title=5),
+        strategy_dict(name=5),
         strategy_dict(id="nicht-uuid"),
         strategy_dict(id="ABCDEF00-0000-4000-8000-000000000001"),
-        strategy_dict(elements=[element_dict(x="1")]),
+        strategy_dict(elements=[element_dict(position={"x": "1", "y": 2})]),
         strategy_dict(elements=[element_dict(id=5)]),
         strategy_dict(elements=[element_dict(management_of="x")]),
         strategy_dict(elements=[element_dict(parameters={"a": 1})]),
         strategy_dict(elements=[element_dict(parameters={"a": {"kind": "other"}})]),
-        strategy_dict(parameters=[{"name": "a", "datatype": "color"}]),
-        strategy_dict(parameters=[{"name": "a", "datatype": "number", "at_application": "yes"}]),
+        strategy_dict(parameters=[parameter_dict(datatype="color")]),
+        strategy_dict(parameters=[parameter_dict(at_application="yes")]),
+        strategy_dict(parameters=[parameter_dict(key="mit Blank")]),
+        strategy_dict(parameters=[parameter_dict(key="1a")]),
+        strategy_dict(parameters=[parameter_dict(key="größe")]),
+        strategy_dict(parameters=[parameter_dict(key="")]),
+        strategy_dict(rules=[instance_dict(key="a b")]),
         strategy_dict(rules=[instance_dict(comparison="groesser")]),
         strategy_dict(rules=[instance_dict(expression=5)]),
         strategy_dict(rules=[instance_dict(origin={"object_type": "Regel", "template_id": "x"})]),
-        strategy_dict(connections=[{"source": "x", "output": "a", "target": uid(2)}]),
+        strategy_dict(connections=[{**connection_dict(), "source": "x"}]),
+        strategy_dict(connections=[{**connection_dict(), "id": "x"}]),
+        strategy_dict(orientation="diagonal"),
+        strategy_dict(collapsed_managements=["x"]),
+        strategy_dict(sections=[{"id": uid(60), "name": "s", "flow": "x"}]),
+        strategy_dict(sections=[{"id": uid(60), "name": "s", "elements": ["x"]}]),
+        strategy_dict(sections=[{"id": uid(60), "name": "s", "collapsed": 1}]),
         strategy_dict(format="pipwerk.other"),
         strategy_dict(format="pipwerk.rule", elements=[]),  # the fields of another format
         template_dict("pipwerk.trend", "Regel"),
         template_dict("pipwerk.rule", "Trend"),
         template_dict("pipwerk.ruleset", "Regel"),
         template_dict("pipwerk.indicator", 5),
-        {"format_version": "1.0"},
+        {"format_version": "2.0"},
         [],
     ],
 )
@@ -422,13 +506,42 @@ def test_wrong_values_are_not_converted(data: Any) -> None:
 
 
 def test_values_are_not_converted_from_text() -> None:
-    rejects(strategy_dict(elements=[element_dict(x="1.5")]))
+    rejects(strategy_dict(elements=[element_dict(position={"x": "1.5", "y": 1})]))
     rejects(
+        strategy_dict(parameters=[parameter_dict(datatype="boolean", value=1, at_application=0)])
+    )
+    rejects(strategy_dict(name=None))
+
+
+def test_an_element_with_an_instance_has_no_name_and_no_key_of_its_own() -> None:
+    rejects(strategy_dict(elements=[element_dict(name="x", instance=instance_dict())]))
+    rejects(strategy_dict(elements=[element_dict(key="x", instance=instance_dict())]))
+    accepts(strategy_dict(elements=[element_dict(instance=instance_dict())]))
+    accepts(strategy_dict(elements=[element_dict(name="x", key="x")]))
+
+
+def test_keys_and_names_have_a_length_limit() -> None:
+    assert limits.MAX_NAME_LENGTH == limits.MAX_KEY_LENGTH == 200
+    accepts(strategy_dict(name="n" * 200))
+    rejects(strategy_dict(name="n" * 201))
+    accepts(strategy_dict(parameters=[parameter_dict(key="k" * 200, name="n" * 200)]))
+    rejects(strategy_dict(parameters=[parameter_dict(key="k" * 201)]))
+    rejects(strategy_dict(parameters=[parameter_dict(name="n" * 201)]))
+    rejects(strategy_dict(elements=[element_dict(name="n" * 201)]))
+    rejects(strategy_dict(sections=[{"id": uid(60), "name": "n" * 201}]))
+    rejects(template_dict("pipwerk.rule", "Regel", name="n" * 201))
+    accepts(template_dict("pipwerk.rule", "Regel", name="Ä ü-ß [x] ö" * 10))
+
+
+def test_names_are_free_text() -> None:
+    document = parse_document(
         strategy_dict(
-            parameters=[{"name": "a", "datatype": "boolean", "value": 1, "at_application": 0}]
+            name="Mein Trend – H1 (neu)",
+            parameters=[parameter_dict(name="Stop-Abstand [Pips]")],
         )
     )
-    rejects(strategy_dict(title=None))
+    assert isinstance(document, StrategyDocument)
+    assert document.parameters[0].name == "Stop-Abstand [Pips]"
 
 
 @pytest.mark.parametrize(
@@ -436,10 +549,15 @@ def test_values_are_not_converted_from_text() -> None:
     [
         {"kind": "fixed"},
         {"kind": "fixed", "value": None},
+        {"kind": "fixed", "value": {"instance": "a", "property": "b"}},
         {"kind": "parameter"},
         {"kind": "parameter", "value": 5},
         {"kind": "expression"},
         {"kind": "expression", "value": 5},
+        {"kind": "connection"},
+        {"kind": "connection", "value": "a.b"},
+        {"kind": "connection", "value": {"instance": "a"}},
+        {"kind": "connection", "value": {"instance": "mit Blank", "property": "b"}},
         {"kind": "application", "value": "x"},
         {"value": 1},
     ],
@@ -454,8 +572,10 @@ def test_a_binding_needs_the_value_its_kind_requires(binding: dict[str, Any]) ->
         {"kind": "fixed", "value": 1},
         {"kind": "fixed", "value": 1.5},
         {"kind": "fixed", "value": "h1"},
+        {"kind": "fixed", "value": "instrument_der_anwendung"},
         {"kind": "fixed", "value": False},
         {"kind": "parameter", "value": "p"},
+        {"kind": "connection", "value": {"instance": "ema20", "property": "wert"}},
         {
             "kind": "expression",
             "value": "1 +",
@@ -468,26 +588,61 @@ def test_valid_bindings(binding: dict[str, Any]) -> None:
     accepts(strategy_dict(elements=[element_dict(parameters={"a": binding})]))
 
 
+def test_a_data_connection_is_read_as_a_link() -> None:
+    value = read_document(
+        json.dumps(
+            strategy_dict(
+                elements=[
+                    element_dict(
+                        parameters={
+                            "a": {
+                                "kind": "connection",
+                                "value": {"instance": "ema20", "property": "wert"},
+                            }
+                        }
+                    )
+                ]
+            )
+        )
+    )
+    assert isinstance(value, Strategy)
+    assert value.elements[0].parameters["a"] == Binding(
+        BindingKind.CONNECTION, DataLink("ema20", "wert")
+    )
+
+
+# sections ---------------------------------------------------------------------------------------
+
+
+def test_a_strategy_has_at_most_as_many_sections_as_elements() -> None:
+    section = {"id": uid(60), "name": "s"}
+    rejects(strategy_dict(sections=[section]))
+    accepts(strategy_dict(elements=[element_dict()], sections=[section]))
+    rejects(
+        strategy_dict(elements=[element_dict()], sections=[section, {**section, "id": uid(61)}])
+    )
+
+
 # format version --------------------------------------------------------------------------------
 
 
 def test_a_higher_major_version_is_rejected() -> None:
-    for version in ("2.0", "2.1", "10.0", "3.7"):
+    for version in ("3.0", "3.1", "10.0", "9.7"):
         rejects(strategy_dict(format_version=version))
         rejects(template_dict("pipwerk.rule", "Regel", format_version=version))
 
 
 def test_other_versions_that_are_not_supported() -> None:
-    for version in ("0.9", "1", "1.", "1.0.0", "abc", "", "-1.0"):
+    for version in ("0.9", "2", "2.", "2.0.0", "abc", "", "-2.0"):
         rejects(strategy_dict(format_version=version))
-    rejects(strategy_dict(format_version=1.0))
+    rejects(strategy_dict(format_version=2.0))
 
 
 def test_the_same_major_version_is_accepted() -> None:
-    accepts(strategy_dict(format_version="1.0"))
-    accepts(strategy_dict(format_version="1.7"))
+    accepts(strategy_dict(format_version="2.0"))
+    accepts(strategy_dict(format_version="2.7"))
     document = parse_document(strategy_dict())
-    assert document.format_version == "1.0"
+    assert document.format_version == "2.0"
 
 
 # unknown types stay valid and are kept ----------------------------------------------------------
@@ -496,22 +651,23 @@ def test_the_same_major_version_is_accepted() -> None:
 def test_an_unknown_element_type_is_valid_and_keeps_all_bindings() -> None:
     original = Strategy(
         id=uid(900),
-        title="t",
+        name="t",
         elements=[
             Element(
                 id=uid(2),
                 type="ext.unbekannt",
-                title="Fremd",
-                name="x",
-                x=3.0,
-                y=4.0,
+                name="Fremd",
+                key="x",
+                position=Position(3.0, 4.0),
                 parameters={
                     "a": Binding(BindingKind.FIXED, "text"),
                     "b": Binding(BindingKind.EXPRESSION, "Order.volumen + 1"),
                     "c": Binding(BindingKind.PARAMETER, "p"),
                     "d": Binding(BindingKind.APPLICATION),
+                    "f": Binding(BindingKind.CONNECTION, DataLink("a", "b")),
                 },
                 properties={"e": Binding(BindingKind.FIXED, 5)},
+                inputs=[ElementInput("a", "b")],
                 rules=[rule("r", "TRUE()")],
             )
         ],
@@ -526,7 +682,7 @@ def test_an_unknown_element_type_is_valid_and_keeps_all_bindings() -> None:
 def test_an_unknown_object_type_is_valid_and_keeps_its_content() -> None:
     original = Strategy(
         id=uid(900),
-        title="t",
+        name="t",
         elements=[
             Element(
                 id=uid(2),
@@ -536,8 +692,8 @@ def test_an_unknown_object_type_is_valid_and_keeps_its_content() -> None:
                     object_type="Fremd",
                     origin=Origin("Fremd", uid(5), "Fremder"),
                     parameter_values={"a": fixed(1), "b": expr("x + 1")},
-                    parameters=[ParameterDefinition("p", DataType.TEXT, False, "v", ())],
-                    properties=[PropertyDefinition("q", DataType.NUMBER, "1", ())],
+                    parameters=[ParameterDefinition("P", DataType.TEXT, False, "v", ())],
+                    properties=[PropertyDefinition("Q", DataType.NUMBER, "1", ())],
                     instances=[ema("ema20")],
                     rules=[rule("r", "TRUE()")],
                     expression="1",
@@ -571,11 +727,7 @@ def expression_places(text: str) -> list[dict[str, Any]]:
         strategy_dict(rules=[instance_dict(expression=text)]),
         strategy_dict(rules=[instance_dict(result_expression=text)]),
         strategy_dict(rules=[instance_dict(parameter_values={"a": binding})]),
-        strategy_dict(
-            rules=[
-                instance_dict(properties=[{"name": "a", "datatype": "number", "expression": text}])
-            ]
-        ),
+        strategy_dict(rules=[instance_dict(properties=[parameter_dict(expression=text)])]),
         strategy_dict(elements=[element_dict(rules=[instance_dict(expression=text)])]),
         strategy_dict(elements=[element_dict(instance=instance_dict(expression=text))]),
         template_dict("pipwerk.rule", "Regel", expression=text),
@@ -583,7 +735,7 @@ def expression_places(text: str) -> list[dict[str, Any]]:
         template_dict(
             "pipwerk.indicator",
             "Indikator",
-            properties=[{"name": "a", "datatype": "number", "expression": text}],
+            properties=[parameter_dict(expression=text)],
         ),
         template_dict("pipwerk.trend", "Trend", rules=[instance_dict(expression=text)]),
     ]
@@ -621,9 +773,19 @@ def test_number_of_elements() -> None:
 
 def test_number_of_connections() -> None:
     assert limits.MAX_CONNECTIONS == 4000
-    connection = {"source": uid(1), "output": "weiter", "target": uid(2)}
+    connection = connection_dict()
     accepts(strategy_dict(connections=[connection] * limits.MAX_CONNECTIONS))
     rejects(strategy_dict(connections=[connection] * (limits.MAX_CONNECTIONS + 1)))
+
+
+def test_number_of_inputs_of_an_element() -> None:
+    assert limits.MAX_INPUTS_PER_ELEMENT == 50
+
+    def inputs(count: int) -> list[dict[str, str]]:
+        return [{"instance": f"i{number}", "property": "wert"} for number in range(count)]
+
+    accepts(strategy_dict(elements=[element_dict(inputs=inputs(50))]))
+    rejects(strategy_dict(elements=[element_dict(inputs=inputs(51))]))
 
 
 def rule_list_places(count: int) -> list[dict[str, Any]]:
@@ -651,7 +813,9 @@ def test_number_of_strategy_parameters() -> None:
     assert limits.MAX_STRATEGY_PARAMETERS == 200
 
     def parameters(count: int) -> list[dict[str, Any]]:
-        return [{"name": f"p{number}", "datatype": "number", "value": 1} for number in range(count)]
+        return [
+            parameter_dict(key=f"p{number}", name=f"P {number}", value=1) for number in range(count)
+        ]
 
     accepts(strategy_dict(parameters=parameters(limits.MAX_STRATEGY_PARAMETERS)))
     rejects(strategy_dict(parameters=parameters(limits.MAX_STRATEGY_PARAMETERS + 1)))
@@ -736,3 +900,11 @@ def test_an_invalid_json_text_is_a_validation_error() -> None:
         parse_document(b"")
     with pytest.raises(DocumentError):
         parse_document("[1, 2]")
+
+
+def test_connections_are_shared_in_the_model() -> None:
+    value = read_document(write_document(full_strategy()))
+    assert isinstance(value, Strategy)
+    assert value.connections[0] == Connection(uid(1), "weiter", uid(2), value.connections[0].id)
+    assert value.sections[0].collapsed is True
+    assert value.orientation is Orientation.HORIZONTAL
