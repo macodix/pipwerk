@@ -107,7 +107,7 @@ pipwerk führt einen eigenen Datenbestand historischer Kursdaten. Er enthält:
 
 - Kerzen je Instrument und Zeiteinheit, so wie der Broker sie liefert, einschließlich des Spreads je Kerze, soweit der Broker ihn liefert
 - Ticks je Instrument, soweit verfügbar
-- Angaben zum Instrument je Broker: Kontraktgröße, Volumenschritte, Swap und Margin-Anforderung
+- Angaben zum Instrument je Broker: die Eigenschaften des Objekts `Instrument` (Fachmodell req-fach-051: Bezeichnung, Tickgröße, Tickwert, Punkt, Pip, Spread, Mindestvolumen, Volumenschritt), dazu Kontraktgröße, Swap und Margin-Anforderung
 
 pipwerk berechnet keine Kerzen aus Ticks. Strategietester und Backtester lesen Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
 
@@ -243,3 +243,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-16 | req-system-015: „Vorhaben strategiedesign“ statt „erste Ausbaustufe“, Begriff Objektverzeichnis. Nachprüfung der QA, Durchlauf 3. |
 | 2026-10-19 | req-system-024 neu: Anpassung jeder Benutzeroberfläche an die Fenstergröße. Festlegung des Auftraggebers im Chat am 2026-10-19. Anlass: Abnahme `strategiedesign/wp02`, Mangel M2. |
 | 2026-10-19 | Abschnitt 3 neu: Datenbestand historischer Kursdaten, Import und Beschaffung (req-system-025 bis req-system-027). Folgende Abschnitte neu nummeriert, Kennungen unverändert. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-20 | req-system-025: Angaben zum Instrument an die Eigenschaften von `Instrument` im Fachmodell angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 1, B1). |

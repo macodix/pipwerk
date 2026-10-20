@@ -28,7 +28,7 @@ Das Vorhaben baut auf der gemeinsamen Python-Bibliothek und der Darstellung der 
 
 Als offen gekennzeichnet in den geltenden Dokumenten:
 
-- Strategietester und Backtester: Anzeige der Unterschiede zwischen Fassungen einer Strategie (darf durch den Aufbau nicht ausgeschlossen werden), Auswertung einer Strategie ohne Auslöser (wird mit dem Handelssystem geklärt).
+- Strategietester und Backtester: Anzeige der Unterschiede zwischen Fassungen einer Strategie (darf durch den Aufbau nicht ausgeschlossen werden).
 - Fachmodell: Die als offen gekennzeichneten Stellen zur Ausführung von Strategien (unter anderem freie Margin, req-fach-049) betreffen dieses Vorhaben unmittelbar. Die QA meldet sie als Lücke, soweit ein Testfall sie zum Testen braucht.
 
 ## Stand

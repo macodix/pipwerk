@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `draft`
-- zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner und Handelssystem
+- zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner, Strategietester und Handelssystem
 - zuletzt aktualisiert: `2026-10-19`
 - abgestimmt: [Präsentation Fachmodell: Orders und Regelwerke](praesentation-fachmodell.html), bestätigt vom Auftraggeber im Chat am 14. Oktober 2026. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
@@ -61,7 +61,7 @@ Ein Zustandswechsel wie „Trendrichtung wechselt zu Aufwärts“ ist kein eigen
 
 ### req-fach-016 -- Strategieentscheidung und Order getrennt
 
-Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ablauf nach Auswertung der erforderlichen Bedingungen eine Order veranlassen soll, erreicht er das Element `Order aufgeben`. Dieses legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem. Ein zusätzliches Objekt `Signal` wird dafür derzeit nicht benötigt.
+Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ablauf nach Auswertung der erforderlichen Bedingungen eine Order veranlassen soll, erreicht er das Element `Order aufgeben`. Dieses legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem, im Testlauf an die interne Abwicklung des Strategietesters (Anforderungen Strategietester und Backtester req-test-004). Ein zusätzliches Objekt `Signal` wird dafür derzeit nicht benötigt.
 
 Erstellung, Bestimmung und Prüfung einer konkreten Order richten sich nach dem fachlichen Ordermodell. Freigegebene Orders werden anschließend zur weiteren Verwaltung an den `OrderManager` übergeben.
 
@@ -87,7 +87,7 @@ Das allgemeine Objekt `Order` besitzt folgende Eigenschaften:
 
 - `Order-ID` -- MUSS; interne eindeutige Identifikation unabhängig von einer gegebenenfalls durch Broker oder Handelskonto vergebenen ID.
 - `Status` -- MUSS; aktueller Zustand der Order mit den Werten `wartend`, `teilausgeführt`, `ausgeführt`, `gelöscht`, `abgelaufen`, `abgelehnt`.
-- `Konto` -- MUSS; das Handelskonto, an das die konkrete Order gerichtet ist. Eine konkrete Order kann nicht ohne Kontozuordnung zur Ausführung freigegeben werden.
+- `Konto` -- MUSS; das Handelskonto, im Testlauf das Testkonto, an das die konkrete Order gerichtet ist. Eine konkrete Order kann nicht ohne Kontozuordnung zur Ausführung freigegeben werden.
 - `Strategie-ID` -- KANN; Zuordnung zur verursachenden Strategie.
 - `Bemerkung` -- KANN; freie zusätzliche Information.
 - `geltende Regeln` -- 0..n; die für die Order geltenden Regeln werden der Order übergeben.
@@ -214,7 +214,7 @@ Für `CloseOrder` gelten die allgemeinen Mechanismen von `Order` für direkte We
 
 Orderobjekte sind strategieunabhängige Objekte. Sie können von unterschiedlichen fachlichen Komponenten erzeugt und verwendet werden.
 
-Eine Strategie erzeugt selbst keine konkrete Order. Wenn der Strategieablauf nach Auswertung seiner Bedingungen eine Order veranlassen soll, übergibt das Element `Order aufgeben` die Order an das Handelssystem. Dafür wird derzeit kein zusätzliches Objekt `Signal` vorausgesetzt. Andere fachliche Komponenten, insbesondere eine spätere Positionsverwaltung, können unabhängig davon ebenfalls Orders erzeugen und an den `OrderManager` übergeben.
+Eine Strategie erzeugt selbst keine konkrete Order. Wenn der Strategieablauf nach Auswertung seiner Bedingungen eine Order veranlassen soll, übergibt das Element `Order aufgeben` die Order an das Handelssystem, im Testlauf an die interne Abwicklung (req-test-004). Dafür wird derzeit kein zusätzliches Objekt `Signal` vorausgesetzt. Andere fachliche Komponenten, insbesondere eine spätere Positionsverwaltung, können unabhängig davon ebenfalls Orders erzeugen und an den `OrderManager` übergeben.
 
 ### req-fach-034 -- Allgemeines Objekt Regel
 
@@ -356,7 +356,7 @@ Eine Berechnung muss nicht als `Regel` definiert werden. Die technische Auswertu
 
 ### req-fach-049 -- Order aufgeben im Strategieablauf
 
-`Order aufgeben` ist das Element im Strategieablauf, das eine Order veranlasst. Es legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem. Es wird über den Ablauf erreicht, in der Regel über den Pfad einer Bedingung, es darf aber auch unmittelbar an einem Ausgang eines anderen Elements folgen, zum Beispiel am Ausgang `nicht gestellt` eines anderen `Order aufgeben`.
+`Order aufgeben` ist das Element im Strategieablauf, das eine Order veranlasst. Es legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem, im Testlauf an die interne Abwicklung (req-test-004). Es wird über den Ablauf erreicht, in der Regel über den Pfad einer Bedingung, es darf aber auch unmittelbar an einem Ausgang eines anderen Elements folgen, zum Beispiel am Ausgang `nicht gestellt` eines anderen `Order aufgeben`.
 
 `Order aufgeben` hat zwei Ausgänge: `gestellt` und `nicht gestellt`. Der Ausgang `nicht gestellt` wird genommen, wenn eine Eigenschaft der Order nicht bestimmt werden kann oder eine prüfende Regel der Strategie oder des Elements nicht erfüllt ist, zum Beispiel weil das Volumen unter dem Mindestvolumen liegt. Offen: eine Regel zur freien Margin; den Marginbedarf einer Order liefert derzeit kein Objekt. Am Ausgang `gestellt` beginnt die Verwaltung der Order (req-fach-049a); hat sie eigene Auslöser, wird sie nicht sofort, sondern erst bei diesen durchlaufen. Am Ausgang `nicht gestellt` geht der Ablauf sofort weiter, auch mit einer erneuten Prüfung von vorn mit geänderten Strategieparametern (req-fach-047). Ist an einem Ausgang nichts verbunden, endet dort der Ablaufpfad.
 
@@ -488,3 +488,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-19 | req-fach-015: Auswertung ohne Auslöser wird mit den Anforderungen an das Handelssystem geklärt und darf durch den Aufbau nicht ausgeschlossen werden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | req-fach-053: Bezeichnung eines festen Instruments unabhängig vom Broker, Zuordnung zum Symbol des Brokers je Konto durch die Kontoverwaltung, bis dahin Bezeichnung nach ISO 4217 beziehungsweise ISIN. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 16). |
 | 2026-10-20 | req-fach-046, req-fach-047, req-fach-051, req-fach-053: Auslöser `Start von Hand`, jede Auswertung beginnt an einem Auslöser, eine Strategie ohne Auslöser wird nicht ausgewertet; offener Punkt zur Auswertung ohne Auslöser erledigt. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
+| 2026-10-20 | Zweck, req-fach-016, req-fach-019, req-fach-033, req-fach-049: im Testlauf gehen Orders an die interne Abwicklung, Konto ist das Testkonto (req-test-004, req-test-005). Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 1, H16). |

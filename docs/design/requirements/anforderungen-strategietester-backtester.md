@@ -20,7 +20,7 @@ Die historischen Kursdaten, ihre Beschaffung und ihr Import sind in `anforderung
 
 ### req-test-001 -- Testlauf
 
-Ein Testlauf wendet eine Strategie auf ein Instrument in einem Testzeitraum an und verwendet dafür ein Testkonto (req-test-005). Instrument und Testzeitraum wählt der Anwender aus den historischen Kursdaten.
+Ein Testlauf wendet eine Strategie in einem Testzeitraum an und verwendet dafür ein Testkonto (req-test-005). Der Anwender wählt das Instrument der Anwendung (Fachmodell req-fach-053) und den Testzeitraum. Fehlende Kursdaten werden nach req-test-003 beschafft. Instrumente des Testlaufs sind das Instrument der Anwendung und jedes weitere Instrument, das die Strategie verwendet, fest oder über einen Strategieparameter vom Objekttyp `Instrument`.
 
 ### req-test-002 -- Testzeitraum
 
@@ -33,7 +33,7 @@ Jeder Testlauf hat einen Testzeitraum. Er ist vorbelegt und endet mit dem letzte
 
 Strategietester und Backtester lesen Kursdaten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
 
-Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für das Instrument, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zum Instrument. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt.
+Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt.
 
 Fehlen danach Daten oder sind sie lückenhaft, startet der Testlauf nicht. Eine Meldung nennt die fehlenden Daten und den Grund, warum sie nicht beschafft werden konnten.
 
@@ -54,7 +54,7 @@ Ein Testkonto enthält:
 - Spread: aus den Kerzen des Brokers oder ein fester Wert
 - Kommission
 
-Die Angaben zum Instrument (Kontraktgröße, Volumenschritte, Swap, Margin-Anforderung) werden aus dem Datenbestand vorbelegt und können im Testlauf geändert werden.
+Die Angaben zu jedem Instrument des Testlaufs (Gesamtsystem req-system-025) werden aus dem Datenbestand vorbelegt und können im Testlauf geändert werden.
 
 Ein Testlauf verwendet genau ein Testkonto. Ändert der Anwender im Testlauf einen Wert, bleibt das gespeicherte Testkonto unverändert, außer er speichert die Änderung ausdrücklich.
 
@@ -66,7 +66,7 @@ Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategieteste
 
 ### req-test-007 -- Strategieparameter je Testlauf
 
-Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Hat die Strategie einen Strategieparameter Instrument, setzt ihn das nach req-test-001 gewählte Instrument.
+Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Das gilt auch für Strategieparameter vom Objekttyp `Instrument`.
 
 ## 3. Strategietester
 
@@ -130,3 +130,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-19 | req-test-006 Testbarkeit. Strategie ohne Auslöser an das Handelssystem verwiesen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Offene Punkte entschieden: eine Hauptkomponente mit zwei Betriebsarten, req-test-007 Strategieparameter je Testlauf, req-test-013 Haltepunkte, req-test-014 Anzeige der Werte, Angaben zum Instrument nicht im Testkonto (req-test-005), Umfang eines gespeicherten Backtests (req-test-022). Bestimmung im Indikator 1-2-3-Trend nach `indikator-markttechnik.md` verschoben. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | Offener Punkt „Auswertung ohne Auslöser“ erledigt: Auslöser „Start von Hand“ (Anforderungen an den Strategiedesigner req-fach-015, Fachmodell req-fach-053). Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
+| 2026-10-20 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1), vom Projektleiter: Instrumente des Testlaufs einschließlich weiterer Instrumente der Strategie (req-test-001, -003, -005, -007; B4), Angaben zum Instrument nach req-system-025 (B1), Auswahl von Instrument und Testzeitraum (H8). |
