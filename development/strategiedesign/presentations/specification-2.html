@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>strategiedesign Spezifikation 2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentationen zuvor. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:100px 128px;display:flex;flex-direction:column;gap:36px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:62px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:30px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:26px;line-height:1.42;color:var(--text)}
+code{font-size:.92em;background:#eef2ef;padding:1px 6px;border-radius:5px}
+.note{font-size:23px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:30px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 32px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 14px;font-size:29px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:12px 20px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:24px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:24px 32px;font-size:28px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:112px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:26px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+.layer{display:grid;grid-template-columns:1fr;gap:16px}
+.layer > div{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:18px 28px;display:flex;gap:28px;align-items:baseline}
+.layer b{font-size:28px;min-width:420px;color:var(--green)}
+.layer span{font-size:24px;color:var(--text);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben strategiedesign · Phase 2 Konzeption</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Spezifikation des Strategiedesigners nach der Abnahme von wp02</h1>
+<p style="font-size:36px;width:1560px">Das Arbeitspaket wp02 wurde nicht abgenommen. Deine Anforderungen an die Bedienung sind seitdem neu gefasst, und der Prototyp der Oberfläche ist Grundlage. Der Softwarearchitekt hat die Spezifikation darauf ausgerichtet, die Qualitätssicherung hat sie geprüft und freigegeben. Diese Präsentation zeigt, wie pipwerk Studio jetzt bedient wird und welche sechs Festlegungen du bestätigst.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">20. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/strategiedesign/specification.md</code></p>
+<p class="num">1 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Wo wir stehen</h2>
+<div class="chain">
+<div class="node">Phase 1<small>Anforderungen: deine Dokumente</small></div><span class="arrow">→</span>
+<div class="node" style="border-width:4px">Phase 2<small>Prototyp und Spezifikation</small></div><span class="arrow">→</span>
+<div class="node">Phase 3<small>Planung: neuer Plan der Arbeitspakete</small></div><span class="arrow">→</span>
+<div class="node">Phase 4<small>Umsetzung je Paket</small></div><span class="arrow">→</span>
+<div class="node">Phase 5<small>Abnahme: du probierst aus</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Deine Dokumente</h3><p>Die geänderten Stellen in Anforderungen, Fachmodell und Indikator Markttechnik hat die Qualitätssicherung (QA) geprüft. Ergebnis: <b>bestanden</b>. Beide Testfälle lassen sich weiterhin vollständig gestalten, speichern und laden.</p></div>
+<div class="card col"><h3>Prototyp</h3><p>Der klickbare Prototyp ist Vorlage für Bedienung und Aussehen. Er wird nicht übernommen, die Oberfläche wird danach neu gebaut. Fünf Lösungen darin gelten vorläufig, bis du sie getestet hast (Folie 9).</p></div>
+<div class="card col"><h3>Spezifikation</h3><p>Die QA hat die überarbeitete Spezifikation in zwei Durchläufen geprüft. Ergebnis: <b>bestanden</b>. Sie braucht keine Entscheidung, um umgesetzt zu werden. Sechs Punkte, die in deinen Dokumenten offen waren, füllt sie mit Vorschlägen (Folie 10).</p></div>
+</div>
+<p class="num">2 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>So wird eine Strategie gebaut</h2>
+<div class="grid2">
+<div class="card"><h3>Bedingungen ohne Formeln</h3><p>Bedingungen und Berechnungen entstehen aus Auswahllisten: Werte aus den Objekten, Strategieparametern oder festen Zahlen, Vergleiche in Händlersprache wie „kreuzt nach oben“, „ist größer als“, „vorheriger Wert von“. Zeichenfläche und Eigenschaftenansicht zeigen die Bedingung als lesbaren Satz.</p></div>
+<div class="card"><h3>Werte als Linien</h3><p>Indikatoren, Trends und Markt und Konto liegen als Karten in einem eigenen Bereich neben dem Ablauf. Jede Eigenschaft hat einen Anschlusspunkt. Eine Linie zu einer Bedingung oder Order zeigt, woher der Wert kommt.</p></div>
+<div class="card"><h3>Ablauf von oben nach unten</h3><p>Die Anwendung ordnet die Schritte selbst an, mit möglichst wenigen Kreuzungen. Zusammengehörige Schritte lassen sich zu einem benannten Abschnitt zusammenfassen und einklappen, zum Beispiel „Einstieg“ oder „Verwaltung“.</p></div>
+<div class="card"><h3>Führung ohne Handbuch</h3><p>„Neue Strategie“ bietet einen geführten Aufbau an: Name, Auslöser, Indikatoren, Bedingung, Order. Er lässt sich jederzeit verlassen. Jedes Feld erklärt sich beim Zeigen. Jeder Befund sagt, wie man ihn behebt, und führt per Klick zur Stelle.</p></div>
+</div>
+<p class="note">Die Formelansicht bleibt für Fortgeschrittene erhalten, mit mehrzeiliger Eingabe, farbiger Hervorhebung, Fehlern an der Stelle und der Liste der Eigenschaften nach dem Punkt. Beide Ansichten zeigen dieselbe Bedingung.</p>
+<p class="num">3 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Aufbau des Fensters</h2>
+<table>
+<tr><th style="width:360px">Bereich</th><th>Inhalt</th></tr>
+<tr><td>Kopfzeile</td><td>Neue Strategie, Öffnen, Speichern, Prüfen, Schließen, Löschen, Einstellungen. Zahl der Befunde, ein Klick zeigt die Liste.</td></tr>
+<tr><td>Strategieparameter</td><td>ständig sichtbarer Streifen unter der Kopfzeile: je Parameter Name und Wert, ein Klick ändert ihn, „Neu“ legt einen an</td></tr>
+<tr><td>links</td><td>Elementbibliothek in Gruppen, mit Suche und „Neues Objekt“</td></tr>
+<tr><td>Mitte</td><td>Zeichenfläche mit Ablauf und dem Bereich „Objekte und ihre Werte“</td></tr>
+<tr><td>rechts</td><td>Eigenschaftenansicht des gewählten Elements, ein Klick auf die leere Fläche zeigt die der Strategie</td></tr>
+</table>
+<div class="row">
+<div class="card col"><p class="label">Elementbibliothek</p><p><b>Wann wird gerechnet</b> Kerzenschluss, Tick · <b>Bedingungen und Aktionen</b> Bedingung, Berechnung, Strategieparameter ändern, Order aufgeben, ändern, löschen, Position ändern, schließen · <b>Markt und Konto</b> Konto, Instrument, Kerze, Tick · <b>Indikatoren</b> EMA, ATR, ZigZag, eigener · <b>Trends</b> 1-2-3-Trend (Markttechnik), eigener · <b>Regeln</b> Risiko je Trade, eigene Regel, eigenes Regelwerk</p></div>
+</div>
+<p class="num">4 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Smartphone, Tablet und Bildschirm</h2>
+<table>
+<tr><th style="width:420px">Fensterbreite</th><th>Anordnung</th></tr>
+<tr><td>ab 1100 Pixel</td><td>Elementbibliothek, Zeichenfläche und Eigenschaftenansicht nebeneinander</td></tr>
+<tr><td>700 bis 1099 Pixel</td><td>Zeichenfläche und ein Seitenbereich mit Reitern für Elementbibliothek und Eigenschaftenansicht</td></tr>
+<tr><td>unter 700 Pixel</td><td>ein Bereich nach dem anderen, umschaltbar über eine Leiste, Dialoge über die ganze Breite</td></tr>
+</table>
+<div class="row">
+<div class="card col"><h3>Geprüft in sechs Größen</h3><p>Smartphone hoch und quer (390 × 844, 844 × 390), Tablet hoch und quer (820 × 1180, 1180 × 820), Notebook (1366 × 768) und Bildschirm (1920 × 1080). In jeder Größe überlappt nichts, keine waagerechte Bildlaufleiste, alle Bereiche erreichbar.</p></div>
+<div class="card col"><h3>Bedienung ohne Ziehen</h3><p>Alles, was Ziehen verwendet, geht auch mit Klicks: Einfügen, Verbinden, Werte wählen, Zuordnung zu Verwaltung und Abschnitt. Auf dem Smartphone wird die EMA-Trendfolge im Test nur mit Klicks aufgebaut.</p></div>
+</div>
+<p class="num">5 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Namen und deine gespeicherte Strategie</h2>
+<div class="row">
+<div class="card col"><h3>Ein Name, frei gewählt</h3><p>Jedes Objekt, Element und jeder Strategieparameter hat genau einen Namen, mit Leerzeichen, Umlauten und Bindestrich, zum Beispiel „EMA 20“ oder „Stop-Abstand“. Gespeichert wird zusätzlich eine interne Kennung, die die Anwendung selbst bildet und nie zeigt. Umbenennen ändert sie nicht, deshalb bleiben alle Verwendungen gültig.</p></div>
+<div class="card col"><h3>EMA-Trendfolge öffnet sich</h3><p>Deine in wp02 gebaute Strategie öffnet sich ohne Neubau. Die Anwendung liest die alte Speicherform und schreibt danach die neue. Namen in Programmierschreibweise erscheinen lesbar: „Order ausgefuehrt“ statt <code>order_ausgefuehrt</code>, „Stop abstand“ statt <code>stop_abstand</code>. Umlaute setzt du beim Umbenennen selbst.</p></div>
+</div>
+<p class="note">In der Formelansicht stehen Namen mit Leerzeichen oder Sonderzeichen in eckigen Klammern, zum Beispiel <code>[EMA 20].Wert</code>. In den Auswahllisten erscheinen sie ohne Klammern.</p>
+<p class="num">6 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Nachweis mit den Testfällen</h2>
+<div class="row">
+<div class="card col"><h3>Punkt-2-Ausbruch</h3><p>Zwei Markttechnik-Instanzen auf Signal- und Handelszeiteinheit, Stop-Order mit Einstieg, Stop-Loss und Ziel aus Berechnungen, Volumen aus „Risiko je Trade“ mit 1 %. Verwaltung: Order löschen, wenn der Kurs Punkt 1/3 unterschreitet, Stop-Loss und Ziel bei jedem Kerzenschluss nachziehen.</p></div>
+<div class="card col"><h3>EMA-Trendfolge</h3><p>EMA 20, EMA 50, ATR 14. Kreuzen in beide Richtungen öffnet eine Market-Order mit Stop-Loss im ATR-Abstand. Verwaltung: Position schließen beim Gegenkreuzen, sonst Stop-Loss nachziehen, wenn er sich verbessert.</p></div>
+</div>
+<div class="card"><h3>Wie geprüft wird</h3><p>Ein automatischer Browsertest baut jeden Testfall auf der leeren Zeichenfläche nur über die Bedienung auf, ohne eine Formel als Text einzugeben. Er speichert, lädt die Seite neu, öffnet die Strategie und vergleicht sie mit dem Testfalldokument. Das läuft in Chromium, Firefox und WebKit (die Grundlage von Safari). Die Konsistenzprüfung muss für beide Testfälle null Fehler melden.</p></div>
+<p class="num">7 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Was nicht Gegenstand ist</h2>
+<div class="row">
+<div class="card col"><h3>Keine Ausführung</h3><p>Der Strategiedesigner gestaltet und prüft Strategien. Er rechnet keine Indikatoren und wertet keine Bedingungen aus. Das übernehmen später Strategietester und Handelssystem. Die Bedeutung jeder Formel und Regel ist so festgelegt, dass sie die Strategie ohne Änderung ausführen können.</p></div>
+<div class="card col"><h3>Ohne Anmeldung</h3><p>pipwerk Studio läuft wie bisher ohne Anmeldung, nur in deinem eigenen Netz. Dateien werden nur unter geprüften Namen gelesen und geschrieben. Formeln werden nur zerlegt und geprüft, nie als Programmcode ausgeführt.</p></div>
+</div>
+<p class="num">8 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Aus dem Prototyp, vorläufig bis zu deinem Test</h2>
+<table>
+<tr><th style="width:80px">Nr.</th><th>Lösung</th></tr>
+<tr><td>9</td><td>Ausrichtung des Ablaufs umschaltbar „Senkrecht / Waagerecht“, senkrecht als Standard. Die Wahl wird mit der Strategie gespeichert.</td></tr>
+<tr><td>10</td><td>Ein Objekt ist eine Karte im Bereich „Objekte und ihre Werte“, jede Eigenschaft eine Zeile mit Anschlusspunkt. Ein Element hat einen einzigen Eingangspunkt, seine Werte stehen in der Eigenschaftenansicht unter „Verbundene Werte“.</td></tr>
+<tr><td>11</td><td>Linien: Ablauf durchgezogen mit Pfeil, Verwaltung grün gepunktet, Wert farbig gestrichelt. Mehrere Werte desselben Objekts zum selben Element sind eine Linie mit Zahl. Umschalter „Alle / Auswahl / Aus“ für die Wertlinien.</td></tr>
+<tr><td>12</td><td>Umbenennen eines Objekts: Alle Verwendungen zeigen sofort den neuen Namen, ohne Rückfrage.</td></tr>
+<tr><td>13</td><td>Entfernen eines verwendeten Objekts: Rückfrage mit der Liste der betroffenen Elemente. Danach bleibt in der Bedingung eine leere Stelle, und die Prüfung meldet sie mit dem Weg zur Behebung.</td></tr>
+</table>
+<p class="note">Einwände aus deinem Test gehen an den Softwarearchitekten zurück und werden eingearbeitet.</p>
+<p class="num">9 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Festlegungen zu offenen Punkten</h2>
+<table>
+<tr><th style="width:80px">Nr.</th><th>Festlegung der Spezifikation</th></tr>
+<tr><td>14</td><td><b>ZigZag:</b> Formeln sprechen die drei jüngsten Wendepunkte an, je mit Kurs, Hoch oder Tief und ob endgültig. Begründung des Softwarearchitekten: Mehr braucht kein Testfall, weitere lassen sich später ergänzen.</td></tr>
+<tr><td>15</td><td><b>Namen in Formeln:</b> gespeichert wird die interne Kennung, angezeigt der Name, mit eckigen Klammern bei Leerzeichen (Folie 6).</td></tr>
+<tr><td>16</td><td><b>Festes Instrument:</b> vorläufig ein Text mit der Bezeichnung des Instruments, bis die Kontoverwaltung festlegt, wie Instrumente heißen.</td></tr>
+<tr><td>17</td><td><b>Ablauf ohne Auslöser:</b> Die Prüfung meldet dort kein Element ohne eingehende Verbindung, weil die Auswertung an jeder Stelle beginnen kann. In einem Ablauf mit Auslöser bleibt es ein Fehler.</td></tr>
+<tr><td>18</td><td><b>Alte Strategien:</b> öffnen sich ohne Neubau, mit lesbaren Namen (Folie 6).</td></tr>
+<tr><td>19</td><td><b>Instrument ohne eigene Karte:</b> in einer Regel und in der Verwaltung das Instrument der Order oder Position, im Ablauf das des Auslösers, ohne Auslöser das der Anwendung.</td></tr>
+</table>
+<p class="num">10 / 11</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Bestätigung</h2>
+<div class="row">
+<div class="card col prop"><h3>Einwand des Projektleiters zu Punkt 14</h3><p>Die Grenze von drei Wendepunkten hat keinen technischen Grund, nur den, dass kein Testfall mehr braucht. Nach dem Grundsatz „keine Einschränkung ohne Erfordernis“ schlage ich vor: Die Zahl der Wendepunkte ist nicht begrenzt. Eine Formel spricht den n-ten zurückliegenden Wendepunkt an, soweit die Kursdaten reichen.</p></div>
+<div class="card col ask"><h3>Zu bestätigen</h3><p>Punkt 14 mit dem Vorschlag oben, Punkte 15 bis 19 wie beschrieben. Punkte 9 bis 13 bleiben vorläufig bis zu deinem Test. Danach erstellt der Softwarearchitekt den neuen Plan der Arbeitspakete.</p></div>
+</div>
+<p class="rule">Vermerk der Bestätigung: Abstimmung mit dem Auftraggeber im Chat am 2026-10-20. Punkt 14 bestätigt, wie in der Spezifikation (drei Wendepunkte). Braucht eine Strategie später mehr, entsteht dafür ein eigener Indikator, der ZigZag wird nicht erweitert. Punkte 15 und 18 bestätigt. Punkt 16 geändert: Feste Instrumente tragen eine vom Broker unabhängige Bezeichnung, bis zur Kontoverwaltung nach ISO (Währungspaare nach ISO 4217, sonst ISIN), die Konsistenzprüfung meldet ungültige Bezeichnungen. Punkt 17 ersetzt: Auslöser „Start von Hand“, jede Auswertung beginnt an einem Auslöser, ein Element ohne eingehende Verbindung ist immer ein Fehler, eine Strategie ohne Auslöser erhält einen Hinweis. Punkt 19 geändert: „Instrument“ ohne Platzhalter-Element ist immer das Instrument der Anwendung. Punkte 9 bis 13 vorläufig bis zum Test. Eingetragen im Fachmodell (req-fach-046, 047, 051, 053) und in den Anforderungen (req-fach-015, req-ablauf-007). Nachtrag 2026-10-20 nach Prüfung specification-9.md: Punkt 19 erneut geändert, „Instrument“ ohne Platzhalter-Element ist wie Kerze und Tick das Instrument des Zusammenhangs (Indikator, Order, Auslöser, sonst Anwendung), Fachmodell req-fach-053. Punkt 20 (Verwaltung ohne eigene Auslöser beginnt mit einer Verbindung vom Ausgang „gestellt“) bestätigt.</p>
+<p class="num">11 / 11</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>

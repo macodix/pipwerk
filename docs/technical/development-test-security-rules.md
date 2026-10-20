@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- stand: 2026-10-12
+- stand: 2026-10-19
 - geltungsbereich: gesamtes Pipwerk-Repository
 
 ## 1. Zweck und Grundsatz
@@ -124,6 +124,8 @@ Es gelten mindestens vier Testebenen:
 Für jede Fehlerbehebung wird ein Test ergänzt, der den Fehler vor der Korrektur nachweisen kann, soweit dies technisch sinnvoll reproduzierbar ist.
 
 Fachliche Berechnungen müssen mit fest definierten Eingabedaten reproduzierbar sein. Zeit, Zufall, Marktfeeds und externe Dienste werden in Unit-Tests kontrolliert oder ersetzt.
+
+End-to-End-Tests jeder Benutzeroberfläche laufen mindestens in drei Fenstergrößen: Smartphone im Hochformat, Tablet und Desktop (req-system-024). Sie prüfen dabei, dass keine Inhalte übereinanderliegen und die geprüften Abläufe bedienbar bleiben.
 
 Frontendtests mit Testing Library prüfen bevorzugt sichtbares und zugängliches Benutzerverhalten statt interne React-Strukturen. Playwright-Tests laufen isoliert und verwenden definierte Testdaten.
 

@@ -4,16 +4,17 @@
 
 - status: `draft`
 - zweck: Fachliche Beschreibung des Indikators, der Trend, Phase und Punkte nach der Markttechnik von Michael Voigt aus ZigZag-Wendepunkten bestimmt
-- zuletzt aktualisiert: `2026-10-15`
+- zuletzt aktualisiert: `2026-10-19`
 
 ## 1. Zweck
 
-Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er wird vom Punkt-2-Ausbruch (`str-01`) benötigt. Er wird einmal angelegt und kann auf verschiedenen Zeiteinheiten verwendet werden.
+Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er wird vom Punkt-2-Ausbruch (`str-01`) benötigt. Er wird einmal angelegt und kann auf verschiedenen Zeiteinheiten verwendet werden. In der Oberfläche heißt er „1-2-3-Trend (Markttechnik)“ und steht bei den Trends. Er baut auf dem mitgelieferten Indikator `ZigZag` auf (Fachmodell req-fach-054): Er rechnet selbst nach dessen Verfahren und hat dessen Parameter (Abschnitt 2), eine eigene Instanz von `ZigZag` braucht er nicht.
 
 ## 2. Parameter
 
 | Parameter | Bedeutung | Standardwert |
 |---|---|---|
+| Instrument | Instrument, auf dem der Indikator rechnet (Fachmodell req-fach-053) | Instrument der Anwendung |
 | Zeiteinheit | Zeiteinheit der Kerzen, auf denen der Indikator rechnet (Fachmodell req-fach-054) | -- |
 | Depth | Mindestanzahl Kerzen zwischen zwei Wendepunkten | 12 |
 | Deviation | Mindestbewegung in Punkten für einen neuen Wendepunkt | 5 |
@@ -48,15 +49,15 @@ Ein Aufwärtstrend besteht aus den Punkten 1, 2 und 3:
 
 Steigt der Kurs danach über Punkt 2, wird Punkt 3 zum Punkt 1 des nächsten Abschnitts. Deshalb heißt das jeweils letzte Korrekturtief `Punkt 1/3`.
 
-`Trendrichtung` ist `aufwärts`, wenn die letzten drei endgültigen oder vorläufigen Wendepunkte ein Tief, ein höheres Hoch und ein höheres Tief bilden oder der Kurs danach über das Hoch gestiegen ist. `Punkt 2` ist das jüngste Hoch dieser Folge, `Punkt 1/3` das jüngste Tief. Liegt weder ein Aufwärts- noch ein Abwärtstrend vor, ist die Trendrichtung `kein Trend` und die Punkte sind nicht belegt.
+`Trendrichtung` ist `aufwärts`, sobald die letzten drei Wendepunkte ein Tief (Punkt 1), das folgende Hoch (Punkt 2) und ein Tief über Punkt 1 (Punkt 3) bilden. Ein Ausbruch über Punkt 2 ist dafür nicht nötig. Der vorläufige jüngste Wendepunkt zählt mit, `Punkt 1/3 endgültig` zeigt, ob er sich noch verschieben kann. `Punkt 2` ist das jüngste Hoch dieser Folge, `Punkt 1/3` das jüngste Tief. Liegt weder ein Aufwärts- noch ein Abwärtstrend vor, ist die Trendrichtung `kein Trend` und die Punkte sind nicht belegt.
 
 ### 4.2 Trend intakt
 
-Der Aufwärtstrend ist intakt, solange der Kurs nicht unter `Punkt 1/3` gefallen ist. Fällt der Kurs unter Punkt 1/3, ist `Trend intakt` gleich `nein`, bis ein neuer Trend nach 4.1 entstanden ist.
+Der Aufwärtstrend ist intakt, solange keine abgeschlossene Kerze der Zeiteinheit des Indikators unter `Punkt 1/3` geschlossen hat. Ist er unterschritten, ist `Trend intakt` gleich `nein`, bis ein neuer Trend nach 4.1 entstanden ist.
 
 ### 4.3 Phase
 
-`Bewegung`: Der Kurs ist über `Punkt 2` gestiegen und der ZigZag hat seitdem kein neues Hoch gesetzt.
+`Bewegung`: Eine abgeschlossene Kerze hat über `Punkt 2` geschlossen und der ZigZag hat seitdem kein neues Hoch gesetzt.
 
 `Korrektur`: Der ZigZag hat nach `Punkt 2` ein Hoch gesetzt und der Kurs liegt unter diesem Hoch und über `Punkt 1/3`. Dieses Hoch ist dann der neue `Punkt 2`.
 
@@ -64,9 +65,13 @@ Der Aufwärtstrend ist intakt, solange der Kurs nicht unter `Punkt 1/3` gefallen
 
 Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit werden `Trendrichtung` (sie bestimmt die Handelsrichtung), `Trend intakt` und `Phase` verwendet. Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, `Punkt 1/3` und `Punkt 1/3 endgültig` verwendet.
 
+### 4.4 Durchbruch
+
+Der Indikator wertet einen Durchbruch durch `Punkt 1/3` oder `Punkt 2` nur auf abgeschlossenen Kerzen aus: Die Kerze muss jenseits des Punkts schließen. Ein Docht jenseits des Punkts ist kein Durchbruch. Soll eine Strategie schon bei einem einzelnen Kurs reagieren, vergleicht sie den Kurs selbst mit dem Punkt.
+
 ## 6. Offen
 
-Die Bestimmung in Abschnitt 4 ist vom Projektleiter aus der Markttechnik nach Voigt abgeleitet und vom Auftraggeber noch nicht bestätigt. Insbesondere offen: ob für `aufwärts` ein vollständiger 1-2-3-Abschnitt verlangt wird oder bereits ein höheres Hoch und ein höheres Tief genügen, und ob der Durchbruch unter Punkt 1/3 auf Schlusskurs- oder Tick-Basis gilt.
+Keine offenen Punkte.
 
 ## 7. Änderungsnachweis
 
@@ -74,3 +79,6 @@ Die Bestimmung in Abschnitt 4 ist vom Projektleiter aus der Markttechnik nach Vo
 |---|---|
 | 2026-10-14 | Erstfassung. Eigenschaften mit dem Auftraggeber im Chat abgestimmt, Bestimmung als Entwurf. |
 | 2026-10-15 | Parameter Zeiteinheit, Trendrichtung auf beiden Zeiteinheiten im Punkt-2-Ausbruch. Entscheidung des Auftraggebers im Chat am 2026-10-15 (Vorhaben `strategiedesign`). |
+| 2026-10-19 | Bezeichnung in der Oberfläche „1-2-3-Trend (Markttechnik)“, Gruppe Trends, Grundlage `ZigZag`. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9): Parameter `Instrument` (Fachmodell req-fach-053, B5), rechnet selbst nach dem Verfahren des `ZigZag` (H9). |
+| 2026-10-19 | Bestimmung bestätigt: Aufwärtstrend ab vollständigem 1-2-3-Abschnitt ohne Ausbruch über Punkt 2, vorläufiger Wendepunkt zählt mit. Durchbruch nur auf Schlusskurs abgeschlossener Kerzen (4.4), ohne eigenen Parameter. Entscheidung des Auftraggebers im Chat am 2026-10-19. |

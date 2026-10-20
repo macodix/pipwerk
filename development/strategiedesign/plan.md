@@ -3,10 +3,11 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-18
+- stand: 2026-10-20
 - komponenten: `packages/domain-core`, `components/pipwerk-studio`, `contracts/`
-- grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber am 2026-10-16 mit allen acht Festlegungen ([Präsentation](presentations/specification-1.html), Vermerk der Bestätigung), Stand `main` Commit `fc30c0e25eeda28517b10bd62b64231046f2a467`
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet. Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden; die Hinweise H1 bis H4 werden in den Aufträgen erledigt. Änderung von `wp02` am 2026-10-17 geprüft in [specification-4.md](reviews/specification-4.md), bestanden, vom Auftraggeber am 2026-10-18 bestätigt, ausgenommen „Vorgabe der neuen Strategie“. Änderung von `wp01` und `wp02` am 2026-10-18 nach Entscheidung des Auftraggebers (Auslöser optional, neues Abnahmekriterium 2 von `wp02`) geprüft in [specification-5.md](reviews/specification-5.md) und [specification-6.md](reviews/specification-6.md).
+- grundlage: [specification.md](specification.md) in der Fassung nach der Abnahme von `wp02`, abgestimmt mit dem Auftraggeber am 2026-10-20 ([Präsentation](presentations/specification-2.html), Vermerk der Bestätigung mit Nachtrag), Abschnitt 10 Punkte 9 bis 13 vorläufig bis zu seinem Test. `wp01` beruht auf der Fassung vom 2026-10-16 ([Präsentation](presentations/specification-1.html)).
+- prüfung: Fassung vom 2026-10-16: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise P1 bis P9 eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden. Neufassung von `wp02` und `wp03` vom 2026-10-20: Durchlauf 3 [plan-3.md](reviews/plan-3.md) bestanden, Hinweise H1 bis H5 und H7 eingearbeitet, H6 in der Spezifikation, ohne weitere Prüfung.
+- bestätigung: Neufassung von `wp02` und `wp03` vom Auftraggeber im Chat am 2026-10-20 bestätigt, ohne eigene Präsentation (Abnahmekriterien im Chat vorgelegt). Der Auftraggeber prüft bei der Abnahme nach eigenem Ermessen, die Abnahmekriterien sind keine abschließende Liste.
 
 ## Übersicht
 
@@ -16,7 +17,9 @@
 | `wp02` | Strategien gestalten in der Oberfläche | `wp01` | `open` |
 | `wp03` | Vorlagen in der Oberfläche | `wp02` | `open` |
 
-Die Pakete folgen den Schichten der Spezifikation: Die Oberfläche kennt keine einzelnen Typen und braucht deshalb die Typbeschreibungen, die Konsistenzprüfung und die Ablage über die Web-API (E2). `wp02` endet mit dem Nachweis des Vorhabens, dass sich `str-01` und `str-03` in der Oberfläche gestalten, speichern und laden lassen. Beide Testfälle brauchen nur mitgelieferte Typen, die mitgelieferte Regelvorlage und Regeln, die in der Strategie entstehen. Das Anlegen und Verwalten eigener Vorlagen folgt deshalb in `wp03`.
+Die Pakete folgen den Schichten der Spezifikation: Die Oberfläche kennt keine einzelnen Typen und braucht deshalb die Typbeschreibungen, die Konsistenzprüfung und die Ablage über die Web-API (E2). `wp01` hat Bibliothek und Web-API in der Fassung der Spezifikation vom 2026-10-16 umgesetzt. `wp02` wurde nicht abgenommen ([Abnahmebericht](wp02/acceptance/1.md), Mängel M1 bis M17); die Spezifikation ist danach neu gefasst. `wp02` bringt deshalb Bibliothek und Web-API auf die neue Fassung (Format 2.0) und baut die Oberfläche nach dem bestätigten Prototyp neu auf. Es endet mit dem Nachweis des Vorhabens, dass sich `str-01` und `str-03` in der Oberfläche ohne Anleitung gestalten, speichern und laden lassen. Beide Testfälle brauchen nur mitgelieferte Typen, die mitgelieferte Regelvorlage und Regeln, die in der Strategie entstehen. Das Anlegen und Verwalten eigener Vorlagen folgt deshalb in `wp03`, nach Entscheidung des Auftraggebers vom 2026-10-19 erst nach `wp02`.
+
+`wp02` bleibt ein Paket, obwohl es Bibliothek, Web-API und Oberfläche umfasst: Der Auftraggeber prüft die Bedienung, und nur ein Paket mit Oberfläche gibt ihm ein Ergebnis, das er selbst prüfen kann. Innerhalb des Pakets laufen die Aufträge für Bibliothek und Web-API und für die Oberfläche nebeneinander, soweit die Oberfläche nur die Web-API nach 4.2 voraussetzt.
 
 Abschnittsangaben beziehen sich auf die [Spezifikation](specification.md). Die vollständigen Listen der Kennungen, die Grenzwerte gegen Überlast (Abschnitt 8) und die Einzelheiten der Tests legen die Aufträge fest.
 
@@ -70,30 +73,25 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 
 ### Ziel
 
-Der Anwender gestaltet in pipwerk Studio Strategien auf der Zeichenfläche, speichert, öffnet, prüft, schließt und löscht sie. Die Testfälle `str-01` und `str-03` lassen sich aus der leeren Zeichenfläche vollständig aufbauen, speichern und nach Neuladen unverändert öffnen, ohne Fehler der Konsistenzprüfung.
+Der Anwender gestaltet in pipwerk Studio Strategien auf der Zeichenfläche, wie im bestätigten Prototyp, speichert, öffnet, prüft, schließt und löscht sie, in jeder Fenstergröße nach req-system-024. Die Testfälle `str-01` und `str-03` lassen sich aus der leeren Zeichenfläche ohne Anleitung und ohne einen Ausdruck als Text einzugeben vollständig aufbauen, speichern und nach Neuladen unverändert öffnen, ohne Fehler der Konsistenzprüfung. Die „EMA-Trendfolge“ des Auftraggebers öffnet sich ohne Neubau. Die Mängel M1 bis M17 der ersten Abnahme sind behoben.
 
 ### Umfang
 
-- Aufbau der Oberfläche mit Kopfzeile, Elementbibliothek mit mitgelieferten und gespeicherten Vorlagen, Zeichenfläche und Eigenschaftenansicht (5.1, E2, E3). Sprachauswahl in den Einstellungen.
-- Arbeitsabläufe aus 5.2: Strategie anlegen, Objekt verwenden ohne „Als Vorlage speichern“, Regeln zuordnen einschließlich neuer Regel in der Strategie, Speichern, Schließen, Öffnen, Löschen einer Strategie, Einstellungen mit Objektverzeichnis.
-- Zeichenfläche und Eigenschaftenansicht (5.3): Elemente mit Ausgängen, Verbindungen, Verwaltung als einklappbarer Rahmen, Eigenschaftenansicht aus den Typbeschreibungen mit Bindungsarten und Herkunft, Ausdruckseingabe mit Vorschlägen und Anzeige in der gewählten Sprache.
-- Befunde nach 5.4 und Abschnitt 10 Punkt 1.
-- Darstellung eines Elements mit unbekanntem Typ (3.7, zweiter Absatz).
-- Ergänzung der Typbeschreibung nach 3.1 in Bibliothek, Web-API und ihrer Beschreibung: Ausgang mit der Verwaltung (höchstens einer je Typ), „benannt“, „Strategieparameter“, zulässige Werte der Zeiteinheit bei Parametern und Eigenschaften.
-- Konsistenzprüfung nach 3.6 in der Fassung vom 2026-10-18 in der Bibliothek: kein Befund für eine Strategie ohne Auslöser, `Kerze` ohne Instanz auch ohne Auslöser, Hinweis „kein Element ‚Order aufgeben‘ erreichbar“ nicht für eine Strategie ohne Elemente.
-- Tests der Bibliothek und des Backends für beide Änderungen (Abschnitt 7); technische Dokumentation der Bibliothek, Beschreibung der Web-API und Eintrag „Typbeschreibung“ im Glossar dazu (Abschnitt 9).
-- Texte nur als Text, nie als HTML (Abschnitt 8).
-- Tests nach Abschnitt 7 für die Oberfläche (Vitest) und Browsertests: beide Testfälle über die Oberfläche aufbauen, speichern, nach Neuladen öffnen und mit dem Testfalldokument vergleichen; Objektverzeichnis ändern.
-- Dokumentation: `docs/user/pipwerk-studio.md` mit den Arbeitsabläufen dieses Pakets Schritt für Schritt, der Schreibweise von Ausdrücken, den Befunden und ihrer Behebung und beiden Testfällen als Anleitung (Abschnitt 9, Punkt 3); `docs/technical/pipwerk-studio.md` zum Aufbau der Oberfläche; Glossar für neue Begriffe der Oberfläche.
+- Bibliothek und Web-API auf die geltende Fassung der Spezifikation: alle Änderungen gegenüber `wp01` in 3.1 bis 3.7 (Typbeschreibung mit Gruppe, Erklärungen und Händlersprache, Datentyp Objekt, Bindungsart Datenverbindung, Parameter `Instrument`, feste Instrumente nach ISO, `Instrument` ohne Instanz; mitgelieferte Typen mit `Start von Hand`, `ZigZag` und `Anwenden auf`; Namen und Kennungen, Eingänge, Abschnitte, Ausrichtung, Verwaltung ohne eigene Auslöser; Anzeigeform, Bausteine, Zeichen und sichtbare Namen; Konsistenzprüfung in der geltenden Fassung; Format 2.0 mit Schemata unter `contracts/strategies/v2/` und Lesen von 1.0), Web-API nach 4.2 mit `/api/v1/expressions`, Annahme von 2.0 und 1.0 und Fehlerantworten mit Kennung der Ursache (E2, E9).
+- Testfalldokumente `str-01` und `str-03` in Format 2.0 unter `contracts/strategies/v2/testcases/` nach Abschnitt 6.
+- Oberfläche neu nach dem bestätigten Prototyp (E8, Abschnitt 5) ohne die Teile von `wp03`: Aufbau und Fenstergrößen (5.1), Elementbibliothek (5.2), Zeichenfläche mit Anordnung, Verwaltung, Abschnitten, Bereich „Objekte und ihre Werte“, Datenverbindungen und Befunden (5.3), Eigenschaftenansicht, Bausteine und Formeleditor (5.4), Arbeitsabläufe aus 5.5: Strategie anlegen mit geführtem Aufbau, Objekt verwenden ohne „Als Vorlage speichern“, Regeln zuordnen, Speichern, Prüfen, Schließen, Öffnen, Löschen einer Strategie, Einstellungen; leere Zustände.
+- Sicherheit nach Abschnitt 8, auch die Begrenzungen für `/api/v1/expressions`.
+- Tests nach Abschnitt 7 ohne die Browsertests „Objekt anlegen“, „Vorlage löschen“ und die Vorlagenansicht in den Smartphone-Größen; Prüfskript und Testumgebungsskript mit der gesicherten „EMA-Trendfolge“.
+- Dokumentation nach Abschnitt 9 für dieses Paket: technische Dokumentation von pipwerk Studio und der Bibliothek, `docs/technical/pipwerk-studio-testfaelle.md`, Anwenderdokumentation ohne Test- und Abnahmeanleitungen, Glossar.
 
 ### Nicht-Umfang
 
 - Neues Objekt, Ansicht einer Vorlage, Als Vorlage speichern, Löschen einer Vorlage (`wp03`)
-- weitere Änderungen an Bibliothek und Web-API außer der Ergänzung der Typbeschreibung und der Änderung der Konsistenzprüfung, ausgenommen die Behebung eines Fehlers, den dieses Paket aufdeckt
+- Ausführung von Strategien und Prüfung, ob ein Broker ein Instrument anbietet (Abschnitt 1, 3.1)
 
 ### Umgesetzte Teile der Spezifikation
 
-Abschnitt 1 (Nachweis in der Oberfläche), Abschnitt 2 E2 und E3 Teil Oberfläche, 3.1 die in Phase 4 ergänzten Felder der Typbeschreibung, 3.6 in der Fassung vom 2026-10-18, 3.7 zweiter Absatz Teil Oberfläche, 5.1, 5.2 ohne die Teile von `wp03`, 5.3, 5.4, Abschnitt 6 (Aufbau über die Oberfläche), Abschnitt 7 Punkte Oberfläche und Browsertest ohne „Objekt anlegen“ und „Vorlage löschen“, Punkte Bibliothek und Backend für die Änderungen an 3.1 und 3.6, Abschnitt 8 Satz zur Oberfläche, Abschnitt 9 Punkt 1 (Oberfläche), Punkt 2 für die Änderungen an 3.1 und 3.6 und Punkte 3 und 4 für dieses Paket, Abschnitt 10 Punkt 1.
+Abschnitt 1 ohne das Löschen einer Vorlage in der Oberfläche, Abschnitt 2 E2, E3, E8 und E9 sowie die Erweiterung von E1, 3.1 bis 3.7 in der geltenden Fassung, 4.1 Lesen von Format 1.0, 4.2, Abschnitt 5 ohne die Teile von `wp03`, Abschnitt 6, Abschnitt 7 ohne die Browsertests „Objekt anlegen“, „Vorlage löschen“ und die Vorlagenansicht in den Smartphone-Größen, Abschnitt 8, Abschnitt 9 für dieses Paket, Abschnitt 10 Punkte 1 und 3 bis 20.
 
 ### Abhängigkeiten
 
@@ -103,20 +101,23 @@ Abschnitt 1 (Nachweis in der Oberfläche), Abschnitt 2 E2 und E3 Teil Oberfläch
 
 Der Auftraggeber kann in der Testumgebung selbst prüfen:
 
-1. Die Oberfläche zeigt Kopfzeile mit Menü, Elementbibliothek, Zeichenfläche und Eigenschaftenansicht nach 5.1. Die Sprache wird in den Einstellungen gewählt, alle Texte erscheinen in Deutsch und Englisch.
-2. „Neue Strategie“ zeigt eine leere Zeichenfläche. „Prüfen“ meldet dafür keinen Befund.
-3. `str-03` lässt sich nach der Anleitung der Anwenderdokumentation vollständig aufbauen und speichern. Die Konsistenzprüfung meldet keinen Fehler. Nach Neuladen der Seite öffnet „Öffnen“ die Strategie unverändert.
-4. Ebenso `str-01`, einschließlich der Verwaltung als Rahmen am Ausgang `gestellt`, der sich einklappen lässt.
-5. Ein Element mit Fehler ist rot, mit Hinweis orange umrandet. Bei Auswahl steht der Befundtext in der Eigenschaftenansicht. Befunde ohne Element stehen in der Eigenschaftenansicht der Strategie. Keine Meldung muss weggeklickt werden.
-6. Die Ausdruckseingabe bietet nach einem Namen und einem Punkt die Eigenschaften an, auch die der Objekte der Anwendung, und zeigt den Ausdruck mit den Namen in der gewählten Sprache.
-7. Schließen, „Neue Strategie“ und „Öffnen“ fragen bei ungespeicherten Änderungen nach „Speichern“, „Verwerfen“, „Abbrechen“.
-8. „Öffnen“ zeigt die Liste der Strategien mit Bezeichnung, Beschreibung und letzter Änderung. Eine Strategie lässt sich nach Rückfrage löschen.
-9. In den Einstellungen lässt sich das Objektverzeichnis ändern, mit Rückfrage „Dateien verschieben?“. Mit „verschieben“ erscheinen die gespeicherten Strategien danach weiter in der Liste von „Öffnen“, ohne „verschieben“ nicht. Die gewählte Sprache bleibt nach Neuladen der Seite erhalten.
-10. In der Eigenschaftenansicht der Strategie und von „Order aufgeben“ lassen sich Regeln aus der Elementbibliothek hinzufügen, neue Regeln anlegen, ihre Reihenfolge ändern und Regeln entfernen. Befunde zu einer Regel der Strategie stehen bei dieser Regel. Eine Instanz zeigt ihre Herkunft, zum Beispiel „ema20, aus Objekttyp EMA“.
+1. Bedienbarkeit: Der Auftraggeber baut `str-03` aus der leeren Zeichenfläche ohne Anleitung auf, so wie im bestätigten Prototyp, ohne einen Ausdruck als Text einzugeben, und speichert. Die Konsistenzprüfung meldet keinen Fehler. Nach Neuladen der Seite öffnet „Öffnen“ die Strategie unverändert.
+2. Ebenso `str-01`, einschließlich der Verwaltung als Rahmen am Ausgang „gestellt“, der sich einklappen lässt.
+3. Seine gesicherte „EMA-Trendfolge“ öffnet sich ohne Neubau, mit Namen nach Abschnitt 10 Punkt 18.
+4. In den Fenstergrößen nach 5.1, auch auf Smartphone und Tablet, liegt nichts übereinander, die Seite hat keine waagerechte Bildlaufleiste, und alle Bereiche, Menü und Dialoge sind erreichbar; ohne Ziehen lässt sich jede Bedienung ausführen.
+5. Elementbibliothek in den Gruppen nach 5.2, mit Erklärung bei jedem Eintrag, in Händlersprache, mit `ZigZag` und „1-2-3-Trend (Markttechnik)“. Die Sprache wird in den Einstellungen gewählt, alle Texte erscheinen in Deutsch und Englisch.
+6. Werte von Objekten lassen sich mit Elementen verbinden; Linien, Umschalter „Alle / Auswahl / Aus“ und Legende nach 5.3. Abschnitte lassen sich bilden und einklappen, der Ablauf lässt sich waagerecht stellen.
+7. Strategieparameter stehen im Streifen unter der Kopfzeile und lassen sich dort und bei einer Belegung an Ort und Stelle anlegen. Ein Trend, ein eigener Indikator und ein eigenes Regelwerk lassen sich in der Strategie vollständig belegen, jede Instanz zeigt ihre Eigenschaften mit Datentyp und möglichen Werten.
+8. Bausteine und Formelansicht nach 5.4: Vorschläge nach `Objekt.`, auch nach dem Namen einer Berechnung, Fehler an der Stelle. Umbenennen zieht überall mit; Entfernen eines verwendeten Objekts fragt mit der Liste der Verwendungen nach, danach meldet die Prüfung den leeren Platz.
+9. Befunde: Element mit Fehler rot, mit Hinweis orange, Befundtext in der Eigenschaftenansicht, die Befundzahl führt zur Liste, jeder Befund nennt den Weg zur Behebung und führt zur Stelle. Eine neue, leere Strategie erhält nur den Hinweis „Hauptablauf ohne Auslöser“. Ein Element, das kein Auslöser erreicht, und ein festes Instrument mit ungültiger Bezeichnung sind Fehler; `EURUSD` und eine gültige ISIN sind keine.
+10. Schließen, „Neue Strategie“ und „Öffnen“ fragen bei ungespeicherten Änderungen nach „Speichern“, „Verwerfen“, „Abbrechen“. „Öffnen“ zeigt die Liste der Strategien; eine Strategie lässt sich nach Rückfrage löschen. Das Objektverzeichnis lässt sich in den Einstellungen mit Rückfrage „Dateien verschieben?“ ändern.
 11. Eine Strategie mit einem unbekannten Elementtyp, angelegt über die Schnittstellenbeschreibung, öffnet sich. Das Element ist rot umrandet und zeigt die Kennung seines Typs, seine Belegungen sind nur lesbar und bleiben beim Speichern erhalten.
-12. Die Anwenderdokumentation beschreibt die Arbeitsabläufe dieses Pakets, die Schreibweise von Ausdrücken mit „leer“ und „nicht verfügbar“, die Befunde und beide Testfälle verständlich und vollständig.
+12. „Neue Strategie“ bietet den geführten Aufbau an, jeder leere Zustand nennt den nächsten Schritt. Beim Ablegen eines Elements springt die Ansicht nicht, und kein Element liegt sichtbar in einem fremden Rahmen. Das Erscheinungsbild folgt dem Prototyp. „Über pipwerk Studio“ und der Stand in der Fußzeile sind vorhanden, die gewählte Sprache bleibt nach Neuladen und Neustart erhalten.
+13. Die Anwenderdokumentation beschreibt die Bedienung dieses Pakets verständlich und vollständig und enthält keine Test- oder Abnahmeanleitungen.
 
-Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests der Bibliothek und des Backends zu den Änderungen an 3.1 und 3.6, die Tests der Oberfläche und die Browsertests in Chromium, Firefox und WebKit. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
+Mit der Abnahme testet der Auftraggeber auch die vorläufigen Punkte 9 bis 13 aus Abschnitt 10 der Spezifikation; ein Einwand kommt mit `revise`.
+
+Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 7 für dieses Paket, die Browsertests in Chromium, Firefox und WebKit und in den Fenstergrößen aus 5.1. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
 
 ## wp03 – Vorlagen in der Oberfläche
 
@@ -126,10 +127,11 @@ Der Anwender legt eigene Vorlagen (Indikator, Trend, Regel, Regelwerk) in pipwer
 
 ### Umfang
 
-- Arbeitsabläufe aus 5.2: „Als Vorlage speichern“ in der Eigenschaftenansicht einer Instanz; Objekt anlegen, öffnen, ändern in der Ansicht der Vorlage mit „Speichern“, „Prüfen“, „Schließen“, „Löschen“, enthaltenen Instanzen, Regeln und Regelwerken, Befunden beim betroffenen Teil und Rückfrage beim Schließen; Löschen einer Vorlage in ihrer Ansicht und im Kontextmenü der Elementbibliothek mit Anzeige der Verwendungen.
-- Mitgelieferte Typen und „Risiko je Trade“ ohne Ändern und Löschen in der Oberfläche (E6, Abschnitt 10 Punkt 2).
-- Tests der Oberfläche und Browsertests „Objekt anlegen“ und „Vorlage löschen mit Anzeige der Verwendungen“ (Abschnitt 7).
-- Schaltfläche „Neues Objekt“ in der Elementbibliothek (5.1).
+- Arbeitsabläufe aus 5.5 nach dem bestätigten Prototyp: „Als Vorlage speichern“ in der Eigenschaftenansicht einer Instanz; Objekt anlegen, öffnen, ändern in der Ansicht der Vorlage mit „Speichern“, „Prüfen“, „Schließen“, „Löschen“, enthaltenen Instanzen, Regeln und Regelwerken, eigenen Parametern und Eigenschaften mit Ausdrücken aus Bausteinen, Befunden beim betroffenen Teil und Rückfrage beim Schließen; Löschen einer Vorlage in ihrer Ansicht und an ihrem Eintrag in der Elementbibliothek mit Anzeige der Verwendungen.
+- Gespeicherte Vorlagen als „eigene“ in der Gruppe ihres Objekttyps; mitgelieferte Typen und „Risiko je Trade“ ansehen, nicht ändern und nicht löschen (5.2, E6, Abschnitt 10 Punkt 2).
+- „Neues Objekt“ in der Elementbibliothek (5.1); Ansicht einer Vorlage auch in den Smartphone-Größen (5.1).
+- Tests der Oberfläche und Browsertests „Objekt anlegen“, „Vorlage löschen mit Anzeige der Verwendungen“ und Vorlagenansicht in den Smartphone-Größen (Abschnitt 7).
+- Texte und Namen des Anwenders in der Ansicht der Vorlage nur als Text, nie als HTML (Abschnitt 8).
 - Dokumentation: `docs/user/pipwerk-studio.md` mit den Arbeitsabläufen dieses Pakets Schritt für Schritt; `docs/technical/pipwerk-studio.md` zur Ansicht der Vorlage; Glossar für neue Begriffe dieses Pakets.
 
 ### Nicht-Umfang
@@ -139,7 +141,7 @@ Der Anwender legt eigene Vorlagen (Indikator, Trend, Regel, Regelwerk) in pipwer
 
 ### Umgesetzte Teile der Spezifikation
 
-Abschnitt 5.1 Schaltfläche „Neues Objekt“, Abschnitt 5.2 Zeilen „Objekt verwenden“ (Als Vorlage speichern), „Objekt anlegen, öffnen, ändern“, „Löschen“ (Vorlage), Abschnitt 7 Browsertest „Objekt anlegen“ und „Vorlage löschen“, Abschnitt 9 Punkte 1 und 3 für dieses Paket, Abschnitt 10 Punkt 2 in der Oberfläche.
+Abschnitt 5.1 „Neues Objekt“ und Ansicht einer Vorlage in den Smartphone-Größen, 5.2 gespeicherte und mitgelieferte Vorlagen, 5.5 Zeilen „Objekt verwenden“ (Als Vorlage speichern), „Objekt anlegen, öffnen, ändern“, „Löschen“ (Vorlage), Abschnitt 7 Browsertests „Objekt anlegen“, „Vorlage löschen“ und Vorlagenansicht in den Smartphone-Größen, Abschnitt 8 Satz zur Oberfläche für die Ansicht der Vorlage, Abschnitt 9 Punkte 1 und 4 und Glossar für dieses Paket, Abschnitt 10 Punkt 2 in der Oberfläche.
 
 ### Abhängigkeiten
 
@@ -149,51 +151,56 @@ Abschnitt 5.1 Schaltfläche „Neues Objekt“, Abschnitt 5.2 Zeilen „Objekt v
 
 Der Auftraggeber kann in der Testumgebung selbst prüfen:
 
-1. „Neues Objekt“ legt eine Vorlage jedes Objekttyps `Indikator`, `Trend`, `Regel` und `Regelwerk` an. Sie erscheint in einer eigenen Ansicht, die geöffnete Strategie bleibt dahinter unverändert.
-2. In einem Indikator lassen sich Instanzen mitgelieferter Indikatoren und Regeln hinzufügen und eine eigene Eigenschaft mit Ausdruck festlegen. Ein Trend erhält Zeiteinheit, Verfahren „Ausdruck“ und den Ausdruck für `Richtung`. Ein Regelwerk erhält Regeln in einer Reihenfolge, die sich ändern lässt. Eine Regel erhält Parameter, Ausdruck, bestimmte Eigenschaft und Vergleich beim Prüfen.
-3. „Prüfen“ zeigt Befunde beim betroffenen Teil der Vorlage, zum Beispiel eine Regel mit `Order` in einem Indikator. „Schließen“ fragt bei ungespeicherten Änderungen nach.
-4. Eine gespeicherte Vorlage erscheint in der Elementbibliothek und lässt sich in eine Strategie einfügen, ein Regelwerk als Regelwerk der Strategie. Die Eigenschaftenansicht zeigt die Herkunft der Instanz. Wird die Vorlage danach geöffnet, geändert und gespeichert, bleibt die Instanz in der Strategie unverändert.
-5. „Als Vorlage speichern“ macht aus einer geänderten Instanz eine neue Vorlage.
-6. Beim Löschen einer Vorlage nennt die Rückfrage die Strategien und Vorlagen mit Instanzen daraus. Nach dem Löschen sind diese Instanzen unverändert.
-7. Mitgelieferte Objekttypen und „Risiko je Trade“ bieten weder Ändern noch Löschen an.
-8. Die Anwenderdokumentation beschreibt die Arbeitsabläufe dieses Pakets verständlich und vollständig.
+1. Bedienbarkeit: Der Auftraggeber legt ohne Anleitung, so wie im bestätigten Prototyp, die Regel `mindestvolumen` aus `str-03` als eigene Vorlage an, fügt sie in seine Strategie `str-03` an „Order aufgeben“ ein und speichert. Die Konsistenzprüfung meldet keinen Fehler.
+2. „Neues Objekt“ legt eine Vorlage jedes Objekttyps `Indikator`, `Trend`, `Regel` und `Regelwerk` an. Sie erscheint in einer eigenen Ansicht, die geöffnete Strategie bleibt dahinter unverändert.
+3. In einem Indikator lassen sich Instanzen mitgelieferter Indikatoren und Regeln hinzufügen und eine eigene Eigenschaft mit Ausdruck aus Bausteinen festlegen. Ein Trend erhält Instrument, Zeiteinheit, Verfahren „Ausdruck“ und den Ausdruck für `Richtung`. Ein Regelwerk erhält Regeln in einer Reihenfolge, die sich ändern lässt. Eine Regel erhält Parameter, Ausdruck, bestimmte Eigenschaft und Vergleich beim Prüfen.
+4. „Prüfen“ zeigt Befunde beim betroffenen Teil der Vorlage, zum Beispiel eine Regel mit `Order` in einem Indikator. „Schließen“ fragt bei ungespeicherten Änderungen nach.
+5. Eine gespeicherte Vorlage erscheint als „eigene“ in der Elementbibliothek und lässt sich in eine Strategie einfügen, ein Regelwerk als Regelwerk der Strategie. Die Eigenschaftenansicht zeigt die Herkunft der Instanz. Wird die Vorlage danach geöffnet, geändert und gespeichert, bleibt die Instanz in der Strategie unverändert.
+6. „Als Vorlage speichern“ macht aus einer geänderten Instanz eine neue Vorlage.
+7. Beim Löschen einer Vorlage nennt die Rückfrage die Strategien und Vorlagen mit Instanzen daraus. Nach dem Löschen sind diese Instanzen unverändert.
+8. Mitgelieferte Objekttypen und „Risiko je Trade“ lassen sich ansehen und bieten weder Ändern noch Löschen an.
+9. Die Ansicht einer Vorlage ist auch auf dem Smartphone hoch und quer vollständig bedienbar.
+10. Die Anwenderdokumentation beschreibt die Arbeitsabläufe dieses Pakets verständlich und vollständig.
 
 Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die neuen Tests der Oberfläche und Browsertests in Chromium, Firefox und WebKit. Positive Testberichte beider Tester liegen für jeden zusammengeführten Auftrag vor.
 
 ## Abdeckung der Spezifikation
 
+Bezogen auf die geltende Fassung der Spezifikation. `wp01` hat die Teile in der Fassung vom 2026-10-16 umgesetzt; was die geltende Fassung daran ändert, setzt `wp02` um.
+
 | Teil der Spezifikation | Paket |
 |---|---|
-| 1 Gegenstand, Nachweis mit `str-01` und `str-03` | `wp01` (Dokumente), `wp02` (Oberfläche) |
-| 1 Abweichungen von den Vorlagen | `wp01` (Instanzen als Kopien, Löschen, Auslöser, OpenFormula, kein Index, Indikatoren ohne Berechnung), `wp02` (Strategie ohne Auslöser), `wp03` (Löschen in der Oberfläche) |
-| 2 E1, E4 bis E8 | `wp01` |
-| 2 E2, E3 | `wp01` (Typbeschreibungen, Prüfung im Backend), `wp02` (Oberfläche ohne Typkenntnis, Dokument maßgeblich) |
-| 3.1 bis 3.6 | `wp01`; in Phase 4 ergänzte Felder der Typbeschreibung (3.1) und Änderung der Konsistenzprüfung vom 2026-10-18 (3.6) `wp02` |
-| 3.7 Dokumente und Schemata | `wp01`; Darstellung unbekannter Typen `wp02` |
-| 4.1, 4.2 | `wp01` |
-| 5.1 | `wp02`; Schaltfläche „Neues Objekt“ `wp03` |
+| 1 Gegenstand, Nachweis mit `str-01` und `str-03`, Öffnen der „EMA-Trendfolge“ | `wp02` |
+| 1 Abweichungen von den Vorlagen | `wp01`, in der geltenden Fassung `wp02` (Auslöser, Namen); Löschen einer Vorlage in der Oberfläche `wp03` |
+| 2 E1, E4 bis E7 | `wp01`; Erweiterung von E1 (Anzeigeform, Bausteine) `wp02` |
+| 2 E2, E3, E8, E9 | `wp02` |
+| 3.1 bis 3.7 | `wp01`; geltende Fassung `wp02` |
+| 4.1 | `wp01`; Lesen von Format 1.0 `wp02` |
+| 4.2 | `wp01`; `/api/v1/expressions`, Format 2.0 und 1.0, Fehler mit Kennung der Ursache `wp02` |
+| 5.1 | `wp02`; „Neues Objekt“ und Ansicht einer Vorlage in den Smartphone-Größen `wp03` |
+| 5.2 | `wp02`; gespeicherte und mitgelieferte Vorlagen ansehen, öffnen, löschen `wp03` |
 | 5.3, 5.4 | `wp02` |
-| 5.2 Strategie anlegen, Regeln zuordnen, Speichern, Schließen, Öffnen, Einstellungen | `wp02` |
-| 5.2 Objekt verwenden | `wp02`; „Als Vorlage speichern“ `wp03` |
-| 5.2 Objekt anlegen, öffnen, ändern | `wp03` |
-| 5.2 Löschen | `wp02` (Strategie), `wp03` (Vorlage) |
-| 6 Abbildung der Testfälle | `wp01` (Testfalldokumente), `wp02` (Aufbau über die Oberfläche) |
-| 7 Bibliothek, Testfalldokumente, Backend, Skripte | `wp01`; Tests der Änderungen an 3.1 und 3.6 `wp02` |
-| 7 Oberfläche, Browsertest | `wp02`; „Objekt anlegen“ und „Vorlage löschen“ `wp03` |
-| 8 Sicherheit | `wp01`; Satz zur Oberfläche `wp02`, `wp03` |
-| 9 technische Dokumentation pipwerk Studio | `wp01` (Backend), `wp02`, `wp03` (Oberfläche) |
-| 9 technische Dokumentation der Bibliothek | `wp01`; Änderungen an 3.1 und 3.6 `wp02` |
-| 9 Anwenderdokumentation | `wp02`, `wp03` |
-| 9 Glossar | `wp01`; neue Begriffe der Oberfläche und Eintrag „Typbeschreibung“ `wp02`; neue Begriffe `wp03` |
-| 10 Punkt 1 | `wp02` |
+| 5.5 Strategie anlegen, Regeln zuordnen, Speichern, Prüfen, Schließen, Öffnen, Einstellungen | `wp02` |
+| 5.5 Objekt verwenden | `wp02`; „Als Vorlage speichern“ `wp03` |
+| 5.5 Objekt anlegen, öffnen, ändern | `wp03` |
+| 5.5 Löschen | `wp02` (Strategie), `wp03` (Vorlage) |
+| 6 Abbildung der Testfälle | `wp02` |
+| 7 Bibliothek, Testfalldokumente, Backend, Skripte | `wp02` |
+| 7 Oberfläche, Browsertest | `wp02`; „Objekt anlegen“, „Vorlage löschen“ und Vorlagenansicht in den Smartphone-Größen `wp03` |
+| 8 Sicherheit | `wp02`; Ansicht der Vorlage `wp03` |
+| 9 technische Dokumentation pipwerk Studio | `wp02`; Ansicht der Vorlage `wp03` |
+| 9 technische Dokumentation der Bibliothek, Testfälle | `wp02` |
+| 9 Anwenderdokumentation, Glossar | `wp02`, `wp03` |
+| 10 Punkt 1, Punkte 3 bis 20 | `wp02` (Punkte 9 bis 13 vorläufig bis zum Test in der Abnahme von `wp02`) |
 | 10 Punkt 2 | `wp01` (Bibliothek), `wp03` (Oberfläche) |
-| 10 Punkte 3 bis 8 | `wp01` |
 | 10 Folgen der fachlichen Festlegungen | keine Umsetzung, Hinweis für den Auftraggeber |
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-20 | Hinweise aus [plan-3.md](reviews/plan-3.md) (bestanden), ohne weitere Prüfung: H1 4.1 Lesen von 1.0 in `wp02`; H2 Abschnitt 8 für die Ansicht der Vorlage in `wp03`; H3 Browsertest der Vorlagenansicht in den Smartphone-Größen in `wp03`; H4 neues Kriterium 12 von `wp02` (geführter Aufbau, leere Zustände, Ansicht, Erscheinungsbild, „Über pipwerk Studio“, Sprache); H5 Kriterium 7 von `wp02` um eigenen Indikator und eigenes Regelwerk; H7 Abschnitt 1 in `wp02` ohne Löschen einer Vorlage. H6 in der Spezifikation 3.6. S19 und S20 prüfen die Aufträge von `wp02` auf ihre Gültigkeit nach der Neufassung. |
+| 2026-10-20 | `wp02` und `wp03` neu gefasst nach der Neufassung der Spezifikation (Abnahme von `wp02` nicht bestanden, Mängel M1 bis M17, bestätigter Prototyp, Abstimmung vom 2026-10-20): `wp02` mit Bibliothek und Web-API in Format 2.0 und neuer Oberfläche, Abnahmekriterium zur Bedienbarkeit, das bisherige Kriterium 2 (leere Strategie ohne Befund) durch den Hinweis „Hauptablauf ohne Auslöser“ ersetzt (Spezifikation 3.6; Hinweis T2-H6 aus `specification-9.md`); `wp03` mit Kriterium zur Bedienbarkeit und Ansicht der Vorlage in den Smartphone-Größen; Abschnittsnummern auf die geltende Fassung (5.5 Arbeitsabläufe); Tabelle der Abdeckung neu. |
 | 2026-10-16 | Plan angelegt: drei Pakete, `wp02` hängt von `wp01` ab, `wp03` von `wp02`. |
 | 2026-10-16 | Hinweise aus [plan-1.md](reviews/plan-1.md) eingearbeitet: P1 „Neues Objekt“ in `wp03` und in der Tabelle der Abdeckung; P2 Glossar in `wp03`; P3 zwei Stellen der Anwenderdokumentation in `wp01`; P4 Vergleich ohne Kennung und Zeitpunkte; P5 Ändern des Objektverzeichnisses als Abnahmekriterium nur in `wp02`, in `wp01` als technischer Nachweis; P6 Befund nach „Prüfen“; P7 „kein Fehler“; P8 Kriterien 8 bis 10 von `wp02` ergänzt; P9 Regelvorlage und Ändern einer Vorlage in `wp03`. |
 | 2026-10-17 | `wp01` abgenommen ([Abnahmebericht](wp01/acceptance/1.md)) und mit Commit `cbbebd931b09148b93410e214e495b8b896b1d7e` in `main` übernommen, Stand `done`. |
