@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-19
+- stand: 2026-10-20
 
 ## Regeln
 
@@ -34,10 +34,10 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Element | Alles, was der Anwender auf der Zeichenfläche einer Strategie nutzt. Ein Element zeigt ein Objekt (zum Beispiel einen Trend) oder einen Teil des Ablaufs, der kein Objekt ist (Auslöser, Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen, Verbindung). Ob ein Element in mehreren Strategien verwendet werden kann, ist eine Eigenschaft seines Typs, kein eigener Begriff. Die Begriffe „Knoten“ und „Ablaufelement“ werden nicht verwendet. „Baustein“ bezeichnet kein Element, sondern einen Teil einer Bedingung oder Berechnung: einen Wert, einen Vergleich oder eine Verknüpfung (req-ui-015). |
 | Elementtyp | Die Art eines Elements, zum Beispiel ein Objekttyp, „Bedingung“ oder „Order aufgeben“. |
 | Elementbibliothek | Der Bereich der Oberfläche, der die verfügbaren Elementtypen und die bereits angelegten Objekte zur Auswahl anbietet. |
-| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie oder die Verwaltung einer Order ausgewertet wird: Kerzenschluss einer Zeiteinheit, Tick oder externes Ereignis. Ein Auslöser steht am Anfang des Ablaufs oder der Verwaltung. Kerzenschluss und Tick haben den Parameter `Instrument`, vorbelegt mit dem Instrument der Anwendung (req-fach-053). Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order (req-fach-015). |
+| Auslöser | Ein Element, das festlegt, bei welchem Ereignis eine Strategie oder die Verwaltung einer Order ausgewertet wird: Kerzenschluss einer Zeiteinheit, Tick oder externes Ereignis. Ein Auslöser steht am Anfang des Ablaufs oder der Verwaltung. Kerzenschluss und Tick haben den Parameter `Instrument`, vorbelegt mit dem Instrument der Anwendung (req-fach-053). Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order (Anforderungen an den Strategiedesigner req-fach-015). |
 | Anwendung einer Strategie | Die Zuordnung einer Strategie zu einem Konto und einem Instrument. Sie besteht, bis der Nutzer sie aufhebt. Dieselbe Strategie, zwei verschiedenen Instrumenten zugeordnet, sind zwei Anwendungen. Eine Anwendung kann über den Parameter `Instrument` ihrer Auslöser und Objekte und die Eigenschaft `Instrument` ihrer Orders auch weitere Instrumente verwenden und darauf handeln (req-fach-053). |
-| Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, zum Beispiel bei jedem Kerzenschluss, wenn die Strategie einen Auslöser dafür hat. Wie eine Strategie oder Verwaltung ohne Auslöser ausgewertet wird, ist offen (req-fach-015). |
-| Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er gilt für genau diese Order und die daraus entstehende Position, kann eigene Auslöser haben (req-fach-015) und besteht, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
+| Auswertung | Ein Durchlauf des Ablaufs einer Anwendung, zum Beispiel bei jedem Kerzenschluss, wenn die Strategie einen Auslöser dafür hat. Wie eine Strategie oder Verwaltung ohne Auslöser ausgewertet wird, ist offen (Anforderungen an den Strategiedesigner req-fach-015). |
+| Verwaltung einer Order | Der Teil des Ablaufs nach dem Ausgang „gestellt“ von „Order aufgeben“. Er gilt für genau diese Order und die daraus entstehende Position, kann eigene Auslöser haben (Anforderungen an den Strategiedesigner req-fach-015) und besteht, bis die Order gelöscht oder abgelaufen oder die Position geschlossen ist. |
 | Order aufgeben | Das Element, das im Ablauf eine Order veranlasst. Es legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem. Es hat die Ausgänge „gestellt“ und „nicht gestellt“. |
 | Order ändern | Das Element, das Preis, Stop-Loss, Take-Profit oder Gültigkeit einer wartenden Order ändert. Es hat die Ausgänge „geändert“ und „nicht geändert“. |
 | Order löschen | Das Element, das eine wartende Order löscht. |
@@ -114,6 +114,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-20 | Auslöser, Auswertung, Verwaltung einer Order: Fundort von req-fach-015 genannt (Anforderungen an den Strategiedesigner, nicht Fachmodell). Folgt aus dem Fundort der Kennung. Hinweis H15 aus `development/backtest/reviews/requirements-1.md`. |
 | 2026-10-19 | Strategietester, Backtester, Testlauf, Testzeitraum, Testkonto, Interne Order, Handelnde Stelle, Datenbestand historischer Kursdaten, Import, Beschaffung ergänzt. |
 | 2026-10-19 | Eingang auch unverbunden, Parameter als Eingang (req-ui-014, req-ablauf-007; Hinweis N2 aus `development/strategiedesign/reviews/requirements-10.md`). Auslöser mit Parameter `Instrument`, Anwendung mit weiteren Instrumenten (req-fach-053, Entscheidung des Auftraggebers vom 2026-10-19; Hinweis N5 aus `development/strategiedesign/reviews/requirements-11.md`). Satzfolge im Eintrag „Auslöser“ (Hinweis N6 aus `development/strategiedesign/reviews/requirements-12.md`). |
 | 2026-10-19 | An die Festlegungen des Auftraggebers vom 2026-10-19 angeglichen: Verbindung als Ablaufverbindung oder Datenverbindung, Ausgang und Eingang ergänzt (req-ui-014, Befund B4); „Baustein“ als Teil einer Bedingung (req-ui-015, Hinweis H3); Strategieparameter auch als Objekt (req-fach-046, Hinweis H10); Name statt Bezeichnung bei Herkunft und Index (req-ui-016, Befund B3). Alle aus `development/strategiedesign/reviews/requirements-9.md`. |
