@@ -46,4 +46,4 @@ Phase 4, `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1, [specificati
 
 2026-10-19: Prüfung der geänderten Stellen [requirements-9.md](reviews/requirements-9.md) nicht bestanden (5 blockierende Befunde, alle Folge einer Festlegung). Vom Projektleiter bearbeitet ([requirements-9-response.md](reviews/requirements-9-response.md)), Nachprüfung mit `check`. Durchläufe 10 und 11 bestanden, Hinweise bearbeitet ([requirements-11-response.md](reviews/requirements-11-response.md)). Phase 2 mit `specify`: Prototyp, danach Spezifikation und neuer Plan.
 
-2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, neuer Parameter `Durchbruch gilt bei`. Der Parameter gilt auch für dieses Vorhaben (Eigenschaftenansicht, Vorlage).
+2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, Durchbruch nur auf Schlusskurs. Parameter und Eigenschaften unverändert, keine Auswirkung auf dieses Vorhaben.
