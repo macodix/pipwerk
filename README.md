@@ -5,7 +5,7 @@ Pipwerk is a system for graphical strategy design, backtesting, trading executio
 ## Components
 
 - **pipwerk Studio** (`pipwerk-studio`): graphical strategy designer
-- **Pipwerk Backtest** (`pipwerk-backtest`): strategy tester
+- **pipwerk replay** (`pipwerk-replay`): strategy tester
 - **Pipwerk Trader** (`pipwerk-trader`): trading system
 - **Pipwerk Relay** (`pipwerk-relay`): messaging system
 
