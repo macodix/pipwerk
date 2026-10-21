@@ -1,0 +1,32 @@
+# Testbericht Funktion, Auftrag 03 und 09, Durchlauf 2
+
+- Ergebnis: **nicht bestanden** (1 blockierender Befund)
+- geprüfter Commit: `1f1226f623cba97fb5740e202935edb79f526603` (Zweig `backtest/wp02-09`), ausgecheckt und mit `git rev-parse HEAD` kontrolliert
+- Commit des Prüfskripts: `dba32a9e5469dc9dd1116e0a1660cfab56aec1e6` (Zweig `backtest/wp02-functiontest-03`). Das Skript fehlt im geprüften Commit. Ich habe die Datei mit `git checkout dba32a9… -- components/pipwerk-fetch-mt5/scripts/check` ins Arbeitsverzeichnis geholt und unverändert ausgeführt.
+
+## Prüfskript
+
+`components/pipwerk-fetch-mt5/scripts/check`: alle fünf Schritte bestanden. pytest: 865 bestanden, 4 übersprungen (Dateien gegen `contracts/market-data/v1/`, nicht Teil dieser Prüfung). `ruff check` sauber, `ruff format --check` 29 Dateien, mypy keine Fehler in 28 Dateien.
+
+## Behoben, in Ordnung
+
+- Befund 1 aus dem Vorbericht ist für dichte Daten behoben. Ich habe ein Paket nachgebildet, das aus wahren UTC-Zeitpunkten Serverzeiten macht, und mit Ticks und Kerzen im Minutenabstand geprüft: Europe/Athens (25.10.2026 und 28.03.2027), America/New_York (01.11.2026, 14.03.2027), Australia/Lord_Howe (halbe Stunde, beide Wechsel), Europe/London, Asia/Kolkata (+5:30), Asia/Tokyo, UTC. Beginn von 14 Stunden vor bis 3,5 Stunden nach dem Wechsel, Ende von 3 Stunden vor bis 20 Stunden nach dem Wechsel, in Schritten von 30 Minuten. Die Nachweisfälle aus dem Vorbericht liegen darin (Ende 01:00Z, 01:30Z, 02:00Z; kurzer letzter Abschnitt). Ergebnis bei Ticks im Minutenabstand und Kerzen m1 und m30: in jedem Fall stimmen alle gültigen Zeilen, und `omitted_count` ist gleich der Zahl der Zeilen der zweiten Stunde im Zeitraum. Keine Abweichung. Das Vorstellen der Uhr und Zeitzonen ohne Sommerzeit sind ebenfalls ohne Abweichung.
+- Hinweis 2 (Zahl der Abrufe): `max_reads_per_request`, Standard 500, höchstens 100000, in Beispiel-INI und Dokumentation. Gemessen mit leerer Quelle: 1970 bis 2100 mit Ticks, m1 und d1 (d1 hat nur 5 Schritte und ist zulässig): Ticks und m1 geben `range_too_large` ohne einen Abruf. Grenze genau: bei `max_reads` 1, 3 und 500 geht ein Zeitraum mit genau so vielen Schritten durch, einer mehr gibt `range_too_large` mit 0 Abrufen (UTC und Europe/Athens). Kerzen: 20000 Kerzen m1 bei `max_reads` 2 gehen, 20001 geben `range_too_large`.
+- Hinweis 4 (Schlüssel im Protokoll): `uvicorn.run(..., access_log=False)` (`cli.py` Zeile 83). Der Test `test_cli.py` startet das Programm als Prozess, schickt den Schlüssel in der Adresse und prüft die gesamte Ausgabe auf Schlüssel und Pfad; er besteht im Prüfskript. Dokumentation Abschnitt 9 stimmt mit dem Code überein. Eigene Läufe mit einem laufenden Prozess habe ich nicht gemacht.
+
+## Befunde
+
+### Blockierend
+
+1. **Kerzen ab Zeiteinheit h1: die zweite Kerze der doppelten Stunde wird falsch oder gar nicht unter `omitted` genannt** (`service.py` `_Order.is_repeat`, Zeilen 99 bis 111; `_place` Zeilen 191 bis 217). `_Order` erkennt die zweite Stunde nur, wenn die Serverzeit *unter* die höchste bisher gesehene fällt. Hat die doppelte Stunde je Durchlauf nur eine Zeile (h1, ebenso gröbere Einheiten), ist die Serverzeit der zweiten Zeile *gleich* der höchsten, wird nicht als Wiederholung erkannt, und die Zeile wird nach ihrem ersten UTC-Zeitpunkt behandelt. Folge laut Lauf (Europe/Athens, 25.10.2026, Kerzen h1, eine Kerze je Stunde, Serverzeit als Uhrzeit):
+   - 19:00Z bis 04:00Z: geliefert 19:00Z bis 00:00Z, 02:00Z, 03:00Z (richtig, 01:00Z fehlt); `omitted_count` 1, Grund aber `duplicate_time` statt `double_local_time` (Dokumentation Abschnitt 5 und Auftrag 09 verlangen `double_local_time`).
+   - 19:00Z bis **00:30Z** (Ende vor der doppelten Stunde): geliefert 19:00Z bis 00:00Z (richtig), aber `omitted_count` 1 mit der Zeile 03:00 aus **01:00Z**, die nicht im Zeitraum liegt.
+   - **01:00Z bis 04:00Z** (Beginn in der zweiten Stunde): geliefert 02:00Z, 03:00Z; die Kerze von 01:00Z fehlt, `omitted_count` **0**, kein Eintrag. Die Dokumentation (Abschnitt 5) sagt, das Ergebnis nenne die zweite Stunde unter `omitted` und jede ausgelassene Zeile werde genau einmal genannt.
+   Dasselbe zeigte sich in meinen Läufen mit h1 in Europe/London (24.10. 18:00Z bis 25.10. 00:30Z, `om 1`, erwartet 0), America/New_York und Australia/Lord_Howe. Es sind keine gültigen Zeilen verloren; die Meldung unter `omitted` ist falsch (falscher Grund, Zeile außerhalb des Zeitraums gezählt, Zeile im Zeitraum nicht genannt). Abnahmekriterium 1 von Auftrag 09 (Kerzen, „nur die zweite Stunde steht unter `omitted`“) ist damit für h1 nicht erfüllt; die Tests in `test_service_clock_change.py` decken nach meinem Lauf offenbar nur Einheiten mit mehr als einer Zeile je Durchlauf ab. Behebung: die zweite Zeile auch bei gleicher Serverzeit zuordnen können, zum Beispiel an der Lage im Fenster, nicht nur an einem Rückgang.
+   Reproduktion: `ScriptedGateway` aus `tests/support.py` mit `candle_rows` = je eine h1-Kerze je UTC-Stunde (Serverzeit `astimezone(Europe/Athens)` ohne Zonenangabe), `FetchService(...).candles("EURUSD", "h1", start, end)`.
+
+### Hinweise
+
+2. Rest-Risiko der Erkennung (Dokumentation Abschnitt 5, „Rest-Risiko der Erkennung“) ist größer als beschrieben. Ist die letzte Zeile der ersten Stunde früher als eine Zeile der zweiten Stunde (Ticks im Abstand von 7 Minuten, Athen, London, New York, Lord Howe: erste Stunde endet 00:54Z, Zeile der zweiten Stunde 01:57Z mit Serverzeit 03:57), wird die Zeile der zweiten Stunde **geliefert, mit dem UTC-Zeitpunkt eine Stunde zu früh** (00:57Z), ohne Eintrag unter `omitted`. Die Dokumentation sagt nur, man könne „nicht erkennen, dass eine zweite Stunde vorliegt“; sie nennt nicht, dass dann Zeilen mit falscher Zeit ankommen. Bei Ticks tritt das auf, wenn die Zeit der letzten Zeile der ersten Stunde vor der Serverzeit einer späteren Zeile der zweiten liegt (dünner Markt zur Zeit des Wechsels). Kein Fehler gegen den Auftrag, aber die Folge sollte im Rest-Risiko stehen.
+3. Aus dem Vorbericht, unverändert: die Schätzung der Kerzenzahl zählt Wochenenden mit (Hinweis 3 des Vorberichts, dokumentiert).
+4. Im Arbeitsverzeichnis liegen meine nicht versionierten Prüfdateien `ft-probe-05.py` bis `ft-probe-08.py` (Wurzelverzeichnis) und die von mir geholte, vorgemerkte Datei `components/pipwerk-fetch-mt5/scripts/check`; dazu die Reste früherer Prüfungen (`ft-probe-02.py` bis `-04.py`, `components/pipwerk-replay/`, `packages/market-data/`). Löschen konnte ich nichts. Am Prüfskript habe ich nichts geändert, es gibt keinen neuen Commit.
