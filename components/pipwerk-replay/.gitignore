@@ -1,0 +1,25 @@
+# Python
+backend/.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/dist-e2e/
+frontend/test-results/
+frontend/playwright-report/
+
+# Locally created startup configuration and development database of the
+# backend (the versioned example is backend/pipwerk-replay.example.ini)
+backend/pipwerk-replay.ini
+backend/pipwerk-replay.db
+backend/pipwerk-replay.db-journal
+backend/pipwerk-replay.db-wal
+backend/pipwerk-replay.db-shm
+
+# Locally created test environment (state, logs, startup configuration and
+# database of scripts/testenv)
+.testenv/

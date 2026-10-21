@@ -16,6 +16,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 ## Komponenten
 
 - [pipwerk Studio – technische Dokumentation](pipwerk-studio.md)
+- [pipwerk replay – technische Dokumentation](pipwerk-replay.md) – Strategietester: Backend, Startkonfiguration, Datenbank, Testkonten, Einstellungen, Testumgebung
 
 ## Gemeinsame Bibliotheken
 

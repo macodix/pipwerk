@@ -1,0 +1,49 @@
+[project]
+name = "pipwerk-replay"
+version = "0.1.0.dev0"
+description = "pipwerk replay backend: HTTP API of the strategy tester"
+license = "GPL-3.0-only"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.20.0",
+    "fastapi>=0.141.1",
+    "sqlalchemy>=2.1.3",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+pipwerk-replay = "pipwerk_replay.cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pipwerk_replay"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# S104: the tests name 0.0.0.0 as a value (--host), they bind nothing
+"tests/**" = ["S101", "S104"]
+
+[tool.mypy]
+strict = true
+python_version = "3.14"
+files = ["src", "tests"]

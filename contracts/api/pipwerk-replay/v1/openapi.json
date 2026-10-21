@@ -1,0 +1,735 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "pipwerk replay",
+    "version": "1.0.0",
+    "description": "Web API of pipwerk replay, version 1: the test accounts and the settings. The paths below /api/v1/ are versioned; the technical endpoint /api/health is not part of this description."
+  },
+  "paths": {
+    "/api/v1/accounts": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "List the test accounts",
+        "description": "Lists all test accounts, sorted by name without regard to case.",
+        "operationId": "list_accounts",
+        "responses": {
+          "200": {
+            "description": "The test accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Create a test account",
+        "description": "Creates a test account under a new identifier. The identifier and the mark is_default are set by pipwerk replay and not accepted in the body.",
+        "operationId": "create_account",
+        "requestBody": {
+          "description": "The values of the test account.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "title": "Name",
+                    "description": "Name of the test account, 1 to 100 characters without control characters."
+                  },
+                  "initial_capital": {
+                    "type": "number",
+                    "maximum": 1000000000000.0,
+                    "exclusiveMinimum": 0.0,
+                    "title": "Initial Capital",
+                    "description": "Initial capital in the account currency, greater than 0."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$",
+                    "title": "Currency",
+                    "description": "Account currency, three capital letters (for example EUR)."
+                  },
+                  "leverage": {
+                    "type": "integer",
+                    "maximum": 1000.0,
+                    "minimum": 1.0,
+                    "title": "Leverage",
+                    "description": "Leverage, 1 to 1000."
+                  },
+                  "spread_mode": {
+                    "type": "string",
+                    "enum": [
+                      "candle",
+                      "fixed"
+                    ],
+                    "title": "Spread Mode",
+                    "description": "candle: the spread of the candles; fixed: the value of spread_points."
+                  },
+                  "spread_points": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "maximum": 100000.0,
+                        "minimum": 0.0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Spread Points",
+                    "description": "Fixed spread in points. Required for the spread mode fixed, null for the mode candle."
+                  },
+                  "commission_per_lot_side": {
+                    "type": "number",
+                    "maximum": 100000.0,
+                    "minimum": 0.0,
+                    "title": "Commission Per Lot Side",
+                    "description": "Commission per lot and side in the account currency, 0 or more."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "name",
+                  "initial_capital",
+                  "currency",
+                  "leverage",
+                  "spread_mode",
+                  "spread_points",
+                  "commission_per_lot_side"
+                ],
+                "title": "AccountInput",
+                "description": "The values of a test account that the user sets (create and change)."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The test account was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Read a test account",
+        "description": "Returns the test account with the identifier.",
+        "operationId": "read_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the test account (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the test account (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The test account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such test account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Change a test account",
+        "description": "Replaces all values of the test account with the identifier. It never creates a test account. The default test account can be changed like any other.",
+        "operationId": "update_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the test account (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the test account (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The changed test account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such test account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "The new values of the test account.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "description": "The values of a test account that the user sets (create and change).",
+                "properties": {
+                  "name": {
+                    "description": "Name of the test account, 1 to 100 characters without control characters.",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "title": "Name",
+                    "type": "string"
+                  },
+                  "initial_capital": {
+                    "description": "Initial capital in the account currency, greater than 0.",
+                    "exclusiveMinimum": 0,
+                    "maximum": 1000000000000.0,
+                    "title": "Initial Capital",
+                    "type": "number"
+                  },
+                  "currency": {
+                    "description": "Account currency, three capital letters (for example EUR).",
+                    "pattern": "^[A-Z]{3}$",
+                    "title": "Currency",
+                    "type": "string"
+                  },
+                  "leverage": {
+                    "description": "Leverage, 1 to 1000.",
+                    "maximum": 1000,
+                    "minimum": 1,
+                    "title": "Leverage",
+                    "type": "integer"
+                  },
+                  "spread_mode": {
+                    "description": "candle: the spread of the candles; fixed: the value of spread_points.",
+                    "enum": [
+                      "candle",
+                      "fixed"
+                    ],
+                    "title": "Spread Mode",
+                    "type": "string"
+                  },
+                  "spread_points": {
+                    "anyOf": [
+                      {
+                        "maximum": 100000.0,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Fixed spread in points. Required for the spread mode fixed, null for the mode candle.",
+                    "title": "Spread Points"
+                  },
+                  "commission_per_lot_side": {
+                    "description": "Commission per lot and side in the account currency, 0 or more.",
+                    "maximum": 100000.0,
+                    "minimum": 0,
+                    "title": "Commission Per Lot Side",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "name",
+                  "initial_capital",
+                  "currency",
+                  "leverage",
+                  "spread_mode",
+                  "spread_points",
+                  "commission_per_lot_side"
+                ],
+                "title": "AccountInput",
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Delete a test account",
+        "description": "Deletes the test account with the identifier. The default test account can be deleted; pipwerk replay creates it again at the next start.",
+        "operationId": "delete_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the test account (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the test account (a UUID)."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The test account was deleted."
+          },
+          "404": {
+            "description": "There is no such test account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Read the settings of pipwerk replay",
+        "description": "Returns the settings that pipwerk replay keeps in its database: the user interface language, German ('de') as long as none is stored. Responds with HTTP 503 if the stored value is not a supported language; a valid write repairs it.",
+        "operationId": "read_settings",
+        "responses": {
+          "200": {
+            "description": "The settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Change the settings of pipwerk replay",
+        "description": "Stores the user interface language. Only 'de' and 'en' are accepted; unknown fields are rejected.",
+        "operationId": "write_settings",
+        "requestBody": {
+          "description": "The new settings.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "de",
+                      "en"
+                    ],
+                    "title": "Language"
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "language"
+                ],
+                "title": "SettingsUpdate",
+                "description": "Write model to change the settings. Only the languages German and English are\naccepted; unknown fields are rejected rather than silently ignored."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The settings as stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Account": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the test account, 1 to 100 characters without control characters."
+          },
+          "initial_capital": {
+            "type": "number",
+            "maximum": 1000000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Initial Capital",
+            "description": "Initial capital in the account currency, greater than 0."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "description": "Account currency, three capital letters (for example EUR)."
+          },
+          "leverage": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Leverage",
+            "description": "Leverage, 1 to 1000."
+          },
+          "spread_mode": {
+            "type": "string",
+            "enum": [
+              "candle",
+              "fixed"
+            ],
+            "title": "Spread Mode",
+            "description": "candle: the spread of the candles; fixed: the value of spread_points."
+          },
+          "spread_points": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spread Points",
+            "description": "Fixed spread in points. Required for the spread mode fixed, null for the mode candle."
+          },
+          "commission_per_lot_side": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Commission Per Lot Side",
+            "description": "Commission per lot and side in the account currency, 0 or more."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Identifier of the test account (a UUID)."
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "description": "Whether this is the default test account."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "initial_capital",
+          "currency",
+          "leverage",
+          "spread_mode",
+          "spread_points",
+          "commission_per_lot_side",
+          "id",
+          "is_default"
+        ],
+        "title": "Account",
+        "description": "A test account: its values, its identifier and whether it is the default one.\n\n``is_default`` is read-only: it is true exactly for the account with the fixed\nidentifier of the default test account."
+      },
+      "AccountList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "AccountList",
+        "description": "The test accounts, sorted by name (without regard to case)."
+      },
+      "ApiError": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ApiError",
+        "description": "Error body with a fixed text. It names no path, no exception text and no input."
+      },
+      "ErrorPlace": {
+        "properties": {
+          "location": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "location",
+          "type"
+        ],
+        "title": "ErrorPlace",
+        "description": "One error of a request: the place in the request or body and the error type."
+      },
+      "InvalidRequest": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorPlace"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "errors"
+        ],
+        "title": "InvalidRequest",
+        "description": "Error body for a request or body that does not fit the schema (HTTP 422). Names\nat most 50 places and the error type of each, never the values."
+      },
+      "Settings": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language"
+        ],
+        "title": "Settings",
+        "description": "Read model of the settings of pipwerk replay: the user interface language."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "accounts"
+    },
+    {
+      "name": "settings"
+    }
+  ]
+}
