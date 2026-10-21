@@ -50,3 +50,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: Phase 2. Nachprüfung [requirements-5.md](reviews/requirements-5.md) bestanden. Prototyp pipwerk replay vom Auftraggeber bestätigt; Übersicht wird nach praktischer Erprobung überarbeitet. Entscheidungen zu [backtest-01](questions/backtest-01.md): Auslöser „Manuell“ (bisher „Start von Hand“) nur im Hauptablauf, im Testlauf nach req-test-015; Element „Parameter setzen“ entfällt. Antwort an den Softwarearchitekten.
 
 2026-10-21: Spezifikation hat die Prüfung der QA bestanden ([specification-2.md](reviews/specification-2.md)). Präsentation [specification-1.html](presentations/specification-1.html) zur Bestätigung durch den Auftraggeber. Liste der Auslösertypen in den Anforderungen an den Strategiedesigner (req-fach-015) an „Manuell“ angeglichen.
+
+2026-10-21: Präsentation [specification-1.html](presentations/specification-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 2 abgeschlossen. Phase 3 mit `plan` angestoßen.
