@@ -258,6 +258,16 @@ Zugriffe auf eine Reihe, die zugleich von zwei Prozessen angelegt wird, können 
 | `test_contract.py` | Schemas gleich den Modellen, Beispiele gegen Schema und Import, Schema und Import stimmen bei Fehlern überein |
 | `test_documentation.py` | Gründe, Standardwerte, Tabellen und Schwellen stehen in diesem Dokument |
 
+### Prüfskript
+
+`packages/market-data/scripts/check` führt alle automatischen Prüfungen des Pakets aus und endet nur mit Exit-Code 0, wenn alle bestehen: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`. Das Paketverzeichnis ergibt sich aus dem Pfad des Skripts; es kann aus jedem Verzeichnis aufgerufen werden.
+
+```
+packages/market-data/scripts/check [--with-audit]
+```
+
+`--with-audit` ergänzt `pip-audit` über die in `uv.lock` festgeschriebenen Pakete. Das Skript enthält keine festen Ports, Pfade oder Rechnernamen. Muster: `components/pipwerk-studio/scripts/check`.
+
 ## 13. Entscheidungen
 
 Rein technische Einzelheiten, die die Spezifikation offenlässt:
@@ -283,3 +293,4 @@ Rein technische Einzelheiten, die die Spezifikation offenlässt:
 |---|---|
 | 2026-10-21 | Erstfassung zu Auftrag 02 des Arbeitspakets `wp02` im Vorhaben `backtest`. |
 | 2026-10-21 | Auftrag 08: Grenzen für Zeitpunkte (1970 bis vor 2100), Grund `time_out_of_range`, Vollständigkeit nur innerhalb der Grenzen. |
+| 2026-10-21 | Abschnitt „Prüfskript“ zu `packages/market-data/scripts/check` (Tester Funktion). |
