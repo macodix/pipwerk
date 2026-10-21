@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-20
+- stand: 2026-10-21
 
 ## Regeln
 
@@ -23,7 +23,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Vorlage | Ein gespeichertes Objekt (Indikator, Trend, Regel, Regelwerk) mit Standardwerten. Beim Einfügen in eine Strategie entsteht daraus eine Instanz. |
 | Instanz | Das Objekt, das beim Einfügen einer Vorlage oder eines Objekttyps in eine Strategie entsteht. Es ist eine vollständige Kopie: Es übernimmt die Standardwerte und den übrigen Inhalt der Vorlage, trägt einen in der Strategie vergebenen Namen (zum Beispiel EMA21), gehört nur dieser Strategie und nennt seine Herkunft. Eine Instanz kann auch in einer anderen Instanz oder in einer Vorlage enthalten sein (ein Indikator in einem Trend, eine Regel in einem Regelwerk). Zur Ausführung braucht sie ihre Vorlage nicht. |
 | Herkunft | Die Angabe einer Instanz, woraus sie entstanden ist: der Objekttyp und, wenn sie aus einer Vorlage entstand, Kennung und Name der Vorlage zum Zeitpunkt des Einfügens (ein Name je Objekt, req-ui-016). Bei einem eingefügten Objekttyp (zum Beispiel `EMA`) fehlen Kennung und Name. Spätere Änderungen oder das Löschen der Vorlage ändern die Herkunft nicht. |
-| Kennung | Der sprachneutrale Name eines Typs, einer Eigenschaft, eines Parameters, eines Ausgangs oder eines festgelegten Werts, in Dokumenten und Ausdrücken gespeichert (zum Beispiel `trend_intakt`, `stop_loss`, `flow.condition`). Kennungen von Eigenschaften, Parametern und Werten werden nach einer festen Regel aus dem deutschen Namen gebildet; die Oberfläche zeigt den Namen in der gewählten Sprache. Objekte und Elemente der Strategie tragen eine UUID als Kennung. |
+| Kennung | Der sprachneutrale Name eines Typs, einer Eigenschaft, eines Parameters, eines Ausgangs oder eines festgelegten Werts, in Dokumenten und Ausdrücken gespeichert (zum Beispiel `trendrichtung`, `stop_loss`, `flow.condition`). Kennungen von Eigenschaften, Parametern und Werten werden nach einer festen Regel aus dem deutschen Namen gebildet; die Oberfläche zeigt den Namen in der gewählten Sprache. Objekte und Elemente der Strategie tragen eine UUID als Kennung. |
 | Namensraum | Die Menge der Namen, die ein Ausdruck an einer Stelle ansprechen kann: von innen nach außen die Parameter einer Regel, die Regeln derselben Liste, der umgebende Namensraum (Strategie oder Vorlage) und die Objekte der Anwendung. Ein innerer Name verdeckt einen äußeren; zwei Namen derselben Ebene sind ein Fehler (Spezifikation 3.3). |
 | Ausdruck | Text in der Formelsprache OpenFormula (eine Auswahl), der einen Wert berechnet: in einer Bedingung, Berechnung, Regel, Belegung oder eigenen Eigenschaft. Die Bibliothek zerlegt und prüft ihn, wertet ihn aber nicht aus. Namen stehen in Punkt-Schreibweise (`ema20.wert`), Argumente werden mit `;` getrennt. |
 | Normalisierte Schreibweise | Die Schreibweise eines Ausdrucks, in der Namen die Schreibweise ihrer Kennung und Funktionen die Schreibweise der Norm haben (`order.VOLUMEN` wird zu `Order.volumen`, `if(…)` zu `IF(…)`). Alles andere bleibt Zeichen für Zeichen erhalten. Gespeichert wird sie. |
@@ -115,6 +115,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-21 | Kennung: Beispielwert `trendrichtung` statt `trend_intakt`. Folgt aus der Entscheidung des Auftraggebers vom 2026-10-20 und 2026-10-21 zu B5 und B6 (`Trend intakt` gestrichen, `indikator-markttechnik.md`). Hinweis N5 aus `development/backtest/reviews/requirements-2.md`. |
 | 2026-10-20 | Auslöser und Auswertung: Auslöser „Start von Hand“, jede Auswertung beginnt an einem Auslöser, Strategie ohne Auslöser wird nicht ausgewertet. Folgt aus req-fach-015 und req-fach-053 in der Fassung nach der Entscheidung des Auftraggebers vom 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
 | 2026-10-20 | Auslöser, Auswertung, Verwaltung einer Order: Fundort von req-fach-015 genannt (Anforderungen an den Strategiedesigner, nicht Fachmodell). Folgt aus dem Fundort der Kennung. Hinweis H15 aus `development/backtest/reviews/requirements-1.md`. |
 | 2026-10-19 | Strategietester, Backtester, Testlauf, Testzeitraum, Testkonto, Interne Order, Handelnde Stelle, Datenbestand historischer Kursdaten, Import, Beschaffung ergänzt. |
