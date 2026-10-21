@@ -1,6 +1,7 @@
 """Limits against overload."""
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 DEFAULT_MAX_BYTES = 32 * 1024 * 1024
 DEFAULT_MAX_ROWS = 500_000
@@ -11,6 +12,23 @@ MAX_INTEGER_VALUE = 2_147_483_647
 """Largest value of ``volume`` and ``spread`` of a candle, in JSON and CSV files (2 ** 31 - 1).
 
 The column ``spread`` is a 32-bit integer, so this value fits into it in every database."""
+
+MIN_MOMENT = datetime(1970, 1, 1, tzinfo=UTC)
+"""Earliest moment of a candle, tick, period or instrument datum (included): 1970-01-01T00:00:00Z.
+
+MetaTrader 5 counts its times in seconds from this moment, so no source has an earlier time."""
+
+MAX_MOMENT = datetime(2100, 1, 1, tzinfo=UTC)
+"""Bound of the supported times (not included for a candle, tick or datum; a period and a request
+may end at it): 2100-01-01T00:00:00Z.
+
+The year lies far beyond every series of prices. Because of it, adding the duration of a time
+unit or a millisecond to a supported moment never leaves the range of ``datetime``."""
+
+
+def in_supported_range(moment: datetime) -> bool:
+    """``True`` if ``MIN_MOMENT <= moment < MAX_MOMENT`` (``moment`` aware)."""
+    return MIN_MOMENT <= moment < MAX_MOMENT
 
 
 @dataclass(frozen=True, slots=True)

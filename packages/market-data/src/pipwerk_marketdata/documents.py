@@ -32,7 +32,8 @@ Time = Annotated[
     Field(
         pattern=TIME_PATTERN,
         description="Moment in UTC, ISO 8601 with Z, for example 2024-01-02T10:15:00Z; "
-        "up to 6 fractional digits.",
+        "up to 6 fractional digits. The import accepts moments from 1970-01-01T00:00:00Z "
+        "up to before 2100-01-01T00:00:00Z only (a period may end at 2100-01-01T00:00:00Z).",
     ),
 ]
 Name = Annotated[str, Field(min_length=1, max_length=128, pattern=NAME_PATTERN)]

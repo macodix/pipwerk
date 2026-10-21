@@ -53,7 +53,19 @@ def time_unit(identifier: str) -> TimeUnit:
 
 
 def require_utc(moment: datetime) -> datetime:
-    """Convert an aware moment to UTC; ``ValueError`` for a moment without time zone."""
-    if moment.tzinfo is None or moment.utcoffset() is None:
+    """Convert an aware moment to UTC; ``ValueError`` for a moment without time zone.
+
+    A moment whose UTC time lies beyond the range of ``datetime`` becomes the nearest bound of
+    that range (a bound is outside the supported times, so no row matches it).
+    """
+    offset = moment.utcoffset() if moment.tzinfo is not None else None
+    if offset is None:
         raise ValueError("a moment needs a time zone")
-    return moment.astimezone(UTC)
+    try:
+        return moment.astimezone(UTC)
+    except OverflowError:
+        return (
+            datetime.min.replace(tzinfo=UTC)
+            if offset > timedelta(0)
+            else datetime.max.replace(tzinfo=UTC)
+        )

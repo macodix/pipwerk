@@ -19,7 +19,7 @@ from pipwerk_marketdata.completeness import candle_gaps, combine, merge, tick_ga
 from pipwerk_marketdata.csvimport import CsvSeries, parse_csv
 from pipwerk_marketdata.errors import MarketDataStoreError
 from pipwerk_marketdata.jsonimport import parse_json
-from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, ImportLimits
+from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, MAX_MOMENT, MIN_MOMENT, ImportLimits
 from pipwerk_marketdata.parsed import KIND_CANDLES, KIND_INSTRUMENT, ParsedImport
 from pipwerk_marketdata.records import (
     Candle,
@@ -211,8 +211,8 @@ class MarketDataStore:
             return None
         if parsed.kind == KIND_CANDLES:
             assert parsed.unit is not None  # noqa: S101 - candles have a time unit
-            return Interval(first, time_unit(parsed.unit).add(last))
-        return Interval(first, last + timedelta(milliseconds=1))
+            return Interval(first, min(time_unit(parsed.unit).add(last), MAX_MOMENT))
+        return Interval(first, min(last + timedelta(milliseconds=1), MAX_MOMENT))
 
     @staticmethod
     def _series_id(
@@ -491,6 +491,10 @@ class MarketDataStore:
         request = Interval(require_utc(start), require_utc(end))
         if request.start >= request.end:
             raise ValueError("the period must end after it starts")
+        if request.start < MIN_MOMENT or request.end > MAX_MOMENT:
+            raise ValueError(
+                "the period must lie between 1970-01-01T00:00:00Z and 2100-01-01T00:00:00Z"
+            )
         with _database_errors(), self._engine.connect() as connection:
             series_id = self._series_id(connection, broker, instrument, unit, False)
             if series_id is None:

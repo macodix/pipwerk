@@ -6,7 +6,7 @@ is validated on its own (a fault rejects the entry).
 """
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, NoReturn
 
 from pydantic import BaseModel, ValidationError
@@ -22,7 +22,7 @@ from pipwerk_marketdata.documents import (
 )
 from pipwerk_marketdata.errors import ImportFileError
 from pipwerk_marketdata.filetext import decode_text
-from pipwerk_marketdata.limits import ImportLimits
+from pipwerk_marketdata.limits import MAX_MOMENT, MIN_MOMENT, ImportLimits, in_supported_range
 from pipwerk_marketdata.parsed import (
     KIND_CANDLES,
     KIND_INSTRUMENT,
@@ -42,7 +42,7 @@ from pipwerk_marketdata.records import (
     TradingSession,
     Weekday,
 )
-from pipwerk_marketdata.timeunits import time_unit
+from pipwerk_marketdata.timeunits import require_utc, time_unit
 
 _PRICE_FIELDS = frozenset({"open", "high", "low", "close", "bid", "ask"})
 _MAX_REPORTED_ERRORS = 5
@@ -87,12 +87,15 @@ def _entry_reason(error: ValidationError) -> RejectReason:
 
 
 def parse_moment(text: str) -> datetime | None:
-    """Parse a moment of the schema (``...Z``); ``None`` for an impossible date or time."""
+    """Parse a moment of the schema (``...Z``); ``None`` for an impossible date or time.
+
+    The result may lie outside the supported times (``in_supported_range``); the caller checks.
+    """
     try:
         moment = datetime.fromisoformat(text)
     except ValueError:
         return None
-    return moment.astimezone(UTC)
+    return require_utc(moment)
 
 
 def _sessions(documents: list[TradingSessionDocument]) -> list[TradingSession]:
@@ -115,6 +118,11 @@ def _period(document: PeriodDocument | None) -> Interval | None:
     start, end = parse_moment(document.start), parse_moment(document.end)
     if start is None or end is None or start >= end:
         raise ImportFileError(FileErrorCode.PERIOD_INVALID, "The period must end after it starts.")
+    if start < MIN_MOMENT or end > MAX_MOMENT:
+        raise ImportFileError(
+            FileErrorCode.PERIOD_INVALID,
+            "The period must lie between 1970-01-01T00:00:00Z and 2100-01-01T00:00:00Z.",
+        )
     return Interval(start, end)
 
 
@@ -188,6 +196,9 @@ def _parse_candles(raw: dict[str, Any], limits: ImportLimits) -> ParsedImport:
         if moment is None:
             rejections.reject(number, RejectReason.TIME_INVALID)
             continue
+        if not in_supported_range(moment):
+            rejections.reject(number, RejectReason.TIME_OUT_OF_RANGE)
+            continue
         violation = candle_violation(entry.open, entry.high, entry.low, entry.close)
         if violation is not None:
             rejections.reject(number, violation)
@@ -202,7 +213,7 @@ def _parse_candles(raw: dict[str, Any], limits: ImportLimits) -> ParsedImport:
     if not header.candles and period is None:
         raise ImportFileError(FileErrorCode.NO_ROWS, "The file has no entries and no period.")
     if candles:
-        _check_period(period, candles[0].time, unit.add(candles[-1].time))
+        _check_period(period, candles[0].time, min(unit.add(candles[-1].time), MAX_MOMENT))
     return ParsedImport(
         kind=KIND_CANDLES,
         broker=header.broker,
@@ -231,6 +242,9 @@ def _parse_ticks(raw: dict[str, Any], limits: ImportLimits) -> ParsedImport:
         if moment is None:
             rejections.reject(number, RejectReason.TIME_INVALID)
             continue
+        if not in_supported_range(moment):
+            rejections.reject(number, RejectReason.TIME_OUT_OF_RANGE)
+            continue
         if not rejections.accept_time(number, moment):
             continue
         ticks.append(Tick(moment, entry.bid, entry.ask))
@@ -258,9 +272,11 @@ def _parse_instrument(raw: dict[str, Any]) -> ParsedImport:
         raise _document_error(error) from None
     check_series_names(document.broker, document.instrument, None, candles=False)
     acquired_at = parse_moment(document.acquired_at)
-    if acquired_at is None:
+    if acquired_at is None or not in_supported_range(acquired_at):
         raise ImportFileError(
-            FileErrorCode.DOCUMENT_INVALID, "The field acquired_at is not a valid moment."
+            FileErrorCode.DOCUMENT_INVALID,
+            "The field acquired_at is not a valid moment between 1970-01-01T00:00:00Z "
+            "and 2100-01-01T00:00:00Z.",
         )
     info = InstrumentInfo(
         broker=document.broker,

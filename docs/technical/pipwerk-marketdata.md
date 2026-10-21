@@ -93,6 +93,7 @@ Geprüft wird in dieser Reihenfolge: Spalten, Zeitpunkt, Felder, Kurse, Beziehun
 | `field_missing` | Pflichtfeld fehlt, bei CSV ist die Zelle leer (zum Beispiel Geld oder Brief eines Ticks) |
 | `value_invalid` | Wert ist keine Zahl, keine ganze Zahl, nicht endlich, Volumen oder Spread negativ oder größer als 2 147 483 647 (Abschnitt 4.4), falscher Typ |
 | `time_invalid` | Zeitpunkt entspricht dem Muster nicht oder ist kein wirkliches Datum und keine wirkliche Uhrzeit |
+| `time_out_of_range` | Zeitpunkt liegt vor 1970-01-01T00:00:00Z oder ab 2100-01-01T00:00:00Z (Abschnitt 4.4); bei CSV zählt der Zeitpunkt nach der Umrechnung nach UTC |
 | `local_time_not_existing` | CSV: die Ortszeit gibt es beim Wechsel der Sommerzeit nicht (Uhr vorgestellt) |
 | `price_not_positive` | ein Kurs ist null oder kleiner |
 | `high_below_open` | Hoch kleiner als Eröffnung |
@@ -119,7 +120,7 @@ Die Bibliothek meldet `ImportFileError` mit `code` (`FileErrorCode`) und fester 
 | `header_invalid` | CSV: Kopfzeile ohne Trennzeichen, mit doppelter oder fehlender Spalte |
 | `series_invalid` | Broker, Instrument oder Zeiteinheit unzulässig (leer, länger als 128 Zeichen, Steuerzeichen, Leerzeichen am Anfang oder Ende, unbekannte Zeiteinheit) |
 | `timezone_unknown` | CSV: Zeitzone ist kein IANA-Name |
-| `period_invalid` | JSON: Zeitraum endet nicht nach seinem Beginn oder enthält nicht alle Einträge |
+| `period_invalid` | JSON: Zeitraum endet nicht nach seinem Beginn, liegt nicht zwischen 1970-01-01T00:00:00Z und 2100-01-01T00:00:00Z (Abschnitt 4.4) oder enthält nicht alle Einträge |
 | `no_rows` | die Datei enthält keine Zeile und keinen Zeitraum |
 
 ### 4.4 Begrenzungen gegen Überlast
@@ -133,6 +134,8 @@ Die Bibliothek meldet `ImportFileError` mit `code` (`FileErrorCode`) und fester 
 | `max_reported_rejections` | 1000 aufgelistete abgelehnte Zeilen; `rejected_count` zählt alle |
 
 Obergrenze für Zahlen: `volume` und `spread` einer Kerze sind ganze Zahlen von 0 bis 2 147 483 647 (2^31 − 1, Konstante `MAX_INTEGER_VALUE` in `limits`), in JSON und in CSV gleich. Ein größerer Wert macht die Zeile zu einer abgelehnten Zeile (`value_invalid`). Grund: Die Spalte `spread` der Datenbank ist eine 32-Bit-Zahl; die Grenze sorgt dafür, dass jeder übernommene Wert in jeder Datenbank in die Spalte passt und nie eine Ausnahme beim Speichern entsteht. Das Schema nennt sie als `maximum`. Kurse und die Zahlen der Angaben zum Instrument sind Gleitkommazahlen: Nicht endliche Werte lehnt die Prüfung ab, jeder endliche Wert passt in die Spalte (geprüft bis 1,7 · 10^308) und braucht keine Obergrenze.
+
+Obergrenze und Untergrenze für Zeitpunkte: Zeitpunkte von Kerzen, Ticks und Angaben zum Instrument liegen ab 1970-01-01T00:00:00Z (`MIN_MOMENT` in `limits`, einschließlich) bis vor 2100-01-01T00:00:00Z (`MAX_MOMENT`, ausschließlich); ein Zeitraum (`period`) darf bis `MAX_MOMENT` reichen. In JSON und in CSV gilt dasselbe. Eine Kerze oder ein Tick außerhalb ist eine abgelehnte Zeile (`time_out_of_range`), die Folgezeilen bleiben erhalten. Ein Zeitraum außerhalb ist `period_invalid`, `acquired_at` außerhalb ist `document_invalid`. Bei CSV zählt der Zeitpunkt nach der Umrechnung nach UTC; eine Ortszeit mehr als einen Tag außerhalb der Grenzen wird vor der Umrechnung abgelehnt, damit die Umrechnung selbst nicht überläuft. Das Schema nennt die Grenzen in der Beschreibung der Zeitpunkte; das Muster erlaubt jedes vierstellige Jahr, die Prüfung der Grenzen gehört zum Import. Grund: Die Untergrenze ist der Beginn der Zeitzählung von MetaTrader 5 (Sekunden seit 1970); keine Quelle liefert frühere Zeiten. Die Obergrenze liegt weit über jeder Kursreihe. Beides stellt sicher, dass das Addieren der Dauer einer Zeiteinheit oder einer Millisekunde zu einem übernommenen Zeitpunkt nie den Bereich von `datetime` verlässt (Jahr 9999) und nie `OverflowError` entsteht. Das Ende einer Kerze, das hinter `MAX_MOMENT` läge, wird für abgedeckten Zeitraum und Zeitraumprüfung auf `MAX_MOMENT` begrenzt. `completeness` verlangt einen Zeitraum innerhalb der Grenzen (`ValueError` sonst), weil die Handelszeiten tageweise berechnet werden. Das Lesen (`read_candles`, `read_ticks`, `instrument_info`) rechnet nicht mit den Zeitpunkten und nimmt jeden Zeitpunkt mit Zeitzone an; ein Zeitpunkt, der nach der Umrechnung nach UTC außerhalb des Bereichs von `datetime` läge, gilt als dessen nächste Grenze und trifft keine Zeile.
 
 Grund der Begrenzungen von `ImportLimits`: Die Datei wird vollständig im Speicher geprüft, bevor die Transaktion beginnt. 500 000 Zeilen decken ein Jahr M1-Kerzen ab. Tickdaten sind viel umfangreicher; die Beschaffung teilt sie in mehrere Dateien (Zeiträume), jede mit eigener Begrenzung. Zusätzlich begrenzt `max_page_size` (Standard 10 000) die Zahl der Kerzen oder Ticks je Leseaufruf.
 
@@ -250,6 +253,7 @@ Zugriffe auf eine Reihe, die zugleich von zwei Prozessen angelegt wird, können 
 | `test_import_csv.py` | beide Kerzenvarianten, Ticks, Kopfzeilen und Trennzeichen, Kodierungen, Zeitzonen mit Sommerzeitwechsel (doppelte und fehlende Ortszeit), jeder Ablehnungsgrund bei CSV, Begrenzungen |
 | `test_completeness.py` | Lücken nach den Regeln aus Abschnitt 7, Wochenenden, Handelspausen, M1, Ticks, Zeiteinheiten Woche und Monat, Schwellen |
 | `test_read.py` | Seiten mit Fortsetzung, Obergrenze, Übersicht, Angaben zum Instrument |
+| `test_time_limits.py` | Zeitpunkte am Rand (Jahr 1, 1970, 2100, Jahr 9999) in JSON und CSV, Kerzen und Ticks, jede Zeiteinheit, Zeitraum, Angaben zum Instrument, Lesen, Vollständigkeit und Übersicht ohne `OverflowError` |
 | `test_migrations.py` | leere Datenbank, Wiederholung, fremde Tabellen und fremde Versionstabelle, Schema gleich Tabellendefinition, Rückrollen |
 | `test_contract.py` | Schemas gleich den Modellen, Beispiele gegen Schema und Import, Schema und Import stimmen bei Fehlern überein |
 | `test_documentation.py` | Gründe, Standardwerte, Tabellen und Schwellen stehen in diesem Dokument |
@@ -270,6 +274,7 @@ Rein technische Einzelheiten, die die Spezifikation offenlässt:
 | Vollständigkeit: Lücke vom ersten bis zum letzten Handelszeitpunkt des Lochs | eine Lücke über ein Wochenende hinweg ergibt ein Stück statt vieler |
 | Größte Stille bei Ticks 1 Stunde | Ticks kommen unregelmäßig; die Spezifikation nennt für Ticks keine Regel; ein Wert, der in ruhigen Stunden keine Lücke meldet |
 | Keine Prüfung, ob Eröffnungszeitpunkte auf die Zeiteinheit fallen | die Serverzeit des Brokers fällt nach der Umrechnung nicht auf volle UTC-Grenzen, zum Beispiel bei H4 und D1 |
+| Zeitpunkte nur von 1970 bis vor 2100, sonst abgelehnte Zeile `time_out_of_range` | Abschnitt 4.4: keine Zeit am Rand von `datetime`, nie `OverflowError`; die Grenzen liegen außerhalb jeder Kursreihe |
 | Alembic-Versionstabelle `marketdata_alembic_version` | die Bibliothek darf neben Tabellen des Aufrufers laufen |
 
 ## Änderungsnachweis
@@ -277,3 +282,4 @@ Rein technische Einzelheiten, die die Spezifikation offenlässt:
 | Datum | Änderung |
 |---|---|
 | 2026-10-21 | Erstfassung zu Auftrag 02 des Arbeitspakets `wp02` im Vorhaben `backtest`. |
+| 2026-10-21 | Auftrag 08: Grenzen für Zeitpunkte (1970 bis vor 2100), Grund `time_out_of_range`, Vollständigkeit nur innerhalb der Grenzen. |

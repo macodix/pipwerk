@@ -10,12 +10,18 @@ import csv
 import io
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pipwerk_marketdata.errors import ImportFileError
 from pipwerk_marketdata.filetext import decode_text
-from pipwerk_marketdata.limits import MAX_INTEGER_VALUE, ImportLimits
+from pipwerk_marketdata.limits import (
+    MAX_INTEGER_VALUE,
+    MAX_MOMENT,
+    MIN_MOMENT,
+    ImportLimits,
+    in_supported_range,
+)
 from pipwerk_marketdata.parsed import (
     KIND_CANDLES,
     KIND_TICKS,
@@ -55,6 +61,9 @@ _ROLES = {
     "bid": "bid",
     "ask": "ask",
 }
+
+_LOCAL_MIN = (MIN_MOMENT - timedelta(days=1)).replace(tzinfo=None)
+_LOCAL_MAX = (MAX_MOMENT + timedelta(days=1)).replace(tzinfo=None)
 
 _CANDLE_PRICES = ("open", "high", "low", "close")
 _TICK_PRICES = ("bid", "ask")
@@ -189,9 +198,15 @@ def _moment(cells: list[str], roles: dict[str, int], zone: ZoneInfo) -> datetime
     local = _local_moment(date_text, time_text)
     if local is None:
         raise _RowError(RejectReason.TIME_INVALID)
+    # One day of margin: an offset from UTC is less than one day, so the conversion stays in
+    # the range of ``datetime``; the exact bounds are checked on the UTC moment.
+    if not _LOCAL_MIN <= local < _LOCAL_MAX:
+        raise _RowError(RejectReason.TIME_OUT_OF_RANGE)
     utc = local_to_utc(local, zone)
     if utc is None:
         raise _RowError(RejectReason.LOCAL_TIME_NOT_EXISTING)
+    if not in_supported_range(utc):
+        raise _RowError(RejectReason.TIME_OUT_OF_RANGE)
     return utc
 
 

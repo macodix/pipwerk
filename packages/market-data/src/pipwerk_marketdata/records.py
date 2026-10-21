@@ -204,6 +204,7 @@ class RejectReason(StrEnum):
     FIELD_MISSING = "field_missing"
     VALUE_INVALID = "value_invalid"
     TIME_INVALID = "time_invalid"
+    TIME_OUT_OF_RANGE = "time_out_of_range"
     LOCAL_TIME_NOT_EXISTING = "local_time_not_existing"
     TIME_NOT_ASCENDING = "time_not_ascending"
     TIME_DUPLICATE = "time_duplicate"
