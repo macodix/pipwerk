@@ -284,6 +284,29 @@ Die Tests liegen in `backend/tests/`:
 
 Die Prüfung mit `ruff` und `mypy` entspricht der von pipwerk Studio (`strict = true`, Regeln `E`, `W`, `F`, `I`, `N`, `UP`, `B`, `S`, `A`, `C4`, `SIM`, `RUF`, Zeilenlänge 100).
 
+### 6.2 Prüfskript
+
+Das Prüfskript `components/pipwerk-replay/scripts/check` (POSIX-Shell) führt die Prüfungen aus Abschnitt 6.1 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
+
+```sh
+<Arbeitsverzeichnis>/components/pipwerk-replay/scripts/check [--backend-port <port> --frontend-port <port>] [--with-audit]
+```
+
+| Parameter | Bedeutung |
+| --- | --- |
+| `--backend-port <port>` | Port des Backends im Browsertest, ganze Zahl von 1 bis 65535. Pflicht, sobald `frontend/` vorhanden ist; sonst darf er fehlen. |
+| `--frontend-port <port>` | Port der Oberfläche im Browsertest, ganze Zahl von 1 bis 65535, verschieden vom Port des Backends. Pflicht, sobald `frontend/` vorhanden ist; sonst darf er fehlen. |
+| `--with-audit` | Optional. Führt zusätzlich `pip-audit` für `backend/uv.lock` und mit Oberfläche `npm audit` aus (Zugriff auf das Internet nötig). |
+
+Reihenfolge der Prüfungen:
+
+1. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
+2. Suche im Repository (`git grep`) nach den alten Bezeichnern der Komponente (Muster `pipwerk[-_ ]?backtest`, ohne Beachtung der Schreibweise) in allen versionierten Dateien außerhalb von `docs/design/` und `development/`; ein Treffer lässt die Prüfung scheitern (Auftrag 01, Abnahmekriterium 1)
+3. mit `--with-audit`: `pip-audit` für das Backend
+4. Oberfläche im Verzeichnis `frontend`: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`; mit `--with-audit` zusätzlich `npm audit`; danach der Browsertest `npm run e2e` mit den beiden Ports (Umgebungsvariablen `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_FRONTEND_PORT`). Ohne Verzeichnis `frontend/` überspringt das Skript diese Schritte mit Hinweis in der Ausgabe; das gilt nicht als Fehler.
+
+Am Ende nennt das Skript die bestandenen, die übersprungenen und die gescheiterten Prüfungen. Exitcode 2 bei ungültigen Parametern oder fehlenden Programmen.
+
 ## 7. Abhängigkeiten
 
 Laufzeit (festgeschrieben in `backend/uv.lock`): `alembic`, `fastapi` (mit `pydantic` und `starlette`), `sqlalchemy`, `uvicorn`. Entwicklung und Prüfung: `httpx2` (Testclient von FastAPI), `mypy`, `pytest`, `ruff`. Mindestversionen stehen in `backend/pyproject.toml`: alembic 1.20.0, fastapi 0.141.1, sqlalchemy 2.1.3, uvicorn 0.54.0, httpx2 2.13.1, mypy 2.3.1, pytest 9.1.1, ruff 0.16.9; gelockt sind im Stand dieses Auftrags unter anderem alembic 1.20.0, fastapi 0.156.8, pydantic 2.14.1, starlette 1.9.0, sqlalchemy 2.1.5, uvicorn 0.54.0. Die Seite `/docs` lädt Swagger UI von `cdn.jsdelivr.net` (Abschnitt 2.5).
