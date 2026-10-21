@@ -1,233 +1,367 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadTestcase } from '../testing/fixtures';
+import { inventedStrategy, inventedTypes, meterElement, stepElement } from '../testing/inventedTypes';
+import { emaTrendfolge, EMA_ELEMENT_IDS } from '../testing/emaTrendfolge';
+import { testTypes } from '../testing/typeDescriptions';
+import { newElement, newStrategy, uniqueDisplayName, withOrderDefaults } from './build';
 import {
-  addConnection,
   addElement,
-  addRule,
-  addStrategyParameter,
-  fixed,
-  getInstance,
-  getRule,
-  hasConnection,
-  moveRule,
-  removeConnections,
-  removeElements,
-  withDatatype,
-  removeRule,
+  addInput,
+  connect,
+  createSection,
+  moveObject,
+  placeObject,
+  removeElement,
+  removeInput,
+  removeSection,
   removeStrategyParameter,
-  rulesOf,
-  setElementBinding,
-  setInstanceBinding,
-  setStrategyText,
-  updateElement,
-  updateInstance,
-  updateRule,
-  updateStrategyParameter,
+  renameSection,
+  setBinding,
+  setElementName,
+  setManagement,
+  setPosition,
+  setSection,
+  type ConnectResult,
 } from './ops';
-import type { InstanceDocument, StrategyDocument } from './types';
+import { parseStrategyDocument } from './parse';
+import type { StrategyDocument } from './types';
 
-function rule(name: string, rules: InstanceDocument[] = []): InstanceDocument {
-  return { name, object_type: 'Regel', rules };
+const types = inventedTypes();
+
+function byName(document: StrategyDocument, name: string): string {
+  const found = document.elements.find((element) => element.name === name || element.instance?.name === name);
+  if (found === undefined) {
+    throw new Error(`no element ${name}`);
+  }
+  return found.id;
 }
 
-function withRules(): StrategyDocument {
-  const document = loadTestcase('str-03');
-  return {
-    ...document,
-    rules: [rule('a'), rule('b'), rule('set', [rule('x'), rule('y')])],
-  };
+function documentOf(result: ConnectResult): StrategyDocument {
+  if ('problem' in result) {
+    throw new Error(`problem ${result.problem}`);
+  }
+  return result.document;
 }
 
-describe('operations leave their argument unchanged', () => {
-  it('returns new documents', () => {
-    const document = loadTestcase('str-03');
+describe('connecting steps (specification 3.3)', () => {
+  it('replaces the connection of an output', () => {
+    const document = inventedStrategy();
+    const extra = stepElement('zz.do', 'Noch ein Tun');
+    const withExtra = addElement(document, types, extra, null);
+
+    const changed = documentOf(connect(withExtra, types, byName(withExtra, 'Weiche'), 'yes', extra.id));
+
+    const fromWhen = changed.connections.filter((connection) => connection.source === byName(withExtra, 'Weiche') && connection.output === 'yes');
+    expect(fromWhen).toHaveLength(1);
+    expect(fromWhen[0]?.target).toBe(extra.id);
+  });
+
+  it.each([
+    ['a trigger has no input', 'Weiche', 'yes', 'Beginn', 'target_is_trigger'],
+    ['an object has no connection in the flow', 'Messer', 'next', 'Weiche', 'instance'],
+    ['between the main flow and a management', 'Tun', 'next', 'Tun innen', 'across_flows'],
+    ['an output that the step does not have', 'Tun', 'gibtsnicht', 'Weiche', 'unknown_output'],
+    ['a step with itself', 'Tun', 'next', 'Tun', 'same_element'],
+  ])('refuses %s', (_name, from, output, to, problem) => {
+    const document = inventedStrategy();
+
+    const result = connect(document, types, byName(document, from), output, byName(document, to));
+
+    expect(result).toEqual({ problem });
+  });
+
+  it('refuses a new connection from an element of an unknown type', () => {
+    const document = inventedStrategy();
+    const unknown = stepElement('niemand.kennt', 'Fremd');
+    const withUnknown = addElement(document, types, unknown, null);
+
+    expect(connect(withUnknown, types, unknown.id, 'x', byName(document, 'Tun'))).toEqual({ problem: 'unknown_type' });
+  });
+
+  it('connects the management output with a step of the management that has no trigger of its own, and not with one that has', () => {
+    let document = inventedStrategy();
+    const place = byName(document, 'Ausführen');
+    const inside = byName(document, 'Tun innen');
+    // the management of the invented strategy has a trigger: no connection from "done"
+    expect(connect(document, types, place, 'done', inside)).toEqual({ problem: 'management_has_triggers' });
+    // without the trigger it is allowed
+    document = removeElement(document, types, byName(document, 'Beginn innen'));
+    const result = documentOf(connect(document, types, place, 'done', inside));
+    expect(result.connections.some((connection) => connection.source === place && connection.output === 'done')).toBe(true);
+    // the management output does not reach a step outside of the management
+    expect(connect(document, types, place, 'done', byName(document, 'Tun'))).toEqual({ problem: 'across_flows' });
+  });
+});
+
+describe('adding steps', () => {
+  it('connects a step behind the selected step at its first free output', () => {
+    const document = inventedStrategy();
+    const added = stepElement('zz.do', 'Neu');
+
+    const changed = addElement(document, types, added, byName(document, 'Weiche'));
+
+    const connection = changed.connections.find((candidate) => candidate.target === added.id);
+    expect(connection?.source).toBe(byName(document, 'Weiche'));
+    expect(connection?.output).toBe('no');
+  });
+
+  it('does not connect behind a step of another flow', () => {
+    const document = inventedStrategy();
+    const added = stepElement('zz.do', 'Neu');
+
+    const changed = addElement(document, types, added, byName(document, 'Tun innen'));
+
+    expect(changed.connections.some((candidate) => candidate.target === added.id)).toBe(false);
+  });
+
+  it('connects the first step of a management without trigger with the management output; a trigger removes that connection', () => {
+    let document = newStrategy('S');
+    const place = stepElement('zz.place', 'Ausführen', { parameters: { sorte: { kind: 'fixed', value: 'zz.kind_a' } } });
+    document = addElement(document, types, place, null);
+    const first = stepElement('zz.do', 'Erster', { management_of: place.id });
+
+    document = addElement(document, types, first, null);
+
+    expect(document.connections).toEqual([expect.objectContaining({ source: place.id, output: 'done', target: first.id })]);
+
+    document = addElement(document, types, stepElement('zz.start', 'Beginn', { management_of: place.id }), null);
+
+    expect(document.connections).toEqual([]);
+  });
+
+  it('adds an object without a connection', () => {
+    const document = inventedStrategy();
+    const changed = addElement(document, types, meterElement('Zweiter Messer', 'messer_2'), byName(document, 'Weiche'));
+
+    expect(changed.connections).toHaveLength(document.connections.length);
+  });
+});
+
+describe('removing an element (specification 5.4)', () => {
+  it('connects predecessor and successor of a step with one way in and one way out', () => {
+    const document = inventedStrategy();
+
+    const changed = removeElement(document, types, byName(document, 'Tun'));
+
+    expect(changed.elements.some((element) => element.name === 'Tun')).toBe(false);
+    expect(changed.connections.some((connection) => connection.source === byName(document, 'Weiche') && connection.output === 'yes' && connection.target === byName(document, 'Ausführen'))).toBe(true);
+  });
+
+  it('takes the steps of the management with the element and removes sections and folded frames that no longer exist', () => {
+    let document = inventedStrategy();
+    const place = byName(document, 'Ausführen');
+    document = createSection(document, types, byName(document, 'Tun innen'), 'Innen');
+    document = { ...document, collapsed_managements: [place] };
+
+    const changed = removeElement(document, types, place);
+
+    expect(changed.elements.map((element) => element.name ?? element.instance?.name)).toEqual(['Messer', 'Beginn', 'Weiche', 'Tun']);
+    expect(changed.sections).toEqual([]);
+    expect(changed.collapsed_managements).toEqual([]);
+    expect(changed.connections.every((connection) => changed.elements.some((element) => element.id === connection.source))).toBe(true);
+  });
+
+  it('removes the inputs and data connections that took values from a removed instance', () => {
+    let document = inventedStrategy();
+    document = addInput(document, byName(document, 'Tun'), { instance: 'messer', property: 'stand' });
+    document = setBinding(document, types, byName(document, 'Tun'), 'parameters', 'menge', { kind: 'connection', value: { instance: 'messer', property: 'stand' } });
+
+    const changed = removeElement(document, types, byName(document, 'Messer'));
+
+    const doIt = changed.elements.find((element) => element.name === 'Tun');
+    expect(doIt?.inputs).toEqual([]);
+    expect(doIt?.parameters.menge).toBeUndefined();
+  });
+});
+
+describe('moving a step between flows (specification 3.3, 5.3)', () => {
+  it('removes the connections that would lie between flows, hands the place back to the arrangement and leaves the section', () => {
+    let document = inventedStrategy();
+    const insideDo = byName(document, 'Tun innen');
+    document = createSection(document, types, insideDo, 'Innen');
+    document = setPosition(document, insideDo, { x: 5, y: 5 });
+
+    const changed = setManagement(document, types, insideDo, null);
+
+    const moved = changed.elements.find((element) => element.id === insideDo);
+    expect(moved?.management_of).toBeNull();
+    expect(moved?.position).toBeNull();
+    expect(changed.sections).toEqual([]);
+    expect(changed.connections.some((connection) => connection.target === insideDo || connection.source === insideDo)).toBe(false);
+  });
+
+  it('does not put an element into its own management', () => {
+    const document = inventedStrategy();
+    const place = byName(document, 'Ausführen');
+
+    expect(setManagement(document, types, place, place)).toBe(document);
+  });
+
+  it('does not put a step into a step that has no management', () => {
+    const document = inventedStrategy();
+
+    expect(setManagement(document, types, byName(document, 'Tun'), byName(document, 'Weiche'))).toBe(document);
+  });
+
+  it('removes the connection from the management output when a trigger is moved into the management', () => {
+    let document = newStrategy('S');
+    const place = stepElement('zz.place', 'Ausführen', { parameters: { sorte: { kind: 'fixed', value: 'zz.kind_a' } } });
+    const first = stepElement('zz.do', 'Erster', { management_of: place.id });
+    const trigger = stepElement('zz.start', 'Beginn');
+    document = addElement(addElement(addElement(document, types, place, null), types, first, null), types, trigger, null);
+    expect(document.connections).toHaveLength(1);
+
+    document = setManagement(document, types, trigger.id, place.id);
+
+    expect(document.connections).toEqual([]);
+  });
+});
+
+describe('sections (specification 3.3)', () => {
+  it('forms a section of the flow of the step, renames it, and removes it without removing its steps', () => {
+    let document = inventedStrategy();
+    const when = byName(document, 'Weiche');
+
+    document = createSection(document, types, when, 'Entscheidung');
+    const section = document.sections[0];
+    expect(section).toMatchObject({ name: 'Entscheidung', flow: null, elements: [when], collapsed: false });
+    document = renameSection(document, section?.id ?? '', 'Wahl');
+    expect(document.sections[0]?.name).toBe('Wahl');
+    document = removeSection(document, section?.id ?? '');
+
+    expect(document.sections).toEqual([]);
+    expect(document.elements.some((element) => element.id === when)).toBe(true);
+  });
+
+  it('lets a step belong to one section only', () => {
+    let document = inventedStrategy();
+    const when = byName(document, 'Weiche');
+    const doIt = byName(document, 'Tun');
+    document = createSection(document, types, when, 'Eins');
+    document = createSection(document, types, doIt, 'Zwei');
+    const first = document.sections[0];
+
+    document = setSection(document, doIt, first?.id ?? '');
+
+    expect(document.sections).toHaveLength(1);
+    expect(document.sections[0]?.elements).toEqual([when, doIt]);
+  });
+});
+
+describe('assignments, names and strategy parameters', () => {
+  it('renames an instance and an element without touching the identifier in expressions', () => {
+    let document = inventedStrategy();
+    document = setElementName(document, byName(document, 'Messer'), 'Mein Messer');
+    document = setElementName(document, byName(document, 'Weiche'), 'Meine Weiche');
+
+    const meter = document.elements.find((element) => element.instance !== undefined);
+    const when = document.elements.find((element) => element.type === 'zz.when');
+    expect(meter?.instance?.name).toBe('Mein Messer');
+    expect(meter?.instance?.key).toBe('messer');
+    expect(when?.name).toBe('Meine Weiche');
+    expect(when?.key).toBe('weiche');
+  });
+
+  it('gives the properties of a newly chosen kind of order their standard values and keeps the ones that exist', () => {
+    let document = newStrategy('S');
+    const place = stepElement('zz.place', 'Ausführen', { parameters: { sorte: { kind: 'fixed', value: 'zz.kind_a' } } });
+    document = addElement(document, types, withOrderDefaults(place, types), null);
+    expect(document.elements[0]?.properties).toEqual({ stufe: { kind: 'fixed', value: 'low' } });
+    document = setBinding(document, types, place.id, 'properties', 'wunsch', { kind: 'fixed', value: 'viel' });
+
+    document = setBinding(document, types, place.id, 'parameters', 'sorte', { kind: 'fixed', value: 'zz.kind_b' });
+
+    expect(document.elements[0]?.properties).toEqual({
+      stufe: { kind: 'fixed', value: 'low' },
+      wunsch: { kind: 'fixed', value: 'viel' },
+      extra: { kind: 'fixed', value: 5 },
+    });
+  });
+
+  it('removes a strategy parameter and the assignments that used it, in elements and in instances', () => {
+    let document = inventedStrategy();
+    document = { ...document, parameters: [{ key: 'p', name: 'P', datatype: 'number', value: 1 }] };
+    document = setBinding(document, types, byName(document, 'Tun'), 'parameters', 'menge', { kind: 'parameter', value: 'p' });
+    document = setBinding(document, types, byName(document, 'Messer'), 'instance', 'laenge', { kind: 'parameter', value: 'p' });
+
+    const changed = removeStrategyParameter(document, 'p');
+
+    expect(changed.parameters).toEqual([]);
+    expect(changed.elements.find((element) => element.name === 'Tun')?.parameters.menge).toBeUndefined();
+    expect(changed.elements.find((element) => element.instance !== undefined)?.instance?.parameter_values?.laenge).toBeUndefined();
+  });
+
+  it('adds an input once and removes it', () => {
+    let document = inventedStrategy();
+    const doIt = byName(document, 'Tun');
+    document = addInput(document, doIt, { instance: 'messer', property: 'stand' });
+    document = addInput(document, doIt, { instance: 'messer', property: 'stand' });
+    expect(document.elements.find((element) => element.id === doIt)?.inputs).toHaveLength(1);
+
+    document = removeInput(document, doIt, { instance: 'messer', property: 'stand' });
+
+    expect(document.elements.find((element) => element.id === doIt)?.inputs).toEqual([]);
+  });
+
+  it('leaves its argument unchanged', () => {
+    const document = inventedStrategy();
     const before = JSON.stringify(document);
 
-    setStrategyText(document, 'title', 'T');
-    addStrategyParameter(document, 'p');
-    updateElement(document, document.elements[0]!.id, { x: 99 });
-    removeElements(document, new Set([document.elements[0]!.id]));
-    addRule(document, { kind: 'strategy' }, rule('n'));
+    removeElement(document, types, byName(document, 'Tun'));
+    setBinding(document, types, byName(document, 'Tun'), 'parameters', 'menge', { kind: 'fixed', value: 3 });
+    setManagement(document, types, byName(document, 'Tun'), byName(document, 'Ausführen'));
 
     expect(JSON.stringify(document)).toBe(before);
   });
 });
 
-describe('strategy', () => {
-  it('sets the title and the description', () => {
-    const document = loadTestcase('str-03');
+describe('order of the objects (specification 5.3)', () => {
+  it('moves an instance up and down and puts it at a place', () => {
+    let document = inventedStrategy();
+    document = addElement(document, types, meterElement('Zweiter', 'zweiter'), null);
+    document = addElement(document, types, meterElement('Dritter', 'dritter'), null);
+    const names = () => document.elements.filter((element) => element.instance !== undefined).map((element) => element.instance?.name);
+    expect(names()).toEqual(['Messer', 'Zweiter', 'Dritter']);
 
-    expect(setStrategyText(document, 'title', 'Neu').title).toBe('Neu');
-    expect(setStrategyText(document, 'description', 'D').description).toBe('D');
-  });
-
-  it('adds, changes and removes parameters; a new one gets a free name', () => {
-    let document = loadTestcase('str-03');
-
-    document = addStrategyParameter(document, 'zeiteinheit');
-    expect(document.parameters.map((parameter) => parameter.name)).toEqual(['zeiteinheit', 'stop_abstand', 'zeiteinheit1']);
-    document = updateStrategyParameter(document, 2, { datatype: 'integer', value: 7 });
-    expect(document.parameters[2]).toMatchObject({ datatype: 'integer', value: 7, name: 'zeiteinheit1' });
-    document = removeStrategyParameter(document, 0);
-    expect(document.parameters.map((parameter) => parameter.name)).toEqual(['stop_abstand', 'zeiteinheit1']);
+    document = moveObject(document, types, byName(document, 'Zweiter'), -1);
+    expect(names()).toEqual(['Zweiter', 'Messer', 'Dritter']);
+    document = moveObject(document, types, byName(document, 'Zweiter'), -1);
+    expect(names()).toEqual(['Zweiter', 'Messer', 'Dritter']);
+    document = placeObject(document, types, byName(document, 'Zweiter'), 2);
+    expect(names()).toEqual(['Messer', 'Dritter', 'Zweiter']);
   });
 });
 
-describe('elements', () => {
-  it('changes one element', () => {
-    const document = loadTestcase('str-03');
-    const id = document.elements[1]!.id;
-
-    const next = updateElement(document, id, { title: 'neu' });
-
-    expect(next.elements[1]?.title).toBe('neu');
-    expect(next.elements[0]).toBe(document.elements[0]);
+describe('new names (specification 3.3)', () => {
+  it('counts up with a space and ignores the case', () => {
+    expect(uniqueDisplayName('Kerze', [])).toBe('Kerze');
+    expect(uniqueDisplayName('Kerze', ['kerze'])).toBe('Kerze 2');
+    expect(uniqueDisplayName('Kerze', ['Kerze', 'Kerze 2'])).toBe('Kerze 3');
   });
 
-  it('sets and removes the binding of a parameter or a property', () => {
-    const document = loadTestcase('str-03');
-    const order = document.elements.find((element) => element.type === 'flow.place_order')!;
+  it('forms the element of a type with the standard values of its parameters', () => {
+    const element = newElement(types.byId.get('zz.do') as never, { name: 'Tun', managementOf: null });
 
-    let next = setElementBinding(document, order.id, 'properties', 'volumen', fixed(0.5));
-    expect(next.elements.find((element) => element.id === order.id)?.properties.volumen).toEqual({ kind: 'fixed', value: 0.5 });
-    next = setElementBinding(next, order.id, 'properties', 'volumen', null);
-    expect(next.elements.find((element) => element.id === order.id)?.properties).toEqual(order.properties);
-    expect(setElementBinding(document, 'unknown', 'parameters', 'p', fixed(1))).toBe(document);
-  });
-
-  it('removes elements with their connections and moves the elements of their managements to the main flow', () => {
-    const document = loadTestcase('str-03');
-    const order = document.elements.find((element) => element.type === 'flow.place_order')!;
-
-    const next = removeElements(document, new Set([order.id]));
-
-    expect(next.elements.find((element) => element.id === order.id)).toBeUndefined();
-    expect(next.connections.some((connection) => connection.source === order.id || connection.target === order.id)).toBe(false);
-    expect(next.elements.every((element) => element.management_of === null)).toBe(true);
-    expect(next.elements).toHaveLength(document.elements.length - 1);
-  });
-
-  it('adds an element at the end', () => {
-    const document = loadTestcase('str-03');
-
-    const next = addElement(document, { ...document.elements[0]!, id: 'new' });
-
-    expect(next.elements.at(-1)?.id).toBe('new');
+    expect(element.parameters).toEqual({ menge: { kind: 'fixed', value: 1 } });
+    expect(element.name).toBe('Tun');
+    expect(element.position).toBeNull();
   });
 });
 
-describe('connections', () => {
-  it('adds a connection once and removes by position', () => {
-    const document = loadTestcase('str-03');
-    const connection = { source: document.elements[3]!.id, output: 'weiter', target: document.elements[5]!.id };
+describe('the strategy "EMA-Trendfolge" and the operations', () => {
+  it('opens as a document of format 2.0 without changes by parsing', () => {
+    const raw = emaTrendfolge();
+    const document = parseStrategyDocument(raw);
 
-    const once = addConnection(document, connection);
-    const twice = addConnection(once, { ...connection });
-
-    expect(once.connections).toHaveLength(document.connections.length + 1);
-    expect(twice).toBe(once);
-    expect(hasConnection(once, connection)).toBe(true);
-    expect(removeConnections(once, new Set([once.connections.length - 1])).connections).toEqual(document.connections);
-  });
-});
-
-describe('rules', () => {
-  it('lists the rules of the strategy and of an element', () => {
-    const document = withRules();
-    const order = document.elements.find((element) => element.type === 'flow.place_order')!;
-
-    expect(rulesOf(document, { kind: 'strategy' }).map((r) => r.name)).toEqual(['a', 'b', 'set']);
-    expect(rulesOf(document, { kind: 'element', id: order.id }).map((r) => r.name)).toEqual(['mindestvolumen']);
-    expect(rulesOf(document, { kind: 'element', id: 'unknown' })).toEqual([]);
+    expect(JSON.parse(JSON.stringify(document))).toEqual(raw);
   });
 
-  it('finds a rule at a path, also inside a rule set, and nothing where the path leads nowhere', () => {
-    const document = withRules();
-    const owner = { kind: 'strategy' } as const;
+  it('removes a step of the management and bridges the flow', () => {
+    const document = parseStrategyDocument(emaTrendfolge());
+    const real = testTypes();
 
-    expect(getRule(document, { owner, indices: [1] })?.name).toBe('b');
-    expect(getRule(document, { owner, indices: [2, 1] })?.name).toBe('y');
-    expect(getRule(document, { owner, indices: [5] })).toBeUndefined();
-    expect(getRule(document, { owner, indices: [0, 0] })).toBeUndefined();
-  });
+    const changed = removeElement(document, real, EMA_ELEMENT_IDS.newStop);
 
-  it('adds a rule to the owner and to a rule set', () => {
-    const document = withRules();
-    const owner = { kind: 'strategy' } as const;
-
-    const next = addRule(addRule(document, owner, rule('c')), owner, rule('z'), [2]);
-
-    expect(next.rules.map((r) => r.name)).toEqual(['a', 'b', 'set', 'c']);
-    expect(next.rules[2]?.rules?.map((r) => r.name)).toEqual(['x', 'y', 'z']);
-  });
-
-  it('adds a rule to an element', () => {
-    const document = withRules();
-    const order = document.elements.find((element) => element.type === 'flow.place_order')!;
-
-    const next = addRule(document, { kind: 'element', id: order.id }, rule('n'));
-
-    expect(next.elements.find((element) => element.id === order.id)?.rules.map((r) => r.name)).toEqual(['mindestvolumen', 'n']);
-  });
-
-  it('removes and moves, inside the list of the owner and inside a rule set', () => {
-    const document = withRules();
-    const owner = { kind: 'strategy' } as const;
-
-    expect(removeRule(document, { owner, indices: [0] }).rules.map((r) => r.name)).toEqual(['b', 'set']);
-    expect(removeRule(document, { owner, indices: [2, 0] }).rules[2]?.rules?.map((r) => r.name)).toEqual(['y']);
-    expect(moveRule(document, { owner, indices: [0] }, 1).rules.map((r) => r.name)).toEqual(['b', 'a', 'set']);
-    expect(moveRule(document, { owner, indices: [2, 1] }, -1).rules[2]?.rules?.map((r) => r.name)).toEqual(['y', 'x']);
-  });
-
-  it('does not move a rule out of its list', () => {
-    const document = withRules();
-    const owner = { kind: 'strategy' } as const;
-
-    expect(moveRule(document, { owner, indices: [0] }, -1).rules.map((r) => r.name)).toEqual(['a', 'b', 'set']);
-    expect(moveRule(document, { owner, indices: [2] }, 1).rules.map((r) => r.name)).toEqual(['a', 'b', 'set']);
-  });
-
-  it('changes a rule and the values of its parameters', () => {
-    const document = withRules();
-    const path = { owner: { kind: 'strategy' } as const, indices: [2, 1] };
-
-    const renamed = updateRule(document, path, { name: 'yy', expression: 'a' });
-    expect(getRule(renamed, path)).toMatchObject({ name: 'yy', expression: 'a' });
-
-    const bound = setInstanceBinding(renamed, { kind: 'rule', path }, 'p', fixed(3));
-    expect(getRule(bound, path)?.parameter_values).toEqual({ p: { kind: 'fixed', value: 3 } });
-    expect(getRule(setInstanceBinding(bound, { kind: 'rule', path }, 'p', null), path)?.parameter_values).toEqual({});
-  });
-
-  it('changes the instance of an element and its values', () => {
-    const document = loadTestcase('str-03');
-    const ema = document.elements.find((element) => element.type === 'EMA')!;
-    const target = { kind: 'element', id: ema.id } as const;
-
-    const renamed = updateInstance(document, target, { name: 'schnell' });
-    const bound = setInstanceBinding(renamed, target, 'periode', fixed(9));
-
-    expect(getInstance(bound, target)).toMatchObject({ name: 'schnell' });
-    expect(getInstance(bound, target)?.parameter_values?.periode).toEqual({ kind: 'fixed', value: 9 });
-    expect(updateInstance(document, { kind: 'element', id: document.elements.find((e) => e.type === 'flow.condition')!.id }, { name: 'x' })).toBe(document);
-    expect(getInstance(document, { kind: 'element', id: 'unknown' })).toBeUndefined();
-  });
-});
-
-describe('withDatatype', () => {
-  it('removes the choices when the datatype changes to another one than choice, and sets the patch', () => {
-    const changed = withDatatype({ name: 'p', datatype: 'choice' as const, choices: ['a'], extra: 1 }, 'time_unit', {});
-
-    expect(changed).toEqual({ name: 'p', datatype: 'time_unit', extra: 1 });
-    expect('choices' in changed).toBe(false);
-  });
-
-  it('keeps the choices for the datatype choice and leaves an unchanged datatype alone', () => {
-    const definition = { name: 'p', datatype: 'time_unit' as const, choices: ['k1'] };
-
-    expect(withDatatype(definition, 'time_unit', { name: 'x' })).toBe(definition);
-    expect(withDatatype(definition, 'choice', {}).choices).toEqual(['k1']);
+    expect(changed.connections.some((connection) => connection.source === EMA_ELEMENT_IDS.crossAgainst && connection.output === 'falsch' && connection.target === EMA_ELEMENT_IDS.improved)).toBe(true);
   });
 });

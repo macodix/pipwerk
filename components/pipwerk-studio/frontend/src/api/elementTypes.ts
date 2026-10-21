@@ -39,9 +39,16 @@ export const dataTypes: readonly DataType[] = [
   'object',
 ];
 
-export type BindingKind = 'fixed' | 'parameter' | 'expression' | 'application';
+/** The kinds of assignment (specification 3.1): fixed value, strategy parameter, data connection, expression, at the application. */
+export type BindingKind = 'fixed' | 'parameter' | 'connection' | 'expression' | 'application';
 
-export const bindingKinds: readonly BindingKind[] = ['fixed', 'parameter', 'expression', 'application'];
+export const bindingKinds: readonly BindingKind[] = [
+  'fixed',
+  'parameter',
+  'connection',
+  'expression',
+  'application',
+];
 
 export type ElementKind =
   | 'trigger'
@@ -64,6 +71,10 @@ export type ObjectCategory = 'indicator' | 'trend' | 'rule' | 'ruleset';
 
 const objectCategories: readonly ObjectCategory[] = ['indicator', 'trend', 'rule', 'ruleset'];
 
+/** The groups of the element library (specification 5.2), in the order shown. */
+export const groupIds = ['when', 'actions', 'market', 'indicators', 'trends', 'rules'] as const;
+export type GroupId = (typeof groupIds)[number];
+
 export type Scalar = string | number | boolean | null;
 
 export type Choice = { id: string; label: Label };
@@ -75,6 +86,7 @@ export type ParameterDescription = {
   id: string;
   datatype: DataType;
   label: Label;
+  explanation: Label;
   required: boolean;
   default: Scalar;
   choices: Choice[];
@@ -87,23 +99,30 @@ export type PropertyDescription = {
   id: string;
   datatype: DataType;
   label: Label;
+  explanation: Label;
   must: boolean;
   setByUser: boolean;
   default: Scalar;
   choices: Choice[];
+  /** The kinds of assignment the user may choose; all of them if the description names none. */
+  bindings: BindingKind[];
   appliesWhen: Condition | null;
   objectType: string | null;
 };
 
 /** An output of an element of the flow. The management of the element hangs at the output with `holdsManagement`. */
-export type OutputDescription = { id: string; label: Label; holdsManagement: boolean };
+export type OutputDescription = { id: string; label: Label; explanation: Label; holdsManagement: boolean };
 
 export type TypeDescription = {
   id: string;
   kind: ElementKind;
   name: Label;
   description: Label;
+  /** The short text shown when the entry is pointed at (specification 3.1). */
+  explanation: Label;
   category: ObjectCategory | null;
+  /** The group of the element library; `null` for a type that does not stand there. */
+  group: GroupId | null;
   parameters: ParameterDescription[];
   properties: PropertyDescription[];
   outputs: OutputDescription[];
@@ -117,19 +136,29 @@ export type TypeDescription = {
   byUser: boolean;
 };
 
+export type FunctionArgument = { name: Label; explanation: Label };
+
 export type FunctionDescription = {
   name: string;
+  label: Label;
+  explanation: Label;
   description: Label;
   minArguments: number;
   maxArguments: number | null;
+  arguments: FunctionArgument[];
 };
 
-/** A template document as the backend delivers it. Besides the fields used here it holds the whole content. */
+/**
+ * A template document as the backend delivers it. Besides the fields used here it holds the whole content. A
+ * delivered template names itself in both languages (`label`); `name` is the German name, the one that is stored in
+ * an instance of an own template.
+ */
 export type TemplateDocument = {
   id: string;
-  title: string;
+  name: string;
   description: string;
   object_type: string;
+  label: Label;
   [field: string]: unknown;
 };
 
@@ -147,6 +176,11 @@ function optionalBoolean(value: unknown, what: string): boolean {
 function parseLabel(value: unknown, what: string): Label {
   const record = expectRecord(value, what);
   return { de: expectString(record.de, `${what}.de`), en: expectString(record.en, `${what}.en`) };
+}
+
+/** A label that a description may leave out: the empty text then. */
+function optionalLabel(value: unknown, what: string): Label {
+  return value === undefined || value === null ? { de: '', en: '' } : parseLabel(value, what);
 }
 
 function parseDataType(value: unknown, what: string): DataType {
@@ -184,22 +218,26 @@ function parseCondition(value: unknown, what: string): Condition | null {
   return { name: expectString(record.name, `${what}.name`), value: expectString(record.value, `${what}.value`) };
 }
 
-function parseParameter(value: unknown, what: string): ParameterDescription {
-  const record = expectRecord(value, what);
-  const bindings = expectArray(record.bindings, `${what}.bindings`).map((kind) => {
+function parseBindingKinds(value: unknown, what: string): BindingKind[] {
+  return expectArray(value, what).map((kind) => {
     if (typeof kind === 'string' && (bindingKinds as readonly string[]).includes(kind)) {
       return kind as BindingKind;
     }
-    throw new ResponseFormatError(`${what}.bindings`);
+    throw new ResponseFormatError(what);
   });
+}
+
+function parseParameter(value: unknown, what: string): ParameterDescription {
+  const record = expectRecord(value, what);
   return {
     id: expectString(record.id, `${what}.id`),
     datatype: parseDataType(record.datatype, `${what}.datatype`),
     label: parseLabel(record.label, `${what}.label`),
+    explanation: optionalLabel(record.explanation, `${what}.explanation`),
     required: expectBoolean(record.required, `${what}.required`),
     default: parseScalar(record.default, `${what}.default`),
     choices: parseChoices(record.choices, `${what}.choices`),
-    bindings,
+    bindings: parseBindingKinds(record.bindings, `${what}.bindings`),
     appliesWhen: parseCondition(record.applies_when, `${what}.applies_when`),
     objectType: expectNullableString(record.object_type, `${what}.object_type`),
   };
@@ -211,13 +249,28 @@ function parseProperty(value: unknown, what: string): PropertyDescription {
     id: expectString(record.id, `${what}.id`),
     datatype: parseDataType(record.datatype, `${what}.datatype`),
     label: parseLabel(record.label, `${what}.label`),
+    explanation: optionalLabel(record.explanation, `${what}.explanation`),
     must: expectBoolean(record.must, `${what}.must`),
     setByUser: expectBoolean(record.set_by_user, `${what}.set_by_user`),
     default: parseScalar(record.default, `${what}.default`),
     choices: parseChoices(record.choices, `${what}.choices`),
+    bindings:
+      record.bindings === undefined
+        ? [...bindingKinds]
+        : parseBindingKinds(record.bindings, `${what}.bindings`),
     appliesWhen: parseCondition(record.applies_when, `${what}.applies_when`),
     objectType: expectNullableString(record.object_type, `${what}.object_type`),
   };
+}
+
+function parseGroup(value: unknown, what: string): GroupId | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'string' && (groupIds as readonly string[]).includes(value)) {
+    return value as GroupId;
+  }
+  throw new ResponseFormatError(what);
 }
 
 function parseType(value: unknown, what: string): TypeDescription {
@@ -232,12 +285,16 @@ function parseType(value: unknown, what: string): TypeDescription {
       throw new ResponseFormatError(`${what}.category`);
     }
   }
+  const description = parseLabel(record.description, `${what}.description`);
+  const explanation = optionalLabel(record.explanation, `${what}.explanation`);
   return {
     id: expectString(record.id, `${what}.id`),
     kind: kind as ElementKind,
     name: parseLabel(record.name, `${what}.name`),
-    description: parseLabel(record.description, `${what}.description`),
+    description,
+    explanation: explanation.de === '' && explanation.en === '' ? description : explanation,
     category: (category ?? null) as ObjectCategory | null,
+    group: parseGroup(record.group, `${what}.group`),
     parameters: expectArray(record.parameters, `${what}.parameters`).map((item, index) =>
       parseParameter(item, `${what}.parameters[${index}]`),
     ),
@@ -249,6 +306,7 @@ function parseType(value: unknown, what: string): TypeDescription {
       return {
         id: expectString(output.id, `${what}.outputs[${index}].id`),
         label: parseLabel(output.label, `${what}.outputs[${index}].label`),
+        explanation: optionalLabel(output.explanation, `${what}.outputs[${index}].explanation`),
         holdsManagement: optionalBoolean(output.holds_management, `${what}.outputs[${index}].holds_management`),
       };
     }),
@@ -261,13 +319,23 @@ function parseType(value: unknown, what: string): TypeDescription {
   };
 }
 
+/** A name that is a text or a text in both languages. */
+function parseBilingualName(value: unknown, what: string): Label {
+  if (typeof value === 'string') {
+    return { de: value, en: value };
+  }
+  return parseLabel(value, what);
+}
+
 function parseTemplate(value: unknown, what: string): TemplateDocument {
   const record = expectRecord(value, what);
   expectString(record.id, `${what}.id`);
-  expectString(record.title, `${what}.title`);
   expectString(record.object_type, `${what}.object_type`);
+  const label = parseBilingualName(record.name ?? record.title, `${what}.name`);
   return {
     ...record,
+    name: label.de,
+    label,
     description: typeof record.description === 'string' ? record.description : '',
   } as TemplateDocument;
 }
@@ -275,11 +343,24 @@ function parseTemplate(value: unknown, what: string): TemplateDocument {
 function parseFunction(value: unknown, what: string): FunctionDescription {
   const record = expectRecord(value, what);
   const max = record.max_arguments;
+  const description = optionalLabel(record.description, `${what}.description`);
+  const label = optionalLabel(record.label, `${what}.label`);
+  const explanation = optionalLabel(record.explanation, `${what}.explanation`);
+  const args = record.arguments === undefined ? [] : expectArray(record.arguments, `${what}.arguments`);
   return {
     name: expectString(record.name, `${what}.name`),
-    description: parseLabel(record.description, `${what}.description`),
+    label: label.de === '' && label.en === '' ? { de: expectString(record.name, `${what}.name`), en: expectString(record.name, `${what}.name`) } : label,
+    explanation: explanation.de === '' && explanation.en === '' ? description : explanation,
+    description,
     minArguments: typeof record.min_arguments === 'number' ? record.min_arguments : 0,
     maxArguments: typeof max === 'number' ? max : null,
+    arguments: args.map((item, index) => {
+      const argument = expectRecord(item, `${what}.arguments[${index}]`);
+      return {
+        name: parseLabel(argument.name, `${what}.arguments[${index}].name`),
+        explanation: optionalLabel(argument.explanation, `${what}.arguments[${index}].explanation`),
+      };
+    }),
   };
 }
 

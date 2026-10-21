@@ -36,11 +36,24 @@ describe('object directory', () => {
 });
 
 describe('causeOf', () => {
-  it('names the status and the fixed text', () => {
+  it('names the status; the English text of the answer is not part of the cause', () => {
     expect(causeOf(new HttpError(409, 'Nothing was moved.', { detail: 'Nothing was moved.' }))).toEqual({
       status: 409,
-      detail: 'Nothing was moved.',
       moveFailure: null,
+    });
+  });
+
+  it('takes the directories and files from the data of the cause (`params`) as well', () => {
+    const body = {
+      detail: 'Moving failed.',
+      code: 'object_directory.move_not_restored',
+      params: { source_directory: '/old', target_directory: '/new', files: ['a.strategy.json'] },
+    };
+
+    expect(causeOf(new HttpError(500, body.detail, body)).moveFailure).toEqual({
+      sourceDirectory: '/old',
+      targetDirectory: '/new',
+      files: ['a.strategy.json'],
     });
   });
 
@@ -67,6 +80,6 @@ describe('causeOf', () => {
   });
 
   it('has no cause for an error that is not an answer of the backend', () => {
-    expect(causeOf(new TypeError('network error'))).toEqual({ status: null, detail: null, moveFailure: null });
+    expect(causeOf(new TypeError('network error'))).toEqual({ status: null, moveFailure: null });
   });
 });

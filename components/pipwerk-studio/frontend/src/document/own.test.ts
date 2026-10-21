@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { documentToFlow, flowToDocument } from '../canvas/flowModel';
-import { loadTestcaseRaw, realTypes } from '../testing/fixtures';
+import { testTypes } from '../testing/typeDescriptions';
 import { getOwn, hasOwn, removeOwn, setOwn } from './own';
-import { setElementBinding, setInstanceBinding, updateRule } from './ops';
+import { removeStrategyParameter, setBinding } from './ops';
 import { parseStrategyDocument, serializeDocument } from './parse';
 import type { Bindings, StrategyDocument } from './types';
 
@@ -35,17 +34,17 @@ const BINDING = '{"kind":"fixed","value":7}';
 
 /** A document with the binding `__proto__` at an element, at its instance and at a rule (written as text: a literal would set the prototype). */
 const PROTO_DOCUMENT = `{
-  "format": "pipwerk.strategy", "format_version": "1.0", "id": "doc", "title": "T",
+  "format": "pipwerk.strategy", "format_version": "2.0", "id": "doc", "name": "T",
   "rules": [{
-    "name": "regel", "object_type": "Regel",
-    "parameters": [{ "name": "__proto__", "datatype": "number" }],
+    "name": "regel", "key": "regel", "object_type": "Regel",
+    "parameters": [{ "key": "__proto__", "name": "p", "datatype": "number" }],
     "parameter_values": { "__proto__": ${BINDING} }
   }],
   "elements": [{
     "id": "e1", "type": "unbekannt",
     "parameters": { "__proto__": ${BINDING}, "andere": ${BINDING} },
     "properties": { "__proto__": ${BINDING} },
-    "instance": { "name": "inst", "object_type": "X", "parameter_values": { "__proto__": ${BINDING} } }
+    "instance": { "name": "inst", "key": "inst", "object_type": "X", "parameter_values": { "__proto__": ${BINDING} } }
   }]
 }`;
 
@@ -60,7 +59,8 @@ describe('a binding named `__proto__`', () => {
     expect(ownKeys(raw.elements[0]?.parameters)).toEqual(['__proto__', 'andere']);
   });
 
-  it('is kept when the document is read, changed, derived and compared', () => {
+  it('is kept when the document is read, changed and compared', () => {
+    const types = testTypes();
     const document = parseStrategyDocument(JSON.parse(PROTO_DOCUMENT));
     const element = document.elements[0]!;
 
@@ -72,9 +72,8 @@ describe('a binding named `__proto__`', () => {
     expect(Object.getPrototypeOf(element.parameters)).toBe(Object.prototype);
 
     // Changed: another binding changes and `__proto__` stays.
-    let changed: StrategyDocument = setElementBinding(document, 'e1', 'parameters', 'neu', JSON.parse(BINDING));
-    changed = setInstanceBinding(changed, { kind: 'element', id: 'e1' }, 'neu', JSON.parse(BINDING));
-    changed = updateRule(changed, { owner: { kind: 'strategy' }, indices: [0] }, { description: 'x' });
+    let changed: StrategyDocument = setBinding(document, types, 'e1', 'parameters', 'neu', JSON.parse(BINDING));
+    changed = setBinding(changed, types, 'e1', 'instance', 'neu', JSON.parse(BINDING));
     expect(ownKeys(changed.elements[0]?.parameters)).toEqual(['__proto__', 'andere', 'neu']);
     expect(ownKeys(changed.elements[0]?.instance?.parameter_values)).toEqual(['__proto__', 'neu']);
     expect(ownKeys(changed.rules[0]?.parameter_values)).toEqual(['__proto__']);
@@ -82,32 +81,19 @@ describe('a binding named `__proto__`', () => {
     expect(serializeDocument(changed)).not.toBe(serializeDocument(document));
 
     // `__proto__` itself is changed and removed like any other binding.
-    const replaced = setElementBinding(changed, 'e1', 'parameters', '__proto__', { kind: 'application' });
+    const replaced = setBinding(changed, types, 'e1', 'parameters', '__proto__', { kind: 'application' });
     expect(getOwn(replaced.elements[0]?.parameters, '__proto__')).toEqual({ kind: 'application' });
     expect(Object.getPrototypeOf(replaced.elements[0]?.parameters)).toBe(Object.prototype);
-    const removed = setElementBinding(replaced, 'e1', 'parameters', '__proto__', null);
+    const removed = setBinding(replaced, types, 'e1', 'parameters', '__proto__', null);
     expect(ownKeys(removed.elements[0]?.parameters)).toEqual(['andere', 'neu']);
 
-    // Derived: document → drawing area → document stays the same, and the text of the document keeps the field.
-    const flow = documentToFlow(document, {
-      types: realTypes,
-      language: 'de',
-      frames: {},
-      collapsed: new Set(),
-      selectedNodes: new Set(),
-      selectedEdges: new Set(),
-      severities: new Map(),
-    });
-    const back = flowToDocument(document, flow);
-    expect(back).toBe(document);
-    expect(serializeDocument(back)).toContain('"__proto__":{"kind":"fixed","value":7}');
-    const reread = parseStrategyDocument(JSON.parse(serializeDocument(back)));
+    // Removing a strategy parameter that nothing uses leaves the fields as they are.
+    const without = removeStrategyParameter(document, 'gibt-es-nicht');
+    expect(ownKeys(without.elements[0]?.parameters)).toEqual(['__proto__', 'andere']);
+
+    // The text of the document keeps the field, and reading it again gives the same document.
+    expect(serializeDocument(document)).toContain('"__proto__":{"kind":"fixed","value":7}');
+    const reread = parseStrategyDocument(JSON.parse(serializeDocument(document)));
     expect(serializeDocument(reread)).toBe(serializeDocument(document));
-  });
-
-  it('does not change a test case document (counter-check without the field)', () => {
-    const raw = loadTestcaseRaw('str-03');
-
-    expect(JSON.stringify(parseStrategyDocument(raw))).toBe(JSON.stringify(parseStrategyDocument(JSON.parse(JSON.stringify(raw)))));
   });
 });

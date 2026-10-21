@@ -1,0 +1,67 @@
+{
+  "format": "pipwerk.strategy",
+  "format_version": "2.0",
+  "id": "5a0f3d7e-6b1c-4e52-8f0a-3c9d2b7e4a10",
+  "name": "Mit unbekanntem Typ",
+  "description": "Ein Element dieser Strategie hat einen Typ, den es nicht gibt.",
+  "parameters": [],
+  "rules": [],
+  "elements": [
+    {
+      "id": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b01",
+      "type": "trigger.manual_start",
+      "name": "Start von Hand",
+      "key": null,
+      "position": null,
+      "parameters": {},
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b02",
+      "type": "erweiterung.fremder_typ",
+      "name": "Fremdes Element",
+      "key": null,
+      "position": null,
+      "parameters": { "wert": { "kind": "fixed", "value": 42 } },
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b03",
+      "type": "flow.delete_order",
+      "name": "Order löschen",
+      "key": null,
+      "position": null,
+      "parameters": {},
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    }
+  ],
+  "connections": [
+    {
+      "id": "7d1c9e44-2a6b-4f30-8e57-1b3a5c7d9e01",
+      "source": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b01",
+      "output": "weiter",
+      "target": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b02"
+    },
+    {
+      "id": "7d1c9e44-2a6b-4f30-8e57-1b3a5c7d9e02",
+      "source": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b02",
+      "output": "ergebnis_a",
+      "target": "0b6f2a31-7c4e-4d85-9a12-5e8f1c3d7b03"
+    }
+  ],
+  "sections": [],
+  "orientation": "vertical",
+  "collapsed_managements": []
+}

@@ -1,246 +1,218 @@
-import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-import {
-  createAndSave,
-  insert,
-  loadedPage,
-  nodeById,
-  objectDirectory,
-  panel,
-  restoreObjectDirectory,
-  save,
-  useCleanRun,
-} from './support';
+import { clickMenu, expect, library, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
 
-// The workflows of the Strategy Designer in the three browsers, each from the point of view of
-// the user: settings (language and object directory) and findings on the drawing area. The
-// questions about unsaved changes, open and delete, rules and the unknown type are in
-// `strategies.spec.ts`.
+// Specification 5.5: the workflows save, check, close, new, open, delete and settings.
 
-useCleanRun();
-
-const SETTINGS = /^(Einstellungen|Settings)$/;
-
-async function openSettings(page: Page): Promise<Locator> {
-  await page.getByRole('button', { name: SETTINGS }).click();
-  const dialog = page.getByRole('dialog', { name: SETTINGS });
-  await expect(dialog).toBeVisible();
-  return dialog;
+async function dialogButton(page: Page, name: string | RegExp) {
+  return page.getByRole('dialog').getByRole('button', { name });
 }
 
-/** Changes the object directory in the settings, answers the question and closes the dialog. */
-async function changeObjectDirectory(page: Page, path: string, answer: string): Promise<void> {
-  const dialog = await openSettings(page);
-  await dialog.getByLabel('Verzeichnis (absoluter Pfad)').fill(path);
+test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page, api }, testInfo) => {
+  void api;
+  // The backend of the run is shared by all browsers: every browser saves a strategy with a name of its own.
+  const name = `Meine erste Strategie ${testInfo.project.name}`;
+  await openApp(page);
+  await clickMenu(page, 'new');
+
+  await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
+  await expect(page.getByTestId('canvas-empty')).toContainText('Nächster Schritt');
+  await expect(page.getByTestId('lane-empty')).toHaveCount(0);
+  await expect(page.getByTestId('param-strip')).toContainText('Noch keine');
+
+  // the name, then saving: "gespeichert", and the strategy stands in the list
+  await showArea(page, 'props');
+  await page.getByTestId('strategy-name').fill(name);
+  await clickMenu(page, 'save');
+  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expect(page.getByTestId('findings-count')).toBeVisible();
+  await clickMenu(page, 'open');
+  await expect(page.getByRole('dialog').getByRole('button', { name, exact: true })).toBeVisible();
+});
+
+test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page, api }) => {
+  void api;
+  await openApp(page);
+  await clickMenu(page, 'new');
+  await library(page, 'Bedingung').click();
+  await expect(node(page, 'Bedingung')).toHaveCount(1);
+
+  await clickMenu(page, 'check');
+
+  await expect(page.getByTestId('findings-count')).not.toContainText('keine');
+  await page.getByTestId('findings-count').click();
+  const findings = page.getByTestId('finding');
+  await expect(findings.first()).toBeVisible();
+  await expect(findings.first()).toContainText('So beheben Sie es');
+  await expect(node(page, 'Bedingung')).toHaveClass(/err|hint/);
+  // "Zur Stelle" selects the element
+  await page.locator('[data-testid="finding"][data-code="flow.not_reached"]').getByTestId('finding-goto').click();
+  await expect(page.getByTestId('props-element')).toBeVisible();
+  await expect(page.getByTestId('element-name')).toHaveValue('Bedingung');
+});
+
+test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page, api }, testInfo) => {
+  void api;
+  const savedName = `Gespeicherter Name ${testInfo.project.name}`;
+  await openApp(page);
+  await openStrategy(page, 'EMA-Trendfolge');
+  await showArea(page, 'props');
+  await page.getByTestId('strategy-name').fill('EMA geändert');
+
+  // cancel: nothing happens
+  await clickMenu(page, 'close');
+  await expect(page.getByRole('dialog')).toContainText('noch nicht gespeichert');
+  for (const name of ['Speichern', 'Verwerfen', 'Abbrechen']) {
+    await expect(await dialogButton(page, name)).toBeVisible();
+  }
+  await (await dialogButton(page, 'Abbrechen')).click();
+  await expect(page.getByTestId('status-pill')).toContainText('EMA geändert');
+
+  // discard: the strategy is closed, the stored one is unchanged
+  await clickMenu(page, 'new');
+  await (await dialogButton(page, 'Verwerfen')).click();
+  await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
+  await clickMenu(page, 'open');
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true })).toBeVisible();
+  await page.getByTestId('dialog-cancel').click();
+
+  // save: the change is stored, then the strategy is closed
+  await showArea(page, 'props');
+  await page.getByTestId('strategy-name').fill(savedName);
+  await clickMenu(page, 'open');
+  await page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true }).click();
+  await (await dialogButton(page, 'Speichern')).click();
+  await expect(page.getByTestId('status-pill')).toContainText('EMA-Trendfolge');
+  await clickMenu(page, 'open');
+  await expect(page.getByRole('dialog').getByRole('button', { name: savedName, exact: true })).toBeVisible();
+});
+
+test('the list of strategies shows name, description and last change, and marks a file that cannot be read', async ({ page, api }) => {
+  void api;
+  await openApp(page);
+
+  await clickMenu(page, 'open');
+
+  const row = page.getByTestId('open-row').filter({ hasText: 'EMA-Trendfolge' });
+  await expect(row).toContainText('emma ist die 2 EMA Strategie');
+  await expect(row).toContainText(/\d\d\.\d\d\.\d{4}, \d\d:\d\d Uhr/);
+  await expect(page.getByRole('dialog').getByText('nicht lesbar')).toHaveCount(1);
+});
+
+test('the open strategy is deleted after a question; it is gone from the list', async ({ page, api }) => {
+  // The backend of the run is shared by all tests and all browsers: the test deletes a strategy of its own, not one
+  // that other tests open.
+  const doomed = { ...unknownTypeStrategy(), id: '0d5e1c2a-7b34-4f6a-9c18-2e4b6a8c0d13', name: 'Zum Löschen' };
+  if (api !== null) {
+    api.strategies.set(doomed.id as string, doomed);
+  } else {
+    const stored = await page.request.put(`/api/v1/strategies/${doomed.id as string}`, { data: doomed });
+    expect(stored.ok()).toBe(true);
+  }
+  await openApp(page);
+  await openStrategy(page, 'Zum Löschen');
+
+  await clickMenu(page, 'delete');
+  await expect(page.getByRole('dialog')).toContainText('Zum Löschen');
+  await (await dialogButton(page, 'Abbrechen')).click();
+  await expect(page.getByTestId('status-pill')).toContainText('Zum Löschen');
+
+  await clickMenu(page, 'delete');
+  await (await dialogButton(page, 'Löschen')).click();
+
+  await expect(page.getByTestId('canvas-no-strategy')).toBeVisible();
+  await clickMenu(page, 'open');
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Zum Löschen' })).toHaveCount(0);
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge' })).toBeVisible();
+});
+
+test('the language of the interface is changed in the settings and stays after reloading', async ({ page, api }) => {
+  void api;
+  await openApp(page);
+  await clickMenu(page, 'settings');
+  await page.getByRole('dialog').getByLabel('Sprache').selectOption('English');
+  await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText('Settings');
+  await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');
+  await expect(page.getByTestId('library')).toContainText('Element library');
+  await expect(page.getByTestId('library')).toContainText('When to calculate');
+
+  await page.reload();
+
+  await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');
+  await expect(library(page, 'Candle close')).toHaveCount(1);
+  // back to German for the tests that follow
+  await clickMenu(page, 'settings');
+  await page.getByRole('dialog').getByLabel('Language').selectOption('Deutsch');
+  await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
+  await expect(page.getByTestId('param-strip')).toContainText('Strategieparameter');
+});
+
+test('the object directory is changed with the question "Dateien verschieben?", with and without moving', async ({ page, api }) => {
+  void api;
+  await openApp(page);
+  await clickMenu(page, 'settings');
+  const dialog = page.getByRole('dialog');
+  const directory = dialog.getByLabel('Verzeichnis (absoluter Pfad)');
+  const first = join(tmpdir(), `pipwerk-studio-e2e-objects-${Date.now()}-a`);
+  const second = join(tmpdir(), `pipwerk-studio-e2e-objects-${Date.now()}-b`);
+
+  // a relative path is refused
+  await directory.fill('relativ/pfad');
   await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
   await expect(dialog.getByText('Dateien verschieben?')).toBeVisible();
-  await dialog.getByRole('button', { name: answer }).click();
+  await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Das Objektverzeichnis konnte nicht geändert werden.');
+
+  // the question can be cancelled
+  await directory.fill(first);
+  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
+  await expect(dialog.getByText('Dateien verschieben?')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Abbrechen' }).first().click();
+  await expect(dialog.getByText('Dateien verschieben?')).toHaveCount(0);
+
+  // with moving: the stored strategies come along
+  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
+  await dialog.getByRole('button', { name: 'Ja, Dateien verschieben' }).click();
   await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
+  await expect(directory).toHaveValue(first);
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  await clickMenu(page, 'open');
+  // the list belongs to the directory: with the files moved, the strategies are still there
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // without moving: only the directory changes
+  await clickMenu(page, 'settings');
+  await directory.fill(second);
+  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
+  await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
+  await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
+  await expect(directory).toHaveValue(second);
+
+  // The backend of the run is shared by the tests that follow. The strategies lie in `first`: go back there, so that
+  // the following tests find "EMA-Trendfolge" again.
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  await clickMenu(page, 'settings');
+  await directory.fill(first);
+  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
+  await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
+  await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
+});
+
+test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page, api }) => {
+  void api;
+  await openApp(page);
+
+  await page.getByTestId('menu-about').click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('pipwerk Studio');
+  await expect(dialog).toContainText('GNU General Public License');
+  await expect(dialog.getByRole('link')).toBeVisible();
   await dialog.getByRole('button', { name: 'Schließen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-}
-
-test.describe('settings: the object directory (acceptance criterion 9)', () => {
-  let original: string;
-  let target: string;
-
-  test.beforeEach(async ({ page }, testInfo) => {
-    // The object directory of the run is `objects` inside the temporary directory of the run,
-    // which `e2e/start-backend.mjs` creates and removes at the end. The target is a new
-    // directory in that directory, so that even a run that is killed leaves nothing outside it.
-    original = await objectDirectory(page);
-    testInfo.annotations.push({ type: 'object-directory', description: original });
-    target = mkdtempSync(join(dirname(original), 'target-'));
-  });
-
-  test.afterEach(async ({ request }) => {
-    // First the object directory of the run is restored, then the target is removed, so that
-    // the backend never points to a directory that no longer exists.
-    await restoreObjectDirectory(request, original);
-    rmSync(target, { recursive: true, force: true });
-  });
-
-  test('with "Ja, Dateien verschieben" the strategy stays in the list of "Öffnen", its file is in the new directory', async ({
-    page,
-  }) => {
-    await loadedPage(page);
-    await createAndSave(page, 'Mit Verschieben');
-    expect(readdirSync(original)).toHaveLength(1);
-    expect(readdirSync(target)).toEqual([]);
-
-    await changeObjectDirectory(page, target, 'Ja, Dateien verschieben');
-
-    expect(await objectDirectory(page)).toBe(target);
-    expect(readdirSync(target)).toHaveLength(1);
-    expect(readdirSync(original)).toEqual([]);
-    // The open strategy stays open; the list of "Öffnen" shows the moved file.
-    await expect(page.getByLabel('Bezeichnung', { exact: true })).toHaveValue('Mit Verschieben');
-    await page.getByRole('button', { name: 'Öffnen' }).click();
-    const list = page.getByRole('dialog', { name: 'Strategie öffnen' });
-    await expect(list.getByRole('button', { name: 'Mit Verschieben' })).toBeVisible();
-    await list.getByRole('button', { name: 'Abbrechen' }).click();
-  });
-
-  test('with "Nein, nur das Verzeichnis ändern" the strategy is not in the list of "Öffnen"; the next "Speichern" writes to the new directory', async ({
-    page,
-  }) => {
-    await loadedPage(page);
-    await createAndSave(page, 'Ohne Verschieben');
-
-    await changeObjectDirectory(page, target, 'Nein, nur das Verzeichnis ändern');
-
-    expect(await objectDirectory(page)).toBe(target);
-    // The file stays where it was; the new directory is empty and so is the list.
-    expect(readdirSync(original)).toHaveLength(1);
-    expect(readdirSync(target)).toEqual([]);
-    await page.getByRole('button', { name: 'Öffnen' }).click();
-    const list = page.getByRole('dialog', { name: 'Strategie öffnen' });
-    await expect(list.getByText('Es sind keine Strategien gespeichert.')).toBeVisible();
-    await expect(list.getByRole('button', { name: 'Ohne Verschieben' })).toHaveCount(0);
-    await list.getByRole('button', { name: 'Abbrechen' }).click();
-
-    // The strategy is still open and is saved into the new directory.
-    await expect(page.getByLabel('Bezeichnung', { exact: true })).toHaveValue('Ohne Verschieben');
-    await page.getByLabel('Bezeichnung', { exact: true }).fill('Ohne Verschieben, gespeichert');
-    await save(page);
-    expect(readdirSync(target)).toHaveLength(1);
-    await page.getByRole('button', { name: 'Öffnen' }).click();
-    await expect(
-      page.getByRole('dialog', { name: 'Strategie öffnen' }).getByRole('button', { name: 'Ohne Verschieben, gespeichert' }),
-    ).toBeVisible();
-    await page.getByRole('dialog', { name: 'Strategie öffnen' }).getByRole('button', { name: 'Abbrechen' }).click();
-  });
-
-  test('"Abbrechen" and a path that is not absolute change nothing', async ({ page }) => {
-    await loadedPage(page);
-    const dialog = await openSettings(page);
-
-    await dialog.getByLabel('Verzeichnis (absoluter Pfad)').fill(target);
-    await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
-    await dialog.getByRole('button', { name: 'Abbrechen' }).click();
-    expect(await objectDirectory(page)).toBe(original);
-
-    await dialog.getByLabel('Verzeichnis (absoluter Pfad)').fill('nicht/absolut');
-    await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
-    await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
-    // The cause stands in the dialog, nothing was changed.
-    await expect(dialog.getByRole('alert')).toContainText('Das Objektverzeichnis konnte nicht geändert werden.');
-    expect(await objectDirectory(page)).toBe(original);
-  });
-});
-
-test.describe('settings: the language (acceptance criterion 9)', () => {
-  test('stays after a reload of the page, for the whole user interface', async ({ page }) => {
-    await loadedPage(page);
-    const dialog = await openSettings(page);
-    await dialog.getByLabel('Sprache').selectOption('en');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(dialog.getByLabel('Language')).toBeEnabled();
-    await dialog.getByRole('button', { name: 'Close' }).click();
-    await expect(page.getByRole('button', { name: 'New strategy' })).toBeVisible();
-
-    await page.reload();
-
-    await expect(page.getByRole('button', { name: 'New strategy' })).toBeEnabled();
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.getByRole('complementary', { name: 'Element library' })).toBeVisible();
-    await expect(page.getByRole('listbox', { name: 'Triggers' })).toBeVisible();
-    await page.getByRole('button', { name: 'New strategy' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: 'Strategy' })).toBeVisible();
-    await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
-  });
-});
-
-// --- findings (acceptance criteria 2 and 5) ---------------------------------------------------
-
-/** The color of the outline of an element on the drawing area. */
-async function outline(node: Locator): Promise<[number, number, number]> {
-  const color = await node.locator('.element-node').evaluate((element) => getComputedStyle(element).borderTopColor);
-  const match = /^rgba?\((\d+), (\d+), (\d+)/.exec(color);
-  expect(match, color).not.toBeNull();
-  return [Number(match![1]), Number(match![2]), Number(match![3])];
-}
-
-test.describe('findings (acceptance criteria 2 and 5)', () => {
-  test('a trigger from the library without a time unit: "Prüfen" shows the finding red at the element, the text with its properties, the finding without element with the strategy', async ({
-    page,
-  }) => {
-    await loadedPage(page);
-    await page.getByRole('button', { name: 'Neue Strategie' }).click();
-    await insert(page, 'Auslöser', /^Kerzenschluss/);
-    await expect(page.locator('.element-node[data-severity]')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Prüfen' }).click();
-
-    // Three findings: the missing time unit and the missing connection at the trigger, and the hint
-    // without an element that no order can be reached.
-    await expect(page.getByText('Befunde: 3')).toBeVisible();
-    const trigger = page.locator('.react-flow__node-element');
-    await expect(trigger.locator('.element-node')).toHaveAttribute('data-severity', 'error');
-    await expect(trigger.locator('.element-node-mark')).toHaveText('Fehler');
-    const [red, green, blue] = await outline(trigger);
-    expect(red).toBeGreaterThan(150);
-    expect(green).toBeLessThan(80);
-    expect(blue).toBeLessThan(80);
-    // No message has to be clicked away.
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.getByRole('alertdialog')).toHaveCount(0);
-
-    // With the selected element: the text of the finding stands next to its properties.
-    await trigger.click();
-    const ofElement = panel(page).getByRole('region', { name: 'Befunde dieses Elements' });
-    await expect(ofElement).toContainText('Fehler');
-    await expect(ofElement).toContainText('Der Pflichtparameter „Zeiteinheit“ hat keinen Wert.');
-    await expect(ofElement).toContainText('Der Auslöser ist mit keinem Element des Ablaufs verbunden.');
-    await expect(panel(page).getByLabel('Bindungsart von Zeiteinheit', { exact: true })).toBeVisible();
-
-    // The finding without an element stands with the strategy.
-    await page.locator('.react-flow__pane').click({ position: { x: 20, y: 20 } });
-    const ofStrategy = panel(page).getByRole('region', { name: 'Befunde der Strategie' });
-    await expect(ofStrategy).toContainText('Hinweis');
-    await expect(ofStrategy).toContainText('Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt.');
-
-    // Binding the time unit removes the finding of the parameter: the count falls.
-    await trigger.click();
-    await panel(page).getByLabel('Bindungsart von Zeiteinheit', { exact: true }).selectOption('fixed');
-    await panel(page).getByLabel('Zeiteinheit', { exact: true }).selectOption('h1');
-    await page.getByRole('button', { name: 'Prüfen' }).click();
-    await expect(page.getByText('Befunde: 2')).toBeVisible();
-  });
-
-  test('an element with a hint is outlined orange (the answer of the check is replaced: a strategy has no hint at an element)', async ({
-    page,
-  }) => {
-    let element: string | null = null;
-    // The library reports a hint at an element only for templates. To see the outline of a hint, the
-    // answer of the check gets, instead of the findings of the element, one finding of the level hint.
-    await page.route('**/api/v1/check', async (route) => {
-      const response = await route.fetch();
-      const body = (await response.json()) as { findings: { element: string | null; [field: string]: unknown }[] };
-      if (element !== null) {
-        body.findings = body.findings.filter((finding) => finding.element !== element);
-        body.findings.push({ level: 'hint', code: 'flow.no_incoming', element, subject: null, details: {} });
-      }
-      await route.fulfill({ response, json: body });
-    });
-    await loadedPage(page);
-    await page.getByRole('button', { name: 'Neue Strategie' }).click();
-    element = await insert(page, 'Elemente des Ablaufs', /^Bedingung/);
-
-    await page.getByRole('button', { name: 'Prüfen' }).click();
-
-    const node = nodeById(page, element);
-    await expect(node.locator('.element-node')).toHaveAttribute('data-severity', 'hint');
-    await expect(node.locator('.element-node-mark')).toHaveText('Hinweis');
-    const [red, green, blue] = await outline(node);
-    expect(red).toBeGreaterThan(150);
-    expect(green).toBeGreaterThan(50);
-    expect(green).toBeLessThan(140);
-    expect(blue).toBeLessThan(40);
-    await node.click();
-    await expect(panel(page).getByRole('region', { name: 'Befunde dieses Elements' })).toContainText('Hinweis');
-  });
 });

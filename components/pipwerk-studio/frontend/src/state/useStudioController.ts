@@ -1,10 +1,11 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchElementTypes } from '../api/elementTypes';
 import {
   checkDocument,
+  createKey,
   createStrategy,
   deleteStrategy,
   listObjects,
@@ -12,36 +13,68 @@ import {
   readTemplate,
   replaceStrategy,
   templateArts,
+  type Finding,
 } from '../api/objects';
-import { cornerForCenter, freePosition, ownerAtPoint, syncedFrames } from '../canvas/canvasEditing';
-import type { CanvasApi } from '../DesignerCanvas';
-import type { Point } from '../canvas/layout';
-import { freshName, instanceFromType, newStrategy } from '../document/build';
 import {
   addElement,
+  addInput,
   addRule,
-  getRule,
-  moveRule as moveRuleIn,
-  removeRule as removeRuleIn,
-  rulesOf,
+  addStrategyParameter,
+  clearPositions,
+  connect,
+  createSection,
+  disconnect,
+  moveObject,
+  placeObject,
+  removeElement,
+  removeInput,
+  removeRule,
+  removeSection,
+  removeStrategyParameter,
+  renameSection,
+  setBinding,
+  setElementName,
+  setManagement,
+  setOrientation,
+  setPosition,
+  setSection,
+  setSectionCollapsed,
+  setStrategyDescription,
+  setStrategyName,
+  toggleManagementCollapsed,
+  updateStrategyParameter,
+  removalSet,
+  type BindingScope,
+  type ConnectionProblem,
 } from '../document/ops';
-import type { RuleOwner, RulePath, StrategyDocument } from '../document/types';
-import { sameRulePath } from '../document/types';
-import type { FunctionItem } from '../expression/completions';
-import { useLiveNames } from '../expression/useLiveNames';
-import { indexFindings } from '../findings/findingsModel';
-import { defaultLanguage, isSupportedLanguage, type SupportedLanguage } from '../i18n';
-import { elementForSource, ruleForSource, type TemplateLoader } from '../library/insert';
 import {
-  buildLibrary,
-  findEntry,
-  type LibraryEntry,
-  type LibrarySource,
-  type StoredTemplates,
-} from '../library/libraryModel';
-import { createTypeIndex, labelText } from '../model/typeIndex';
-import { editorReducer, initialEditorState, isDirty, type Selection } from './editorState';
-import type { StudioApi } from './StudioContext';
+  instanceFromTemplate,
+  instanceFromType,
+  newElement,
+  newStrategy,
+  newTemplateElement,
+  takenNames,
+  typeDisplayName,
+  uniqueDisplayName,
+  withOrderDefaults,
+} from '../document/build';
+import type { Binding, StrategyDocument, StrategyParameter } from '../document/types';
+import { defaultLanguage, isSupportedLanguage, type SupportedLanguage } from '../i18n';
+import { buildLibrary, findEntry, type StoredTemplates } from '../library/libraryModel';
+import { elementName, isCardElement } from '../model/elements';
+import { createTypeIndex, holdsInstance, type TypeIndex } from '../model/typeIndex';
+import { NARROW_LAYOUT, matchesMedia } from '../ui/media';
+import { newUuid } from '../document/ids';
+import {
+  initialStudioState,
+  isDirty,
+  studioReducer,
+  type Panel,
+  type Selection,
+  type StudioState,
+  type WireMode,
+} from './studioState';
+import type { Pt } from '../arrange/layout';
 
 /** What happens after the question about unsaved changes. */
 export type PendingAction = { kind: 'new' } | { kind: 'close' } | { kind: 'open'; id: string };
@@ -52,40 +85,44 @@ export type DialogState =
   | { kind: 'open' }
   | { kind: 'delete' }
   | { kind: 'settings' }
+  | { kind: 'removeElement'; id: string }
+  | { kind: 'removeParameter'; key: string }
   | { kind: 'error'; titleKey: string; error: unknown };
 
-/** The number of rules in a list of rules: of the owner, or of the rule set at `inside`. */
-function listLength(document: StrategyDocument, owner: RuleOwner, inside: readonly number[]): number {
-  if (inside.length === 0) {
-    return rulesOf(document, owner).length;
-  }
-  return getRule(document, { owner, indices: [...inside] })?.rules?.length ?? 0;
-}
+/** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
+export type NewParameter = Pick<StrategyParameter, 'name' | 'datatype' | 'object_type' | 'value' | 'at_application' | 'choices'>;
 
-/** Everything the application keeps and does for the open strategy: state, requests, dialogs. */
-export function useStudioController() {
+/** Where an entry of the library is laid when it is dropped on the drawing area. */
+export type DropTarget = { after?: string | null; flow?: string | null };
+
+export type StudioController = ReturnType<typeof useStudioController>;
+
+const TYPES_KEY = ['element-types'];
+
+/** Everything the application keeps and does for the open strategy: state, requests, dialogs, edits. */
+export function useStudioController(language: SupportedLanguage) {
   const { i18n } = useTranslation();
-  const language: SupportedLanguage =
-    i18n.resolvedLanguage !== undefined && isSupportedLanguage(i18n.resolvedLanguage)
-      ? i18n.resolvedLanguage
-      : defaultLanguage;
-  const [state, dispatch] = useReducer(editorReducer, initialEditorState);
+  const queryClient = useQueryClient();
+  const [state, dispatch] = useReducer(studioReducer, initialStudioState);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [busy, setBusy] = useState(false);
   const stateRef = useRef(state);
   stateRef.current = state;
-  const canvasApi = useRef<CanvasApi>(null);
-
-  // --- type descriptions and stored templates ------------------------------------------------
+  const strategyToken = useRef(0);
 
   const typesQuery = useQuery({
-    queryKey: ['element-types'],
+    queryKey: TYPES_KEY,
     queryFn: ({ signal }) => fetchElementTypes(signal),
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
     networkMode: 'always',
   });
-  const types = useMemo(() => (typesQuery.data === undefined ? null : createTypeIndex(typesQuery.data)), [typesQuery.data]);
+  const types: TypeIndex | null = useMemo(
+    () => (typesQuery.data === undefined ? null : createTypeIndex(typesQuery.data)),
+    [typesQuery.data],
+  );
+  const typesRef = useRef(types);
+  typesRef.current = types;
 
   const storedQueries = useQueries({
     queries: templateArts.map((art) => ({
@@ -97,180 +134,40 @@ export function useStudioController() {
   });
   const storedData = storedQueries.map((query) => query.data);
   const stored = useMemo<StoredTemplates>(
-    () => Object.fromEntries(templateArts.map((art, index) => [art, storedData[index]])) as StoredTemplates,
+    () => Object.fromEntries(templateArts.map((art, index) => [art, storedData[index]])),
     storedData,
   );
   const storedFailed = storedQueries.some((query) => query.isError);
-
   const library = useMemo(() => (types === null ? [] : buildLibrary(types, stored, language)), [types, stored, language]);
-  const functions = useMemo<FunctionItem[]>(
-    () => (types?.functions ?? []).map((item) => ({ name: item.name, description: item.description[language] })),
-    [types, language],
-  );
 
-  // --- findings ------------------------------------------------------------------------------
-
-  const findings = useMemo(() => indexFindings(state.findings), [state.findings]);
-  const severities = useMemo(() => {
-    const map = new Map<string, 'error' | 'hint'>();
-    for (const element of state.document?.elements ?? []) {
-      const level = findings.severityOfElement(element.id);
-      if (level !== null) {
-        map.set(element.id, level);
-      }
-    }
-    return map;
-  }, [findings, state.document]);
-
-  const liveNames = useLiveNames(state.document);
   const dirty = isDirty(state);
-
-  // --- editing -------------------------------------------------------------------------------
-
-  const edit = useCallback((change: (document: StrategyDocument) => StrategyDocument) => {
-    dispatch({ type: 'edited', change });
-  }, []);
-
-  const select = useCallback((selection: Selection) => {
-    dispatch({ type: 'select', selection });
-  }, []);
 
   const showError = useCallback((titleKey: string, error: unknown) => {
     setDialog({ kind: 'error', titleKey, error });
   }, []);
 
-  const loadTemplate = useCallback<TemplateLoader>((source) => readTemplate(source.art, source.id), []);
-
-  const addRuleFromLibrary = useCallback(
-    async (owner: RuleOwner, source: LibrarySource, inside: number[] = []) => {
-      const document = stateRef.current.document;
-      if (document === null || types === null) {
-        return;
-      }
-      try {
-        const rule = await ruleForSource(document, types, source, loadTemplate);
-        if (rule === null) {
-          return;
-        }
-        const position = listLength(document, owner, inside);
-        dispatch({ type: 'edited', change: (current) => addRule(current, owner, rule, inside) });
-        dispatch({ type: 'select', selection: { kind: 'rule', path: { owner, indices: [...inside, position] } } });
-      } catch (error) {
-        showError('errors.insertFailed', error);
-      }
-    },
-    [loadTemplate, showError, types],
-  );
-
-  const addNewRule = useCallback(
-    (owner: RuleOwner, inside: number[] = []) => {
-      const document = stateRef.current.document;
-      const ruleType = types?.list.find((type) => type.kind === 'object_type' && type.category === 'rule');
-      if (document === null || ruleType === undefined) {
-        return;
-      }
-      const rule = instanceFromType(ruleType, freshName(document, labelText(ruleType.name, language)));
-      const position = listLength(document, owner, inside);
-      dispatch({ type: 'edited', change: (current) => addRule(current, owner, rule, inside) });
-      dispatch({ type: 'select', selection: { kind: 'rule', path: { owner, indices: [...inside, position] } } });
-    },
-    [language, types],
-  );
-
-  const removeRule = useCallback((path: RulePath) => {
-    dispatch({ type: 'edited', change: (current) => removeRuleIn(current, path) });
+  const notify = useCallback((key: string, params?: Record<string, string>) => {
+    dispatch({ type: 'notice', key, params });
   }, []);
 
-  const moveRule = useCallback((path: RulePath, delta: -1 | 1) => {
-    dispatch({ type: 'edited', change: (current) => moveRuleIn(current, path, delta) });
-    const selection = stateRef.current.selection;
-    if (selection.kind === 'rule' && sameRulePath(selection.path, path)) {
-      const last = path.indices[path.indices.length - 1] ?? 0;
-      dispatch({
-        type: 'select',
-        selection: { kind: 'rule', path: { owner: path.owner, indices: [...path.indices.slice(0, -1), Math.max(0, last + delta)] } },
-      });
-    }
+  const edit = useCallback(
+    (change: (document: StrategyDocument) => StrategyDocument, options?: { selection?: Selection; reveal?: string }) => {
+      dispatch({ type: 'edited', change, selection: options?.selection, reveal: options?.reveal });
+    },
+    [],
+  );
+
+  const select = useCallback((selection: Selection, panel?: Panel) => {
+    dispatch({ type: 'select', selection, panel });
   }, []);
 
-  // --- inserting from the library --------------------------------------------------------------
-
-  const insert = useCallback(
-    async (source: LibrarySource, center: Point) => {
-      const current = stateRef.current;
-      if (current.document === null || types === null) {
-        return;
-      }
-      try {
-        const corner = freePosition(current.document, types, cornerForCenter(center, 1));
-        const owner = ownerAtPoint(current.document, types, current.frames, new Set(current.collapsed), center);
-        const element = await elementForSource(
-          current.document,
-          types,
-          source,
-          { x: corner.x, y: corner.y, managementOf: owner, language },
-          loadTemplate,
-        );
-        if (element === null) {
-          return;
-        }
-        dispatch({ type: 'edited', change: (document) => addElement(document, element) });
-        dispatch({
-          type: 'framesGrow',
-          grow: (document, frames) => syncedFrames(document, types, frames, language, true),
-        });
-        dispatch({ type: 'select', selection: { kind: 'elements', ids: [element.id] } });
-      } catch (error) {
-        showError('errors.insertFailed', error);
-      }
-    },
-    [language, loadTemplate, showError, types],
-  );
-
-  /** An entry was dropped on the drawing area. */
-  const dropEntry = useCallback(
-    (source: LibrarySource, point: Point) => {
-      const entry = findEntry(library, source);
-      if (entry === undefined || entry.target !== 'canvas' || entry.unreadable) {
-        return;
-      }
-      void insert(source, point);
-    },
-    [insert, library],
-  );
-
-  /** Enter on an entry: into the middle of the visible drawing area, or into the rules of the strategy or the selected element. */
-  const insertEntry = useCallback(
-    (entry: LibraryEntry) => {
-      if (entry.target === 'rules') {
-        const selection = stateRef.current.selection;
-        const document = stateRef.current.document;
-        let owner: RuleOwner = { kind: 'strategy' };
-        if (selection.kind === 'elements' && selection.ids.length === 1 && document !== null) {
-          const element = document.elements.find((candidate) => candidate.id === selection.ids[0]);
-          if (element !== undefined && types?.byId.get(element.type)?.rulesAllowed === true) {
-            owner = { kind: 'element', id: element.id };
-          }
-        }
-        void addRuleFromLibrary(owner, entry.source);
-        return;
-      }
-      void insert(entry.source, canvasApi.current?.centerPoint() ?? { x: 0, y: 0 });
-    },
-    [addRuleFromLibrary, insert, types],
-  );
-
-  // --- workflows -----------------------------------------------------------------------------------
-
-  // Counts up whenever a strategy is opened, created or closed: the answer of a check that was
-  // started for an earlier strategy is not shown for the one that is open now.
-  const strategyToken = useRef(0);
+  // --- workflows -------------------------------------------------------------------------------
 
   const checkAfterOpen = useCallback(async (document: StrategyDocument, token: number) => {
     try {
-      const result = await checkDocument(document);
+      const findings = await checkDocument(document);
       if (strategyToken.current === token) {
-        dispatch({ type: 'checked', findings: result.findings });
+        dispatch({ type: 'checked', findings });
       }
     } catch {
       // The findings stay unknown; "Prüfen" asks again.
@@ -300,18 +197,29 @@ export function useStudioController() {
         strategyToken.current += 1;
         dispatch({ type: 'closed' });
       } else if (action.kind === 'new') {
-        if (types !== null) {
-          strategyToken.current += 1;
-          dispatch({ type: 'loaded', document: newStrategy(), persisted: false, findings: null });
+        let names: string[] = [];
+        try {
+          const list = await queryClient.fetchQuery({
+            queryKey: ['objects', 'strategies', 'names'],
+            queryFn: ({ signal }) => listObjects('strategies', signal),
+            staleTime: 0,
+          });
+          names = list.map((entry) => entry.name ?? '');
+        } catch {
+          names = [];
         }
+        const name = uniqueDisplayName(i18n.t('strategy.newName'), names);
+        strategyToken.current += 1;
+        dispatch({ type: 'loaded', document: newStrategy(name), persisted: false, findings: null });
+        dispatch({ type: 'panel', panel: 'canvas' });
       } else {
         await openById(action.id);
       }
     },
-    [openById, types],
+    [i18n, openById, queryClient],
   );
 
-  /** "Neue Strategie", "Schließen" and "Öffnen" ask first if there are unsaved changes. */
+  /** "Neue Strategie", "Schließen" and "Öffnen" ask first if there are unsaved changes (specification 5.5). */
   const request = useCallback(
     (action: PendingAction) => {
       if (isDirty(stateRef.current)) {
@@ -323,7 +231,7 @@ export function useStudioController() {
     [run],
   );
 
-  /** Saves: the first time with POST, then with PUT; always, and the findings of the answer are shown. */
+  /** Saves always, the first time with POST, then with PUT; the findings of the answer are shown. */
   const save = useCallback(async (): Promise<boolean> => {
     const current = stateRef.current;
     const document = current.document;
@@ -332,13 +240,14 @@ export function useStudioController() {
     }
     setBusy(true);
     try {
-      const saved = current.persisted ? await replaceStrategy(document) : await createStrategy(document);
+      const result = current.persisted ? await replaceStrategy(document) : await createStrategy(document);
       dispatch({
         type: 'saved',
-        saved: saved.document,
-        findings: saved.findings,
-        replaceOpen: stateRef.current.document === document,
+        saved: result.document ?? document,
+        findings: result.findings,
+        replaceOpen: result.document !== null && stateRef.current.document === document,
       });
+      void queryClient.invalidateQueries({ queryKey: ['objects'] });
       return true;
     } catch (error) {
       showError('errors.saveFailed', error);
@@ -346,7 +255,7 @@ export function useStudioController() {
     } finally {
       setBusy(false);
     }
-  }, [showError]);
+  }, [queryClient, showError]);
 
   const check = useCallback(async () => {
     const document = stateRef.current.document;
@@ -355,8 +264,7 @@ export function useStudioController() {
     }
     setBusy(true);
     try {
-      const result = await checkDocument(document);
-      dispatch({ type: 'checked', findings: result.findings });
+      dispatch({ type: 'checked', findings: await checkDocument(document) });
     } catch (error) {
       showError('errors.checkFailed', error);
     } finally {
@@ -374,6 +282,7 @@ export function useStudioController() {
     try {
       if (current.persisted) {
         await deleteStrategy(current.document.id);
+        void queryClient.invalidateQueries({ queryKey: ['objects'] });
       }
       setDialog(null);
       strategyToken.current += 1;
@@ -383,99 +292,414 @@ export function useStudioController() {
     } finally {
       setBusy(false);
     }
-  }, [showError]);
+  }, [queryClient, showError]);
 
   /** The answer to the question about unsaved changes. */
   const answerUnsaved = useCallback(
     async (answer: 'save' | 'discard' | 'cancel') => {
-      const current = dialog;
-      if (current === null || current.kind !== 'unsaved') {
+      if (dialog === null || dialog.kind !== 'unsaved') {
         return;
       }
+      const then = dialog.then;
+      setDialog(null);
       if (answer === 'cancel') {
-        setDialog(null);
         return;
       }
-      if (answer === 'save') {
-        setDialog(null);
-        if (!(await save())) {
-          return;
-        }
-      } else {
-        setDialog(null);
+      if (answer === 'save' && !(await save())) {
+        return;
       }
-      await run(current.then);
+      await run(then);
     },
     [dialog, run, save],
   );
 
-  const api = useMemo<StudioApi | null>(() => {
-    if (state.document === null || types === null) {
+  // --- inserting -------------------------------------------------------------------------------
+
+  /** The management the selected thing stands for: the selected frame, or the flow of the selected step. */
+  const currentFlow = useCallback((): string | null => {
+    const current = stateRef.current;
+    const document = current.document;
+    if (document === null) {
       return null;
     }
+    const selection = current.selection;
+    if (selection.kind === 'frame') {
+      return selection.id;
+    }
+    if (selection.kind === 'element') {
+      return document.elements.find((candidate) => candidate.id === selection.id)?.management_of ?? null;
+    }
+    return null;
+  }, []);
+
+  /** Lays an entry of the library on the drawing area or adds it as a rule. */
+  const insert = useCallback(
+    async (entryKey: string, drop?: DropTarget) => {
+      const current = stateRef.current;
+      const index = typesRef.current;
+      const document = current.document;
+      if (document === null || index === null) {
+        return;
+      }
+      const entry = findEntry(library, entryKey);
+      if (entry === undefined || entry.unreadable) {
+        return;
+      }
+      try {
+        const source = entry.source;
+        let template: ({ id: string; name: string; object_type: string } & Record<string, unknown>) | null = null;
+        let own = false;
+        let typeId: string;
+        if (source.kind === 'type') {
+          typeId = source.typeId;
+        } else if (source.kind === 'builtinTemplate') {
+          const found = index.templates.find((candidate) => candidate.id === source.templateId);
+          if (found === undefined) {
+            return;
+          }
+          template = found;
+          typeId = found.object_type;
+        } else {
+          const record = await readTemplate(source.art, source.id);
+          template = record as { id: string; name: string; object_type: string } & Record<string, unknown>;
+          typeId = template.object_type;
+          own = true;
+        }
+        const type = index.byId.get(typeId);
+        const name = uniqueDisplayName(
+          entry.name === '' ? (type === undefined ? typeId : typeDisplayName(type, language)) : entry.name,
+          type === undefined || holdsInstance(type) || type.named || entry.target === 'rules' || template !== null
+            ? takenNames(document, index)
+            : [],
+        );
+        if (entry.target === 'rules') {
+          const selection = current.selection;
+          const selected =
+            selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
+          const owner = selected !== undefined && index.byId.get(selected.type)?.rulesAllowed === true ? selected.id : null;
+          const ownerIndex = owner === null ? -1 : document.elements.findIndex((candidate) => candidate.id === owner);
+          const scope = ownerIndex < 0 ? '/rules' : `/elements/${ownerIndex}/rules`;
+          const key = await createKey(document, scope, name);
+          const rule =
+            template !== null
+              ? instanceFromTemplate(template, name, key, own)
+              : type === undefined
+                ? null
+                : instanceFromType(type, name, key);
+          if (rule === null) {
+            return;
+          }
+          edit((latest) => addRule(latest, owner, rule), {
+            selection: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
+          });
+          notify(owner === null ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
+          return;
+        }
+        if (type === undefined) {
+          return;
+        }
+        const needsKey = holdsInstance(type) || type.named;
+        const key = needsKey ? await createKey(document, '/elements', name) : null;
+        const flow = drop?.flow !== undefined ? drop.flow : currentFlow();
+        const selection = current.selection;
+        const after = drop?.after !== undefined ? drop.after : selection.kind === 'element' ? selection.id : null;
+        const options = { name, key, managementOf: type.kind === 'object_type' || type.kind === 'application_object' ? null : flow };
+        const added =
+          template !== null
+            ? newTemplateElement(template, { ...options, managementOf: null }, own)
+            : withOrderDefaults(newElement(type, options), index);
+        edit((latest) => addElement(latest, index, added, after), {
+          selection: { kind: 'element', id: added.id },
+          reveal: added.id,
+        });
+        if (matchesMedia(NARROW_LAYOUT)) {
+          notify('notices.inserted', { name });
+        }
+      } catch (error) {
+        showError('errors.insertFailed', error);
+      }
+    },
+    [currentFlow, edit, language, library, notify, showError],
+  );
+
+  // --- the drawing area ------------------------------------------------------------------------
+
+  const problemNotice = useCallback(
+    (problem: ConnectionProblem) => {
+      notify(`notices.connection.${problem}`);
+    },
+    [notify],
+  );
+
+  const connectSteps = useCallback(
+    (from: string, output: string, to: string): boolean => {
+      const index = typesRef.current;
+      const document = stateRef.current.document;
+      if (index === null || document === null) {
+        return false;
+      }
+      const result = connect(document, index, from, output, to);
+      if ('problem' in result) {
+        problemNotice(result.problem);
+        dispatch({ type: 'armed', armed: null });
+        return false;
+      }
+      edit(() => result.document);
+      return true;
+    },
+    [edit, problemNotice],
+  );
+
+  /** A value of an object is connected with an element: it becomes an input (specification 5.3). */
+  const connectValue = useCallback(
+    (instanceElement: string, property: string, to: string) => {
+      const document = stateRef.current.document;
+      const index = typesRef.current;
+      const source = document?.elements.find((candidate) => candidate.id === instanceElement);
+      const target = document?.elements.find((candidate) => candidate.id === to);
+      if (document === null || index === null || source?.instance === undefined || source.instance === null || target === undefined) {
+        return;
+      }
+      if (source.id === target.id) {
+        return;
+      }
+      const key = source.instance.key;
+      edit((latest) => addInput(latest, to, { instance: key, property }), { selection: { kind: 'element', id: to } });
+      notify('notices.inputAdded');
+    },
+    [edit, notify],
+  );
+
+  /** After a step was dragged: it belongs to the frame it lies in, never to one it only touches (specification 5.3). */
+  const dropStep = useCallback(
+    (id: string, position: Pt, owner: string | null) => {
+      const index = typesRef.current;
+      const document = stateRef.current.document;
+      if (index === null || document === null) {
+        return;
+      }
+      const found = document.elements.find((candidate) => candidate.id === id);
+      if (found === undefined) {
+        return;
+      }
+      if ((found.management_of ?? null) !== owner) {
+        edit((latest) => setManagement(latest, index, id, owner));
+        notify(owner === null ? 'notices.toMainFlow' : 'notices.toManagement');
+        return;
+      }
+      edit((latest) => setPosition(latest, id, position));
+    },
+    [edit, notify],
+  );
+
+  const addParameter = useCallback(
+    async (parameter: NewParameter): Promise<string | null> => {
+      const document = stateRef.current.document;
+      if (document === null) {
+        return null;
+      }
+      try {
+        const name = uniqueDisplayName(parameter.name, document.parameters.map((candidate) => candidate.name));
+        const key = await createKey(document, '/parameters', name);
+        edit((latest) => addStrategyParameter(latest, { ...parameter, name, key }));
+        return key;
+      } catch (error) {
+        showError('errors.insertFailed', error);
+        return null;
+      }
+    },
+    [edit, showError],
+  );
+
+  /** Everything that goes with an element when it is removed, for the question before it. */
+  const removalInfo = useCallback((id: string) => {
+    const document = stateRef.current.document;
+    const index = typesRef.current;
+    if (document === null || index === null) {
+      return null;
+    }
+    const target = document.elements.find((candidate) => candidate.id === id);
+    if (target === undefined) {
+      return null;
+    }
+    const ids = removalSet(document, id);
     return {
-      document: state.document,
-      types,
-      language,
-      findings,
-      findingsKnown: state.findings !== null,
-      liveNames,
-      functions,
-      library,
-      selection: state.selection,
+      target,
+      managed: document.elements.filter((candidate) => ids.includes(candidate.id)),
+    };
+  }, []);
+
+  const requestRemoveElement = useCallback(
+    (id: string) => {
+      const info = removalInfo(id);
+      if (info === null) {
+        return;
+      }
+      if (info.managed.length > 0) {
+        setDialog({ kind: 'removeElement', id });
+      } else {
+        const index = typesRef.current;
+        if (index !== null) {
+          edit((latest) => removeElement(latest, index, id), { selection: { kind: 'strategy' } });
+        }
+      }
+    },
+    [edit, removalInfo],
+  );
+
+  const confirmRemoveElement = useCallback(
+    (id: string) => {
+      const index = typesRef.current;
+      setDialog(null);
+      if (index !== null) {
+        edit((latest) => removeElement(latest, index, id), { selection: { kind: 'strategy' } });
+      }
+    },
+    [edit],
+  );
+
+  const elementDisplayName = useCallback(
+    (id: string): string => {
+      const found = stateRef.current.document?.elements.find((candidate) => candidate.id === id);
+      const index = typesRef.current;
+      return found === undefined || index === null ? '' : elementName(found, index, language);
+    },
+    [language],
+  );
+
+  const actions = useMemo(
+    () => ({
+      dispatch,
       edit,
       select,
-      addRuleFromLibrary: (owner, source, inside) => {
-        void addRuleFromLibrary(owner, source, inside);
+      notify,
+      setDialog,
+      request,
+      save,
+      check,
+      confirmDelete,
+      answerUnsaved,
+      insert,
+      connectSteps,
+      connectValue,
+      dropStep,
+      addParameter,
+      removalInfo,
+      requestRemoveElement,
+      confirmRemoveElement,
+      elementDisplayName,
+      showElement: (id: string) => {
+        edit((document) => document, { selection: { kind: 'element', id }, reveal: id });
+        dispatch({ type: 'panel', panel: 'props' });
       },
-      addNewRule,
-      removeRule,
-      moveRule,
-    };
-  }, [
-    state.document,
-    state.findings,
-    state.selection,
-    types,
-    language,
-    findings,
-    liveNames,
-    functions,
-    library,
-    edit,
-    select,
-    addRuleFromLibrary,
-    addNewRule,
-    removeRule,
-    moveRule,
-  ]);
+      setWires: (mode: WireMode) => dispatch({ type: 'wires', mode }),
+      setPanel: (panel: Panel) => dispatch({ type: 'panel', panel }),
+      arm: (armed: StudioState['armed']) => dispatch({ type: 'armed', armed }),
+      toggleCard: (id: string) => dispatch({ type: 'toggleCard', id }),
+      focusField: (field: string) => dispatch({ type: 'focusField', field }),
+      retryTypes: () => {
+        void queryClient.invalidateQueries({ queryKey: TYPES_KEY });
+        void queryClient.invalidateQueries({ queryKey: ['objects'] });
+      },
+      // document operations in the name of the user
+      setName: (name: string) => edit((document) => setStrategyName(document, name)),
+      setDescription: (description: string) => edit((document) => setStrategyDescription(document, description)),
+      setOrientation: (orientation: StrategyDocument['orientation']) => edit((document) => setOrientation(document, orientation)),
+      arrangeAgain: () => edit((document) => clearPositions(document)),
+      toggleManagement: (owner: string) => edit((document) => toggleManagementCollapsed(document, owner)),
+      disconnect: (connectionId: string) => edit((document) => disconnect(document, connectionId)),
+      renameElement: (id: string, name: string) => edit((document) => setElementName(document, id, name)),
+      setBinding: (id: string, scope: BindingScope, key: string, binding: Binding | null) => {
+        const index = typesRef.current;
+        if (index !== null) {
+          edit((document) => setBinding(document, index, id, scope, key, binding));
+        }
+      },
+      addInput: (id: string, input: { instance: string; property: string }) => edit((document) => addInput(document, id, input)),
+      removeInput: (id: string, input: { instance: string; property: string }) =>
+        edit((document) => removeInput(document, id, input)),
+      updateParameter: (key: string, patch: Partial<StrategyParameter>) =>
+        edit((document) => updateStrategyParameter(document, key, patch)),
+      removeParameter: (key: string) => {
+        setDialog(null);
+        edit((document) => removeStrategyParameter(document, key));
+      },
+      setManagement: (id: string, owner: string | null) => {
+        const index = typesRef.current;
+        if (index !== null) {
+          edit((document) => setManagement(document, index, id, owner));
+        }
+      },
+      setSection: (id: string, sectionId: string | null) => edit((document) => setSection(document, id, sectionId)),
+      createSection: (id: string, name: string) => {
+        const index = typesRef.current;
+        if (index !== null) {
+          edit((document) => createSection(document, index, id, name));
+        }
+      },
+      renameSection: (sectionId: string, name: string) => edit((document) => renameSection(document, sectionId, name)),
+      setSectionCollapsed: (sectionId: string, collapsed: boolean) =>
+        edit((document) => setSectionCollapsed(document, sectionId, collapsed)),
+      removeSection: (sectionId: string) =>
+        edit((document) => removeSection(document, sectionId), { selection: { kind: 'strategy' } }),
+      moveObject: (id: string, delta: -1 | 1) => {
+        const index = typesRef.current;
+        if (index !== null) {
+          edit((document) => moveObject(document, index, id, delta));
+        }
+      },
+      placeObject: (id: string, position: number) => {
+        const index = typesRef.current;
+        if (index !== null) {
+          edit((document) => placeObject(document, index, id, position));
+        }
+      },
+      removeRule: (owner: string | null, key: string) => edit((document) => removeRule(document, owner, key)),
+      newId: newUuid,
+    }),
+    [
+      addParameter,
+      answerUnsaved,
+      check,
+      confirmDelete,
+      confirmRemoveElement,
+      connectSteps,
+      connectValue,
+      dropStep,
+      edit,
+      elementDisplayName,
+      insert,
+      notify,
+      queryClient,
+      removalInfo,
+      request,
+      requestRemoveElement,
+      save,
+      select,
+    ],
+  );
 
   return {
     state,
-    dispatch,
-    language,
+    dialog,
+    busy,
     types,
     typesFailed: typesQuery.isError,
-    retryTypes: () => {
-      void typesQuery.refetch();
-    },
-    library,
     storedFailed,
-    findings,
-    severities,
+    library,
     dirty,
-    busy,
-    dialog,
-    setDialog,
-    api,
-    canvasApi,
-    insertEntry,
-    dropEntry,
-    request,
-    save,
-    check,
-    confirmDelete,
-    answerUnsaved,
-    openById,
+    language,
+    actions,
+    isCard: (id: string): boolean => {
+      const found = state.document?.elements.find((candidate) => candidate.id === id);
+      return found !== undefined && types !== null && isCardElement(found, types);
+    },
   };
 }
+
+/** The language of the interface that is in use: the one i18next resolved, the default if none. */
+export function languageOf(resolved: string | undefined): SupportedLanguage {
+  return resolved !== undefined && isSupportedLanguage(resolved) ? resolved : defaultLanguage;
+}
+
+export type { Finding };

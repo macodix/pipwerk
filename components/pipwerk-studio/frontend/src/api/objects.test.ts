@@ -1,207 +1,126 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { loadTestcase, loadTestcaseRaw } from '../testing/fixtures';
-import { HttpError, ResponseFormatError } from './http';
+import { newStrategy } from '../document/build';
+import { ResponseFormatError } from './http';
 import {
-  checkDocument,
-  createStrategy,
-  deleteStrategy,
-  listObjects,
-  parseCheckResult,
+  MAX_EXPRESSIONS_PER_REQUEST,
+  createKey,
   parseFindings,
   parseObjectList,
-  readStrategy,
-  readTemplate,
-  replaceStrategy,
+  requestExpressions,
 } from './objects';
-
-function json(status: number, body: unknown): Response {
-  return status === 204 ? new Response(null, { status }) : new Response(JSON.stringify(body), { status });
-}
-
-type Call = { url: string; method: string | undefined; body: string | undefined };
-
-function mockFetch(answer: (call: Call) => Response): Call[] {
-  const calls: Call[] = [];
-  vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
-    const call = { url, method: init?.method, body: typeof init?.body === 'string' ? init.body : undefined };
-    calls.push(call);
-    return Promise.resolve(answer(call));
-  });
-  return calls;
-}
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('lists', () => {
-  it('reads the entries, also those that cannot be read', () => {
+describe('lists and findings of the Web API', () => {
+  it('reads the list with name, description, kind and time, and marks a file that cannot be read', () => {
     const list = parseObjectList({
       items: [
-        {
-          id: 'a',
-          title: 'T',
-          description: 'D',
-          object_type: null,
-          modified: '2026-10-17T10:00:00.123456Z',
-          unreadable: false,
-        },
-        { id: 'b', title: null, description: null, object_type: null, modified: '2026-10-17T10:00:00Z', unreadable: true },
+        { id: 'a', name: 'Eins', description: 'Text', object_type: null, modified: '2026-10-20T10:00:00Z', unreadable: false },
+        { id: 'b', name: null, description: null, object_type: null, modified: '2026-10-20T10:00:00Z', unreadable: true },
       ],
     });
 
     expect(list).toEqual([
-      { id: 'a', title: 'T', description: 'D', objectType: null, modified: '2026-10-17T10:00:00.123456Z', unreadable: false },
-      { id: 'b', title: null, description: null, objectType: null, modified: '2026-10-17T10:00:00Z', unreadable: true },
+      { id: 'a', name: 'Eins', description: 'Text', objectType: null, modified: '2026-10-20T10:00:00Z', unreadable: false },
+      { id: 'b', name: null, description: null, objectType: null, modified: '2026-10-20T10:00:00Z', unreadable: true },
     ]);
   });
 
-  it.each([
-    [{}],
-    [{ items: {} }],
-    [{ items: [{ id: 1 }] }],
-    [{ items: [{ id: 'a', title: null, description: null, object_type: null, modified: 'x' }] }],
-  ])('rejects %j', (value) => {
+  it.each([[{}], [{ items: [{ id: 'a' }] }], [{ items: [{ id: 1, name: 'x', modified: 'y' }] }]])('rejects %j', (value) => {
     expect(() => parseObjectList(value)).toThrow(ResponseFormatError);
   });
 
-  it('asks the path of the kind', async () => {
-    const calls = mockFetch(() => json(200, { items: [] }));
-
-    await expect(listObjects('rulesets')).resolves.toEqual([]);
-
-    expect(calls[0]?.url).toBe('/api/v1/rulesets');
+  it('reads findings with level, identifier, element, subject and the data for the text', () => {
+    expect(parseFindings([{ level: 'hint', code: 'x.y', element: 'e', subject: null, details: { a: 1 } }])).toEqual([
+      { level: 'hint', code: 'x.y', element: 'e', subject: null, details: { a: 1 } },
+    ]);
+    expect(() => parseFindings([{ level: 'bad', code: 'x', element: null, subject: null }])).toThrow(ResponseFormatError);
   });
 });
 
-describe('findings and check results', () => {
-  it('reads findings', () => {
-    expect(
-      parseFindings([{ level: 'hint', code: 'x.y', element: null, subject: 'a.b', details: { n: 1 } }]),
-    ).toEqual([{ level: 'hint', code: 'x.y', element: null, subject: 'a.b', details: { n: 1 } }]);
+describe('identifiers and expressions (specification 3.3, 3.4, E2)', () => {
+  it('asks the backend for the identifier of a new name: the interface forms none', async () => {
+    const calls: { url: string; body: unknown }[] = [];
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init?.body)) });
+      return Promise.resolve(new Response(JSON.stringify({ key: 'kerze_2' }), { status: 200 }));
+    });
+    const document = newStrategy('S');
+
+    await expect(createKey(document, '/elements', 'Kerze 2')).resolves.toBe('kerze_2');
+
+    expect(calls).toEqual([{ url: '/api/v1/keys', body: { document, scope: '/elements', name: 'Kerze 2' } }]);
   });
 
-  it.each([
-    [[{ level: 'info', code: 'x', element: null, subject: null, details: {} }]],
-    [[{ level: 'error', code: 3, element: null, subject: null, details: {} }]],
-    [[{ level: 'error', code: 'x', element: 4, subject: null, details: {} }]],
-    [[{ level: 'error', code: 'x', element: null, subject: null, details: [] }]],
-    [{}],
-  ])('rejects %j', (value) => {
-    expect(() => parseFindings(value)).toThrow(ResponseFormatError);
-  });
-
-  it('reads the recognized names with their positions', () => {
-    const result = parseCheckResult({
-      findings: [],
-      expressions: [
-        {
-          element: 'e1',
-          subject: null,
-          field: 'parameter:ausdruck',
-          names: [
-            {
-              start: 0,
-              end: 11,
-              identifier: 'Order.volumen',
-              resolved: true,
-              previous: false,
-              segments: [
-                { identifier: 'Order', start: 0, end: 5 },
-                { identifier: 'volumen', start: 6, end: 13 },
-              ],
-            },
-          ],
-        },
-      ],
-      names_truncated: false,
+  it('reads sentence, display form and blocks of an expression and keeps the order of the query', async () => {
+    vi.stubGlobal('fetch', (_url: string, init?: RequestInit) => {
+      const items = (JSON.parse(String(init?.body)) as { items: { pointer: string; stored: string }[] }).items;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            items: items.map((item) => ({
+              stored: item.stored,
+              display: item.stored.toUpperCase(),
+              sentence: `Satz ${item.stored}`,
+              blocks: item.stored === 'kaputt' ? null : { kind: 'name', path: ['ema20', 'wert'] },
+              findings: [],
+            })),
+          }),
+          { status: 200 },
+        ),
+      );
     });
 
-    expect(result.expressions[0]?.names[0]?.segments.map((segment) => segment.identifier)).toEqual(['Order', 'volumen']);
-    expect(result.namesTruncated).toBe(false);
+    const answers = await requestExpressions(newStrategy('S'), 'de', [
+      { pointer: '/elements/0/parameters/ausdruck/value', stored: 'a' },
+      { pointer: '/elements/1/parameters/ausdruck/value', stored: 'kaputt' },
+    ]);
+
+    expect(answers.map((answer) => answer.sentence)).toEqual(['Satz a', 'Satz kaputt']);
+    expect(answers[0]?.blocks).toEqual({ kind: 'name', path: ['ema20', 'wert'] });
+    expect(answers[1]?.blocks).toBeNull();
   });
 
-  it('rejects a check answer without the flag', () => {
-    expect(() => parseCheckResult({ findings: [], expressions: [] })).toThrow(ResponseFormatError);
-  });
-});
+  it('accepts the blocks as the backend writes them: every field is there, those that do not apply are null', async () => {
+    const name = { kind: 'name', path: ['ema20', 'wert'], value: null, operator: null, direction: null, children: [] };
+    const crossing = { kind: 'crossing', path: null, value: null, operator: null, direction: 'any', children: [name, name] };
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve(new Response(JSON.stringify({ items: [{ stored: 'a', display: 'a', sentence: 's', blocks: crossing }] }), { status: 200 })),
+    );
 
-describe('strategies', () => {
-  const document = loadTestcase('str-03');
+    const answers = await requestExpressions(newStrategy('S'), 'de', [{ pointer: '/x', stored: 'a' }]);
 
-  it('creates with POST and reads the answer', async () => {
-    const calls = mockFetch(() => json(201, { id: 'x', document: loadTestcaseRaw('str-03'), findings: [] }));
-
-    const saved = await createStrategy(document);
-
-    expect(calls[0]).toMatchObject({ url: '/api/v1/strategies', method: 'POST' });
-    expect(JSON.parse(calls[0]?.body ?? '')).toEqual(document);
-    expect(saved.document).toEqual(document);
-    expect(saved.findings).toEqual([]);
+    expect(answers[0]?.blocks?.path).toBeUndefined();
+    expect(answers[0]?.blocks?.children?.map((child) => child.path)).toEqual([
+      ['ema20', 'wert'],
+      ['ema20', 'wert'],
+    ]);
   });
 
-  it('replaces with PUT on the path of the identifier', async () => {
-    const calls = mockFetch(() => json(200, { id: document.id, document: loadTestcaseRaw('str-03'), findings: [] }));
+  it('splits more than the allowed number of expressions into several requests', async () => {
+    let requests = 0;
+    vi.stubGlobal('fetch', (_url: string, init?: RequestInit) => {
+      requests += 1;
+      const items = (JSON.parse(String(init?.body)) as { items: unknown[] }).items;
+      expect(items.length).toBeLessThanOrEqual(MAX_EXPRESSIONS_PER_REQUEST);
+      return Promise.resolve(
+        new Response(JSON.stringify({ items: items.map(() => ({ stored: 'a', display: 'a', sentence: 'a', blocks: null })) }), { status: 200 }),
+      );
+    });
+    const queries = Array.from({ length: 120 }, (_, index) => ({ pointer: `/elements/${index}/parameters/x/value`, stored: 'a' }));
 
-    await replaceStrategy(document);
+    const answers = await requestExpressions(newStrategy('S'), 'en', queries);
 
-    expect(calls[0]).toMatchObject({ url: `/api/v1/strategies/${document.id}`, method: 'PUT' });
+    expect(answers).toHaveLength(120);
+    expect(requests).toBe(3);
   });
 
-  it('reads a strategy and checks the document before it is used', async () => {
-    mockFetch(() => json(200, loadTestcaseRaw('str-03')));
-    await expect(readStrategy('abc')).resolves.toEqual(document);
+  it('refuses an answer with a different number of entries', async () => {
+    vi.stubGlobal('fetch', () => Promise.resolve(new Response(JSON.stringify({ items: [] }), { status: 200 })));
 
-    mockFetch(() => json(200, { ...(loadTestcaseRaw('str-03') as object), format: 'pipwerk.rule' }));
-    await expect(readStrategy('abc')).rejects.toBeInstanceOf(ResponseFormatError);
-
-    mockFetch(() => json(200, { id: 'x' }));
-    await expect(readStrategy('abc')).rejects.toBeInstanceOf(ResponseFormatError);
-  });
-
-  it('does not use an answer to a save that does not have the expected form', async () => {
-    mockFetch(() => json(200, { id: 'x', document: { id: 'x' }, findings: [] }));
-
-    await expect(createStrategy(document)).rejects.toBeInstanceOf(ResponseFormatError);
-  });
-
-  it('deletes with DELETE', async () => {
-    const calls = mockFetch(() => json(204, null));
-
-    await expect(deleteStrategy('abc')).resolves.toBeUndefined();
-
-    expect(calls[0]).toMatchObject({ url: '/api/v1/strategies/abc', method: 'DELETE' });
-  });
-
-  it('fails with the error of the backend', async () => {
-    mockFetch(() => json(409, { detail: 'The object file cannot be read.' }));
-
-    await expect(deleteStrategy('abc')).rejects.toMatchObject({ status: 409, detail: 'The object file cannot be read.' });
-    await expect(deleteStrategy('abc')).rejects.toBeInstanceOf(HttpError);
-  });
-
-  it('asks for the check with the whole document', async () => {
-    const calls = mockFetch(() => json(200, { findings: [], expressions: [], names_truncated: false }));
-
-    await checkDocument(document);
-
-    expect(calls[0]).toMatchObject({ url: '/api/v1/check', method: 'POST' });
-  });
-});
-
-describe('templates', () => {
-  it('reads the document of a template as a record', async () => {
-    const calls = mockFetch(() => json(200, { id: 'i', title: 'T', object_type: 'Regel', expression: 'a' }));
-
-    await expect(readTemplate('rules', 'i')).resolves.toMatchObject({ expression: 'a' });
-
-    expect(calls[0]?.url).toBe('/api/v1/rules/i');
-  });
-
-  it('does not use a template without its identifying fields', async () => {
-    mockFetch(() => json(200, { id: 'i', title: 'T' }));
-
-    await expect(readTemplate('rules', 'i')).rejects.toBeInstanceOf(ResponseFormatError);
+    await expect(requestExpressions(newStrategy('S'), 'de', [{ pointer: '/x', stored: 'a' }])).rejects.toThrow(ResponseFormatError);
   });
 });

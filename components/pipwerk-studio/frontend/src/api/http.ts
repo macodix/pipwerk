@@ -18,6 +18,10 @@ export class HttpError extends Error {
   readonly status: number;
   readonly detail: string | null;
   readonly body: unknown;
+  /** The identifier of the cause (`code` of the answer), for example `object_directory.not_absolute`; `null` if the answer has none. */
+  readonly code: string | null;
+  /** The data for the text of the cause (`params` of the answer). */
+  readonly params: Record<string, unknown>;
 
   constructor(status: number, detail: string | null, body: unknown) {
     super(`The request failed with HTTP status ${status}`);
@@ -25,7 +29,30 @@ export class HttpError extends Error {
     this.status = status;
     this.detail = detail;
     this.body = body;
+    this.code = codeOf(body);
+    this.params = paramsOf(body);
   }
+}
+
+function codeOf(body: unknown): string | null {
+  if (typeof body === 'object' && body !== null && 'code' in body && typeof body.code === 'string') {
+    return body.code;
+  }
+  return null;
+}
+
+function paramsOf(body: unknown): Record<string, unknown> {
+  if (
+    typeof body === 'object' &&
+    body !== null &&
+    'params' in body &&
+    typeof body.params === 'object' &&
+    body.params !== null &&
+    !Array.isArray(body.params)
+  ) {
+    return body.params as Record<string, unknown>;
+  }
+  return {};
 }
 
 /** The answer of the backend does not have the expected form. */

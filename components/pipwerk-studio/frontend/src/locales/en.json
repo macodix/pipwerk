@@ -15,14 +15,6 @@
     "unknown": "unknown",
     "close": "Close"
   },
-  "canvas": {
-    "label": "Designer canvas",
-    "empty": "The canvas is empty.",
-    "controls": "Canvas view",
-    "management": "Management: {{title}}",
-    "collapse": "Collapse management “{{title}}”",
-    "expand": "Expand management “{{title}}”"
-  },
   "backend": {
     "checking": "Backend: checking connection",
     "connected": "Backend: connected",
@@ -34,6 +26,23 @@
     "commit": "Commit {{commit}}",
     "commitAt": "Commit {{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}"
   },
+  "common": {
+    "cancel": "Cancel"
+  },
+  "layout": {
+    "sideArea": "Side area",
+    "areas": "Areas",
+    "canvas": "Canvas",
+    "library": "Library",
+    "properties": "Properties"
+  },
+  "strategy": {
+    "newName": "New strategy"
+  },
+  "values": {
+    "yes": "yes",
+    "no": "no"
+  },
   "menu": {
     "label": "Menu",
     "new": "New strategy",
@@ -42,13 +51,22 @@
     "check": "Check",
     "close": "Close",
     "delete": "Delete",
-    "settings": "Settings"
+    "settings": "Settings",
+    "tips": {
+      "new": "Creates a new, empty strategy.",
+      "open": "Shows the saved strategies to open.",
+      "save": "Saves the strategy and checks it. Saving always works, even with findings.",
+      "check": "Looks for problems such as missing connections or empty required entries.",
+      "close": "Closes the strategy. With unsaved changes Studio asks first.",
+      "delete": "Deletes the open strategy after confirmation.",
+      "settings": "Language and storage location of the objects."
+    }
   },
   "datatype": {
     "number": "Number",
     "integer": "Integer",
     "percent": "Percent",
-    "boolean": "Boolean",
+    "boolean": "Yes/no",
     "text": "Text",
     "choice": "Choice",
     "time_unit": "Time unit",
@@ -57,139 +75,245 @@
     "expression": "Expression",
     "object": "Object"
   },
+  "binding": {
+    "unset": "not assigned",
+    "fixed": "Fixed value",
+    "parameter": "Strategy parameter",
+    "connection": "Value of an object",
+    "expression": "Expression",
+    "application": "Passed at application",
+    "atApplicationShort": "at application"
+  },
   "library": {
-    "label": "Element library",
     "title": "Element library",
+    "hint": "A click inserts an element after the selected step. You can also drag it onto the canvas.",
+    "search": "Search …",
+    "searchLabel": "Search the element library",
     "groups": {
-      "triggers": "Triggers",
-      "flow": "Elements of the flow",
-      "applicationObjects": "Objects of the application",
-      "objectTypes": "Object types",
-      "builtinTemplates": "Delivered templates",
-      "storedTemplates": "Stored templates"
+      "when": "When to calculate",
+      "actions": "Conditions and actions",
+      "market": "Market and account",
+      "indicators": "Indicators",
+      "trends": "Trends",
+      "rules": "Rules"
     },
-    "empty": "No entries.",
-    "loadFailed": "The type descriptions could not be loaded. Without them no strategy can be created or opened.",
-    "retry": "Try again",
-    "storedFailed": "The stored templates could not be read.",
+    "own": "own",
     "unreadable": "not readable",
-    "forRules": "for rules"
+    "loading": "The elements are loading.",
+    "loadFailed": "The elements could not be loaded. Without them no strategy can be created or opened.",
+    "retry": "Try again",
+    "empty": "No entries.",
+    "nothingFound": "Nothing found. Try another search term.",
+    "storedFailed": "The stored templates could not be read."
+  },
+  "params": {
+    "title": "Strategy parameters",
+    "name": "Name of the strategy parameter",
+    "remove": "Remove strategy parameter",
+    "datatype": "Data type",
+    "value": "Value",
+    "atApplication": "Pass the value only at application",
+    "atApplicationNote": "passed at application",
+    "newName": "New strategy parameter",
+    "openFirst": "Open a strategy to see its parameters.",
+    "none": "None yet. Create the first one with \"New\", for example the time unit.",
+    "clickToChange": "Click to change",
+    "new": "New",
+    "newTip": "Create a new strategy parameter",
+    "done": "Done",
+    "statusTip": "To the properties view of the strategy: name, description, findings",
+    "unsaved": "unsaved",
+    "saved": "saved"
+  },
+  "fields": {
+    "choose": "Choose value …",
+    "otherObject": "Other …",
+    "otherObjectPlaceholder": "Enter the designation",
+    "otherObjectLabel": "Designation",
+    "noParameterYet": "No strategy parameter has been created yet. Create the first one here.",
+    "noParameterFits": "No existing strategy parameter fits this field. Create a fitting one.",
+    "chooseParameter": "Choose strategy parameter",
+    "chooseParameterOption": "Choose strategy parameter …",
+    "newParameterOption": "+ New strategy parameter …",
+    "newParameterName": "Name of the new strategy parameter",
+    "create": "Create",
+    "noObject": "There is no object on the canvas yet. Add an indicator or another object from the element library.",
+    "chooseObject": "Choose object",
+    "chooseObjectOption": "Choose object …",
+    "chooseProperty": "Choose property",
+    "choosePropertyOption": "Choose property …",
+    "noFittingProperty": "This object supplies no value that fits the field.",
+    "unsetRequired": "Required: choose an assignment.",
+    "unsetOptional": "Optional. Without a value the entry stays empty.",
+    "application": "The value is only passed when the strategy is applied.",
+    "required": "required",
+    "explanation": "Explanation",
+    "assignment": "Assignment"
+  },
+  "expression": {
+    "empty": "Still empty.",
+    "hasError": "The expression has an error and cannot be shown as a sentence.",
+    "formula": "Formula",
+    "readOnly": "The expression is only shown here."
+  },
+  "canvas": {
+    "noStrategyTitle": "No strategy open",
+    "noStrategyText": "Next step: create an empty strategy with \"New strategy\" or open a saved one.",
+    "emptyTitle": "The canvas is empty",
+    "emptyText": "Next step: start with a trigger. It defines when the strategy calculates. You find it in the element library in the group \"When to calculate\".",
+    "openLibrary": "Show the element library",
+    "wiresArrive": "{{count}} value line(s) end here",
+    "portManagement": "The management of this order starts here. If the management has no trigger of its own, drag from here to its first step.",
+    "portReconnect": "Drag to another step to connect differently",
+    "portConnect": "Drag to the next step, or click and then click the next step",
+    "portValue": "Drag from here to an element to connect this value",
+    "fewerProperties": "fewer properties",
+    "allProperties": "all {{count}} properties",
+    "expandManagement": "Expand management",
+    "collapseManagement": "Collapse management",
+    "management": "Management · {{name}}",
+    "steps_one": "{{count}} step",
+    "steps_other": "{{count}} steps",
+    "managementEmpty": "Still empty. Select this frame and add a trigger from the element library.",
+    "collapseSection": "Collapse section",
+    "expandSection": "Expand section",
+    "sectionName": "Name of the section",
+    "lane": "Objects and their values",
+    "laneEmpty": "Indicators, trends and market objects appear here. You connect their values with steps by lines.",
+    "deleteConnection": "Delete connection",
+    "wireOnlyExpression": "only used in the expression",
+    "unknownTypeSummary": "Unknown type \"{{type}}\"",
+    "expressionEmpty": "Still empty – the condition or calculation is built from blocks later.",
+    "orientation": "Orientation",
+    "orientVerticalTip": "Flow vertical: entry on top, exits below",
+    "orientHorizontalTip": "Flow horizontal from left to right, for wide screens",
+    "vertical": "Vertical",
+    "horizontal": "Horizontal",
+    "wires": "Value lines",
+    "wiresTip": {
+      "all": "Show all value lines",
+      "selection": "Show only the value lines of the selected element",
+      "off": "Hide value lines"
+    },
+    "wiresMode": {
+      "all": "All",
+      "selection": "Selection",
+      "off": "Off"
+    },
+    "zoom": "Zoom",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in",
+    "showAll": "Show everything",
+    "showAllTip": "Show the whole strategy at once (zoomed out)",
+    "toStart": "To the beginning",
+    "toStartTip": "Move the view to the beginning of the strategy, at a readable size",
+    "arrange": "Arrange again",
+    "arrangeTip": "Arrange all elements automatically again",
+    "armed": "Now click the step that follows next.",
+    "legend": "Legend",
+    "legendFlow": "Flow: defines the order",
+    "legendManagement": "Management of an order (green, dotted)",
+    "legendWire": "Value: path of a value (coloured, dashed)",
+    "legendWireExpression": "Value, only used in the expression (dotted)",
+    "properties": "Properties"
   },
   "properties": {
     "panel": "Properties",
-    "numberHint": "Allowed is a number with a point or a comma as decimal separator, without exponent (for example 0.5 or 2,75).",
-    "integerHint": "Allowed is a whole number without decimal places and without exponent (for example 20).",
-    "none": "No strategy is open. Create one with “New strategy” or open a stored one.",
-    "multiple": "{{count}} elements selected.",
+    "none": "Next step: \"New strategy\" creates an empty strategy, \"Open\" shows saved strategies.",
     "strategy": "Strategy",
-    "title": "Title",
+    "strategyName": "Name of the strategy",
     "description": "Description",
-    "label": "Label",
+    "descriptionPlaceholder": "What is this strategy about?",
+    "rulesOfStrategy": "Rules of the strategy",
+    "rulesOfStrategyHint": "These rules apply to every order of the strategy.",
+    "findings": "Check results",
+    "notChecked": "Not checked yet. \"Check\" looks for problems such as missing connections or empty required entries.",
+    "noFindings": "No findings. The strategy is consistent.",
+    "findingsGeneral": "These findings belong to no single element.",
+    "findingsMarked": "Elements outlined in red or orange on the canvas have a finding. \"Go to it\" leads there.",
+    "management": "Management",
+    "managementOfName": "of the order \"{{name}}\"",
+    "managementText": "The management runs for each placed order individually: first for the waiting order, after execution for the position.",
+    "managementEmpty": "The frame is still empty. First add a trigger from the element library. Further steps attach to it.",
+    "managementInsert": "Whatever you insert from the element library now goes into this frame.",
+    "section": "Section",
+    "sectionName": "Name of the section",
+    "stepsOfSection_one": "{{count}} step",
+    "stepsOfSection_other": "{{count}} steps",
+    "sectionHint": "On the canvas the section collapses and expands with the button at its title.",
+    "dissolveSection": "Dissolve section",
     "name": "Name",
-    "parameters": "Parameters",
-    "properties": "Properties",
-    "orderProperties": "Properties of the order",
-    "instanceValues": "Values of the instance",
-    "noParameters": "The strategy has no parameters.",
-    "parameterName": "Name of parameter {{number}}",
-    "parameterType": "Datatype of {{name}}",
-    "parameterChoices": "Values of {{name}}",
-    "choicesHint": "separated by commas",
-    "parameterValue": "Value of {{name}}",
-    "atApplication": "at the application",
-    "removeParameter": "Remove parameter {{name}}",
+    "unknownType": "The type \"{{type}}\" is unknown. The assignments are only shown and stay unchanged when saving.",
+    "storedAssignments": "Stored assignments",
+    "noAssignments": "No assignments.",
     "remove": "Remove",
-    "addParameter": "Add parameter",
-    "newParameterName": "parameter",
-    "unknownType": "Unknown type “{{type}}”. The values are only shown and stay unchanged when saving.",
+    "settings": "Settings",
+    "settingsOfObject": "Settings of the object",
+    "orderProperties": "Properties of the order",
+    "orderPropertiesHint": "The order gets these values. If a required entry such as the volume is missing, a rule has to determine it.",
+    "delivers": "Delivers",
+    "deliversHint": "Each value is an output for a line",
+    "inputs": "Inputs",
+    "inputsHint": "Values of objects that are connected to this element.",
+    "noInputs": "No value connected yet. Choose a value below or drag a line from the property of an object to here on the canvas.",
+    "removeInput": "Remove input",
+    "connectValue": "Connect value",
+    "connectValueOption": "+ Connect value …",
+    "rulesOfElement": "Rules of this element",
+    "rulesOfElementHint": "These rules apply in addition to the rules of the strategy, for this element only.",
+    "noRules": "No rules.",
+    "removeRule": "Remove rule \"{{name}}\"",
+    "noSection": "– not in a section –",
+    "newSection": "+ Create new section …",
+    "sectionNamePlaceholder": "Name of the section, for example \"Entry\"",
+    "createSection": "Create",
+    "sectionInfo": "Sections group steps that belong together. They can be collapsed on the canvas.",
+    "belongsTo": "Belongs to",
+    "mainFlow": "Main flow",
+    "managementOf": "Management of \"{{name}}\"",
+    "belongsToHint": "Here you decide whether the step belongs to the main flow or to the management of an order, without dragging it.",
+    "placeInArea": "Place in the area for objects",
+    "up": "Up",
+    "down": "Down",
     "originType": "{{name}}, from object type {{type}}",
-    "originTemplate": "{{name}}, from template {{title}}",
-    "choose": "please choose",
-    "unset": "not set",
-    "application": "passed at the application",
-    "bindingKindOf": "Kind of binding of {{name}}",
-    "binding": {
-      "fixed": "fixed value",
-      "parameter": "parameter",
-      "expression": "expression",
-      "application": "at the application"
-    }
-  },
-  "rules": {
-    "title": "Rules",
-    "none": "No rules.",
-    "select": "Select rule {{name}}",
-    "up": "Move rule {{name}} up",
-    "down": "Move rule {{name}} down",
-    "remove": "Remove rule {{name}}",
-    "removeShort": "Remove",
-    "errors_one": "{{count}} error",
-    "errors_other": "{{count}} errors",
-    "hints_one": "{{count}} hint",
-    "hints_other": "{{count}} hints",
-    "fromLibrary": "Template from the element library",
-    "add": "Add",
-    "new": "New rule"
-  },
-  "ruleView": {
-    "back": "Back to {{owner}}",
-    "parameterDefinitions": "Parameters of the rule",
-    "parameterValues": "Values of the parameters",
-    "required": "Required",
-    "standardValue": "Standard value of {{name}}",
-    "expression": "Expression",
-    "resultExpression": "Expression for the overall result",
-    "determinedProperty": "Determined property of the order",
-    "checkOnly": "none (checking only)",
-    "comparison": "Comparison when checking",
-    "comparisons": {
-      "hoechstens": "at most",
-      "mindestens": "at least",
-      "gleich": "equal"
-    }
-  },
-  "expression": {
-    "suggestions": "Suggestions",
-    "display": "Display",
-    "result": "Result",
-    "rule": "Rule"
+    "originTemplate": "{{name}}, from template {{template}}, object type {{type}}"
   },
   "findings": {
     "title": "Findings",
-    "ofStrategy": "Findings of the strategy",
-    "ofElement": "Findings of this element",
-    "ofRule": "Findings of this rule",
+    "howToFix": "How to fix it: ",
+    "goto": "Go to it",
     "level": {
       "error": "Error",
       "hint": "Hint"
     },
-    "count_one": "Findings: {{count}}",
-    "count_other": "Findings: {{count}}",
-    "countDetail": "{{errors}} errors, {{hints}} hints",
+    "count_one": "{{count}} finding",
+    "count_other": "{{count}} findings",
+    "none": "no findings",
+    "countTip": "{{errors}} errors, {{hints}} hints. A click shows the findings.",
     "unknown": "Finding {{code}}",
     "fields": {
-      "parameter": "parameter “{{name}}”",
-      "property": "property “{{name}}”",
-      "propertyDefinition": "property “{{name}}” of the instance",
-      "expression": "expression",
-      "result_expression": "expression for the overall result"
+      "parameter": "Parameter \"{{name}}\"",
+      "property": "Property \"{{name}}\"",
+      "propertyDefinition": "Property \"{{name}}\" of the object",
+      "expression": "Expression",
+      "result_expression": "Expression for the overall result"
     },
     "issues": {
       "syntax": "Typing error at position {{start}} to {{end}}: {{syntaxReason}}",
-      "unknown_function": "Unknown function “{{name}}” (position {{start}} to {{end}}).",
-      "unknown_name": "Unknown name “{{name}}” (position {{start}} to {{end}}).",
-      "unknown_property": "“{{object}}” has no property “{{property}}” (position {{start}} to {{end}}).",
+      "unknown_function": "Unknown function \"{{name}}\" (position {{start}} to {{end}}).",
+      "unknown_name": "Unknown name \"{{name}}\" (position {{start}} to {{end}}).",
+      "unknown_property": "\"{{object}}\" has no property \"{{property}}\" (position {{start}} to {{end}}).",
       "type_mismatch": "The type does not fit: expected {{expected}}, found {{found}} (position {{start}} to {{end}}).",
-      "unknown_choice_value": "“{{values}}” is not a value of the choice; allowed are {{allowed}} (position {{start}} to {{end}}).",
-      "argument_count": "The function {{function}} receives {{found}} arguments; {{minimum}} to {{maximum}} are allowed (position {{start}} to {{end}}).",
-      "other": "The expression is invalid at position {{start}} to {{end}}."
+      "unknown_choice_value": "\"{{values}}\" is not a value of the choice; allowed are {{allowed}} (position {{start}} to {{end}}).",
+      "argument_count": "The function {{function}} gets {{found}} entries; {{minimum}} to {{maximum}} are allowed (position {{start}} to {{end}}).",
+      "other": "The expression is faulty at position {{start}} to {{end}}."
     },
     "syntax": {
       "unexpected_end": "the expression ends too early",
-      "unexpected_token": "unexpected character “{{found}}”",
-      "invalid_character": "invalid character “{{found}}”",
+      "unexpected_token": "unexpected character \"{{found}}\"",
+      "invalid_character": "invalid character \"{{found}}\"",
       "invalid_number": "invalid number",
-      "unterminated_string": "text is not closed",
+      "unterminated_string": "text not closed",
       "too_long": "the expression is too long",
       "too_deep": "the expression is nested too deeply"
     },
@@ -201,13 +325,13 @@
       "across_managements": "the connection leads between the flow and a management or between two managements"
     },
     "bindingReasons": {
-      "binding_kind": "this kind of binding is not allowed",
-      "type": "the fixed value has the wrong datatype",
+      "binding_kind": "this kind of assignment is not allowed",
+      "type": "the fixed value has the wrong data type",
       "choice_value": "the fixed value is not part of the choice",
       "value": "the value is not allowed",
       "unknown_parameter": "the parameter is unknown",
       "unknown_property": "the property is unknown",
-      "set_by_application": "the application sets this property, not the user"
+      "set_by_application": "the application assigns this property, not the user"
     },
     "resultReasons": {
       "unknown_property": "the determined property is unknown",
@@ -219,76 +343,222 @@
       "cycle": "circular reference"
     },
     "trigger": {
-      "unconnected": "The trigger is not connected to any element of the flow."
+      "unconnected": "The trigger is not connected with any element of the flow."
     },
     "flow": {
-      "no_incoming": "No connection leads to this element of the flow.",
+      "not_reached": "No trigger reaches this element of the flow.",
+      "main_without_trigger": "The main flow has no trigger; the strategy never starts.",
       "unending_loop": "Loop without a condition that ends it (on {{elements}} elements).",
-      "management_only": "“{{type}}” may only stand in a management, not in the main flow.",
+      "management_only": "\"{{type}}\" may only stand in a management, not in the main flow.",
       "no_order_reachable": "No element that places an order can be reached from the trigger."
     },
+    "instrument": {
+      "invalid": "The instrument \"{{value}}\" is not a valid designation."
+    },
+    "data": {
+      "unknown": "The data connection is invalid: {{reason}}.",
+      "type_mismatch": "The data type of the connected value does not fit: expected {{expected}}, found {{found}}."
+    },
+    "input": {
+      "unused": "The input \"{{property}}\" is not used."
+    },
+    "key": {
+      "invalid": "The identifier \"{{key}}\" contains characters that an expression cannot address."
+    },
+    "layout": {
+      "invalid": "A section or a collapsed frame does not fit: {{reason}}."
+    },
+    "dataReasons": {
+      "unknown_instance": "the object does not exist",
+      "unknown_property": "the object does not have this property"
+    },
+    "layoutReasons": {
+      "unknown_flow": "the flow belongs to no element",
+      "unknown_element": "the element does not exist",
+      "element_twice": "an element is in two sections",
+      "other_flow": "the element belongs to another flow"
+    },
     "expression": {
-      "invalid": "The expression in {{field}} is invalid: {{problem}}",
-      "order_outside_management": "The expression in {{field}} uses order or position outside a management."
+      "empty": "The expression in {{field}} is missing or incomplete.",
+      "invalid": "The expression in {{field}} is faulty: {{problem}}",
+      "order_outside_management": "The expression in {{field}} uses order or position outside of a management."
     },
     "rule": {
       "unresolved_name": "Hint on the expression in {{field}}: {{problem}} The template alone does not know the name; it is checked in every strategy that contains the template.",
-      "result_mismatch": "The result of the rule does not fit the determined property “{{property}}”: {{reason}}.",
-      "order_in_indicator": "The rule uses order or position. That is not allowed in an indicator or trend.",
-      "invalid_type": "This list of rules holds an object of type “{{type}}” that may not stand there.",
+      "result_mismatch": "The result of the rule does not fit the determined property \"{{property}}\": {{reason}}.",
+      "order_in_indicator": "The rule addresses order or position. That is not allowed in an indicator or trend.",
+      "invalid_type": "This list of rules contains an object of the type \"{{type}}\" that must not be there.",
       "comparison_missing": "The determining rule names no comparison for checking."
     },
     "parameter": {
-      "missing": "The required parameter “{{parameter}}” has no value.",
-      "binding_invalid": "The value of “{{parameter}}{{property}}” does not fit: {{reason}}."
+      "missing": "The required parameter \"{{parameter}}\" has no value.",
+      "binding_invalid": "The assignment of \"{{parameter}}{{property}}\" does not fit: {{reason}}."
     },
     "order": {
-      "property_missing": "The property “{{property}}” of the order is not set and no determining rule supplies it."
+      "property_missing": "The property \"{{property}}\" of the order is not assigned, and no determining rule supplies it."
     },
     "ruleset": {
       "reference_order": "Rule set with {{kind}}."
     },
     "candle": {
-      "no_instance": "The candle is used, but no candle with a time unit lies on the canvas."
+      "no_instance": "The candle is used, but there is no candle with a time unit on the canvas."
     },
     "name": {
-      "duplicate": "The name “{{name}}” is used twice.",
-      "invalid": "The name “{{name}}” contains characters that an expression cannot address."
+      "duplicate": "The name \"{{name}}\" is used twice.",
+      "invalid": "The name \"{{name}}\" contains characters that an expression cannot address."
     },
     "type": {
-      "unknown": "The type “{{type}}” is unknown."
+      "unknown": "The type \"{{type}}\" is unknown."
     },
     "trend": {
-      "direction_missing": "The trend lacks the expression for the property “{{property}}”."
+      "direction_missing": "The trend lacks the expression for the property \"{{property}}\"."
     },
     "calculation": {
       "circular_reference": "Calculations use their results in a circle ({{names}})."
     },
     "findings": {
-      "truncated": "There are more findings than are shown (limit {{limit}})."
+      "truncated": "There are more findings than shown (limit {{limit}})."
     },
     "connection": {
       "invalid": "Invalid connection: {{reason}}."
     },
     "element": {
-      "rules_not_allowed": "Rules are assigned to this element although “{{type}}” allows none.",
+      "rules_not_allowed": "Rules are assigned to this element although \"{{type}}\" allows none.",
       "management_invalid": "The element belongs to the management of an element that does not place an order."
+    }
+  },
+  "findingFixes": {
+    "unknown": "Check the affected element and its entries. If the finding shows no cause, report the identifier of the finding.",
+    "issues": {
+      "syntax": "Correct the spelling at the named position.",
+      "unknown_function": "Choose a function that exists.",
+      "unknown_name": "Choose a value that exists: an object on the canvas, a strategy parameter or the result of a step.",
+      "unknown_property": "Choose a property that the object supplies.",
+      "type_mismatch": "Use a value of the fitting data type.",
+      "unknown_choice_value": "Choose one of the allowed values.",
+      "argument_count": "Give the fitting number of entries.",
+      "other": "Correct the expression at the named position."
+    },
+    "trigger": {
+      "unconnected": "Connect the trigger with the first step or remove it."
+    },
+    "flow": {
+      "not_reached": "Connect a previous step or a trigger with this step or remove it.",
+      "main_without_trigger": "Add a trigger and connect it with the first step.",
+      "unending_loop": "Put a condition into the loop from which one output leads out of the loop.",
+      "management_only": "Move the step into the management of an order or remove it.",
+      "no_order_reachable": "Connect the flow with a step that places an order."
+    },
+    "instrument": {
+      "invalid": "Correct the designation of the instrument."
+    },
+    "data": {
+      "unknown": "Choose an object and a property that exist, or delete the connection.",
+      "type_mismatch": "Connect a value of the fitting data type."
+    },
+    "input": {
+      "unused": "Use the value in an expression or remove the input."
+    },
+    "key": {
+      "invalid": "Change the name."
+    },
+    "layout": {
+      "invalid": "Remove the section and create it again."
+    },
+    "expression": {
+      "empty": "Enter the complete expression.",
+      "invalid": "Correct the expression.",
+      "order_outside_management": "Use order and position only in the management of an order."
+    },
+    "rule": {
+      "unresolved_name": "Check the name in the expression of the template.",
+      "result_mismatch": "Change the expression of the rule or choose another determined property.",
+      "order_in_indicator": "Remove the rule from the indicator or trend and assign it to the strategy or to an element.",
+      "invalid_type": "Remove the object from this list.",
+      "comparison_missing": "Choose the comparison for checking."
+    },
+    "parameter": {
+      "missing": "Give the parameter a value, choose a strategy parameter or \"at application\".",
+      "binding_invalid": "Choose a fitting assignment."
+    },
+    "order": {
+      "property_missing": "Assign the property or assign a rule that determines it to the element or the strategy."
+    },
+    "ruleset": {
+      "reference_order": "Change the order of the rules so that each rule only uses earlier results."
+    },
+    "candle": {
+      "no_instance": "Put a candle with a time unit on the canvas and use its values."
+    },
+    "name": {
+      "duplicate": "Give one of the two another name.",
+      "invalid": "Change the name."
+    },
+    "type": {
+      "unknown": "Remove the element or install the extension that supplies the type."
+    },
+    "trend": {
+      "direction_missing": "Enter the expression for the direction of the trend."
+    },
+    "calculation": {
+      "circular_reference": "Change one of the calculations so that it does not lead back to itself."
+    },
+    "findings": {
+      "truncated": "Fix the findings shown and check again."
+    },
+    "connection": {
+      "invalid": "Delete the connection and draw it again."
+    },
+    "element": {
+      "rules_not_allowed": "Remove the rules from this element.",
+      "management_invalid": "Move the element into the main flow or into the management of an order."
+    }
+  },
+  "notices": {
+    "openFirst": "Open a strategy first or create a new one.",
+    "ruleForStrategy": "The rule applies to the whole strategy.",
+    "ruleForElement": "The rule applies to the selected element.",
+    "inserted": "\"{{name}}\" is inserted. You can see it on the canvas.",
+    "inputAdded": "The value is now an input of the element.",
+    "toMainFlow": "The element now belongs to the main flow.",
+    "toManagement": "The element now belongs to the management of this order.",
+    "connection": {
+      "unknown_element": "The element no longer exists.",
+      "same_element": "A step cannot be connected with itself.",
+      "target_is_trigger": "A trigger has no input.",
+      "instance": "Objects are not connected in the flow. You connect their values with a line from their card.",
+      "unknown_type": "No new connections start from an element of an unknown type.",
+      "unknown_output": "This output does not belong to the step.",
+      "across_flows": "The management of an order is separate from the main flow: connect only steps in the same frame.",
+      "management_has_triggers": "The management has triggers of its own. No connection leads from \"placed\" then."
     }
   },
   "dialogs": {
     "unsaved": {
       "title": "Unsaved changes",
-      "text": "The strategy has changes that are not saved yet.",
+      "text": "\"{{name}}\" has changes that are not saved yet. What should happen?",
       "save": "Save",
       "discard": "Discard",
       "cancel": "Cancel"
     },
     "delete": {
       "title": "Delete strategy?",
-      "text": "The strategy “{{title}}” will be deleted.",
-      "textUntitled": "The strategy without a title will be deleted.",
-      "notSaved": "It has not been saved yet; only the open strategy is discarded.",
+      "text": "The strategy \"{{name}}\" will be deleted. This cannot be undone.",
+      "notSaved": "It was not saved yet; only the open strategy is discarded.",
       "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "removeElement": {
+      "title": "Remove element?",
+      "text": "\"{{name}}\" will be removed.",
+      "managed": "The management of the order is removed with it:",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    },
+    "removeParameter": {
+      "title": "Remove strategy parameter?",
+      "text": "The strategy parameter \"{{name}}\" will be removed. Assignments that use it are empty afterwards and the check reports them.",
+      "confirm": "Remove",
       "cancel": "Cancel"
     },
     "error": {
@@ -297,27 +567,33 @@
   },
   "errors": {
     "http": "The backend rejected the request with status {{status}}.",
+    "httpCode": "The backend rejected the request (status {{status}}, cause {{code}}).",
     "timeout": "The backend did not answer in time.",
-    "unexpectedResponse": "The backend sent an unexpected response.",
-    "network": "The backend cannot be reached.",
+    "unexpectedResponse": "The backend sent an unexpected answer.",
+    "network": "The backend is not reachable.",
     "saveFailed": "The strategy could not be saved.",
     "openFailed": "The strategy could not be opened.",
     "deleteFailed": "The strategy could not be deleted.",
     "checkFailed": "The strategy could not be checked.",
-    "insertFailed": "The entry could not be inserted."
+    "insertFailed": "The entry could not be inserted.",
+    "codes": {
+      "object_directory": {
+        "not_absolute": "The object directory must be an absolute path."
+      }
+    }
   },
   "openDialog": {
     "title": "Open strategy",
     "loading": "The strategies are being read.",
     "loadFailed": "The list of strategies could not be read.",
     "retry": "Try again",
-    "empty": "No strategies are stored.",
-    "columnTitle": "Title",
+    "empty": "No strategies are saved. Close this window and create one with \"New strategy\".",
+    "columnName": "Name",
     "columnDescription": "Description",
     "columnModified": "Last change",
-    "modifiedValue": "{{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}",
+    "modifiedValue": "{{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}}",
     "unreadable": "not readable",
-    "untitled": "(no title)",
+    "untitled": "(no name)",
     "cancel": "Cancel"
   },
   "settings": {
@@ -326,18 +602,18 @@
     "directoryLoading": "The object directory is being read.",
     "directoryLoadFailed": "The object directory could not be read.",
     "directoryNotSet": "No object directory is set and no default can be determined.",
-    "directoryIsDefault": "The default directory is in use.",
-    "directoryIsSet": "The directory has been set.",
+    "directoryIsDefault": "The default directory applies.",
+    "directoryIsSet": "The directory was set.",
     "directory": "Directory (absolute path)",
     "directoryChange": "Change directory",
     "moveQuestion": "Move files?",
-    "moveYes": "Yes, move the files",
+    "moveYes": "Yes, move files",
     "moveNo": "No, only change the directory",
     "moveCancel": "Cancel",
-    "directorySaved": "The object directory has been changed.",
+    "directorySaved": "The object directory was changed.",
     "directoryFailed": "The object directory could not be changed.",
     "moveFailureFrom": "Old directory: {{directory}}",
-    "moveFailureTo": "New directory; it holds the files that could not be brought back: {{directory}}",
+    "moveFailureTo": "New directory, it contains the files that could not be brought back: {{directory}}",
     "close": "Close"
   }
 }
