@@ -135,6 +135,8 @@ Prüfgebiete der Tester:
 - Code- und Dokumentationsprüfung: Programmierregeln, bewährte Verfahren, technische Dokumentation
 - Sicherheitsprüfung: Sicherheitsregeln nach BSI-Grundschutz und OWASP
 
+Der Tester Funktion prüft jeden Commit eines Entwicklers. Der Tester Sicherheit prüft einmal je Arbeitspaket den Arbeitszweig, nachdem alle Aufträge zusammengeführt sind und bevor die QA prüft. Seine Befunde gehen als Aufträge an die Entwickler; die Korrektur-Commits prüfen Tester Funktion und, beschränkt auf die Befunde, Tester Sicherheit.
+
 Die QA prüft erst, wenn alle Aufträge des Pakets zusammengeführt sind und die Testumgebung läuft. Ändert sich danach der Code, ist eine erneute Prüfung durch Tester und QA erforderlich.
 
 Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit des Arbeitszweigs, positive Testberichte, positiver Prüfbericht der QA, laufende Testumgebung.
@@ -199,7 +201,7 @@ Namen von Vorhaben bestehen aus Kleinbuchstaben und Ziffern. Arbeitspakete heiß
 | Bericht | Datei |
 |---|---|
 | Prüfbericht der QA in den Phasen 1 bis 3 | `reviews/requirements-<n>.md`, `reviews/specification-<n>.md`, `reviews/plan-<n>.md` |
-| Testbericht | `<arbeitspaket>/tests/<auftrag>-<prüfgebiet>-<n>.md` mit Prüfgebiet `functiontest` oder `securitytest` |
+| Testbericht | `<arbeitspaket>/tests/<auftrag>-functiontest-<n>.md`, Sicherheitsprüfung `<arbeitspaket>/tests/securitytest-<n>.md` |
 | Prüfbericht der QA in Phase 4 | `<arbeitspaket>/reviews/<n>.md` |
 | Abnahmebericht | `<arbeitspaket>/acceptance/<n>.md` |
 | Frage | `questions/<name>-<nn>.md` mit dem Namen des Vorhabens beziehungsweise Arbeitspakets aus `ref` |
@@ -273,6 +275,7 @@ Diese Regeln gelten für jede Prüfung durch QA und Tester, in allen Phasen:
 - **Detailtiefe nach Umfang.** Spezifikation und Plan legen nur Bausteine, Entscheidungen und Abnahmekriterien fest, so knapp, wie der Umfang des Vorhabens es erlaubt. Testdetails, Formulierungen und Schreibweisen von Pfaden gehören in die Aufträge, nicht in Spezifikation oder Plan.
 - **Erster Durchlauf vollständig.** Der erste Durchlauf meldet alle Befunde auf einmal. Jeder weitere Durchlauf ist eine Nachprüfung: Er prüft nur, ob die Befunde behoben sind und ob die dafür geänderten Stellen neue Fehler enthalten.
 - **Nur blockierende Befunde.** Ein Befund verhindert das Bestehen nur, wenn er einer Anforderung oder einem Abnahmekriterium widerspricht, die Funktion beeinträchtigt oder eine Sicherheitslücke ist. Alles andere steht im Bericht als Hinweis. Hinweise verhindern das Bestehen nicht und werden bei der nächsten passenden Gelegenheit erledigt oder verworfen.
+- **Kurze Berichte.** Ein Prüf- oder Testbericht umfasst höchstens etwa 60 Zeilen. Jeder Hinweis steht in einer Zeile. Eine Nachprüfung nennt nur die noch offenen und die neuen Befunde.
 - **Bestanden ist bestanden.** Nach einer bestandenen Prüfung folgt keine weitere Prüfung, nur weil Hinweise eingearbeitet wurden. Das Dokument geht mit dem bestandenen Prüfbericht in den nächsten Schritt; die eingearbeiteten Hinweise nennt der Änderungsnachweis.
 
 ### Fragen an den Auftraggeber
@@ -295,6 +298,7 @@ Die Grenze einer Prüfschleife richtet sich nach ihrem Fortschritt, nicht nach e
 
 - Eine Schleife läuft weiter, solange jeder Durchlauf weniger blockierende Befunde hat als der vorige. Neue Befunde an korrigierten Stellen zählen mit.
 - Sie geht eine Ebene höher (Entwickler → Entwicklungsleiter beziehungsweise Softwarearchitekt → Projektleiter → Auftraggeber), wenn ein blockierender Befund nach einer Korrektur unverändert wiederkommt oder wenn die Zahl der blockierenden Befunde nicht sinkt.
+- Ab dem dritten Durchlauf einer Prüfung von Spezifikation oder Plan entscheidet der Softwarearchitekt verbleibende rein technische Befunde selbst nach [Rein technische Streitpunkte](#rein-technische-streitpunkte) und vermerkt sie im Änderungsnachweis; die QA prüft danach nur noch Befunde, die Dokumente des Auftraggebers, bestätigte Festlegungen, Abnahmekriterien oder den Umfang berühren.
 - Ein Befund, den nur eine höhere Ebene entscheiden kann, geht sofort dorthin, ohne das Ende der Schleife abzuwarten. Die übrigen Befunde werden währenddessen weiter bearbeitet.
 
 | Schleife ohne Fortschritt | Weiter an |
@@ -459,6 +463,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-21 | Umfang der Prüfungen: Berichte höchstens etwa 60 Zeilen. Grenze der Durchläufe: ab dem dritten Durchlauf entscheidet der Softwarearchitekt rein technische Befunde zu Spezifikation und Plan selbst. Phase 4: Sicherheitsprüfung einmal je Arbeitspaket statt je Commit. Festlegung des Auftraggebers im Chat am 2026-10-21. Anlass: Verbrauch des Nutzungskontingents. |
 | 2026-10-21 | Rolle Entwicklungsleiter (`devlead`) für die Phasen 4 bis 6 vom Softwarearchitekten abgetrennt: Meldungen `implement`, `fix`, `integrate` an den Entwicklungsleiter, neue Meldungen `amend` und `amended` für Lücken in Spezifikation oder Plan, `agentrun` überwacht beide Empfängerverzeichnisse. Modelle: Softwarearchitekt Opus, übrige Rollen Sonnet. Festlegung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | Kurzfassung am Anfang. Abschnitt „Verbrauch des Nutzungskontingents“: Sonnet für alle Rollen, gezieltes Lesen. Anlass: Sitzungslimit nach kurzer Zeit erreicht. Festlegung des Auftraggebers im Chat am 2026-10-20. |
 | 2026-10-20 | Umfang der Prüfungen: nach bestandener Prüfung keine weitere Prüfung nur für eingearbeitete Hinweise. Anlass: Spezifikation `strategiedesign` nach bestandenen Durchläufen 7 und 8 erneut zur Prüfung (Durchlauf 9), Sitzung danach wegen fehlenden Herzschlags beendet. |
