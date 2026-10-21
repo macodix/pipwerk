@@ -70,3 +70,7 @@ Vorschlag (Spezifikation, Abschnitt 13, Punkt 2): Der geänderte Wert gilt bis z
 
 ## Antwort
 
+
+### Zu 1. Bestätigung des Prototyps
+
+Bestätigt vom Auftraggeber im Chat am 2026-10-21 als Vorlage für Spezifikation und Umsetzung der Oberfläche, einschließlich der dort genannten Punkte 1 bis 7. Der Prototyp reicht für die ersten Versuche. Die Übersicht wird nach der praktischen Erprobung überarbeitet. Was sich bewährt und was nicht, wird dann festgestellt und über die Dokumente des Auftraggebers eingebracht.
