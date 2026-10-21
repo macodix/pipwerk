@@ -31,7 +31,11 @@ from web_api_support import (
 
 from pipwerk_studio.app import create_app
 
-TEXT = {"detail": "The stored pipwerk Studio object directory is invalid."}
+TEXT = {
+    "detail": "The stored pipwerk Studio object directory is invalid.",
+    "code": "object_directory.stored_invalid",
+    "params": {},
+}
 ARTS = ["strategies", "indicators", "trends", "rules", "rulesets"]
 DOCUMENTS: dict[str, Callable[[], dict[str, Any]]] = {
     "strategies": lambda: load_case("str-03"),

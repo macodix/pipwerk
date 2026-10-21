@@ -21,16 +21,15 @@ import ipaddress
 import re
 from collections.abc import Iterable, Sequence
 
-from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+from pipwerk_studio.errors import error_response
 
 #: Names that are always allowed.
 DEFAULT_ALLOWED_HOSTS: tuple[str, ...] = ("127.0.0.1", "localhost", "::1")
 
 #: Entry that allows every IP address.
 ANY_IP_ENTRY = "*ip"
-
-HOST_NOT_ALLOWED_TEXT = "The Host header of the request is not allowed."
 
 _ENTRY_RE = re.compile(r"[a-z0-9._:-]+")
 _PORT_RE = re.compile(r"[0-9]{1,5}")
@@ -128,5 +127,5 @@ class HostCheckMiddleware:
         if scope["type"] == "websocket":
             await send({"type": "websocket.close", "code": 1008})
             return
-        response = JSONResponse(status_code=400, content={"detail": HOST_NOT_ALLOWED_TEXT})
+        response = error_response("host.not_allowed")
         await response(scope, receive, send)

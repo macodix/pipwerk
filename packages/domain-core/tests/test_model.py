@@ -1,12 +1,16 @@
 import copy
+import uuid
 
 from pipwerk_domain.model import (
     Binding,
+    Connection,
     Element,
     Instance,
     Origin,
     ParameterDefinition,
+    Section,
     Strategy,
+    StrategyParameter,
     Template,
 )
 from pipwerk_domain.typedesc import BindingKind, DataType
@@ -67,13 +71,45 @@ def test_instances_are_complete_copies_with_their_own_content() -> None:
 
 
 def test_defaults_are_not_shared() -> None:
-    first = Strategy(id="a", title="a")
-    second = Strategy(id="b", title="b")
+    first = Strategy(id="a", name="a")
+    second = Strategy(id="b", name="b")
     first.elements.append(Element(id="e", type="t"))
     first.parameters.append(ParameterDefinition("x", DataType.NUMBER))  # type: ignore[arg-type]
+    first.sections.append(Section("s"))
+    first.collapsed_managements.append("m")
     assert second.elements == []
     assert second.parameters == []
+    assert second.sections == []
+    assert second.collapsed_managements == []
     one = Instance(name="a", object_type="t")
     two = Instance(name="b", object_type="t")
     one.parameter_values["x"] = fixed(1)
     assert two.parameter_values == {}
+
+
+def test_a_key_is_formed_from_the_name_when_it_is_not_given() -> None:
+    assert Instance(name="EMA 20", object_type="t").key == "ema_20"
+    assert Instance(name="EMA 20", key="ema20", object_type="t").key == "ema20"
+    assert ParameterDefinition("Stop-Abstand", DataType.NUMBER).key == "stop_abstand"
+    assert StrategyParameter("Größe", DataType.NUMBER).key == "groesse"
+    assert Element(id="e", type="flow.calculation", name="Neuer Stop").key == "neuer_stop"
+    assert Element(id="e", type="flow.condition", name="Ist gut").key == "ist_gut"
+    assert Element(id="e", type="trigger.tick", name="Tick").key is None  # no key for a trigger
+    assert Element(id="e", type="flow.calculation").key is None
+
+
+def test_the_name_of_an_element_is_the_name_of_its_instance() -> None:
+    plain = Element(id="e", type="flow.calculation", name="Rechnung")
+    shown = Element(id="f", type="EMA", instance=Instance(name="EMA 20", object_type="EMA"))
+    assert plain.shown_name == "Rechnung"
+    assert shown.shown_name == "EMA 20"
+    assert Element(id="g", type="x").shown_name is None
+
+
+def test_a_connection_and_a_section_get_an_identifier() -> None:
+    first = Connection("a", "weiter", "b")
+    second = Connection("a", "weiter", "b")
+    assert first.id != second.id
+    assert Section("s").id != Section("s").id
+    assert uuid.UUID(first.id).version == 4
+    assert Connection("a", "weiter", "b", "x").id == "x"

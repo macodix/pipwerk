@@ -50,6 +50,7 @@ class BindingKind(StrEnum):
 
     FIXED = "fixed"
     PARAMETER = "parameter"
+    CONNECTION = "connection"
     EXPRESSION = "expression"
     APPLICATION = "application"
 
@@ -57,9 +58,32 @@ class BindingKind(StrEnum):
 ALL_BINDINGS = (
     BindingKind.FIXED,
     BindingKind.PARAMETER,
+    BindingKind.CONNECTION,
     BindingKind.EXPRESSION,
     BindingKind.APPLICATION,
 )
+
+
+class Group(StrEnum):
+    """Group of the element library (specification 5.2)."""
+
+    WHEN = "when"
+    ACTIONS = "actions"
+    MARKET = "market"
+    INDICATORS = "indicators"
+    TRENDS = "trends"
+    RULES = "rules"
+
+
+INSTRUMENT_TYPE = "Instrument"
+"""Object type of the parameter ``instrument`` (data type object)."""
+
+INSTRUMENT_PARAMETER = "instrument"
+"""Identifier of the parameter and of the order property ``Instrument`` (specification 3.1)."""
+
+APPLICATION_INSTRUMENT = "instrument_der_anwendung"
+"""Identifier of the fixed value "Instrument der Anwendung": the only choice and the default
+of the parameter ``instrument``."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +92,10 @@ class Label:
 
     de: str
     en: str
+
+
+NO_TEXT = Label("", "")
+"""The empty text: the explanation of a registration that does not give one."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,8 +117,8 @@ class Condition:
 @dataclass(frozen=True, slots=True)
 class ParameterDescription:
     """A parameter of a type: identifier, data type, mandatory or optional, default value,
-    allowed values, allowed binding kinds, label and optionally the condition under which
-    it applies."""
+    allowed values, allowed binding kinds, label with explanation and optionally the
+    condition under which it applies."""
 
     id: str
     datatype: DataType
@@ -101,16 +129,17 @@ class ParameterDescription:
     bindings: tuple[BindingKind, ...] = ALL_BINDINGS
     applies_when: Condition | None = None
     object_type: str | None = None
+    explanation: Label = NO_TEXT
 
 
 @dataclass(frozen=True, slots=True)
 class PropertyDescription:
-    """A property of a type: identifier, data type, MUSS (``must``) or KANN, label.
+    """A property of a type: identifier, data type, MUSS (``must``) or KANN, label with
+    explanation.
 
     For order types ``set_by_user`` states whether the user fills the property; the
-    application fills the others (``Instrument``, ``Konto``, ``Order-ID``, ``Status``,
-    ``Strategie-ID``, ``Preis`` of ``MarketOrder`` and ``CloseOrder``, ``Position`` of
-    ``CloseOrder``).
+    application fills the others (``Konto``, ``Order-ID``, ``Status``, ``Strategie-ID``,
+    ``Preis`` of ``MarketOrder`` and ``CloseOrder``, ``Position`` of ``CloseOrder``).
     """
 
     id: str
@@ -122,6 +151,7 @@ class PropertyDescription:
     choices: tuple[Choice, ...] = ()
     applies_when: Condition | None = None
     object_type: str | None = None
+    explanation: Label = NO_TEXT
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +166,7 @@ class OutputDescription:
     id: str
     label: Label
     holds_management: bool = False
+    explanation: Label = NO_TEXT
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,6 +192,10 @@ class TypeDescription:
     strategy_parameters: bool = False
     """For objects of the application: whether expressions over this object address the
     strategy parameters (``Strategie``)."""
+    explanation: Label = NO_TEXT
+    """The short text the user interface shows on pointing at the type, in trader language."""
+    group: Group | None = None
+    """Group of the element library (specification 5.2), ``None`` for a type that is not in it."""
 
     def parameter(self, parameter_id: str) -> ParameterDescription | None:
         for item in self.parameters:
@@ -218,6 +253,13 @@ TIME_UNITS: tuple[Choice, ...] = tuple(
 """All time units of MetaTrader 5 from M1 to MN1, with identifiers formed by the rule."""
 
 TIME_UNIT_IDS = frozenset(_TIME_UNIT_IDS)
+
+INSTRUMENT_CHOICES: tuple[Choice, ...] = (
+    Choice(
+        APPLICATION_INSTRUMENT, Label("Instrument der Anwendung", "Instrument of the application")
+    ),
+)
+"""The fixed value of the parameter ``instrument``: the instrument of the application."""
 
 
 def choice_ids(datatype: DataType, choices: tuple[Choice, ...]) -> tuple[str, ...] | None:

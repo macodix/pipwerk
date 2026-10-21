@@ -130,11 +130,12 @@ def test_a_faulty_expression_of_a_rule_is_found_with_the_rule() -> None:
     assert found[0].details["issue"] == "syntax"
 
 
-def test_a_rule_without_an_expression_is_faulty() -> None:
+def test_a_rule_without_an_expression_is_a_statement_without_a_value() -> None:
     strategy = valid_strategy()
     strategy.rules.append(Instance(name="r", object_type="Regel", origin=Origin("Regel")))
-    found = only(check(strategy), fc.EXPRESSION_INVALID)
-    assert found[0].details["issue"] == "syntax"
+    found = only(check(strategy), fc.EXPRESSION_EMPTY)
+    assert (found[0].subject, found[0].details["reason"]) == ("r", "missing")
+    assert only(check(strategy), fc.EXPRESSION_INVALID) == []
 
 
 def test_rule_parameters_are_values_in_the_expression() -> None:

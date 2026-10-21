@@ -16,8 +16,14 @@ class Level(StrEnum):
 
 # Identifiers of the findings of the table in specification 3.6
 TRIGGER_UNCONNECTED = "trigger.unconnected"
-FLOW_NO_INCOMING = "flow.no_incoming"
+FLOW_NOT_REACHED = "flow.not_reached"
+FLOW_MAIN_WITHOUT_TRIGGER = "flow.main_without_trigger"
+INSTRUMENT_INVALID = "instrument.invalid"
 EXPRESSION_INVALID = "expression.invalid"
+EXPRESSION_EMPTY = "expression.empty"
+DATA_UNKNOWN = "data.unknown"
+DATA_TYPE_MISMATCH = "data.type_mismatch"
+INPUT_UNUSED = "input.unused"
 RULE_RESULT_MISMATCH = "rule.result_mismatch"
 FLOW_UNENDING_LOOP = "flow.unending_loop"
 PARAMETER_MISSING = "parameter.missing"
@@ -35,13 +41,14 @@ FLOW_NO_ORDER_REACHABLE = "flow.no_order_reachable"
 RULE_UNRESOLVED_NAME = "rule.unresolved_name"  # hint for a rule template (specification 3.4)
 CONNECTION_INVALID = "connection.invalid"
 PARAMETER_BINDING_INVALID = "parameter.binding_invalid"
-NAME_INVALID = "name.invalid"
+KEY_INVALID = "key.invalid"
 ELEMENT_RULES_NOT_ALLOWED = "element.rules_not_allowed"
 ELEMENT_MANAGEMENT_INVALID = "element.management_invalid"
 RULE_INVALID_TYPE = "rule.invalid_type"
 RULE_COMPARISON_MISSING = "rule.comparison_missing"
 TREND_DIRECTION_MISSING = "trend.direction_missing"
 CALCULATION_CIRCULAR = "calculation.circular_reference"
+LAYOUT_INVALID = "layout.invalid"
 FINDINGS_TRUNCATED = "findings.truncated"
 
 
@@ -50,7 +57,7 @@ class Finding:
     """A finding of the consistency check.
 
     ``element`` is the identifier of the affected element; ``subject`` names the affected
-    instance or rule: the name, and for a part inside another instance the names joined
+    instance or rule by its key, and for a part inside another instance the keys joined
     with points (``regelwerk.regel``). Both are ``None`` if the finding concerns neither.
     ``details`` are the data for the text; for a faulty expression they include ``field``
     (which expression), ``start`` and ``end`` (character positions), ``issue`` and ``reason``.

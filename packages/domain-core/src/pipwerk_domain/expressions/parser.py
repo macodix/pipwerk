@@ -19,6 +19,7 @@ from pipwerk_domain.expressions.nodes import (
     NameSegment,
     Node,
     Number,
+    Slot,
     String,
     Unary,
 )
@@ -82,6 +83,7 @@ class _Frame:
     name_start: int = 0
     name_end: int = 0
     arguments: list[Node] | None = None
+    separators: list[int] | None = None
 
 
 def parse(source: str) -> ParseResult:
@@ -200,7 +202,9 @@ def _parse_tokens(tokens: list[Token]) -> Node:
             index += 1
             _reduce_all(frame)
             assert frame.arguments is not None  # noqa: S101 - set when the call was opened
+            assert frame.separators is not None  # noqa: S101 - set when the call was opened
             frame.arguments.append(frame.operands.pop())
+            frame.separators.append(token.start)
             expecting_operand = True
         elif token.kind is TokenKind.RIGHT_PAREN and frame.kind in ("group", "call"):
             index += 1
@@ -222,6 +226,7 @@ def _parse_tokens(tokens: list[Token]) -> Node:
                         closed.name_start,
                         closed.name_end,
                         tuple(closed.arguments),
+                        tuple(closed.separators or ()),
                     )
                 )
         elif token.kind is TokenKind.END and frame.kind == "root":
@@ -231,16 +236,20 @@ def _parse_tokens(tokens: list[Token]) -> Node:
             raise _unexpected(token)
 
 
-def _name_node(token: Token) -> Name:
-    text = token.text
-    if "." not in text:
-        return Name(token.start, token.end, (NameSegment(text, token.start, token.end),))
-    segments: list[NameSegment] = []
-    offset = token.start
-    for part in token.text.split("."):
-        segments.append(NameSegment(part, offset, offset + len(part)))
-        offset += len(part) + 1
-    return Name(token.start, token.end, tuple(segments))
+def _name_node(token: Token) -> Name | Slot:
+    """The node of a name; ``[]`` alone is the empty place, in a longer name it is a syntax
+    problem."""
+    parts = token.parts
+    if len(parts) == 1 and parts[0].bracketed and parts[0].text == "":
+        return Slot(token.start, token.end)
+    for part in parts:
+        if part.bracketed and part.text == "":
+            raise SyntaxProblem("empty_part", part.start, part.end)
+    return Name(
+        token.start,
+        token.end,
+        tuple(NameSegment(part.text, part.start, part.end, part.bracketed) for part in parts),
+    )
 
 
 def _open_call(frames: list[_Frame], name: Token, tokens: list[Token], index: int) -> int:
@@ -265,6 +274,7 @@ def _open_call(frames: list[_Frame], name: Token, tokens: list[Token], index: in
             name_start=name.start,
             name_end=name.end,
             arguments=[],
+            separators=[],
         )
     )
     return index

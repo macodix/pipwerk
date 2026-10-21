@@ -21,8 +21,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from web_api_support import CONTRACT_FILE
 
-from pipwerk_studio import body_limit, cli, web_api
+from pipwerk_studio import cli
 from pipwerk_studio.app import create_app
+from pipwerk_studio.errors import ERROR_CODES
 from pipwerk_studio.storage import (
     SETTINGS_SINGLETON_ID,
     StudioSettingsRecord,
@@ -258,12 +259,7 @@ def test_description_of_the_public_web_api_under_contracts() -> None:
 
 
 def test_fixed_texts_of_the_public_web_api() -> None:
-    texts = [
-        value
-        for name, value in vars(web_api).items()
-        if name.endswith("_TEXT") and isinstance(value, str)
-    ]
-    texts += [body_limit.BODY_TOO_LARGE_TEXT]
-    assert len(texts) >= 12
+    texts = [info.text for info in ERROR_CODES.values()]
+    assert len(texts) >= 30
     for text in texts:
         assert_spelled_correctly(text)

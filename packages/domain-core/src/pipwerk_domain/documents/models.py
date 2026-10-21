@@ -1,7 +1,9 @@
-"""Pydantic models of the documents (specification 3.7). Only this package uses Pydantic.
+"""Pydantic models of the documents of the format 2.0 (specification 3.7). Only this package
+uses Pydantic.
 
 The models are strict (no conversion of values) and reject additional fields. The JSON
-schemas under ``contracts/strategies/v1/`` are generated from them.
+schemas under ``contracts/strategies/v2/`` are generated from them. Documents of the format
+1.0 are read by the models in :mod:`pipwerk_domain.documents.v1` and converted.
 """
 
 from typing import Annotated, Literal
@@ -15,21 +17,26 @@ from pydantic import (
 )
 
 from pipwerk_domain.expressions import nesting_depth
+from pipwerk_domain.identifiers import KEY_PATTERN
 from pipwerk_domain.limits import (
     MAX_CONNECTIONS,
     MAX_ELEMENTS,
     MAX_EXPRESSION_LENGTH,
     MAX_EXPRESSION_NESTING,
+    MAX_INPUTS_PER_ELEMENT,
     MAX_INSTANCE_NESTING,
+    MAX_KEY_LENGTH,
+    MAX_NAME_LENGTH,
     MAX_RULES_PER_LIST,
     MAX_STRATEGY_PARAMETERS,
 )
 
-FORMAT_VERSION = "1.0"
+FORMAT_VERSION = "2.0"
 """Version of the document format written by this library."""
 
-SUPPORTED_MAJOR_VERSION = 1
-"""A document with another major version is rejected."""
+SUPPORTED_MAJOR_VERSION = 2
+"""A document with another major version is rejected; a document of the major version 1 is
+read by converting it (specification 3.7)."""
 
 UUID_PATTERN = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 
@@ -46,8 +53,9 @@ DataTypeName = Literal[
     "expression",
     "object",
 ]
-BindingKindName = Literal["fixed", "parameter", "expression", "application"]
+BindingKindName = Literal["fixed", "parameter", "connection", "expression", "application"]
 ComparisonName = Literal["hoechstens", "mindestens", "gleich"]
+OrientationName = Literal["vertical", "horizontal"]
 
 
 def _check_depth(text: str) -> str:
@@ -66,6 +74,15 @@ FiniteFloat = Annotated[float, Field(allow_inf_nan=False)]
 ScalarValue = bool | int | FiniteFloat | str
 """The value of a fixed binding, a default or a strategy parameter."""
 UuidString = Annotated[str, Field(pattern=UUID_PATTERN)]
+Key = Annotated[
+    str,
+    Field(
+        pattern=KEY_PATTERN,
+        max_length=MAX_KEY_LENGTH,
+        description="Key of an object in an expression: a simple name",
+    ),
+]
+Name = Annotated[str, Field(max_length=MAX_NAME_LENGTH, description="Name of the user, free text")]
 RuleList = Annotated[list["InstanceDocument"], Field(max_length=MAX_RULES_PER_LIST)]
 
 
@@ -73,18 +90,30 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
+class DataLinkDocument(_Strict):
+    """The value of a data connection: a property of an instance on the drawing area, by the
+    keys of the instance and of the property."""
+
+    instance: Key
+    property: Key
+
+
 class BindingDocument(_Strict):
     """Value of a parameter or property with its kind of binding."""
 
     kind: BindingKindName
-    value: ScalarValue | None = None
+    value: ScalarValue | DataLinkDocument | None = None
 
     @model_validator(mode="after")
     def _check_value(self) -> BindingDocument:
-        if self.kind == "fixed" and self.value is None:
+        if self.kind == "fixed" and (
+            self.value is None or isinstance(self.value, DataLinkDocument)
+        ):
             raise ValueError("a fixed binding needs a value")
         if self.kind in ("parameter", "expression") and not isinstance(self.value, str):
             raise ValueError(f"a binding of the kind {self.kind} needs a text as value")
+        if self.kind == "connection" and not isinstance(self.value, DataLinkDocument):
+            raise ValueError("a binding of the kind connection needs an instance and a property")
         if self.kind == "application" and self.value is not None:
             raise ValueError("a binding of the kind application has no value")
         if self.kind == "expression" and isinstance(self.value, str):
@@ -95,18 +124,21 @@ class BindingDocument(_Strict):
 
 
 class OriginDocument(_Strict):
-    """Origin of an instance: object type and, if known, identifier and title of the template."""
+    """Origin of an instance: object type and, if known, the identifier of the template and,
+    for a template of the user only, its name at the time of insertion."""
 
     object_type: str
     template_id: UuidString | None = None
-    template_title: str | None = None
+    template_name: Name | None = None
 
 
 class ParameterDefinitionDocument(_Strict):
     """Own parameter of a template or instance."""
 
-    name: str
+    key: Key
+    name: Name
     datatype: DataTypeName
+    object_type: str | None = None
     required: bool = False
     default: ScalarValue | None = None
     choices: list[str] = Field(default_factory=list)
@@ -115,8 +147,10 @@ class ParameterDefinitionDocument(_Strict):
 class PropertyDefinitionDocument(_Strict):
     """Own property of an indicator or trend with its expression."""
 
-    name: str
+    key: Key
+    name: Name
     datatype: DataTypeName
+    object_type: str | None = None
     expression: Expression
     choices: list[str] = Field(default_factory=list)
 
@@ -124,8 +158,10 @@ class PropertyDefinitionDocument(_Strict):
 class StrategyParameterDocument(_Strict):
     """Parameter of a strategy: a value or "at the application"."""
 
-    name: str
+    key: Key
+    name: Name
     datatype: DataTypeName
+    object_type: str | None = None
     value: ScalarValue | None = None
     at_application: bool = False
     choices: list[str] = Field(default_factory=list)
@@ -146,45 +182,82 @@ class _Content(_Strict):
 
 
 class _InstanceHead(_Strict):
-    name: str
+    name: Name
+    key: Key
     object_type: str
     origin: OriginDocument | None = None
 
 
 class InstanceDocument(_Content, _InstanceHead):
     """A complete copy of a template or object type (E4). The base classes are in this
-    order so that name, object type and origin come before the content."""
+    order so that name, key, object type and origin come before the content."""
+
+
+class PositionDocument(_Strict):
+    """The place of an element on the drawing area, set by the user."""
+
+    x: FiniteFloat
+    y: FiniteFloat
+
+
+class InputDocument(_Strict):
+    """An input of an element: a property of an instance on the drawing area."""
+
+    instance: Key
+    property: Key
 
 
 class ElementDocument(_Strict):
     """An element on the drawing area. The type is a text; an unknown type is valid and
-    its values are kept."""
+    its values are kept. An element with an instance has no name and no key of its own."""
 
     id: UuidString
     type: str
-    title: str = ""
-    name: str | None = None
-    x: FiniteFloat = 0.0
-    y: FiniteFloat = 0.0
+    name: Name | None = None
+    key: Key | None = None
+    position: PositionDocument | None = None
     parameters: dict[str, BindingDocument] = Field(default_factory=dict)
     properties: dict[str, BindingDocument] = Field(default_factory=dict)
+    inputs: list[InputDocument] = Field(default_factory=list, max_length=MAX_INPUTS_PER_ELEMENT)
     rules: RuleList = Field(default_factory=list)
     management_of: UuidString | None = None
     instance: InstanceDocument | None = None
+
+    @model_validator(mode="after")
+    def _check_instance(self) -> ElementDocument:
+        if self.instance is not None and (self.name is not None or self.key is not None):
+            raise ValueError("an element with an instance has neither a name nor a key")
+        return self
 
 
 class ConnectionDocument(_Strict):
     """A connection from an output of an element to an element."""
 
+    id: UuidString
     source: UuidString
     output: str
     target: UuidString
 
 
+class SectionDocument(_Strict):
+    """A section: a named group of elements of one flow that can be collapsed. ``flow`` is the
+    identifier of the element "Order aufgeben" whose management the section belongs to, or
+    ``null`` for the main flow."""
+
+    id: UuidString
+    name: Name
+    flow: UuidString | None = None
+    elements: list[UuidString] = Field(default_factory=list, max_length=MAX_ELEMENTS)
+    collapsed: bool = False
+
+
 class _Document(_Strict):
     format_version: str = Field(
         pattern=rf"^{SUPPORTED_MAJOR_VERSION}\.[0-9]+$",
-        description="Version of the format; a document of a higher major version is rejected",
+        description=(
+            "Version of the format; a document of a higher major version is rejected, one of "
+            "the major version 1 is read by converting it"
+        ),
     )
 
 
@@ -224,7 +297,7 @@ class StrategyDocument(_Document):
 
     format: Literal["pipwerk.strategy"]
     id: UuidString
-    title: str
+    name: Name
     description: str = ""
     parameters: list[StrategyParameterDocument] = Field(
         default_factory=list, max_length=MAX_STRATEGY_PARAMETERS
@@ -232,16 +305,25 @@ class StrategyDocument(_Document):
     rules: RuleList = Field(default_factory=list)
     elements: list[ElementDocument] = Field(default_factory=list, max_length=MAX_ELEMENTS)
     connections: list[ConnectionDocument] = Field(default_factory=list, max_length=MAX_CONNECTIONS)
+    sections: list[SectionDocument] = Field(default_factory=list, max_length=MAX_ELEMENTS)
+    orientation: OrientationName = "vertical"
+    collapsed_managements: list[UuidString] = Field(default_factory=list, max_length=MAX_ELEMENTS)
 
     @model_validator(mode="before")
     @classmethod
     def _nesting(cls, data: object) -> object:
         return _check_nesting(data)
 
+    @model_validator(mode="after")
+    def _check_sections(self) -> StrategyDocument:
+        if len(self.sections) > len(self.elements):
+            raise ValueError("a strategy has at most as many sections as elements")
+        return self
+
 
 class _TemplateDocument(_Document, _Content):
     id: UuidString
-    title: str
+    name: Name
     description: str = ""
 
     @model_validator(mode="before")

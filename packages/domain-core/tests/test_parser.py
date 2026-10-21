@@ -8,6 +8,7 @@ from pipwerk_domain.expressions.nodes import (
     Name,
     Node,
     Number,
+    Slot,
     String,
     Unary,
     postorder,
@@ -90,11 +91,6 @@ def test_names(source: str, expected: str) -> None:
 @pytest.mark.parametrize(
     "source",
     [
-        "еma20",  # Cyrillic e in the first place
-        "ema2а",  # Cyrillic a in the last place
-        "Äpfel",
-        "größe",
-        "a.б",
         "１ + 1",  # full-width digit
         "٣ + 1",  # Arabic-indic digit
         "1 + ١٢",
@@ -102,10 +98,72 @@ def test_names(source: str, expected: str) -> None:
         "1.٥",
     ],
 )
-def test_only_ascii_letters_and_digits_make_names_and_numbers(source: str) -> None:
+def test_only_ascii_digits_make_numbers(source: str) -> None:
     result = parse(source)
     assert result.issue is not None
     assert result.issue.reason in ("invalid_character", "invalid_number")
+
+
+@pytest.mark.parametrize(
+    ("source", "texts"),
+    [
+        ("еma20", ["еma20"]),  # Cyrillic e in the first place
+        ("ema2а", ["ema2а"]),  # Cyrillic a in the last place
+        ("Äpfel", ["Äpfel"]),
+        ("größe", ["größe"]),
+        ("a.б", ["a", "б"]),
+        ("[EMA 20].Wert", ["EMA 20", "Wert"]),
+        ("Strategie.[Stop-Abstand]", ["Strategie", "Stop-Abstand"]),
+        ("[1.5 Faktor]", ["1.5 Faktor"]),  # a point inside the brackets is part of the name
+    ],
+)
+def test_the_letters_of_any_script_and_names_in_brackets_make_names(
+    source: str, texts: list[str]
+) -> None:
+    """The display form has names of the user with umlauts and spaces (specification 3.4)."""
+    result = parse(source)
+    assert result.issue is None
+    assert isinstance(result.tree, Name)
+    assert [item.text for item in result.tree.segments] == texts
+
+
+def test_a_name_in_brackets_has_the_position_with_its_brackets() -> None:
+    result = parse("[EMA 20].Wert")
+    assert isinstance(result.tree, Name)
+    first, second = result.tree.segments
+    assert (first.start, first.end, first.bracketed) == (0, 8, True)
+    assert (second.start, second.end, second.bracketed) == (9, 13, False)
+
+
+@pytest.mark.parametrize(
+    ("source", "reason"),
+    [
+        ("[EMA 20", "unterminated_bracket"),
+        ("a + [EMA", "unterminated_bracket"),
+        ("[a].[].b", "empty_part"),
+        ("[].a", "empty_part"),
+        ("a.", "invalid_character"),
+        ("[a]]", "invalid_character"),
+    ],
+)
+def test_names_in_brackets_have_syntax_problems(source: str, reason: str) -> None:
+    result = parse(source)
+    assert result.issue is not None
+    assert result.issue.reason == reason
+
+
+def test_the_empty_place_is_an_expression_of_its_own() -> None:
+    result = parse("[]")
+    assert isinstance(result.tree, Slot)
+    both = parse("IF([]; 1; [])")
+    assert isinstance(both.tree, Call)
+    assert [type(item) for item in both.tree.args] == [Slot, Number, Slot]
+
+
+def test_calls_know_the_positions_of_their_separators() -> None:
+    result = parse("IF(a;  b; c)")
+    assert isinstance(result.tree, Call)
+    assert result.tree.arg_separators == (4, 8)
 
 
 def test_a_line_feed_ends_a_name() -> None:

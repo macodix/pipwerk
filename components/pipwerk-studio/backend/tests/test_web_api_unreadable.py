@@ -42,6 +42,9 @@ CONFLICT_TEXT = (
     "An entry of another kind has this identifier in the object directory (any entry, for "
     "example a file, a symbolic link or a directory). Nothing was written."
 )
+UNREADABLE = {"detail": TEXT, "code": "object.unreadable", "params": {}}
+LINK = {"detail": LINK_TEXT, "code": "object.name_taken", "params": {}}
+CONFLICT = {"detail": CONFLICT_TEXT, "code": "object.kind_conflict", "params": {}}
 
 
 def place(objects: Path, name: str, content: bytes) -> Path:
@@ -92,7 +95,7 @@ def test_a_file_that_is_not_readable_is_listed_with_the_mark_and_not_changed(
     assert set(by_id) == {BAD_ID, ok_id}
     broken = by_id[BAD_ID]
     assert broken["unreadable"] is True
-    assert broken["title"] is None
+    assert broken["name"] is None
     assert broken["description"] is None
     assert broken["object_type"] is None
     assert broken["modified"].endswith("Z")
@@ -101,16 +104,16 @@ def test_a_file_that_is_not_readable_is_listed_with_the_mark_and_not_changed(
 
     answer = client.get(f"/api/v1/rules/{BAD_ID}")
     assert answer.status_code == 409
-    assert answer.json() == {"detail": TEXT}
+    assert answer.json() == UNREADABLE
 
     document = rule_document()
     document["id"] = BAD_ID
     replaced = put(client, "rules", BAD_ID, document)
     assert replaced.status_code == 409
-    assert replaced.json() == {"detail": TEXT}
+    assert replaced.json() == UNREADABLE
     deleted = client.delete(f"/api/v1/rules/{BAD_ID}")
     assert deleted.status_code == 409
-    assert deleted.json() == {"detail": TEXT}
+    assert deleted.json() == UNREADABLE
     assert client.get(f"/api/v1/rules/{BAD_ID}/usages").status_code == 409
 
     assert path.read_bytes() == before
@@ -146,11 +149,11 @@ def test_usages_skip_files_that_are_not_readable_and_count_them(
 def test_a_file_that_a_newer_version_wrote_is_kept(client: TestClient, objects: Path) -> None:
     newer = rule_document()
     newer["id"] = BAD_ID
-    newer["format_version"] = "2.0"
+    newer["format_version"] = "3.0"
     path = place(objects, f"{BAD_ID}.rule.json", body(newer))
     assert client.get("/api/v1/rules").json()["items"][0]["unreadable"] is True
     assert client.delete(f"/api/v1/rules/{BAD_ID}").status_code == 409
-    assert json.loads(path.read_bytes())["format_version"] == "2.0"
+    assert json.loads(path.read_bytes())["format_version"] == "3.0"
 
 
 def test_other_files_are_neither_listed_nor_changed(client: TestClient, objects: Path) -> None:
@@ -186,7 +189,7 @@ def test_a_symbolic_link_is_neither_listed_nor_read_nor_deleted(
     # saving never follows or replaces the link: nothing is written
     response = put(client, "rules", BAD_ID, document)
     assert response.status_code == 409
-    assert response.json() == {"detail": LINK_TEXT}
+    assert response.json() == LINK
     assert (objects / f"{BAD_ID}.rule.json").is_symlink()
     assert target.read_bytes() == valid_rule_text(BAD_ID)
     assert sorted(path.name for path in objects.iterdir()) == [f"{BAD_ID}.rule.json"]
@@ -205,7 +208,7 @@ def test_a_symbolic_link_of_another_kind_blocks_saving(
     document["id"] = BAD_ID
     response = put(client, "rules", BAD_ID, document)
     assert response.status_code == 409
-    assert response.json() == {"detail": CONFLICT_TEXT}
+    assert response.json() == CONFLICT
     assert (objects / f"{BAD_ID}.ruleset.json").is_symlink()
     assert sorted(path.name for path in objects.iterdir()) == [f"{BAD_ID}.ruleset.json"]
     assert target.exists() is not dangling
@@ -222,7 +225,7 @@ def test_a_dangling_symbolic_link_of_the_same_kind_blocks_saving(
     document["id"] = BAD_ID
     response = put(client, "rules", BAD_ID, document)
     assert response.status_code == 409
-    assert response.json() == {"detail": LINK_TEXT}
+    assert response.json() == LINK
     assert not (tmp_path / "missing.json").exists()
 
 
@@ -297,7 +300,7 @@ def test_any_entry_of_another_kind_blocks_creating_and_replacing(
     document["id"] = BAD_ID
     response = put(client, "rules", BAD_ID, document)
     assert response.status_code == 409
-    assert response.json() == {"detail": CONFLICT_TEXT}
+    assert response.json() == CONFLICT
     assert snapshot(objects) == before
     assert (target.read_bytes() if target.exists() else None) == target_before
 
@@ -316,7 +319,7 @@ def test_a_link_or_a_directory_under_the_name_of_the_path_blocks_saving(
     document["id"] = BAD_ID
     response = put(client, "rules", BAD_ID, document)
     assert response.status_code == 409
-    assert response.json() == {"detail": LINK_TEXT}
+    assert response.json() == LINK
     assert snapshot(objects) == before
     assert (target.read_bytes() if target.exists() else None) == target_before
 
@@ -330,7 +333,7 @@ def test_a_file_that_is_not_readable_under_the_name_of_the_path_blocks_saving(
     document["id"] = BAD_ID
     response = put(client, "rules", BAD_ID, document)
     assert response.status_code == 409
-    assert response.json() == {"detail": TEXT}
+    assert response.json() == UNREADABLE
     assert snapshot(objects) == before
 
 
@@ -354,7 +357,7 @@ def test_a_file_that_becomes_readable_is_read_at_once(client: TestClient, object
     place(objects, f"{BAD_ID}.rule.json", valid_rule_text(BAD_ID))
     item = client.get("/api/v1/rules").json()["items"][0]
     assert item["unreadable"] is False
-    assert item["title"] == "Mindestvolumen"
+    assert item["name"] == "Mindestvolumen"
     assert client.get(f"/api/v1/rules/{BAD_ID}").status_code == 200
     (objects / f"{BAD_ID}.rule.json").unlink()
     assert client.get("/api/v1/rules").json() == {"items": []}

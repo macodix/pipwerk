@@ -1,0 +1,548 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "BindingDocument": {
+      "additionalProperties": false,
+      "description": "Value of a parameter or property with its kind of binding.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "fixed",
+            "parameter",
+            "connection",
+            "expression",
+            "application"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/DataLinkDocument"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "BindingDocument",
+      "type": "object"
+    },
+    "DataLinkDocument": {
+      "additionalProperties": false,
+      "description": "The value of a data connection: a property of an instance on the drawing area, by the\nkeys of the instance and of the property.",
+      "properties": {
+        "instance": {
+          "description": "Key of an object in an expression: a simple name",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Instance",
+          "type": "string"
+        },
+        "property": {
+          "description": "Key of an object in an expression: a simple name",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Property",
+          "type": "string"
+        }
+      },
+      "required": [
+        "instance",
+        "property"
+      ],
+      "title": "DataLinkDocument",
+      "type": "object"
+    },
+    "InstanceDocument": {
+      "additionalProperties": false,
+      "description": "A complete copy of a template or object type (E4). The base classes are in this\norder so that name, key, object type and origin come before the content.",
+      "properties": {
+        "name": {
+          "description": "Name of the user, free text",
+          "maxLength": 200,
+          "title": "Name",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key of an object in an expression: a simple name",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Key",
+          "type": "string"
+        },
+        "object_type": {
+          "title": "Object Type",
+          "type": "string"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OriginDocument"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parameter_values": {
+          "additionalProperties": {
+            "$ref": "#/$defs/BindingDocument"
+          },
+          "title": "Parameter Values",
+          "type": "object"
+        },
+        "parameters": {
+          "items": {
+            "$ref": "#/$defs/ParameterDefinitionDocument"
+          },
+          "title": "Parameters",
+          "type": "array"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PropertyDefinitionDocument"
+          },
+          "title": "Properties"
+        },
+        "instances": {
+          "items": {
+            "$ref": "#/$defs/InstanceDocument"
+          },
+          "title": "Instances",
+          "type": "array"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/InstanceDocument"
+          },
+          "maxItems": 200,
+          "title": "Rules",
+          "type": "array"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "description": "Expression in OpenFormula notation",
+              "maxLength": 4096,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "determined_property": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Determined Property"
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "enum": [
+                "hoechstens",
+                "mindestens",
+                "gleich"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison"
+        },
+        "result_expression": {
+          "anyOf": [
+            {
+              "description": "Expression in OpenFormula notation",
+              "maxLength": 4096,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Expression"
+        }
+      },
+      "required": [
+        "name",
+        "key",
+        "object_type"
+      ],
+      "title": "InstanceDocument",
+      "type": "object"
+    },
+    "OriginDocument": {
+      "additionalProperties": false,
+      "description": "Origin of an instance: object type and, if known, the identifier of the template and,\nfor a template of the user only, its name at the time of insertion.",
+      "properties": {
+        "object_type": {
+          "title": "Object Type",
+          "type": "string"
+        },
+        "template_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template Id"
+        },
+        "template_name": {
+          "anyOf": [
+            {
+              "description": "Name of the user, free text",
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template Name"
+        }
+      },
+      "required": [
+        "object_type"
+      ],
+      "title": "OriginDocument",
+      "type": "object"
+    },
+    "ParameterDefinitionDocument": {
+      "additionalProperties": false,
+      "description": "Own parameter of a template or instance.",
+      "properties": {
+        "key": {
+          "description": "Key of an object in an expression: a simple name",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Key",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the user, free text",
+          "maxLength": 200,
+          "title": "Name",
+          "type": "string"
+        },
+        "datatype": {
+          "enum": [
+            "number",
+            "integer",
+            "percent",
+            "boolean",
+            "text",
+            "choice",
+            "time_unit",
+            "timestamp",
+            "date",
+            "expression",
+            "object"
+          ],
+          "title": "Datatype",
+          "type": "string"
+        },
+        "object_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Object Type"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        },
+        "choices": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Choices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "name",
+        "datatype"
+      ],
+      "title": "ParameterDefinitionDocument",
+      "type": "object"
+    },
+    "PropertyDefinitionDocument": {
+      "additionalProperties": false,
+      "description": "Own property of an indicator or trend with its expression.",
+      "properties": {
+        "key": {
+          "description": "Key of an object in an expression: a simple name",
+          "maxLength": 200,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Key",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the user, free text",
+          "maxLength": 200,
+          "title": "Name",
+          "type": "string"
+        },
+        "datatype": {
+          "enum": [
+            "number",
+            "integer",
+            "percent",
+            "boolean",
+            "text",
+            "choice",
+            "time_unit",
+            "timestamp",
+            "date",
+            "expression",
+            "object"
+          ],
+          "title": "Datatype",
+          "type": "string"
+        },
+        "object_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Object Type"
+        },
+        "expression": {
+          "description": "Expression in OpenFormula notation",
+          "maxLength": 4096,
+          "title": "Expression",
+          "type": "string"
+        },
+        "choices": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Choices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "name",
+        "datatype",
+        "expression"
+      ],
+      "title": "PropertyDefinitionDocument",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Document of a ruleset.",
+  "properties": {
+    "parameter_values": {
+      "additionalProperties": {
+        "$ref": "#/$defs/BindingDocument"
+      },
+      "title": "Parameter Values",
+      "type": "object"
+    },
+    "parameters": {
+      "items": {
+        "$ref": "#/$defs/ParameterDefinitionDocument"
+      },
+      "title": "Parameters",
+      "type": "array"
+    },
+    "properties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PropertyDefinitionDocument"
+      },
+      "title": "Properties"
+    },
+    "instances": {
+      "items": {
+        "$ref": "#/$defs/InstanceDocument"
+      },
+      "title": "Instances",
+      "type": "array"
+    },
+    "rules": {
+      "items": {
+        "$ref": "#/$defs/InstanceDocument"
+      },
+      "maxItems": 200,
+      "title": "Rules",
+      "type": "array"
+    },
+    "expression": {
+      "anyOf": [
+        {
+          "description": "Expression in OpenFormula notation",
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expression"
+    },
+    "determined_property": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Determined Property"
+    },
+    "comparison": {
+      "anyOf": [
+        {
+          "enum": [
+            "hoechstens",
+            "mindestens",
+            "gleich"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Comparison"
+    },
+    "result_expression": {
+      "anyOf": [
+        {
+          "description": "Expression in OpenFormula notation",
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result Expression"
+    },
+    "format_version": {
+      "description": "Version of the format; a document of a higher major version is rejected, one of the major version 1 is read by converting it",
+      "pattern": "^2\\.[0-9]+$",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of the user, free text",
+      "maxLength": 200,
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "format": {
+      "const": "pipwerk.ruleset",
+      "title": "Format",
+      "type": "string"
+    },
+    "object_type": {
+      "const": "Regelwerk",
+      "title": "Object Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "format_version",
+    "id",
+    "name",
+    "format",
+    "object_type"
+  ],
+  "title": "RulesetDocument",
+  "type": "object"
+}

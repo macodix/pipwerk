@@ -25,6 +25,7 @@ from pipwerk_domain.model import (
     Element,
     Instance,
     Origin,
+    Position,
     PropertyDefinition,
     Strategy,
     StrategyParameter,
@@ -55,7 +56,7 @@ from tests.helpers import (
 )
 from tests.paths import TESTCASE_DIRECTORY
 
-HEAD = f'"format": "pipwerk.strategy", "format_version": "1.0", "id": "{uid(1)}", "title": "t"'
+HEAD = f'"format": "pipwerk.strategy", "format_version": "2.0", "id": "{uid(1)}", "name": "t"'
 
 
 def text_with(extra: str) -> str:
@@ -167,14 +168,20 @@ def test_a_template_may_not_use_other_unknown_names() -> None:
 # B2, B3: numbers that are no JSON values ---------------------------------------------------------
 
 PLACES = {
-    "strategy parameter": '"parameters": [{"name": "a", "datatype": "number", "value": %s}]',
-    "coordinate": '"elements": [{"id": "' + uid(2) + '", "type": "t", "x": %s}]',
-    "coordinate y": '"elements": [{"id": "' + uid(2) + '", "type": "t", "y": %s}]',
+    "strategy parameter": (
+        '"parameters": [{"key": "a", "name": "a", "datatype": "number", "value": %s}]'
+    ),
+    "coordinate": '"elements": [{"id": "'
+    + uid(2)
+    + '", "type": "t", "position": {"x": %s, "y": 0}}]',
+    "coordinate y": '"elements": [{"id": "'
+    + uid(2)
+    + '", "type": "t", "position": {"x": 0, "y": %s}}]',
     "fixed value": '"elements": [{"id": "'
     + uid(2)
     + '", "type": "t", "parameters": {"a": {"kind": "fixed", "value": %s}}}]',
-    "default": '"rules": [{"name": "r", "object_type": "Regel", "parameters": '
-    '[{"name": "a", "datatype": "number", "default": %s}]}]',
+    "default": '"rules": [{"name": "r", "key": "r", "object_type": "Regel", "parameters": '
+    '[{"key": "a", "name": "a", "datatype": "number", "default": %s}]}]',
 }
 
 
@@ -199,14 +206,14 @@ def test_python_objects_with_non_finite_numbers_are_rejected(value: float) -> No
         parse_document(
             {
                 "format": "pipwerk.strategy",
-                "format_version": "1.0",
+                "format_version": "2.0",
                 "id": uid(1),
-                "title": "t",
-                "elements": [{"id": uid(2), "type": "t", "x": value}],
+                "name": "t",
+                "elements": [{"id": uid(2), "type": "t", "position": {"x": value, "y": 0}}],
             }
         )
     strategy = valid_strategy()
-    strategy.elements[0].x = value
+    strategy.elements[0].position = Position(value, 0.0)
     with pytest.raises(DocumentError):
         write_document(strategy)
     strategy = valid_strategy()
@@ -242,7 +249,7 @@ def test_written_documents_are_valid_json_for_strict_readers(name: str) -> None:
 
 
 def test_a_key_twice_in_an_object_is_rejected() -> None:
-    twice = "{" + HEAD + ', "title": "y"}'
+    twice = "{" + HEAD + ', "name": "y"}'
     with pytest.raises(DocumentError):
         parse_document(twice)
     with pytest.raises(DocumentError):
@@ -251,7 +258,7 @@ def test_a_key_twice_in_an_object_is_rejected() -> None:
     with pytest.raises(DocumentError):
         parse_document(nested)
     inner = text_with(
-        '"rules": [{"name": "r", "object_type": "Regel", "parameter_values": '
+        '"rules": [{"name": "r", "key": "r", "object_type": "Regel", "parameter_values": '
         '{"a": {"kind": "fixed", "value": 1}, "a": {"kind": "fixed", "value": 2}}}]'
     )
     with pytest.raises(DocumentError):
@@ -260,7 +267,7 @@ def test_a_key_twice_in_an_object_is_rejected() -> None:
 
 def test_a_document_without_a_repeated_key_is_still_read() -> None:
     document = parse_document(text_with('"description": "d"'))
-    assert document.title == "t"
+    assert document.name == "t"
 
 
 def test_problems_of_the_json_text_are_validation_errors() -> None:
@@ -306,41 +313,50 @@ def test_invalid_names(name: str) -> None:
     assert not is_valid_name(name)
 
 
-def test_names_with_a_line_feed_or_another_script_are_a_finding() -> None:
+def test_keys_with_a_line_feed_or_another_script_are_a_finding() -> None:
+    """The key in an expression is a simple name in ASCII letters; the name of the user is
+    free text (specification 3.3)."""
     for bad in ("ema20\n", "еma20", "ema٣"):
         strategy = valid_strategy()
         strategy.elements.append(element(5, "EMA", instance=ema(bad)))
-        found = only(check(strategy), fc.NAME_INVALID)
-        assert [item.details["name"] for item in found] == [bad]
+        found = only(check(strategy), fc.KEY_INVALID)
+        assert [item.details["key"] for item in found] == [bad]
     strategy = valid_strategy()
     strategy.elements.insert(1, calculation(5, "c\n", "1"))
     strategy.connections = [connect(1, "weiter", 5), connect(5, "weiter", 2)]
-    assert only(check(strategy), fc.NAME_INVALID)
+    assert only(check(strategy), fc.KEY_INVALID)
     strategy = valid_strategy()
     strategy.rules.append(rule("r\n", "TRUE()"))
-    assert only(check(strategy), fc.NAME_INVALID)
+    assert only(check(strategy), fc.KEY_INVALID)
     strategy = valid_strategy()
-    strategy.parameters = [StrategyParameter("p\n", DataType.NUMBER, 1)]
-    assert only(check(strategy), fc.NAME_INVALID)
+    strategy.parameters = [StrategyParameter("p", DataType.NUMBER, 1, key="p\n")]
+    assert only(check(strategy), fc.KEY_INVALID)
 
 
-def test_an_instance_with_a_look_alike_name_is_not_the_instance_of_the_ascii_name() -> None:
+def test_an_instance_with_a_look_alike_key_is_not_the_instance_of_the_ascii_key() -> None:
     strategy = valid_strategy()
     strategy.elements.append(element(5, "EMA", instance=ema("ema20")))
     strategy.elements.append(element(6, "EMA", instance=ema("еma20")))
     found = check(strategy)
-    assert [item.element for item in only(found, fc.NAME_INVALID)] == [uid(6)]
+    assert [item.element for item in only(found, fc.KEY_INVALID)] == [uid(6)]
     assert only(found, fc.NAME_DUPLICATE) == []
 
 
 @pytest.mark.parametrize(
     "text",
-    ["٣ + 1", "１ + 1", "1 + ١٢", "12٣", "1.٥", "еma20 + 1"],
+    ["٣ + 1", "１ + 1", "1 + ١٢", "12٣", "1.٥"],
 )
-def test_expressions_take_only_ascii_numbers_and_names(text: str) -> None:
+def test_expressions_take_only_ascii_numbers(text: str) -> None:
     result = analyze(text, Scope())
     assert [item.kind.value for item in result.issues] == ["syntax"]
     assert result.issues[0].reason in ("invalid_character", "invalid_number")
+
+
+def test_a_name_of_another_script_is_a_name_that_is_not_known() -> None:
+    """A look-alike letter makes another name: it is no syntax problem, and the stored form
+    does not find the ASCII key (the display form finds names of the user in any script)."""
+    result = analyze("еma20 + 1", Scope())
+    assert [item.kind.value for item in result.issues] == ["unknown_name"]
 
 
 # Sicherheit B1: long chains of calculations
@@ -358,7 +374,7 @@ def chain_strategy(length: int, *, closing: str = "1") -> Strategy:
         connections.append(connect(number - 1, "weiter", number))
     elements.append(place_order(length + 2))
     connections.append(connect(length + 1, "weiter", length + 2))
-    return Strategy(id=uid(900), title="kette", elements=elements, connections=connections)
+    return Strategy(id=uid(900), name="kette", elements=elements, connections=connections)
 
 
 def test_a_chain_of_calculations_up_to_the_limit_of_elements() -> None:
@@ -612,7 +628,7 @@ def test_a_document_of_2_mib_is_checked_within_time_and_memory() -> None:
     for number in range(2, 442):
         elements.append(calculation(number, f"c{number}", expression))
         connections.append(connect(number - 1, "weiter", number))
-    strategy = Strategy(id=uid(900), title="gross", elements=elements, connections=connections)
+    strategy = Strategy(id=uid(900), name="gross", elements=elements, connections=connections)
     text = write_document(strategy)
     size = len(text.encode())
     assert limits.MAX_DOCUMENT_BYTES * 0.9 < size <= limits.MAX_DOCUMENT_BYTES
@@ -643,7 +659,7 @@ def test_normalization_of_a_hostile_document_is_bounded() -> None:
     for number in range(2, 200):
         elements.append(calculation(number, f"c{number}", many_names(2048)))
         connections.append(connect(number - 1, "weiter", number))
-    strategy = Strategy(id=uid(900), title="gross", elements=elements, connections=connections)
+    strategy = Strategy(id=uid(900), name="gross", elements=elements, connections=connections)
     started = time.perf_counter()
     result = normalize_strategy(strategy)
     assert time.perf_counter() - started < 10
@@ -752,7 +768,11 @@ def test_str_01_management_calculations_use_the_direction_of_the_order() -> None
     order = next(item for item in strategy.elements if item.type == catalog.FLOW_PLACE_ORDER)
     management = strategy.management(order.id)
     assert management is not None
-    calculations = {item.name: item for item in management.elements if item.name}
+    calculations = {
+        item.key: item
+        for item in management.elements
+        if item.key and item.type == catalog.FLOW_CALCULATION
+    }
     assert set(calculations) == {"stop_neu", "ziel_neu"}
     for name, item in calculations.items():
         text = str(item.parameters["ausdruck"].value)
@@ -765,7 +785,7 @@ def test_str_01_management_calculations_use_the_direction_of_the_order() -> None
         "mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
     )
     # in the main flow the direction of the signal time unit decides, there is no order yet
-    main = [item for item in strategy.main_elements() if item.name in ("einstieg", "stop", "ziel")]
+    main = [item for item in strategy.main_elements() if item.key in ("einstieg", "stop", "ziel")]
     assert len(main) == 3
     for item in main:
         assert 'mt_signal.trendrichtung = "aufwaerts"' in str(item.parameters["ausdruck"].value)

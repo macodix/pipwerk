@@ -77,7 +77,8 @@ def test_a_test_case_is_created_listed_and_read_back_equal_except_identifier(
 
     listing = client.get("/api/v1/strategies").json()["items"]
     assert [item["id"] for item in listing] == [object_id]
-    assert listing[0]["title"] == document["title"]
+    assert listing[0]["name"] == document["name"]
+    assert "title" not in listing[0]
     assert listing[0]["description"] == document["description"]
     assert listing[0]["unreadable"] is False
 
@@ -96,8 +97,8 @@ def test_both_test_cases_are_listed_with_one_file_each(client: TestClient, objec
     assert files(objects) == sorted([f"{first}.strategy.json", f"{second}.strategy.json"])
     for item in listing:
         assert item["modified"].endswith("Z")
-    titles = [item["title"] for item in listing]
-    assert titles == sorted(titles, key=str.casefold)
+    names = [item["name"] for item in listing]
+    assert names == sorted(names, key=str.casefold)
 
 
 def test_the_stored_file_is_the_document_as_the_library_writes_it(
@@ -137,13 +138,13 @@ def test_create_list_read_replace_and_delete_for_every_kind(
     assert stored["id"] == object_id
 
     changed = copy.deepcopy(stored)
-    changed["title"] = "Geändert"
+    changed["name"] = "Geändert"
     changed["description"] = "Neue Beschreibung"
     replaced = put(client, art, object_id, changed)
     assert replaced.status_code == 200, replaced.text
     assert replaced.json()["id"] == object_id
-    assert replaced.json()["document"]["title"] == "Geändert"
-    assert client.get(f"/api/v1/{art}/{object_id}").json()["title"] == "Geändert"
+    assert replaced.json()["document"]["name"] == "Geändert"
+    assert client.get(f"/api/v1/{art}/{object_id}").json()["name"] == "Geändert"
     assert client.get(f"/api/v1/{art}").json()["items"][0]["description"] == "Neue Beschreibung"
     assert files(objects) == [f"{object_id}.{kind}.json"]
 
@@ -164,7 +165,11 @@ def test_an_unknown_identifier_is_404_for_read_delete_and_usages(
     assert client.delete(f"/api/v1/{art}/{unknown}").status_code == 404
     assert client.get(f"/api/v1/{art}/{unknown}/usages").status_code == 404
     answer = client.get(f"/api/v1/{art}/{unknown}")
-    assert answer.json() == {"detail": "The object does not exist."}
+    assert answer.json() == {
+        "detail": "The object does not exist.",
+        "code": "object.not_found",
+        "params": {},
+    }
 
 
 @pytest.mark.parametrize("art", list(ARTS))
@@ -181,6 +186,8 @@ def test_the_identifier_must_be_a_uuid_otherwise_422(
     assert response.status_code == 422
     assert response.json() == {
         "detail": "The request is invalid.",
+        "code": "request.invalid",
+        "params": {},
         "errors": [{"location": ["path", "id"], "type": "uuid_parsing"}],
     }
     assert "not-a-uuid" not in response.text  # the input is not repeated
@@ -221,6 +228,8 @@ def test_the_format_must_fit_the_kind_of_object(client: TestClient, art: str) ->
         assert response.status_code == 422, (art, other)
         assert response.json() == {
             "detail": "The format of the document does not fit the kind of object.",
+            "code": "document.format_mismatch",
+            "params": {},
             "errors": [{"location": ["format"], "type": "format_mismatch"}],
         }
     assert client.get(f"/api/v1/{art}").json() == {"items": []}
@@ -248,6 +257,8 @@ def test_the_identifier_of_the_path_is_authoritative(client: TestClient, objects
     assert response.status_code == 422
     assert response.json() == {
         "detail": "The identifier of the document differs from the identifier in the path.",
+        "code": "document.id_mismatch",
+        "params": {},
         "errors": [{"location": ["id"], "type": "id_mismatch"}],
     }
     assert files(objects) == [f"{object_id}.strategy.json"]
@@ -292,10 +303,10 @@ def test_put_on_an_existing_file_is_200_and_a_second_put_too(
 ) -> None:
     document = load_case("str-03")
     assert put(client, "strategies", document["id"], document).status_code == 201
-    document["title"] = "Zweite Fassung"
+    document["name"] = "Zweite Fassung"
     response = put(client, "strategies", document["id"], document)
     assert response.status_code == 200
-    assert response.json()["document"]["title"] == "Zweite Fassung"
+    assert response.json()["document"]["name"] == "Zweite Fassung"
     assert files(objects) == [f"{document['id']}.strategy.json"]
 
 
@@ -322,17 +333,17 @@ def test_save_after_changing_the_object_directory_without_moving_writes_to_the_n
     assert changed.status_code == 200
 
     document = copy.deepcopy(created["document"])
-    document["title"] = "Im neuen Verzeichnis"
+    document["name"] = "Im neuen Verzeichnis"
     response = put(client, "strategies", object_id, document)
 
     assert response.status_code == 201
     assert response.json()["findings"] == []
     assert files(new) == [f"{object_id}.strategy.json"]
-    assert json.loads((new / f"{object_id}.strategy.json").read_text("utf-8"))["title"] == (
+    assert json.loads((new / f"{object_id}.strategy.json").read_text("utf-8"))["name"] == (
         "Im neuen Verzeichnis"
     )
     assert (objects / f"{object_id}.strategy.json").read_bytes() == old_text  # left unchanged
-    assert client.get(f"/api/v1/strategies/{object_id}").json()["title"] == "Im neuen Verzeichnis"
+    assert client.get(f"/api/v1/strategies/{object_id}").json()["name"] == "Im neuen Verzeichnis"
     again = put(client, "strategies", object_id, document)
     assert again.status_code == 200  # now it exists in the new directory
 
@@ -351,7 +362,9 @@ def test_put_on_a_missing_file_is_refused_if_a_file_of_another_kind_has_the_iden
         "detail": (
             "An entry of another kind has this identifier in the object directory (any "
             "entry, for example a file, a symbolic link or a directory). Nothing was written."
-        )
+        ),
+        "code": "object.kind_conflict",
+        "params": {},
     }
     assert {name: (objects / name).read_bytes() for name in files(objects)} == before
     assert files(objects) == [f"{object_id}.rule.json"]
@@ -401,19 +414,19 @@ def _remove_trigger(document: dict[str, Any]) -> None:
 
 
 def _misspell(document: dict[str, Any]) -> None:
-    _find(document, "flow.condition", title="Kreuzen")["parameters"]["ausdruck"]["value"] = (
+    _find(document, "flow.condition", name="Kreuzen")["parameters"]["ausdruck"]["value"] = (
         "ema20.wert > > 1"
     )
 
 
 def _unknown_name(document: dict[str, Any]) -> None:
-    _find(document, "flow.condition", title="Kreuzen")["parameters"]["ausdruck"]["value"] = (
+    _find(document, "flow.condition", name="Kreuzen")["parameters"]["ausdruck"]["value"] = (
         "gibtesnicht.wert > 1"
     )
 
 
 def _order_in_main_flow(document: dict[str, Any]) -> None:
-    _find(document, "flow.condition", title="Kreuzen")["parameters"]["ausdruck"]["value"] = (
+    _find(document, "flow.condition", name="Kreuzen")["parameters"]["ausdruck"]["value"] = (
         "Order.volumen > 0"
     )
 
@@ -425,7 +438,8 @@ def _order_in_indicator(document: dict[str, Any]) -> None:
             "origin": {"object_type": "Indikator"},
             "rules": [
                 {
-                    "name": "regel",
+                    "name": "Regel",
+                    "key": "regel",
                     "object_type": "Regel",
                     "origin": {"object_type": "Regel"},
                     "expression": "Order.volumen > 0",
@@ -439,21 +453,26 @@ def _modify_order_outside_management(document: dict[str, Any]) -> None:
     trigger = _find(document, "trigger.candle_close", management_of=None)
     element_id = "00000000-0000-4000-8000-0000000000aa"
     document["elements"].append(
-        {"id": element_id, "type": "flow.modify_order", "title": "Order ändern"}
+        {"id": element_id, "type": "flow.modify_order", "name": "Order ändern"}
     )
     document["connections"].append(
-        {"source": trigger["id"], "output": "weiter", "target": element_id}
+        {
+            "id": "00000000-0000-4000-8000-0000000000ac",
+            "source": trigger["id"],
+            "output": "weiter",
+            "target": element_id,
+        }
     )
 
 
 def _unknown_element_type(document: dict[str, Any]) -> None:
     document["elements"].append(
-        {"id": "00000000-0000-4000-8000-0000000000bb", "type": "x.unbekannt", "title": "?"}
+        {"id": "00000000-0000-4000-8000-0000000000bb", "type": "x.unbekannt", "name": "?"}
     )
 
 
 CHANGES: list[tuple[str, Callable[[dict[str, Any]], None], str]] = [
-    ("removed trigger", _remove_trigger, "flow.no_incoming"),
+    ("removed trigger", _remove_trigger, "flow.not_reached"),
     ("misspelling", _misspell, "expression.invalid"),
     ("unknown name", _unknown_name, "expression.invalid"),
     ("order in the main flow", _order_in_main_flow, "expression.order_outside_management"),
@@ -500,7 +519,7 @@ def test_put_saves_a_changed_test_case_with_its_findings(
 def test_the_misspelling_is_reported_with_its_place(client: TestClient) -> None:
     document = load_case("str-03")
     _misspell(document)
-    element = _find(document, "flow.condition", title="Kreuzen")
+    element = _find(document, "flow.condition", name="Kreuzen")
     findings = check(client, document).json()["findings"]
     invalid = [item for item in findings if item["code"] == "expression.invalid"]
     assert len(invalid) == 1
@@ -530,7 +549,7 @@ def test_put_with_findings_still_answers_200_and_post_with_findings_201(
     _remove_trigger(document)
     created = post(client, "strategies", document)
     assert created.status_code == 201
-    assert "flow.no_incoming" in codes(created.json()["findings"])
+    assert "flow.not_reached" in codes(created.json()["findings"])
     assert "strategy.no_trigger" not in codes(created.json()["findings"])
     assert client.get(f"/api/v1/strategies/{created.json()['id']}").status_code == 200
 
@@ -541,7 +560,7 @@ def test_a_document_with_an_unknown_element_type_is_kept_as_it_is(client: TestCl
         {
             "id": "00000000-0000-4000-8000-0000000000bb",
             "type": "x.unbekannt",
-            "title": "?",
+            "name": "?",
             "parameters": {"p": {"kind": "fixed", "value": 5}},
         }
     )
@@ -556,17 +575,15 @@ def test_a_document_with_an_unknown_element_type_is_kept_as_it_is(client: TestCl
 
 def test_the_expressions_are_saved_in_the_normalized_spelling(client: TestClient) -> None:
     document = load_case("str-03")
-    expected = _find(document, "flow.calculation", name="richtung")["parameters"]["ausdruck"][
+    expected = _find(document, "flow.calculation", key="richtung")["parameters"]["ausdruck"][
         "value"
     ]
     assert expected == 'IF(ema20.wert > ema50.wert; "buy"; "sell")'
     written = 'if( EMA20.WERT > Ema50.Wert; "buy"; "sell")'
-    _find(document, "flow.calculation", name="richtung")["parameters"]["ausdruck"]["value"] = (
-        written
-    )
+    _find(document, "flow.calculation", key="richtung")["parameters"]["ausdruck"]["value"] = written
     created = post(client, "strategies", document).json()
     assert created["findings"] == []
-    saved = _find(created["document"], "flow.calculation", name="richtung")
+    saved = _find(created["document"], "flow.calculation", key="richtung")
     assert saved["parameters"]["ausdruck"]["value"] == 'IF( ema20.wert > ema50.wert; "buy"; "sell")'
     stored = client.get(f"/api/v1/strategies/{created['id']}").json()
     assert stored == created["document"]
@@ -599,14 +616,19 @@ def test_the_delivered_template_cannot_be_changed_or_deleted(
     read = client.get(f"/api/v1/rules/{RISK_TEMPLATE_ID}")
     assert read.status_code == 200
     document = read.json()
-    assert document["title"] == "Risiko je Trade"
-    document["title"] = "Geändert"
+    assert document["name"] == "Risiko je Trade"
+    document["name"] = "Geändert"
     changed = put(client, "rules", RISK_TEMPLATE_ID, document)
     assert changed.status_code == 403
-    assert changed.json() == {"detail": "A delivered template cannot be changed or deleted."}
+    assert changed.json() == {
+        "detail": "A delivered template cannot be changed or deleted.",
+        "code": "object.builtin",
+        "params": {},
+    }
     deleted = client.delete(f"/api/v1/rules/{RISK_TEMPLATE_ID}")
     assert deleted.status_code == 403
-    assert client.get(f"/api/v1/rules/{RISK_TEMPLATE_ID}").json()["title"] == "Risiko je Trade"
+    assert deleted.json()["code"] == "object.builtin"
+    assert client.get(f"/api/v1/rules/{RISK_TEMPLATE_ID}").json()["name"] == "Risiko je Trade"
     assert client.get("/api/v1/rules").json() == {"items": []}  # not in the object directory
     assert not objects.exists()
 
@@ -654,7 +676,13 @@ def test_a_changed_object_directory_is_used_at_once(
 
 
 def test_another_method_is_405(client: TestClient) -> None:
-    assert client.patch("/api/v1/strategies").status_code == 405
+    answer = client.patch("/api/v1/strategies")
+    assert answer.status_code == 405
+    assert answer.json() == {
+        "detail": "The method is not allowed for this path.",
+        "code": "request.method_not_allowed",
+        "params": {},
+    }
     assert client.put("/api/v1/strategies", content=b"{}", headers=JSON).status_code == 405
     assert client.delete("/api/v1/strategies").status_code == 405
     assert (
@@ -662,4 +690,6 @@ def test_another_method_is_405(client: TestClient) -> None:
     )
     assert client.post("/api/v1/element-types", content=b"{}", headers=JSON).status_code == 405
     assert client.get("/api/v1/check").status_code == 405
-    assert client.get("/api/v1/unknown").status_code == 404
+    unknown = client.get("/api/v1/unknown")
+    assert unknown.status_code == 404
+    assert unknown.json()["code"] == "request.not_found"

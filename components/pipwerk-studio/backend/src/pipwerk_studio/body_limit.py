@@ -17,10 +17,9 @@ It applies to all requests below a path prefix.
 
 from __future__ import annotations
 
-from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-BODY_TOO_LARGE_TEXT = "The request body is larger than the limit of 2 MiB."
+from pipwerk_studio.errors import error_response
 
 
 class BodyLimitMiddleware:
@@ -46,7 +45,7 @@ class BodyLimitMiddleware:
         return None
 
     async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
-        response = JSONResponse(status_code=413, content={"detail": BODY_TOO_LARGE_TEXT})
+        response = error_response("request.too_large", {"limit_bytes": self._limit})
         await response(scope, receive, send)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

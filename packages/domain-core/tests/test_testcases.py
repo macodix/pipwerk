@@ -1,4 +1,4 @@
-"""The test case documents str-01 and str-03 (specification section 6)."""
+"""The test case documents str-01 and str-03 in the format 2.0 (specification section 6, 7)."""
 
 import json
 from pathlib import Path
@@ -12,9 +12,10 @@ from pipwerk_domain.consistency.engine import Checker
 from pipwerk_domain.defaults import default_registry
 from pipwerk_domain.documents import parse_document, read_document, write_document
 from pipwerk_domain.documents.schemas import generate_schema
-from pipwerk_domain.model import Element, Instance, Strategy
+from pipwerk_domain.model import Binding, Element, Instance, Orientation, Strategy
 from pipwerk_domain.risk_rule import RISK_PER_TRADE_RULE_ID
 from pipwerk_domain.typedesc import BindingKind, DataType
+from tests.helpers import fixed
 from tests.paths import TESTCASE_DIRECTORY
 
 NAMES = ["str-01", "str-03"]
@@ -36,7 +37,7 @@ def follow(strategy: Strategy, source: Element, output: str) -> Element:
         for item in strategy.connections
         if item.source == source.id and item.output == output
     ]
-    assert len(targets) == 1, (source.title, output)
+    assert len(targets) == 1, (source.shown_name, output)
     found = strategy.element(targets[0])
     assert found is not None
     return found
@@ -45,6 +46,7 @@ def follow(strategy: Strategy, source: Element, output: str) -> Element:
 @pytest.mark.parametrize("name", NAMES)
 def test_the_document_is_valid_against_the_schema(name: str) -> None:
     data = json.loads(path_of(name).read_text(encoding="utf-8"))
+    assert data["format_version"] == "2.0"
     Draft202012Validator(generate_schema("strategy")).validate(data)
     parse_document(path_of(name).read_text(encoding="utf-8"))
 
@@ -82,6 +84,7 @@ def test_ids_and_references_are_consistent(name: str) -> None:
     for connection in strategy.connections:
         assert connection.source in ids
         assert connection.target in ids
+    assert len({item.id for item in strategy.connections}) == len(strategy.connections)
     owners = {item.management_of for item in strategy.elements if item.management_of}
     assert len(owners) == 1
     owner = strategy.element(next(iter(owners)))
@@ -89,8 +92,54 @@ def test_ids_and_references_are_consistent(name: str) -> None:
     assert owner.type == catalog.FLOW_PLACE_ORDER
 
 
+@pytest.mark.parametrize("name", NAMES)
+def test_names_are_in_trader_language_and_without_position(name: str) -> None:
+    """No name in programming spelling, no position, no section: the user interface orders
+    the elements itself (specification 6)."""
+    strategy = load(name)
+    texts = [strategy.name]
+    texts += [item.name for item in strategy.parameters]
+    texts += [item.name for item in strategy.rules]
+    for element in strategy.elements:
+        assert element.position is None
+        texts.append(element.shown_name or "")
+        texts += [item.name for item in element.rules]
+    for text in texts:
+        assert text
+        assert "_" not in text, text
+    assert strategy.sections == []
+    assert strategy.orientation is Orientation.VERTICAL
+    assert strategy.collapsed_managements == []
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_every_input_is_used_and_names_an_instance_of_the_strategy(name: str) -> None:
+    strategy = load(name)
+    instances = {item.instance.key for item in strategy.elements if item.instance}
+    inputs = [(item.id, entry) for item in strategy.elements for entry in item.inputs]
+    assert inputs
+    for _, entry in inputs:
+        assert entry.instance in instances
+    assert [item for item in check_strategy(strategy) if item.code == "input.unused"] == []
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_instruments_are_the_instrument_of_the_application(name: str) -> None:
+    strategy = load(name)
+    for element in strategy.elements:
+        bindings: list[Binding] = []
+        if element.instance is not None and "instrument" in element.instance.parameter_values:
+            bindings.append(element.instance.parameter_values["instrument"])
+        if element.type in (catalog.TRIGGER_CANDLE_CLOSE, catalog.TRIGGER_TICK):
+            bindings.append(element.parameters["instrument"])
+        if element.type == catalog.FLOW_PLACE_ORDER:
+            bindings.append(element.properties["instrument"])
+        for binding in bindings:
+            assert (binding.kind, binding.value) == (BindingKind.FIXED, "instrument_der_anwendung")
+
+
 def risk_rule_of(strategy: Strategy) -> Instance:
-    rules = [item for item in strategy.rules if item.name == "risiko"]
+    rules = [item for item in strategy.rules if item.key == "risiko"]
     assert len(rules) == 1
     return rules[0]
 
@@ -98,15 +147,18 @@ def risk_rule_of(strategy: Strategy) -> Instance:
 @pytest.mark.parametrize("name", NAMES)
 def test_rule_of_the_strategy_risiko_from_risk_per_trade(name: str) -> None:
     strategy = load(name)
-    assert [item.name for item in strategy.rules] == ["risiko"]
+    assert [item.key for item in strategy.rules] == ["risiko"]
     risk = risk_rule_of(strategy)
     assert risk.origin is not None
     assert risk.origin.template_id == RISK_PER_TRADE_RULE_ID
-    assert risk.origin.template_title == "Risiko je Trade"
+    assert risk.origin.template_name is None  # a delivered template: only its identifier
     assert risk.parameter_values["risikogrenze"].value == 0.01
     assert risk.determined_property == "volumen"
     assert risk.comparison is not None
     assert risk.comparison.value == "hoechstens"
+    assert risk.expression is not None
+    assert "Order.instrument.tickgroesse" in risk.expression
+    assert "Instrument.tickgroesse" not in risk.expression.replace("Order.instrument.", "")
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -114,24 +166,30 @@ def test_rule_of_the_element_mindestvolumen(name: str) -> None:
     strategy = load(name)
     orders = [item for item in strategy.elements if item.type == catalog.FLOW_PLACE_ORDER]
     assert len(orders) == 1
-    assert [item.name for item in orders[0].rules] == ["mindestvolumen"]
+    assert [item.key for item in orders[0].rules] == ["mindestvolumen"]
     minimum = orders[0].rules[0]
     assert minimum.object_type == "Regel"
     assert minimum.determined_property is None  # checking
-    assert minimum.expression == "Order.volumen >= Instrument.mindestvolumen"
-    assert all(item.name != "mindestvolumen" for item in strategy.rules)
+    assert minimum.expression == "Order.volumen >= Order.instrument.mindestvolumen"
+    assert all(item.key != "mindestvolumen" for item in strategy.rules)
 
 
 def test_str_01_parameters_and_instances() -> None:
     strategy = load("str-01")
-    assert strategy.title.startswith("Scalping Punkt 2 Ausbruch")
-    assert [(item.name, item.datatype) for item in strategy.parameters] == [
+    assert strategy.name.startswith("Scalping Punkt 2 Ausbruch")
+    assert [(item.key, item.datatype) for item in strategy.parameters] == [
         ("signalzeiteinheit", DataType.TIME_UNIT),
         ("handelszeiteinheit", DataType.TIME_UNIT),
         ("entry_puffer", DataType.NUMBER),
         ("stop_puffer", DataType.NUMBER),
     ]
-    instances = {item.instance.name: item.instance for item in strategy.elements if item.instance}
+    assert [item.name for item in strategy.parameters] == [
+        "Signalzeiteinheit",
+        "Handelszeiteinheit",
+        "Entry-Puffer",
+        "Stop-Puffer",
+    ]
+    instances = {item.instance.key: item.instance for item in strategy.elements if item.instance}
     assert set(instances) == {"mt_signal", "mt_handel"}
     for instance in instances.values():
         assert instance.object_type == "Markttechnik"
@@ -165,7 +223,7 @@ def test_str_01_main_flow() -> None:
     calculation_1 = follow(strategy, condition_3, "wahr")
     calculation_2 = follow(strategy, calculation_1, "weiter")
     calculation_3 = follow(strategy, calculation_2, "weiter")
-    assert [item.name for item in (calculation_1, calculation_2, calculation_3)] == [
+    assert [item.key for item in (calculation_1, calculation_2, calculation_3)] == [
         "einstieg",
         "stop",
         "ziel",
@@ -218,17 +276,19 @@ def test_str_01_management() -> None:
     waiting = follow(strategy, candle, "weiter")
     assert waiting.parameters["ausdruck"].value == 'Order.status = "wartend"'
     new_stop = follow(strategy, waiting, "wahr")
-    assert new_stop.name == "stop_neu"
+    assert new_stop.key == "stop_neu"
     differs = follow(strategy, new_stop, "weiter")
     assert differs.parameters["ausdruck"].value == "stop_neu.ergebnis <> Order.stop_loss"
     new_target = follow(strategy, differs, "wahr")
-    assert new_target.name == "ziel_neu"
+    assert new_target.key == "ziel_neu"
     modify = follow(strategy, new_target, "weiter")
     assert modify.type == catalog.FLOW_MODIFY_ORDER
     assert modify.parameters["stop_loss"].value == "stop_neu.ergebnis"
     assert modify.parameters["take_profit"].value == "ziel_neu.ergebnis"
     assert follow(strategy, modify, "nicht_geaendert").type == catalog.FLOW_DELETE_ORDER
     assert len(management.elements) == 10
+    # the management has triggers of its own: no connection from the output "gestellt"
+    assert [item for item in strategy.connections if item.source == order.id] == []
 
 
 def test_str_01_has_all_elements_and_connections() -> None:
@@ -240,13 +300,14 @@ def test_str_01_has_all_elements_and_connections() -> None:
 
 def test_str_03_parameters_and_instances() -> None:
     strategy = load("str-03")
-    assert strategy.title == "EMA-Trendfolge"
-    assert [(item.name, item.datatype, item.value) for item in strategy.parameters] == [
+    assert strategy.name == "EMA-Trendfolge"
+    assert [(item.key, item.datatype, item.value) for item in strategy.parameters] == [
         ("zeiteinheit", DataType.TIME_UNIT, "h1"),
         ("stop_abstand", DataType.NUMBER, 2),
     ]
-    instances = {item.instance.name: item.instance for item in strategy.elements if item.instance}
+    instances = {item.instance.key: item.instance for item in strategy.elements if item.instance}
     assert set(instances) == {"ema20", "ema50", "atr14"}
+    assert instances["ema20"].name == "EMA 20"
     assert instances["ema20"].object_type == "EMA"
     assert instances["ema20"].parameter_values["periode"].value == 20
     assert instances["ema50"].parameter_values["periode"].value == 50
@@ -269,10 +330,10 @@ def test_str_03_main_flow_and_management() -> None:
         "AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert))"
     )
     direction = follow(strategy, crossing, "wahr")
-    assert direction.name == "richtung"
+    assert direction.key == "richtung"
     assert direction.parameters["ausdruck"].value == 'IF(ema20.wert > ema50.wert; "buy"; "sell")'
     stop = follow(strategy, direction, "weiter")
-    assert stop.name == "stop"
+    assert stop.key == "stop"
     assert "Kerze.schluss" in str(stop.parameters["ausdruck"].value)
     assert "Strategie.stop_abstand * atr14.wert" in str(stop.parameters["ausdruck"].value)
     order = follow(strategy, stop, "weiter")
@@ -292,7 +353,7 @@ def test_str_03_main_flow_and_management() -> None:
     assert close.type == catalog.FLOW_CLOSE_POSITION
     assert close.parameters == {}  # without a volume
     new_stop = follow(strategy, against, "falsch")
-    assert new_stop.name == "stop_neu"
+    assert new_stop.key == "stop_neu"
     improved = follow(strategy, new_stop, "weiter")
     assert "Position.stop_loss" in str(improved.parameters["ausdruck"].value)
     assert "Position.richtung" in str(improved.parameters["ausdruck"].value)
@@ -328,9 +389,13 @@ def test_removed_trigger(name: str) -> None:
     trigger = next(item for item in strategy.main_elements() if item.type.startswith("trigger."))
     strategy.elements.remove(trigger)
     strategy.connections = [item for item in strategy.connections if item.source != trigger.id]
-    codes = {item.code for item in check_strategy(strategy)}
-    assert "strategy.no_trigger" not in codes  # a strategy without trigger is no finding
-    assert "flow.no_incoming" in codes
+    findings = check_strategy(strategy)
+    codes = {item.code for item in findings}
+    assert "flow.not_reached" in codes
+    hints = [item for item in findings if item.level is Level.HINT]
+    assert [item.code for item in hints] == ["flow.main_without_trigger"]
+    unreached = {item.element for item in findings if item.code == "flow.not_reached"}
+    assert unreached == {item.id for item in strategy.main_elements() if item.instance is None}
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -388,11 +453,14 @@ def test_rule_with_order_in_an_indicator(name: str) -> None:
             id="00000000-0000-4000-8000-0000000000aa",
             type="Indikator",
             instance=Instance(
-                name="eigener_indikator",
+                name="Eigener Indikator",
+                key="eigener_indikator",
                 object_type="Indikator",
+                parameter_values={"zeiteinheit": fixed("h1")},
                 rules=[
                     Instance(
-                        name="regel",
+                        name="Regel",
+                        key="regel",
                         object_type="Regel",
                         expression="Order.volumen > 0",
                     )

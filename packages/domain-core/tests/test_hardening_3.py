@@ -224,7 +224,7 @@ def hostile_strategy(count: int, expression: str) -> Strategy:
     for number in range(2, count + 2):
         elements.append(calculation(number, f"c{number}", expression))
         connections.append(connect(number - 1, "weiter", number))
-    return Strategy(id=uid(900), title="gross", elements=elements, connections=connections)
+    return Strategy(id=uid(900), name="gross", elements=elements, connections=connections)
 
 
 # Point 4: the normalization of 2 MiB has to parse and rewrite every expression ----------------
@@ -264,9 +264,9 @@ def test_an_object_with_a_cycle_is_a_document_error() -> None:
     elements.append(elements)
     data: dict[str, object] = {
         "format": "pipwerk.strategy",
-        "format_version": "1.0",
+        "format_version": "2.0",
         "id": uid(1),
-        "title": "t",
+        "name": "t",
         "elements": elements,
     }
     with pytest.raises(DocumentError):
@@ -283,9 +283,9 @@ def test_a_part_that_is_attached_many_times_is_walked_once() -> None:
         shared = [shared, shared]
     data: dict[str, object] = {
         "format": "pipwerk.strategy",
-        "format_version": "1.0",
+        "format_version": "2.0",
         "id": uid(1),
-        "title": "t",
+        "name": "t",
         "elements": shared,
     }
     started = time.perf_counter()
@@ -298,9 +298,9 @@ def test_a_part_attached_many_times_with_a_surrogate_is_rejected() -> None:
     shared: list[object] = ["a\ud800"]
     data: dict[str, object] = {
         "format": "pipwerk.strategy",
-        "format_version": "1.0",
+        "format_version": "2.0",
         "id": uid(1),
-        "title": "t",
+        "name": "t",
         "elements": [shared, shared],
     }
     with pytest.raises(DocumentError):

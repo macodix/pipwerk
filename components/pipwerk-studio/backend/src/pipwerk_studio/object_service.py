@@ -39,7 +39,9 @@ from pipwerk_domain.defaults import builtin_templates
 from pipwerk_domain.documents import (
     AnyDocument,
     DocumentError,
+    document_to_json,
     from_document,
+    load_json,
     parse_document,
     to_document,
     write_document,
@@ -134,7 +136,7 @@ class ListEntry:
     object_id: str
     modified: datetime
     unreadable: bool
-    title: str | None = None
+    name: str | None = None
     description: str | None = None
     object_type: str | None = None
 
@@ -165,7 +167,7 @@ class Usage:
 
     kind: ObjectKind
     object_id: str
-    title: str
+    name: str
 
 
 @dataclass(frozen=True)
@@ -182,6 +184,15 @@ class _Loaded:
 
     status: Literal["ok", "missing", "unreadable"]
     stored: StoredObject | None = None
+
+
+def _is_format_one(text: str) -> bool:
+    """Whether a document text that the library has accepted is of the format 1.0."""
+    data = load_json(text)
+    if not isinstance(data, dict):  # pragma: no cover - the library accepted it
+        return False
+    version = data.get("format_version")
+    return isinstance(version, str) and version.startswith("1.")
 
 
 def document_kind(document: AnyDocument) -> ObjectKind:
@@ -223,7 +234,7 @@ def _contains_origin(value: Strategy | Template, template_id: str) -> bool:
 
 
 def _sort_key(entry: ListEntry) -> tuple[bool, str, str]:
-    return (entry.title is None, (entry.title or "").casefold(), entry.object_id)
+    return (entry.name is None, (entry.name or "").casefold(), entry.object_id)
 
 
 class ObjectService:
@@ -250,7 +261,11 @@ class ObjectService:
             return _Loaded("unreadable")
         if document.id != object_id or document_kind(document) != kind:
             return _Loaded("unreadable")
-        return _Loaded("ok", StoredObject(object_id, result.value.decode("utf-8"), document))
+        text = result.value.decode("utf-8")
+        if _is_format_one(text):
+            # a file of the format 1.0 stays as it is until it is saved; it is read as 2.0
+            text = document_to_json(document)
+        return _Loaded("ok", StoredObject(object_id, text, document))
 
     def _require(self, kind: ObjectKind, object_id: str) -> StoredObject:
         loaded = self._load(kind, object_id)
@@ -281,8 +296,8 @@ class ObjectService:
             raise ObjectDirectoryUnreadableError("The object directory cannot be read.") from error
 
     def list_objects(self, kind: str) -> list[ListEntry]:
-        """The objects of one kind with title, description and time of the last change; the
-        not readable ones with the mark only. Sorted by title (not readable ones last).
+        """The objects of one kind with name, description and time of the last change; the
+        not readable ones with the mark only. Sorted by name (not readable ones last).
 
         Raises ``ObjectDirectoryUnreadableError`` if the object directory cannot be listed.
         """
@@ -297,7 +312,7 @@ class ObjectService:
                         item.object_id,
                         item.modified,
                         False,
-                        document.title,
+                        document.name,
                         document.description,
                         getattr(document, "object_type", None),
                     )
@@ -442,8 +457,8 @@ class ObjectService:
                     skipped += loaded.status == "unreadable"
                     continue
                 if _contains_origin(from_document(loaded.stored.document), object_id):
-                    found.append(Usage(other_kind, item.object_id, loaded.stored.document.title))
-        found.sort(key=lambda usage: (usage.title.casefold(), usage.kind, usage.object_id))
+                    found.append(Usage(other_kind, item.object_id, loaded.stored.document.name))
+        found.sort(key=lambda usage: (usage.name.casefold(), usage.kind, usage.object_id))
         return Usages(found, skipped)
 
     def check(self, document: AnyDocument) -> CheckResult:

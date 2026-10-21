@@ -20,6 +20,7 @@ The tests are skipped without an installed Git and in a working directory that
 is not a Git working directory (for example an unpacked archive).
 """
 
+import json
 import os
 import shutil
 import socket
@@ -35,6 +36,10 @@ import pytest
 COMPONENT = "components/pipwerk-studio"
 LIBRARY = "packages/domain-core"
 SCRIPT = f"{COMPONENT}/scripts/testenv"
+SAVED_STRATEGY = (
+    "development/strategiedesign/wp02/acceptance/ema-trendfolge-auftraggeber.strategy.json"
+)
+SAVED_IDENTIFIER = "7209de70-2fdc-49fc-a242-33251216ed22"
 GIT = shutil.which("git")
 GIT_ENVIRONMENT = {
     "GIT_AUTHOR_NAME": "tester",
@@ -71,7 +76,18 @@ pytestmark = pytest.mark.skipif(
 def _versioned_files(root: Path) -> list[str]:
     assert GIT is not None
     result = subprocess.run(  # noqa: S603
-        [GIT, "-C", str(root), "ls-files", "-z", "--", "LICENSE", COMPONENT, LIBRARY],
+        [
+            GIT,
+            "-C",
+            str(root),
+            "ls-files",
+            "-z",
+            "--",
+            "LICENSE",
+            COMPONENT,
+            LIBRARY,
+            SAVED_STRATEGY,
+        ],
         capture_output=True,
         check=True,
         env={**os.environ, "GIT_CONFIG_GLOBAL": os.devnull},
@@ -205,6 +221,7 @@ class Replica:
             'cp "$2" "$TESTENV_RECORD_DIR/pipwerk-studio.ini"\n'
             "database=$(sed -n 's|^url = sqlite:///||p' \"$2\")\n"
             'cp "$database" "$TESTENV_RECORD_DIR/studio.db"\n'
+            'cp -R "$(dirname "$database")/objects" "$TESTENV_RECORD_DIR/objects"\n'
             "exit 1\n",
             encoding="utf-8",
         )
@@ -519,6 +536,99 @@ def test_start_stores_the_object_directory_below_testenv_before_the_backend_star
     assert len(lines) == 2
     assert lines[1].startswith("url = sqlite:///")
     assert "objects" not in lines[1]
+
+
+def test_start_puts_the_saved_strategy_unchanged_into_the_object_directory(
+    make_replica: Callable[..., Replica],
+) -> None:
+    """The saved strategy "EMA-Trendfolge" (format 1.0) lies in the object directory under the file
+    name of its identifier before the backend starts, byte by byte as in the repository."""
+    replica = make_replica()
+    record = replica.base / "record"
+    record.mkdir()
+    replica.install_working_programs(record)
+
+    replica.start()
+
+    stored = record / "objects" / f"{SAVED_IDENTIFIER}.strategy.json"
+    assert sorted(item.name for item in (record / "objects").iterdir()) == [stored.name]
+    assert stored.read_bytes() == (replica.root / SAVED_STRATEGY).read_bytes()
+    assert json.loads(stored.read_text(encoding="utf-8"))["format_version"] == "1.0"
+    assert stat.S_IMODE(stored.stat().st_mode) == 0o600
+
+
+def test_start_aborts_when_the_saved_strategy_is_missing(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica(with_git=False)
+    (replica.root / SAVED_STRATEGY).unlink()
+    replica.git("init", "--quiet")
+    replica.git("add", "--all")
+    replica.git("commit", "--quiet", "--message", "replica without the saved strategy")
+    record = replica.base / "record"
+    record.mkdir()
+    replica.install_working_programs(record)
+
+    result = replica.start()
+
+    assert result.returncode != 0
+    assert "the saved strategy of the test environment is missing" in result.stderr
+    assert not (replica.component / ".testenv").exists()
+    assert not (record / "arguments.txt").exists()  # the backend was not started
+
+
+def test_the_saved_strategy_is_found_by_the_location_of_the_script_not_a_fixed_path() -> None:
+    assert SOURCE_ROOT is not None
+    script = (SOURCE_ROOT / SCRIPT).read_text(encoding="utf-8")
+    assert '"$repo_root/$SAVED_STRATEGY"' in script
+    assert str(SOURCE_ROOT) not in script
+
+
+def run_put(source: Path, directory: Path) -> subprocess.CompletedProcess[str]:
+    assert SOURCE_ROOT is not None
+    return subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            "-I",
+            str(SOURCE_ROOT / COMPONENT / "scripts/put_saved_strategy.py"),
+            str(source),
+            str(directory),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_a_file_for_the_identifier_in_the_directory_is_left_as_it_is(tmp_path: Path) -> None:
+    assert SOURCE_ROOT is not None
+    source = SOURCE_ROOT / SAVED_STRATEGY
+    directory = tmp_path / "objects"
+    directory.mkdir()
+    for kind in ("strategy", "rule"):  # a file of any kind for the identifier counts
+        other = directory / f"{SAVED_IDENTIFIER}.{kind}.json"
+        other.write_bytes(b"other content")
+
+        result = run_put(source, directory)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "present"
+        assert other.read_bytes() == b"other content"
+        assert sorted(item.name for item in directory.iterdir()) == [other.name]
+        other.unlink()
+    assert run_put(source, directory).stdout.strip() == "put"
+    assert run_put(source, directory).stdout.strip() == "present"  # a second call changes nothing
+
+
+def test_a_document_without_an_identifier_is_not_put(tmp_path: Path) -> None:
+    broken = tmp_path / "broken.json"
+    broken.write_text('{"format": "pipwerk.strategy"}', encoding="utf-8")
+
+    result = run_put(broken, tmp_path / "objects")
+
+    assert result.returncode == 1
+    assert "could not be put" in result.stderr
+    assert result.stdout == ""
 
 
 @pytest.mark.parametrize(

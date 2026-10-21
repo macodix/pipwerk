@@ -1,6 +1,6 @@
 """Consistency check of strategies and templates (specification 3.6)."""
 
-from pipwerk_domain.consistency.engine import Checker
+from pipwerk_domain.consistency.engine import Checker, ExpressionContext
 from pipwerk_domain.consistency.findings import (
     CheckResult,
     ExpressionNames,
@@ -44,8 +44,23 @@ def check_template_with_names(
     return CheckResult(findings, checker.expression_names, checker.names_truncated)
 
 
+def check_with_contexts(
+    value: Strategy | Template, registry: ElementRegistry | None = None
+) -> Checker:
+    """Check a strategy or template and keep the context of every place of an expression by its
+    JSON pointer (``Checker.contexts``): what the endpoint of the expressions needs."""
+    checker = Checker(default_registry() if registry is None else registry, record_contexts=True)
+    if isinstance(value, Strategy):
+        checker.check_strategy(value)
+    else:
+        checker.check_template(value)
+    return checker
+
+
 __all__ = [
     "CheckResult",
+    "Checker",
+    "ExpressionContext",
     "ExpressionNames",
     "Finding",
     "Level",
@@ -55,4 +70,5 @@ __all__ = [
     "check_strategy_with_names",
     "check_template",
     "check_template_with_names",
+    "check_with_contexts",
 ]
