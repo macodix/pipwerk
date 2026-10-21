@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
-- zuletzt aktualisiert: `2026-10-19`
+- zuletzt aktualisiert: `2026-10-21`
 - abgestimmt: Festlegungen des Auftraggebers im Chat am 19. bis 21. Oktober 2026. Prüfung durch die QA bestanden ([requirements-4.md](../../../development/backtest/reviews/requirements-4.md)), [Präsentation](../../../development/backtest/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -142,4 +142,5 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-21 | req-test-003: Ticks gehören zu den benötigten Kursdaten, wenn ein Auslöser `Tick` verwendet wird, keine Nachbildung aus Kerzen. Entscheidung des Auftraggebers im Chat am 2026-10-20 (B2). |
 | 2026-10-21 | Benennung: Hauptkomponente Strategietester (pipwerk replay) mit den Betriebsarten Einzelschritt-Test und Backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, H7). |
 | 2026-10-21 | Produktname pipwerk replay. Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | Vermerk „abgestimmt“: Prüfung `requirements-4.md` bestanden, Präsentation `requirements-1.html` bestätigt vom Auftraggeber im Chat am 2026-10-21. Datum „zuletzt aktualisiert“ nachgeführt (Hinweis H11 aus `requirements-5.md`), vom Projektleiter. |
 | 2026-10-21 | req-test-004: Abwicklung wie ein Broker, Ablehnung mit sichtbarem Grund; req-test-008 Indikatoren ohne Werte zu Beginn. Nach Prüfbericht der QA (`backtest`, Durchlauf 3, M1, M2), Festlegung des Auftraggebers im Chat am 2026-10-21. |
