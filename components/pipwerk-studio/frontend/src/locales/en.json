@@ -458,7 +458,11 @@
     "count_one": "{{count}} finding",
     "count_other": "{{count}} findings",
     "none": "no findings",
-    "countTip": "{{errors}} errors, {{hints}} hints. A click shows the findings.",
+    "errorsCount_one": "{{count}} error",
+    "errorsCount_other": "{{count}} errors",
+    "hintsCount_one": "{{count}} hint",
+    "hintsCount_other": "{{count}} hints",
+    "countTip": "{{errors}}, {{hints}}. A click shows the findings.",
     "unknown": "Finding {{code}}",
     "fields": {
       "parameter": "Parameter \"{{name}}\"",

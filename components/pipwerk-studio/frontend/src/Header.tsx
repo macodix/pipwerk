@@ -107,12 +107,15 @@ export function Header({ onAbout, aboutRef }: { onAbout: () => void; aboutRef: R
         {count !== null ? (
           <button
             type="button"
-            className={`count-pill${count > 0 ? ' bad' : ' good'}`}
+            className={`count-pill${findings.errors > 0 ? ' bad' : count > 0 ? ' hints-only' : ' good'}`}
             onClick={() => {
               actions.select({ kind: 'strategy' }, 'props');
             }}
             data-testid="findings-count"
-            data-tip={t('findings.countTip', { errors: findings.errors, hints: findings.hints })}
+            data-tip={t('findings.countTip', {
+              errors: t('findings.errorsCount', { count: findings.errors }),
+              hints: t('findings.hintsCount', { count: findings.hints }),
+            })}
           >
             <Icon name={count > 0 ? 'warn' : 'check'} size={14} />
             {count > 0 ? t('findings.count', { count }) : t('findings.none')}

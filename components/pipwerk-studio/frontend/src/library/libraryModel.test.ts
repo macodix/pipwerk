@@ -91,4 +91,14 @@ describe('the element library (specification 5.2)', () => {
     expect(groups.find((group) => group.id === 'trends')?.entries.map((entry) => entry.name)).toEqual(['1-2-3-Trend (Markttechnik)', 'eigener Trend']);
     expect(groups.find((group) => group.id === 'rules')?.entries.map((entry) => entry.name)).toEqual(['Risiko je Trade', 'eigene Regel', 'eigenes Regelwerk']);
   });
+
+  it('names and explains the delivered rule template in the language of the interface (order 07, B2)', () => {
+    const rules = (language: 'de' | 'en') => buildLibrary(testTypes(), {}, language).find((group) => group.id === 'rules')?.entries[0];
+
+    expect(rules('de')).toMatchObject({ name: 'Risiko je Trade', explanation: expect.stringMatching(/^Begrenzt den Verlust/) });
+    expect(rules('en')).toMatchObject({ name: 'Risk per trade', explanation: expect.stringMatching(/^Limits the loss up to the stop loss/) });
+    expect(rules('en')?.explanation).not.toMatch(/Begrenzt/);
+    // the entry that adds a rule to a list of rules is this very entry: it carries the same texts
+    expect(rules('en')?.target).toBe('rules');
+  });
 });
