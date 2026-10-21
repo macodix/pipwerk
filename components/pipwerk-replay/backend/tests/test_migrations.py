@@ -25,7 +25,7 @@ from pipwerk_replay.app import create_app
 from pipwerk_replay.migrate import DatabaseMigrationError, migrate_database
 from pipwerk_replay.storage import Base, create_replay_engine
 
-NEWEST_REVISION = "0001"
+NEWEST_REVISION = "0002"
 
 
 def database_url(tmp_path: Path) -> str:
@@ -45,7 +45,7 @@ def test_new_database_gets_the_newest_schema(tmp_path: Path) -> None:
     engine = create_replay_engine(database_url(tmp_path))
     engine.dispose()
 
-    assert column_names(tmp_path, "replay_settings") == ["id", "language"]
+    assert column_names(tmp_path, "replay_settings") == ["id", "language", "default_source"]
     assert column_names(tmp_path, "test_accounts") == [
         "id",
         "name",
@@ -63,7 +63,7 @@ def test_new_database_gets_the_newest_schema(tmp_path: Path) -> None:
 
 def test_second_start_changes_nothing(tmp_path: Path) -> None:
     first = TestClient(create_app(database_url(tmp_path)))
-    first.put("/api/v1/settings", json={"language": "en"})
+    first.put("/api/replay/settings/language", json={"language": "en"})
     before = sqlite_rows(tmp_path, "SELECT * FROM replay_settings")
     accounts_before = sqlite_rows(tmp_path, "SELECT * FROM test_accounts")
 
@@ -72,7 +72,7 @@ def test_second_start_changes_nothing(tmp_path: Path) -> None:
     assert sqlite_rows(tmp_path, "SELECT * FROM replay_settings") == before
     assert sqlite_rows(tmp_path, "SELECT * FROM test_accounts") == accounts_before
     assert sqlite_rows(tmp_path, "SELECT version_num FROM alembic_version") == [(NEWEST_REVISION,)]
-    assert second.get("/api/v1/settings").json() == {"language": "en"}
+    assert second.get("/api/replay/settings/language").json() == {"language": "en"}
 
 
 def test_migrating_a_current_database_again_is_possible(tmp_path: Path) -> None:
@@ -117,6 +117,7 @@ def test_the_migrations_are_part_of_the_package() -> None:
     names = sorted(item.name for item in versions.iterdir() if item.name.endswith(".py"))
 
     assert "v0001_initial.py" in names
+    assert "v0002_default_source.py" in names
     assert resources.files("pipwerk_replay").joinpath("migrations", "env.py").is_file()
 
 
@@ -157,7 +158,7 @@ def test_a_failed_migration_leaves_no_table_and_the_next_start_works(
 
     client = TestClient(create_app(database_url(tmp_path)))
 
-    assert client.get("/api/v1/settings").json() == {"language": "de"}
+    assert client.get("/api/replay/settings/language").json() == {"language": "de"}
     assert sqlite_rows(tmp_path, "SELECT version_num FROM alembic_version") == [(NEWEST_REVISION,)]
 
 

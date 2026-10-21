@@ -19,6 +19,10 @@ backend/pipwerk-replay.db
 backend/pipwerk-replay.db-journal
 backend/pipwerk-replay.db-wal
 backend/pipwerk-replay.db-shm
+backend/pipwerk-marketdata.db
+backend/pipwerk-marketdata.db-journal
+backend/pipwerk-marketdata.db-wal
+backend/pipwerk-marketdata.db-shm
 
 # Locally created test environment (state, logs, startup configuration and
 # database of scripts/testenv)

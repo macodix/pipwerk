@@ -1,4 +1,4 @@
-"""Tests of the setting of the language (req-ui-008) on ``/api/v1/settings``.
+"""Tests of the setting of the language (req-ui-008) on ``/api/replay/settings/language``.
 
 Covers: default German when nothing is stored yet, reading and writing German and English,
 rejection of invalid language values, unknown fields and bodies that are no JSON object,
@@ -34,7 +34,7 @@ from pipwerk_replay.storage import (
 )
 
 JSON = {"content-type": "application/json"}
-URL = "/api/v1/settings"
+URL = "/api/replay/settings/language"
 
 
 def make_client(database_url: str) -> TestClient:
@@ -194,8 +194,11 @@ def test_other_methods_are_405(client: TestClient) -> None:
     assert client.patch(URL, json={"language": "en"}).status_code == 405
 
 
-def test_the_old_studio_style_path_does_not_exist(client: TestClient) -> None:
-    assert client.get("/api/replay/settings/language").status_code == 404
+def test_the_setting_is_no_part_of_the_public_web_api(client: TestClient) -> None:
+    for method in ("get", "put"):
+        response = client.request(method, "/api/v1/settings", json={"language": "en"})
+        assert response.status_code == 404, method
+    assert "/api/v1/settings" not in client.get("/openapi.json").json()["paths"]
 
 
 def test_an_invalid_stored_value_is_503_and_a_valid_write_repairs_it(

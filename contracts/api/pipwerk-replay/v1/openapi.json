@@ -3,7 +3,7 @@
   "info": {
     "title": "pipwerk replay",
     "version": "1.0.0",
-    "description": "Web API of pipwerk replay, version 1: the test accounts and the settings. The paths below /api/v1/ are versioned; the technical endpoint /api/health is not part of this description."
+    "description": "Web API of pipwerk replay, version 1: the test accounts, the data stock of historical price data (overview, import, completeness) and the acquisition from the source. The paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal endpoints below /api/replay/ (settings, revision) are not part of this description."
   },
   "paths": {
     "/api/v1/accounts": {
@@ -138,7 +138,7 @@
             }
           },
           "415": {
-            "description": "The request body is not JSON.",
+            "description": "The request body has the wrong media type.",
             "content": {
               "application/json": {
                 "schema": {
@@ -268,7 +268,7 @@
             }
           },
           "415": {
-            "description": "The request body is not JSON.",
+            "description": "The request body has the wrong media type.",
             "content": {
               "application/json": {
                 "schema": {
@@ -419,27 +419,71 @@
         }
       }
     },
-    "/api/v1/settings": {
+    "/api/v1/market-data/overview": {
       "get": {
         "tags": [
-          "settings"
+          "market-data"
         ],
-        "summary": "Read the settings of pipwerk replay",
-        "description": "Returns the settings that pipwerk replay keeps in its database: the user interface language, German ('de') as long as none is stored. Responds with HTTP 503 if the stored value is not a supported language; a valid write repairs it.",
-        "operationId": "read_settings",
+        "summary": "Read the overview of the data stock",
+        "description": "Lists the series (candles of a time unit, or ticks) of every broker and instrument with count, first and last time, covered periods and gaps, and the instruments with data about them. Both lists are cut to the section of the request (``offset``, ``limit``; at most ``max_listed_items``, default 1000, each); the lists of periods in a series are cut to ``max_listed_items`` as well and counted completely. The gaps are computed over the whole covered range of each series.",
+        "operationId": "read_market_data_overview",
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of items to skip in each list.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Number of items to skip in each list."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Largest number of items in each list. Without it, and at most, the limit of the startup configuration (``max_listed_items``, default 1000).",
+              "title": "Limit"
+            },
+            "description": "Largest number of items in each list. Without it, and at most, the limit of the startup configuration (``max_listed_items``, default 1000)."
+          }
+        ],
         "responses": {
           "200": {
-            "description": "The settings.",
+            "description": "The overview.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Settings"
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
                 }
               }
             }
           },
           "503": {
-            "description": "The stored value is invalid.",
+            "description": "The stored value is invalid or the data store failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -449,36 +493,120 @@
             }
           }
         }
-      },
-      "put": {
+      }
+    },
+    "/api/v1/market-data/instrument": {
+      "get": {
         "tags": [
-          "settings"
+          "market-data"
         ],
-        "summary": "Change the settings of pipwerk replay",
-        "description": "Stores the user interface language. Only 'de' and 'en' are accepted; unknown fields are rejected.",
-        "operationId": "write_settings",
+        "summary": "Read the data of an instrument",
+        "description": "Returns the newest data of an instrument at a broker (contract size, tick value, swap, margin and the moment of the acquisition); with ``as_of`` the newest data obtained not after that moment.",
+        "operationId": "read_market_data_instrument",
+        "parameters": [
+          {
+            "name": "broker",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+              "title": "Broker"
+            }
+          },
+          {
+            "name": "instrument",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+              "title": "Instrument"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only data obtained not after this moment (ISO 8601 with time zone).",
+              "title": "As Of"
+            },
+            "description": "Only data obtained not after this moment (ISO 8601 with time zone)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data of the instrument.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstrumentInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There are no data of this instrument.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/imports/json": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Import a JSON file",
+        "description": "Imports a file in the JSON format of ``contracts/market-data/v1/`` (candles, ticks or the data of an instrument). The body is the file, with the media type ``application/json``; it is at most ``max_upload_bytes`` large (default 32 MiB) and has at most ``max_rows`` rows (default 500 000). Rows of the same time replace those that exist. Rows that fail the checks are rejected and named in the result with a reason; a file that is refused as a whole (HTTP 422) changes nothing.",
+        "operationId": "import_market_data_json",
         "requestBody": {
-          "description": "The new settings.",
+          "description": "The JSON file.",
           "content": {
             "application/json": {
               "schema": {
-                "properties": {
-                  "language": {
-                    "type": "string",
-                    "enum": [
-                      "de",
-                      "en"
-                    ],
-                    "title": "Language"
-                  }
-                },
-                "additionalProperties": false,
-                "type": "object",
-                "required": [
-                  "language"
-                ],
-                "title": "SettingsUpdate",
-                "description": "Write model to change the settings. Only the languages German and English are\naccepted; unknown fields are rejected rather than silently ignored."
+                "type": "string",
+                "format": "binary"
               }
             }
           },
@@ -486,11 +614,21 @@
         },
         "responses": {
           "200": {
-            "description": "The settings as stored.",
+            "description": "The result of the import.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Settings"
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The file is refused as a whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRefused"
                 }
               }
             }
@@ -506,7 +644,761 @@
             }
           },
           "415": {
-            "description": "The request body is not JSON.",
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many imports or acquisitions are running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/imports/csv": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Import a CSV file",
+        "description": "Imports a CSV file in the export format of MetaTrader 5 (candles or ticks). The body is the file, with the media type ``text/csv``; it is limited like a JSON file. The file does not name its series, so the request does: ``kind``, ``broker``, ``instrument``, for candles ``time_unit``, and ``timezone`` (IANA name of the time zone of the times in the file; a local time that occurs twice at a change of the clock counts as the earlier one, one that does not exist is a rejected row). A file that is refused as a whole (HTTP 422, ``FileRefused``, for example an unknown time zone or a header without the needed columns) changes nothing; query parameters that do not fit the schema are answered with HTTP 422, too, in the form of ``InvalidRequest``.",
+        "operationId": "import_market_data_csv",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "candles",
+                "ticks"
+              ],
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "broker",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+              "title": "Broker"
+            }
+          },
+          {
+            "name": "instrument",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+              "title": "Instrument"
+            }
+          },
+          {
+            "name": "time_unit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4",
+                    "m5",
+                    "m6",
+                    "m10",
+                    "m12",
+                    "m15",
+                    "m20",
+                    "m30",
+                    "h1",
+                    "h2",
+                    "h3",
+                    "h4",
+                    "h6",
+                    "h8",
+                    "h12",
+                    "d1",
+                    "w1",
+                    "mn1"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The time unit of the candles; needed for ``candles``, not for ``ticks``.",
+              "title": "Time Unit"
+            },
+            "description": "The time unit of the candles; needed for ``candles``, not for ``ticks``."
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "IANA name of the time zone of the times in the file, e.g. Europe/Athens.",
+              "title": "Timezone"
+            },
+            "description": "IANA name of the time zone of the times in the file, e.g. Europe/Athens."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result of the import.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The file is refused as a whole (``FileRefused``) or the parameters do not fit the schema (``InvalidRequest``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRefused"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many imports or acquisitions are running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "The CSV file.",
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/completeness": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Check the completeness for a list of needed parts",
+        "description": "For every needed part (candles of a time unit or ticks of an instrument in a period, or the data of an instrument) tells what is needed, what is present and what is missing, in the order of the request. The broker is the default source unless the request names one (HTTP 409 if there is neither). At most ``max_parts_per_request`` parts (default 100).",
+        "operationId": "check_market_data_completeness",
+        "requestBody": {
+          "description": "The needed parts.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$defs": {
+                  "CandlesPart": {
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "candles",
+                        "title": "Kind"
+                      },
+                      "instrument": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                        "title": "Instrument"
+                      },
+                      "time_unit": {
+                        "type": "string",
+                        "enum": [
+                          "m1",
+                          "m2",
+                          "m3",
+                          "m4",
+                          "m5",
+                          "m6",
+                          "m10",
+                          "m12",
+                          "m15",
+                          "m20",
+                          "m30",
+                          "h1",
+                          "h2",
+                          "h3",
+                          "h4",
+                          "h6",
+                          "h8",
+                          "h12",
+                          "d1",
+                          "w1",
+                          "mn1"
+                        ],
+                        "title": "Time Unit"
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Start",
+                        "description": "Start of the period, included. ISO 8601 with time zone."
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "End",
+                        "description": "End of the period, excluded. ISO 8601 with time zone."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "instrument",
+                      "time_unit",
+                      "start",
+                      "end"
+                    ],
+                    "title": "CandlesPart",
+                    "description": "Candles of one instrument and one time unit in the period ``[start, end)``."
+                  },
+                  "InstrumentPart": {
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "instrument",
+                        "title": "Kind"
+                      },
+                      "instrument": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                        "title": "Instrument"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "instrument"
+                    ],
+                    "title": "InstrumentPart",
+                    "description": "The details of one instrument (no period)."
+                  },
+                  "TicksPart": {
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "ticks",
+                        "title": "Kind"
+                      },
+                      "instrument": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                        "title": "Instrument"
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Start",
+                        "description": "Start of the period, included. ISO 8601 with time zone."
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "End",
+                        "description": "End of the period, excluded. ISO 8601 with time zone."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "instrument",
+                      "start",
+                      "end"
+                    ],
+                    "title": "TicksPart",
+                    "description": "Ticks of one instrument in the period ``[start, end)``."
+                  }
+                },
+                "properties": {
+                  "broker": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Broker",
+                    "description": "The broker to check; without it the default source."
+                  },
+                  "parts": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/$defs/CandlesPart"
+                        },
+                        {
+                          "$ref": "#/$defs/TicksPart"
+                        },
+                        {
+                          "$ref": "#/$defs/InstrumentPart"
+                        }
+                      ],
+                      "discriminator": {
+                        "propertyName": "kind",
+                        "mapping": {
+                          "candles": "#/$defs/CandlesPart",
+                          "instrument": "#/$defs/InstrumentPart",
+                          "ticks": "#/$defs/TicksPart"
+                        }
+                      }
+                    },
+                    "type": "array",
+                    "minItems": 1,
+                    "title": "Parts",
+                    "description": "The needed parts; at most ``max_parts_per_request`` (default 100)."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "parts"
+                ],
+                "title": "CompletenessRequest",
+                "description": "The parts a test run needs. The broker is the default source unless given."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Needed, present and missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Completeness"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request cannot be served in the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/acquisitions": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Start an acquisition from the source",
+        "description": "Asks the source for the given parts and imports what it delivers. One part is an acquisition by hand, several are the missing parts of a test run. The acquisition runs in the background (it can take minutes), part by part; a failed part does not stop the others. The answer holds the identifier; ``GET`` on the acquisition shows the state of each part. HTTP 409 with the code ``no_source`` if no source is set up, HTTP 429 if too many acquisitions run. A period that is too large for the source fails with the code ``range_too_large``; pipwerk replay does not split it.",
+        "operationId": "start_market_data_acquisition",
+        "requestBody": {
+          "description": "The parts to acquire.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$defs": {
+                  "CandlesPart": {
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "candles",
+                        "title": "Kind"
+                      },
+                      "instrument": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                        "title": "Instrument"
+                      },
+                      "time_unit": {
+                        "type": "string",
+                        "enum": [
+                          "m1",
+                          "m2",
+                          "m3",
+                          "m4",
+                          "m5",
+                          "m6",
+                          "m10",
+                          "m12",
+                          "m15",
+                          "m20",
+                          "m30",
+                          "h1",
+                          "h2",
+                          "h3",
+                          "h4",
+                          "h6",
+                          "h8",
+                          "h12",
+                          "d1",
+                          "w1",
+                          "mn1"
+                        ],
+                        "title": "Time Unit"
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Start",
+                        "description": "Start of the period, included. ISO 8601 with time zone."
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "End",
+                        "description": "End of the period, excluded. ISO 8601 with time zone."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "instrument",
+                      "time_unit",
+                      "start",
+                      "end"
+                    ],
+                    "title": "CandlesPart",
+                    "description": "Candles of one instrument and one time unit in the period ``[start, end)``."
+                  },
+                  "InstrumentPart": {
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "instrument",
+                        "title": "Kind"
+                      },
+                      "instrument": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                        "title": "Instrument"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "instrument"
+                    ],
+                    "title": "InstrumentPart",
+                    "description": "The details of one instrument (no period)."
+                  },
+                  "TicksPart": {
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "ticks",
+                        "title": "Kind"
+                      },
+                      "instrument": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                        "title": "Instrument"
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Start",
+                        "description": "Start of the period, included. ISO 8601 with time zone."
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "End",
+                        "description": "End of the period, excluded. ISO 8601 with time zone."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "instrument",
+                      "start",
+                      "end"
+                    ],
+                    "title": "TicksPart",
+                    "description": "Ticks of one instrument in the period ``[start, end)``."
+                  }
+                },
+                "properties": {
+                  "parts": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/$defs/CandlesPart"
+                        },
+                        {
+                          "$ref": "#/$defs/TicksPart"
+                        },
+                        {
+                          "$ref": "#/$defs/InstrumentPart"
+                        }
+                      ],
+                      "discriminator": {
+                        "propertyName": "kind",
+                        "mapping": {
+                          "candles": "#/$defs/CandlesPart",
+                          "instrument": "#/$defs/InstrumentPart",
+                          "ticks": "#/$defs/TicksPart"
+                        }
+                      }
+                    },
+                    "type": "array",
+                    "minItems": 1,
+                    "title": "Parts",
+                    "description": "The parts to acquire; at most ``max_parts_per_request`` (default 100)."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "parts"
+                ],
+                "title": "AcquisitionRequest",
+                "description": "The parts to acquire from the source: one for an acquisition by hand, several for the\nmissing parts of a test run."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "The acquisition was started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Acquisition"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No source is set up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcquisitionRefused"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many imports or acquisitions are running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/acquisitions/{id}": {
+      "get": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Read the state of an acquisition",
+        "description": "Returns the state of the acquisition: for every part ``queued``, ``running``, ``succeeded`` (with the result of the import) or ``failed`` (with the code and the reason). The state of the last acquisitions is kept in memory (at most ``max_kept_acquisitions``, default 100); it is gone after a restart.",
+        "operationId": "read_market_data_acquisition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the acquisition (a UUID).",
+              "title": "Id"
+            },
+            "description": "Identifier of the acquisition (a UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The acquisition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Acquisition"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The acquisition does not exist.",
             "content": {
               "application/json": {
                 "schema": {
@@ -635,6 +1527,162 @@
         "title": "AccountList",
         "description": "The test accounts, sorted by name (without regard to case)."
       },
+      "Acquisition": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "finished"
+            ],
+            "title": "State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/AcquisitionPart"
+            },
+            "type": "array",
+            "title": "Parts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "state",
+          "created_at",
+          "finished_at",
+          "parts"
+        ],
+        "title": "Acquisition",
+        "description": "An acquisition: its parts are worked off one after the other; a failed part does not stop\nthe others. ``running`` until every part has succeeded or failed, then ``finished``."
+      },
+      "AcquisitionPart": {
+        "properties": {
+          "request": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CandlesPart"
+              },
+              {
+                "$ref": "#/components/schemas/TicksPart"
+              },
+              {
+                "$ref": "#/components/schemas/InstrumentPart"
+              }
+            ],
+            "title": "Request",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "candles": "#/components/schemas/CandlesPart",
+                "instrument": "#/components/schemas/InstrumentPart",
+                "ticks": "#/components/schemas/TicksPart"
+              }
+            }
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "title": "State"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "omitted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Omitted Count"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartFailure"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request",
+          "state",
+          "result",
+          "omitted_count",
+          "error"
+        ],
+        "title": "AcquisitionPart",
+        "description": "The state of one part of an acquisition.\n\n``queued`` (not yet asked), ``running``, ``succeeded`` (``result`` holds the import, and\n``omitted_count`` the rows the source left out) or ``failed`` (``error`` says why)."
+      },
+      "AcquisitionRefused": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "code": {
+            "type": "string",
+            "const": "no_source",
+            "title": "Code"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "code",
+          "reason"
+        ],
+        "title": "AcquisitionRefused",
+        "description": "Error body when no acquisition can start because no source is set up (HTTP 409)."
+      },
       "ApiError": {
         "properties": {
           "detail": {
@@ -649,6 +1697,95 @@
         ],
         "title": "ApiError",
         "description": "Error body with a fixed text. It names no path, no exception text and no input."
+      },
+      "CandlesPart": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "candles",
+            "title": "Kind"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          },
+          "time_unit": {
+            "type": "string",
+            "enum": [
+              "m1",
+              "m2",
+              "m3",
+              "m4",
+              "m5",
+              "m6",
+              "m10",
+              "m12",
+              "m15",
+              "m20",
+              "m30",
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h6",
+              "h8",
+              "h12",
+              "d1",
+              "w1",
+              "mn1"
+            ],
+            "title": "Time Unit"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start",
+            "description": "Start of the period, included. ISO 8601 with time zone."
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End",
+            "description": "End of the period, excluded. ISO 8601 with time zone."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "instrument",
+          "time_unit",
+          "start",
+          "end"
+        ],
+        "title": "CandlesPart",
+        "description": "Candles of one instrument and one time unit in the period ``[start, end)``."
+      },
+      "Completeness": {
+        "properties": {
+          "broker": {
+            "type": "string",
+            "title": "Broker"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PartCompleteness"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "results"
+        ],
+        "title": "Completeness",
+        "description": "The completeness of the needed parts at one broker, in the order of the request."
       },
       "ErrorPlace": {
         "properties": {
@@ -680,6 +1817,286 @@
         "title": "ErrorPlace",
         "description": "One error of a request: the place in the request or body and the error type."
       },
+      "FileErrorCode": {
+        "type": "string",
+        "enum": [
+          "too_large",
+          "too_many_rows",
+          "not_decodable",
+          "json_invalid",
+          "document_invalid",
+          "header_invalid",
+          "series_invalid",
+          "timezone_unknown",
+          "period_invalid",
+          "no_rows"
+        ],
+        "title": "FileErrorCode",
+        "description": "Why a whole file was refused."
+      },
+      "FileRefused": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "code": {
+            "$ref": "#/components/schemas/FileErrorCode"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "code",
+          "message"
+        ],
+        "title": "FileRefused",
+        "description": "Error body for a file that is refused as a whole (nothing was changed). ``message`` is a\nfixed text that names fields, never content of the file."
+      },
+      "ImportResult": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "candles",
+              "ticks",
+              "instrument"
+            ],
+            "title": "Kind"
+          },
+          "broker": {
+            "type": "string",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "title": "Instrument"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted"
+          },
+          "replaced": {
+            "type": "integer",
+            "title": "Replaced"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "rejected": {
+            "items": {
+              "$ref": "#/components/schemas/RejectedRow"
+            },
+            "type": "array",
+            "title": "Rejected"
+          },
+          "rejected_count": {
+            "type": "integer",
+            "title": "Rejected Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "broker",
+          "instrument",
+          "unit",
+          "accepted",
+          "replaced",
+          "period_start",
+          "period_end",
+          "rejected",
+          "rejected_count"
+        ],
+        "title": "ImportResult",
+        "description": "The result of an import.\n\n``accepted`` counts the rows taken over, ``replaced`` those of them that replaced an existing\nrow of the same moment. ``rejected`` lists at most the first ``max_reported_rejections``\nrejected rows; ``rejected_count`` counts all. ``period_start`` and ``period_end`` span the rows\ntaken over (``null`` if there are none)."
+      },
+      "InstrumentEntry": {
+        "properties": {
+          "broker": {
+            "type": "string",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "title": "Instrument"
+          },
+          "acquired_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Acquired At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "instrument",
+          "acquired_at"
+        ],
+        "title": "InstrumentEntry",
+        "description": "The newest instrument data of one instrument at one broker (moment of the acquisition)."
+      },
+      "InstrumentInfo": {
+        "properties": {
+          "broker": {
+            "type": "string",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "title": "Instrument"
+          },
+          "acquired_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Acquired At"
+          },
+          "tick_size": {
+            "type": "number",
+            "title": "Tick Size"
+          },
+          "tick_value": {
+            "type": "number",
+            "title": "Tick Value"
+          },
+          "tick_value_currency": {
+            "type": "string",
+            "title": "Tick Value Currency"
+          },
+          "point": {
+            "type": "number",
+            "title": "Point"
+          },
+          "pip": {
+            "type": "number",
+            "title": "Pip"
+          },
+          "spread": {
+            "type": "number",
+            "title": "Spread",
+            "description": "Usual spread as price difference."
+          },
+          "min_volume": {
+            "type": "number",
+            "title": "Min Volume"
+          },
+          "volume_step": {
+            "type": "number",
+            "title": "Volume Step"
+          },
+          "contract_size": {
+            "type": "number",
+            "title": "Contract Size"
+          },
+          "swap_long": {
+            "type": "number",
+            "title": "Swap Long"
+          },
+          "swap_short": {
+            "type": "number",
+            "title": "Swap Short"
+          },
+          "swap_triple_weekday": {
+            "$ref": "#/components/schemas/Weekday"
+          },
+          "margin_per_lot": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin Per Lot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "instrument",
+          "acquired_at",
+          "tick_size",
+          "tick_value",
+          "tick_value_currency",
+          "point",
+          "pip",
+          "spread",
+          "min_volume",
+          "volume_step",
+          "contract_size",
+          "swap_long",
+          "swap_short",
+          "swap_triple_weekday",
+          "margin_per_lot"
+        ],
+        "title": "InstrumentInfo",
+        "description": "The newest data of an instrument at a broker (``contracts/market-data/v1/``)."
+      },
+      "InstrumentPart": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "instrument",
+            "title": "Kind"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "instrument"
+        ],
+        "title": "InstrumentPart",
+        "description": "The details of one instrument (no period)."
+      },
       "InvalidRequest": {
         "properties": {
           "detail": {
@@ -703,24 +2120,383 @@
         "title": "InvalidRequest",
         "description": "Error body for a request or body that does not fit the schema (HTTP 422). Names\nat most 50 places and the error type of each, never the values."
       },
-      "Settings": {
+      "MissingPeriod": {
         "properties": {
-          "language": {
+          "start": {
             "type": "string",
-            "enum": [
-              "de",
-              "en"
-            ],
-            "title": "Language"
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/MissingReason"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "language"
+          "start",
+          "end",
+          "reason"
         ],
-        "title": "Settings",
-        "description": "Read model of the settings of pipwerk replay: the user interface language."
+        "title": "MissingPeriod",
+        "description": "A missing period and why it is missing."
+      },
+      "MissingReason": {
+        "type": "string",
+        "enum": [
+          "not_covered",
+          "gap"
+        ],
+        "title": "MissingReason",
+        "description": "Why part of a period is missing."
+      },
+      "Overview": {
+        "properties": {
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesOverview"
+            },
+            "type": "array",
+            "title": "Series"
+          },
+          "series_total": {
+            "type": "integer",
+            "title": "Series Total"
+          },
+          "instruments": {
+            "items": {
+              "$ref": "#/components/schemas/InstrumentEntry"
+            },
+            "type": "array",
+            "title": "Instruments"
+          },
+          "instruments_total": {
+            "type": "integer",
+            "title": "Instruments Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "series",
+          "series_total",
+          "instruments",
+          "instruments_total",
+          "offset",
+          "limit"
+        ],
+        "title": "Overview",
+        "description": "The data stock: its series and the instruments with data about them.\n\nBoth lists are sorted by broker, instrument and unit and cut to the section of the request;\n``series_total`` and ``instruments_total`` count all items."
+      },
+      "PartCompleteness": {
+        "properties": {
+          "needed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CandlesPart"
+              },
+              {
+                "$ref": "#/components/schemas/TicksPart"
+              },
+              {
+                "$ref": "#/components/schemas/InstrumentPart"
+              }
+            ],
+            "title": "Needed",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "candles": "#/components/schemas/CandlesPart",
+                "instrument": "#/components/schemas/InstrumentPart",
+                "ticks": "#/components/schemas/TicksPart"
+              }
+            }
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "present": {
+            "items": {
+              "$ref": "#/components/schemas/Period"
+            },
+            "type": "array",
+            "title": "Present"
+          },
+          "present_count": {
+            "type": "integer",
+            "title": "Present Count"
+          },
+          "missing": {
+            "items": {
+              "$ref": "#/components/schemas/MissingPeriod"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "missing_count": {
+            "type": "integer",
+            "title": "Missing Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "needed",
+          "complete",
+          "present",
+          "present_count",
+          "missing",
+          "missing_count"
+        ],
+        "title": "PartCompleteness",
+        "description": "One needed part: what is needed, what is present, what is missing.\n\nFor candles and ticks ``present`` and ``missing`` split the needed period (times in which\nthe market is closed count as present); ``complete`` is true if nothing is missing. For\n``instrument`` both lists are empty and ``complete`` tells whether data exist. The lists hold\nat most ``max_listed_items`` periods, the counts count all of them."
+      },
+      "PartFailure": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "file_error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileErrorCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "reason"
+        ],
+        "title": "PartFailure",
+        "description": "Why a part could not be acquired.\n\n``code`` is a code of the source (``unauthorized``, ``symbol_unknown``, ``no_data``,\n``range_too_large``, ``terminal_unavailable``, ``broker_error``, ``broker_unknown``,\n``invalid_broker_data``, ``invalid_request``, ``host_not_allowed``, ``body_too_large``,\n``not_found``, ``internal_error``) with the reason the source gave, or a code of pipwerk\nreplay: ``source_unreachable``, ``source_response_invalid``, ``source_response_too_large``,\n``import_refused`` (``file_error`` names why), ``data_store_error``, ``acquisition_failed``.\n``reason`` is a readable German text."
+      },
+      "Period": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Period",
+        "description": "A period from ``start`` (included) to ``end`` (excluded), UTC."
+      },
+      "RejectReason": {
+        "type": "string",
+        "enum": [
+          "columns_mismatch",
+          "entry_invalid",
+          "field_unknown",
+          "field_missing",
+          "value_invalid",
+          "time_invalid",
+          "time_out_of_range",
+          "local_time_not_existing",
+          "time_not_ascending",
+          "time_duplicate",
+          "price_not_positive",
+          "high_below_open",
+          "high_below_low",
+          "high_below_close",
+          "low_above_open",
+          "low_above_close"
+        ],
+        "title": "RejectReason",
+        "description": "Why a row of an import file was rejected."
+      },
+      "RejectedRow": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/RejectReason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "row",
+          "reason"
+        ],
+        "title": "RejectedRow",
+        "description": "A rejected row: the line number in a CSV file (the header is line 1), the position of\nthe entry in a JSON file, and why."
+      },
+      "SeriesOverview": {
+        "properties": {
+          "broker": {
+            "type": "string",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "title": "Instrument"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "first": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First"
+          },
+          "last": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last"
+          },
+          "covered": {
+            "items": {
+              "$ref": "#/components/schemas/Period"
+            },
+            "type": "array",
+            "title": "Covered"
+          },
+          "covered_count": {
+            "type": "integer",
+            "title": "Covered Count"
+          },
+          "missing": {
+            "items": {
+              "$ref": "#/components/schemas/MissingPeriod"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "missing_count": {
+            "type": "integer",
+            "title": "Missing Count"
+          },
+          "has_trading_hours": {
+            "type": "boolean",
+            "title": "Has Trading Hours"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "instrument",
+          "unit",
+          "count",
+          "first",
+          "last",
+          "covered",
+          "covered_count",
+          "missing",
+          "missing_count",
+          "has_trading_hours"
+        ],
+        "title": "SeriesOverview",
+        "description": "One series: candles of one time unit (``unit``) or ticks (``unit`` is ``ticks``).\n\n``covered`` and ``missing`` list at most ``max_listed_items`` periods; ``covered_count`` and\n``missing_count`` count all of them. A gap lies within the covered periods and within the\ntrading time; ``missing`` of a series holds gaps only."
+      },
+      "TicksPart": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "ticks",
+            "title": "Kind"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start",
+            "description": "Start of the period, included. ISO 8601 with time zone."
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End",
+            "description": "End of the period, excluded. ISO 8601 with time zone."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "instrument",
+          "start",
+          "end"
+        ],
+        "title": "TicksPart",
+        "description": "Ticks of one instrument in the period ``[start, end)``."
+      },
+      "Weekday": {
+        "type": "string",
+        "enum": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ],
+        "title": "Weekday",
+        "description": "Weekday names as used in the files; the order is the order of ``datetime.weekday()``."
       }
     }
   },
@@ -729,7 +2505,7 @@
       "name": "accounts"
     },
     {
-      "name": "settings"
+      "name": "market-data"
     }
   ]
 }

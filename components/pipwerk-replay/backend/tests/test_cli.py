@@ -179,7 +179,11 @@ def test_the_database_is_created_by_alembic_at_start(
 
     with sqlite3.connect(tmp_path / "replay.db") as connection:
         version = connection.execute("SELECT version_num FROM alembic_version").fetchall()
-    assert version == [("0001",)]
+        data_stock = connection.execute(
+            "SELECT version_num FROM marketdata_alembic_version"
+        ).fetchall()
+    assert version == [("0002",)]
+    assert len(data_stock) == 1  # the data stock has its own version table
 
 
 def test_create_app_without_configuration_raises_and_creates_no_database(
@@ -205,6 +209,8 @@ def test_create_app_without_url_uses_the_startup_configuration(
 
     assert client.get("/api/health").status_code == 200
     too_large = client.put(
-        "/api/v1/settings", content=b" " * 3000, headers={"content-type": "application/json"}
+        "/api/replay/settings/language",
+        content=b" " * 3000,
+        headers={"content-type": "application/json"},
     )
     assert too_large.status_code == 413
