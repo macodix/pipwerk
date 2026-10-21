@@ -1,0 +1,71 @@
+#!/bin/sh
+# Check script of the component pipwerk-fetch-mt5.
+#
+# Runs the automatic checks of the component on the working directory this
+# script belongs to and ends with exit code 0 only if all of them pass:
+#
+#   check
+#
+# Checks: uv sync --frozen, pytest, ruff check, ruff format --check, mypy.
+# The package MetaTrader5 is not needed; the tests replace it.
+#
+# The working directory is derived from the path of this script. The script
+# can be called from any directory. It takes no parameters and contains no
+# ports, paths or machine names.
+#
+# Documentation: docs/technical/pipwerk-fetch-mt5.md, section "Prüfskript".
+
+set -u
+
+PROG=check
+
+die() {
+    printf '%s: %s\n' "$PROG" "$*" >&2
+    exit 2
+}
+
+[ $# -eq 0 ] || die "this script takes no parameters"
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    die "cannot determine the directory of the script"
+component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    die "cannot determine the directory of the component"
+
+command -v uv >/dev/null 2>&1 || die "required program not found: uv"
+
+passed=''
+failed=''
+
+# step <name> <command...>: runs one check and records the result.
+step() {
+    step_name=$1
+    shift
+    printf '\n%s: === %s ===\n' "$PROG" "$step_name"
+    if "$@"; then
+        printf '%s: passed: %s\n' "$PROG" "$step_name"
+        passed="$passed
+  $step_name"
+    else
+        printf '%s: FAILED: %s\n' "$PROG" "$step_name" >&2
+        failed="$failed
+  $step_name"
+    fi
+}
+
+in_component() {
+    uv --directory "$component_dir" "$@"
+}
+
+step "uv sync --frozen" in_component sync --frozen
+step "pytest" in_component run --frozen pytest
+step "ruff check" in_component run --frozen ruff check
+step "ruff format --check" in_component run --frozen ruff format --check
+step "mypy" in_component run --frozen mypy
+
+printf '\n%s: passed:%s\n' "$PROG" "${passed:-
+  none}"
+if [ -n "$failed" ]; then
+    printf '%s: failed:%s\n' "$PROG" "$failed" >&2
+    exit 1
+fi
+printf '%s: all checks passed\n' "$PROG"

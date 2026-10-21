@@ -195,7 +195,7 @@ uv run --frozen ruff format --check
 uv run --frozen mypy
 ```
 
-Das Prüfskript der Tester für diese Komponente ist nicht Teil des Auftrags. Ein Test gegen ein echtes MetaTrader 5 gibt es nicht; ihn macht der Auftraggeber in der Abnahme.
+Das Prüfskript der Tester führt diese Prüfungen zusammen aus (Abschnitt „Prüfskript“ unten). Ein Test gegen ein echtes MetaTrader 5 gibt es nicht; ihn macht der Auftraggeber in der Abnahme.
 
 Die Tests (pytest, 350 Fälle; vier davon prüfen die Dateien gegen `contracts/market-data/v1/` und werden übersprungen, solange das Verzeichnis im Arbeitsverzeichnis fehlt):
 
@@ -211,6 +211,10 @@ Die Tests (pytest, 350 Fälle; vier davon prüfen die Dateien gegen `contracts/m
 | `test_contract.py` | Beschreibung gleich dem Programm, Beispiele gleich den Antworten, Dateien gegen die Schemata des Imports |
 | `test_cli.py` | `-c`, Suchorte, Start mit Adresse und Port der Datei, Abbruch ohne gültige Datei, das echte Programm als Prozess |
 | `test_repository.py` | Beispiel der INI, `MetaTrader5` nur als Extra für Windows, Startskripte, keine Schlüssel und keine Angaben des Entwicklungsrechners in den Dateien |
+
+### Prüfskript
+
+`components/pipwerk-fetch-mt5/scripts/check` führt die automatischen Prüfungen der Komponente aus: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`. Es nimmt keine Parameter, braucht `uv` und das Paket `MetaTrader5` nicht. Aufruf mit dem Pfad des Skripts aus beliebigem Verzeichnis, zum Beispiel `<Arbeitsverzeichnis>/components/pipwerk-fetch-mt5/scripts/check`; das Arbeitsverzeichnis ergibt sich aus dem Pfad des Skripts. Jede Prüfung läuft, auch wenn eine vorige scheitert; der Exit-Code ist nur 0, wenn alle bestehen (1 bei einer gescheiterten Prüfung, 2 bei falschem Aufruf).
 
 ## 12. Entscheidungen
 
