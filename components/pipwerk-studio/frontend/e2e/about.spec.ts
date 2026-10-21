@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { expect, openApp, test } from './support';
+import { expect, openApp, STUB, test } from './support';
 
 const frontendDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -15,6 +15,9 @@ const repositoryUrl = (
     repository: { url: string };
   }
 ).repository.url;
+
+// These tests need the real backend (status, revision); the fake backend does not answer for them.
+test.skip(STUB, 'needs the real backend');
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
