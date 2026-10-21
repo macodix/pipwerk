@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-import { clickMenu, expect, library, node, openApp, openStrategy, showArea, test } from './support';
+import { clickMenu, expect, library, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
 
 // Specification 5.5: the workflows save, check, close, new, open, delete and settings.
 
@@ -11,8 +11,10 @@ async function dialogButton(page: Page, name: string | RegExp) {
   return page.getByRole('dialog').getByRole('button', { name });
 }
 
-test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page, api }) => {
+test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page, api }, testInfo) => {
   void api;
+  // The backend of the run is shared by all browsers: every browser saves a strategy with a name of its own.
+  const name = `Meine erste Strategie ${testInfo.project.name}`;
   await openApp(page);
   await clickMenu(page, 'new');
 
@@ -23,12 +25,12 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
 
   // the name, then saving: "gespeichert", and the strategy stands in the list
   await showArea(page, 'props');
-  await page.getByTestId('strategy-name').fill('Meine erste Strategie');
+  await page.getByTestId('strategy-name').fill(name);
   await clickMenu(page, 'save');
   await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
   await expect(page.getByTestId('findings-count')).toBeVisible();
   await clickMenu(page, 'open');
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Meine erste Strategie' })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('button', { name, exact: true })).toBeVisible();
 });
 
 test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page, api }) => {
@@ -52,8 +54,9 @@ test('"Prüfen" shows the findings with the way to fix them, and a click leads t
   await expect(page.getByTestId('element-name')).toHaveValue('Bedingung');
 });
 
-test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page, api }) => {
+test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page, api }, testInfo) => {
   void api;
+  const savedName = `Gespeicherter Name ${testInfo.project.name}`;
   await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   await showArea(page, 'props');
@@ -78,13 +81,13 @@ test('closing, a new strategy and opening ask what to do with unsaved changes: s
 
   // save: the change is stored, then the strategy is closed
   await showArea(page, 'props');
-  await page.getByTestId('strategy-name').fill('Gespeicherter Name');
+  await page.getByTestId('strategy-name').fill(savedName);
   await clickMenu(page, 'open');
   await page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true }).click();
   await (await dialogButton(page, 'Speichern')).click();
   await expect(page.getByTestId('status-pill')).toContainText('EMA-Trendfolge');
   await clickMenu(page, 'open');
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Gespeicherter Name', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('button', { name: savedName, exact: true })).toBeVisible();
 });
 
 test('the list of strategies shows name, description and last change, and marks a file that cannot be read', async ({ page, api }) => {
@@ -100,21 +103,29 @@ test('the list of strategies shows name, description and last change, and marks 
 });
 
 test('the open strategy is deleted after a question; it is gone from the list', async ({ page, api }) => {
-  void api;
+  // The backend of the run is shared by all tests and all browsers: the test deletes a strategy of its own, not one
+  // that other tests open.
+  const doomed = { ...unknownTypeStrategy(), id: '0d5e1c2a-7b34-4f6a-9c18-2e4b6a8c0d13', name: 'Zum Löschen' };
+  if (api !== null) {
+    api.strategies.set(doomed.id as string, doomed);
+  } else {
+    const stored = await page.request.put(`/api/v1/strategies/${doomed.id as string}`, { data: doomed });
+    expect(stored.ok()).toBe(true);
+  }
   await openApp(page);
-  await openStrategy(page, 'Mit unbekanntem Typ');
+  await openStrategy(page, 'Zum Löschen');
 
   await clickMenu(page, 'delete');
-  await expect(page.getByRole('dialog')).toContainText('Mit unbekanntem Typ');
+  await expect(page.getByRole('dialog')).toContainText('Zum Löschen');
   await (await dialogButton(page, 'Abbrechen')).click();
-  await expect(page.getByTestId('status-pill')).toContainText('Mit unbekanntem Typ');
+  await expect(page.getByTestId('status-pill')).toContainText('Zum Löschen');
 
   await clickMenu(page, 'delete');
   await (await dialogButton(page, 'Löschen')).click();
 
   await expect(page.getByTestId('canvas-no-strategy')).toBeVisible();
   await clickMenu(page, 'open');
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Mit unbekanntem Typ' })).toHaveCount(0);
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Zum Löschen' })).toHaveCount(0);
   await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge' })).toBeVisible();
 });
 

@@ -17,6 +17,8 @@ test('the view does not jump when a step is dropped (M3)', async ({ page, api })
   void api;
   await openApp(page, { width: 1366, height: 768 });
   await openStrategy(page, 'EMA-Trendfolge');
+  // the view is set when the strategy has been fitted into the area; only then does it make sense to compare
+  await expect.poll(async () => viewOf(page)).not.toBe('');
   const before = await viewOf(page);
   const step = node(page, 'Richtung');
   const start = await boxOf(step);
