@@ -4,6 +4,7 @@ import {
   expectArray,
   expectBoolean,
   expectNullableString,
+  expectNumber,
   expectRecord,
   expectString,
   isRecord,
@@ -139,6 +140,9 @@ export async function checkDocument(document: StrategyDocument, signal?: AbortSi
   return parseFindings(record.findings);
 }
 
+/** What the new object is, for the key the backend forms when the name gives none (specification 3.3). */
+export type KeyKind = 'parameter' | 'property' | 'instance' | 'rule' | 'condition' | 'calculation';
+
 /**
  * The identifier in expressions for a new name (specification 3.3). The backend forms it, so that the user
  * interface does not repeat the rule (E2). `scope` is the JSON Pointer to the list the new entry joins.
@@ -148,50 +152,186 @@ export async function createKey(
   scope: string,
   name: string,
   signal?: AbortSignal,
+  options?: { kind?: KeyKind; objectType?: string },
 ): Promise<string> {
-  const record = expectRecord(
-    await requestJson('/api/v1/keys', { method: 'POST', body: { document, scope, name }, signal }),
-    'key',
-  );
+  const body: Record<string, unknown> = { document, scope, name };
+  if (options?.kind !== undefined) {
+    body.kind = options.kind;
+  }
+  if (options?.objectType !== undefined) {
+    body.object_type = options.objectType;
+  }
+  const record = expectRecord(await requestJson('/api/v1/keys', { method: 'POST', body, signal }), 'key');
   return expectString(record.key, 'key');
 }
 
-/** One block of the tree of an expression (specification 3.4); the fields beyond these stay as they are. */
+/** The kinds of block of an expression (specification 3.4). */
+export type BlockKind = 'empty' | 'name' | 'literal' | 'comparison' | 'arithmetic' | 'logic' | 'if' | 'function' | 'crossing';
+
+const blockKinds: readonly string[] = ['empty', 'name', 'literal', 'comparison', 'arithmetic', 'logic', 'if', 'function', 'crossing'];
+
+export type LiteralType = 'number' | 'integer' | 'percent' | 'text' | 'boolean';
+
+/**
+ * One block of the tree of an expression (specification 3.4). Only the fields that belong to the kind are present:
+ * `path` (the identifiers of a name, for example the instance and its property), `value` and `datatype` (a fixed value),
+ * `operator` (comparison, arithmetic, logic), `function`, `direction` (crossing) and `children`.
+ */
 export type ExpressionBlock = {
-  kind: string;
-  /** For a name: the identifiers of the path, for example the instance and its property. */
+  kind: BlockKind;
   path?: string[];
+  value?: string | number | boolean;
+  datatype?: LiteralType;
+  operator?: string;
+  function?: string;
+  direction?: 'up' | 'down' | 'any';
   children?: ExpressionBlock[];
-  [field: string]: unknown;
+};
+
+/** The kinds of part of an expression the formula view colours (specification 3.4). */
+export type TokenKind = 'name' | 'function' | 'value' | 'operator' | 'bracket' | 'separator';
+
+/** A part of the display form: `start` is the first character, `end` the position after the last. */
+export type ExpressionToken = { start: number; end: number; kind: TokenKind; partner: number | null };
+
+export type VisibleChoice = { id: string; label: { de: string; en: string } };
+
+/** A property of a name that an expression can address at a place. */
+export type VisibleProperty = {
+  key: string;
+  label: { de: string; en: string };
+  datatype: string | null;
+  explanation: { de: string; en: string } | null;
+  choices: VisibleChoice[];
+  /** The property has an earlier value (`PREVIOUS` may stand around it). */
+  previousValue: boolean;
+};
+
+export type VisibleNameKind = 'instance' | 'result' | 'strategy_parameter' | 'parameter' | 'application_object' | 'rule';
+
+/** A name that an expression can address at the place, with its properties. */
+export type VisibleName = {
+  display: string;
+  path: string[];
+  kind: VisibleNameKind;
+  datatype: string | null;
+  properties: VisibleProperty[];
+  propertiesTruncated: boolean;
+  /** The instances and rules contained in an instance, a trend or a ruleset. */
+  contents: VisibleName[];
 };
 
 export type ExpressionAnswer = {
   stored: string;
+  /** The expression in the display form, in the language of the request. */
   display: string;
-  /** The expression as a readable sentence in the language asked for. */
-  sentence: string;
+  /** The expression as a readable sentence in the language asked for; `null` with a typing error. */
+  sentence: string | null;
   /** The blocks of the expression; `null` if the expression has a typing error. */
   blocks: ExpressionBlock | null;
+  blocksOmitted: boolean;
+  tokens: ExpressionToken[];
   findings: Finding[];
+  findingsTruncated: boolean;
+  /** The names visible at the place. */
+  names: VisibleName[];
+  namesTruncated: boolean;
 };
 
-export type ExpressionQuery = { pointer: string; stored: string };
+/** A question about the expression at a place: exactly one of `stored`, `display` and `blocks` is given. */
+export type ExpressionQuery = { pointer: string; stored?: string; display?: string; blocks?: ExpressionBlock };
+
+function optionalString(value: unknown, what: string): string | undefined {
+  return value === null || value === undefined ? undefined : expectString(value, what);
+}
 
 function parseBlock(value: unknown, what: string): ExpressionBlock {
   const record = expectRecord(value, what);
-  const block: ExpressionBlock = { ...record, kind: expectString(record.kind, `${what}.kind`) };
+  const kind = expectString(record.kind, `${what}.kind`);
+  if (!blockKinds.includes(kind)) {
+    throw new ResponseFormatError(`${what}.kind`);
+  }
+  const block: ExpressionBlock = { kind: kind as BlockKind };
   // The backend writes every field of a block; one that does not apply to the kind is `null`.
-  if (record.path === null || record.path === undefined) {
-    delete block.path;
-  } else {
+  if (record.path !== null && record.path !== undefined) {
     block.path = expectArray(record.path, `${what}.path`).map((item, index) => expectString(item, `${what}.path[${index}]`));
   }
+  const literal = record.value;
+  if (typeof literal === 'string' || typeof literal === 'number' || typeof literal === 'boolean') {
+    block.value = literal;
+  }
+  const datatype = optionalString(record.datatype, `${what}.datatype`);
+  if (datatype !== undefined) {
+    block.datatype = datatype as LiteralType;
+  }
+  const operator = optionalString(record.operator, `${what}.operator`);
+  if (operator !== undefined) {
+    block.operator = operator;
+  }
+  const functionName = optionalString(record.function, `${what}.function`);
+  if (functionName !== undefined) {
+    block.function = functionName;
+  }
+  const direction = optionalString(record.direction, `${what}.direction`);
+  if (direction === 'up' || direction === 'down' || direction === 'any') {
+    block.direction = direction;
+  }
   if (record.children !== undefined && record.children !== null) {
-    block.children = expectArray(record.children, `${what}.children`).map((item, index) =>
-      parseBlock(item, `${what}.children[${index}]`),
-    );
+    const children = expectArray(record.children, `${what}.children`).map((item, index) => parseBlock(item, `${what}.children[${index}]`));
+    if (children.length > 0) {
+      block.children = children;
+    }
   }
   return block;
+}
+
+function parseTokens(value: unknown, what: string): ExpressionToken[] {
+  return expectArray(value, what).map((item, index) => {
+    const record = expectRecord(item, `${what}[${index}]`);
+    return {
+      start: expectNumber(record.start, `${what}[${index}].start`),
+      end: expectNumber(record.end, `${what}[${index}].end`),
+      kind: expectString(record.kind, `${what}[${index}].kind`) as TokenKind,
+      partner: record.partner === null || record.partner === undefined ? null : expectNumber(record.partner, `${what}[${index}].partner`),
+    };
+  });
+}
+
+function parseLabelPair(value: unknown, what: string): { de: string; en: string } {
+  const record = expectRecord(value, what);
+  return { de: expectString(record.de, `${what}.de`), en: expectString(record.en, `${what}.en`) };
+}
+
+function parseVisibleName(value: unknown, what: string): VisibleName {
+  const record = expectRecord(value, what);
+  return {
+    display: expectString(record.display, `${what}.display`),
+    path: expectArray(record.path, `${what}.path`).map((item, index) => expectString(item, `${what}.path[${index}]`)),
+    kind: expectString(record.kind, `${what}.kind`) as VisibleNameKind,
+    datatype: expectNullableString(record.datatype, `${what}.datatype`),
+    properties: expectArray(record.properties ?? [], `${what}.properties`).map((item, index) => {
+      const property = expectRecord(item, `${what}.properties[${index}]`);
+      return {
+        key: expectString(property.key, `${what}.properties[${index}].key`),
+        label: parseLabelPair(property.label, `${what}.properties[${index}].label`),
+        datatype: expectNullableString(property.datatype, `${what}.properties[${index}].datatype`),
+        explanation:
+          property.explanation === null || property.explanation === undefined
+            ? null
+            : parseLabelPair(property.explanation, `${what}.properties[${index}].explanation`),
+        choices: expectArray(property.choices ?? [], `${what}.properties[${index}].choices`).map((choice, choiceIndex) => {
+          const entry = expectRecord(choice, `${what}.properties[${index}].choices[${choiceIndex}]`);
+          return {
+            id: expectString(entry.id, `${what}.properties[${index}].choices[${choiceIndex}].id`),
+            label: parseLabelPair(entry.label, `${what}.properties[${index}].choices[${choiceIndex}].label`),
+          };
+        }),
+        previousValue: property.previous_value === true,
+      };
+    }),
+    propertiesTruncated: record.properties_truncated === true,
+    contents: expectArray(record.contents ?? [], `${what}.contents`).map((item, index) => parseVisibleName(item, `${what}.contents[${index}]`)),
+  };
 }
 
 function parseExpressionAnswer(value: unknown, what: string): ExpressionAnswer {
@@ -199,9 +339,14 @@ function parseExpressionAnswer(value: unknown, what: string): ExpressionAnswer {
   return {
     stored: expectString(record.stored, `${what}.stored`),
     display: expectString(record.display, `${what}.display`),
-    sentence: expectString(record.sentence, `${what}.sentence`),
+    sentence: expectNullableString(record.sentence, `${what}.sentence`),
     blocks: record.blocks === null || record.blocks === undefined ? null : parseBlock(record.blocks, `${what}.blocks`),
+    blocksOmitted: record.blocks_omitted === true,
+    tokens: record.tokens === undefined ? [] : parseTokens(record.tokens, `${what}.tokens`),
     findings: record.findings === undefined ? [] : parseFindings(record.findings, `${what}.findings`),
+    findingsTruncated: record.findings_truncated === true,
+    names: expectArray(record.names ?? [], `${what}.names`).map((item, index) => parseVisibleName(item, `${what}.names[${index}]`)),
+    namesTruncated: record.names_truncated === true,
   };
 }
 
@@ -221,7 +366,7 @@ export async function requestExpressions(
     const record = expectRecord(
       await requestJson('/api/v1/expressions', {
         method: 'POST',
-        body: { document, language, items: part.map((query) => ({ pointer: query.pointer, stored: query.stored })) },
+        body: { document, language, items: part },
         signal,
       }),
       'expressions',

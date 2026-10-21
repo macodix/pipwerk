@@ -12,13 +12,17 @@ import {
   readStrategy,
   readTemplate,
   replaceStrategy,
+  requestExpressions,
   templateArts,
   type Finding,
 } from '../api/objects';
+import { addToList, type ListRef } from '../document/instanceOps';
+import { listPointer, placePointer, setPlaceStored, type ExpressionPlace } from '../document/places';
+import type { Block } from '../expression/blocks';
+import { ownerElement, withInputs } from '../expression/inputs';
 import {
   addElement,
   addInput,
-  addRule,
   addStrategyParameter,
   clearPositions,
   connect,
@@ -92,8 +96,8 @@ export type DialogState =
 /** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
 export type NewParameter = Pick<StrategyParameter, 'name' | 'datatype' | 'object_type' | 'value' | 'at_application' | 'choices'>;
 
-/** Where an entry of the library is laid when it is dropped on the drawing area. */
-export type DropTarget = { after?: string | null; flow?: string | null };
+/** Where an entry of the library is laid: on the drawing area behind a step or in a management, or as a rule in a list of rules. */
+export type DropTarget = { after?: string | null; flow?: string | null; ruleList?: ListRef; instanceList?: ListRef };
 
 export type StudioController = ReturnType<typeof useStudioController>;
 
@@ -211,6 +215,7 @@ export function useStudioController(language: SupportedLanguage) {
         const name = uniqueDisplayName(i18n.t('strategy.newName'), names);
         strategyToken.current += 1;
         dispatch({ type: 'loaded', document: newStrategy(name), persisted: false, findings: null });
+        dispatch({ type: 'wizard', wizard: {} });
         dispatch({ type: 'panel', panel: 'canvas' });
       } else {
         await openById(action.id);
@@ -332,18 +337,21 @@ export function useStudioController(language: SupportedLanguage) {
     return null;
   }, []);
 
-  /** Lays an entry of the library on the drawing area or adds it as a rule. */
+  /**
+   * Lays an entry of the library on the drawing area or adds it as a rule. The answer is the identifier of the
+   * element that was laid out, the key of the rule or contained object that was added, or `null` if nothing was.
+   */
   const insert = useCallback(
-    async (entryKey: string, drop?: DropTarget) => {
+    async (entryKey: string, drop?: DropTarget): Promise<string | null> => {
       const current = stateRef.current;
       const index = typesRef.current;
       const document = current.document;
       if (document === null || index === null) {
-        return;
+        return null;
       }
       const entry = findEntry(library, entryKey);
       if (entry === undefined || entry.unreadable) {
-        return;
+        return null;
       }
       try {
         const source = entry.source;
@@ -355,7 +363,7 @@ export function useStudioController(language: SupportedLanguage) {
         } else if (source.kind === 'builtinTemplate') {
           const found = index.templates.find((candidate) => candidate.id === source.templateId);
           if (found === undefined) {
-            return;
+            return null;
           }
           template = found;
           typeId = found.object_type;
@@ -372,14 +380,18 @@ export function useStudioController(language: SupportedLanguage) {
             ? takenNames(document, index)
             : [],
         );
-        if (entry.target === 'rules') {
+        if (entry.target === 'rules' || drop?.instanceList !== undefined) {
           const selection = current.selection;
           const selected =
             selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
           const owner = selected !== undefined && index.byId.get(selected.type)?.rulesAllowed === true ? selected.id : null;
-          const ownerIndex = owner === null ? -1 : document.elements.findIndex((candidate) => candidate.id === owner);
-          const scope = ownerIndex < 0 ? '/rules' : `/elements/${ownerIndex}/rules`;
-          const key = await createKey(document, scope, name);
+          const explicit = drop?.instanceList ?? drop?.ruleList;
+          const list: ListRef = explicit ?? { root: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner }, steps: [], list: 'rules' };
+          const scope = listPointer(document, list);
+          if (scope === null) {
+            return null;
+          }
+          const key = await createKey(document, scope, name, undefined, { kind: list.list === 'rules' ? 'rule' : 'instance', objectType: typeId });
           const rule =
             template !== null
               ? instanceFromTemplate(template, name, key, own)
@@ -387,16 +399,19 @@ export function useStudioController(language: SupportedLanguage) {
                 ? null
                 : instanceFromType(type, name, key);
           if (rule === null) {
-            return;
+            return null;
           }
-          edit((latest) => addRule(latest, owner, rule), {
-            selection: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
+          const nested = list.steps.length > 0;
+          edit((latest) => addToList(latest, list, rule), {
+            selection: nested || explicit !== undefined ? undefined : owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
           });
-          notify(owner === null ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
-          return;
+          if (!nested && explicit === undefined) {
+            notify(list.root.kind === 'strategy' ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
+          }
+          return key;
         }
         if (type === undefined) {
-          return;
+          return null;
         }
         const needsKey = holdsInstance(type) || type.named;
         const key = needsKey ? await createKey(document, '/elements', name) : null;
@@ -415,11 +430,42 @@ export function useStudioController(language: SupportedLanguage) {
         if (matchesMedia(NARROW_LAYOUT)) {
           notify('notices.inserted', { name });
         }
+        return added.id;
+      } catch (error) {
+        showError('errors.insertFailed', error);
+        return null;
+      }
+    },
+    [currentFlow, edit, language, library, notify, showError],
+  );
+
+  /** Writes an expression given as blocks: the expression endpoint forms it, the inputs of the values join the element. */
+  const writeBlocks = useCallback(
+    async (place: ExpressionPlace, blocks: Block): Promise<void> => {
+      const document = stateRef.current.document;
+      const index = typesRef.current;
+      const pointer = document === null ? null : placePointer(document, place);
+      if (document === null || index === null || pointer === null) {
+        return;
+      }
+      try {
+        const [answer] = await requestExpressions(document, language, [{ pointer, blocks }]);
+        if (answer !== undefined) {
+          edit((latest) => withInputs(setPlaceStored(latest, index, place, answer.stored), ownerElement(place), blocks));
+        }
       } catch (error) {
         showError('errors.insertFailed', error);
       }
     },
-    [currentFlow, edit, language, library, notify, showError],
+    [edit, language, showError],
+  );
+
+  /** Selects an element without leaving the guided setup (a click on the drawing area leaves it). */
+  const selectQuietly = useCallback(
+    (id: string) => {
+      edit((latest) => latest, { selection: { kind: 'element', id } });
+    },
+    [edit],
   );
 
   // --- the drawing area ------------------------------------------------------------------------
@@ -580,6 +626,8 @@ export function useStudioController(language: SupportedLanguage) {
       confirmDelete,
       answerUnsaved,
       insert,
+      writeBlocks,
+      selectQuietly,
       connectSteps,
       connectValue,
       dropStep,
@@ -676,6 +724,8 @@ export function useStudioController(language: SupportedLanguage) {
       requestRemoveElement,
       save,
       select,
+      selectQuietly,
+      writeBlocks,
     ],
   );
 

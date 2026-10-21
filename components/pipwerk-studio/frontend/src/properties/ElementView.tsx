@@ -11,8 +11,10 @@ import { iconOf, kindClassOf, labelText, orderSelector } from '../model/typeInde
 import { useStudio } from '../state/StudioContext';
 import { Btn, Info, Section, Select, TextInput } from '../ui/controls';
 import { Icon } from '../ui/Icon';
+import { contentKind } from '../model/objectContent';
 import { FieldRow, applies, specOfParameter, specOfProperty, type FieldSpec } from './fields';
 import { FindingsList } from './FindingsList';
+import { InstanceList, InstancePanel } from './Instances';
 
 /** The own parameters of an instance (from a template of the user) as entries that can be assigned. */
 function ownSpecs(instance: InstanceDocument | null | undefined): FieldSpec[] {
@@ -231,6 +233,8 @@ export function ElementView({ element }: { element: ElementDocument }) {
       element={element}
       answer={answerFor(where, spec.id)}
       note={note}
+      scope={where}
+      condition={spec.datatype === 'expression' && type.named && type.properties.some((property) => property.datatype === 'boolean')}
       onChange={(binding) => {
         actions.setBinding(element.id, where, spec.id, binding);
       }}
@@ -437,10 +441,16 @@ export function ElementView({ element }: { element: ElementDocument }) {
         </Select>
       </Section>
 
+      {card && contentKind(type) !== null ? (
+        <Section title={t('instances.content')} testid="sec-content">
+          <InstancePanel refTo={{ root: { kind: 'object', id: element.id }, steps: [] }} card />
+        </Section>
+      ) : null}
+
       {type.rulesAllowed ? (
         <Section title={t('properties.rulesOfElement')} testid="sec-element-rules">
           <p className="muted">{t('properties.rulesOfElementHint')}</p>
-          <RuleList rules={element.rules} owner={element.id} />
+          <InstanceList list={{ root: { kind: 'element', id: element.id }, steps: [], list: 'rules' }} kind="rules" />
         </Section>
       ) : null}
 
@@ -501,37 +511,5 @@ export function ElementView({ element }: { element: ElementDocument }) {
         </Btn>
       </footer>
     </div>
-  );
-}
-
-/** The rules of the strategy or of an element: their names with their origin, and the way to remove one. */
-export function RuleList({ rules, owner }: { rules: readonly InstanceDocument[]; owner: string | null }) {
-  const { studio, types } = useStudio();
-  const { t } = useTranslation();
-  if (rules.length === 0) {
-    return <p className="empty-note">{t('properties.noRules')}</p>;
-  }
-  return (
-    <ul className="prop-list" data-testid="rule-list">
-      {rules.map((rule) => {
-        const objectType = types?.byId.get(rule.object_type);
-        return (
-          <li key={rule.key} className="prop-row" data-testid="rule-row">
-            <Icon name="shield" size={14} />
-            <span className="prop-name">{rule.name}</span>
-            <span className="dtype-chip">{objectType === undefined ? rule.object_type : labelText(objectType.name, studio.language)}</span>
-            <Btn
-              small
-              kind="quiet"
-              icon="trash"
-              title={t('properties.removeRule', { name: rule.name })}
-              onClick={() => {
-                studio.actions.removeRule(owner, rule.key);
-              }}
-            />
-          </li>
-        );
-      })}
-    </ul>
   );
 }

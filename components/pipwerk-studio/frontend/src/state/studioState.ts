@@ -16,8 +16,26 @@ export type WireMode = 'all' | 'selection' | 'off';
 /** A short note that disappears on its own (specification 5.3: nothing to click away except critical errors). */
 export type Notice = { serial: number; key: string; params: Record<string, string> };
 
+/**
+ * The guided setup of a new strategy (specification 5.5): the step it is at and the elements it laid out so far, so
+ * that going back and changing a step replaces what that step made.
+ */
+export type WizardState = {
+  step: number;
+  /** The element the trigger step made. */
+  trigger: string | null;
+  /** The objects the indicator step made. */
+  indicators: readonly string[];
+  /** The element the condition step made. */
+  condition: string | null;
+};
+
+export const initialWizard: WizardState = { step: 1, trigger: null, indicators: [], condition: null };
+
 export type StudioState = {
   document: StrategyDocument | null;
+  /** The guided setup is open; `null` when the user works by hand. */
+  wizard: WizardState | null;
   /** The text of the document at the last opening or saving; a document that differs has unsaved changes. */
   savedText: string | null;
   /** The strategy exists in the object directory (the next save replaces it). */
@@ -42,6 +60,7 @@ export type StudioState = {
 
 export const initialStudioState: StudioState = {
   document: null,
+  wizard: null,
   savedText: null,
   persisted: false,
   findings: null,
@@ -73,6 +92,7 @@ export type StudioAction =
   | { type: 'armed'; armed: StudioState['armed'] }
   | { type: 'toggleCard'; id: string }
   | { type: 'focusField'; field: string }
+  | { type: 'wizard'; wizard: Partial<WizardState> | null }
   | { type: 'notice'; key: string; params?: Record<string, string> };
 
 export function documentText(document: StrategyDocument): string {
@@ -134,7 +154,14 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
     case 'checked':
       return { ...state, findings: action.findings };
     case 'select':
-      return { ...state, selection: action.selection, armed: null, panel: action.panel ?? state.panel };
+      return {
+        ...state,
+        selection: action.selection,
+        armed: null,
+        panel: action.panel ?? state.panel,
+        // choosing a step or an object on the drawing area ends the guided setup: the user works by hand
+        wizard: action.selection.kind === 'strategy' ? state.wizard : null,
+      };
     case 'panel':
       return { ...state, panel: action.panel };
     case 'wires':
@@ -150,6 +177,11 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       };
     case 'focusField':
       return { ...state, focusField: { field: action.field, serial: nextSerial() } };
+    case 'wizard':
+      return {
+        ...state,
+        wizard: action.wizard === null ? null : { ...(state.wizard ?? initialWizard), ...action.wizard },
+      };
     case 'notice':
       return { ...state, notice: { serial: nextSerial(), key: action.key, params: action.params ?? {} } };
   }

@@ -16,6 +16,10 @@ async function openEma(user: ReturnType<typeof userEvent.setup>): Promise<void> 
 }
 
 async function rename(user: ReturnType<typeof userEvent.setup>, name: string): Promise<void> {
+  const leave = screen.queryByTestId('wz-leave');
+  if (leave !== null) {
+    await user.click(leave);
+  }
   const field = screen.getByTestId('strategy-name');
   await user.clear(field);
   await user.type(field, name);

@@ -1,0 +1,228 @@
+import type { ExpressionBlock, LiteralType } from '../api/objects';
+
+/**
+ * The tree of blocks of an expression and the changes the block editor makes to it (specification 3.4). The tree is
+ * what the backend reads out of an expression and turns back into one (`/api/v1/expressions`); this module never
+ * reads or writes the text of an expression (E2).
+ */
+
+export type Block = ExpressionBlock;
+
+export const EMPTY: Block = { kind: 'empty' };
+
+export const COMPARE_OPERATORS = ['=', '<>', '<', '<=', '>', '>='] as const;
+export const ARITHMETIC_OPERATORS = ['+', '-', '*', '/'] as const;
+
+export function nameBlock(path: readonly string[]): Block {
+  return { kind: 'name', path: [...path] };
+}
+
+export function literalBlock(value: string | number | boolean, datatype: LiteralType): Block {
+  return { kind: 'literal', value, datatype };
+}
+
+/** A number the user typed: whole numbers are integers. */
+export function numberBlock(value: number): Block {
+  return literalBlock(value, Number.isInteger(value) ? 'integer' : 'number');
+}
+
+export function comparisonBlock(operator: string, left: Block, right: Block): Block {
+  return { kind: 'comparison', operator, children: [left, right] };
+}
+
+export function arithmeticBlock(operator: string, left: Block, right: Block): Block {
+  return { kind: 'arithmetic', operator, children: [left, right] };
+}
+
+export function logicBlock(operator: 'and' | 'or' | 'not', children: Block[]): Block {
+  return { kind: 'logic', operator, children };
+}
+
+export function ifBlock(condition: Block, whenTrue: Block, whenFalse: Block): Block {
+  return { kind: 'if', children: [condition, whenTrue, whenFalse] };
+}
+
+export function functionBlock(name: string, children: Block[]): Block {
+  return { kind: 'function', function: name, children };
+}
+
+export function crossingBlock(direction: 'up' | 'down' | 'any', a: Block, b: Block): Block {
+  return { kind: 'crossing', direction, children: [a, b] };
+}
+
+export function childrenOf(block: Block): Block[] {
+  return block.children ?? [];
+}
+
+export function child(block: Block, index: number): Block {
+  return block.children?.[index] ?? EMPTY;
+}
+
+/** The block with its child at `index` replaced (a missing child is added as far as needed). */
+export function withChild(block: Block, index: number, replacement: Block): Block {
+  const children = [...childrenOf(block)];
+  while (children.length < index) {
+    children.push(EMPTY);
+  }
+  children[index] = replacement;
+  return { ...block, children };
+}
+
+export function withChildren(block: Block, children: Block[]): Block {
+  return { ...block, children };
+}
+
+export function isEmptyBlock(block: Block): boolean {
+  return block.kind === 'empty';
+}
+
+/** The key of a name for lists: the identifiers of its path. */
+export function pathKey(path: readonly string[]): string {
+  return path.map((part) => part.toLowerCase()).join('\u001f');
+}
+
+/** Every name in the tree, in the order of the expression. */
+export function namesIn(block: Block): string[][] {
+  const found: string[][] = [];
+  const visit = (current: Block): void => {
+    if (current.kind === 'name' && current.path !== undefined) {
+      found.push(current.path);
+    }
+    for (const part of current.children ?? []) {
+      visit(part);
+    }
+  };
+  visit(block);
+  return found;
+}
+
+/** The properties of instances an expression addresses: the first two identifiers of every name (specification 3.3). */
+export function instanceReferences(block: Block | null): { instance: string; property: string }[] {
+  if (block === null) {
+    return [];
+  }
+  const found: { instance: string; property: string }[] = [];
+  for (const path of namesIn(block)) {
+    const [instance, property] = path;
+    if (instance !== undefined && property !== undefined) {
+      found.push({ instance, property });
+    }
+  }
+  return found;
+}
+
+/** The tree with every name for which `matches` is true replaced by an empty place (specification 3.4, "Entfernen"). */
+export function emptyWhere(block: Block, matches: (path: readonly string[]) => boolean): Block {
+  if (block.kind === 'name' && block.path !== undefined && matches(block.path)) {
+    return EMPTY;
+  }
+  if (block.children === undefined) {
+    return block;
+  }
+  return { ...block, children: block.children.map((part) => emptyWhere(part, matches)) };
+}
+
+export function usesName(block: Block, matches: (path: readonly string[]) => boolean): boolean {
+  return namesIn(block).some((path) => matches(path));
+}
+
+// ---- the kinds a value can have -----------------------------------------------------------------------------------
+
+/** What the choice of a value shows for a block: a name, or one of the kinds of value (`k:...`). */
+export function valueKey(block: Block): string {
+  switch (block.kind) {
+    case 'name':
+      return `n:${(block.path ?? []).join('\u001f')}`;
+    case 'literal':
+      return block.datatype === 'text' ? 'k:str' : block.datatype === 'boolean' ? 'k:bool' : 'k:num';
+    case 'arithmetic':
+      return 'k:calc';
+    case 'comparison':
+    case 'crossing':
+    case 'logic':
+      return 'k:cond';
+    case 'if':
+      return 'k:if';
+    case 'function':
+      return block.function === 'PREVIOUS' ? 'k:prev' : 'k:func';
+    case 'empty':
+      return '';
+  }
+}
+
+export function pathOfKey(key: string): string[] {
+  return key.slice(2).split('\u001f');
+}
+
+/** The block a choice in the list of values stands for; what was there before becomes the first operand where that fits. */
+export function blockForKey(key: string, current: Block): Block {
+  if (key.startsWith('n:')) {
+    return nameBlock(pathOfKey(key));
+  }
+  const keep = isEmptyBlock(current) ? EMPTY : current;
+  switch (key) {
+    case 'k:num':
+      return numberBlock(0);
+    case 'k:str':
+      return literalBlock('', 'text');
+    case 'k:bool':
+      return literalBlock(true, 'boolean');
+    case 'k:prev':
+      return functionBlock('PREVIOUS', [keep]);
+    case 'k:calc':
+      return arithmeticBlock('+', keep, EMPTY);
+    case 'k:if':
+      return ifBlock(EMPTY, keep, EMPTY);
+    case 'k:func':
+      return functionBlock('MIN', [keep, EMPTY]);
+    case 'k:cond':
+      return comparisonBlock('>', EMPTY, EMPTY);
+    default:
+      return EMPTY;
+  }
+}
+
+// ---- the kinds a condition can have --------------------------------------------------------------------------------
+
+export type ConditionKind = 'compare' | 'cross' | 'and' | 'or' | 'not' | 'value';
+
+export function conditionKind(block: Block): ConditionKind {
+  switch (block.kind) {
+    case 'comparison':
+      return 'compare';
+    case 'crossing':
+      return 'cross';
+    case 'logic':
+      return block.operator === 'or' ? 'or' : block.operator === 'not' ? 'not' : 'and';
+    case 'empty':
+      return 'compare';
+    default:
+      return 'value';
+  }
+}
+
+export const blankComparison = (): Block => comparisonBlock('>', EMPTY, EMPTY);
+
+/** The condition of the kind chosen, made from the one that was there (kept where it fits). */
+export function convertCondition(kind: ConditionKind, current: Block): Block {
+  const have = !isEmptyBlock(current);
+  const currentKind = conditionKind(current);
+  switch (kind) {
+    case 'compare':
+      return currentKind === 'compare' && have ? current : blankComparison();
+    case 'cross':
+      return crossingBlock('up', EMPTY, EMPTY);
+    case 'and':
+      return current.kind === 'logic' && current.operator === 'or'
+        ? { ...current, operator: 'and' }
+        : logicBlock('and', [have ? current : blankComparison(), blankComparison()]);
+    case 'or':
+      return current.kind === 'logic' && current.operator === 'and'
+        ? { ...current, operator: 'or' }
+        : logicBlock('or', [have ? current : blankComparison(), blankComparison()]);
+    case 'not':
+      return logicBlock('not', [have ? current : blankComparison()]);
+    case 'value':
+      return EMPTY;
+  }
+}

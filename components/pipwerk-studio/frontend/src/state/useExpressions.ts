@@ -41,7 +41,10 @@ export function expressionSlots(document: StrategyDocument): ExpressionSlot[] {
 }
 
 /** The parts of the document that decide what an expression says; moving a step or folding a frame does not. */
-function signature(document: StrategyDocument): string {
+export function documentSignature(document: StrategyDocument | null): string {
+  if (document === null) {
+    return '';
+  }
   return JSON.stringify([
     document.parameters,
     document.rules,
@@ -86,7 +89,7 @@ function useDelayed<T>(value: T, delay: number): T {
  * change. While the answer is on its way the previous answers stay.
  */
 export function useExpressions(document: StrategyDocument | null, language: SupportedLanguage, enabled: boolean): Expressions {
-  const current = useMemo(() => (document === null ? null : { document, sign: signature(document) }), [document]);
+  const current = useMemo(() => (document === null ? null : { document, sign: documentSignature(document) }), [document]);
   const settled = useDelayed(current, 250);
   const sign = settled?.sign ?? '';
   const query = useQuery({

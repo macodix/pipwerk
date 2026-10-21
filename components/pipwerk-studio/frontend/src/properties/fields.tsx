@@ -3,8 +3,11 @@ import { useTranslation } from 'react-i18next';
 
 import type { BindingKind, Choice, DataType, ParameterDescription, PropertyDescription } from '../api/elementTypes';
 import type { ExpressionAnswer } from '../api/objects';
+import type { BindingScope } from '../document/ops';
 import { getOwn } from '../document/own';
+import type { ExpressionPlace } from '../document/places';
 import { isConnectionValue, type Binding, type ElementDocument, type StrategyDocument } from '../document/types';
+import { ExpressionPanel } from '../expression/ExpressionPanel';
 import type { SupportedLanguage } from '../i18n';
 import { elementName, propertyRows } from '../model/elements';
 import { compatibleDataTypes, labelText, objectTypeChoices, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
@@ -48,7 +51,7 @@ export function initialValue(datatype: DataType, spec: Pick<FieldSpec, 'default'
 
 /** The kinds of assignment the user can choose, in the order of the type description. */
 export function kindsFor(spec: FieldSpec, current: BindingKind | undefined): BindingKind[] {
-  const kinds: BindingKind[] = spec.bindings.filter((kind) => kind !== 'expression' || current === 'expression');
+  const kinds: BindingKind[] = [...spec.bindings];
   if (current !== undefined && !kinds.includes(current)) {
     kinds.push(current);
   }
@@ -384,6 +387,20 @@ export function ExpressionReadout({
   );
 }
 
+/** The editor of the expression an element holds for a field: blocks or formula (specification 5.4). */
+function ExpressionEditor({ spec, place, selfKey, condition }: { spec: FieldSpec; place: ExpressionPlace; selfKey: string | null; condition: boolean }) {
+  const hint = spec.choices.length > 0 ? { choices: spec.choices.map((choice) => ({ id: choice.id, label: choice.label })) } : undefined;
+  return (
+    <ExpressionPanel
+      place={place}
+      mode={condition ? 'condition' : 'value'}
+      selfKey={selfKey}
+      hint={hint}
+      testid={`expression-${spec.id}`}
+    />
+  );
+}
+
 export type FieldRowProps = {
   spec: FieldSpec;
   binding: Binding | undefined;
@@ -393,17 +410,26 @@ export type FieldRowProps = {
   language: SupportedLanguage;
   document: StrategyDocument;
   types: TypeIndex;
-  element: ElementDocument;
+  /** The element the assignment belongs to; none for the parameter of an instance that lies in no element. */
+  element?: ElementDocument;
   answer: ExpressionAnswer | undefined;
   onChange: (binding: Binding | null) => void;
   onCreateParameter: (name: string) => Promise<string | null>;
   /** The note under the label, for example which rule determines the value. */
   note?: string;
+  /** Where the assignment lies in the element: needed to edit an expression there. */
+  scope?: BindingScope;
+  /** Where the expression of this field lies if that is not in an element (a parameter of a rule or a contained object). */
+  place?: ExpressionPlace;
+  /** An expression of this field is a condition (true or false) and not a value. */
+  condition?: boolean;
 };
 
 /** One parameter or property with its label, its explanation, the kind of assignment and the value. */
 export function FieldRow(props: FieldRowProps) {
-  const { spec, binding, readOnly, level, language, document, types, element, answer, onChange, onCreateParameter, note } = props;
+  const { spec, binding, readOnly, level, language, document, types, element, answer, onChange, onCreateParameter, note, scope, condition } = props;
+  const place: ExpressionPlace | null =
+    props.place ?? (element !== undefined && scope !== undefined ? { kind: 'binding', element: element.id, scope, key: spec.id } : null);
   const { t } = useTranslation();
   const tip = labelText(spec.explanation, language);
   const kinds = kindsFor(spec, binding?.kind);
@@ -455,7 +481,9 @@ export function FieldRow(props: FieldRowProps) {
       );
     }
     if (binding === undefined) {
-      return exprOnly ? (
+      return exprOnly && place !== null && readOnly !== true ? (
+        <ExpressionEditor spec={spec} place={place} selfKey={element?.key ?? null} condition={condition === true} />
+      ) : exprOnly ? (
         <ExpressionReadout stored="" answer={undefined} testid={`expression-${spec.id}`} />
       ) : (
         <p className="fixed-note muted">{t(spec.required ? 'fields.unsetRequired' : 'fields.unsetOptional')}</p>
@@ -501,14 +529,16 @@ export function FieldRow(props: FieldRowProps) {
             document={document}
             types={types}
             language={language}
-            self={element.id}
+            self={element?.id ?? ''}
             onChange={(value) => {
               onChange({ kind: 'connection', value });
             }}
           />
         );
       case 'expression':
-        return (
+        return place !== null && readOnly !== true ? (
+          <ExpressionEditor spec={spec} place={place} selfKey={element?.key ?? null} condition={condition === true} />
+        ) : (
           <ExpressionReadout
             stored={typeof binding.value === 'string' ? binding.value : ''}
             answer={answer}

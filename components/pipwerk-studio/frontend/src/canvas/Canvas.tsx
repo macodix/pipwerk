@@ -712,6 +712,16 @@ function CanvasView() {
               >
                 {t('canvas.openLibrary')}
               </Btn>
+              <Btn
+                icon="wand"
+                testid="empty-wizard"
+                onClick={() => {
+                  actions.dispatch({ type: 'wizard', wizard: studio.state.wizard === null ? { step: 1 } : {} });
+                  actions.setPanel('props');
+                }}
+              >
+                {t('wizard.offerButton')}
+              </Btn>
             </div>
           </div>
         </div>

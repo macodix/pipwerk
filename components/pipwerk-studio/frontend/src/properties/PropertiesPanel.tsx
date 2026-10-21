@@ -6,8 +6,10 @@ import { PanelTabs } from '../library/Library';
 import { useStudio } from '../state/StudioContext';
 import { Btn, Section } from '../ui/controls';
 import { Icon } from '../ui/Icon';
-import { ElementView, RuleList } from './ElementView';
+import { ElementView } from './ElementView';
 import { FindingsList } from './FindingsList';
+import { InstanceList } from './Instances';
+import { Wizard } from '../wizard/Wizard';
 
 /** After a click on a finding the field is scrolled into view and highlighted. */
 function useFocusField(root: React.RefObject<HTMLElement | null>): void {
@@ -78,7 +80,7 @@ function StrategyView() {
       </Section>
       <Section title={t('properties.rulesOfStrategy')} testid="sec-rules">
         <p className="muted">{t('properties.rulesOfStrategyHint')}</p>
-        <RuleList rules={document.rules} owner={null} />
+        <InstanceList list={{ root: { kind: 'strategy' }, steps: [], list: 'rules' }} kind="rules" />
       </Section>
       <Section
         title={t('properties.findings')}
@@ -256,6 +258,8 @@ export function PropertiesPanel() {
         </div>
       </div>
     );
+  } else if (state.wizard !== null) {
+    body = <Wizard />;
   } else if (selection.kind === 'element') {
     const element = document.elements.find((candidate) => candidate.id === selection.id);
     body = element === undefined ? <StrategyView /> : <ElementView element={element} key={element.id} />;
