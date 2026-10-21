@@ -135,7 +135,7 @@ export function bindingText(
     }
     case 'expression': {
       const answer = answers(slot);
-      return answer === undefined ? '…' : answer.sentence;
+      return answer === undefined ? '…' : (answer.sentence ?? t('expression.hasError'));
     }
     case 'application':
       return t('binding.atApplicationShort');

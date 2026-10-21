@@ -8,6 +8,7 @@ import { parseStrategyDocument } from '../document/parse';
 import type { StrategyDocument } from '../document/types';
 import { indexFindings } from '../findings/findingsModel';
 import { createI18n } from '../i18n';
+import { answerOf } from '../testing/answers';
 import { EMA_ELEMENT_IDS, emaTrendfolge } from '../testing/emaTrendfolge';
 import { inventedStrategy, inventedTypes, stepElement } from '../testing/inventedTypes';
 import { testTypes } from '../testing/typeDescriptions';
@@ -35,7 +36,7 @@ function flowOf(
       types,
       language: 'de',
       t: i18n.t,
-      answers: () => (options.sentence === undefined ? undefined : { stored: '', display: '', sentence: options.sentence, blocks: null, findings: [] }),
+      answers: () => (options.sentence === undefined ? undefined : answerOf({ sentence: options.sentence })),
     },
     findings: indexFindings(null),
     selection: options.selection ?? { kind: 'strategy' },

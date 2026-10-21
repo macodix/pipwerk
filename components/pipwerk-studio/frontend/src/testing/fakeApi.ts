@@ -1,4 +1,5 @@
 import { emaTrendfolge } from './emaTrendfolge';
+import { blocksToStored, namesOf, storedToBlocks } from './fakeExpressions';
 import { identifierFromName } from './keys';
 import { typeDescriptionsJson } from './typeDescriptions';
 
@@ -72,18 +73,6 @@ function check(document: Json, types: Map<string, Json>): FakeFinding[] {
     found.push({ level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} });
   }
   return found;
-}
-
-/** The name nodes of the blocks of an expression: every `a.b` of the text, in lower case. */
-function blocksOf(text: string): Json | null {
-  if (text.trim() === '') {
-    return { kind: 'empty' };
-  }
-  const children: Json[] = [];
-  for (const match of text.matchAll(/([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)/g)) {
-    children.push({ kind: 'name', path: [String(match[1]).toLowerCase(), String(match[2]).toLowerCase()] });
-  }
-  return { kind: 'function', function: 'IF', children };
 }
 
 export class FakeApi {
@@ -264,9 +253,16 @@ export class FakeApi {
       return { status: 200, body: { key } };
     }
     if (url === '/api/v1/expressions' && method === 'POST') {
+      const names = namesOf(asRecord(body.document));
       const items = asArray(body.items).map((entry) => {
-        const stored = String(entry.stored ?? entry.display ?? '');
-        return { stored, display: stored, sentence: stored, blocks: blocksOf(stored), tokens: [], findings: [], names: [] };
+        const stored = entry.blocks !== undefined ? blocksToStored(asRecord(entry.blocks)) : String(entry.stored ?? entry.display ?? '');
+        const blocks = storedToBlocks(stored);
+        // a text outside of the part of the language the fake knows is reported as a typing error at its end
+        const findings =
+          blocks === null
+            ? [{ level: 'error', code: 'expression.invalid', element: null, subject: null, details: { issue: 'syntax', reason: 'unexpected_end', start: stored.length - 1, end: stored.length } }]
+            : [];
+        return { stored, display: stored, sentence: blocks === null ? null : stored, blocks, tokens: [], findings, names };
       });
       return { status: 200, body: { items } };
     }

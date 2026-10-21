@@ -6,8 +6,10 @@ import { PanelTabs } from '../library/Library';
 import { useStudio } from '../state/StudioContext';
 import { Btn, Section } from '../ui/controls';
 import { Icon } from '../ui/Icon';
-import { ElementView, RuleList } from './ElementView';
+import { ElementView } from './ElementView';
 import { FindingsList } from './FindingsList';
+import { InstanceList } from './Instances';
+import { Wizard } from '../wizard/Wizard';
 
 /** After a click on a finding the field is scrolled into view and highlighted. */
 function useFocusField(root: React.RefObject<HTMLElement | null>): void {
@@ -23,7 +25,10 @@ function useFocusField(root: React.RefObject<HTMLElement | null>): void {
     }
     target.scrollIntoView({ block: 'center' });
     target.classList.add('flash');
-    target.querySelector<HTMLElement>('select, input, textarea, button')?.focus({ preventScroll: true });
+    // a finding in an expression leads to the spot in the formula, which takes the focus itself
+    if (focus.place === null) {
+      target.querySelector<HTMLElement>('select, input, textarea, button')?.focus({ preventScroll: true });
+    }
     const timer = window.setTimeout(() => {
       target.classList.remove('flash');
     }, 1800);
@@ -78,7 +83,7 @@ function StrategyView() {
       </Section>
       <Section title={t('properties.rulesOfStrategy')} testid="sec-rules">
         <p className="muted">{t('properties.rulesOfStrategyHint')}</p>
-        <RuleList rules={document.rules} owner={null} />
+        <InstanceList list={{ root: { kind: 'strategy' }, steps: [], list: 'rules' }} kind="rules" />
       </Section>
       <Section
         title={t('properties.findings')}
@@ -256,6 +261,8 @@ export function PropertiesPanel() {
         </div>
       </div>
     );
+  } else if (state.wizard !== null) {
+    body = <Wizard />;
   } else if (selection.kind === 'element') {
     const element = document.elements.find((candidate) => candidate.id === selection.id);
     body = element === undefined ? <StrategyView /> : <ElementView element={element} key={element.id} />;

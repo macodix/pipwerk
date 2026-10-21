@@ -66,10 +66,16 @@ describe('translations (specification 5.1)', () => {
         'canvas.zoom',
         'datatype.text',
         'dialogs.error.ok',
+        'expression.arithmetic.+',
+        'expression.arithmetic.-',
+        'expression.text',
+        'instances.name',
         'library.groups.trends',
         'openDialog.columnName',
         'properties.name',
         'revision.commit',
+        'wizard.steps.name',
+        'wizard.steps.order',
       ].sort(),
     );
   });

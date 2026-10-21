@@ -91,6 +91,16 @@ export async function clickMenu(page: Page, id: 'new' | 'open' | 'save' | 'check
   await page.getByTestId(`cmenu-${id}`).click();
 }
 
+/** "Neue Strategie" and leaving the guided setup: the user works by hand on the empty drawing area. */
+export async function newStrategy(page: Page): Promise<void> {
+  await clickMenu(page, 'new');
+  await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
+  const leave = page.getByTestId('wz-leave');
+  if (await leave.isVisible()) {
+    await leave.click();
+  }
+}
+
 /** Opens a stored strategy by name. */
 export async function openStrategy(page: Page, name: string): Promise<void> {
   await clickMenu(page, 'open');

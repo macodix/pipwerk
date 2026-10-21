@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { referencesOfBlocks } from '../arrange/input';
 import { parseStrategyDocument } from '../document/parse';
 import { createI18n } from '../i18n';
+import { answerOf } from '../testing/answers';
 import { EMA_ELEMENT_IDS, emaTrendfolge } from '../testing/emaTrendfolge';
 import { inventedStrategy, inventedTypes } from '../testing/inventedTypes';
 import { testTypes } from '../testing/typeDescriptions';
@@ -18,7 +19,7 @@ function context(sentences: Record<string, string> = {}): DescribeContext {
     types,
     language: 'de',
     t: i18n.t,
-    answers: (slot) => (sentences[slot] === undefined ? undefined : { stored: '', display: '', sentence: sentences[slot], blocks: null, findings: [] }),
+    answers: (slot) => (sentences[slot] === undefined ? undefined : answerOf({ sentence: sentences[slot] })),
   };
 }
 

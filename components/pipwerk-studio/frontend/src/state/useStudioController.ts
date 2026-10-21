@@ -12,13 +12,17 @@ import {
   readStrategy,
   readTemplate,
   replaceStrategy,
+  requestExpressions,
   templateArts,
   type Finding,
 } from '../api/objects';
+import { addToList, type ListRef } from '../document/instanceOps';
+import { listPointer, placePointer, setPlaceStored, type ExpressionPlace } from '../document/places';
+import type { Block } from '../expression/blocks';
+import { ownerElement, withInputs } from '../expression/inputs';
 import {
   addElement,
   addInput,
-  addRule,
   addStrategyParameter,
   clearPositions,
   connect,
@@ -30,7 +34,6 @@ import {
   removeInput,
   removeRule,
   removeSection,
-  removeStrategyParameter,
   renameSection,
   setBinding,
   setElementName,
@@ -65,10 +68,13 @@ import { elementName, isCardElement } from '../model/elements';
 import { createTypeIndex, holdsInstance, type TypeIndex } from '../model/typeIndex';
 import { NARROW_LAYOUT, matchesMedia } from '../ui/media';
 import { newUuid } from '../document/ids';
+import { NO_USE, planRemoval, removeWithPlan, type RemovalPlan, type RemovalTarget } from './removal';
 import {
   initialStudioState,
   isDirty,
   studioReducer,
+  type ExpressionFocus,
+  type StudioAction,
   type Panel,
   type Selection,
   type StudioState,
@@ -85,15 +91,15 @@ export type DialogState =
   | { kind: 'open' }
   | { kind: 'delete' }
   | { kind: 'settings' }
-  | { kind: 'removeElement'; id: string }
-  | { kind: 'removeParameter'; key: string }
+  | { kind: 'removeElement'; id: string; plan: RemovalPlan }
+  | { kind: 'removeParameter'; key: string; plan: RemovalPlan }
   | { kind: 'error'; titleKey: string; error: unknown };
 
 /** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
 export type NewParameter = Pick<StrategyParameter, 'name' | 'datatype' | 'object_type' | 'value' | 'at_application' | 'choices'>;
 
-/** Where an entry of the library is laid when it is dropped on the drawing area. */
-export type DropTarget = { after?: string | null; flow?: string | null };
+/** Where an entry of the library is laid: on the drawing area behind a step or in a management, or as a rule in a list of rules. */
+export type DropTarget = { after?: string | null; flow?: string | null; ruleList?: ListRef; instanceList?: ListRef };
 
 export type StudioController = ReturnType<typeof useStudioController>;
 
@@ -103,11 +109,17 @@ const TYPES_KEY = ['element-types'];
 export function useStudioController(language: SupportedLanguage) {
   const { i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const [state, dispatch] = useReducer(studioReducer, initialStudioState);
+  const [state, dispatchToReducer] = useReducer(studioReducer, initialStudioState);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [busy, setBusy] = useState(false);
   const stateRef = useRef(state);
   stateRef.current = state;
+  // The state a change leads to is known at once: a sequence of changes (a step laid out, then named, then given an
+  // expression) works on the result of the one before, also before the interface was drawn anew in between.
+  const dispatch = useCallback((action: StudioAction) => {
+    stateRef.current = studioReducer(stateRef.current, action);
+    dispatchToReducer(action);
+  }, []);
   const strategyToken = useRef(0);
 
   const typesQuery = useQuery({
@@ -211,6 +223,7 @@ export function useStudioController(language: SupportedLanguage) {
         const name = uniqueDisplayName(i18n.t('strategy.newName'), names);
         strategyToken.current += 1;
         dispatch({ type: 'loaded', document: newStrategy(name), persisted: false, findings: null });
+        dispatch({ type: 'wizard', wizard: {} });
         dispatch({ type: 'panel', panel: 'canvas' });
       } else {
         await openById(action.id);
@@ -332,18 +345,21 @@ export function useStudioController(language: SupportedLanguage) {
     return null;
   }, []);
 
-  /** Lays an entry of the library on the drawing area or adds it as a rule. */
+  /**
+   * Lays an entry of the library on the drawing area or adds it as a rule. The answer is the identifier of the
+   * element that was laid out, the key of the rule or contained object that was added, or `null` if nothing was.
+   */
   const insert = useCallback(
-    async (entryKey: string, drop?: DropTarget) => {
+    async (entryKey: string, drop?: DropTarget): Promise<string | null> => {
       const current = stateRef.current;
       const index = typesRef.current;
       const document = current.document;
       if (document === null || index === null) {
-        return;
+        return null;
       }
       const entry = findEntry(library, entryKey);
       if (entry === undefined || entry.unreadable) {
-        return;
+        return null;
       }
       try {
         const source = entry.source;
@@ -355,7 +371,7 @@ export function useStudioController(language: SupportedLanguage) {
         } else if (source.kind === 'builtinTemplate') {
           const found = index.templates.find((candidate) => candidate.id === source.templateId);
           if (found === undefined) {
-            return;
+            return null;
           }
           template = found;
           typeId = found.object_type;
@@ -372,14 +388,18 @@ export function useStudioController(language: SupportedLanguage) {
             ? takenNames(document, index)
             : [],
         );
-        if (entry.target === 'rules') {
+        if (entry.target === 'rules' || drop?.instanceList !== undefined) {
           const selection = current.selection;
           const selected =
             selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
           const owner = selected !== undefined && index.byId.get(selected.type)?.rulesAllowed === true ? selected.id : null;
-          const ownerIndex = owner === null ? -1 : document.elements.findIndex((candidate) => candidate.id === owner);
-          const scope = ownerIndex < 0 ? '/rules' : `/elements/${ownerIndex}/rules`;
-          const key = await createKey(document, scope, name);
+          const explicit = drop?.instanceList ?? drop?.ruleList;
+          const list: ListRef = explicit ?? { root: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner }, steps: [], list: 'rules' };
+          const scope = listPointer(document, list);
+          if (scope === null) {
+            return null;
+          }
+          const key = await createKey(document, scope, name, undefined, { kind: list.list === 'rules' ? 'rule' : 'instance', objectType: typeId });
           const rule =
             template !== null
               ? instanceFromTemplate(template, name, key, own)
@@ -387,16 +407,19 @@ export function useStudioController(language: SupportedLanguage) {
                 ? null
                 : instanceFromType(type, name, key);
           if (rule === null) {
-            return;
+            return null;
           }
-          edit((latest) => addRule(latest, owner, rule), {
-            selection: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
+          const nested = list.steps.length > 0;
+          edit((latest) => addToList(latest, list, rule), {
+            selection: nested || explicit !== undefined ? undefined : owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
           });
-          notify(owner === null ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
-          return;
+          if (!nested && explicit === undefined) {
+            notify(list.root.kind === 'strategy' ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
+          }
+          return key;
         }
         if (type === undefined) {
-          return;
+          return null;
         }
         const needsKey = holdsInstance(type) || type.named;
         const key = needsKey ? await createKey(document, '/elements', name) : null;
@@ -415,11 +438,42 @@ export function useStudioController(language: SupportedLanguage) {
         if (matchesMedia(NARROW_LAYOUT)) {
           notify('notices.inserted', { name });
         }
+        return added.id;
+      } catch (error) {
+        showError('errors.insertFailed', error);
+        return null;
+      }
+    },
+    [currentFlow, edit, language, library, notify, showError],
+  );
+
+  /** Writes an expression given as blocks: the expression endpoint forms it, the inputs of the values join the element. */
+  const writeBlocks = useCallback(
+    async (place: ExpressionPlace, blocks: Block): Promise<void> => {
+      const document = stateRef.current.document;
+      const index = typesRef.current;
+      const pointer = document === null ? null : placePointer(document, place);
+      if (document === null || index === null || pointer === null) {
+        return;
+      }
+      try {
+        const [answer] = await requestExpressions(document, language, [{ pointer, blocks }]);
+        if (answer !== undefined) {
+          edit((latest) => withInputs(setPlaceStored(latest, index, place, answer.stored), ownerElement(place), blocks));
+        }
       } catch (error) {
         showError('errors.insertFailed', error);
       }
     },
-    [currentFlow, edit, language, library, notify, showError],
+    [edit, language, showError],
+  );
+
+  /** Selects an element without leaving the guided setup (a click on the drawing area leaves it). */
+  const selectQuietly = useCallback(
+    (id: string) => {
+      edit((latest) => latest, { selection: { kind: 'element', id } });
+    },
+    [edit],
   );
 
   // --- the drawing area ------------------------------------------------------------------------
@@ -529,14 +583,31 @@ export function useStudioController(language: SupportedLanguage) {
     };
   }, []);
 
+  /** Who uses the target; an expression that cannot be asked for counts as unused (the check reports it afterwards). */
+  const planOf = useCallback(
+    async (target: RemovalTarget): Promise<RemovalPlan> => {
+      const document = stateRef.current.document;
+      if (document === null) {
+        return NO_USE;
+      }
+      try {
+        return await planRemoval(document, language, target);
+      } catch {
+        return NO_USE;
+      }
+    },
+    [language],
+  );
+
   const requestRemoveElement = useCallback(
-    (id: string) => {
+    async (id: string): Promise<void> => {
       const info = removalInfo(id);
       if (info === null) {
         return;
       }
-      if (info.managed.length > 0) {
-        setDialog({ kind: 'removeElement', id });
+      const plan = await planOf({ kind: 'element', id });
+      if (info.managed.length > 0 || plan.users.length > 0) {
+        setDialog({ kind: 'removeElement', id, plan });
       } else {
         const index = typesRef.current;
         if (index !== null) {
@@ -544,18 +615,47 @@ export function useStudioController(language: SupportedLanguage) {
         }
       }
     },
-    [edit, removalInfo],
+    [edit, planOf, removalInfo],
+  );
+
+  /** Removes an element or a strategy parameter: the expressions that named it get an empty place first. */
+  const applyRemoval = useCallback(
+    async (target: RemovalTarget, plan: RemovalPlan): Promise<void> => {
+      const index = typesRef.current;
+      const document = stateRef.current.document;
+      setDialog(null);
+      if (index === null || document === null) {
+        return;
+      }
+      try {
+        const changed = await removeWithPlan(document, index, language, target, plan);
+        edit(() => changed, target.kind === 'element' ? { selection: { kind: 'strategy' } } : undefined);
+      } catch (error) {
+        showError('errors.insertFailed', error);
+      }
+    },
+    [edit, language, showError],
   );
 
   const confirmRemoveElement = useCallback(
-    (id: string) => {
-      const index = typesRef.current;
-      setDialog(null);
-      if (index !== null) {
-        edit((latest) => removeElement(latest, index, id), { selection: { kind: 'strategy' } });
-      }
+    (id: string, plan: RemovalPlan) => {
+      void applyRemoval({ kind: 'element', id }, plan);
     },
-    [edit],
+    [applyRemoval],
+  );
+
+  const requestRemoveParameter = useCallback(
+    async (key: string): Promise<void> => {
+      setDialog({ kind: 'removeParameter', key, plan: await planOf({ kind: 'parameter', key }) });
+    },
+    [planOf],
+  );
+
+  const confirmRemoveParameter = useCallback(
+    (key: string, plan: RemovalPlan) => {
+      void applyRemoval({ kind: 'parameter', key }, plan);
+    },
+    [applyRemoval],
   );
 
   const elementDisplayName = useCallback(
@@ -580,6 +680,8 @@ export function useStudioController(language: SupportedLanguage) {
       confirmDelete,
       answerUnsaved,
       insert,
+      writeBlocks,
+      selectQuietly,
       connectSteps,
       connectValue,
       dropStep,
@@ -587,6 +689,8 @@ export function useStudioController(language: SupportedLanguage) {
       removalInfo,
       requestRemoveElement,
       confirmRemoveElement,
+      requestRemoveParameter,
+      confirmRemoveParameter,
       elementDisplayName,
       showElement: (id: string) => {
         edit((document) => document, { selection: { kind: 'element', id }, reveal: id });
@@ -596,7 +700,7 @@ export function useStudioController(language: SupportedLanguage) {
       setPanel: (panel: Panel) => dispatch({ type: 'panel', panel }),
       arm: (armed: StudioState['armed']) => dispatch({ type: 'armed', armed }),
       toggleCard: (id: string) => dispatch({ type: 'toggleCard', id }),
-      focusField: (field: string) => dispatch({ type: 'focusField', field }),
+      focusField: (field: string, place?: ExpressionFocus) => dispatch({ type: 'focusField', field, place }),
       retryTypes: () => {
         void queryClient.invalidateQueries({ queryKey: TYPES_KEY });
         void queryClient.invalidateQueries({ queryKey: ['objects'] });
@@ -620,10 +724,6 @@ export function useStudioController(language: SupportedLanguage) {
         edit((document) => removeInput(document, id, input)),
       updateParameter: (key: string, patch: Partial<StrategyParameter>) =>
         edit((document) => updateStrategyParameter(document, key, patch)),
-      removeParameter: (key: string) => {
-        setDialog(null);
-        edit((document) => removeStrategyParameter(document, key));
-      },
       setManagement: (id: string, owner: string | null) => {
         const index = typesRef.current;
         if (index !== null) {
@@ -663,6 +763,7 @@ export function useStudioController(language: SupportedLanguage) {
       check,
       confirmDelete,
       confirmRemoveElement,
+      confirmRemoveParameter,
       connectSteps,
       connectValue,
       dropStep,
@@ -674,8 +775,11 @@ export function useStudioController(language: SupportedLanguage) {
       removalInfo,
       request,
       requestRemoveElement,
+      requestRemoveParameter,
       save,
       select,
+      selectQuietly,
+      writeBlocks,
     ],
   );
 

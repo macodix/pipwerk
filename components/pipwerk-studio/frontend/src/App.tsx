@@ -15,6 +15,7 @@ import type { DescribeContext } from './model/describe';
 import { ParamStrip } from './ParamStrip';
 import { PropertiesPanel } from './properties/PropertiesPanel';
 import { RevisionDisplay } from './RevisionDisplay';
+import type { RemovalPlan } from './state/removal';
 import { StudioContext, useStudio, type StudioValue } from './state/StudioContext';
 import { languageOf, useStudioController } from './state/useStudioController';
 import { useExpressions } from './state/useExpressions';
@@ -49,6 +50,29 @@ function TabBar() {
         </button>
       ))}
     </nav>
+  );
+}
+
+/** The steps that use what is about to be removed (the rules of the strategy are one entry of their own). */
+function UsersList({ plan }: { plan: RemovalPlan }) {
+  const { t } = useTranslation();
+  const { studio } = useStudio();
+  if (plan.users.length === 0) {
+    return null;
+  }
+  return (
+    <>
+      <p>{t('dialogs.usedBy')}</p>
+      <ul className="usage-list" data-testid="remove-users">
+        {plan.users.map((id) => (
+          <li key={id ?? 'strategy'}>
+            <Icon name={id === null ? 'chart' : 'list'} size={14} />
+            {id === null ? t('dialogs.usedByStrategyRules') : studio.actions.elementDisplayName(id)}
+          </li>
+        ))}
+      </ul>
+      <p>{t('dialogs.afterRemoval')}</p>
+    </>
   );
 }
 
@@ -172,13 +196,14 @@ function Dialogs({
             {
               label: t('dialogs.removeElement.confirm'),
               onClick: () => {
-                actions.confirmRemoveElement(dialog.id);
+                actions.confirmRemoveElement(dialog.id, dialog.plan);
               },
             },
             { label: t('dialogs.removeElement.cancel'), primary: true, onClick: close },
           ]}
         >
           <p>{t('dialogs.removeElement.text', { name: actions.elementDisplayName(dialog.id) })}</p>
+          <UsersList plan={dialog.plan} />
           {info.managed.length > 0 ? (
             <>
               <p>{t('dialogs.removeElement.managed')}</p>
@@ -208,13 +233,14 @@ function Dialogs({
             {
               label: t('dialogs.removeParameter.confirm'),
               onClick: () => {
-                actions.removeParameter(dialog.key);
+                actions.confirmRemoveParameter(dialog.key, dialog.plan);
               },
             },
             { label: t('dialogs.removeParameter.cancel'), primary: true, onClick: close },
           ]}
         >
           <p>{t('dialogs.removeParameter.text', { name: parameter.name })}</p>
+          <UsersList plan={dialog.plan} />
         </MessageDialog>
       );
     }

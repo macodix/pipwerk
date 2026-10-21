@@ -136,16 +136,25 @@ export type TypeDescription = {
   byUser: boolean;
 };
 
-export type FunctionArgument = { name: Label; explanation: Label };
+/** One argument of a function with its label and explanation in trader language. */
+export type FunctionArgument = {
+  name: string;
+  kind: string;
+  optional: boolean;
+  label: Label;
+  explanation: Label;
+};
 
 export type FunctionDescription = {
   name: string;
   label: Label;
   explanation: Label;
-  description: Label;
   minArguments: number;
   maxArguments: number | null;
+  /** The arguments in order; the last one repeats if `variadic` names a kind. */
   arguments: FunctionArgument[];
+  variadic: string | null;
+  result: string;
 };
 
 /**
@@ -343,24 +352,29 @@ function parseTemplate(value: unknown, what: string): TemplateDocument {
 function parseFunction(value: unknown, what: string): FunctionDescription {
   const record = expectRecord(value, what);
   const max = record.max_arguments;
-  const description = optionalLabel(record.description, `${what}.description`);
+  const name = expectString(record.name, `${what}.name`);
   const label = optionalLabel(record.label, `${what}.label`);
-  const explanation = optionalLabel(record.explanation, `${what}.explanation`);
-  const args = record.arguments === undefined ? [] : expectArray(record.arguments, `${what}.arguments`);
+  const args = record.parameters === undefined ? [] : expectArray(record.parameters, `${what}.parameters`);
   return {
-    name: expectString(record.name, `${what}.name`),
-    label: label.de === '' && label.en === '' ? { de: expectString(record.name, `${what}.name`), en: expectString(record.name, `${what}.name`) } : label,
-    explanation: explanation.de === '' && explanation.en === '' ? description : explanation,
-    description,
+    name,
+    label: label.de === '' && label.en === '' ? { de: name, en: name } : label,
+    explanation: optionalLabel(record.explanation, `${what}.explanation`),
     minArguments: typeof record.min_arguments === 'number' ? record.min_arguments : 0,
     maxArguments: typeof max === 'number' ? max : null,
     arguments: args.map((item, index) => {
-      const argument = expectRecord(item, `${what}.arguments[${index}]`);
+      const argument = expectRecord(item, `${what}.parameters[${index}]`);
+      const argumentName = expectString(argument.name, `${what}.parameters[${index}].name`);
+      const argumentLabel = optionalLabel(argument.label, `${what}.parameters[${index}].label`);
       return {
-        name: parseLabel(argument.name, `${what}.arguments[${index}].name`),
-        explanation: optionalLabel(argument.explanation, `${what}.arguments[${index}].explanation`),
+        name: argumentName,
+        kind: typeof argument.kind === 'string' ? argument.kind : 'any',
+        optional: argument.optional === true,
+        label: argumentLabel.de === '' && argumentLabel.en === '' ? { de: argumentName, en: argumentName } : argumentLabel,
+        explanation: optionalLabel(argument.explanation, `${what}.parameters[${index}].explanation`),
       };
     }),
+    variadic: typeof record.variadic === 'string' ? record.variadic : null,
+    result: typeof record.result === 'string' ? record.result : 'any',
   };
 }
 

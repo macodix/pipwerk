@@ -41,7 +41,7 @@ function ParameterEditor({ parameter }: { parameter: StrategyParameter }) {
           title={t('params.remove')}
           testid="param-delete"
           onClick={() => {
-            actions.setDialog({ kind: 'removeParameter', key: parameter.key });
+            void actions.requestRemoveParameter(parameter.key);
           }}
         />
       </div>
