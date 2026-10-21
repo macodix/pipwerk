@@ -5,7 +5,7 @@
 - status: `draft`
 - zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
 - zuletzt aktualisiert: `2026-10-19`
-- abgestimmt: Festlegungen des Auftraggebers im Chat am 19. Oktober 2026. Prüfung durch die QA und Präsentation stehen aus.
+- abgestimmt: Festlegungen des Auftraggebers im Chat am 19. bis 21. Oktober 2026. Prüfung durch die QA bestanden ([requirements-4.md](../../../development/backtest/reviews/requirements-4.md)), [Präsentation](../../../development/backtest/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
 

@@ -45,4 +45,4 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 
 2026-10-21: Nachprüfung [requirements-3.md](reviews/requirements-3.md) nicht bestanden (M1, M2). Festlegungen des Auftraggebers: req-test-004 Abwicklung wie ein Broker mit sichtbarem Ablehnungsgrund, req-test-008 Indikatoren ohne Werte. H4 im Fachmodell bearbeitet. Nachprüfung mit `check`.
 
-2026-10-21: Nachprüfung [requirements-4.md](reviews/requirements-4.md) bestanden. Präsentation [requirements-1.html](presentations/requirements-1.html) zur Bestätigung durch den Auftraggeber.
+2026-10-21: Nachprüfung [requirements-4.md](reviews/requirements-4.md) bestanden. Präsentation [requirements-1.html](presentations/requirements-1.html) zur Bestätigung durch den Auftraggeber. Bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 1 abgeschlossen. Phase 2 noch nicht angestoßen, auf Wunsch des Auftraggebers in einem neuen Chat.
