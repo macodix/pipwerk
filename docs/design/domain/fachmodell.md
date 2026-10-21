@@ -429,16 +429,15 @@ Das Instrument kommt aus der Anwendung der Strategie, sofern die Strategie kein 
 
 ### req-fach-054 -- Mitgelieferte Indikatoren
 
-Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR`, `ZigZag` und `Markttechnik`. Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat die Parameter `Instrument` (req-fach-053) und `Zeiteinheit`.
+Mitgeliefert werden mindestens die Indikatoren `EMA`, `ATR` und `ZigZag`. Der Indikator `Markttechnik` ist zurückgestellt, bis ein rudimentär funktionierendes Gesamtsystem vorliegt ([Indikator Markttechnik](indikator-markttechnik.md)). Ihre Parameter folgen dem Muster der entsprechenden Indikatoren von MetaTrader 5. Jeder Indikator hat die Parameter `Instrument` (req-fach-053) und `Zeiteinheit`.
 
 | Indikator | Parameter | Eigenschaften |
 |---|---|---|
 | `EMA` (exponentieller gleitender Durchschnitt) | `Instrument`, `Zeiteinheit`, `Periode`, `Verschiebung` (Standard 0), `Anwenden auf` (Kurs der Kerze, aus dem der Durchschnitt berechnet wird, wie in MetaTrader 5; Standard Schlusskurs) | `Wert` |
 | `ATR` (Average True Range) | `Instrument`, `Zeiteinheit`, `Periode` | `Wert` |
-| `ZigZag` | `Instrument`, `Zeiteinheit`, `Depth` (Standard 12), `Deviation` (Standard 5), `Backstep` (Standard 3); Verfahren des in MetaTrader 5 mitgelieferten ZigZag | die Wendepunkte, je Wendepunkt Kurs, Hoch oder Tief und ob endgültig. Offen: wie viele zurückliegende Wendepunkte Ausdrücke ansprechen können. |
-| `Markttechnik` | siehe [Indikator Markttechnik](indikator-markttechnik.md) | siehe dort |
+| `ZigZag` | `Instrument`, `Zeiteinheit`, `Depth` (Standard 12), `Deviation` (Standard 5), `Backstep` (Standard 3); Verfahren des in MetaTrader 5 mitgelieferten ZigZag | die Wendepunkte, je Wendepunkt Kurs, Hoch oder Tief und ob endgültig. Ausdrücke können mindestens das letzte und das vorletzte endgültige Hoch und Tief ansprechen (`str-01`). Offen: ob weitere zurückliegende Wendepunkte ansprechbar sind. |
 
-In der Oberfläche heißt `Markttechnik` „1-2-3-Trend (Markttechnik)“ und steht wie selbst angelegte Trends in der Gruppe der Trends. Er baut auf `ZigZag` auf: Er rechnet selbst nach dessen Verfahren und hat dessen Parameter ([Indikator Markttechnik](indikator-markttechnik.md), Abschnitt 2), eine eigene Instanz von `ZigZag` braucht er nicht.
+Der zurückgestellte Indikator `Markttechnik` heißt in der Oberfläche „1-2-3-Trend (Markttechnik)“ und baut auf `ZigZag` auf.
 
 Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors als Objekte.
 
@@ -496,3 +495,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-20 | req-fach-051: `Kerze` und `Tick` ohne Instanz haben das Instrument des Zusammenhangs wie `Instrument`; req-fach-010: Trend mit Parameter `Instrument`. Vom Projektleiter nach T1-H1 und T1-H2 aus `development/strategiedesign/reviews/specification-10.md`, Folge der Entscheidung des Auftraggebers vom selben Tag (Kerze, Tick und Instrument bezeichnen dasselbe Instrument). |
 | 2026-10-21 | req-fach-036: Beispiele für Kennungen ohne die gestrichene Eigenschaft `Trend intakt`. |
 | 2026-10-21 | req-fach-021: Maßnahme, wenn eine prüfende Regel nach der Ausführung einer Marktorder nicht erfüllt ist. Entscheidung des Auftraggebers im Chat am 2026-10-20 (`backtest`, B3). |
+| 2026-10-21 | req-fach-054: `Markttechnik` zurückgestellt, nicht mitgeliefert; `ZigZag` liefert mindestens das letzte und vorletzte endgültige Hoch und Tief. Entscheidung des Auftraggebers im Chat am 2026-10-21. |

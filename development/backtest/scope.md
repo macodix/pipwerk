@@ -14,7 +14,6 @@ Anforderungsdokumente:
 Fachmodell des Auftraggebers, das für dieses Vorhaben gilt und von der QA ebenfalls auf Widersprüche, Lücken und mehrdeutige Begriffe geprüft wird:
 
 - [Fachmodell des Trading-Systems](../../docs/design/domain/fachmodell.md), insbesondere die Ausführung von Strategien, Orders, Positionen und Regeln
-- [Indikator Markttechnik](../../docs/design/domain/indikator-markttechnik.md), weil der Strategietester ihn berechnet
 
 ## Prüfmaterial
 
@@ -41,3 +40,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-19: Phase 1. Offene Punkte des Anforderungsdokuments vom Auftraggeber im Chat am 19. Oktober 2026 entschieden. Prüfung der Dokumente des Auftraggebers durch die QA mit `check` angestoßen.
 
 2026-10-20/21: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (6 blockierende Befunde). B1, B4, H8, H16 vom Projektleiter bearbeitet. Entscheidungen des Auftraggebers im Chat: B2 Auslöser `Tick` verlangt echte Ticks im Datenbestand; B3 Volumen nach der Ausführung durch Teilschließung anpassen, sonst schließen und vermerken; B5, B6 Bestimmung im Indikator Markttechnik neu gefasst. Testfälle als Prüfmaterial abgegrenzt. Benennung der Betriebsarten Einzelschritt-Test und Backtest (H7). Bearbeitung: [requirements-1-response.md](reviews/requirements-1-response.md). Nachprüfung mit `check`.
+
+2026-10-21: Nachprüfung [requirements-2.md](reviews/requirements-2.md) nicht bestanden (N1, Indikator Markttechnik). Entscheidung des Auftraggebers: Markttechnik zurückgestellt, `str-01` bestimmt Trend und Bezüge aus den Wendepunkten des `ZigZag`. N1 entfällt damit. N5, N6 bearbeitet. Nachprüfung mit `check`.

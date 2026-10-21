@@ -2,13 +2,13 @@
 
 ## Dokumentstatus
 
-- status: `draft`
-- zweck: Fachliche Beschreibung des Indikators, der Trend, Phase und Punkte nach der Markttechnik von Michael Voigt aus ZigZag-Wendepunkten bestimmt
-- zuletzt aktualisiert: `2026-10-19`
+- status: `zurückgestellt`: Entwicklung von Markttechnik-Indikatoren und Expert Advisors erst, wenn ein rudimentär funktionierendes Gesamtsystem vorliegt. Der erreichte Stand bleibt als Grundlage erhalten. Entscheidung des Auftraggebers im Chat am 2026-10-21.
+- zweck: Fachliche Beschreibung des Indikators, der Trend und Punkte nach der Markttechnik von Michael Voigt aus ZigZag-Wendepunkten bestimmt
+- zuletzt aktualisiert: `2026-10-21`
 
 ## 1. Zweck
 
-Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er wird vom Punkt-2-Ausbruch (`str-01`) benötigt. Er wird einmal angelegt und kann auf verschiedenen Zeiteinheiten verwendet werden. In der Oberfläche heißt er „1-2-3-Trend (Markttechnik)“ und steht bei den Trends. Er baut auf dem mitgelieferten Indikator `ZigZag` auf (Fachmodell req-fach-054): Er rechnet selbst nach dessen Verfahren und hat dessen Parameter (Abschnitt 2), eine eigene Instanz von `ZigZag` braucht er nicht.
+Der Indikator `Markttechnik` ist ein Indikator von pipwerk nach req-fach-013. Er wurde für den Punkt-2-Ausbruch (`str-01`) angelegt; `str-01` verwendet seit 2026-10-21 stattdessen den `ZigZag`. Er wird einmal angelegt und kann auf verschiedenen Zeiteinheiten verwendet werden. In der Oberfläche heißt er „1-2-3-Trend (Markttechnik)“ und steht bei den Trends. Er baut auf dem mitgelieferten Indikator `ZigZag` auf (Fachmodell req-fach-054): Er rechnet selbst nach dessen Verfahren und hat dessen Parameter (Abschnitt 2), eine eigene Instanz von `ZigZag` braucht er nicht.
 
 ## 2. Parameter
 
@@ -73,10 +73,6 @@ Im bestätigten Aufwärtstrend befindet sich der Markt in der Bewegung, solange 
 
 Der Indikator wertet einen Durchbruch durch `Punkt 1/3` oder `Punkt 2` nur auf abgeschlossenen Kerzen aus: Die Kerze muss jenseits des Punkts schließen. Ein Docht jenseits des Punkts ist kein Durchbruch. Soll eine Strategie schon bei einem einzelnen Kurs reagieren, vergleicht sie den Kurs selbst mit dem Punkt.
 
-## 5. Verwendung im Punkt-2-Ausbruch
-
-Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit wird `Trendrichtung` verwendet (sie bestimmt die Handelsrichtung). Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, und `Punkt 1/3` verwendet.
-
 ## 6. Offen
 
 Keine offenen Punkte.
@@ -92,3 +88,4 @@ Keine offenen Punkte.
 | 2026-10-19 | Bestimmung bestätigt: Aufwärtstrend ab vollständigem 1-2-3-Abschnitt ohne Ausbruch über Punkt 2, vorläufiger Wendepunkt zählt mit. Durchbruch nur auf Schlusskurs abgeschlossener Kerzen (4.4), ohne eigenen Parameter. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-21 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1, B5, B6): Trend erst nach Schluss über Punkt 2 bestätigt, bleibt bei weiterem Lauf in Trendrichtung bestehen, nach Trendbruch `kein Trend`; Punkte folgen den Wendepunkten des ZigZag. Eigenschaften `Trend intakt` und `Phase` gestrichen, Bewegung und Korrektur aus Kurs und Punkten (4.3). Entscheidung des Auftraggebers im Chat am 2026-10-20 und 2026-10-21. |
 | 2026-10-21 | Nach Prüfbericht der QA (`backtest`, Durchlauf 2, N1): `Punkt 2` wird ein Hoch, sobald der ZigZag es gesetzt hat; das Tief der Korrektur wird erst mit Schluss über `Punkt 2` zum `Punkt 1/3`, bis dahin gilt das bisherige Tief. Eigenschaft `Punkt 1/3 endgültig` entfällt. Beispiel in 4.1. Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | Zurückgestellt; `str-01` verwendet den `ZigZag`, Abschnitt 5 entfällt. Entscheidung des Auftraggebers im Chat am 2026-10-21. |

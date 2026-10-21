@@ -41,7 +41,7 @@ Beispiele sind:
 -   Indikator,
 -   Konto, Instrument, Kerze, Tick, Order, Position, Strategie (Objekte der Anwendung, Fachmodell req-fach-051).
 
-Marktphase, Bewegung und Korrektur sind keine eigenen Objekte. Sie ergeben sich aus Eigenschaften eines Indikators und dem Kurs, zum Beispiel beim Indikator Markttechnik aus `Punkt 2` und `Punkt 1/3`.
+Marktphase, Bewegung und Korrektur sind keine eigenen Objekte. Sie ergeben sich aus Eigenschaften eines Indikators und dem Kurs, zum Beispiel aus den Wendepunkten des `ZigZag`.
 
 Weitere Objekte können abhängig von der konkreten Strategie,
 dem verwendeten Berechnungsverfahren oder anderen fachlichen
@@ -448,7 +448,7 @@ Die folgenden Punkte sind noch nicht entschieden:
 8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
-9.  Welche Objekte über EMA, ATR, ZigZag und Markttechnik hinaus (Fachmodell req-fach-054) als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
+9.  Welche Objekte über EMA, ATR und ZigZag hinaus (Fachmodell req-fach-054) als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
 10. Anmeldung und Berechtigung für die Web-API (Gesamtsystem req-system-011). Im Vorhaben `strategiedesign` ohne Anmeldung, pipwerk Studio ist dort nur in einem vom Betreiber kontrollierten Netz erreichbar; Betreiber und Anwender sind dort dieselbe Person.
 
 ## 10. Änderungsnachweis
@@ -501,3 +501,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-20 | req-fach-015: Auslöser „Start von Hand“, jede Auswertung beginnt an einem Auslöser; req-ablauf-007: Hinweis bei einer Strategie ohne Auslöser. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
 | 2026-10-20 | req-ablauf-007: Prüfung der Bezeichnung fester Instrumente. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkte 16 und 19). |
 | 2026-10-21 | Bewegung und Korrektur ohne Eigenschaft `Phase` (Indikator Markttechnik). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | Indikator Markttechnik zurückgestellt (Fachmodell req-fach-054). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
