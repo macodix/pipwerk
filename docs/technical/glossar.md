@@ -89,7 +89,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Schnittstelle | Eine Stelle, an der Daten in ein Programm hinein- oder herauskommen: die Web-API, das Lesen und Schreiben von Dateien, das Lesen der Konfiguration. |
 | Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. Die öffentliche Web-API von pipwerk Studio liegt unter `/api/v1/` und ist unter `contracts/api/` beschrieben; die übrigen Endpunkte unter `/api/` sind interne Verbindungen der Komponente. |
 | Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Die QA prüft dort aus Kundensicht, der Auftraggeber erprobt dort und nimmt ab. |
-| Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt und Team liegen. |
+| Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt, Entwicklungsleiter und Team liegen. |
 | Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#begriffe). |
 
 ## Werkzeuge und Bibliotheken
@@ -109,7 +109,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Playwright | Werkzeug für automatische Tests in einem echten Browser. Es bedient die Oberfläche wie ein Nutzer. |
 | Ruff, mypy | Werkzeuge, die Python-Code auf Stil und Typfehler prüfen. |
 | uv | Werkzeug, das Python-Pakete installiert und ihre Versionen festschreibt. |
-| tmux | Programm, das Terminalsitzungen im Hintergrund weiterlaufen lässt. Jede Sitzung des Softwarearchitekten läuft in einer eigenen tmux-Sitzung. |
+| tmux | Programm, das Terminalsitzungen im Hintergrund weiterlaufen lässt. Jede Sitzung von Softwarearchitekt und Entwicklungsleiter läuft in einer eigenen tmux-Sitzung. |
 
 ## Änderungsnachweis
 | Datum | Änderung |
