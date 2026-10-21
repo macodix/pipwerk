@@ -44,3 +44,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: Nachprüfung [requirements-2.md](reviews/requirements-2.md) nicht bestanden (N1, Indikator Markttechnik). Entscheidung des Auftraggebers: Markttechnik zurückgestellt, `str-01` bestimmt Trend und Bezüge aus den Wendepunkten des `ZigZag`. N1 entfällt damit. N5, N6 bearbeitet. Nachprüfung mit `check`.
 
 2026-10-21: Nachprüfung [requirements-3.md](reviews/requirements-3.md) nicht bestanden (M1, M2). Festlegungen des Auftraggebers: req-test-004 Abwicklung wie ein Broker mit sichtbarem Ablehnungsgrund, req-test-008 Indikatoren ohne Werte. H4 im Fachmodell bearbeitet. Nachprüfung mit `check`.
+
+2026-10-21: Nachprüfung [requirements-4.md](reviews/requirements-4.md) bestanden. Präsentation [requirements-1.html](presentations/requirements-1.html) zur Bestätigung durch den Auftraggeber.
