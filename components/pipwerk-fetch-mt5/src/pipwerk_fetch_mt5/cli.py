@@ -78,7 +78,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except FetchError:
         logger.warning("MetaTrader 5 is not reachable yet; every request is tried again.")
     app = create_app(service, shared_key=config.shared_key, allowed_hosts=allowed_hosts_of(config))
-    uvicorn.run(app, host=config.host, port=config.port, server_header=False)
+    # No access log: it names the address of every request with its query string, and a client
+    # may send the shared key there. The program logs its own events without addresses.
+    uvicorn.run(app, host=config.host, port=config.port, server_header=False, access_log=False)
     return 0
 
 

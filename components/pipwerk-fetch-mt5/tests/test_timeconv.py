@@ -11,7 +11,12 @@ from zoneinfo import ZoneInfo
 import pytest
 from support import naive, utc
 
-from pipwerk_fetch_mt5.timeconv import format_utc, server_to_utc, utc_to_server
+from pipwerk_fetch_mt5.timeconv import (
+    format_utc,
+    resolve_server_time,
+    server_to_utc,
+    utc_to_server,
+)
 
 ATHENS = ZoneInfo("Europe/Athens")
 
@@ -86,3 +91,18 @@ def test_format_utc_has_milliseconds_and_a_trailing_z() -> None:
     )
     other = datetime(2026, 1, 5, 10, 0, tzinfo=ATHENS)
     assert format_utc(other) == "2026-01-05T08:00:00.000Z"
+
+
+def test_the_meaning_of_a_server_time_at_the_changes() -> None:
+    plain = resolve_server_time(naive(2026, 1, 5, 10, 0), ATHENS)
+    assert (plain.first, plain.exists, plain.second) == (utc(2026, 1, 5, 8, 0), True, None)
+    double = resolve_server_time(naive(2026, 10, 25, 3, 30), ATHENS)
+    assert (double.first, double.exists, double.second) == (
+        utc(2026, 10, 25, 0, 30),
+        True,
+        utc(2026, 10, 25, 1, 30),
+    )
+    missing = resolve_server_time(naive(2026, 3, 29, 3, 30), ATHENS)
+    assert (missing.first, missing.exists, missing.second) == (utc(2026, 3, 29, 1, 30), False, None)
+    with pytest.raises(ValueError):
+        resolve_server_time(utc(2026, 1, 5), ATHENS)

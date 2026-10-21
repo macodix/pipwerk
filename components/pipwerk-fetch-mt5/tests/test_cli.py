@@ -77,6 +77,7 @@ def test_the_server_starts_with_address_and_port_of_the_startup_configuration(
     assert main(["-c", str(write_ini(tmp_path))]) == 0
     assert (started["host"], started["port"]) == ("192.0.2.10", 9100)
     assert started["server_header"] is False
+    assert started["access_log"] is False  # the access log would name a key sent in the address
 
 
 def test_the_started_application_serves_with_the_key_and_the_allowed_names(
@@ -190,7 +191,14 @@ def test_the_program_runs_as_a_process_on_the_address_of_its_startup_configurati
         assert request_status(url, KEY) in (200, 503)
         assert request_status(url, None) == 401
         assert request_status(url, KEY + "x") == 401
+        # A client that sends the key in the address (it is not accepted there, but the
+        # address must not reach the log of the server either).
+        assert request_status(f"{url}?key={KEY}", None) == 401
+        assert request_status(f"{url}?access_token={KEY}", KEY) in (200, 503)
+        assert request_status(f"http://127.0.0.1:{port}/{KEY}/x?k={KEY}", None) == 401
     finally:
         process.terminate()
         output = process.communicate(timeout=20)[0]
     assert KEY not in output
+    assert "/api/v1/health" not in output  # no access log at all
+    assert "Uvicorn running" in output  # the log of the server is there, it is just silent

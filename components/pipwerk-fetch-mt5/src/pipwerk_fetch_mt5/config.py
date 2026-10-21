@@ -19,6 +19,8 @@ entry never goes unnoticed):
     broker. ``name`` (optional): the name of the broker as delivered in the files; without it
     the name of the trade server MetaTrader 5 is connected to is used.
     ``max_rows_per_request`` (default 50000): the largest number of rows of one answer.
+    ``max_reads_per_request`` (default 500): the largest number of reads of MetaTrader 5 for
+    one request (a long period is read in several steps).
 ``[metatrader5]``
     Optional details of the connection with MetaTrader 5: ``path`` (terminal program),
     ``login``, ``password``, ``server``, ``timeout_ms``. Without any, the program attaches to
@@ -51,6 +53,8 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 DEFAULT_MAX_ROWS = 50_000
 MAX_ROWS_LIMIT = 1_000_000
+DEFAULT_MAX_READS = 500
+MAX_READS_LIMIT = 100_000
 DEFAULT_TIMEOUT_MS = 60_000
 
 #: The shared key: printable ASCII without blanks (it travels in a header), 16 to 256 characters.
@@ -66,7 +70,9 @@ BROKER_NAME_PATTERN = re.compile(r"\S(?:[^\x00-\x1f\x7f]*\S)?")
 _ALLOWED_OPTIONS: dict[str, frozenset[str]] = {
     "server": frozenset({"host", "port", "allowed_hosts"}),
     "security": frozenset({"shared_key"}),
-    "broker": frozenset({"server_time_zone", "name", "max_rows_per_request"}),
+    "broker": frozenset(
+        {"server_time_zone", "name", "max_rows_per_request", "max_reads_per_request"}
+    ),
     "metatrader5": frozenset({"path", "login", "password", "server", "timeout_ms"}),
 }
 _FREE_SECTIONS = frozenset({"symbols"})
@@ -98,6 +104,7 @@ class StartupConfig:
     allowed_hosts: tuple[str, ...] = ()
     broker_name: str | None = None
     max_rows: int = DEFAULT_MAX_ROWS
+    max_reads: int = DEFAULT_MAX_READS
     symbols: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
     metatrader: MetaTraderSettings = field(default_factory=MetaTraderSettings)
 
@@ -340,6 +347,9 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
     max_rows = _integer(
         parser, path, "broker", "max_rows_per_request", DEFAULT_MAX_ROWS, 1, MAX_ROWS_LIMIT
     )
+    max_reads = _integer(
+        parser, path, "broker", "max_reads_per_request", DEFAULT_MAX_READS, 1, MAX_READS_LIMIT
+    )
     port = _integer(parser, path, "server", "port", DEFAULT_PORT, 1, 65535)
     broker_name = _text(parser, "broker", "name")
     if broker_name is not None and (
@@ -354,6 +364,7 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
         allowed_hosts=_allowed_hosts(parser, path),
         broker_name=broker_name,
         max_rows=max_rows,
+        max_reads=max_reads,
         symbols=_symbols(parser, path),
         metatrader=_metatrader(parser, path),
     )

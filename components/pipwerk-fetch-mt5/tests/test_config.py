@@ -13,6 +13,7 @@ import pytest
 from pipwerk_fetch_mt5 import config as config_module
 from pipwerk_fetch_mt5.config import (
     CONFIG_FILE_NAME,
+    DEFAULT_MAX_READS,
     DEFAULT_MAX_ROWS,
     DEFAULT_PORT,
     StartupConfigError,
@@ -59,6 +60,7 @@ def test_the_minimal_file_gives_the_defaults(ini: Path) -> None:
     assert config.host == "127.0.0.1"
     assert config.port == DEFAULT_PORT
     assert config.max_rows == DEFAULT_MAX_ROWS
+    assert config.max_reads == DEFAULT_MAX_READS == 500
     assert config.allowed_hosts == ()
     assert config.broker_name is None
     assert dict(config.symbols) == {}
@@ -82,6 +84,7 @@ shared_key = {SECRET}
 server_time_zone = Europe/Athens
 name = Demo-Broker
 max_rows_per_request = 1234
+max_reads_per_request = 77
 
 [metatrader5]
 path = C:\\Program Files\\MetaTrader 5\\terminal64.exe
@@ -100,6 +103,7 @@ DE40 = GER40.cash
     assert config.allowed_hosts == ("mt5-pc.example", "192.0.2.10")
     assert config.broker_name == "Demo-Broker"
     assert config.max_rows == 1234
+    assert config.max_reads == 77
     assert config.metatrader.path == "C:\\Program Files\\MetaTrader 5\\terminal64.exe"
     assert config.metatrader.login == 12345
     assert config.metatrader.password == "account-password-1"
@@ -180,6 +184,9 @@ def test_a_key_that_is_too_short_or_not_printable_ascii_is_rejected(
         ("server", "allowed_hosts = bad host!"),
         ("broker", "max_rows_per_request = 0"),
         ("broker", "max_rows_per_request = 1000001"),
+        ("broker", "max_reads_per_request = 0"),
+        ("broker", "max_reads_per_request = 100001"),
+        ("broker", "max_reads_per_request = many"),
         ("metatrader5", "login = abc"),
         ("metatrader5", "timeout_ms = 10"),
         ("symbols", "EURUSD ="),

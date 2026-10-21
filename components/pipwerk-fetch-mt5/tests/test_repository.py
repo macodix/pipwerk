@@ -71,6 +71,7 @@ def test_the_example_names_every_entry_of_the_startup_configuration() -> None:
 
 def test_the_example_with_every_optional_entry_switched_on_is_valid(tmp_path: Path) -> None:
     optional = {"allowed_hosts", "name", "max_rows_per_request", "path", "login", "password"}
+    optional |= {"max_reads_per_request"}
     optional |= {"server", "timeout_ms", "EURUSD", "DE40"}
     uncommented = []
     for line in EXAMPLE.read_text(encoding="utf-8").splitlines():

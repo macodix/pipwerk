@@ -159,11 +159,14 @@ def test_the_summer_time_change_in_autumn_takes_the_earlier_time_once() -> None:
 
 
 def test_a_read_that_begins_in_the_second_occurrence_leaves_it_out() -> None:
-    # The period starts at 01:00 UTC = the second 03:00 (EET). The clock shows 03:00 and
-    # 03:30 (second occurrence) and 04:00. By the rule of the import 03:00 is the earlier time
-    # (00:00 UTC), which lies before the period: the rows are left out, not shifted.
+    # The period starts at 01:00 UTC = the second 03:00 (EET). The clock shows 03:00, 03:30
+    # (first occurrence), 03:00, 03:30 (second occurrence) and 04:00. The first occurrence
+    # lies before the period and is not delivered; the second is left out and counted, not
+    # shifted to the UTC times of the first.
     gateway = ScriptedGateway(
         candle_rows=[
+            candle(naive(2026, 10, 25, 3, 0)),
+            candle(naive(2026, 10, 25, 3, 30)),
             candle(naive(2026, 10, 25, 3, 0)),
             candle(naive(2026, 10, 25, 3, 30)),
             candle(naive(2026, 10, 25, 4, 0)),

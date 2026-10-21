@@ -16,6 +16,7 @@ UTC times are aware ``datetime`` values with ``timezone.utc``.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -38,6 +39,72 @@ def utc_to_server(utc_time: datetime, zone: ZoneInfo) -> datetime:
     if utc_time.tzinfo is None:
         raise ValueError("a UTC time has a time zone")
     return utc_time.astimezone(zone).replace(tzinfo=None)
+
+
+@dataclass(frozen=True)
+class ServerTime:
+    """What a server time means in UTC.
+
+    ``first`` is the UTC time by the rule of the import (``fold=0``). If the wall clock time
+    does not exist (``exists`` is false) it is the nominal time: the one the clock before the
+    jump would have for it; it only decides which step of a read owns the row. ``second`` is
+    the UTC time of the later occurrence if the wall clock time occurs twice, else ``None``.
+    """
+
+    first: datetime
+    exists: bool
+    second: datetime | None
+
+
+def resolve_server_time(server_time: datetime, zone: ZoneInfo) -> ServerTime:
+    """The meaning of a server time in UTC (see ``ServerTime``)."""
+    if server_time.tzinfo is not None:
+        raise ValueError("a server time has no time zone")
+    first = server_time.replace(tzinfo=zone, fold=0).astimezone(UTC)
+    exists = first.astimezone(zone).replace(tzinfo=None) == server_time
+    second: datetime | None = None
+    if exists:
+        later = server_time.replace(tzinfo=zone, fold=1).astimezone(UTC)
+        second = later if later != first else None
+    return ServerTime(first=first, exists=exists, second=second)
+
+
+#: Distance between the samples when the offsets of a long period are looked at.
+_SAMPLE_DISTANCE = timedelta(days=7)
+
+#: How far beyond a limit of a period the offset is looked at: a change of the offset that
+#: matters for the rows of the period is never farther away (a shift is a few hours).
+_LOOK_AROUND = timedelta(days=1)
+
+
+def server_window(start: datetime, end: datetime, zone: ZoneInfo) -> tuple[datetime, datetime]:
+    """The server times ``[low, high)`` for a read of the period ``[start, end)`` (aware UTC
+    times): they contain the server time of every row whose UTC time lies in the period, and,
+    where the clocks are put back near the period, the whole repeated hour with both of its
+    occurrences, so that the second occurrence is recognised by the order of the rows.
+
+    The server time is the UTC time plus the offset of the zone, so it is not the server
+    time of the limits when the offset changes in or near the period: after the clocks are put
+    back the server time at ``end`` is lower than the one shortly before it. With ``shift``
+    the largest difference of the offsets near the period, the window is widened by twice
+    that on both sides (a step that holds a row of the repeated hour then holds all of it).
+    Without a change of the offset it is exactly ``[server(start), server(end))``.
+    """
+    points = [start - _LOOK_AROUND, start, end, end + _LOOK_AROUND]
+    cursor = start + _SAMPLE_DISTANCE
+    while cursor < end:
+        points.append(cursor)
+        cursor += _SAMPLE_DISTANCE
+    offsets: list[timedelta] = []
+    for point in points:
+        try:
+            offset = point.astimezone(zone).utcoffset()
+        except OverflowError, ValueError, OSError:
+            continue
+        if offset is not None:
+            offsets.append(offset)
+    shift = max(offsets) - min(offsets) if offsets else timedelta(0)
+    return utc_to_server(start, zone) - 2 * shift, utc_to_server(end, zone) + 2 * shift
 
 
 _WEEKDAYS: tuple[Weekday, ...] = (

@@ -12,9 +12,12 @@ Limits:
   is read (period divided by the nominal duration of the time unit); for ticks it is counted
   while reading. A period with more rows is answered with ``range_too_large``.
 - A large period is read in several calls: candles in steps of at most ``CANDLE_CHUNK`` bars,
-  ticks in steps of ``TICK_CHUNK_HOURS`` hours. The steps are cut in UTC and passed to the
-  gateway as server times. A step keeps only the rows whose server time lies in the step, so
-  rows near the limits that the gateway returns in addition belong to the neighbouring step.
+  ticks in steps of ``TICK_CHUNK_HOURS`` hours. The steps are cut in UTC. The window passed
+  to the gateway (server times) is the step, widened where the offset of the zone changes
+  (``timeconv.server_window``). A step keeps only the rows whose UTC time lies in it, so rows
+  that the gateway returns in addition belong to the neighbouring step.
+- At most ``max_reads`` reads of the gateway per request. The number of steps of the period
+  is known before the first read; a period with more is answered with ``range_too_large``.
 
 Rows that cannot be delivered are left out and counted; the first ``MAX_REPORTED`` are named:
 
@@ -22,8 +25,8 @@ Rows that cannot be delivered are left out and counted; the first ``MAX_REPORTED
 - ``double_local_time``: a server time that occurs twice (the clocks were put back). A time
   that occurs twice counts as the earlier one (rule of the import), so the second occurrence
   would get the UTC time of the first. The program recognises the second occurrence by its
-  order (the server time goes backwards) or by a UTC time outside of its step, and leaves it
-  out instead of delivering two rows for one UTC time.
+  order (the server time goes backwards) and leaves it out instead of delivering two rows for
+  one UTC time. The first occurrence is always delivered.
 - ``duplicate_time``: a candle with the server time of the candle before it.
 - ``invalid_price``: a candle or tick without prices above zero.
 
@@ -67,9 +70,9 @@ from pipwerk_fetch_mt5.models import (
 )
 from pipwerk_fetch_mt5.timeconv import (
     format_utc,
-    server_to_utc,
+    resolve_server_time,
+    server_window,
     sessions_to_utc,
-    utc_to_server,
 )
 
 logger = logging.getLogger(__name__)
@@ -139,7 +142,9 @@ def _positive(*values: float) -> bool:
 
 @dataclass(frozen=True)
 class _Step:
-    """One read: the step ``[start, end)`` in UTC and the same limits in server time."""
+    """One read: the step ``[start, end)`` in UTC, which owns the rows whose UTC time lies in
+    it, and the window ``[server_start, server_end)`` in server time that is passed to the
+    gateway (``timeconv.server_window``)."""
 
     start: datetime
     end: datetime
@@ -186,42 +191,48 @@ class FetchService:
         return symbol, info
 
     def _steps(self, start: datetime, end: datetime, length: timedelta) -> list[_Step]:
+        """The steps of a period, cut in UTC. ``range_too_large`` if there are more than
+        ``max_reads`` of them: the number is known before the first read."""
+        if math.ceil((end - start) / length) > self._config.max_reads:
+            raise FetchError("range_too_large")
         steps: list[_Step] = []
         cursor = start
         while cursor < end:
             until = min(cursor + length, end)
-            steps.append(
-                _Step(
-                    cursor,
-                    until,
-                    utc_to_server(cursor, self._zone),
-                    utc_to_server(until, self._zone),
-                )
-            )
+            low, high = server_window(cursor, until, self._zone)
+            steps.append(_Step(cursor, until, low, high))
             cursor = until
         return steps
 
     def _place(
         self, server_time: datetime, step: _Step, order: _Order, omitted: _Omissions
     ) -> datetime | None:
-        """The UTC time of a row of a step, or ``None`` if the row is not delivered: it is
-        outside of the step (silently) or it is left out and counted."""
-        if not step.server_start <= server_time < step.server_end:
-            return None  # a row near the limit that belongs to the neighbouring step
-        moment = self._to_utc(server_time)
-        if moment is None:
-            omitted.add(server_time, "time_does_not_exist")
-            return None
-        if order.is_repeat(server_time) or not step.start <= moment < step.end:
-            omitted.add(server_time, "double_local_time")
-            return None
-        return moment
+        """The UTC time of a row of a step, or ``None`` if the row is not delivered: it
+        belongs to another step (silently) or it is left out and counted.
 
-    def _to_utc(self, server_time: datetime) -> datetime | None:
+        A row belongs to the step in which its UTC time lies. The window passed to the gateway
+        is wider than the step where the offset of the zone changes, so a row is placed by its
+        UTC time and never by whether its server time lies in the window. The first occurrence
+        of a repeated hour is delivered with the UTC time of the earlier clock. The second
+        occurrence (recognised by the order) is left out and counted by the step that holds
+        its UTC time; a missing time by the step that holds its nominal UTC time."""
         try:
-            return server_to_utc(server_time, self._zone)
+            meaning = resolve_server_time(server_time, self._zone)
         except OverflowError, ValueError, OSError:
-            return None  # a time the zone cannot convert counts as a time that does not exist
+            # A time the zone cannot convert counts as a time that does not exist.
+            if step.server_start <= server_time < step.server_end:
+                omitted.add(server_time, "time_does_not_exist")
+            return None
+        if not meaning.exists:
+            if step.start <= meaning.first < step.end:
+                omitted.add(server_time, "time_does_not_exist")
+            return None
+        if order.is_repeat(server_time):
+            moment = meaning.second or meaning.first
+            if step.start <= moment < step.end:
+                omitted.add(server_time, "double_local_time")
+            return None
+        return meaning.first if step.start <= meaning.first < step.end else None
 
     def _trading_hours(self, symbol: str) -> list[TradingSessionDocument] | None:
         """The weekly trading hours of the symbol in UTC, or ``None`` if the source delivers

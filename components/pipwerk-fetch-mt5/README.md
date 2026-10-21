@@ -62,6 +62,6 @@ What the replica delivers:
 - Instruments `EURUSD`, `GBPUSD`, `USDJPY`; any other designation answers `symbol_unknown`.
 - Candles of all 21 time units of MetaTrader 5 (`m1` to `mn1`), ticks about every 1.5 seconds with milliseconds, and the details of the instrument. The same request gives the same bytes every time.
 - No candle and no tick from Friday 22:00 to Sunday 22:00 (server time); the files carry the trading hours Sunday 22:00 to Friday 22:00 while the time zone of the replica (`time_zone`, default `UTC`) has no summer time.
-- Errors on request: `symbol_unknown` (unknown designation), `no_data`, `broker_error` and `terminal_unavailable` (`gateway.fail`, `gateway.available`), `range_too_large` (small `max_rows`), `unauthorized` (wrong key), `invalid_request`, `host_not_allowed`.
+- Errors on request: `symbol_unknown` (unknown designation), `no_data`, `broker_error` and `terminal_unavailable` (`gateway.fail`, `gateway.available`), `range_too_large` (small `max_rows`, or a period that needs more reads than `max_reads`), `unauthorized` (wrong key), `invalid_request`, `host_not_allowed`.
 
 More in section 8 of the technical documentation.
