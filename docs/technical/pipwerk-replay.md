@@ -484,6 +484,30 @@ npm run e2e           # Playwright gegen die gebaute Oberfläche und ein echtes 
 | `layout.spec.ts` | die sechs Fenstergrößen 390 × 844, 844 × 390, 820 × 1180, 1180 × 820, 1366 × 768 und 1920 × 1080 für beide Ansichten, mit gefüllten Tabellen, geöffnetem Importformular, Ergebnis und Fehler: keine Bildlaufleiste der Seite, Kopfzeile, Hauptbereich und Fußzeile übereinander statt ineinander, Bedienelemente der Kopfzeile nebeneinander und im Fenster, keine Überlappung der Karten, kein Bedienelement außerhalb seiner Karte, jede Karte und das Ende der Ansicht erreichbar, Menü (voll oder kompakt), Dialoge im Fenster mit erreichbaren Schaltflächen |
 | `about.spec.ts` | Dialog „Über pipwerk replay“ (Name, Stand aus dem Bau, Lizenz, Adresse), gesperrte Seite, Fokus bleibt im Dialog und kehrt zurück, Tooltip der Standanzeige, Anzeige bei nicht erreichbarem Backend |
 
+### 6.3 Prüfskript
+
+Das Prüfskript `components/pipwerk-replay/scripts/check` (POSIX-Shell) führt die Prüfungen aus den Abschnitten 6.1 und 6.2 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
+
+```sh
+<Arbeitsverzeichnis>/components/pipwerk-replay/scripts/check [--backend-port <port> --frontend-port <port>] [--with-audit]
+```
+
+| Parameter | Bedeutung |
+| --- | --- |
+| `--backend-port <port>` | Port des Backends im Browsertest, ganze Zahl von 1 bis 65535. Pflicht, sobald `frontend/` vorhanden ist; sonst darf er fehlen. |
+| `--frontend-port <port>` | Port der Oberfläche im Browsertest, ganze Zahl von 1 bis 65535, verschieden vom Port des Backends. Pflicht, sobald `frontend/` vorhanden ist; sonst darf er fehlen. |
+| `--with-audit` | Optional. Führt zusätzlich `pip-audit` für `backend/uv.lock` und `npm audit` für die Oberfläche aus (Zugriff auf das Internet nötig). |
+
+Reihenfolge der Prüfungen:
+
+1. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
+2. Vergleich der Beschreibung `contracts/api/pipwerk-replay/v1/openapi.json` mit der Anwendung (`python -m pipwerk_replay.contract … --check`)
+3. Suche im Repository (`git grep`) nach den alten Bezeichnern der Komponente (Muster `pipwerk[-_ ]?backtest`, ohne Beachtung der Schreibweise) in allen versionierten Dateien außerhalb von `docs/design/` und `development/`; ein Treffer lässt die Prüfung scheitern
+4. mit `--with-audit`: `pip-audit` für das Backend
+5. Oberfläche im Verzeichnis `frontend` (seit Auftrag 05): `npm ci`, `npm run typecheck`, `npm test`, `npm run build`; mit `--with-audit` zusätzlich `npm audit`; danach der Browsertest `npm run e2e` mit den beiden Ports (Umgebungsvariablen `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_FRONTEND_PORT`), nach dem Muster von `components/pipwerk-studio/scripts/check`. Ohne Verzeichnis `frontend/` überspringt das Skript diese Schritte mit Hinweis in der Ausgabe; das gilt nicht als Fehler. Installation und Browsertest dauern lange; sie laufen beim Aufruf durch den Tester im Hintergrund.
+
+Am Ende nennt das Skript die bestandenen, die übersprungenen und die gescheiterten Prüfungen. Exitcode 2 bei ungültigen Parametern oder fehlenden Programmen.
+
 ## 7. Abhängigkeiten
 
 Laufzeit (festgeschrieben in `backend/uv.lock`): `alembic`, `fastapi` (mit `pydantic` und `starlette`), `httpx2` (HTTP-Client zur Quelle; vorher nur Testclient von FastAPI, deshalb aus der Entwicklungsgruppe in die Laufzeit verschoben), `pipwerk-marketdata` (Pfadabhängigkeit `packages/market-data`, Version `==0.1.0`, bringt `tzdata` mit), `sqlalchemy`, `uvicorn`. Entwicklung und Prüfung: `pipwerk-fetch-mt5` (Pfadabhängigkeit `components/pipwerk-fetch-mt5` für die nachgebildete Quelle), `mypy`, `pytest`, `ruff`. Mindestversionen stehen in `backend/pyproject.toml`: alembic 1.20.0, fastapi 0.141.1, httpx2 2.13.1, sqlalchemy 2.1.3, uvicorn 0.54.0, mypy 2.3.1, pytest 9.1.1, ruff 0.16.9; gelockt sind im Stand von Auftrag 04 unter anderem alembic 1.20.0, fastapi 0.156.8, httpx2 2.16.0, pydantic 2.13.5 (festgelegt durch `pipwerk-marketdata`), starlette 1.9.0, sqlalchemy 2.1.5, uvicorn 0.54.0. Die Seite `/docs` lädt Swagger UI von `cdn.jsdelivr.net` (Abschnitt 2.5).

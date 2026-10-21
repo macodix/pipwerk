@@ -1,0 +1,245 @@
+#!/bin/sh
+# Check script of the component pipwerk replay.
+#
+# Runs the automatic checks of the component on the working directory this
+# script belongs to and ends with exit code 0 only if all of them pass:
+#
+#   check [--backend-port <port> --frontend-port <port>] [--with-audit]
+#
+# Checks: backend (uv sync --frozen, pytest, ruff check, ruff format --check,
+# mypy), search in the repository for the old identifiers of the component,
+# frontend (npm ci, typecheck, Vitest, build) and the browser test with
+# Playwright on the given ports. The frontend checks and the browser test run
+# only if the directory frontend/ exists; otherwise the script skips them
+# with a note. The ports are required only then. --with-audit adds pip-audit
+# for the backend and npm audit for the frontend.
+#
+# The working directory is derived from the path of this script. The script
+# can be called from any directory. Ports are parameters; the script contains
+# no fixed ports, paths or machine names.
+#
+# This file names the old identifiers as check values; it is excluded from
+# the search in the repository.
+#
+# Documentation: docs/technical/pipwerk-replay.md, section 6.3 "Prüfskript".
+
+set -u
+
+# A Git environment inherited from the caller must not redirect the search.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
+PROG=check
+
+die() {
+    printf '%s: %s\n' "$PROG" "$*" >&2
+    exit 2
+}
+
+usage() {
+    cat >&2 <<EOF
+Usage:
+  $PROG [--backend-port <port> --frontend-port <port>] [--with-audit]
+
+The ports are required if the directory frontend/ exists.
+EOF
+    exit 2
+}
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    die "cannot determine the directory of the script"
+component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    die "cannot determine the directory of the component"
+backend_dir="$component_dir/backend"
+frontend_dir="$component_dir/frontend"
+
+# require_port <parameter> <value>: sets PORT_VALUE to the value without
+# leading zeros. The length check keeps numbers out of the shell's integer
+# arithmetic that it cannot handle.
+require_port() {
+    PORT_VALUE=$2
+    case $PORT_VALUE in
+    '' | *[!0-9]*) die "$1 must be a number between 1 and 65535" ;;
+    esac
+    while [ "${PORT_VALUE#0}" != "$PORT_VALUE" ]; do
+        PORT_VALUE=${PORT_VALUE#0}
+    done
+    case $PORT_VALUE in
+    '' | ??????*) die "$1 must be a number between 1 and 65535" ;;
+    esac
+    if [ "$PORT_VALUE" -gt 65535 ]; then
+        die "$1 must be a number between 1 and 65535"
+    fi
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "required program not found: $1"
+}
+
+backend_port=''
+frontend_port=''
+with_audit=0
+while [ $# -gt 0 ]; do
+    case $1 in
+    --backend-port | --frontend-port)
+        [ $# -ge 2 ] || die "missing value for $1"
+        case $1 in
+        --backend-port) backend_port=$2 ;;
+        --frontend-port) frontend_port=$2 ;;
+        esac
+        shift 2
+        ;;
+    --with-audit)
+        with_audit=1
+        shift
+        ;;
+    -h | --help) usage ;;
+    *) die "unknown parameter: $1" ;;
+    esac
+done
+
+has_frontend=0
+[ -d "$frontend_dir" ] && has_frontend=1
+
+if [ -n "$backend_port" ]; then
+    require_port --backend-port "$backend_port"
+    backend_port=$PORT_VALUE
+fi
+if [ -n "$frontend_port" ]; then
+    require_port --frontend-port "$frontend_port"
+    frontend_port=$PORT_VALUE
+fi
+if [ "$has_frontend" = 1 ]; then
+    [ -n "$backend_port" ] || die "missing parameter --backend-port"
+    [ -n "$frontend_port" ] || die "missing parameter --frontend-port"
+fi
+if [ -n "$backend_port" ] && [ "$backend_port" = "$frontend_port" ]; then
+    die "--backend-port and --frontend-port must differ"
+fi
+
+require_command git
+require_command uv
+if [ "$has_frontend" = 1 ]; then
+    require_command npm
+    require_command npx
+fi
+
+repo_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null) ||
+    die "$script_dir is not in a Git working directory"
+
+passed=''
+failed=''
+skipped=''
+
+# step <name> <command...>: runs one check and records the result.
+step() {
+    step_name=$1
+    shift
+    printf '\n%s: === %s ===\n' "$PROG" "$step_name"
+    if "$@"; then
+        printf '%s: passed: %s\n' "$PROG" "$step_name"
+        passed="$passed
+  $step_name"
+    else
+        printf '%s: FAILED: %s\n' "$PROG" "$step_name" >&2
+        failed="$failed
+  $step_name"
+    fi
+}
+
+# skip <name> <reason>: records a check that does not apply.
+skip() {
+    printf '\n%s: skipped: %s (%s)\n' "$PROG" "$1" "$2"
+    skipped="$skipped
+  $1 ($2)"
+}
+
+in_backend() {
+    uv --directory "$backend_dir" "$@"
+}
+
+in_frontend() {
+    (cd "$frontend_dir" && "$@")
+}
+
+# search_old_names: the old identifiers of the component do not occur in
+# versioned files outside of docs/design/ and development/ (acceptance
+# criterion 1 of order 01).
+search_old_names() {
+    search_output=$(git -C "$repo_root" grep -n -I -i -E 'pipwerk[-_ ]?backtest' -- . \
+        ':!docs/design' ':!development' \
+        ':!components/pipwerk-replay/scripts/check')
+    search_status=$?
+    # git grep ends with 1 if nothing is found; that is not an error.
+    if [ "$search_status" -gt 1 ]; then
+        printf '%s: git grep failed with exit code %s\n' "$PROG" "$search_status" >&2
+        return 1
+    fi
+    if [ -n "$search_output" ]; then
+        printf '%s: old identifiers found:\n%s\n' "$PROG" "$search_output" >&2
+        return 1
+    fi
+    printf '%s: no old identifiers found\n' "$PROG"
+}
+
+# pip_audit: checks the packages locked in backend/uv.lock for known
+# vulnerabilities.
+pip_audit() {
+    audit_requirements=$(mktemp) || return 1
+    audit_status=0
+    in_backend export --frozen --no-hashes --no-emit-project -o "$audit_requirements" &&
+        uvx pip-audit -r "$audit_requirements" --no-deps --disable-pip || audit_status=1
+    rm -f "$audit_requirements"
+    return "$audit_status"
+}
+
+browser_test() {
+    (
+        cd "$frontend_dir" &&
+            PIPWERK_REPLAY_E2E_BACKEND_PORT=$backend_port \
+                PIPWERK_REPLAY_E2E_FRONTEND_PORT=$frontend_port \
+                npm run e2e
+    )
+}
+
+printf '%s: checking %s at commit %s\n' "$PROG" "$repo_root" \
+    "$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+
+# Backend (docs/technical/pipwerk-replay.md, section 6.1)
+step "backend: uv sync --frozen" in_backend sync --frozen
+step "backend: pytest" in_backend run --frozen pytest
+step "backend: ruff check" in_backend run --frozen ruff check
+step "backend: ruff format --check" in_backend run --frozen ruff format --check
+step "backend: mypy" in_backend run --frozen mypy
+step "backend: openapi.json equals the application" in_backend run --frozen \
+    python -m pipwerk_replay.contract \
+    "$repo_root/contracts/api/pipwerk-replay/v1/openapi.json" --check
+step "search in the repository for the old identifiers" search_old_names
+if [ "$with_audit" = 1 ]; then
+    step "backend: pip-audit" pip_audit
+fi
+
+# Frontend and browser test (from order 05)
+if [ "$has_frontend" = 1 ]; then
+    step "frontend: npm ci" in_frontend npm ci
+    step "frontend: typecheck" in_frontend npm run typecheck
+    step "frontend: Vitest" in_frontend npm test
+    step "frontend: build" in_frontend npm run build
+    if [ "$with_audit" = 1 ]; then
+        step "frontend: npm audit" in_frontend npm audit
+    fi
+    step "browser test" browser_test
+else
+    skip "frontend: npm ci, typecheck, Vitest, build, browser test" \
+        "directory frontend/ does not exist yet"
+fi
+
+printf '\n%s: passed:%s\n' "$PROG" "${passed:-
+  none}"
+if [ -n "$skipped" ]; then
+    printf '%s: skipped:%s\n' "$PROG" "$skipped"
+fi
+if [ -n "$failed" ]; then
+    printf '%s: failed:%s\n' "$PROG" "$failed" >&2
+    exit 1
+fi
+printf '%s: all checks passed\n' "$PROG"
