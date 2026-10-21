@@ -3,9 +3,24 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-19
+- stand: 2026-10-21
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
+
+## Kurzfassung
+
+Für die meisten Aufgaben genügt dieser Abschnitt. Die übrigen Abschnitte werden nur gelesen, wenn die Aufgabe sie betrifft.
+
+- Kette: Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt ⇄ Team (Entwickler, Tester, QA). Jede Rolle spricht nur mit ihren Nachbarn.
+- Der Auftraggeber entscheidet Anforderungsdokumente, Fachmodell und Strategiebeschreibungen. Alles andere entscheiden Softwarearchitekt und Team.
+- Phasen: 1 Anforderung (QA prüft die Dokumente des Auftraggebers, Abstimmung), 2 Konzeption (Spezifikation, klickbarer Prototyp für neue Oberflächen, Abstimmung), 3 Planung (Arbeitspakete, Abstimmung), 4 Umsetzung (Aufträge, Tester, QA), 5 Abnahme durch den Auftraggeber, 6 Integration in `main`.
+- Rückwege: fehlende Anforderung → Phase 1, Lücke der Spezifikation → Phase 2, Mangel in der Abnahme → Phase 4, Planänderung → Phase 3.
+- Übergabe nur über Übergabedokumente und Meldungen unter `development/` auf `origin/main`.
+- Prüfungen: erster Durchlauf vollständig, danach nur Nachprüfung; nur blockierende Befunde verhindern das Bestehen; bestanden ist bestanden.
+- Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann. Korrekturen aus bestehenden Festlegungen, Fragen der Spezifikation und offene Punkte erledigen die Rollen selbst.
+- Prüfschleifen laufen, solange die blockierenden Befunde weniger werden, sonst eine Ebene höher.
+- Rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend.
+- Ausführung auf dem Entwicklungsrechner: Runner, `agentrun`, Herzschlag, Rollen in `devteam/`, Modelle nach [Verbrauch des Nutzungskontingents](#verbrauch-des-nutzungskontingents).
 
 ## Geltungsbereich und Dokumentationsorte
 
@@ -417,6 +432,14 @@ Weitere Werkzeuge, insbesondere Schnittstellen-, Architektur-, Property-based- o
 
 Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben. Das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur. Die Modellzuordnung der Rollen ist änderbare Laufzeitkonfiguration.
 
+### Verbrauch des Nutzungskontingents
+
+Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
+
+- **Modell.** Alle Rollen auf dem Entwicklungsrechner arbeiten mit Sonnet. Opus wird nur auf ausdrückliche Festlegung des Auftraggebers für eine bestimmte Aufgabe eingesetzt.
+- **Gezielt lesen.** Jede Rolle liest von diesem Dokument und von [Agentenrollen und Briefings](agentenrollen-und-briefings.md) die Kurzfassung und die Abschnitte ihrer Aufgabe, große Dateien abschnittsweise. Vollständig gelesen wird nur das eigene Übergabedokument.
+- **Parallele Arbeit** bleibt zulässig.
+
 ## Offene Punkte
 
 - Vergleich von Claude und Codex als Tester mit gezielt eingebauten Fehlern, sobald der erste Durchlauf steht.
@@ -426,6 +449,7 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-21 | Kurzfassung am Anfang. Abschnitt „Verbrauch des Nutzungskontingents“: Sonnet für alle Rollen, gezieltes Lesen. Anlass: Sitzungslimit nach kurzer Zeit erreicht. Festlegung des Auftraggebers im Chat am 2026-10-20. |
 | 2026-10-20 | Umfang der Prüfungen: nach bestandener Prüfung keine weitere Prüfung nur für eingearbeitete Hinweise. Anlass: Spezifikation `strategiedesign` nach bestandenen Durchläufen 7 und 8 erneut zur Prüfung (Durchlauf 9), Sitzung danach wegen fehlenden Herzschlags beendet. |
 | 2026-10-19 | Konfiguration der Rollen: Rollendateien verweisen auf die Briefings im Repository statt sie zu kopieren. Umgesetzt auf dem Entwicklungsrechner am 2026-10-19, Probelauf aller sechs Rollen bestanden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Fragen an den Auftraggeber: Regel „Lücken“, nur Lücken mit gutem technischem Grund (Betrieb, Umsetzbarkeit, Sicherheit) blockieren und führen zu Rückfragen, alle anderen werden dokumentiert, ohne den Entwicklungsprozess zu unterbrechen. Festlegung des Auftraggebers im Chat am 2026-10-19. |

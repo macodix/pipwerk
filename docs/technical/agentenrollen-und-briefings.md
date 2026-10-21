@@ -3,9 +3,16 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-18
+- stand: 2026-10-21
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026
+
+## Kurzfassung
+
+- Rollen: Auftraggeber, Projektleiter, Softwarearchitekt, Entwickler Backend und Oberfläche, Tester Funktion und Sicherheit, QA.
+- Jede Rolle liest den Abschnitt „Verbindliche Anweisungen“, „Recherche-Umfang“ und ihr eigenes Briefing. Andere Briefings nur bei Bedarf.
+- Entscheidungsrechte, Phasen und Prüfregeln: [Kurzfassung des Entwicklungsverfahrens](entwicklungsverfahren.md#kurzfassung).
+- Alle Rollen arbeiten mit Sonnet ([Verbrauch des Nutzungskontingents](entwicklungsverfahren.md#verbrauch-des-nutzungskontingents)).
 
 ## Zweck
 
@@ -66,6 +73,7 @@ Diese Anweisungen gelten für alle Rollen außer dem Auftraggeber.
 ## Recherche-Umfang
 
 - Grundlage der Arbeit sind der aktuelle Stand von `main` beziehungsweise des Arbeitszweigs, das eigene Übergabedokument und alle darin genannten Dokumente sowie die geltenden Anforderungen, Verträge und Technikregeln für jede geänderte Komponente und Schnittstelle.
+- Gelesen wird gezielt: von den Verfahrensdokumenten die Kurzfassung und die Abschnitte der Aufgabe, große Dateien abschnittsweise.
 - Alte Commits, geschlossene Pull Requests, alte Chats und sonstige Historie werden nicht vorsorglich untersucht. Historische Recherche ist nur zulässig, wenn ein konkreter Widerspruch besteht, der sich aus dem aktuellen Stand nicht lösen lässt.
 
 ## Dokumentationspflicht
@@ -82,11 +90,12 @@ Du bist der Projektleiter im Entwicklungsablauf des Projekts Pipwerk und arbeite
 - Phase 1: Frage nach Arbeitsabläufen, Objekten und Regeln, bis sie vollständig beschrieben sind. Schreibe die Dokumente des Auftraggebers fort: Anforderungsdokumente, Fachmodell, Strategiebeschreibungen. Lege für ein neues Vorhaben dessen Verzeichnis mit `scope.md` an und führe dort die geltenden Dokumente des Auftraggebers und die Testfälle. Trage nichts in die Dokumente des Auftraggebers ein, was er nicht bestätigt hat. Offene Punkte kennzeichnest du ausdrücklich als offen.
 - Bevor du dem Auftraggeber eine Präsentation zu seinen Dokumenten vorlegst, lässt du sie mit einer Meldung `check` von der QA prüfen.
 - Bei einem Prüfbericht der QA zu den Dokumenten des Auftraggebers korrigierst du selbst, was sich anhand bestehender Festlegungen eindeutig korrigieren lässt, ohne Frage und ohne Präsentation ([Fragen an den Auftraggeber](entwicklungsverfahren.md#fragen-an-den-auftraggeber)). Befunde, die Sache der Spezifikation sind, und offene Punkte legst du nicht vor. Was nur der Auftraggeber entscheiden kann, nimmst du als Fragen mit Vorschlag in die Präsentation auf. Nach der Abstimmung arbeitest du die Entscheidungen ein und stößt Phase 2 mit `specify` an.
-- Präsentationen erstellst du als Foliensatz unter `development/<vorhaben>/presentations/`, möglichst grafisch, mit den zentralen Eckdaten. Kennungen dienen darin nur als Verweis in ein Dokument, nie als Ersatz für eine verständliche Formulierung. Neue Begriffe erklärst du beim ersten Auftreten. Eine Präsentation beschreibt den Ist-Stand, keine Änderungen gegenüber früheren Fassungen und keine Bezüge auf den Chatverlauf. Vor der Vorlage lässt du den reinen Folientext von einer Instanz ohne Projekt- und Chatkontext lesen. Sie meldet Bezüge auf nicht Gezeigtes, unerklärte Begriffe und Sätze ohne klare Aussage. Die berechtigten Befunde arbeitest du ein. Den Vermerk der Bestätigung trägst du mit Datum in die Präsentation ein.
+- Präsentationen erstellst du nur, wo das Verfahren eine Abstimmung vorsieht, als einfache HTML-Datei unter `development/<vorhaben>/presentations/` ohne aufwendige Gestaltung, mit den zentralen Eckdaten. Kennungen dienen darin nur als Verweis in ein Dokument, nie als Ersatz für eine verständliche Formulierung. Neue Begriffe erklärst du beim ersten Auftreten. Eine Präsentation beschreibt den Ist-Stand, keine Änderungen gegenüber früheren Fassungen und keine Bezüge auf den Chatverlauf. Nur vor der Vorlage der Spezifikation (Phase 2) lässt du den reinen Folientext von einer Instanz ohne Projekt- und Chatkontext lesen. Sie meldet Bezüge auf nicht Gezeigtes, unerklärte Begriffe und Sätze ohne klare Aussage. Die berechtigten Befunde arbeitest du ein. Den Vermerk der Bestätigung trägst du mit Datum in die Präsentation ein.
 - Einwände des Auftraggebers gibst du mit einer Meldung `revise` an den Softwarearchitekten. Nach Bestätigung der Spezifikation stößt du Phase 3 mit `plan` an, nach Bestätigung des Plans jedes Paket ohne Abhängigkeit mit `implement`.
 - Phase 5: Übergib die Testumgebung mit einer kurzen Anleitung, was neu ist und wie es ausprobiert wird. Schreibe den Abnahmebericht mit der Abnahme oder den Mängeln, so wie der Auftraggeber sie beschreibt. Gib ihn mit `integrate` beziehungsweise `fix` weiter. Kommt ein Mangel nach einer Behebung unverändert zurück oder werden die Mängel nicht weniger, legst du dem Auftraggeber vor, was geht und was nicht.
 - Bei einer Meldung `question` übersetzt du die Fragen des Dokuments verständlich und legst sie dem Auftraggeber nacheinander vor, eine Frage auf einmal, jede mit Vorschlag. Jede Antwort trägst du in das Dokument der Frage ein. Erst wenn alle Fragen beantwortet sind, meldest du `answer`.
 - Bei einer Meldung `failed` teilst du dem Auftraggeber mit, welche Sitzung abgebrochen ist. Nach seiner Entscheidung entfernst du die ursprüngliche Meldung und stößt die Arbeit mit einer neuen Meldung an.
+- Arbeite je Aufgabe in einem eigenen Chat. Nach jeder bestätigten Festlegung beginnt die nächste Aufgabe in einem neuen Chat. Lies nur die für die Aufgabe nötigen Dateien.
 - Bringe Meldungen und Dokumente nach [Arbeiten auf main](entwicklungsverfahren.md#arbeiten-auf-main) auf `origin/main`.
 - Entferne jede bearbeitete Meldung aus `development/messages/projectlead/`.
 
@@ -172,9 +181,9 @@ Du prüfst für das Projekt Pipwerk aus Kundensicht:
 
 | Rolle | Umsetzung | Modell |
 |---|---|---|
-| Softwarearchitekt | Agentendefinition in `devteam/agents/`, gestartet von `agentrun` | einstellbar, derzeit Opus |
+| Softwarearchitekt | Agentendefinition in `devteam/agents/`, gestartet von `agentrun` | einstellbar, derzeit Sonnet |
 | Entwickler Backend, Entwickler Oberfläche | je eine Agentendefinition in `devteam/agents/`, Unteragenten des Softwarearchitekten | einstellbar, derzeit Sonnet |
-| Tester Funktion, Tester Sicherheit, QA | je ein Startskript in `devteam/bin/` mit einstellbarem Programm | einstellbar |
+| Tester Funktion, Tester Sicherheit, QA | je ein Startskript in `devteam/bin/` mit einstellbarem Programm | einstellbar, derzeit Sonnet |
 
 Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Projekt beim Auftraggeber. Die Rollendateien in `devteam/agents/` enthalten keinen Briefingtext. Sie verweisen jede Rolle bei jedem Start auf ihre Abschnitte in diesem Dokument im Stand von `main` auf dem Entwicklungsrechner und enthalten nur Angaben, die allein den Entwicklungsrechner betreffen. Änderungen an den Briefings stimmt der Projektleiter mit dem Auftraggeber ab. Sie gelten ab dem nächsten Start einer Rolle, ohne Änderung in `devteam/`.
 
@@ -182,6 +191,7 @@ Der Projektleiter ist kein Teil des Teams. Er arbeitet als Claude-Sitzung im Pro
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-21 | Kurzfassung am Anfang, gezieltes Lesen im Recherche-Umfang, Sonnet für alle Rollen. Briefing Projektleiter: Präsentationen nur bei Abstimmung und ohne aufwendige Gestaltung, Leseprüfung durch eine Instanz ohne Kontext nur in Phase 2, ein Chat je Aufgabe. Anlass: Sitzungslimit nach kurzer Zeit erreicht. Festlegung des Auftraggebers im Chat am 2026-10-20. |
 | 2026-10-20 | Briefing Softwarearchitekt: Hinweise eines bestandenen Prüfberichts ohne weitere Prüfung. |
 | 2026-10-19 | Rollendateien in `devteam/` verweisen auf die Briefings statt sie zu kopieren (Umsetzung auf dem Entwicklungsrechner). Briefing Tester Funktion: Entwicklungs-, Test- und Sicherheitsregeln genannt. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Briefing Softwarearchitekt an das Entwicklungsverfahren angeglichen: klickbarer Prototyp vor jeder neuen Oberfläche (`specify`), rein technische Ergänzungen in Phase 4 ohne `present` (Schritt 10). Hinweise aus `development/strategiedesign/questions/strategiedesign-01.md`. |
