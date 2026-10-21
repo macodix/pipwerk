@@ -33,11 +33,10 @@ Der ZigZag liefert eine Folge von Wendepunkten, abwechselnd Hoch und Tief. Der j
 | `Trendrichtung` | `aufwärts`, `abwärts`, `kein Trend` | siehe 4.1 und 4.2 |
 | `Punkt 2` | Kurs | siehe 4.1, nur bei Trendrichtung aufwärts oder abwärts belegt |
 | `Punkt 1/3` | Kurs | siehe 4.1, nur bei Trendrichtung aufwärts oder abwärts belegt |
-| `Punkt 1/3 endgültig` | `ja`, `nein` | `ja`, wenn der Wendepunkt von Punkt 1/3 endgültig ist (Abschnitt 3) |
 
 Alle Angaben gelten für den Aufwärtstrend. Für den Abwärtstrend gilt alles spiegelbildlich, Hoch und Tief sowie über und unter vertauscht.
 
-Ob ein Trend gebrochen ist und ob sich der Markt in Bewegung oder Korrektur befindet, liefert der Indikator nicht als eigene Eigenschaft. Beides ergibt sich aus `Trendrichtung`, den Punkten und dem Kurs (4.3).
+Ob ein Trend gebrochen ist und ob sich der Markt in Bewegung oder Korrektur befindet, liefert der Indikator nicht als eigene Eigenschaft. Beides ergibt sich aus `Trendrichtung`, den Punkten und dem Kurs (4.3). Ob ein Punkt endgültig ist, ergibt sich aus 4.1: `Punkt 2` und `Punkt 1/3` sind stets bestätigte Wendepunkte.
 
 ### 4.1 Entstehung des Trends und Punkte
 
@@ -51,12 +50,14 @@ Bestätigt ist der Aufwärtstrend erst, wenn eine Kerze über Punkt 2 schließt 
 
 Im bestätigten Trend gilt:
 
-- `Punkt 1/3` ist das letzte Tief, an dem eine Bewegung in Trendrichtung begonnen hat. Zu Beginn ist es Punkt 3.
-- `Punkt 2` ist das letzte Hoch, das der ZigZag gesetzt hat.
-- Setzt der ZigZag nach `Punkt 2` ein Tief, beginnt die Korrektur. `Punkt 1/3` bleibt das bisherige Tief, solange es nicht durchbrochen ist.
-- Setzt der ZigZag nach dem Tief der Korrektur ein neues Hoch, ist das Tief der Korrektur ein Wendepunkt. Es wird zum neuen `Punkt 1/3`, und das neue Hoch zum neuen `Punkt 2`.
+- `Punkt 2` ist das Hoch der letzten Bewegung. Ein neues Hoch wird zum `Punkt 2`, sobald der ZigZag es nach seinen Parametern (`Depth`, `Deviation`, `Backstep`) als Wendepunkt gesetzt hat. Damit beginnt die Korrektur. Ein späteres, niedrigeres Hoch in der Korrektur ändert `Punkt 2` nicht.
+- `Punkt 1/3` ist das Tief, von dem die letzte Bewegung ausgegangen ist. Zu Beginn ist es Punkt 3.
+- Während der Korrektur bleibt `Punkt 1/3` das bisherige Tief. Das Tief der Korrektur gilt noch nicht als Punkt.
+- Schließt eine Kerze über `Punkt 2` (4.4), ist die Korrektur beendet. Das tiefste Tief der Korrektur wird zum neuen `Punkt 1/3`.
 
 Läuft der Kurs weiter in Trendrichtung, bleibt der Trend bestehen. Es entsteht dabei kein neuer Trend.
+
+Beispiel: Punkt 1 bei 100, Punkt 2 bei 110, Punkt 3 bei 105. Eine Kerze schließt über 110, der Aufwärtstrend ist bestätigt, `Punkt 2` 110, `Punkt 1/3` 105. Der Kurs steigt auf 120 und fällt auf 114. Sobald der ZigZag 120 als Hoch gesetzt hat, ist `Punkt 2` 120, `Punkt 1/3` bleibt 105. Schließt danach eine Kerze über 120, wird 114 zum `Punkt 1/3`. Bis dahin ist der Trend erst bei einem Schluss unter 105 gebrochen.
 
 ### 4.2 Trendbruch
 
@@ -74,7 +75,7 @@ Der Indikator wertet einen Durchbruch durch `Punkt 1/3` oder `Punkt 2` nur auf a
 
 ## 5. Verwendung im Punkt-2-Ausbruch
 
-Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit wird `Trendrichtung` verwendet (sie bestimmt die Handelsrichtung). Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, `Punkt 1/3` und `Punkt 1/3 endgültig` verwendet.
+Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit wird `Trendrichtung` verwendet (sie bestimmt die Handelsrichtung). Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, und `Punkt 1/3` verwendet.
 
 ## 6. Offen
 
@@ -90,3 +91,4 @@ Keine offenen Punkte.
 | 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9): Parameter `Instrument` (Fachmodell req-fach-053, B5), rechnet selbst nach dem Verfahren des `ZigZag` (H9). |
 | 2026-10-19 | Bestimmung bestätigt: Aufwärtstrend ab vollständigem 1-2-3-Abschnitt ohne Ausbruch über Punkt 2, vorläufiger Wendepunkt zählt mit. Durchbruch nur auf Schlusskurs abgeschlossener Kerzen (4.4), ohne eigenen Parameter. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-21 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1, B5, B6): Trend erst nach Schluss über Punkt 2 bestätigt, bleibt bei weiterem Lauf in Trendrichtung bestehen, nach Trendbruch `kein Trend`; Punkte folgen den Wendepunkten des ZigZag. Eigenschaften `Trend intakt` und `Phase` gestrichen, Bewegung und Korrektur aus Kurs und Punkten (4.3). Entscheidung des Auftraggebers im Chat am 2026-10-20 und 2026-10-21. |
+| 2026-10-21 | Nach Prüfbericht der QA (`backtest`, Durchlauf 2, N1): `Punkt 2` wird ein Hoch, sobald der ZigZag es gesetzt hat; das Tief der Korrektur wird erst mit Schluss über `Punkt 2` zum `Punkt 1/3`, bis dahin gilt das bisherige Tief. Eigenschaft `Punkt 1/3 endgültig` entfällt. Beispiel in 4.1. Entscheidung des Auftraggebers im Chat am 2026-10-21. |

@@ -15,7 +15,7 @@ Die größere Zeiteinheit bestimmt, ob ein Trend vorliegt. Der konkrete Trade wi
 
 ## Voraussetzungen
 
-Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie der Trend werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
+Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie der Trend werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Punkt 2 und Punkt 1/3.
 
 Für die Tradeplanung werden außerdem vom Instrument Spread, Pip, Tickgröße, Tickwert, Mindestvolumen und Volumenschritt und vom Konto das Kapital benötigt (Objekte der Anwendung `Konto` und `Instrument`, Fachmodell req-fach-051) sowie die Risikoregel der Strategie (Abschnitt 4).
 
