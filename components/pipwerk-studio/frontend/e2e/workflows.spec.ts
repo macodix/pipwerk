@@ -81,6 +81,8 @@ test('closing, a new strategy and opening ask what to do with unsaved changes: s
 
   // save: the change is stored, then the strategy is closed
   await showArea(page, 'props');
+  // a new strategy offers the guided setup; the name is changed in the properties view of the strategy
+  await page.getByTestId('wz-leave').click();
   await page.getByTestId('strategy-name').fill(savedName);
   await clickMenu(page, 'open');
   await page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true }).click();

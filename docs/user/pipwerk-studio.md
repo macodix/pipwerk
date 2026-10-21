@@ -3,16 +3,14 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-20
+- stand: 2026-10-21
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu pipwerk Studio dient
 
 pipwerk Studio ist der grafische Strategiedesigner von Pipwerk. Mit ihm werden Handelsstrategien auf einer Zeichenfläche zusammengestellt und bearbeitet.
 
-Hinweis: pipwerk Studio hat eine neue Oberfläche. Die Beschreibung der neuen Oberfläche (Abschnitte 3, 6, 7.4, 9 und 10) folgt; bis dahin enthalten diese Abschnitte nur einen Vermerk. Die übrigen Abschnitte gelten weiter.
-
-Der derzeitige Stand: In der Oberfläche können Strategien angelegt, geprüft, gespeichert, geöffnet, geschlossen und gelöscht und auf der Zeichenfläche angesehen, angeordnet und verbunden werden; Sprache und Objektverzeichnis stellen Sie in den Einstellungen ein. Vorlagen (Indikator, Trend, Regel, Regelwerk) lassen sich in der Oberfläche noch nicht anlegen, ansehen oder löschen; das geht bisher nur über die Web-API (Abschnitt 2, „Web-API ausprobieren“). Strategien werden nicht ausgeführt.
+Der derzeitige Stand: Sie legen Strategien an, geführt oder von Hand, stellen Bedingungen, Berechnungen und Regeln aus Bausteinen zusammen oder schreiben sie als Formel, verbinden Schritte und Werte, ordnen Regeln zu, benennen und entfernen Objekte, prüfen, speichern, öffnen, schließen und löschen Strategien. Sprache und Objektverzeichnis stellen Sie in den Einstellungen ein. Vorlagen (Indikator, Trend, Regel, Regelwerk) lassen sich in der Oberfläche noch nicht neu anlegen, ansehen oder löschen; das geht bisher nur über die Web-API (Abschnitt 2, „Web-API ausprobieren“). Eine gespeicherte Vorlage fügen Sie dagegen in eine Strategie ein. Strategien werden nicht ausgeführt.
 
 Wo Sie was finden:
 
@@ -21,11 +19,11 @@ Wo Sie was finden:
 | pipwerk Studio starten | 2 |
 | die Oberfläche kennenlernen | 3 |
 | Sprache oder Objektverzeichnis einstellen | 5 |
-| eine Strategie anlegen, speichern, prüfen, schließen, öffnen oder löschen, Regeln zuordnen (Beschreibung folgt) | 6 |
-| einen Ausdruck schreiben und verstehen, was „leer“ und „nicht verfügbar“ bedeuten | 7 |
+| eine Strategie anlegen, Elemente einfügen und verbinden, Werte von Objekten verwenden, Strategieparameter anlegen, Regeln zuordnen, Indikatoren und Trends belegen, umbenennen, entfernen, speichern, prüfen, schließen, öffnen oder löschen | 6 |
+| einen Ausdruck aus Bausteinen zusammenstellen oder als Formel schreiben und verstehen, was „leer“ und „nicht verfügbar“ bedeuten | 7 |
 | einen Befund der Konsistenzprüfung verstehen und beheben | 8 |
-| den Testfall `str-03` (EMA-Trendfolge) selbst aufbauen (Anleitung folgt) | 9 |
-| den Testfall `str-01` (Scalping Punkt 2 Ausbruch) selbst aufbauen (Anleitung folgt) | 10 |
+| mit dem geführten Aufbau eine erste Strategie anlegen | 9 |
+| alles ohne Ziehen bedienen | 10 |
 
 Begriffe, die Sie ohne Vorwissen vielleicht nicht kennen, erklärt das Glossar in Abschnitt 12, zum Beispiel Oberfläche, Zeichenfläche und Datenbank.
 
@@ -62,7 +60,74 @@ Nach dem Start wird pipwerk Studio in einem Webbrowser unter der Adresse `http:/
 
 ## 3. Aufbau der Oberfläche
 
-Die Oberfläche besteht aus der Kopfzeile oben, dem Streifen der Strategieparameter, der Elementbibliothek, der Zeichenfläche, der Eigenschaftenansicht und der Fußzeile unten. In breiten Fenstern liegen Bibliothek, Zeichenfläche und Eigenschaften nebeneinander, in mittleren liegen Zeichenfläche und ein Seitenbereich mit zwei Reitern nebeneinander, in schmalen steht ein Bereich nach dem anderen und Sie wechseln über die Leiste unten. Die ausführliche Beschreibung der neuen Oberfläche folgt; dieser Abschnitt beschreibt vorerst nur die Fußzeile.
+Die Oberfläche besteht aus der Kopfzeile oben, dem Streifen der Strategieparameter, der Elementbibliothek, der Zeichenfläche, der Eigenschaftenansicht und der Fußzeile unten. Wie sie angeordnet sind, hängt von der Breite des Fensters ab:
+
+| Breite des Fensters | Anordnung |
+| --- | --- |
+| ab 1100 Pixel | Elementbibliothek, Zeichenfläche und Eigenschaftenansicht liegen nebeneinander. |
+| von 700 bis 1099 Pixel | Die Zeichenfläche steht neben einem Seitenbereich mit zwei Reitern, „Bibliothek“ und „Eigenschaften“. |
+| unter 700 Pixel | Es steht ein Bereich nach dem anderen im Fenster. Unten wechseln Sie mit der Leiste „Fläche“, „Bibliothek“, „Eigenschaften“. |
+
+Alles, was sich mit der Maus ziehen lässt, geht auch mit Klicks (Abschnitt 10). Deshalb lässt sich pipwerk Studio auch auf einem Telefon bedienen.
+
+### 3.1 Kopfzeile
+
+Links steht der Name „pipwerk Studio“, daneben das Menü: „Neue Strategie“, „Öffnen“, „Speichern“, „Prüfen“, „Schließen“, „Löschen“ und „Einstellungen“. Ab 1280 Pixel Breite stehen die Einträge einzeln da; darunter öffnet der Knopf „Menü“ eine Liste. Zeigen Sie mit dem Mauszeiger auf einen Eintrag, sagt eine kurze Erklärung, was er tut. Ohne geöffnete Strategie sind „Speichern“, „Prüfen“, „Schließen“ und „Löschen“ nicht wählbar.
+
+Rechts zeigt ein Feld die Zahl der Befunde der letzten Prüfung („3 Befunde“, grün „keine Befunde“). Ein Klick darauf öffnet die Eigenschaftenansicht der Strategie mit der Liste der Befunde. Daneben steht die Schaltfläche „Über pipwerk Studio“ (Abschnitt 4).
+
+### 3.2 Streifen der Strategieparameter
+
+Unter der Kopfzeile steht links der Name der Strategie mit dem Zustand „ungespeichert“ oder „gespeichert“. Ein Klick darauf zeigt die Eigenschaftenansicht der Strategie. Rechts davon stehen die Strategieparameter, jeder mit Namen und Wert. Ein Strategieparameter ist ein Wert, den Sie an einer Stelle festlegen und überall in der Strategie verwenden (zum Beispiel die Zeiteinheit).
+
+- „Neu“ legt einen Strategieparameter an. Sein Fenster öffnet sich gleich.
+- Ein Klick auf einen Strategieparameter öffnet sein Fenster: Name, Datentyp, Wert, der Schalter „Wert erst bei der Anwendung übergeben“ und das Entfernen (Papierkorb). „Fertig“ schließt das Fenster.
+- Beim Umbenennen ändert sich überall sofort der Name; Ausdrücke, die den Strategieparameter verwenden, zeigen den neuen Namen.
+- Das Entfernen fragt zuerst und nennt die Elemente, die den Strategieparameter verwenden (Abschnitt 6.8).
+
+### 3.3 Elementbibliothek
+
+Die Bibliothek zeigt, was Sie in die Strategie einfügen können, in Gruppen:
+
+| Gruppe | Inhalt |
+| --- | --- |
+| Wann wird gerechnet | Auslöser, zum Beispiel „Kerzenschluss“ und „Tick“ |
+| Bedingungen und Aktionen | Schritte des Ablaufs, zum Beispiel „Bedingung“, „Berechnung“, „Order aufgeben“, „Position ändern“ |
+| Markt und Konto | Objekte der Anwendung: Konto, Instrument, Kerze, Tick |
+| Indikatoren | mitgelieferte und eigene Indikatoren, zum Beispiel „EMA“ und „ATR“, und „eigener Indikator“ |
+| Trends | mitgelieferte und eigene Trends, zum Beispiel „1-2-3-Trend (Markttechnik)“, und „eigener Trend“ |
+| Regeln | Regeln und Regelwerke, zum Beispiel „Risiko je Trade“, und „eigene Regel“ |
+
+Eine gespeicherte Vorlage trägt die Marke „eigene“. Das Suchfeld oben filtert die Einträge nach Namen und Erklärung. Zeigen Sie mit dem Mauszeiger auf einen Eintrag oder wählen Sie ihn mit der Tabulatortaste, erscheint seine Erklärung.
+
+Ein Klick auf einen Eintrag fügt das Element hinter dem gewählten Schritt ein und verbindet es mit dessen nächstem freien Ausgang. Ist nichts gewählt, liegt es frei auf der Zeichenfläche. Ist der Rahmen einer Verwaltung gewählt, gehört das Element zu dieser Verwaltung. Sie können einen Eintrag auch auf die Zeichenfläche, auf einen Schritt (dahinter) oder in einen Rahmen (in diese Verwaltung) ziehen. Eine Regel oder ein Regelwerk wird der Strategie zugeordnet, oder dem gewählten Element, wenn dieses Regeln zulässt (Abschnitt 6.6).
+
+### 3.4 Zeichenfläche
+
+Die Zeichenfläche zeigt die Strategie:
+
+- Ein **Schritt** (Auslöser, Bedingung, Berechnung, Order …) ist ein Kasten mit dem Namen, einem Satz, der sagt, was er tut, und seinen Ausgängen. Eine Bedingung hat die Ausgänge „wahr“ und „falsch“, die meisten anderen Schritte „weiter“. Die Linie von einem Ausgang zum nächsten Schritt bedeutet „danach folgt“.
+- Eine **Karte** zeigt ein Objekt (Indikator, Trend, Kerze …) im Bereich „Objekte und ihre Werte“ neben dem Ablauf. Die Zeilen der Karte sind die Werte des Objekts. Von einer Zeile aus lässt sich ein Wert mit einem Schritt verbinden (Abschnitt 6.3).
+- Der **Rahmen** „Verwaltung · Order aufgeben“ hängt unter dem Schritt „Order aufgeben“. In ihm läuft die Verwaltung der Order: zuerst für die wartende Order, nach der Ausführung für die Position. Der Knopf am Titel klappt den Rahmen ein und aus.
+- Ein **Abschnitt** fasst zusammengehörige Schritte eines Ablaufs unter einem Namen zusammen und lässt sich ein- und ausklappen.
+- **Wertlinien** zeigen, welche Werte von Objekten ein Schritt verwendet. Kräftige Linien sind Eingänge, blasse, gepunktete Linien Werte, die nur ein Ausdruck verwendet.
+
+Die Werkzeugleiste enthält „Ausrichtung“ (senkrecht oder waagerecht), „Wertlinien“ (alle, Auswahl, aus), Vergrößern und Verkleinern, „Alles zeigen“, „Zum Anfang“ und „Neu anordnen“ (alle Schritte wieder automatisch anordnen). Die Legende erklärt die Linien. Ein Schritt, den Sie verschieben, behält seinen Platz; alle anderen ordnet pipwerk Studio selbst.
+
+Ein rot umrandeter Schritt hat einen Fehler, ein orange umrandeter einen Hinweis der Prüfung (Abschnitt 8). Ein Schritt mit einem Typ, den diese Fassung nicht kennt, ist rot und zeigt die Kennung seines Typs; seine Belegungen bleiben beim Speichern unverändert.
+
+### 3.5 Eigenschaftenansicht
+
+Die Eigenschaftenansicht zeigt, was Sie auf der Zeichenfläche gewählt haben. Ein Klick auf eine freie Stelle der Zeichenfläche oder auf den Namen der Strategie zeigt die Strategie.
+
+- **Strategie:** Name, Beschreibung, „Regeln der Strategie“, die Befunde der Prüfung mit „Prüfen“.
+- **Schritt:** Name, die Einstellungen des Schritts (Abschnitt 6.4), bei „Order aufgeben“ die „Eigenschaften der Order“, „Liefert“ (was der Schritt für andere bereitstellt, zum Beispiel das Ergebnis einer Berechnung), „Eingänge“ (Werte von Objekten, die mit dem Schritt verbunden sind), „Regeln dieses Elements“, „Abschnitt“, „Gehört zu“ (Hauptablauf oder Verwaltung einer Order) und „Entfernen“.
+- **Objekt:** Name, Herkunft (zum Beispiel „EMA 20, aus Objekttyp EMA“), die Einstellungen des Objekts, „Liefert“ (die Werte), „Stelle im Bereich der Objekte“ und „Entfernen“. Ein eigener Indikator, ein eigener Trend und ein Regelwerk haben dazu ihren Inhalt (Abschnitt 6.7).
+- **Rahmen** und **Abschnitt:** was sie sind und was Sie damit tun können.
+
+Zu jedem Feld gehört eine Erklärung: Zeigen Sie auf die Beschriftung oder auf das Symbol „i“. Ein Feld mit einem Befund trägt dessen Farbe.
+
+### 3.6 Fußzeile
 
 Unten steht die Fußzeile. Sie zeigt links, ob pipwerk Studio seinen Hintergrunddienst erreicht, und rechts daneben den Stand, aus dem pipwerk Studio läuft. Der Hintergrunddienst ist der Teil von pipwerk Studio, der außerhalb des Browsers läuft (siehe Glossar in Abschnitt 12).
 
@@ -186,11 +251,101 @@ Wird die Sprache später erfolgreich gelesen oder eine Änderung erfolgreich ges
 
 ## 6. Arbeitsabläufe
 
-Die Beschreibung der Arbeitsabläufe mit der neuen Oberfläche (Strategie anlegen, Elemente und Objekte verwenden, Regeln zuordnen, Speichern, Prüfen, Schließen, Öffnen, Löschen) folgt. Die frühere Beschreibung gehörte zur alten Oberfläche und ist entfernt. Die Einstellungen beschreibt Abschnitt 5.
+Dieser Abschnitt beschreibt die Arbeitsabläufe der Reihe nach. Die Einstellungen beschreibt Abschnitt 5, die Schreibweise der Ausdrücke Abschnitt 7.
+
+### 6.1 Eine Strategie anlegen
+
+„Neue Strategie“ in der Kopfzeile legt eine leere Strategie an. Hat die geöffnete Strategie ungespeicherte Änderungen, fragt pipwerk Studio vorher (Abschnitt 6.9). Danach zeigt die Eigenschaftenansicht den geführten Aufbau (Abschnitt 9). Wählen Sie „Ohne Assistent weiterarbeiten“, bleibt die Zeichenfläche leer; sie sagt, was der nächste Schritt ist: ein Auslöser aus der Gruppe „Wann wird gerechnet“ der Elementbibliothek. Den Namen der Strategie und ihre Beschreibung tragen Sie in der Eigenschaftenansicht der Strategie ein (Klick auf den Namen im Streifen der Strategieparameter). Eine neue Strategie heißt „Neue Strategie“, mit angehängter Zahl, wenn der Name schon vergeben ist. Gespeichert wird erst mit „Speichern“.
+
+### 6.2 Elemente einfügen und verbinden
+
+1. Klicken Sie in der Elementbibliothek einen Eintrag an. Er wird hinter dem gewählten Schritt eingefügt und mit dessen nächstem freien Ausgang verbunden. Die Eigenschaftenansicht zeigt das neue Element, und Sie können es gleich benennen. Jedes Element bekommt einen Namen, zum Beispiel „Bedingung“, bei einem Namen, den es schon gibt, mit Zahl: „Bedingung 2“.
+2. Ein Schritt hat Ausgänge. Eine Bedingung hat „wahr“ und „falsch“; die ersten freien Ausgänge füllt das Einfügen der Reihe nach. Wollen Sie einen anderen Ausgang verbinden, klicken Sie den Ausgang an (ein Hinweis fordert Sie auf, den nächsten Schritt anzuklicken) und dann den Schritt, der folgen soll. Oder ziehen Sie vom Ausgang auf den Schritt.
+3. Ein Ausgang hat höchstens eine Verbindung. Verbinden Sie ihn neu, ersetzt die neue die alte. Eine Verbindung löschen Sie, indem Sie die Linie anklicken und dann das Kreuz an der Linie.
+4. Nicht erlaubt ist: ein Auslöser als Ziel (er hat keinen Eingang), ein Schritt mit sich selbst, ein Objekt im Ablauf und eine Verbindung zwischen dem Hauptablauf und der Verwaltung einer Order. pipwerk Studio sagt es mit einer kurzen Meldung.
+
+**Verwaltung einer Order.** Unter „Order aufgeben“ hängt der Rahmen „Verwaltung · Order aufgeben“. Klicken Sie den Titel des Rahmens an, gehört alles, was Sie jetzt einfügen, zu dieser Verwaltung. Hat die Verwaltung keinen eigenen Auslöser, wird der erste eingefügte Schritt mit dem Ausgang der Order verbunden. Fügen Sie einen Auslöser in die Verwaltung ein, entfällt diese Verbindung. Ein Schritt wechselt die Verwaltung, indem Sie ihn in den Rahmen ziehen (oder heraus) oder in seiner Eigenschaftenansicht unter „Gehört zu“ die Verwaltung wählen.
+
+**Abschnitte.** Unter „Abschnitt“ in der Eigenschaftenansicht eines Schritts ordnen Sie ihn einem Abschnitt zu oder bilden mit „+ Neuen Abschnitt bilden …“ einen neuen. Ein Abschnitt lässt sich auf der Zeichenfläche ein- und ausklappen; „Abschnitt auflösen“ in der Eigenschaftenansicht des Abschnitts löst ihn auf, die Schritte bleiben.
+
+### 6.3 Werte von Objekten verwenden
+
+Indikatoren, Trends und die Objekte des Marktes liegen als Karten im Bereich „Objekte und ihre Werte“. Jede Zeile einer Karte ist ein Wert, den das Objekt liefert. Damit ein Schritt einen Wert verwenden kann, ist der Wert ein **Eingang** des Schritts. Einen Eingang legen Sie auf drei Wegen an:
+
+- Sie wählen den Wert in den Bausteinen eines Ausdrucks (Abschnitt 7.4). Der Eingang entsteht von selbst.
+- Sie ziehen auf der Zeichenfläche eine Linie von der Zeile der Karte auf den Schritt.
+- Sie wählen in der Eigenschaftenansicht des Schritts unter „Eingänge“ den Eintrag „+ Wert verbinden …“.
+
+Unter „Eingänge“ stehen die Werte mit dem Namen des Objekts; das Kreuz daneben entfernt den Eingang. Ein Eingang, den kein Ausdruck verwendet, wird bei der Prüfung als Hinweis gemeldet.
+
+Die Reihenfolge der Karten ändern Sie unter „Stelle im Bereich der Objekte“ in der Eigenschaftenansicht des Objekts mit „Nach oben“ und „Nach unten“ oder durch Ziehen der Karte.
+
+### 6.4 Parameter und Eigenschaften belegen
+
+Die Einstellungen eines Elements stehen in seiner Eigenschaftenansicht. Zu jedem Parameter und jeder Eigenschaft gehört eine Belegung. Sie wählen ihre Art:
+
+| Belegung | Bedeutung |
+| --- | --- |
+| Fester Wert | Sie geben den Wert ein oder wählen ihn aus der Liste. |
+| Strategieparameter | Sie wählen einen Strategieparameter, dessen Datentyp passt. Es gibt noch keinen passenden? Dann legen Sie ihn mit „+ Neuer Strategieparameter …“ gleich an. |
+| Wert eines Objekts | Sie wählen ein Objekt auf der Zeichenfläche und einen seiner Werte. |
+| Ausdruck | Sie stellen den Wert aus Bausteinen zusammen (Abschnitt 7). |
+| Bei der Anwendung übergeben | Der Wert wird erst übergeben, wenn die Strategie angewendet wird. |
+
+Welche Arten ein Feld anbietet, bestimmt das Feld. Ein Feld ohne Belegung ist „nicht belegt“. Ein Pflichtfeld trägt einen Stern; fehlt seine Belegung, meldet die Prüfung es.
+
+Bei „Order aufgeben“ wählen Sie den Ordertyp. Er bestimmt die „Eigenschaften der Order“, die Sie belegen (zum Beispiel Richtung und Stop-Loss). Wechseln Sie den Ordertyp, bekommen die neu gebrauchten Eigenschaften ihre Standardwerte, die vorhandenen bleiben. Ein Pflichtwert wie das Volumen kann auch eine Regel bestimmen (Abschnitt 6.6).
+
+### 6.5 Strategieparameter
+
+Strategieparameter legen Sie im Streifen unter der Kopfzeile an, ändern und entfernen sie dort (Abschnitt 3.2). Die Datentypen sind Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Zeiteinheit und die Objekte der Anwendung. In Ausdrücken heißt ein Strategieparameter mit seinem Namen, in den Bausteinen steht er in der Gruppe „Strategieparameter“.
+
+### 6.6 Regeln zuordnen
+
+Eine Regel prüft oder bestimmt etwas, zum Beispiel das Volumen einer Order. Regeln stehen an zwei Stellen: in der Eigenschaftenansicht der Strategie unter „Regeln der Strategie“ (sie gelten für jede Order der Strategie) und in der Eigenschaftenansicht eines Elements, das Regeln zulässt, zum Beispiel „Order aufgeben“, unter „Regeln dieses Elements“ (sie gelten zusätzlich nur für dieses Element).
+
+1. Wählen Sie in der Liste „Regel oder Regelwerk hinzufügen …“ eine mitgelieferte Regel (zum Beispiel „Risiko je Trade“), eine gespeicherte Vorlage (mit der Marke „eigene“) oder „eigene Regel“. Eine Regel aus einer Vorlage ist eine vollständige Kopie: Ändern oder Löschen der Vorlage ändert sie nicht. Sie können auch einen Eintrag der Gruppe „Regeln“ der Elementbibliothek anklicken; er wird der Strategie zugeordnet, oder dem gewählten Element, wenn dieses Regeln zulässt.
+2. Die neue Regel ist aufgeklappt. Sie hat einen Namen, den Sie ändern können.
+3. Aufgeklappt zeigt die Regel ihre Parameter (zum Beispiel „Risikogrenze“ der Regel „Risiko je Trade“) mit der Belegung, den „Ausdruck der Regel“ aus Bausteinen, „Die Regel bestimmt“ und „Vergleich beim Prüfen“. Bestimmt die Regel „nichts (sie prüft nur)“, ergibt der Ausdruck wahr oder falsch. Bestimmt sie eine Eigenschaft der Order (zum Beispiel das Volumen), ergibt der Ausdruck deren Wert, und der „Vergleich beim Prüfen“ (höchstens, mindestens, gleich) sagt, wie der aktuelle Wert der Eigenschaft gegen das Ergebnis des Ausdrucks geprüft wird, zum Beispiel das Volumen höchstens gleich dem bestimmten Volumen. Eine eigene Regel kann zusätzlich eigene Parameter haben.
+4. „Nach oben“ und „Nach unten“ ändern die Reihenfolge; sie ist wichtig, weil eine Regel nur die Ergebnisse früherer Regeln verwenden kann. Das Papierkorb-Symbol entfernt die Regel, der Pfeil davor klappt sie ein und auf.
+5. Ein Regelwerk enthält Regeln und kann einen Ausdruck für das Gesamtergebnis haben. Es hat dieselben Listen und Ausdrücke wie eine Regel (unter „Regeln des Regelwerks“ und „Gesamtergebnis“).
+
+### 6.7 Indikatoren, Trends und Regelwerke belegen
+
+Ein mitgelieferter Indikator oder Trend hat Parameter, die Sie belegen: bei einem Indikator zum Beispiel Zeiteinheit und Periode, bei einem Trend Instrument, Zeiteinheit und das Berechnungsverfahren. Die Zeiteinheit wählen Sie am besten als Strategieparameter, damit Sie sie an einer Stelle ändern.
+
+Ein **eigener Indikator** und ein **eigener Trend** haben einen Inhalt, den Sie in der Eigenschaftenansicht aufbauen:
+
+- „Eigene Parameter“: Sie legen Parameter mit Name, Datentyp und Standardwert an. Die Ausdrücke des Objekts sprechen sie mit ihrem Namen an.
+- „Eigenschaften“: die Werte, die das Objekt liefert. Jede bekommt ihren Wert aus einem Ausdruck aus Bausteinen. Bei einem Trend gehört die Richtung des Trends dazu („Ausdruck für Richtung festlegen“).
+- „Enthaltene Indikatoren“ und „Enthaltene Regeln und Regelwerke“: Indikatoren und Regeln, die das Objekt enthält. Ihre Werte sind in den Ausdrücken des Objekts mit `Objekt.Eigenschaft` ansprechbar.
+
+Ein **eigenes Regelwerk** enthält Regeln (Abschnitt 6.6) und kann den Ausdruck für das Gesamtergebnis haben.
+
+### 6.8 Umbenennen und Entfernen
+
+**Umbenennen.** Den Namen eines Elements, Objekts, Strategieparameters, einer Regel oder eines Abschnitts ändern Sie im Feld „Name“. Es gibt keine Rückfrage, und alle Verwendungen zeigen sofort den neuen Namen: die Sätze auf der Zeichenfläche, die Ausdrücke in den Bausteinen und in der Formel, die Eingänge. Der Name, unter dem Ausdrücke das Objekt ansprechen, ändert sich nicht und taucht für Sie nicht auf.
+
+**Entfernen.** „Entfernen“ in der Eigenschaftenansicht eines Elements oder das Papierkorb-Symbol eines Strategieparameters oder einer Regel entfernt es.
+
+- Wird das Objekt oder der Strategieparameter von anderen Elementen verwendet, fragt pipwerk Studio zuerst und nennt in einer Liste die Elemente, die ihn verwenden. „Abbrechen“ lässt alles, wie es war.
+- Bei „Order aufgeben“ entfernt pipwerk Studio mit dem Element auch seine Verwaltung und nennt deren Schritte in der Liste.
+- Nach dem Entfernen steht in den Ausdrücken, die den Namen verwendet haben, ein leerer Platz „Wert wählen …“. Ein Feld, das den Strategieparameter oder einen Wert des Objekts belegt hat, ist „nicht belegt“. Die Linien und Eingänge, die von dem Objekt kamen, sind weg.
+- Hatte ein entfernter Schritt genau eine eingehende und eine ausgehende Verbindung, wird die Lücke geschlossen: sein Vorgänger wird mit seinem Nachfolger verbunden. Ein Schritt ohne Verwendung und ohne Verwaltung wird ohne Rückfrage entfernt.
+
+### 6.9 Speichern, Prüfen, Schließen, Öffnen, Löschen
+
+- **Speichern** legt die Strategie im Objektverzeichnis ab, beim ersten Mal neu, danach ersetzt es die gespeicherte. Speichern geht immer, auch bei Befunden. Danach prüft pipwerk Studio die Strategie. Der Zustand im Streifen der Strategieparameter wechselt auf „gespeichert“.
+- **Prüfen** sucht Probleme (Abschnitt 8) und zeigt ihre Zahl in der Kopfzeile. Nach dem Öffnen läuft die Prüfung von selbst.
+- **Schließen**, **Neue Strategie** und **Öffnen** fragen bei ungespeicherten Änderungen: „Speichern“, „Verwerfen“ oder „Abbrechen“. Die Escape-Taste ist „Abbrechen“. Scheitert das Speichern, geschieht nichts weiter.
+- **Öffnen** zeigt die gespeicherten Strategien mit Name, Beschreibung und letzter Änderung. Eine Datei, die sich nicht lesen lässt, ist gekennzeichnet und nicht zu öffnen.
+- **Löschen** fragt zuerst und löscht die gespeicherte Strategie. Eine Strategie, die nie gespeichert wurde, wird nur verworfen.
+
+Nach dem Öffnen bleibt die Strategie so, wie sie gespeichert ist: Felder, die diese Fassung nicht kennt, bleiben beim Speichern unverändert.
 
 ## 7. Ausdrücke schreiben
 
-Ein Ausdruck ist ein kurzer Text, der einen Wert berechnet oder eine Frage beantwortet, deren Antwort „wahr“ oder „falsch“ ist. Sie schreiben Ausdrücke in einer Bedingung, einer Berechnung, einer Regel und überall dort, wo die Bindungsart „Ausdruck“ gewählt ist. Die Schreibweise folgt einer Auswahl aus OpenFormula, der Formelsprache der Tabellenkalkulationen. pipwerk Studio berechnet Ausdrücke nicht. Es prüft sie und meldet Fehler (Abschnitt 8). Strategien werden in diesem Stand nicht ausgeführt.
+Ein Ausdruck ist ein kurzer Text, der einen Wert berechnet oder eine Frage beantwortet, deren Antwort „wahr“ oder „falsch“ ist. Ausdrücke stehen in einer Bedingung, einer Berechnung, einer Regel, im Inhalt eines eigenen Indikators oder Trends und überall dort, wo die Belegungsart „Ausdruck“ gewählt ist. Sie stellen sie aus Bausteinen zusammen (Abschnitt 7.4), ohne die Schreibweise zu kennen. Wer will, schreibt einen Ausdruck in der Formelansicht („Ausdruck für Fortgeschrittene“). Die Abschnitte 7.1 bis 7.3 und 7.5 beschreiben die Schreibweise und die Bedeutung dafür. Sie folgt einer Auswahl aus OpenFormula, der Formelsprache der Tabellenkalkulationen. pipwerk Studio berechnet Ausdrücke nicht. Es prüft sie und meldet Fehler (Abschnitt 8). Strategien werden in diesem Stand nicht ausgeführt.
 
 ### 7.1 Namen
 
@@ -203,9 +358,9 @@ Ein Ausdruck ist ein kurzer Text, der einen Wert berechnet oder eine Frage beant
   - der Name einer Regel mit `.ergebnis`, zum Beispiel `risiko.ergebnis`
   - `Strategie` mit dem Namen eines Strategieparameters, zum Beispiel `Strategie.stop_abstand`
 - Parameter einer Regel stehen ohne Punkt, zum Beispiel `risikogrenze`.
-- Sie schreiben die Kennung (`stop_loss`, `trend_intakt`), nicht den Namen in der Sprache der Anzeige („Stop-Loss“, „Trend intakt“). Unter dem Eingabefeld zeigt pipwerk Studio den Ausdruck mit den Namen in der gewählten Sprache („Anzeige: …“). So lesen Sie ihn auf Deutsch oder Englisch, ohne ihn zu ändern. Namen, die Sie selbst vergeben haben, bleiben, wie Sie sie geschrieben haben.
+- Gespeichert werden Kennungen (`stop_loss`, `trend_intakt`). Die Formelansicht zeigt den Ausdruck dagegen in der Anzeigeform: mit den Namen, die Sie vergeben haben, und mit den Beschriftungen der Objekte der Anwendung, ihrer Eigenschaften und der Werte einer Auswahl in der gewählten Sprache. Ein Name, der Leerzeichen, einen Bindestrich oder andere Zeichen enthält, steht in eckigen Klammern: `[EMA 20].Wert`. So lesen Sie ihn auf Deutsch oder Englisch, ohne ihn zu ändern. Beim Eingeben dürfen Sie auch die Kennungen und die Beschriftungen der anderen Sprache schreiben; pipwerk Studio erkennt sie und zeigt danach die Anzeigeform. Die Beispiele in diesem Abschnitt stehen in der gespeicherten Form mit Kennungen.
 - Groß- und Kleinschreibung wird nicht unterschieden. Gespeichert wird die Schreibweise der Kennung: `order.VOLUMEN` wird zu `Order.volumen`, `if(…)` zu `IF(…)`.
-- Namen bestehen nur aus den Buchstaben `A` bis `Z` und `a` bis `z`, den Ziffern `0` bis `9` und `_` und beginnen mit einem Buchstaben oder `_`.
+- Kennungen bestehen nur aus den Buchstaben `A` bis `Z` und `a` bis `z`, den Ziffern `0` bis `9` und `_` und beginnen mit einem Buchstaben oder `_`. Die Namen, die Sie vergeben, dürfen frei sein: pipwerk Studio bildet die Kennung daraus selbst (aus „Stop-Loss“ wird `stop_loss`).
 - Welche Namen ein Ausdruck sieht, hängt davon ab, wo er steht:
 
 | Der Ausdruck steht … | Er sieht … |
@@ -250,9 +405,46 @@ Ein innerer Name verdeckt einen äußeren mit demselben Namen. Zwei Namen dersel
 
 Die Funktionsnamen stehen immer in dieser englischen Schreibweise. Deutsche Namen gibt es nicht. Die Eingabe bietet die Funktionen mit ihrer Beschreibung an.
 
-### 7.4 Eingabe von Ausdrücken
+### 7.4 Ausdrücke aus Bausteinen und in der Formelansicht
 
-Die Eingabe von Ausdrücken mit Vorschlägen gehört zur alten Oberfläche. In der neuen Oberfläche zeigt die Eigenschaftenansicht einen Ausdruck zunächst nur lesend, als Satz und als Formel. Die Beschreibung der Eingabe folgt.
+Wo ein Ausdruck steht, zeigt die Eigenschaftenansicht oben den Satz, den der Ausdruck sagt („EMA 20 kreuzt EMA 50 in beide Richtungen“; auf der Zeichenfläche steht derselbe Satz). Darunter wechseln Sie mit den Reitern „Bausteine“ und „Ausdruck für Fortgeschrittene“ zwischen den beiden Ansichten. Beide zeigen und ändern denselben Ausdruck. pipwerk Studio schreibt ihn nur, wenn er ein gültiger Ausdruck ist.
+
+**Bausteine.** Jeder Platz für einen Wert ist eine Liste, zuerst „Wert wählen …“. Sie enthält in dieser Reihenfolge:
+
+1. „Verbundene Werte“: die Werte, die Sie mit dem Element verbunden haben (Eingänge),
+2. „Objekte der Strategie“: die Werte Ihrer Indikatoren und Trends,
+3. „Objekte der Anwendung“: Konto, Instrument, Kerze, Tick, in einer Verwaltung auch Order und Position, und Strategie (zum Beispiel die Zahl der wartenden Orders),
+4. „Ergebnisse“: das Ergebnis jeder anderen Bedingung, Berechnung und Regel,
+5. „Strategieparameter“,
+6. „Parameter“ (in einer Regel: ihre eigenen Parameter),
+7. „Feste Werte und Rechnen“: „Zahl …“, „Text oder Auswahlwert …“, „wahr oder falsch …“, „Vorheriger Wert von …“, „Rechnung (plus, minus, mal, geteilt)“, „Wenn … dann … sonst …“, „Funktion (kleinster, größter, abgerundet …)“ und „Bedingung (wahr oder falsch) …“.
+
+Ein Wert wird in der Form *Objekt › Eigenschaft* gezeigt, zum Beispiel „EMA 20 › Wert“. Wählen Sie den Wert eines Objekts der Strategie, ist er danach ein Eingang des Elements; Sie müssen ihn nicht eigens verbinden. Bei einem Text, dessen Wert aus einer Auswahl stammt (zum Beispiel die Richtung einer Order oder die Phase eines Trends), bietet pipwerk Studio die erlaubten Werte zur Wahl an. Ein Wert kann selbst eine Rechnung, eine Fallunterscheidung, eine Funktion oder eine Bedingung sein; die Bausteine klappen sich nach Bedarf auf.
+
+Eine **Bedingung** wählt oben ihre Art:
+
+| Art | Bedeutung |
+| --- | --- |
+| Vergleich | Zwei Werte und ein Vergleich: ist gleich, ist ungleich, ist kleiner als, ist kleiner oder gleich, ist größer als, ist größer oder gleich. |
+| Kreuzung | Ein Wert kreuzt einen anderen, nach oben, nach unten oder in beide Richtungen. Der Ausdruck vergleicht dazu den vorigen mit dem jetzigen Wert beider (`PREVIOUS`, Abschnitt 7.3); das passt für Werte, die sich mit der Zeit ändern, zum Beispiel der Wert eines Indikators. |
+| Alle gelten (und) | Mindestens zwei Bedingungen, alle müssen wahr sein. „Bedingung hinzufügen“ fügt eine hinzu; ab drei Bedingungen entfernt das Kreuz neben einer sie wieder. |
+| Eine gilt (oder) | Mehrere Bedingungen, mindestens eine muss wahr sein. |
+| Nicht | Kehrt eine Bedingung um. |
+| Wert ist wahr | Ein Wert, der wahr oder falsch ist, zum Beispiel „MT Signal › Trend intakt“ oder eine Fallunterscheidung, deren Zweige Bedingungen sind. |
+
+Ein leerer Platz trägt „Wert wählen …“. Er macht den Ausdruck unvollständig; die Prüfung meldet das. Eine Kreuzung, die noch nicht vollständig ist, bleibt im Editor, wie Sie sie begonnen haben.
+
+Lässt sich ein Ausdruck nicht aus Bausteinen zeigen, weil er einen Schreibfehler enthält oder zu tief verschachtelt ist, sagt pipwerk Studio es und bietet „Zur Ansicht für Fortgeschrittene“ und „Neu zusammenstellen“ an.
+
+**Formelansicht („Ausdruck für Fortgeschrittene“).** Die Formelansicht ist ein mehrzeiliges Feld mit der Anzeigeform (Abschnitt 7.1). Sie hilft beim Schreiben:
+
+- Namen, Funktionen, Zahlen und Texte haben je eine Farbe.
+- Steht der Cursor an einer Klammer, sind sie und die zugehörige Klammer hervorgehoben.
+- Ein Fehler ist an der Stelle wellig unterstrichen. Zeigen Sie mit dem Mauszeiger darauf, steht der Grund da, und unter dem Feld steht der erste Fehler als Satz.
+- Nach `Objekt.` schlägt pipwerk Studio die Eigenschaften des Objekts vor, jeweils mit Datentyp und Erklärung. Das gilt auch nach dem Namen einer Bedingung oder Berechnung (`Ergebnis`), eines Trends mit enthaltenen Indikatoren und eines Regelwerks mit seinen Regeln. Auch beim Beginn eines Namens erscheinen Vorschläge. Mit den Pfeiltasten wählen Sie, mit der Eingabetaste oder der Tabulatortaste übernehmen Sie, Escape schließt die Liste.
+- Schreiben Sie eine Funktion, erklärt eine Zeile unter dem Feld ihre Argumente und hebt das hervor, an dem Sie stehen.
+
+Während Sie tippen, liest pipwerk Studio den Ausdruck nach einer kurzen Pause neu; die Bausteine und der Satz folgen. Solange er einen Schreibfehler hat, steht er nur in der Formelansicht.
 
 ### 7.5 „Leer“ und „nicht verfügbar“
 
@@ -290,45 +482,52 @@ Die Tabelle nennt die Texte, wie sie in der Oberfläche erscheinen. Drei Punkte 
 
 | Kennung | Stufe | Text in der Oberfläche | Behebung |
 | --- | --- | --- | --- |
-| `trigger.unconnected` | Fehler | Der Auslöser ist mit keinem Element des Ablaufs verbunden. | Ziehen Sie eine Verbindung vom Ausgang des Auslösers zu einem Element, oder löschen Sie den Auslöser. |
-| `flow.no_incoming` | Fehler | Zu diesem Element des Ablaufs führt keine Verbindung. | Ziehen Sie eine Verbindung von einem Ausgang eines Auslösers oder eines anderen Elements zu diesem Element. Das gilt auch für das erste Element eines Ablaufs ohne Auslöser. Legen Sie dann einen Auslöser davor. |
-| `flow.unending_loop` | Fehler | Rückführung ohne Bedingung, die sie beendet (an … Elementen). | Eine Verbindung führt im Kreis zurück, und kein Ausgang einer Bedingung im Kreis führt hinaus. Fügen Sie im Kreis eine Bedingung ein, von der ein Ausgang aus dem Kreis hinausführt, oder entfernen Sie die Rückführung. |
-| `flow.management_only` | Fehler | „…“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf. | Ziehen Sie das Element in den Rahmen einer Verwaltung. |
-| `flow.no_order_reachable` | Hinweis | Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt. | Verbinden Sie den Ablauf vom Auslöser bis zu „Order aufgeben“, oder lassen Sie den Hinweis stehen, wenn die Strategie keine Order aufgeben soll. Eine Strategie ohne Elemente hat diesen Hinweis nicht. |
-| `parameter.missing` | Fehler | Der Pflichtparameter „…“ hat keinen Wert. | Wählen Sie bei dem Parameter eine Bindungsart und geben Sie einen Wert an, oder wählen Sie „bei der Anwendung“. |
-| `parameter.binding_invalid` | Fehler | Die Belegung von „…“ passt nicht: … | Ändern Sie die Belegung nach dem genannten Grund (siehe unten). |
-| `order.property_missing` | Fehler | Die Eigenschaft „…“ der Order ist nicht belegt, und keine bestimmende Regel liefert sie. | Belegen Sie die Eigenschaft bei „Order aufgeben“ (Bereich „Eigenschaften der Order“), oder ordnen Sie eine Regel zu, die sie bestimmt (zum Beispiel „Risiko je Trade“ für das Volumen). |
-| `expression.invalid` | Fehler | Der Ausdruck in … ist fehlerhaft: … | Korrigieren Sie den Ausdruck nach dem genannten Problem (siehe unten). |
-| `expression.order_outside_management` | Fehler | Der Ausdruck in … verwendet Order oder Position außerhalb einer Verwaltung. | `Order` und `Position` gibt es nur in einer Verwaltung, in einer Regel der Strategie und in einer Regel von „Order aufgeben“. Verschieben Sie das Element in eine Verwaltung oder ändern Sie den Ausdruck. |
-| `rule.result_mismatch` | Fehler | Das Ergebnis der Regel passt nicht zur bestimmten Eigenschaft „…“: … | Der Ausdruck der Regel muss einen Wert vom Datentyp der bestimmten Eigenschaft ergeben (bei einer nur prüfenden Regel „wahr“ oder „falsch“). Ändern Sie den Ausdruck oder die bestimmte Eigenschaft. |
-| `rule.order_in_indicator` | Fehler | Die Regel spricht Order oder Position an. In einem Indikator oder Trend ist das nicht erlaubt. | Entfernen Sie die Regel aus dem Indikator oder Trend, oder schreiben Sie sie ohne `Order` und `Position`. |
-| `rule.invalid_type` | Fehler | In dieser Liste von Regeln steht ein Objekt vom Typ „…“, das dort nicht stehen darf. | In einer Liste von Regeln stehen nur Regeln und Regelwerke. Entfernen Sie das andere Objekt. |
-| `rule.comparison_missing` | Fehler | Die bestimmende Regel nennt keinen Vergleich beim Prüfen. | Wählen Sie bei der Regel den „Vergleich beim Prüfen“ („höchstens“, „mindestens“ oder „gleich“). |
-| `rule.unresolved_name` | Hinweis | Hinweis zum Ausdruck in …: … Die Vorlage allein kennt den Namen nicht; geprüft wird er in jeder Strategie, die die Vorlage enthält. | Betrifft nur eine Vorlage, die für sich geprüft wird. Der Name wird in jeder Strategie geprüft, die die Vorlage enthält. Prüfen Sie dort. |
-| `ruleset.reference_order` | Fehler | Regelwerk mit …. | Eine Regel verwendet das Ergebnis einer späteren Regel (Vorwärtsbezug) oder die Regeln verweisen im Kreis aufeinander (Zirkelbezug). Ändern Sie die Reihenfolge der Regeln oder die Ausdrücke. |
-| `candle.no_instance` | Fehler | Die Kerze wird verwendet, aber auf der Zeichenfläche liegt keine Kerze mit gesetzter Zeiteinheit. | Legen Sie das Objekt „Kerze“ aus der Elementbibliothek auf die Zeichenfläche und setzen Sie seine Zeiteinheit. Nur wenn das Element ausschließlich von „Kerzenschluss“ ausgelöst wird, braucht es keine Kerze auf der Zeichenfläche. |
+| `trigger.unconnected` | Fehler | Der Auslöser ist mit keinem Element des Ablaufs verbunden. | Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn. |
+| `flow.not_reached` | Fehler | Kein Auslöser erreicht dieses Element des Ablaufs. | Verbinden Sie einen vorherigen Schritt oder einen Auslöser mit diesem Schritt oder entfernen Sie ihn. |
+| `flow.main_without_trigger` | Hinweis | Der Hauptablauf hat keinen Auslöser; die Strategie startet nie. | Legen Sie einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt. Eine neue, leere Strategie hat nur diesen Hinweis. |
+| `flow.unending_loop` | Fehler | Rückführung ohne Bedingung, die sie beendet (an … Elementen). | Legen Sie in die Rückführung eine Bedingung, von der ein Ausgang aus der Rückführung hinausführt. |
+| `flow.management_only` | Fehler | „…“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf. | Verschieben Sie den Schritt in die Verwaltung einer Order oder entfernen Sie ihn. |
+| `flow.no_order_reachable` | Hinweis | Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt. | Verbinden Sie den Ablauf mit einem Schritt, der eine Order aufgibt. Soll die Strategie keine Order aufgeben, lassen Sie den Hinweis stehen. |
+| `instrument.invalid` | Fehler | Das Instrument „…“ ist keine gültige Bezeichnung. | Korrigieren Sie die Bezeichnung des Instruments. |
+| `parameter.missing` | Fehler | Der Pflichtparameter „…“ hat keinen Wert. | Geben Sie dem Parameter einen Wert, wählen Sie einen Strategieparameter oder „bei der Anwendung“. |
+| `parameter.binding_invalid` | Fehler | Die Belegung von „…“ passt nicht: … | Wählen Sie eine passende Belegung (Gründe siehe unten). |
+| `order.property_missing` | Fehler | Die Eigenschaft „…“ der Order ist nicht belegt, und keine bestimmende Regel liefert sie. | Belegen Sie die Eigenschaft oder ordnen Sie dem Element oder der Strategie eine Regel zu, die sie bestimmt (zum Beispiel „Risiko je Trade“ für das Volumen). |
+| `expression.empty` | Fehler | Der Ausdruck in … fehlt oder ist unvollständig. | Geben Sie den Ausdruck vollständig an: Füllen Sie jeden leeren Platz „Wert wählen …“. |
+| `expression.invalid` | Fehler | Der Ausdruck in … ist fehlerhaft: … | Korrigieren Sie den Ausdruck (Probleme siehe unten). Ein Klick auf „Zur Stelle“ führt zur Stelle im Ausdruck. |
+| `expression.order_outside_management` | Fehler | Der Ausdruck in … verwendet Order oder Position außerhalb einer Verwaltung. | Verwenden Sie Order und Position nur in der Verwaltung einer Order, in einer Regel der Strategie und in einer Regel von „Order aufgeben“. |
+| `data.unknown` | Fehler | Die Datenverbindung ist ungültig: …. | Wählen Sie ein Objekt und eine Eigenschaft, die es gibt, oder löschen Sie die Verbindung. Gründe: das Objekt gibt es nicht, das Objekt hat diese Eigenschaft nicht. |
+| `data.type_mismatch` | Fehler | Der Datentyp des verbundenen Werts passt nicht: erwartet …, gefunden …. | Verbinden Sie einen Wert vom passenden Datentyp. |
+| `input.unused` | Hinweis | Der Eingang „…“ wird nicht verwendet. | Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie den Eingang. |
+| `rule.result_mismatch` | Fehler | Das Ergebnis der Regel passt nicht zur bestimmten Eigenschaft „…“: …. | Ändern Sie den Ausdruck der Regel oder wählen Sie eine andere bestimmte Eigenschaft. Der Ausdruck muss einen Wert vom Datentyp der bestimmten Eigenschaft ergeben (bei einer nur prüfenden Regel „wahr“ oder „falsch“). |
+| `rule.order_in_indicator` | Fehler | Die Regel spricht Order oder Position an. In einem Indikator oder Trend ist das nicht erlaubt. | Entfernen Sie die Regel aus dem Indikator oder Trend und ordnen Sie sie der Strategie oder einem Element zu. |
+| `rule.invalid_type` | Fehler | In dieser Liste von Regeln steht ein Objekt vom Typ „…“, das dort nicht stehen darf. | Entfernen Sie das Objekt aus dieser Liste. |
+| `rule.comparison_missing` | Fehler | Die bestimmende Regel nennt keinen Vergleich beim Prüfen. | Wählen Sie den Vergleich beim Prüfen („höchstens“, „mindestens“ oder „gleich“). |
+| `rule.unresolved_name` | Hinweis | Hinweis zum Ausdruck in …: … Die Vorlage allein kennt den Namen nicht; geprüft wird er in jeder Strategie, die die Vorlage enthält. | Prüfen Sie den Namen im Ausdruck der Vorlage. Der Hinweis betrifft nur eine Vorlage, die für sich geprüft wird. |
+| `ruleset.reference_order` | Fehler | Regelwerk mit Vorwärtsbezug (beziehungsweise Zirkelbezug). | Ändern Sie die Reihenfolge der Regeln, sodass jede Regel nur frühere Ergebnisse verwendet. |
+| `candle.no_instance` | Fehler | Die Kerze wird verwendet, aber auf der Zeichenfläche liegt keine Kerze mit gesetzter Zeiteinheit. | Legen Sie eine Kerze mit Zeiteinheit auf die Zeichenfläche und verwenden Sie ihre Werte. Nur wenn ein Element ausschließlich von „Kerzenschluss“ ausgelöst wird, braucht es keine Kerze auf der Zeichenfläche. |
 | `name.duplicate` | Fehler | Der Name „…“ ist doppelt vergeben. | Geben Sie einem der beiden einen anderen Namen. Zwei Namen derselben Ebene dürfen nicht gleich sein. |
-| `name.invalid` | Fehler | Der Name „…“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann. | Verwenden Sie nur `A` bis `Z`, `a` bis `z`, `0` bis `9` und `_`, und beginnen Sie mit einem Buchstaben oder `_`. |
-| `type.unknown` | Fehler | Der Typ „…“ ist unbekannt. | Das Element stammt von einem anderen Programm oder einer neueren Fassung. Löschen Sie es oder ersetzen Sie es durch ein Element der Elementbibliothek. |
-| `trend.direction_missing` | Fehler | Dem Trend fehlt der Ausdruck für die Eigenschaft „…“. | Schreiben Sie den Ausdruck für die Richtung des Trends. |
-| `calculation.circular_reference` | Fehler | Berechnungen verwenden ihre Ergebnisse im Kreis (…). | Eine Berechnung braucht, über andere hinweg, ihr eigenes Ergebnis. Ändern Sie einen der Ausdrücke. Ein Name in `PREVIOUS(…)` zählt nicht. |
-| `connection.invalid` | Fehler | Ungültige Verbindung: … | Löschen Sie die Verbindung und ziehen Sie sie neu (siehe unten). |
-| `element.rules_not_allowed` | Fehler | Diesem Element sind Regeln zugeordnet, obwohl „…“ keine zulässt. | Entfernen Sie die Regeln des Elements. |
-| `element.management_invalid` | Fehler | Das Element gehört zur Verwaltung eines Elements, das keine Order aufgibt. | Ziehen Sie das Element in den Rahmen eines Elements „Order aufgeben“ oder heraus. |
+| `key.invalid` | Fehler | Die Kennung „…“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann. | Ändern Sie den Namen. |
+| `layout.invalid` | Fehler | Ein Abschnitt oder eingeklappter Rahmen passt nicht: …. | Entfernen Sie den Abschnitt und legen Sie ihn neu an. |
+| `type.unknown` | Fehler | Der Typ „…“ ist unbekannt. | Entfernen Sie das Element oder installieren Sie die Erweiterung, die den Typ liefert. |
+| `trend.direction_missing` | Fehler | Dem Trend fehlt der Ausdruck für die Eigenschaft „…“. | Geben Sie den Ausdruck für die Richtung des Trends an. |
+| `calculation.circular_reference` | Fehler | Berechnungen verwenden ihre Ergebnisse im Kreis (…). | Ändern Sie eine der Berechnungen, sodass sie nicht auf sich selbst zurückführt. Ein Name in `PREVIOUS(…)` zählt nicht. |
+| `connection.invalid` | Fehler | Ungültige Verbindung: …. | Löschen Sie die Verbindung und ziehen Sie sie neu (Gründe siehe unten). |
+| `element.rules_not_allowed` | Fehler | Diesem Element sind Regeln zugeordnet, obwohl „…“ keine zulässt. | Entfernen Sie die Regeln von diesem Element. |
+| `element.management_invalid` | Fehler | Das Element gehört zur Verwaltung eines Elements, das keine Order aufgibt. | Verschieben Sie das Element in den Hauptablauf oder in die Verwaltung einer Order. |
 | `findings.truncated` | Fehler | Es gibt mehr Befunde, als angezeigt werden (Grenze …). | Beheben Sie die angezeigten Befunde und prüfen Sie erneut. |
 
 **Probleme in einem Ausdruck** (`expression.invalid`). Die Stelle zählt von 0 in Zeichen des Ausdrucks: „Stelle 13 bis 14“ ist das 14. Zeichen.
 
 | Problem | Text | Behebung |
 | --- | --- | --- |
-| Schreibfehler | Schreibfehler an Stelle … bis …: … | Korrigieren Sie die Stelle. Der Grund steht dahinter (siehe unten). |
-| unbekannte Funktion | Unbekannte Funktion „…“ (Stelle … bis …). | Schreiben Sie den Funktionsnamen wie in Abschnitt 7.3. |
-| unbekannter Name | Unbekannter Name „…“ (Stelle … bis …). | Schreiben Sie einen Namen, der an dieser Stelle sichtbar ist (Abschnitt 7.1), oder legen Sie die Instanz, Berechnung oder den Parameter an. |
-| unbekannte Eigenschaft | „…“ hat keine Eigenschaft „…“ (Stelle … bis …). | Schreiben Sie eine Eigenschaft des Objekts. Die Eingabe schlägt sie nach dem Punkt vor. |
-| unpassender Typ | Der Typ passt nicht: erwartet …, gefunden … (Stelle … bis …). | Ersetzen Sie den Wert durch einen vom erwarteten Datentyp. |
-| unbekannter Wert einer Auswahl | „…“ ist kein Wert der Auswahl; erlaubt sind … (Stelle … bis …). | Schreiben Sie einen der erlaubten Werte als Text. |
-| falsche Zahl von Argumenten | Die Funktion … erhält … Argumente; erlaubt sind … bis … (Stelle … bis …). | Geben Sie die erlaubte Zahl von Argumenten an. |
-| anderes | Der Ausdruck ist an Stelle … bis … fehlerhaft. | Prüfen Sie die Stelle. |
+| Schreibfehler | Schreibfehler an Stelle … bis …: … | Korrigieren Sie die Schreibweise an der genannten Stelle. Der Grund steht dahinter (siehe unten). |
+| unbekannte Funktion | Unbekannte Funktion „…“ (Stelle … bis …). | Wählen Sie eine Funktion, die es gibt (Abschnitt 7.3). |
+| unbekannter Name | Unbekannter Name „…“ (Stelle … bis …). | Wählen Sie einen Wert, den es gibt: ein Objekt auf der Zeichenfläche, einen Strategieparameter oder das Ergebnis eines Schritts (Abschnitt 7.1). |
+| unbekannte Eigenschaft | „…“ hat keine Eigenschaft „…“ (Stelle … bis …). | Wählen Sie eine Eigenschaft, die das Objekt liefert. Die Formelansicht schlägt sie nach dem Punkt vor. |
+| unpassender Typ | Der Typ passt nicht: erwartet …, gefunden … (Stelle … bis …). | Verwenden Sie einen Wert vom passenden Datentyp. |
+| unbekannter Wert einer Auswahl | „…“ ist kein Wert der Auswahl; erlaubt sind … (Stelle … bis …). | Wählen Sie einen der erlaubten Werte. |
+| falsche Zahl von Argumenten | Die Funktion … erhält … Angaben; erlaubt sind … bis … (Stelle … bis …). | Geben Sie die passende Zahl von Angaben an. |
+| anderes | Der Ausdruck ist an Stelle … bis … fehlerhaft. | Korrigieren Sie den Ausdruck an der genannten Stelle. |
 
 Gründe eines Schreibfehlers: der Ausdruck endet zu früh (eine Klammer oder ein Argument fehlt), unerwartetes Zeichen „…“ (zum Beispiel ein zweites `>`), ungültiges Zeichen „…“, ungültige Zahl, Text nicht abgeschlossen (ein Anführungszeichen fehlt), der Ausdruck ist zu lang, der Ausdruck ist zu tief geschachtelt.
 
@@ -338,17 +537,38 @@ Gründe einer unpassenden Belegung: diese Bindungsart ist nicht erlaubt, der fes
 
 Gründe, warum das Ergebnis einer Regel nicht passt: die bestimmte Eigenschaft ist unbekannt, das Ergebnis ist kein Wert der Auswahl, der Typ des Ergebnisses passt nicht.
 
-Bezeichnungen in den Texten: Ein Ausdruck steht „in Parameter „…““, „in Eigenschaft „…““, „in Eigenschaft „…“ der Instanz“, „in Ausdruck“ oder „in Ausdruck für das Gesamtergebnis“. Ein Zirkelbezug oder Vorwärtsbezug heißt „Vorwärtsbezug“ beziehungsweise „Zirkelbezug“.
+Bezeichnungen in den Texten: Ein Ausdruck steht „in Parameter „…““, „in Eigenschaft „…““, „in Eigenschaft „…“ des Objekts“, „in Ausdruck“ oder „in Ausdruck für das Gesamtergebnis“. Ein Zirkelbezug oder Vorwärtsbezug heißt „Zirkelbezug“ beziehungsweise „Vorwärtsbezug“.
 
-Die Strategien `str-01` und `str-03` haben keinen Befund. Mit den Beispieldokumenten in der technischen Dokumentation `docs/technical/pipwerk-studio.md`, Abschnitt 5.4 („Befunde der Konsistenzprüfung“), können Sie jeden dieser Befunde über die Web-API auslösen.
+**Zur Stelle.** Jeder Befund in der Eigenschaftenansicht der Strategie hat die Schaltfläche „Zur Stelle“. Sie wählt das Element, zeigt es auf der Zeichenfläche und führt zum Feld, das der Befund nennt. Betrifft der Befund einen Ausdruck, öffnet sie dessen Formelansicht und markiert die Stelle im Ausdruck, an der der Fehler liegt. Bei einer Regel klappt sie die Regel auf.
 
-## 9. Testfall `str-03` (EMA-Trendfolge) aufbauen
+## 9. Mit dem geführten Aufbau eine erste Strategie anlegen
 
-Die Anleitung zum Aufbau des Testfalls mit der neuen Oberfläche folgt. Die frühere Anleitung gehörte zur alten Oberfläche und ist entfernt.
+„Neue Strategie“ bietet den geführten Aufbau an. Er führt in fünf Schritten zu einer ersten Strategie und legt dabei dieselben Elemente an, die Sie von Hand mit der Elementbibliothek einfügen. Oben stehen der Schritt, an dem Sie sind, und die Reihe der fünf Schritte. Unten stehen „Zurück“, „Überspringen“ und „Weiter“ (im letzten Schritt „Fertig“).
 
-## 10. Testfall `str-01` (Scalping Punkt 2 Ausbruch) aufbauen
+1. **Name.** Name und Beschreibung der Strategie. Beides ändern Sie später jederzeit.
+2. **Auslöser.** Sie wählen, wann die Strategie rechnet, zum Beispiel bei jedem Schluss einer Kerze, und die Zeiteinheit. Ist „Als Strategieparameter anlegen“ eingeschaltet (empfohlen), legt der Aufbau die Zeiteinheit als Strategieparameter an; Sie ändern sie dann an einer Stelle. „Weiter“ legt den Auslöser an.
+3. **Indikatoren.** Jede Schaltfläche („EMA“, „ATR“ …) legt einen Indikator an. Er steht mit seinem Namen und seiner Periode darunter; beides ändern Sie gleich. Das Kreuz entfernt ihn wieder. Die Zeiteinheit des Indikators ist der Strategieparameter, wenn Sie einen angelegt haben.
+4. **Bedingung.** Wann soll gehandelt werden? Sie wählen zwei Werte der Indikatoren („Wert A“, „Wert B“) und den Vergleich: kreuzt, ist größer als, ist kleiner als. „Weiter“ legt eine Bedingung hinter dem Auslöser an, mit dem Ausdruck aus Bausteinen. Feinere Bedingungen bauen Sie später aus Bausteinen (Abschnitt 7.4). Brauchen Sie keine Bedingung oder noch keine zwei Werte, überspringen Sie den Schritt.
+5. **Order.** Sie wählen den Ordertyp und die Angaben, die der Ordertyp vom Anwender verlangt. Die Regel „Risiko je Trade“, die das Volumen bestimmt, ist angekreuzt, wenn sie zur Verfügung steht. „Fertig“ legt „Order aufgeben“ hinter der Bedingung an, ordnet die Regel der Strategie zu, zeigt das neue Element und startet die Prüfung. Die Meldung sagt: „Der Aufbau steht. Die Prüfung zeigt, was noch fehlt.“
 
-Die Anleitung zum Aufbau des Testfalls mit der neuen Oberfläche folgt. Die frühere Anleitung gehörte zur alten Oberfläche und ist entfernt.
+Mit „Zurück“ gehen Sie einen Schritt zurück und ändern ihn; was der Schritt angelegt hat, wird ersetzt, nicht verdoppelt. „Ohne Assistent weiterarbeiten“ (oben) beendet den Aufbau jederzeit: Was bis dahin angelegt wurde, bleibt, und Sie arbeiten von Hand weiter. Das gilt auch, wenn Sie ein Element auf der Zeichenfläche wählen oder einen Eintrag der Elementbibliothek einfügen. Gespeichert wird erst mit „Speichern“.
+
+## 10. Alles ohne Ziehen bedienen
+
+Jede Bedienung, für die Sie ziehen können, geht auch mit Klicks. Das hilft auf einem Telefon, am Touchpad und mit der Tastatur.
+
+| Sie wollen … | Mit der Maus ziehen | Mit Klicks |
+| --- | --- | --- |
+| ein Element einfügen | den Eintrag der Bibliothek auf die Zeichenfläche, hinter einen Schritt oder in einen Rahmen ziehen | den Eintrag anklicken (mit der Tastatur: Tabulator, dann Eingabetaste oder Leertaste); gewählt ist der Schritt oder der Rahmen, hinter beziehungsweise in dem es stehen soll |
+| zwei Schritte verbinden | vom Ausgang auf den Schritt ziehen | den Ausgang anklicken, dann den Schritt |
+| einen Wert eines Objekts mit einem Schritt verbinden | von der Zeile der Karte auf den Schritt ziehen | in den Bausteinen den Wert wählen, oder in der Eigenschaftenansicht des Schritts „+ Wert verbinden …“ wählen |
+| einen Schritt in die Verwaltung einer Order oder heraus bringen | den Schritt in den Rahmen oder heraus ziehen | in der Eigenschaftenansicht unter „Gehört zu“ wählen |
+| einen Schritt einem Abschnitt zuordnen | – | in der Eigenschaftenansicht unter „Abschnitt“ wählen |
+| die Reihenfolge der Objekte ändern | die Karte ziehen | in der Eigenschaftenansicht unter „Stelle im Bereich der Objekte“ „Nach oben“ oder „Nach unten“ wählen |
+| eine Linie löschen | – | die Linie anklicken, dann das Kreuz |
+| die Ansicht ändern | die Fläche ziehen | „Verkleinern“, „Vergrößern“, „Alles zeigen“ und „Zum Anfang“ in der Werkzeugleiste |
+
+In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwischen Fläche, Bibliothek und Eigenschaften. Fügen Sie in der Bibliothek ein Element ein, sagt eine Meldung, dass es auf der Zeichenfläche steht.
 
 ## 11. Bekannte Einschränkungen
 
@@ -361,7 +581,8 @@ Die Anleitung zum Aufbau des Testfalls mit der neuen Oberfläche folgt. Die frü
 - In der Testumgebung entfernt `testenv stop` auch die gespeicherten Strategien und Vorlagen, solange das Objektverzeichnis unter `components/pipwerk-studio/.testenv/` liegt. Wurde es auf ein anderes Verzeichnis geändert, bleiben die Dateien dort erhalten.
 - Im Entwicklungsbetrieb kann der Stand im Dialog und in der Fußzeile vom laufenden Code abweichen (Abschnitt 4).
 - Strategien werden nicht ausgeführt. Die Konsistenzprüfung prüft nur.
-- Die Konsistenzprüfung meldet für Strategien in diesem Stand keinen Hinweis, der ein einzelnes Element betrifft. Die Oberfläche würde ein solches Element orange umranden. Heute tritt dieser Fall in einer Strategie nicht auf: Der Hinweis „Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt“ hat kein Element, und der Hinweis zu einem unbekannten Namen in einem Ausdruck gilt nur für Vorlagen.
+- Ein Ausdruck, den die Bausteine nicht zeigen können (ein Schreibfehler oder eine zu tiefe Verschachtelung), steht nur in der Formelansicht.
+- Der geführte Aufbau legt eine einfache Bedingung an: ein Vergleich oder eine Kreuzung zweier Werte von Indikatoren. Alles Weitere stellen Sie von Hand zusammen.
 
 ## 12. Glossar
 
@@ -378,14 +599,28 @@ Die Anleitung zum Aufbau des Testfalls mit der neuen Oberfläche folgt. Die frü
 | Vorlage | Ein wiederverwendbares Objekt, zum Beispiel eine Regel. Es wird einmal angelegt und gespeichert und lässt sich in Strategien verwenden. |
 | Instanz | Eine vollständige Kopie einer Vorlage innerhalb einer Strategie. Sie nennt ihre Vorlage in `origin`. Ändern oder Löschen der Vorlage ändert die Instanz nicht. |
 | Zeichenfläche | Der Bereich der Oberfläche in der Mitte, auf dem Sie die Elemente einer Strategie anordnen und verbinden. |
-| Elementbibliothek | Der Bereich der Oberfläche links mit den Einträgen, die Sie auf die Zeichenfläche ziehen können, in Gruppen: Auslöser, Elemente des Ablaufs, Objekte der Anwendung, Objekttypen und Vorlagen. |
-| Eigenschaftenansicht | Der Bereich der Oberfläche rechts, in dem Sie die Eigenschaften des ausgewählten Elements, der ausgewählten Regel oder der Strategie sehen und ändern. |
+| Elementbibliothek | Der Bereich der Oberfläche links mit den Einträgen, die Sie in die Strategie einfügen (anklicken oder auf die Zeichenfläche ziehen), in Gruppen: „Wann wird gerechnet“, „Bedingungen und Aktionen“, „Markt und Konto“, „Indikatoren“, „Trends“ und „Regeln“. |
+| Eigenschaftenansicht | Der Bereich der Oberfläche rechts, in dem Sie die Eigenschaften des gewählten Elements, Rahmens oder Abschnitts oder der Strategie sehen und ändern, mit Regeln, Eingängen und den Befunden der Prüfung. |
 | Element | Alles, was Sie auf die Zeichenfläche legen: ein Auslöser, ein Schritt des Ablaufs (zum Beispiel Bedingung, Berechnung, Order aufgeben) oder ein Objekt (zum Beispiel eine Instanz von EMA). |
 | Auslöser | Ein Element, das festlegt, bei welchem Ereignis die Strategie oder eine Verwaltung ausgewertet wird, zum Beispiel beim Schluss einer Kerze oder bei jedem Tick. Auslöser sind freiwillig. |
 | Verbindung | Eine Linie zwischen zwei Elementen. Sie bedeutet „danach folgt“. Sie beginnt an einem Ausgang eines Elements und endet am Eingang des nächsten. |
 | Verwaltung (Rahmen) | Der Teil des Ablaufs, der nach dem Ausgang „gestellt“ von „Order aufgeben“ läuft und sich um die gestellte Order kümmert. Auf der Zeichenfläche ist sie ein Rahmen unter dem Element. Elemente im Rahmen gehören zur Verwaltung. |
 | Strategieparameter | Ein Wert, den Sie an einer Stelle der Strategie festlegen und überall in ihr verwenden. Ausdrücke sprechen ihn als `Strategie.<Name>` an. |
-| Bindungsart | Die Art, wie ein Parameter oder eine Eigenschaft ihren Wert erhält: „fester Wert“, „Parameter“ (aus einem Strategieparameter), „Ausdruck“ oder „bei der Anwendung“. |
+| Schritt | Ein Element des Ablaufs auf der Zeichenfläche: ein Auslöser oder ein Element wie Bedingung, Berechnung oder Order aufgeben. Ein Schritt ist ein Kasten mit Ausgängen. |
+| Karte | Die Darstellung eines Objekts (Indikator, Trend, Kerze …) im Bereich „Objekte und ihre Werte“. Jede Zeile ist ein Wert des Objekts. |
+| Eingang | Ein Wert eines Objekts, den ein Schritt verwendet. Er entsteht, wenn Sie den Wert in den Bausteinen wählen oder eine Linie von der Karte zum Schritt ziehen. |
+| Wertlinie | Die Linie von der Zeile einer Karte zu einem Schritt, der den Wert verwendet. Kräftig ist ein Eingang, blass und gepunktet ein Wert, den nur ein Ausdruck verwendet. |
+| Baustein | Ein Stück eines Ausdrucks, das Sie in einer Liste wählen, statt es zu schreiben: ein Wert, eine Zahl, ein Text, eine Rechnung, eine Fallunterscheidung, eine Funktion oder eine Bedingung. Aus Bausteinen setzt sich ein Ausdruck zusammen (Abschnitt 7.4). |
+| leerer Platz | Ein Platz in einem Ausdruck, an dem noch kein Wert gewählt ist („Wert wählen …“). Er macht den Ausdruck unvollständig. Er entsteht auch, wenn Sie ein Objekt entfernen, das der Ausdruck verwendet hat. |
+| Formelansicht | Die Ansicht „Ausdruck für Fortgeschrittene“: Der Ausdruck als Text in der Anzeigeform, mit Farben, markierten Fehlern und Vorschlägen (Abschnitt 7.4). |
+| Anzeigeform | Die Schreibweise eines Ausdrucks in der Formelansicht: mit den Namen, die Sie vergeben haben, und den Beschriftungen der gewählten Sprache. Gespeichert wird die Form mit Kennungen. |
+| Satz | Der Ausdruck als lesbarer Satz, zum Beispiel „EMA 20 kreuzt EMA 50 in beide Richtungen“. Er steht auf der Zeichenfläche und in der Eigenschaftenansicht. |
+| Kreuzung | Eine Bedingung: Ein Wert kreuzt einen anderen, nach oben, nach unten oder in beide Richtungen. |
+| Geführter Aufbau | Der Assistent, den „Neue Strategie“ anbietet: Er führt in fünf Schritten zu einer ersten Strategie (Abschnitt 9). |
+| Regelwerk | Ein Objekt, das mehrere Regeln enthält und einen Ausdruck für das Gesamtergebnis haben kann. |
+| bestimmende Regel | Eine Regel, die eine Eigenschaft der Order bestimmt, zum Beispiel das Volumen. Eine Regel, die nichts bestimmt, prüft nur. |
+| Vergleich beim Prüfen | Bei einer bestimmenden Regel: wie der aktuelle Wert der Eigenschaft gegen das Ergebnis der Regel geprüft wird: höchstens, mindestens oder gleich. |
+| Bindungsart | Die Art, wie ein Parameter oder eine Eigenschaft ihren Wert erhält: „fester Wert“, „Strategieparameter“, „Wert eines Objekts“, „Ausdruck“ oder „bei der Anwendung“. |
 | Datentyp | Die Art eines Werts: Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Auswahl, Zeiteinheit, Zeitpunkt, Datum, Ausdruck oder Objekt. |
 | Zeiteinheit | Die Dauer einer Kerze, zum Beispiel M15 (15 Minuten), H1 (1 Stunde) oder D1 (1 Tag). |
 | Regel | Eine Regel prüft oder bestimmt etwas, zum Beispiel das Volumen einer Order. Sie steht in der Eigenschaftenansicht der Strategie oder eines Elements und hat einen Ausdruck. |
