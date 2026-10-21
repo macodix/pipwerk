@@ -1,8 +1,8 @@
 # Strategy Contracts
 
-Versioned schemas and test case documents for stored and exchanged strategy definitions.
+Versioned schemas and test case documents for stored and exchanged strategy definitions. The library writes the format 2.0 and reads the format 1.0 by converting it.
 
-- `v1/testcases/`: the test case documents `str-01` and `str-03`.
-- `v1/examples/`: example documents for trying out the web API through `/docs`: a rule template with a changed version, and seven changed versions of `str-03` that provoke one finding each. The user documentation `docs/user/pipwerk-studio.md` ("Web-API ausprobieren") describes the steps; the backend tests `test_user_documentation_examples.py` check them.
+- `v2/`: schemas of the format 2.0, the test case documents `str-01` and `str-03` in `testcases/`, and example documents in `examples/` for trying out the web API through `/docs` (steps in `docs/technical/pipwerk-studio.md`, "Web-API ausprobieren").
+- `v1/`: schemas of the format 1.0, unchanged; its `testcases/` and `examples/` are test data for reading the old format.
 
 Documentation: [docs/technical/pipwerk-domain.md](../../docs/technical/pipwerk-domain.md)
