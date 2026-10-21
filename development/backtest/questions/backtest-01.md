@@ -83,3 +83,16 @@ Entscheidung des Auftraggebers im Chat am 2026-10-21, eingearbeitet vom Projektl
 - Er ist nur im Hauptablauf zulässig. In der Verwaltung einer Order meldet die Konsistenzprüfung einen Fehler. Das gilt allgemein, nicht nur im Testlauf.
 - Im Testlauf tritt er einmal ein, standardmäßig zu Beginn des Testzeitraums vor der ersten Kerze. Wahlweise gibt der Anwender einen Zeitpunkt im Testzeitraum ein, zum Beispiel für eine bestimmte Marktphase. Im Einzelschritt-Test kann der Anwender ihn zusätzlich an der aktuellen Stelle auslösen (Anforderungen an den Strategietester req-test-015, offener Punkt 2 erledigt).
 - Umbenennung in Glossar, Spezifikation und Strategiedokumenten ist Sache des Softwarearchitekten.
+
+### Zu 3. Geltung von „Parameter setzen“
+
+Entscheidung des Auftraggebers im Chat am 2026-10-21, eingearbeitet vom Projektleiter (Fachmodell req-fach-047, Anforderungen an den Strategiedesigner req-ui-003):
+
+- Das Element „Parameter setzen“ entfällt. Strategieparameter werden im Ablauf nicht geändert und behalten während eines Testlaufs oder einer Anwendung ihren Startwert.
+- Eine zweite Prüfung mit anderem Wert verwendet einen weiteren Strategieparameter, gegebenenfalls mit Rückführung im Ablauf.
+- Das Beispiel mit der Handelszeiteinheit ist gestrichen. Es war nur eine mögliche Vorgehensweise, keine Anforderung.
+- Folgen in Glossar, Spezifikation (Abschnitte 3.4 und 13), Strategieformat und Prototyp sind Sache des Softwarearchitekten.
+
+### Zu H11
+
+Erledigt vom Projektleiter (Commit `a9990e8`).

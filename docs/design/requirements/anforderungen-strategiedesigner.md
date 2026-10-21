@@ -234,7 +234,7 @@ bestehen können. Der Nutzer muss diese Details bei Bedarf öffnen können.
 
 ### req-ui-003 -- Tätigkeiten und Prüfungen im Ablauf
 
-Elemente des Ablaufs (Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen) müssen eine Tätigkeit oder eine konkrete Prüfung
+Elemente des Ablaufs (Bedingung, Berechnung, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen) müssen eine Tätigkeit oder eine konkrete Prüfung
 ausdrücken. Reine Substantive wie „Marktstruktur", „Handelsplanung" oder
 „Pending Order" genügen nicht als Ablaufschritt. Jedes Element des Ablaufs trägt als Namen zunächst die Tätigkeit seines Elementtyps, der Anwender kann ihn ändern. Elemente, die ein Objekt zeigen, tragen den Namen des Objekts.
 
@@ -503,3 +503,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-21 | Bewegung und Korrektur ohne Eigenschaft `Phase` (Indikator Markttechnik). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | Indikator Markttechnik zurückgestellt (Fachmodell req-fach-054). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | req-fach-015: Auslöser „Start von Hand“ heißt „Manuell“ und steht nur im Hauptablauf, nicht in der Verwaltung einer Order. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
+| 2026-10-21 | req-ui-003: Element „Parameter setzen“ entfällt (Fachmodell req-fach-047). Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |

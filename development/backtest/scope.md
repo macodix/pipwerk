@@ -46,3 +46,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: Nachprüfung [requirements-3.md](reviews/requirements-3.md) nicht bestanden (M1, M2). Festlegungen des Auftraggebers: req-test-004 Abwicklung wie ein Broker mit sichtbarem Ablehnungsgrund, req-test-008 Indikatoren ohne Werte. H4 im Fachmodell bearbeitet. Nachprüfung mit `check`.
 
 2026-10-21: Nachprüfung [requirements-4.md](reviews/requirements-4.md) bestanden. Präsentation [requirements-1.html](presentations/requirements-1.html) zur Bestätigung durch den Auftraggeber. Bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 1 abgeschlossen. Phase 2 mit `specify` angestoßen.
+
+2026-10-21: Phase 2. Nachprüfung [requirements-5.md](reviews/requirements-5.md) bestanden. Prototyp pipwerk replay vom Auftraggeber bestätigt; Übersicht wird nach praktischer Erprobung überarbeitet. Entscheidungen zu [backtest-01](questions/backtest-01.md): Auslöser „Manuell“ (bisher „Start von Hand“) nur im Hauptablauf, im Testlauf nach req-test-015; Element „Parameter setzen“ entfällt. Antwort an den Softwarearchitekten.
