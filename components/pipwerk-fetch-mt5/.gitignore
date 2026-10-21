@@ -1,0 +1,10 @@
+# Python
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# The filled-in startup configuration holds the shared key and never goes into the
+# repository (the versioned example is pipwerk-fetch-mt5.example.ini)
+pipwerk-fetch-mt5.ini
