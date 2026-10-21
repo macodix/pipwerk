@@ -64,7 +64,7 @@ export function buildLibrary(types: TypeIndex, stored: StoredTemplates, language
       key: `template:${template.id}`,
       source: { kind: 'builtinTemplate', templateId: template.id },
       name: labelText(template.label, language),
-      explanation: template.description,
+      explanation: labelText(template.explanation, language),
       target,
       own: false,
       unreadable: false,

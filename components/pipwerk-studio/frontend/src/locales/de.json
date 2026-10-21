@@ -458,7 +458,11 @@
     "count_one": "{{count}} Befund",
     "count_other": "{{count}} Befunde",
     "none": "keine Befunde",
-    "countTip": "{{errors}} Fehler, {{hints}} Hinweise. Ein Klick zeigt die Befunde.",
+    "errorsCount_one": "{{count}} Fehler",
+    "errorsCount_other": "{{count}} Fehler",
+    "hintsCount_one": "{{count}} Hinweis",
+    "hintsCount_other": "{{count}} Hinweise",
+    "countTip": "{{errors}}, {{hints}}. Ein Klick zeigt die Befunde.",
     "unknown": "Befund {{code}}",
     "fields": {
       "parameter": "Parameter „{{name}}“",

@@ -159,8 +159,8 @@ export type FunctionDescription = {
 
 /**
  * A template document as the backend delivers it. Besides the fields used here it holds the whole content. A
- * delivered template names itself in both languages (`label`); `name` is the German name, the one that is stored in
- * an instance of an own template.
+ * delivered template names and explains itself in both languages (`label`, `explanation`), taken from
+ * `template_texts` of the answer; `name` is the German name, the one that is stored in an instance of an own template.
  */
 export type TemplateDocument = {
   id: string;
@@ -168,6 +168,7 @@ export type TemplateDocument = {
   description: string;
   object_type: string;
   label: Label;
+  explanation: Label;
   [field: string]: unknown;
 };
 
@@ -336,16 +337,37 @@ function parseBilingualName(value: unknown, what: string): Label {
   return parseLabel(value, what);
 }
 
-function parseTemplate(value: unknown, what: string): TemplateDocument {
+/** The texts a delivered template shows, by template identifier (`template_texts` of the answer). */
+type TemplateTexts = { name: Label; explanation: Label };
+
+function parseTemplateTexts(value: unknown): Map<string, TemplateTexts> {
+  const texts = new Map<string, TemplateTexts>();
+  if (value === undefined || value === null) {
+    return texts;
+  }
+  expectArray(value, 'template_texts').forEach((item, index) => {
+    const record = expectRecord(item, `template_texts[${index}]`);
+    texts.set(expectString(record.id, `template_texts[${index}].id`), {
+      name: parseLabel(record.name, `template_texts[${index}].name`),
+      explanation: parseLabel(record.explanation, `template_texts[${index}].explanation`),
+    });
+  });
+  return texts;
+}
+
+function parseTemplate(value: unknown, what: string, texts: ReadonlyMap<string, TemplateTexts>): TemplateDocument {
   const record = expectRecord(value, what);
-  expectString(record.id, `${what}.id`);
+  const id = expectString(record.id, `${what}.id`);
   expectString(record.object_type, `${what}.object_type`);
-  const label = parseBilingualName(record.name ?? record.title, `${what}.name`);
+  const delivered = texts.get(id);
+  const label = delivered?.name ?? parseBilingualName(record.name ?? record.title, `${what}.name`);
+  const description = typeof record.description === 'string' ? record.description : '';
   return {
     ...record,
     name: label.de,
     label,
-    description: typeof record.description === 'string' ? record.description : '',
+    description,
+    explanation: delivered?.explanation ?? { de: description, en: description },
   } as TemplateDocument;
 }
 
@@ -381,10 +403,11 @@ function parseFunction(value: unknown, what: string): FunctionDescription {
 /** Checks the answer of `GET /api/v1/element-types` before it is used. */
 export function parseElementTypes(value: unknown): ElementTypesResponse {
   const record = expectRecord(value, 'element types');
+  const texts = parseTemplateTexts(record.template_texts);
   return {
     types: expectArray(record.types, 'types').map((item, index) => parseType(item, `types[${index}]`)),
     templates: expectArray(record.templates, 'templates').map((item, index) =>
-      parseTemplate(item, `templates[${index}]`),
+      parseTemplate(item, `templates[${index}]`, texts),
     ),
     functions: expectArray(record.functions, 'functions').map((item, index) =>
       parseFunction(item, `functions[${index}]`),

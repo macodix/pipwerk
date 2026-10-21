@@ -148,6 +148,39 @@ describe('saving, checking and deleting', () => {
     expect(screen.getByTestId('status-pill')).toHaveTextContent('ungespeichert');
   });
 
+  it('shows the count of the findings in red only if there is an error; with hints alone it is orange and the tip counts right (order 07)', async () => {
+    const user = userEvent.setup();
+    let findings: { level: 'error' | 'hint'; code: string; element: null; subject: null; details: Record<string, never> }[] = [
+      { level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} },
+    ];
+    mockApi({ findings: () => findings });
+    renderWithProviders(<App />, 'de');
+    await waitForReady();
+    await openEma(user);
+
+    await menu(user, 'check');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('findings-count')).toHaveTextContent('1 Befund');
+    });
+    const pill = screen.getByTestId('findings-count');
+    expect(pill).toHaveClass('hints-only');
+    expect(pill).not.toHaveClass('bad');
+    expect(pill).toHaveAttribute('data-tip', '0 Fehler, 1 Hinweis. Ein Klick zeigt die Befunde.');
+
+    findings = [
+      { level: 'error', code: 'flow.not_reached', element: null, subject: null, details: {} },
+      { level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} },
+      { level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} },
+    ];
+    await menu(user, 'check');
+    await waitFor(() => {
+      expect(screen.getByTestId('findings-count')).toHaveTextContent('3 Befunde');
+    });
+    expect(screen.getByTestId('findings-count')).toHaveClass('bad');
+    expect(screen.getByTestId('findings-count')).toHaveAttribute('data-tip', '1 Fehler, 2 Hinweise. Ein Klick zeigt die Befunde.');
+  });
+
   it('shows the findings of "Prüfen" with the way to fix them', async () => {
     const user = userEvent.setup();
     mockApi({
