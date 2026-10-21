@@ -726,10 +726,13 @@
     },
     "removeParameter": {
       "title": "Strategieparameter entfernen?",
-      "text": "Der Strategieparameter „{{name}}“ wird entfernt. Belegungen, die ihn verwenden, sind danach leer, und die Prüfung meldet sie.",
+      "text": "Der Strategieparameter „{{name}}“ wird entfernt.",
       "confirm": "Entfernen",
       "cancel": "Abbrechen"
     },
+    "usedBy": "Diese Elemente verwenden ihn:",
+    "usedByStrategyRules": "Regeln der Strategie",
+    "afterRemoval": "Danach bleibt in den Ausdrücken ein leerer Platz „Wert wählen …“. Belegungen, die ihn verwenden, sind „nicht belegt“. Verbindungen und Eingänge, die von ihm kamen, entfallen.",
     "error": {
       "ok": "OK"
     }

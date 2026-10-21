@@ -34,7 +34,6 @@ import {
   removeInput,
   removeRule,
   removeSection,
-  removeStrategyParameter,
   renameSection,
   setBinding,
   setElementName,
@@ -69,10 +68,13 @@ import { elementName, isCardElement } from '../model/elements';
 import { createTypeIndex, holdsInstance, type TypeIndex } from '../model/typeIndex';
 import { NARROW_LAYOUT, matchesMedia } from '../ui/media';
 import { newUuid } from '../document/ids';
+import { NO_USE, planRemoval, removeWithPlan, type RemovalPlan, type RemovalTarget } from './removal';
 import {
   initialStudioState,
   isDirty,
   studioReducer,
+  type ExpressionFocus,
+  type StudioAction,
   type Panel,
   type Selection,
   type StudioState,
@@ -89,8 +91,8 @@ export type DialogState =
   | { kind: 'open' }
   | { kind: 'delete' }
   | { kind: 'settings' }
-  | { kind: 'removeElement'; id: string }
-  | { kind: 'removeParameter'; key: string }
+  | { kind: 'removeElement'; id: string; plan: RemovalPlan }
+  | { kind: 'removeParameter'; key: string; plan: RemovalPlan }
   | { kind: 'error'; titleKey: string; error: unknown };
 
 /** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
@@ -107,11 +109,17 @@ const TYPES_KEY = ['element-types'];
 export function useStudioController(language: SupportedLanguage) {
   const { i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const [state, dispatch] = useReducer(studioReducer, initialStudioState);
+  const [state, dispatchToReducer] = useReducer(studioReducer, initialStudioState);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [busy, setBusy] = useState(false);
   const stateRef = useRef(state);
   stateRef.current = state;
+  // The state a change leads to is known at once: a sequence of changes (a step laid out, then named, then given an
+  // expression) works on the result of the one before, also before the interface was drawn anew in between.
+  const dispatch = useCallback((action: StudioAction) => {
+    stateRef.current = studioReducer(stateRef.current, action);
+    dispatchToReducer(action);
+  }, []);
   const strategyToken = useRef(0);
 
   const typesQuery = useQuery({
@@ -575,14 +583,31 @@ export function useStudioController(language: SupportedLanguage) {
     };
   }, []);
 
+  /** Who uses the target; an expression that cannot be asked for counts as unused (the check reports it afterwards). */
+  const planOf = useCallback(
+    async (target: RemovalTarget): Promise<RemovalPlan> => {
+      const document = stateRef.current.document;
+      if (document === null) {
+        return NO_USE;
+      }
+      try {
+        return await planRemoval(document, language, target);
+      } catch {
+        return NO_USE;
+      }
+    },
+    [language],
+  );
+
   const requestRemoveElement = useCallback(
-    (id: string) => {
+    async (id: string): Promise<void> => {
       const info = removalInfo(id);
       if (info === null) {
         return;
       }
-      if (info.managed.length > 0) {
-        setDialog({ kind: 'removeElement', id });
+      const plan = await planOf({ kind: 'element', id });
+      if (info.managed.length > 0 || plan.users.length > 0) {
+        setDialog({ kind: 'removeElement', id, plan });
       } else {
         const index = typesRef.current;
         if (index !== null) {
@@ -590,18 +615,47 @@ export function useStudioController(language: SupportedLanguage) {
         }
       }
     },
-    [edit, removalInfo],
+    [edit, planOf, removalInfo],
+  );
+
+  /** Removes an element or a strategy parameter: the expressions that named it get an empty place first. */
+  const applyRemoval = useCallback(
+    async (target: RemovalTarget, plan: RemovalPlan): Promise<void> => {
+      const index = typesRef.current;
+      const document = stateRef.current.document;
+      setDialog(null);
+      if (index === null || document === null) {
+        return;
+      }
+      try {
+        const changed = await removeWithPlan(document, index, language, target, plan);
+        edit(() => changed, target.kind === 'element' ? { selection: { kind: 'strategy' } } : undefined);
+      } catch (error) {
+        showError('errors.insertFailed', error);
+      }
+    },
+    [edit, language, showError],
   );
 
   const confirmRemoveElement = useCallback(
-    (id: string) => {
-      const index = typesRef.current;
-      setDialog(null);
-      if (index !== null) {
-        edit((latest) => removeElement(latest, index, id), { selection: { kind: 'strategy' } });
-      }
+    (id: string, plan: RemovalPlan) => {
+      void applyRemoval({ kind: 'element', id }, plan);
     },
-    [edit],
+    [applyRemoval],
+  );
+
+  const requestRemoveParameter = useCallback(
+    async (key: string): Promise<void> => {
+      setDialog({ kind: 'removeParameter', key, plan: await planOf({ kind: 'parameter', key }) });
+    },
+    [planOf],
+  );
+
+  const confirmRemoveParameter = useCallback(
+    (key: string, plan: RemovalPlan) => {
+      void applyRemoval({ kind: 'parameter', key }, plan);
+    },
+    [applyRemoval],
   );
 
   const elementDisplayName = useCallback(
@@ -635,6 +689,8 @@ export function useStudioController(language: SupportedLanguage) {
       removalInfo,
       requestRemoveElement,
       confirmRemoveElement,
+      requestRemoveParameter,
+      confirmRemoveParameter,
       elementDisplayName,
       showElement: (id: string) => {
         edit((document) => document, { selection: { kind: 'element', id }, reveal: id });
@@ -644,7 +700,7 @@ export function useStudioController(language: SupportedLanguage) {
       setPanel: (panel: Panel) => dispatch({ type: 'panel', panel }),
       arm: (armed: StudioState['armed']) => dispatch({ type: 'armed', armed }),
       toggleCard: (id: string) => dispatch({ type: 'toggleCard', id }),
-      focusField: (field: string) => dispatch({ type: 'focusField', field }),
+      focusField: (field: string, place?: ExpressionFocus) => dispatch({ type: 'focusField', field, place }),
       retryTypes: () => {
         void queryClient.invalidateQueries({ queryKey: TYPES_KEY });
         void queryClient.invalidateQueries({ queryKey: ['objects'] });
@@ -668,10 +724,6 @@ export function useStudioController(language: SupportedLanguage) {
         edit((document) => removeInput(document, id, input)),
       updateParameter: (key: string, patch: Partial<StrategyParameter>) =>
         edit((document) => updateStrategyParameter(document, key, patch)),
-      removeParameter: (key: string) => {
-        setDialog(null);
-        edit((document) => removeStrategyParameter(document, key));
-      },
       setManagement: (id: string, owner: string | null) => {
         const index = typesRef.current;
         if (index !== null) {
@@ -711,6 +763,7 @@ export function useStudioController(language: SupportedLanguage) {
       check,
       confirmDelete,
       confirmRemoveElement,
+      confirmRemoveParameter,
       connectSteps,
       connectValue,
       dropStep,
@@ -722,6 +775,7 @@ export function useStudioController(language: SupportedLanguage) {
       removalInfo,
       request,
       requestRemoveElement,
+      requestRemoveParameter,
       save,
       select,
       selectQuietly,

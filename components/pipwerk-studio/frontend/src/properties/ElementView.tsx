@@ -196,7 +196,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
             kind="quiet"
             testid="remove-element"
             onClick={() => {
-              actions.requestRemoveElement(element.id);
+              void actions.requestRemoveElement(element.id);
             }}
           >
             {t('properties.remove')}
@@ -305,7 +305,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
   const sections = !card;
 
   return (
-    <div className="props" data-testid="props-element" data-kind={element.type}>
+    <div className="props" data-testid="props-element" data-kind={element.type} data-element-id={element.id}>
       <header className="props-head">
         <div className={`badge b-${cls}`}>
           <Icon name={iconOf(type)} size={20} />
@@ -504,7 +504,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
           kind="quiet"
           testid="remove-element"
           onClick={() => {
-            actions.requestRemoveElement(element.id);
+            void actions.requestRemoveElement(element.id);
           }}
         >
           {t('properties.remove')}

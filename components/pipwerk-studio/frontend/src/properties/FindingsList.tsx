@@ -21,7 +21,9 @@ export function useGotoFinding(): (finding: Finding) => void {
     const field = finding.details.field;
     if (typeof field === 'string') {
       const separator = field.indexOf(':');
-      actions.focusField(separator < 0 ? field : field.slice(separator + 1));
+      // a finding in an expression also leads to the spot in the expression
+      const place = typeof finding.details.start === 'number' ? { field, subject: finding.subject, code: finding.code } : undefined;
+      actions.focusField(separator < 0 ? field : field.slice(separator + 1), place);
     }
   };
 }

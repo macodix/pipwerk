@@ -397,6 +397,7 @@ function ExpressionEditor({ spec, place, selfKey, condition }: { spec: FieldSpec
       selfKey={selfKey}
       hint={hint}
       testid={`expression-${spec.id}`}
+      focusField={place.kind === 'binding' ? `${place.scope === 'properties' ? 'property' : 'parameter'}:${place.key}` : undefined}
     />
   );
 }

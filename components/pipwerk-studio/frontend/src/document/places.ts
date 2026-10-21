@@ -158,6 +158,71 @@ export function placePointer(document: StrategyDocument, place: ExpressionPlace)
   }
 }
 
+/** Every place of the document that holds an expression (empty ones are left out). */
+export function expressionPlaces(document: StrategyDocument): ExpressionPlace[] {
+  const found: ExpressionPlace[] = [];
+  const visit = (ref: InstanceRef, instance: InstanceDocument, withParameters: boolean): void => {
+    if (typeof instance.expression === 'string' && instance.expression !== '') {
+      found.push({ kind: 'rule', ref, field: 'expression' });
+    }
+    if (typeof instance.result_expression === 'string' && instance.result_expression !== '') {
+      found.push({ kind: 'rule', ref, field: 'result_expression' });
+    }
+    for (const property of instance.properties ?? []) {
+      if (property.expression !== '') {
+        found.push({ kind: 'property', ref, key: property.key });
+      }
+    }
+    if (withParameters) {
+      for (const [key, binding] of Object.entries(instance.parameter_values ?? {})) {
+        if (binding.kind === 'expression' && typeof binding.value === 'string' && binding.value !== '') {
+          found.push({ kind: 'parameter', ref, key });
+        }
+      }
+    }
+    for (const inner of instance.instances ?? []) {
+      visit(child(ref, 'instances', inner.key), inner, true);
+    }
+    for (const rule of instance.rules ?? []) {
+      visit(child(ref, 'rules', rule.key), rule, true);
+    }
+  };
+  for (const rule of document.rules) {
+    visit({ root: { kind: 'strategy' }, steps: [{ list: 'rules', key: rule.key }] }, rule, true);
+  }
+  for (const element of document.elements) {
+    const records: [BindingScope, Record<string, Binding> | undefined][] = [
+      ['parameters', element.parameters],
+      ['properties', element.properties],
+      ['instance', element.instance?.parameter_values],
+    ];
+    for (const [scope, record] of records) {
+      for (const [key, binding] of Object.entries(record ?? {})) {
+        if (binding.kind === 'expression' && typeof binding.value === 'string' && binding.value !== '') {
+          found.push({ kind: 'binding', element: element.id, scope, key });
+        }
+      }
+    }
+    if (element.instance !== undefined && element.instance !== null) {
+      visit({ root: { kind: 'object', id: element.id }, steps: [] }, element.instance, false);
+    }
+    for (const rule of element.rules) {
+      visit({ root: { kind: 'element', id: element.id }, steps: [{ list: 'rules', key: rule.key }] }, rule, true);
+    }
+  }
+  return found;
+}
+
+/** The element a place belongs to; `null` for the rules of the strategy. */
+export function placeOwner(place: ExpressionPlace): string | null {
+  switch (place.kind) {
+    case 'binding':
+      return place.element;
+    default:
+      return place.ref.root.kind === 'strategy' ? null : place.ref.root.id;
+  }
+}
+
 /** The stored expression at the place; the empty text if there is none. */
 export function placeStored(document: StrategyDocument, place: ExpressionPlace): string {
   switch (place.kind) {

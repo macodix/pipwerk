@@ -25,7 +25,10 @@ function useFocusField(root: React.RefObject<HTMLElement | null>): void {
     }
     target.scrollIntoView({ block: 'center' });
     target.classList.add('flash');
-    target.querySelector<HTMLElement>('select, input, textarea, button')?.focus({ preventScroll: true });
+    // a finding in an expression leads to the spot in the formula, which takes the focus itself
+    if (focus.place === null) {
+      target.querySelector<HTMLElement>('select, input, textarea, button')?.focus({ preventScroll: true });
+    }
     const timer = window.setTimeout(() => {
       target.classList.remove('flash');
     }, 1800);

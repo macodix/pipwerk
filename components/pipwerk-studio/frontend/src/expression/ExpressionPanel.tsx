@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ExpressionPlace } from '../document/places';
@@ -27,14 +27,33 @@ export type ExpressionPanelProps = {
   hint?: ValueHint;
   label?: string;
   testid?: string;
+  /** The field as the check names it (`parameter:ausdruck`, `expression`, …): a finding in it opens the formula view. */
+  focusField?: string;
+  /** The names (key, name) under which a check calls the rule that holds this expression. */
+  subject?: readonly string[];
 };
 
-export function ExpressionPanel({ place, mode, selfKey = null, hint, label, testid }: ExpressionPanelProps) {
+export function ExpressionPanel({ place, mode, selfKey = null, hint, label, testid, focusField, subject }: ExpressionPanelProps) {
   const { t } = useTranslation();
   const { studio, types } = useStudio();
   const language = studio.language;
   const session = useExpressionSession(place);
   const [view, setView] = useState<'blocks' | 'formula'>('blocks');
+  const [reveal, setReveal] = useState<{ serial: number; code: string } | null>(null);
+  const focus = studio.state.focusField;
+  // A finding in this expression: the formula view opens and marks the spot (specification 5.5).
+  useEffect(() => {
+    const target = focus?.place;
+    if (focus === null || target === null || target === undefined || focusField === undefined || target.field !== focusField) {
+      return;
+    }
+    const wanted = target.subject?.toLowerCase();
+    if (wanted !== undefined && subject !== undefined && !subject.some((candidate) => candidate.toLowerCase() === wanted)) {
+      return;
+    }
+    setView('formula');
+    setReveal({ serial: focus.serial, code: target.code });
+  }, [focus, focusField, subject]);
   const document = studio.state.document;
   const owner = ownerElement(place);
   const inputs = useMemo(
@@ -136,7 +155,7 @@ export function ExpressionPanel({ place, mode, selfKey = null, hint, label, test
           <ValueEditor value={session.tree} onChange={session.setTree} ctx={ctx} hint={hint} testid="calc-root" />
         )
       ) : (
-        <FormulaEditor session={session} />
+        <FormulaEditor session={session} reveal={reveal} />
       )}
     </div>
   );

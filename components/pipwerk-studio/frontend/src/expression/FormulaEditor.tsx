@@ -1,4 +1,4 @@
-import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Finding } from '../api/objects';
@@ -43,7 +43,7 @@ function rangeOf(finding: Finding, length: number): [number, number] | null {
   return [from, Math.max(Math.min(end, length), Math.min(from + 1, length))];
 }
 
-export function FormulaEditor({ session }: { session: ExpressionSession }) {
+export function FormulaEditor({ session, reveal = null }: { session: ExpressionSession; reveal?: { serial: number; code: string } | null }) {
   const { t, i18n } = useTranslation();
   const { studio, types } = useStudio();
   const language = studio.language;
@@ -71,6 +71,27 @@ export function FormulaEditor({ session }: { session: ExpressionSession }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [marks, language, t, i18n],
   );
+
+  // A click on a finding leads here: the spot of the finding is selected (the formula answer knows it for this text).
+  const handled = useRef(0);
+  useEffect(() => {
+    if (reveal === null || handled.current === reveal.serial) {
+      return;
+    }
+    const located = marks.filter((finding) => rangeOf(finding, text.length) !== null);
+    const target = located.find((finding) => finding.code === reveal.code) ?? located[0];
+    const range = target === undefined ? null : rangeOf(target, text.length);
+    if (range === null) {
+      return;
+    }
+    handled.current = reveal.serial;
+    const element = area.current;
+    if (element !== null) {
+      element.focus();
+      element.setSelectionRange(range[0], range[1]);
+      setCaret(range[0]);
+    }
+  }, [marks, reveal, text]);
 
   useLayoutEffect(() => {
     const element = area.current;

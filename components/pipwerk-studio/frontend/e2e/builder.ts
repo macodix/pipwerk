@@ -26,11 +26,23 @@ export type C =
   | { not: C }
   | { truthy: V };
 
+/** Chooses an entry of a list by its label; a label that is not in the list fails with the labels that are. */
+async function chooseLabel(list: Locator, label: string): Promise<void> {
+  const labelsOf = async (): Promise<string[]> => (await list.locator('option').allTextContents()).map((text) => text.trim());
+  // the values of the list come from the expression endpoint: they may arrive a moment after the list is shown
+  try {
+    await expect.poll(labelsOf, { timeout: 10_000 }).toContain(label);
+  } catch {
+    throw new Error(`"${label}" is not in the list: ${(await labelsOf()).join(' | ')}`);
+  }
+  await list.selectOption({ label });
+}
+
 /** Sets a value in the block editor: `vb` is the element of the value (`.vb`). */
 export async function setValue(vb: Locator, v: V): Promise<void> {
   const sel = vb.locator(':scope > .select select');
   if ('pick' in v) {
-    await sel.selectOption({ label: v.pick });
+    await chooseLabel(sel, v.pick);
   } else if ('num' in v) {
     await sel.selectOption('k:num');
     await vb.locator(':scope > .num-wrap input').fill(String(v.num));
@@ -39,7 +51,7 @@ export async function setValue(vb: Locator, v: V): Promise<void> {
     await vb.locator(':scope > input.input').fill(v.text);
   } else if ('choice' in v) {
     await sel.selectOption('k:str');
-    await vb.locator(':scope > .select').nth(1).locator('select').selectOption({ label: v.choice });
+    await chooseLabel(vb.locator(':scope > .select').nth(1).locator('select'), v.choice);
   } else if ('calc' in v) {
     await sel.selectOption('k:calc');
     const inner = vb.locator(':scope > .vb-inner.calc');
@@ -107,10 +119,16 @@ export const field = (page: Page, id: string): Locator => props(page).locator(`[
 
 /** Inserts an entry of the library behind the selected step and names the new element. */
 export async function add(page: Page, entry: string, name?: string): Promise<void> {
+  // the properties view of the step that was selected before: the new one is there when it shows another element
+  const before = (await props(page).count()) === 0 ? null : await props(page).getAttribute('data-element-id');
   await showArea(page, 'library');
-  await library(page, entry).click();
+  // an entry by its name; where two entries have one name (the trigger "Tick" and the object "Tick"), by its type
+  await (entry.startsWith('type:') ? page.locator(`[data-testid="lib-item"][data-lib="${entry}"]`) : library(page, entry)).click();
   await showArea(page, 'props');
   await expect(props(page)).toBeVisible();
+  if (before !== null) {
+    await expect(props(page)).not.toHaveAttribute('data-element-id', before);
+  }
   if (name !== undefined) {
     await page.getByTestId('element-name').fill(name);
   }
@@ -120,8 +138,14 @@ export async function add(page: Page, entry: string, name?: string): Promise<voi
 export async function select(page: Page, name: string): Promise<void> {
   await showArea(page, 'canvas');
   const target = node(page, name).or(card(page, name)).first();
-  await target.scrollIntoViewIfNeeded();
-  await target.click({ position: { x: 44, y: 14 } });
+  if ((page.viewportSize()?.width ?? 1366) < 700) {
+    // on a narrow window the step may lie outside of it: the whole drawing is brought into the window first
+    await page.getByTestId('zoom-fit').click();
+    await target.click();
+  } else {
+    await target.scrollIntoViewIfNeeded();
+    await target.click({ position: { x: 44, y: 14 } });
+  }
   await showArea(page, 'props');
 }
 

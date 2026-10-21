@@ -726,10 +726,13 @@
     },
     "removeParameter": {
       "title": "Remove strategy parameter?",
-      "text": "The strategy parameter \"{{name}}\" will be removed. Assignments that use it are empty afterwards and the check reports them.",
+      "text": "The strategy parameter \"{{name}}\" will be removed.",
       "confirm": "Remove",
       "cancel": "Cancel"
     },
+    "usedBy": "These elements use it:",
+    "usedByStrategyRules": "Rules of the strategy",
+    "afterRemoval": "Afterwards the expressions keep an empty place \"Choose value …\". Assignments that use it are \"not assigned\". Connections and inputs that came from it are removed.",
     "error": {
       "ok": "OK"
     }

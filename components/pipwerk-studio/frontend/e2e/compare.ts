@@ -110,6 +110,29 @@ export function canonicalExpression(text: string, keys: ReadonlyMap<string, stri
   return rewritten.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').trim();
 }
 
+/** The names of the elements, of the objects and of the rules of a document, in the order of the document. */
+export function namesOf(document: Json): string[] {
+  const names: string[] = [];
+  const instance = (value: unknown): void => {
+    if (isRecord(value)) {
+      names.push(String(value.name));
+      ((value.rules as unknown[] | undefined) ?? []).forEach(instance);
+      ((value.instances as unknown[] | undefined) ?? []).forEach(instance);
+    }
+  };
+  ((document.parameters as Json[] | undefined) ?? []).forEach((parameter) => names.push(String(parameter.name)));
+  ((document.rules as unknown[] | undefined) ?? []).forEach(instance);
+  for (const element of (document.elements as Json[] | undefined) ?? []) {
+    if (isRecord(element.instance)) {
+      instance(element.instance);
+    } else {
+      names.push(String(element.name));
+    }
+    ((element.rules as unknown[] | undefined) ?? []).forEach(instance);
+  }
+  return names;
+}
+
 /** The document without identifiers, names, positions and times, with numbered keys; the same for equal strategies. */
 export function canonical(document: Json): Json {
   const keys = keyMap(document);

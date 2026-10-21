@@ -345,6 +345,8 @@ function RuleBody({ refTo, instance }: { refTo: InstanceRef; instance: InstanceD
           mode={determined === '' ? 'condition' : 'value'}
           hint={choices.length > 0 ? { choices } : undefined}
           testid="rule-expression"
+          focusField="expression"
+          subject={[instance.key, instance.name]}
         />
       </Section>
       <Section title={t('instances.ruleDetermines')} testid="sec-rule-determines">
@@ -400,6 +402,14 @@ function InstanceCard({ list, instance, index, count, startOpen }: { list: ListR
       setOpen(true);
     }
   }, [startOpen]);
+  // a finding in the expression of this rule opens its card
+  const focus = studio.state.focusField;
+  useEffect(() => {
+    const subject = focus?.place?.subject;
+    if (subject !== undefined && subject !== null && [instance.key, instance.name].some((candidate) => candidate.toLowerCase() === subject.toLowerCase())) {
+      setOpen(true);
+    }
+  }, [focus, instance.key, instance.name]);
   const refTo = entryRef(list, instance.key);
   if (types === null) {
     return null;
@@ -569,7 +579,13 @@ export function InstancePanel({ refTo, card = false }: { refTo: InstanceRef; car
       {kind === 'ruleset' ? (
         <Section title={t('instances.resultExpression')} testid="sec-result">
           <p className="muted">{t('instances.resultHint')}</p>
-          <ExpressionPanel place={{ kind: 'rule', ref: refTo, field: 'result_expression' }} mode="value" testid="result-expression" />
+          <ExpressionPanel
+            place={{ kind: 'rule', ref: refTo, field: 'result_expression' }}
+            mode="value"
+            testid="result-expression"
+            focusField="result_expression"
+            subject={[instance.key, instance.name]}
+          />
         </Section>
       ) : null}
       {kind === null && !card ? <p className="muted">{t('instances.noContent')}</p> : null}

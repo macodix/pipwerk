@@ -1,6 +1,9 @@
 import type { Finding } from '../api/objects';
 import type { StrategyDocument } from '../document/types';
 
+/** The expression a finding refers to: the field as the check names it, the rule it belongs to, the kind of finding. */
+export type ExpressionFocus = { field: string; subject: string | null; code: string };
+
 /** What the properties view shows (specification 5.1). */
 export type Selection =
   | { kind: 'strategy' }
@@ -53,8 +56,11 @@ export type StudioState = {
   openCount: number;
   /** An element the view is moved to if it is outside of the view. */
   reveal: { id: string; serial: number } | null;
-  /** A field of the properties view the user is sent to by a finding. */
-  focusField: { field: string; serial: number } | null;
+  /**
+   * A field of the properties view the user is sent to by a finding. A finding in an expression also names the place:
+   * the formula view of that expression opens and marks the spot (specification 5.5).
+   */
+  focusField: { field: string; serial: number; place: ExpressionFocus | null } | null;
   notice: Notice | null;
 };
 
@@ -91,7 +97,7 @@ export type StudioAction =
   | { type: 'wires'; mode: WireMode }
   | { type: 'armed'; armed: StudioState['armed'] }
   | { type: 'toggleCard'; id: string }
-  | { type: 'focusField'; field: string }
+  | { type: 'focusField'; field: string; place?: ExpressionFocus }
   | { type: 'wizard'; wizard: Partial<WizardState> | null }
   | { type: 'notice'; key: string; params?: Record<string, string> };
 
@@ -176,7 +182,7 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
           : [...state.openCards, action.id],
       };
     case 'focusField':
-      return { ...state, focusField: { field: action.field, serial: nextSerial() } };
+      return { ...state, focusField: { field: action.field, serial: nextSerial(), place: action.place ?? null } };
     case 'wizard':
       return {
         ...state,
