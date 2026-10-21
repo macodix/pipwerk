@@ -9,7 +9,7 @@ Nachweis des Vorhabens sind die beiden Testfälle: Jeder muss sich im Einzelschr
 Anforderungsdokumente:
 
 - [Anforderungen an das Gesamtsystem](../../docs/design/requirements/anforderungen-gesamtsystem.md)
-- [Anforderungen an den Strategietester](../../docs/design/requirements/anforderungen-strategietester-backtester.md)
+- [Anforderungen an den Strategietester](../../docs/design/requirements/anforderungen-strategietester.md)
 
 Fachmodell des Auftraggebers, das für dieses Vorhaben gilt und von der QA ebenfalls auf Widersprüche, Lücken und mehrdeutige Begriffe geprüft wird:
 

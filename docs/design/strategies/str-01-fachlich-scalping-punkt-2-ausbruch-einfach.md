@@ -9,7 +9,7 @@
 
 ## Handelsidee
 
-Bei einem markttechnisch intakten Trend entstehen am Punkt 2 häufig Bewegungen in Trendrichtung. Die Strategie soll einen kleinen Teil einer solchen Bewegung mit kurzer Verweildauer im Markt nutzen.
+Bei einem markttechnischen Trend entstehen am Punkt 2 häufig Bewegungen in Trendrichtung. Die Strategie soll einen kleinen Teil einer solchen Bewegung mit kurzer Verweildauer im Markt nutzen.
 
 Die größere Zeiteinheit bestimmt, ob ein Trend vorliegt. Der konkrete Trade wird anschließend auf einer kleineren Handelszeiteinheit geplant. Long und Short werden nicht als getrennte Strategien behandelt. Gehandelt wird immer in Richtung des erkannten Trends.
 
@@ -74,7 +74,7 @@ Ist der Trade handelbar, wird eine Stop-Order in Trendrichtung mit dem berechnet
 
 Die Verwaltung der Order hat zwei Auslöser: `Tick` und `Kerzenschluss` der Handelszeiteinheit.
 
-Bei jedem Tick: Durchbricht der Kurs den letzten Punkt 1/3, ist die zugrunde liegende Trendkonstellation nicht mehr intakt. Die Order wird gelöscht.
+Bei jedem Tick: Durchbricht der Kurs den letzten Punkt 1/3, ist die Grundlage des Trades entfallen. Die Order wird gelöscht.
 
 Bei jedem Kerzenschluss der Handelszeiteinheit: Weicht der noch nicht endgültige Punkt 1/3 vom Stop-Loss-Bezug der Order ab (Vergleich des neu berechneten Stop-Loss mit `Order.Stop-Loss`), werden Stop-Loss und Take-Profit mit „Order ändern“ angepasst. Die Regeln der Strategie gelten dabei erneut, die Risikoregel jetzt prüfend, weil das Volumen einer wartenden Order nicht geändert werden kann. Nimmt „Order ändern“ den Ausgang „nicht geändert“, weil das bestehende Volumen die Risikogrenze nicht mehr einhält oder der Trade nicht mehr regelgerecht handelbar ist, wird die Order gelöscht. Der nächste Auslöser des Hauptablaufs plant den Trade neu.
 
@@ -94,7 +94,7 @@ Der Trade endet, wenn der Stop-Loss oder der Take-Profit erreicht wird.
 
 | Parameter | Bedeutung | Wert oder Regel | Status |
 |---|---|---|---|
-| Signalzeiteinheit | Strategieparameter, Zeiteinheit für Trend und Marktphase | M15, H1, H4 oder D1 | bestätigt |
+| Signalzeiteinheit | Strategieparameter, Zeiteinheit für den Trend | M15, H1, H4 oder D1 | bestätigt |
 | Handelszeiteinheit | Strategieparameter, Zeiteinheit für Auslöser, Punkt 2, Punkt 1/3, Tradeplanung und Verwaltung der Order | kleiner als die Signalzeiteinheit, Empfehlung nach der Paarungstabelle in Abschnitt 2 | bestätigt |
 | Entry-Puffer | zusätzlicher Abstand hinter Punkt 2 | Strategieparameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
 | Stop-Puffer | zusätzlicher Abstand hinter Punkt 1/3 | Strategieparameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
