@@ -296,8 +296,8 @@ class ObjectService:
             raise ObjectDirectoryUnreadableError("The object directory cannot be read.") from error
 
     def list_objects(self, kind: str) -> list[ListEntry]:
-        """The objects of one kind with title, description and time of the last change; the
-        not readable ones with the mark only. Sorted by title (not readable ones last).
+        """The objects of one kind with name, description and time of the last change; the
+        not readable ones with the mark only. Sorted by name (not readable ones last).
 
         Raises ``ObjectDirectoryUnreadableError`` if the object directory cannot be listed.
         """
