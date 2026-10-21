@@ -105,6 +105,10 @@ Wählt der Anwender ein Element an, zeigt die Eigenschaftenansicht wie im Strate
 
 ## 4. Backtest
 
+### req-test-015 -- Auslöser Manuell im Testlauf
+
+Der Auslöser „Manuell“ (Fachmodell req-fach-053) tritt in einem Testlauf einmal ein, standardmäßig zu Beginn des Testzeitraums vor der ersten Kerze. Wahlweise gibt der Anwender für den Testlauf einen Zeitpunkt im Testzeitraum ein, zu dem er stattdessen eintritt, zum Beispiel um eine bestimmte Marktphase zu testen. Im Einzelschritt-Test kann der Anwender ihn zusätzlich an der aktuellen Stelle auslösen. Nicht zu verwechseln mit dem Start des Testlaufs (req-test-012).
+
 ### req-test-020 -- Ablauf
 
 Der Backtest lässt die Strategie ohne Unterbrechung über den Testzeitraum laufen.
@@ -127,7 +131,6 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 ## 5. Noch offene Punkte
 
 1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
-2. An welcher Stelle eines Testlaufs der Auslöser „Start von Hand“ eintritt (Fachmodell req-fach-053), zum Beispiel einmal zu Beginn des Testzeitraums. Nicht zu verwechseln mit dem Start des Testlaufs (req-test-012).
 
 ## 6. Änderungsnachweis
 
@@ -144,3 +147,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-21 | Produktname pipwerk replay. Entscheidung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | Vermerk „abgestimmt“: Prüfung `requirements-4.md` bestanden, Präsentation `requirements-1.html` bestätigt vom Auftraggeber im Chat am 2026-10-21. Datum „zuletzt aktualisiert“ nachgeführt (Hinweis H11 aus `requirements-5.md`), vom Projektleiter. |
 | 2026-10-21 | req-test-004: Abwicklung wie ein Broker, Ablehnung mit sichtbarem Grund; req-test-008 Indikatoren ohne Werte zu Beginn. Nach Prüfbericht der QA (`backtest`, Durchlauf 3, M1, M2), Festlegung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | req-test-015: Eintreten des Auslösers „Manuell“ (bisher „Start von Hand“) im Testlauf, offener Punkt 2 erledigt. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |

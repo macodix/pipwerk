@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-19`
+- zuletzt aktualisiert: `2026-10-21`
 - abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -132,7 +132,7 @@ Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als 
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Hat eine Strategie Auslöser, starten diese ihren Ablauf beziehungsweise werten ihn erneut aus. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Jede Auswertung beginnt an einem Auslöser. Für den Start von Hand gibt es den Auslöser „Start von Hand“. Eine Strategie ohne Auslöser lässt sich speichern, wird aber nicht ausgewertet. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen und ihre Parameter legt das Fachmodell fest (req-fach-053): Kerzenschluss, Tick, Start von Hand und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
+Hat eine Strategie Auslöser, starten diese ihren Ablauf beziehungsweise werten ihn erneut aus. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Jede Auswertung beginnt an einem Auslöser. Für den Start von Hand gibt es den Auslöser „Manuell“. Er steht nur im Hauptablauf, nicht in der Verwaltung einer Order (Fachmodell req-fach-053). Eine Strategie ohne Auslöser lässt sich speichern, wird aber nicht ausgewertet. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen und ihre Parameter legt das Fachmodell fest (req-fach-053): Kerzenschluss, Tick, Start von Hand und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
 
 Bei einer Strategie mit Auslösern ergibt sich die Wiederholung einer Strategieauswertung aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -502,3 +502,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-20 | req-ablauf-007: Prüfung der Bezeichnung fester Instrumente. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkte 16 und 19). |
 | 2026-10-21 | Bewegung und Korrektur ohne Eigenschaft `Phase` (Indikator Markttechnik). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | Indikator Markttechnik zurückgestellt (Fachmodell req-fach-054). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | req-fach-015: Auslöser „Start von Hand“ heißt „Manuell“ und steht nur im Hauptablauf, nicht in der Verwaltung einer Order. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |

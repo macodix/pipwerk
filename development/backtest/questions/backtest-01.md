@@ -74,3 +74,12 @@ Vorschlag (Spezifikation, Abschnitt 13, Punkt 2): Der geänderte Wert gilt bis z
 ### Zu 1. Bestätigung des Prototyps
 
 Bestätigt vom Auftraggeber im Chat am 2026-10-21 als Vorlage für Spezifikation und Umsetzung der Oberfläche, einschließlich der dort genannten Punkte 1 bis 7. Der Prototyp reicht für die ersten Versuche. Die Übersicht wird nach der praktischen Erprobung überarbeitet. Was sich bewährt und was nicht, wird dann festgestellt und über die Dokumente des Auftraggebers eingebracht.
+
+### Zu 2. „Start von Hand“ im Testlauf
+
+Entscheidung des Auftraggebers im Chat am 2026-10-21, eingearbeitet vom Projektleiter:
+
+- Der Auslöser heißt künftig „Manuell“ (Fachmodell req-fach-053, Anforderungen an den Strategiedesigner req-fach-015).
+- Er ist nur im Hauptablauf zulässig. In der Verwaltung einer Order meldet die Konsistenzprüfung einen Fehler. Das gilt allgemein, nicht nur im Testlauf.
+- Im Testlauf tritt er einmal ein, standardmäßig zu Beginn des Testzeitraums vor der ersten Kerze. Wahlweise gibt der Anwender einen Zeitpunkt im Testzeitraum ein, zum Beispiel für eine bestimmte Marktphase. Im Einzelschritt-Test kann der Anwender ihn zusätzlich an der aktuellen Stelle auslösen (Anforderungen an den Strategietester req-test-015, offener Punkt 2 erledigt).
+- Umbenennung in Glossar, Spezifikation und Strategiedokumenten ist Sache des Softwarearchitekten.
