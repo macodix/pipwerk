@@ -52,3 +52,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: Spezifikation hat die Prüfung der QA bestanden ([specification-2.md](reviews/specification-2.md)). Präsentation [specification-1.html](presentations/specification-1.html) zur Bestätigung durch den Auftraggeber. Liste der Auslösertypen in den Anforderungen an den Strategiedesigner (req-fach-015) an „Manuell“ angeglichen.
 
 2026-10-21: Präsentation [specification-1.html](presentations/specification-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 2 abgeschlossen. Phase 3 mit `plan` angestoßen.
+
+2026-10-21: Phase 3. Arbeitspaketplan hat die Prüfung der QA bestanden ([plan-2.md](reviews/plan-2.md)). Präsentation [plan-1.html](presentations/plan-1.html) zur Bestätigung durch den Auftraggeber.
