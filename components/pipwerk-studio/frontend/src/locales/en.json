@@ -346,12 +346,40 @@
       "unconnected": "The trigger is not connected with any element of the flow."
     },
     "flow": {
-      "no_incoming": "No connection leads to this element of the flow.",
+      "not_reached": "No trigger reaches this element of the flow.",
+      "main_without_trigger": "The main flow has no trigger; the strategy never starts.",
       "unending_loop": "Loop without a condition that ends it (on {{elements}} elements).",
       "management_only": "\"{{type}}\" may only stand in a management, not in the main flow.",
       "no_order_reachable": "No element that places an order can be reached from the trigger."
     },
+    "instrument": {
+      "invalid": "The instrument \"{{value}}\" is not a valid designation."
+    },
+    "data": {
+      "unknown": "The data connection is invalid: {{reason}}.",
+      "type_mismatch": "The data type of the connected value does not fit: expected {{expected}}, found {{found}}."
+    },
+    "input": {
+      "unused": "The input \"{{property}}\" is not used."
+    },
+    "key": {
+      "invalid": "The identifier \"{{key}}\" contains characters that an expression cannot address."
+    },
+    "layout": {
+      "invalid": "A section or a collapsed frame does not fit: {{reason}}."
+    },
+    "dataReasons": {
+      "unknown_instance": "the object does not exist",
+      "unknown_property": "the object does not have this property"
+    },
+    "layoutReasons": {
+      "unknown_flow": "the flow belongs to no element",
+      "unknown_element": "the element does not exist",
+      "element_twice": "an element is in two sections",
+      "other_flow": "the element belongs to another flow"
+    },
     "expression": {
+      "empty": "The expression in {{field}} is missing or incomplete.",
       "invalid": "The expression in {{field}} is faulty: {{problem}}",
       "order_outside_management": "The expression in {{field}} uses order or position outside of a management."
     },
@@ -415,12 +443,30 @@
       "unconnected": "Connect the trigger with the first step or remove it."
     },
     "flow": {
-      "no_incoming": "Connect a previous step with this step or remove it.",
+      "not_reached": "Connect a previous step or a trigger with this step or remove it.",
+      "main_without_trigger": "Add a trigger and connect it with the first step.",
       "unending_loop": "Put a condition into the loop from which one output leads out of the loop.",
       "management_only": "Move the step into the management of an order or remove it.",
       "no_order_reachable": "Connect the flow with a step that places an order."
     },
+    "instrument": {
+      "invalid": "Correct the designation of the instrument."
+    },
+    "data": {
+      "unknown": "Choose an object and a property that exist, or delete the connection.",
+      "type_mismatch": "Connect a value of the fitting data type."
+    },
+    "input": {
+      "unused": "Use the value in an expression or remove the input."
+    },
+    "key": {
+      "invalid": "Change the name."
+    },
+    "layout": {
+      "invalid": "Remove the section and create it again."
+    },
     "expression": {
+      "empty": "Enter the complete expression.",
       "invalid": "Correct the expression.",
       "order_outside_management": "Use order and position only in the management of an order."
     },

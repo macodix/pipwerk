@@ -346,12 +346,40 @@
       "unconnected": "Der Auslöser ist mit keinem Element des Ablaufs verbunden."
     },
     "flow": {
-      "no_incoming": "Zu diesem Element des Ablaufs führt keine Verbindung.",
+      "not_reached": "Kein Auslöser erreicht dieses Element des Ablaufs.",
+      "main_without_trigger": "Der Hauptablauf hat keinen Auslöser; die Strategie startet nie.",
       "unending_loop": "Rückführung ohne Bedingung, die sie beendet (an {{elements}} Elementen).",
       "management_only": "„{{type}}“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf.",
       "no_order_reachable": "Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt."
     },
+    "instrument": {
+      "invalid": "Das Instrument „{{value}}“ ist keine gültige Bezeichnung."
+    },
+    "data": {
+      "unknown": "Die Datenverbindung ist ungültig: {{reason}}.",
+      "type_mismatch": "Der Datentyp des verbundenen Werts passt nicht: erwartet {{expected}}, gefunden {{found}}."
+    },
+    "input": {
+      "unused": "Der Eingang „{{property}}“ wird nicht verwendet."
+    },
+    "key": {
+      "invalid": "Die Kennung „{{key}}“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann."
+    },
+    "layout": {
+      "invalid": "Ein Abschnitt oder eingeklappter Rahmen passt nicht: {{reason}}."
+    },
+    "dataReasons": {
+      "unknown_instance": "das Objekt gibt es nicht",
+      "unknown_property": "das Objekt hat diese Eigenschaft nicht"
+    },
+    "layoutReasons": {
+      "unknown_flow": "der Ablauf gehört zu keinem Element",
+      "unknown_element": "das Element gibt es nicht",
+      "element_twice": "ein Element steht in zwei Abschnitten",
+      "other_flow": "das Element gehört zu einem anderen Ablauf"
+    },
     "expression": {
+      "empty": "Der Ausdruck in {{field}} fehlt oder ist unvollständig.",
       "invalid": "Der Ausdruck in {{field}} ist fehlerhaft: {{problem}}",
       "order_outside_management": "Der Ausdruck in {{field}} verwendet Order oder Position außerhalb einer Verwaltung."
     },
@@ -415,12 +443,30 @@
       "unconnected": "Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn."
     },
     "flow": {
-      "no_incoming": "Verbinden Sie einen vorherigen Schritt mit diesem Schritt oder entfernen Sie ihn.",
+      "not_reached": "Verbinden Sie einen vorherigen Schritt oder einen Auslöser mit diesem Schritt oder entfernen Sie ihn.",
+      "main_without_trigger": "Legen Sie einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt.",
       "unending_loop": "Legen Sie in die Rückführung eine Bedingung, von der ein Ausgang aus der Rückführung hinausführt.",
       "management_only": "Verschieben Sie den Schritt in die Verwaltung einer Order oder entfernen Sie ihn.",
       "no_order_reachable": "Verbinden Sie den Ablauf mit einem Schritt, der eine Order aufgibt."
     },
+    "instrument": {
+      "invalid": "Korrigieren Sie die Bezeichnung des Instruments."
+    },
+    "data": {
+      "unknown": "Wählen Sie ein Objekt und eine Eigenschaft, die es gibt, oder löschen Sie die Verbindung.",
+      "type_mismatch": "Verbinden Sie einen Wert vom passenden Datentyp."
+    },
+    "input": {
+      "unused": "Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie den Eingang."
+    },
+    "key": {
+      "invalid": "Ändern Sie den Namen."
+    },
+    "layout": {
+      "invalid": "Entfernen Sie den Abschnitt und legen Sie ihn neu an."
+    },
     "expression": {
+      "empty": "Geben Sie den Ausdruck vollständig an.",
       "invalid": "Korrigieren Sie den Ausdruck.",
       "order_outside_management": "Verwenden Sie Order und Position nur in der Verwaltung einer Order."
     },

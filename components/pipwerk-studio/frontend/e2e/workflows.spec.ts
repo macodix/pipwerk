@@ -47,7 +47,7 @@ test('"Prüfen" shows the findings with the way to fix them, and a click leads t
   await expect(findings.first()).toContainText('So beheben Sie es');
   await expect(node(page, 'Bedingung')).toHaveClass(/err|hint/);
   // "Zur Stelle" selects the element
-  await page.locator('[data-testid="finding"][data-code="flow.no_incoming"]').getByTestId('finding-goto').click();
+  await page.locator('[data-testid="finding"][data-code="flow.not_reached"]').getByTestId('finding-goto').click();
   await expect(page.getByTestId('props-element')).toBeVisible();
   await expect(page.getByTestId('element-name')).toHaveValue('Bedingung');
 });

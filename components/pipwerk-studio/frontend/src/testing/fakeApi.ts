@@ -64,7 +64,7 @@ function check(document: Json, types: Map<string, Json>): FakeFinding[] {
     if (type.kind === 'flow') {
       const incoming = connections.some((connection) => connection.target === id);
       if (!incoming) {
-        found.push({ level: 'error', code: 'flow.no_incoming', element: id, subject: null, details: {} });
+        found.push({ level: 'error', code: 'flow.not_reached', element: id, subject: null, details: {} });
       }
     }
   }

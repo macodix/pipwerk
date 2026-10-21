@@ -63,6 +63,12 @@ export const RESULT_REASONS = ['unknown_property', 'choice_value', 'type'] as co
 
 export const REFERENCE_KINDS = ['forward', 'cycle'] as const;
 
+/** The reasons of `data.unknown`. */
+export const DATA_REASONS = ['unknown_instance', 'unknown_property'] as const;
+
+/** The reasons of `layout.invalid`. */
+export const LAYOUT_REASONS = ['unknown_flow', 'unknown_element', 'element_twice', 'other_flow'] as const;
+
 /** The data the texts can use. Every name has a value (empty if the finding does not have it). */
 const knownDetails = [
   'name',
@@ -105,6 +111,8 @@ const knownDetails = [
   'context',
   'length',
   'instance',
+  'value',
+  'key',
 ] as const;
 
 function plain(value: unknown): string {
@@ -195,6 +203,10 @@ export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextCo
     params.reason = t(`findings.resultReasons.${reason}`, { defaultValue: reason });
   } else if (finding.code === 'ruleset.reference_order') {
     params.kind = t(`findings.referenceKinds.${params.kind ?? ''}`, { defaultValue: params.kind ?? '' });
+  } else if (finding.code === 'data.unknown') {
+    params.reason = t(`findings.dataReasons.${reason}`, { defaultValue: reason });
+  } else if (finding.code === 'layout.invalid') {
+    params.reason = t(`findings.layoutReasons.${reason}`, { defaultValue: reason });
   } else if (finding.code === 'flow.unending_loop') {
     params.elements = String(Array.isArray(finding.details.elements) ? finding.details.elements.length : 0);
   }

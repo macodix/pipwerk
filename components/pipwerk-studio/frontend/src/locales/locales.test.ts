@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest';
 import {
   BINDING_REASONS,
   CONNECTION_REASONS,
+  DATA_REASONS,
   EXPRESSION_ISSUES,
+  LAYOUT_REASONS,
   REFERENCE_KINDS,
   RESULT_REASONS,
   SYNTAX_REASONS,
@@ -109,7 +111,7 @@ describe('texts of the findings (specification 3.6, 5.5)', () => {
 
   it('read the list of identifiers of the library documentation', () => {
     expect(codes.length).toBeGreaterThan(10);
-    expect(codes).toContain('flow.no_incoming');
+    expect(codes).toContain('flow.not_reached');
   });
 
   it.each(['de', 'en'] as const)('give every identifier of the library a text and a way to fix it in %s', (language) => {
@@ -128,6 +130,8 @@ describe('texts of the findings (specification 3.6, 5.5)', () => {
       ...BINDING_REASONS.map((reason) => `findings.bindingReasons.${reason}`),
       ...RESULT_REASONS.map((reason) => `findings.resultReasons.${reason}`),
       ...REFERENCE_KINDS.map((kind) => `findings.referenceKinds.${kind}`),
+      ...DATA_REASONS.map((reason) => `findings.dataReasons.${reason}`),
+      ...LAYOUT_REASONS.map((reason) => `findings.layoutReasons.${reason}`),
     ];
 
     expect(keys.filter((key) => !instance.exists(key))).toEqual([]);

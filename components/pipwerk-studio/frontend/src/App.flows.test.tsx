@@ -148,7 +148,7 @@ describe('saving, checking and deleting', () => {
     const user = userEvent.setup();
     mockApi({
       findings: () => [
-        { level: 'error', code: 'flow.no_incoming', element: null, subject: null, details: {} },
+        { level: 'error', code: 'flow.not_reached', element: null, subject: null, details: {} },
         { level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} },
       ],
     });
@@ -163,7 +163,7 @@ describe('saving, checking and deleting', () => {
     });
     const findings = screen.getAllByTestId('finding');
     expect(findings).toHaveLength(2);
-    expect(findings[0]).toHaveTextContent('Zu diesem Element des Ablaufs führt keine Verbindung.');
+    expect(findings[0]).toHaveTextContent('Kein Auslöser erreicht dieses Element des Ablaufs.');
     expect(findings[0]).toHaveTextContent('So beheben Sie es: Verbinden Sie einen vorherigen Schritt');
     expect(findings[1]).toHaveTextContent('Hinweis');
   });
@@ -191,7 +191,7 @@ describe('the language (specification 5.1, M4)', () => {
   it('switches all texts, also the findings, the dialogs and the library, and shows no German text in the English interface', async () => {
     const user = userEvent.setup();
     mockApi({
-      findings: () => [{ level: 'error', code: 'flow.no_incoming', element: null, subject: null, details: {} }],
+      findings: () => [{ level: 'error', code: 'flow.not_reached', element: null, subject: null, details: {} }],
     });
     renderWithProviders(<App />, 'de');
     await waitForReady();
