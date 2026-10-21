@@ -1,0 +1,974 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "pipwerk-fetch",
+    "description": "Acquisition of historical market data from a source (version 1). A source delivers candles, ticks and the details of an instrument as files in the JSON format of the import of pipwerk replay. pipwerk-fetch-mt5 is the source for MetaTrader 5. Every request carries the shared key as `Authorization: Bearer <key>`; without it the program answers 401 and tells nothing about its instruments.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/fetch": {
+      "post": {
+        "summary": "Fetch candles, ticks or the details of an instrument",
+        "description": "Reads from the source and answers with the file in the JSON format of the import. `candles`: the candles of one time unit with an open time in `[start, end)`. `ticks`: the ticks in `[start, end)`. `instrument`: the details of the instrument at the time of the call. `start` and `end` carry a time zone and are converted to UTC; times in the answer are UTC. Candles and ticks are limited to the largest number of rows of the startup configuration; a larger period is answered with `range_too_large`. The answer holds the file in `file` and the rows that were left out, with the reason, in `omitted`.",
+        "operationId": "fetch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CandlesRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TicksRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/InstrumentRequest"
+                  }
+                ],
+                "title": "Request",
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "candles": "#/components/schemas/CandlesRequest",
+                    "ticks": "#/components/schemas/TicksRequest",
+                    "instrument": "#/components/schemas/InstrumentRequest"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CandleSeriesResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TickSeriesResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InstrumentResponse"
+                    }
+                  ],
+                  "title": "Response Fetch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The Host header is not allowed (error host_not_allowed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The shared key is missing or wrong (error unauthorized).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Symbol unknown at the broker (symbol_unknown) or no data (no_data).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request is larger than 8 KiB (body_too_large).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request (invalid_request) or period too large (range_too_large).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error (internal_error).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "MetaTrader 5 ended the call with an error (broker_error), gives no name of the broker (broker_unknown) or values that cannot be used (invalid_broker_data).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MetaTrader 5 is not reachable (terminal_unavailable).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "summary": "Check that MetaTrader 5 is reachable",
+        "description": "Answers `ok` if MetaTrader 5 is running and connected to its trade server, otherwise 503 with the error `terminal_unavailable`.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The Host header is not allowed (error host_not_allowed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The shared key is missing or wrong (error unauthorized).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error (internal_error).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MetaTrader 5 is not reachable (terminal_unavailable).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CandleEntry": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+            "title": "Time",
+            "examples": [
+              "2026-01-05T10:00:00.000Z"
+            ]
+          },
+          "open": {
+            "type": "number",
+            "title": "Open"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "close": {
+            "type": "number",
+            "title": "Close"
+          },
+          "volume": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume"
+          },
+          "spread": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spread"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "spread"
+        ],
+        "title": "CandleEntry",
+        "description": "A candle: open time (UTC), prices, tick volume and the spread in points if delivered."
+      },
+      "CandleSeriesDocument": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "candles",
+            "title": "Kind",
+            "default": "candles"
+          },
+          "broker": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          },
+          "time_unit": {
+            "type": "string",
+            "enum": [
+              "m1",
+              "m2",
+              "m3",
+              "m4",
+              "m5",
+              "m6",
+              "m10",
+              "m12",
+              "m15",
+              "m20",
+              "m30",
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h6",
+              "h8",
+              "h12",
+              "d1",
+              "w1",
+              "mn1"
+            ],
+            "title": "Time Unit"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodDocument"
+          },
+          "trading_hours": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TradingSessionDocument"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trading Hours"
+          },
+          "candles": {
+            "items": {
+              "$ref": "#/components/schemas/CandleEntry"
+            },
+            "type": "array",
+            "title": "Candles"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "instrument",
+          "time_unit",
+          "period",
+          "trading_hours",
+          "candles"
+        ],
+        "title": "CandleSeriesDocument",
+        "description": "The candles of one series: broker, instrument and time unit.\n\n``trading_hours`` is ``null`` if the source delivers none (the import then leaves the\nstored trading hours of the series unchanged)."
+      },
+      "CandleSeriesResponse": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/CandleSeriesDocument"
+          },
+          "omitted_count": {
+            "type": "integer",
+            "title": "Omitted Count"
+          },
+          "omitted": {
+            "items": {
+              "$ref": "#/components/schemas/OmittedRow"
+            },
+            "type": "array",
+            "title": "Omitted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file",
+          "omitted_count",
+          "omitted"
+        ],
+        "title": "CandleSeriesResponse"
+      },
+      "CandlesRequest": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start",
+            "description": "Start of the period, included."
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End",
+            "description": "End of the period, excluded."
+          },
+          "kind": {
+            "type": "string",
+            "const": "candles",
+            "title": "Kind"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          },
+          "time_unit": {
+            "type": "string",
+            "enum": [
+              "m1",
+              "m2",
+              "m3",
+              "m4",
+              "m5",
+              "m6",
+              "m10",
+              "m12",
+              "m15",
+              "m20",
+              "m30",
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h6",
+              "h8",
+              "h12",
+              "d1",
+              "w1",
+              "mn1"
+            ],
+            "title": "Time Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "kind",
+          "instrument",
+          "time_unit"
+        ],
+        "title": "CandlesRequest",
+        "description": "Candles of one time unit."
+      },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "unauthorized",
+              "host_not_allowed",
+              "body_too_large",
+              "invalid_request",
+              "not_found",
+              "symbol_unknown",
+              "no_data",
+              "range_too_large",
+              "terminal_unavailable",
+              "broker_error",
+              "broker_unknown",
+              "invalid_broker_data",
+              "internal_error"
+            ],
+            "title": "Code"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "reason"
+        ],
+        "title": "ErrorDetail",
+        "description": "An error: a stable ``code`` and a fixed readable ``reason``. ``fields`` names the\ninvalid fields of a request that was rejected as ``invalid_request``."
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse"
+      },
+      "InstrumentDocument": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "instrument",
+            "title": "Kind",
+            "default": "instrument"
+          },
+          "broker": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          },
+          "acquired_at": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+            "title": "Acquired At",
+            "examples": [
+              "2026-01-05T10:00:00.000Z"
+            ]
+          },
+          "tick_size": {
+            "type": "number",
+            "title": "Tick Size"
+          },
+          "tick_value": {
+            "type": "number",
+            "title": "Tick Value"
+          },
+          "tick_value_currency": {
+            "type": "string",
+            "title": "Tick Value Currency"
+          },
+          "point": {
+            "type": "number",
+            "title": "Point"
+          },
+          "pip": {
+            "type": "number",
+            "title": "Pip"
+          },
+          "spread": {
+            "type": "number",
+            "title": "Spread"
+          },
+          "min_volume": {
+            "type": "number",
+            "title": "Min Volume"
+          },
+          "volume_step": {
+            "type": "number",
+            "title": "Volume Step"
+          },
+          "contract_size": {
+            "type": "number",
+            "title": "Contract Size"
+          },
+          "swap_long": {
+            "type": "number",
+            "title": "Swap Long"
+          },
+          "swap_short": {
+            "type": "number",
+            "title": "Swap Short"
+          },
+          "swap_triple_weekday": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "title": "Swap Triple Weekday"
+          },
+          "margin_per_lot": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin Per Lot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "instrument",
+          "acquired_at",
+          "tick_size",
+          "tick_value",
+          "tick_value_currency",
+          "point",
+          "pip",
+          "spread",
+          "min_volume",
+          "volume_step",
+          "contract_size",
+          "swap_long",
+          "swap_short",
+          "swap_triple_weekday",
+          "margin_per_lot"
+        ],
+        "title": "InstrumentDocument",
+        "description": "The details of an instrument at the time of the acquisition.\n\n``tick_value`` is the value of one tick per lot in ``tick_value_currency``. ``pip`` is\nten points for a symbol with three or five digits and else one point. ``spread`` is the\ncurrent spread as a price difference. ``margin_per_lot`` is ``null`` if it cannot be\ndetermined."
+      },
+      "InstrumentRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "instrument",
+            "title": "Kind"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "instrument"
+        ],
+        "title": "InstrumentRequest",
+        "description": "The details of the instrument."
+      },
+      "InstrumentResponse": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/InstrumentDocument"
+          },
+          "omitted_count": {
+            "type": "integer",
+            "title": "Omitted Count",
+            "default": 0
+          },
+          "omitted": {
+            "items": {
+              "$ref": "#/components/schemas/OmittedRow"
+            },
+            "type": "array",
+            "title": "Omitted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "InstrumentResponse"
+      },
+      "OmittedRow": {
+        "properties": {
+          "server_time": {
+            "type": "string",
+            "title": "Server Time"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "time_does_not_exist",
+              "double_local_time",
+              "duplicate_time",
+              "invalid_price"
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "server_time",
+          "reason"
+        ],
+        "title": "OmittedRow",
+        "description": "A row that was left out: its server time (``YYYY-MM-DDTHH:MM:SS.mmm``) and why."
+      },
+      "PeriodDocument": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+            "title": "Start",
+            "examples": [
+              "2026-01-05T10:00:00.000Z"
+            ]
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+            "title": "End",
+            "examples": [
+              "2026-01-05T10:00:00.000Z"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "PeriodDocument",
+        "description": "The period the source covers, even where it delivers no candle or tick."
+      },
+      "TickEntry": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+            "title": "Time",
+            "examples": [
+              "2026-01-05T10:00:00.000Z"
+            ]
+          },
+          "bid": {
+            "type": "number",
+            "title": "Bid"
+          },
+          "ask": {
+            "type": "number",
+            "title": "Ask"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time",
+          "bid",
+          "ask"
+        ],
+        "title": "TickEntry",
+        "description": "A tick: time (UTC, milliseconds), bid and ask."
+      },
+      "TickSeriesDocument": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "ticks",
+            "title": "Kind",
+            "default": "ticks"
+          },
+          "broker": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Broker"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodDocument"
+          },
+          "trading_hours": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TradingSessionDocument"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trading Hours"
+          },
+          "ticks": {
+            "items": {
+              "$ref": "#/components/schemas/TickEntry"
+            },
+            "type": "array",
+            "title": "Ticks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "instrument",
+          "period",
+          "trading_hours",
+          "ticks"
+        ],
+        "title": "TickSeriesDocument",
+        "description": "The ticks of one series: broker and instrument."
+      },
+      "TickSeriesResponse": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/TickSeriesDocument"
+          },
+          "omitted_count": {
+            "type": "integer",
+            "title": "Omitted Count"
+          },
+          "omitted": {
+            "items": {
+              "$ref": "#/components/schemas/OmittedRow"
+            },
+            "type": "array",
+            "title": "Omitted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file",
+          "omitted_count",
+          "omitted"
+        ],
+        "title": "TickSeriesResponse"
+      },
+      "TicksRequest": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start",
+            "description": "Start of the period, included."
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End",
+            "description": "End of the period, excluded."
+          },
+          "kind": {
+            "type": "string",
+            "const": "ticks",
+            "title": "Kind"
+          },
+          "instrument": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+            "title": "Instrument"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "kind",
+          "instrument"
+        ],
+        "title": "TicksRequest",
+        "description": "Ticks with milliseconds."
+      },
+      "TradingSessionDocument": {
+        "properties": {
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "title": "Weekday"
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "From"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^(([01][0-9]|2[0-3]):[0-5][0-9]|24:00)$",
+            "title": "To"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "weekday",
+          "from",
+          "to"
+        ],
+        "title": "TradingSessionDocument",
+        "description": "A weekly trading session in UTC; a session across midnight is split at midnight."
+      }
+    },
+    "securitySchemes": {
+      "sharedKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The shared key of the source, given as `Authorization: Bearer <key>`. It stands in the startup configuration of the source and of the program that calls it."
+      }
+    }
+  },
+  "security": [
+    {
+      "sharedKey": []
+    }
+  ]
+}

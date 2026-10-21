@@ -16,6 +16,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 ## Komponenten
 
 - [pipwerk Studio – technische Dokumentation](pipwerk-studio.md)
+- [pipwerk-fetch-mt5 – technische Dokumentation](pipwerk-fetch-mt5.md)
 
 ## Gemeinsame Bibliotheken
 
