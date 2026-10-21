@@ -100,8 +100,8 @@ class Replica:
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
-        script = self.root / SCRIPT
-        script.chmod(script.stat().st_mode | stat.S_IXUSR)
+        # The file mode of the script is taken over from the source as it is, so that a
+        # missing execute bit shows up in the tests that call the script as a program.
         placeholders = base / "placeholders"
         placeholders.mkdir()
         for program in ("uv", "npm", "npx"):
@@ -618,6 +618,42 @@ def test_start_status_and_stop_of_the_backend_without_a_user_interface(
     after = replica.run("status")
     assert after.returncode == 1
     assert "not running" in after.stdout
+
+
+def test_the_script_is_executable_in_the_git_index() -> None:
+    assert GIT is not None
+    assert SOURCE_ROOT is not None
+    result = subprocess.run(  # noqa: S603
+        [GIT, "-C", str(SOURCE_ROOT), "ls-files", "-s", "--", SCRIPT],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={**os.environ, "GIT_CONFIG_GLOBAL": os.devnull},
+    )
+
+    assert result.stdout.startswith("100755 "), result.stdout
+
+
+def test_status_as_a_program_via_the_absolute_path_without_a_test_environment(
+    make_replica: Callable[..., Replica],
+) -> None:
+    replica = make_replica()
+    script = replica.root / SCRIPT
+    assert script.stat().st_mode & stat.S_IXUSR
+
+    result = subprocess.run(  # noqa: S603
+        [str(script), "status"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=90,
+        env=replica.environment,
+        cwd=replica.base,
+    )
+
+    assert result.returncode == 1
+    assert "not running" in result.stdout
+    _assert_nothing_happened(replica)
 
 
 def test_status_and_stop_without_a_test_environment(
