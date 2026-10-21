@@ -6,7 +6,7 @@
 - stand: 2026-10-21
 - komponenten: `packages/domain-core`, `packages/market-data` (neu), `packages/ui-components`, `components/pipwerk-replay` (neu, bisher `components/pipwerk-backtest`), `components/pipwerk-fetch-mt5` (neu), `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html))
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Nachprüfung in Durchlauf 2
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet
 
 ## Übersicht
 
@@ -29,7 +29,7 @@ Abschnittsangaben beziehen sich auf die [Spezifikation](specification.md). Endpu
 
 ### Ziel
 
-Bibliothek und pipwerk Studio folgen den Entscheidungen des Auftraggebers vom 2026-10-21: Der Auslöser heißt „Manuell“ und ist in einer Verwaltung ein Fehler, das Element „Parameter setzen“ gibt es nicht mehr.
+Bibliothek und pipwerk Studio folgen den Entscheidungen des Auftraggebers vom 2026-10-21: Der Auslöser heißt „Manuell“ und ist in einer Verwaltung ein Fehler, das Element „Parameter setzen“ gibt es nicht mehr. Der `ZigZag` hat die Eigenschaften, die `str-01` verwendet.
 
 ### Umfang
 
@@ -118,7 +118,7 @@ Der Anwender bereitet einen Testlauf vor und testet eine Strategie im Backtest �
 
 ### Umfang
 
-- Ausführung in der Bibliothek, `pipwerk_domain.execution` (E1, E7, 3.1 bis 3.5): Schnittstellen, Auswertung von Ausdrücken, `EMA`, `ATR`, `ZigZag` mit Berechnung der Eigenschaften aus `wp01`, eigene Indikatoren und Trends, Ablauf mit Auslösern und Verwaltungen, Auslöser `Manuell` zum Zeitpunkt nach 6.1, Orders und Regeln.
+- Ausführung in der Bibliothek, `pipwerk_domain.execution` (E1, E7, 3.1 bis 3.5): Schnittstellen, Auswertung von Ausdrücken, `EMA`, `ATR`, `ZigZag` einschließlich Berechnung der in `wp01` beschriebenen Eigenschaften, eigene Indikatoren und Trends, Ablauf mit Auslösern und Verwaltungen, Auslöser `Manuell` zum Zeitpunkt nach 6.1, Orders und Regeln.
 - Interne Abwicklung `pipwerk_replay.broker` (E2, Abschnitt 4).
 - Testlauf (6.1) mit Strategien aus dem Objektverzeichnis oder als hochgeladene Datei (E6), Prüfung und Beschaffung der Kursdaten beim Start (5.4), Backtest im eigenen Prozess mit Fortschritt und Abbrechen (6.4), gespeicherte Backtests mit Liste, Löschen, Vergleich und Herunterladen der Kopie der Strategie (6.5).
 - Web-API (Abschnitt 7) für diese Teile.
@@ -248,3 +248,4 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 |---|---|
 | 2026-10-21 | Plan angelegt: vier Pakete. `wp02` ohne Abhängigkeit, `wp01` nach `strategiedesign/wp02`, `wp03` nach `wp01` und `wp02`, `wp04` nach `wp03` und `strategiedesign/wp03`. |
 | 2026-10-21 | Nach dem Prüfbericht [plan-1.md](reviews/plan-1.md): B1 Typbeschreibung des `ZigZag` mit den Eigenschaften für `str-01` in `wp01` (Umfang, umgesetzte Teile, Abdeckung), Berechnung bleibt in `wp03`. Hinweise: 1 Kriterium 1 zur Bedienbarkeit in `wp01` (übrige Kriterien um eins weitergezählt); 2 Testlauf mit Ablehnung in `wp04` Kriterium 2; 5 Voraussetzung in `wp02` Kriterium 3. Verworfen: 3 (`wp01` ändert in pipwerk Studio nur Texte, keine Bausteine, die `strategiedesign/wp03` umbaut), 4 (der Weg ist beschrieben, den Zeitpunkt bestimmt der Entwicklungsleiter), 6 (Testdetail). |
+| 2026-10-21 | Hinweise aus [plan-2.md](reviews/plan-2.md) (bestanden), ohne weitere Prüfung: 1 Formulierung der Berechnung in `wp03`; 2 Eigenschaften des `ZigZag` im Ziel von `wp01`. Verworfen: 3 (pipwerk Studio führt Strategien nicht aus; Kriterium 1 betrifft nur die Konsistenzprüfung). |
