@@ -479,6 +479,7 @@ function CanvasView() {
       const hit = stepAt(current, point);
       const hitElement = hit === undefined ? undefined : document.elements.find((candidate) => candidate.id === hit);
       const frame = frameAt(current, point);
+      actions.dispatch({ type: 'wizard', wizard: null });
       if (hitElement !== undefined && !isCardElement(hitElement, types)) {
         void actions.insert(key, { after: hitElement.id, flow: hitElement.management_of ?? null });
       } else {

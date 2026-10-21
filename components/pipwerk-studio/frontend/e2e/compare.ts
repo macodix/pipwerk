@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { Page } from '@playwright/test';
+
 /**
  * The comparison of a strategy built in the interface with a test case document of the repository: the documents are
  * equal without identifiers, names, positions and times (specification 7). The keys that expressions use are formed
@@ -17,6 +19,24 @@ const here = dirname(fileURLToPath(import.meta.url));
 export function testCase(name: 'str-01' | 'str-03'): Json {
   const file = resolve(here, '../../../..', 'contracts/strategies/v2/testcases', `${name}.strategy.json`);
   return JSON.parse(readFileSync(file, 'utf-8')) as Json;
+}
+
+/** The stored document of the strategy with the name, fetched from the backend; it is deleted by `removeStored`. */
+export async function storedStrategy(page: Page, name: string): Promise<Json> {
+  const list = (await (await page.request.get('/api/v1/strategies')).json()) as { items: { id: string; name: string | null }[] };
+  const entry = list.items.find((candidate) => candidate.name === name);
+  if (entry === undefined) {
+    throw new Error(`The strategy "${name}" is not stored`);
+  }
+  return (await (await page.request.get(`/api/v1/strategies/${entry.id}`)).json()) as Json;
+}
+
+/** Deletes the strategy with the name from the backend: the tests share one backend and leave nothing behind. */
+export async function removeStored(page: Page, name: string): Promise<void> {
+  const list = (await (await page.request.get('/api/v1/strategies')).json()) as { items: { id: string; name: string | null }[] };
+  for (const entry of list.items.filter((candidate) => candidate.name === name)) {
+    await page.request.delete(`/api/v1/strategies/${entry.id}`);
+  }
 }
 
 /** Fields that hold a name or a time and are left out of the comparison. */
@@ -50,11 +70,42 @@ function keyMap(document: Json): Map<string, string> {
   return map;
 }
 
+/**
+ * The name `a.b.c` with its keys replaced: the first part is a key (or an object of the application, which stays), a
+ * part after a key is a key again only in the objects that contain others, and after `Strategie` it is the key of a
+ * strategy parameter. The properties (`Position.richtung`) stay as they are, even where a step has the same key.
+ */
+function canonicalName(name: string, keys: ReadonlyMap<string, string>): string {
+  const parts = name.split('.');
+  let container = true;
+  return parts
+    .map((part, index) => {
+      const mapped = keys.get(part.toLowerCase());
+      if (index === 0) {
+        container = mapped !== undefined;
+        return mapped ?? part;
+      }
+      if (parts[0]?.toLowerCase() === 'strategie' && index === 1) {
+        return mapped ?? part;
+      }
+      if (container && mapped !== undefined && index < parts.length - 1) {
+        return mapped;
+      }
+      container = false;
+      return part;
+    })
+    .join('.');
+}
+
 /** The expression with every key replaced and the white space made uniform; texts in quotes stay as they are. */
 export function canonicalExpression(text: string, keys: ReadonlyMap<string, string>): string {
   const parts = text.split(/("(?:[^"]|"")*")/);
   const rewritten = parts
-    .map((part, index) => (index % 2 === 1 ? part : part.replace(/[A-Za-z_][A-Za-z0-9_]*/g, (word) => keys.get(word.toLowerCase()) ?? word).replace(/\s+/g, ' ')))
+    .map((part, index) =>
+      index % 2 === 1
+        ? part
+        : part.replace(/[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/g, (name) => canonicalName(name, keys)).replace(/\s+/g, ' '),
+    )
     .join('');
   return rewritten.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').trim();
 }

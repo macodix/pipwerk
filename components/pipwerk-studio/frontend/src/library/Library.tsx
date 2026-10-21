@@ -53,6 +53,8 @@ export function Library() {
       studio.actions.notify('notices.openFirst');
       return;
     }
+    // working with the library is working by hand: the guided setup ends
+    studio.actions.dispatch({ type: 'wizard', wizard: null });
     void studio.actions.insert(entry.key);
   };
 

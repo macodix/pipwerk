@@ -1,7 +1,7 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
 import type { Page } from '@playwright/test';
 
-import { boxOf, card, clickMenu, dragBy, expect, library, node, openApp, openStrategy, overlap, test, viewOf } from './support';
+import { boxOf, card, clickMenu, dragBy, expect, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
 
 /** "Alles zeigen": the whole strategy at once, so that every element can be reached with the mouse. */
 async function showEverything(page: Page): Promise<void> {
@@ -115,7 +115,7 @@ test('a step dragged into the frame becomes part of the management, and out of i
 test('the management output is connected with the first step when the management has no trigger; a trigger removes the connection', async ({ page, api }) => {
   void api;
   await openApp(page);
-  await clickMenu(page, 'new');
+  await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
   await library(page, 'Order aufgeben').click();
   await expect(node(page, 'Order aufgeben')).toHaveCount(1);
@@ -139,7 +139,7 @@ test('the management output is connected with the first step when the management
 test('a step is connected by dragging and by clicking, and a selected line is deleted', async ({ page, api }) => {
   void api;
   await openApp(page);
-  await clickMenu(page, 'new');
+  await newStrategy(page);
   await expect(page.getByTestId('canvas-empty')).toBeVisible();
   await library(page, 'Start von Hand').click();
   await page.getByTestId('canvas').locator('.react-flow__pane').click({ position: { x: 700, y: 400 }, force: true });

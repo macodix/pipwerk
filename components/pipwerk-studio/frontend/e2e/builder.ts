@@ -128,11 +128,12 @@ export async function select(page: Page, name: string): Promise<void> {
 /** "Neue Strategie": the guided setup is left, the strategy gets its name. */
 export async function newStrategyFromScratch(page: Page, name: string): Promise<void> {
   await clickMenu(page, 'new');
+  await showArea(page, 'props');
   await expect(page.getByTestId('wizard')).toBeVisible();
   await page.getByTestId('wz-leave').click();
-  await expect(page.getByTestId('canvas-empty')).toBeVisible();
-  await showArea(page, 'props');
   await page.getByTestId('strategy-name').fill(name);
+  await showArea(page, 'canvas');
+  await expect(page.getByTestId('canvas-empty')).toBeVisible();
 }
 
 export async function createParam(page: Page, name: string, type: 'time_unit' | 'number', value: string): Promise<void> {

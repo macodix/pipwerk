@@ -394,6 +394,12 @@ function InstanceCard({ list, instance, index, count, startOpen }: { list: ListR
   const { studio, types } = useStudio();
   const { t } = useTranslation();
   const [open, setOpen] = useState(startOpen);
+  // the card of the rule that was just added is mounted before the list knows that it is the new one
+  useEffect(() => {
+    if (startOpen) {
+      setOpen(true);
+    }
+  }, [startOpen]);
   const refTo = entryRef(list, instance.key);
   if (types === null) {
     return null;

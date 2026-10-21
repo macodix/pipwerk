@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-import { clickMenu, expect, library, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
+import { clickMenu, expect, library, newStrategy, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
 
 // Specification 5.5: the workflows save, check, close, new, open, delete and settings.
 
@@ -16,7 +16,7 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   // The backend of the run is shared by all browsers: every browser saves a strategy with a name of its own.
   const name = `Meine erste Strategie ${testInfo.project.name}`;
   await openApp(page);
-  await clickMenu(page, 'new');
+  await newStrategy(page);
 
   await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
   await expect(page.getByTestId('canvas-empty')).toContainText('Nächster Schritt');
@@ -36,7 +36,7 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
 test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page, api }) => {
   void api;
   await openApp(page);
-  await clickMenu(page, 'new');
+  await newStrategy(page);
   await library(page, 'Bedingung').click();
   await expect(node(page, 'Bedingung')).toHaveCount(1);
 

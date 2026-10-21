@@ -1,4 +1,4 @@
-import { clickMenu, expect, library, node, openApp, openStrategy, showArea, test } from './support';
+import { expect, library, newStrategy, node, openApp, openStrategy, showArea, test } from './support';
 
 // Specification 5.2: groups from the type descriptions in the order of the specification, search, explanation of every
 // entry when it is pointed at and when it has the keyboard focus.
@@ -65,7 +65,7 @@ test('does not insert without a strategy and says what to do', async ({ page, ap
 test('inserts a trigger and a step: the second is connected behind the first', async ({ page, api }) => {
   void api;
   await openApp(page);
-  await clickMenu(page, 'new');
+  await newStrategy(page);
 
   await library(page, 'Kerzenschluss').click();
   await expect(node(page, 'Kerzenschluss')).toHaveCount(1);
@@ -83,7 +83,7 @@ test('inserts a trigger and a step: the second is connected behind the first', a
 test('lets the user assign a strategy parameter to a field, creating it on the spot', async ({ page, api }) => {
   void api;
   await openApp(page);
-  await clickMenu(page, 'new');
+  await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
   await showArea(page, 'props');
 
