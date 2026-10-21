@@ -84,6 +84,22 @@ describe('identifiers and expressions (specification 3.3, 3.4, E2)', () => {
     expect(answers[1]?.blocks).toBeNull();
   });
 
+  it('accepts the blocks as the backend writes them: every field is there, those that do not apply are null', async () => {
+    const name = { kind: 'name', path: ['ema20', 'wert'], value: null, operator: null, direction: null, children: [] };
+    const crossing = { kind: 'crossing', path: null, value: null, operator: null, direction: 'any', children: [name, name] };
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve(new Response(JSON.stringify({ items: [{ stored: 'a', display: 'a', sentence: 's', blocks: crossing }] }), { status: 200 })),
+    );
+
+    const answers = await requestExpressions(newStrategy('S'), 'de', [{ pointer: '/x', stored: 'a' }]);
+
+    expect(answers[0]?.blocks?.path).toBeUndefined();
+    expect(answers[0]?.blocks?.children?.map((child) => child.path)).toEqual([
+      ['ema20', 'wert'],
+      ['ema20', 'wert'],
+    ]);
+  });
+
   it('splits more than the allowed number of expressions into several requests', async () => {
     let requests = 0;
     vi.stubGlobal('fetch', (_url: string, init?: RequestInit) => {

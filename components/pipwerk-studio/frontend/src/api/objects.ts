@@ -180,10 +180,13 @@ export type ExpressionQuery = { pointer: string; stored: string };
 function parseBlock(value: unknown, what: string): ExpressionBlock {
   const record = expectRecord(value, what);
   const block: ExpressionBlock = { ...record, kind: expectString(record.kind, `${what}.kind`) };
-  if (record.path !== undefined) {
+  // The backend writes every field of a block; one that does not apply to the kind is `null`.
+  if (record.path === null || record.path === undefined) {
+    delete block.path;
+  } else {
     block.path = expectArray(record.path, `${what}.path`).map((item, index) => expectString(item, `${what}.path[${index}]`));
   }
-  if (record.children !== undefined) {
+  if (record.children !== undefined && record.children !== null) {
     block.children = expectArray(record.children, `${what}.children`).map((item, index) =>
       parseBlock(item, `${what}.children[${index}]`),
     );

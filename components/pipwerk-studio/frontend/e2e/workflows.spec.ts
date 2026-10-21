@@ -156,26 +156,31 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Das Objektverzeichnis konnte nicht geändert werden.');
 
-  // without moving
+  // the question can be cancelled
   await directory.fill(first);
   await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
   await expect(dialog.getByText('Dateien verschieben?')).toBeVisible();
   await dialog.getByRole('button', { name: 'Abbrechen' }).first().click();
   await expect(dialog.getByText('Dateien verschieben?')).toHaveCount(0);
-  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
-  await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
-  await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
-  await expect(directory).toHaveValue(first);
 
   // with moving: the stored strategies come along
-  await directory.fill(second);
   await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
   await dialog.getByRole('button', { name: 'Ja, Dateien verschieben' }).click();
   await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
+  await expect(directory).toHaveValue(first);
   await dialog.getByRole('button', { name: 'Schließen' }).click();
   await clickMenu(page, 'open');
   // the list belongs to the directory: with the files moved, the strategies are still there
   await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // without moving: only the directory changes
+  await clickMenu(page, 'settings');
+  await directory.fill(second);
+  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
+  await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
+  await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
+  await expect(directory).toHaveValue(second);
 });
 
 test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page, api }) => {
