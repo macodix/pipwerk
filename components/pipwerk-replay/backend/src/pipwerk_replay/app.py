@@ -1,8 +1,9 @@
 """HTTP application of pipwerk replay.
 
-The application provides a technical health check and the web API under
-``/api/v1/`` (test accounts and settings, ``web_api.py``). The language is a
-component-wide, backend-authoritative setting that is never stored in the browser
+The application provides a technical health check, the public web API under ``/api/v1/`` (test
+accounts, data stock and acquisition; ``web_api.py``, ``marketdata_api.py``) and the internal
+endpoints under ``/api/replay/`` (language, default source, revision; ``internal_api.py``). The
+language is a component-wide, backend-authoritative setting that is never stored in the browser
 (req-ui-008). No other domain logic lives in this module.
 """
 
@@ -16,19 +17,41 @@ from fastapi import FastAPI, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
+from pipwerk_marketdata import MarketDataStore
 from pydantic import BaseModel, ConfigDict
 
 from pipwerk_replay.accounts import AccountService
-from pipwerk_replay.config import DEFAULT_MAX_BODY_BYTES, load_startup_config
+from pipwerk_replay.acquisition import (
+    ENVELOPE_ALLOWANCE,
+    AcquisitionManager,
+    HttpSourceClient,
+    SourceClient,
+)
+from pipwerk_replay.api_support import is_api_path, request_validation_response
+from pipwerk_replay.config import (
+    DEFAULT_MAX_BODY_BYTES,
+    MarketDataSettings,
+    SourceSettings,
+    load_startup_config,
+)
 from pipwerk_replay.docs_page import install_docs
 from pipwerk_replay.host_check import HostCheckMiddleware, build_allowed_hosts
-from pipwerk_replay.settings_service import SettingsService
-from pipwerk_replay.storage import create_replay_engine, create_session_factory
-from pipwerk_replay.web_api import (
-    install_public_api,
-    is_public_path,
-    request_validation_response,
+from pipwerk_replay.marketdata_service import MarketDataService, import_limits
+from pipwerk_replay.revision import (
+    CommitDateLookup,
+    RevisionLookup,
+    determine_revision,
+    lookup_git_commit_date,
+    lookup_git_revision,
 )
+from pipwerk_replay.settings_service import SettingsService
+from pipwerk_replay.storage import (
+    create_database_engine,
+    create_replay_engine,
+    create_session_factory,
+    migrate_marketdata,
+)
+from pipwerk_replay.web_api import install_api
 
 logger = logging.getLogger(__name__)
 
@@ -45,42 +68,85 @@ def create_app(
     database_url: str | None = None,
     allowed_hosts: Sequence[str] = (),
     max_body_bytes: int | None = None,
+    *,
+    marketdata: MarketDataSettings | None = None,
+    source: SourceSettings | None = None,
+    source_client: SourceClient | None = None,
+    revision_lookup: RevisionLookup = lookup_git_revision,
+    commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
 ) -> FastAPI:
     """Create the pipwerk replay HTTP application.
 
     ``database_url`` lets callers (notably the CLI entry point and tests)
     provide an explicit SQLAlchemy database URL. When omitted, the documented
     automatic startup configuration search (req-system-016/req-system-017) is
-    used, and then ``allowed_hosts`` and ``max_body_bytes`` default to the
-    values of the startup configuration unless given. If no valid startup
+    used, and then ``allowed_hosts``, ``max_body_bytes``, ``marketdata`` and ``source`` default
+    to the values of the startup configuration unless given. If no valid startup
     configuration is found, ``StartupConfigError`` is raised; there is no
     implicit replacement database.
 
-    The database is brought to the newest schema, and the default test account is
-    created if it is missing (specification 6.2).
+    The database is brought to the newest schema, the data stock (``pipwerk_marketdata``) in
+    its own database - the one of ``marketdata``, else the one of pipwerk replay - to its
+    own newest schema, and the default test account is created if it is missing
+    (specification 6.2).
 
     ``allowed_hosts`` lists the names (and IP addresses) allowed in the ``Host``
     header of a request in addition to the default names ``127.0.0.1``,
     ``localhost`` and ``::1`` (``host_check.py``); every other request is
     answered with HTTP 400.
 
-    ``max_body_bytes`` is the largest request body below ``/api/v1/`` (default 2 MiB).
+    ``max_body_bytes`` is the largest request body below ``/api/v1/`` and ``/api/replay/``
+    (default 2 MiB); an uploaded file of the import has the limit of ``marketdata``.
+
+    ``source`` is the source of the acquisition (``fetch_url`` and ``fetch_key``); without
+    an address no acquisition can start. ``source_client`` replaces the connection to the
+    source (tests). ``revision_lookup`` and ``commit_date_lookup`` determine the revision
+    (tests).
     """
     if database_url is None:
         startup_config = load_startup_config()
         resolved_database_url = startup_config.database_url
         resolved_hosts = [*startup_config.allowed_hosts, *allowed_hosts]
         resolved_limit = startup_config.max_body_bytes if max_body_bytes is None else max_body_bytes
+        resolved_marketdata = startup_config.marketdata if marketdata is None else marketdata
+        resolved_source = startup_config.source if source is None else source
     else:
         resolved_database_url = database_url
         resolved_hosts = list(allowed_hosts)
         resolved_limit = DEFAULT_MAX_BODY_BYTES if max_body_bytes is None else max_body_bytes
+        resolved_marketdata = MarketDataSettings() if marketdata is None else marketdata
+        resolved_source = SourceSettings() if source is None else source
     engine = create_replay_engine(resolved_database_url)
+    marketdata_url = resolved_marketdata.database_url
+    if marketdata_url is None or marketdata_url == resolved_database_url:
+        marketdata_engine = engine
+    else:
+        marketdata_engine = create_database_engine(marketdata_url)
+    migrate_marketdata(marketdata_engine)
     session_factory = create_session_factory(engine)
     settings_service = SettingsService(session_factory)
     account_service = AccountService(session_factory)
     if account_service.ensure_default_account():
         logger.info("The default test account was created.")
+
+    store = MarketDataStore(marketdata_engine)
+    marketdata_service = MarketDataService(store, resolved_marketdata, settings_service)
+    client = source_client
+    if client is None and resolved_source.url is not None and resolved_source.key is not None:
+        client = HttpSourceClient(
+            resolved_source.url,
+            resolved_source.key,
+            timeout_seconds=resolved_source.timeout_seconds,
+            max_response_bytes=resolved_marketdata.max_upload_bytes + ENVELOPE_ALLOWANCE,
+        )
+    acquisitions = AcquisitionManager(
+        store,
+        client,
+        limits=import_limits(resolved_marketdata),
+        max_running=resolved_source.max_concurrent_acquisitions,
+        max_kept=resolved_source.max_kept_acquisitions,
+    )
+    revision = determine_revision(revision_lookup, commit_date_lookup)
 
     # One schema per model for requests and responses together.
     app = FastAPI(
@@ -90,7 +156,15 @@ def create_app(
         redoc_url=None,
     )
     install_docs(app)
-    install_public_api(app, account_service, settings_service, max_body_bytes=resolved_limit)
+    install_api(
+        app,
+        accounts=account_service,
+        settings=settings_service,
+        marketdata=marketdata_service,
+        acquisitions=acquisitions,
+        revision=revision,
+        max_body_bytes=resolved_limit,
+    )
 
     # The outermost middleware (added last): every request on every path is checked.
     app.add_middleware(HostCheckMiddleware, allowed_hosts=build_allowed_hosts(resolved_hosts))
@@ -101,7 +175,7 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def handle_invalid_request(request: Request, error: RequestValidationError) -> Response:
-        if is_public_path(request.url.path):
+        if is_api_path(request.url.path):
             return request_validation_response(error)
         return await request_validation_exception_handler(request, error)
 

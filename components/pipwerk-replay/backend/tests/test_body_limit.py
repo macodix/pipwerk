@@ -46,6 +46,7 @@ def run(
     chunks: list[bytes],
     declared: bytes | None,
     app: Recorder,
+    overrides: dict[str, int] | None = None,
 ) -> tuple[list[Message], int]:
     """Send the chunks; return the messages sent and the number of messages read."""
     headers = [] if declared is None else [(b"content-length", declared)]
@@ -67,7 +68,7 @@ def run(
     async def send(message: Message) -> None:
         sent.append(message)
 
-    middleware = BodyLimitMiddleware(app, limit=LIMIT, prefix="/api/v1")
+    middleware = BodyLimitMiddleware(app, limit=LIMIT, prefix="/api/v1", overrides=overrides)
     asyncio.run(middleware(scope(path, headers), receive, send))
     return sent, read
 
@@ -185,6 +186,38 @@ def test_other_paths_and_other_scopes_are_not_limited() -> None:
     middleware = BodyLimitMiddleware(application, limit=LIMIT, prefix="/api/v1")
     asyncio.run(middleware({"type": "lifespan", "path": "/api/v1/x"}, receive, send))
     assert called == ["lifespan"]
+
+
+def test_a_path_with_its_own_limit_uses_it_in_both_directions() -> None:
+    overrides = {"/api/v1/upload": 3 * LIMIT, "/api/v1/small": 10}
+
+    # larger than the general limit, within the own one: handed on (counted and declared)
+    app = Recorder()
+    sent, _ = run("/api/v1/upload", [b"a" * (2 * LIMIT)], None, app, overrides)
+    assert status(sent) == 200
+    assert app.body == b"a" * (2 * LIMIT)
+    sent, _ = run(
+        "/api/v1/upload", [b"a" * (2 * LIMIT)], str(2 * LIMIT).encode(), Recorder(), overrides
+    )
+    assert status(sent) == 200
+    # above the own limit
+    app = Recorder()
+    sent, _ = run("/api/v1/upload", [b"a" * (3 * LIMIT + 1)], None, app, overrides)
+    assert status(sent) == 413
+    assert app.calls == 0
+    sent, read = run(
+        "/api/v1/upload", [b"a" * 10], str(3 * LIMIT + 1).encode(), Recorder(), overrides
+    )
+    assert status(sent) == 413
+    assert read == 0  # refused from the declared size, nothing was read
+    # an own limit below the general one
+    assert status(run("/api/v1/small", [b"a" * 11], None, Recorder(), overrides)[0]) == 413
+    assert status(run("/api/v1/small", [b"a" * 10], None, Recorder(), overrides)[0]) == 200
+    # the other paths keep the general limit; the override is for the exact path only
+    assert status(run("/api/v1/other", [b"a" * (LIMIT + 1)], None, Recorder(), overrides)[0]) == 413
+    assert (
+        status(run("/api/v1/upload/x", [b"a" * (LIMIT + 1)], None, Recorder(), overrides)[0]) == 413
+    )
 
 
 def test_the_prefix_itself_and_everything_below_it_is_limited() -> None:

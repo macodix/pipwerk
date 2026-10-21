@@ -166,8 +166,18 @@ def test_other_kinds_of_scope_are_handled_without_error() -> None:
         ("get", f"/api/v1/accounts/{DEFAULT_ACCOUNT_ID}"),
         ("put", f"/api/v1/accounts/{DEFAULT_ACCOUNT_ID}"),
         ("delete", f"/api/v1/accounts/{DEFAULT_ACCOUNT_ID}"),
-        ("get", "/api/v1/settings"),
-        ("put", "/api/v1/settings"),
+        ("get", "/api/replay/settings/language"),
+        ("put", "/api/replay/settings/language"),
+        ("get", "/api/replay/settings/default-source"),
+        ("put", "/api/replay/settings/default-source"),
+        ("get", "/api/replay/revision"),
+        ("get", "/api/v1/market-data/overview"),
+        ("get", "/api/v1/market-data/instrument"),
+        ("post", "/api/v1/market-data/imports/json"),
+        ("post", "/api/v1/market-data/imports/csv"),
+        ("post", "/api/v1/market-data/completeness"),
+        ("post", "/api/v1/market-data/acquisitions"),
+        ("get", f"/api/v1/market-data/acquisitions/{DEFAULT_ACCOUNT_ID}"),
         ("get", "/docs"),
         ("get", "/openapi.json"),
         ("get", "/unknown/path"),
@@ -197,12 +207,15 @@ def test_a_page_that_rebinds_its_name_cannot_write_read_or_delete(tmp_path: Path
         client.delete(f"/api/v1/accounts/{DEFAULT_ACCOUNT_ID}", headers=rebound).status_code == 400
     )
     assert (
-        client.put("/api/v1/settings", json={"language": "en"}, headers=rebound).status_code == 400
+        client.put(
+            "/api/replay/settings/language", json={"language": "en"}, headers=rebound
+        ).status_code
+        == 400
     )
     assert client.get("/api/v1/accounts", headers=rebound).status_code == 400
     # nothing changed
     assert client.get(f"/api/v1/accounts/{DEFAULT_ACCOUNT_ID}").status_code == 200
-    assert client.get("/api/v1/settings").json() == {"language": "de"}
+    assert client.get("/api/replay/settings/language").json() == {"language": "de"}
 
 
 def test_the_rejection_comes_before_the_limit_of_the_body(tmp_path: Path) -> None:

@@ -28,9 +28,9 @@ MEMORY_URLS = [
 def test_a_database_in_memory_keeps_its_schema_and_serves_the_endpoints(url: str) -> None:
     client = TestClient(create_app(url))
 
-    assert client.get("/api/v1/settings").json() == {"language": "de"}
-    assert client.put("/api/v1/settings", json={"language": "en"}).status_code == 200
-    assert client.get("/api/v1/settings").json() == {"language": "en"}
+    assert client.get("/api/replay/settings/language").json() == {"language": "de"}
+    assert client.put("/api/replay/settings/language", json={"language": "en"}).status_code == 200
+    assert client.get("/api/replay/settings/language").json() == {"language": "en"}
     accounts = client.get("/api/v1/accounts").json()["items"]
     assert [item["is_default"] for item in accounts] == [True]
 
@@ -46,7 +46,9 @@ def test_a_second_start_on_a_database_in_memory_changes_nothing(url: str) -> Non
         tables = connection.exec_driver_sql(
             "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
         ).fetchall()
-    assert tables == [("alembic_version",), ("replay_settings",), ("test_accounts",)]
+    # A shared named database can hold the tables of the data stock from another test.
+    own = [row for row in tables if not row[0].startswith("marketdata_")]
+    assert own == [("alembic_version",), ("replay_settings",), ("test_accounts",)]
 
 
 @pytest.mark.parametrize("kind", ["file", *MEMORY_URLS])

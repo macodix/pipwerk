@@ -3,8 +3,8 @@
 This module is the service boundary in front of the SQLAlchemy persistence. It
 exposes the framework-independent type ``Language`` instead of the ORM row. The
 settings are operational, component-wide configuration: there is no user or
-account modelling and exactly one central settings row exists. Only the user
-interface language is kept so far.
+account modelling and exactly one central settings row exists. It keeps the user
+interface language and the default source (the broker whose data a test run uses).
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from typing import Literal, get_args
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from pipwerk_replay.names import is_valid_name
 from pipwerk_replay.storage import SETTINGS_SINGLETON_ID, SettingsRecord
 
 #: Supported user interface languages. Default is German (req-ui-008): the
@@ -35,9 +36,28 @@ class StoredLanguageInvalidError(Exception):
     """
 
 
+class InvalidBrokerNameError(ValueError):
+    """Raised when a name of a broker that is to be stored breaks the rule for names."""
+
+
+class StoredDefaultSourceInvalidError(Exception):
+    """Raised when the stored default source is not a valid name of a broker.
+
+    Like ``StoredLanguageInvalidError`` a defect of the storage content; a valid write
+    repairs it.
+    """
+
+
 def _language_setter(value: Language) -> Callable[[SettingsRecord], None]:
     def apply(record: SettingsRecord) -> None:
         record.language = value
+
+    return apply
+
+
+def _default_source_setter(value: str | None) -> Callable[[SettingsRecord], None]:
+    def apply(record: SettingsRecord) -> None:
+        record.default_source = value
 
     return apply
 
@@ -76,6 +96,34 @@ class SettingsService:
         """
         self._update_record(_language_setter(language))
         return language
+
+    def get_default_source(self) -> str | None:
+        """Return the name of the broker of the default source, ``None`` if none is set.
+
+        The default source is the broker whose data a test run uses (specification 5.1). Raises
+        ``StoredDefaultSourceInvalidError`` if the stored value is no valid name.
+        """
+        with self._session_factory() as session:
+            record = session.get(SettingsRecord, SETTINGS_SINGLETON_ID)
+            if record is None or record.default_source is None:
+                return None
+            stored = record.default_source
+        if not is_valid_name(stored):
+            raise StoredDefaultSourceInvalidError(
+                "Stored pipwerk replay default source is not a valid name"
+            )
+        return stored
+
+    def set_default_source(self, broker: str | None) -> str | None:
+        """Persist the name of the broker of the default source; ``None`` removes it.
+
+        The broker need not exist in the data stock yet. A name that breaks the rule for
+        names is refused with ``InvalidBrokerNameError``.
+        """
+        if broker is not None and not is_valid_name(broker):
+            raise InvalidBrokerNameError("not a valid name of a broker")
+        self._update_record(_default_source_setter(broker))
+        return broker
 
     def _update_record(self, apply: Callable[[SettingsRecord], None]) -> None:
         """Change the singleton row with ``apply``; create it if it is missing."""

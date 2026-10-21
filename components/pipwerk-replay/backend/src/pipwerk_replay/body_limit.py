@@ -13,10 +13,14 @@ parsed:
 - A body within the limit is handed on unchanged.
 
 It applies to all requests below a path prefix. The limit is a setting of the
-backend (``max_body_bytes`` in the startup configuration, ``config.py``).
+backend (``max_body_bytes`` in the startup configuration, ``config.py``). A path can have its
+own limit (``overrides``, exact path): the upload of a file for the data stock is larger than
+a JSON body (``max_upload_bytes``).
 """
 
 from __future__ import annotations
+
+from collections.abc import Mapping
 
 from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -27,10 +31,18 @@ BODY_TOO_LARGE_TEXT = "The request body is larger than the limit."
 class BodyLimitMiddleware:
     """ASGI middleware that rejects a request body above ``limit`` bytes with HTTP 413."""
 
-    def __init__(self, app: ASGIApp, *, limit: int, prefix: str) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        limit: int,
+        prefix: str,
+        overrides: Mapping[str, int] | None = None,
+    ) -> None:
         self._app = app
         self._limit = limit
         self._prefix = prefix.rstrip("/")
+        self._overrides = dict(overrides or {})
 
     def _applies(self, scope: Scope) -> bool:
         if scope["type"] != "http":
@@ -54,8 +66,9 @@ class BodyLimitMiddleware:
         if not self._applies(scope):
             await self._app(scope, receive, send)
             return
+        limit = self._overrides.get(scope["path"], self._limit)
         declared = self._declared_size(scope)
-        if declared is not None and declared > self._limit:
+        if declared is not None and declared > limit:
             await self._reject(scope, receive, send)
             return
         chunks: list[bytes] = []
@@ -67,7 +80,7 @@ class BodyLimitMiddleware:
                 return  # the client has gone; there is nobody to answer
             body: bytes = message.get("body", b"")
             size += len(body)
-            if size > self._limit:
+            if size > limit:
                 await self._reject(scope, receive, send)
                 return
             chunks.append(body)

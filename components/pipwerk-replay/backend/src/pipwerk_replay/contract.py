@@ -21,14 +21,15 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from pipwerk_replay.api_support import is_public_path
 from pipwerk_replay.app import create_app
-from pipwerk_replay.web_api import is_public_path
 
 CONTRACT_VERSION = "1.0.0"
 CONTRACT_DESCRIPTION = (
-    "Web API of pipwerk replay, version 1: the test accounts and the settings. The paths "
-    "below /api/v1/ are versioned; the technical endpoint /api/health is not part of this "
-    "description."
+    "Web API of pipwerk replay, version 1: the test accounts, the data stock of historical "
+    "price data (overview, import, completeness) and the acquisition from the source. The "
+    "paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal "
+    "endpoints below /api/replay/ (settings, revision) are not part of this description."
 )
 
 

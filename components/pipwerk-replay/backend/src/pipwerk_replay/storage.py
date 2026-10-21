@@ -8,12 +8,14 @@ test accounts.
 
 from __future__ import annotations
 
+from pipwerk_marketdata import DatabaseMigrationError as MarketDataMigrationError
+from pipwerk_marketdata import migrate_database as migrate_marketdata_database
 from sqlalchemy import Float, Integer, String, create_engine
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from pipwerk_replay.migrate import migrate_database
+from pipwerk_replay.migrate import DatabaseMigrationError, migrate_database
 
 
 class Base(DeclarativeBase):
@@ -37,6 +39,8 @@ class SettingsRecord(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     language: Mapped[str] = mapped_column(String(8), nullable=False)
+    #: Name of the broker of the default source (specification 5.1); ``NULL``: none is set.
+    default_source: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class AccountRecord(Base):
@@ -59,6 +63,27 @@ def create_replay_engine(database_url: str) -> Engine:
 
     The schema is migrated with Alembic (``pipwerk_replay.migrate``).
     """
+    engine = create_database_engine(database_url)
+    # The engine of the operation keeps the default transaction behaviour of
+    # the driver. The migration at startup takes one connection from it and
+    # controls the transaction of that connection only (pipwerk_replay.migrate).
+    migrate_database(engine)
+    return engine
+
+
+def migrate_marketdata(engine: Engine) -> None:
+    """Bring the data stock (``pipwerk_marketdata``) in the database of ``engine`` to its
+    newest schema. It has its own migrations and its own version table, so it may share the
+    database with pipwerk replay. A failure is a ``DatabaseMigrationError`` of pipwerk replay
+    (the text of the library names no detail)."""
+    try:
+        migrate_marketdata_database(engine)
+    except MarketDataMigrationError as error:
+        raise DatabaseMigrationError(str(error)) from error
+
+
+def create_database_engine(database_url: str) -> Engine:
+    """Create the SQLAlchemy engine of a database; it does not migrate anything."""
     connect_args: dict[str, object] = {}
     if database_url.startswith("sqlite"):
         # check_same_thread=False allows the engine to serve FastAPI's worker
@@ -73,10 +98,6 @@ def create_replay_engine(database_url: str) -> Engine:
         engine = create_engine(database_url, connect_args=connect_args, poolclass=StaticPool)
     else:
         engine = create_engine(database_url, connect_args=connect_args)
-    # The engine of the operation keeps the default transaction behaviour of
-    # the driver. The migration at startup takes one connection from it and
-    # controls the transaction of that connection only (pipwerk_replay.migrate).
-    migrate_database(engine)
     return engine
 
 

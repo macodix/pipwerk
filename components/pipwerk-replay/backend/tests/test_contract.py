@@ -73,8 +73,15 @@ def test_the_description_names_the_endpoints_of_this_order() -> None:
     assert {path: set(operations) for path, operations in paths.items()} == {
         "/api/v1/accounts": {"get", "post"},
         "/api/v1/accounts/{id}": {"get", "put", "delete"},
-        "/api/v1/settings": {"get", "put"},
+        "/api/v1/market-data/overview": {"get"},
+        "/api/v1/market-data/instrument": {"get"},
+        "/api/v1/market-data/imports/json": {"post"},
+        "/api/v1/market-data/imports/csv": {"post"},
+        "/api/v1/market-data/completeness": {"post"},
+        "/api/v1/market-data/acquisitions": {"post"},
+        "/api/v1/market-data/acquisitions/{id}": {"get"},
     }
+    assert "/api/v1/settings" not in paths
 
 
 def test_the_technical_endpoint_is_not_in_the_file_but_stays_in_docs(database_url: str) -> None:
@@ -94,7 +101,20 @@ def test_only_the_schemas_that_the_public_paths_use_are_in_the_file() -> None:
             f"#/components/schemas/{name}" in json.dumps(other) for other in schemas.values()
         )
         assert reachable, name
-    assert {"Account", "AccountList", "Settings", "ApiError", "InvalidRequest"} <= set(schemas)
+    assert {
+        "Account",
+        "AccountList",
+        "ApiError",
+        "InvalidRequest",
+        "Overview",
+        "ImportResult",
+        "FileRefused",
+        "Completeness",
+        "Acquisition",
+        "AcquisitionRefused",
+    } <= set(schemas)
+    # the internal endpoints have no place in the description
+    assert not {"Settings", "ReplayLanguage", "DefaultSource", "ReplayRevision"} & set(schemas)
 
 
 def test_every_reference_is_resolved() -> None:
@@ -119,7 +139,7 @@ def test_the_operation_identifiers_are_unique() -> None:
         for operations in paths.values()  # type: ignore[attr-defined]
         for operation in operations.values()
     ]
-    assert len(identifiers) == len(set(identifiers)) == 7
+    assert len(identifiers) == len(set(identifiers)) == 12
 
 
 def test_the_request_bodies_are_described_with_the_strict_schemas() -> None:
