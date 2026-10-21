@@ -54,3 +54,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: Präsentation [specification-1.html](presentations/specification-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 2 abgeschlossen. Phase 3 mit `plan` angestoßen.
 
 2026-10-21: Phase 3. Arbeitspaketplan hat die Prüfung der QA bestanden ([plan-2.md](reviews/plan-2.md)). Präsentation [plan-1.html](presentations/plan-1.html) zur Bestätigung durch den Auftraggeber.
+
+2026-10-21: Präsentation [plan-1.html](presentations/plan-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 3 abgeschlossen. `wp02` mit `implement` an den Entwicklungsleiter. `wp01` folgt nach `strategiedesign/wp02`.
