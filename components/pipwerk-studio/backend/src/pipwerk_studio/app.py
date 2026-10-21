@@ -14,16 +14,17 @@ import logging
 from collections.abc import Sequence
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from pipwerk_domain.defaults import default_registry
 from pipwerk_domain.registry import ElementRegistry
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from pipwerk_studio.api_models import ApiError, ErrorBody
 from pipwerk_studio.config import ConfigOrigin, load_startup_config
 from pipwerk_studio.docs_page import install_docs
+from pipwerk_studio.errors import ApiException, error_response
 from pipwerk_studio.host_check import HostCheckMiddleware, build_allowed_hosts
 from pipwerk_studio.object_service import ObjectService
 from pipwerk_studio.object_store import (
@@ -49,12 +50,7 @@ from pipwerk_studio.settings_service import (
     StoredObjectDirectoryInvalidError,
 )
 from pipwerk_studio.storage import create_session_factory, create_studio_engine
-from pipwerk_studio.web_api import (
-    STORED_OBJECT_DIRECTORY_INVALID_TEXT,
-    install_public_api,
-    is_public_path,
-    request_validation_response,
-)
+from pipwerk_studio.web_api import install_public_api, request_validation_response
 
 logger = logging.getLogger(__name__)
 
@@ -118,54 +114,24 @@ class StudioObjectDirectoryUpdate(BaseModel):
     move: bool
 
 
-class ObjectDirectoryError(BaseModel):
-    """Error body of the object directory endpoints: a fixed text only."""
-
-    model_config = ConfigDict(extra="forbid", strict=True)
-
-    detail: str
+class ObjectDirectoryError(ApiError):
+    """Error body of the object directory endpoints: a fixed text, the code and the params."""
 
 
-class ObjectMoveRestoreFailure(BaseModel):
+class ObjectMoveRestoreFailure(ErrorBody):
     """Error body if moving failed and the files could not be brought back.
 
     ``source_directory`` is the old and ``target_directory`` the new object
     directory; ``files`` are the names of the files that are now in the new
-    directory and could not be brought back.
+    directory and could not be brought back. The three fields are also the params.
     """
 
-    model_config = ConfigDict(extra="forbid", strict=True)
-
-    detail: str
     source_directory: str
     target_directory: str
     files: list[str]
 
 
 OBJECT_DIRECTORY_PATH = "/api/studio/settings/object-directory"
-INVALID_OBJECT_DIRECTORY_BODY_TEXT = (
-    "The request body must be a JSON object with the fields path (text) and move (true or false)."
-)
-INVALID_OBJECT_DIRECTORY_TEXT = "The object directory must be an absolute path."
-OBJECT_CONFLICT_TEXT = (
-    "The new object directory already contains files with the same names. Nothing was moved."
-)
-STORED_OBJECT_DIRECTORY_NO_MOVE_TEXT = (
-    "The stored pipwerk Studio object directory is invalid, so no files can be moved. "
-    "Save the object directory without moving files to repair it."
-)
-OBJECT_TARGET_NOT_CREATED_TEXT = (
-    "The new object directory could not be created. Nothing was moved and the object "
-    "directory is unchanged."
-)
-OBJECT_MOVE_FAILED_TEXT = (
-    "Moving the object files failed. The files were brought back and the object directory "
-    "is unchanged."
-)
-OBJECT_MOVE_NOT_RESTORED_TEXT = (
-    "Moving the object files failed and some files could not be brought back. "
-    "The object directory is unchanged."
-)
 
 
 def _object_directory_model(setting: ObjectDirectorySetting) -> StudioObjectDirectory:
@@ -290,10 +256,7 @@ def create_app(
             return StudioLanguage(language=settings_service.get_language())
         except StoredLanguageInvalidError as error:
             logger.error("%s", error)
-            raise HTTPException(
-                status_code=503,
-                detail="The stored pipwerk Studio language is invalid.",
-            ) from error
+            raise ApiException("language.stored_invalid") from error
 
     @app.put(
         "/api/studio/settings/language",
@@ -314,26 +277,30 @@ def create_app(
     @app.exception_handler(RequestValidationError)
     async def handle_invalid_request(request: Request, error: RequestValidationError) -> Response:
         # The object directory endpoints answer with a fixed text that does not
-        # repeat the input; the other endpoints keep the default answer.
+        # repeat the input; the other endpoints name the places of the errors.
         if request.url.path == OBJECT_DIRECTORY_PATH:
-            body = ObjectDirectoryError(detail=INVALID_OBJECT_DIRECTORY_BODY_TEXT)
-            return JSONResponse(status_code=422, content=body.model_dump())
-        if is_public_path(request.url.path):
-            return request_validation_response(error)
-        return await request_validation_exception_handler(request, error)
+            return error_response("object_directory.invalid_body")
+        return request_validation_response(error)
 
     @app.exception_handler(ObjectMoveRollbackError)
     def handle_object_move_not_restored(
         _request: Request, error: ObjectMoveRollbackError
     ) -> JSONResponse:
         logger.error("Moving the object files failed and they could not be restored.")
-        body = ObjectMoveRestoreFailure(
-            detail=OBJECT_MOVE_NOT_RESTORED_TEXT,
-            source_directory=str(error.source),
-            target_directory=str(error.target),
+        source_directory = str(error.source)
+        target_directory = str(error.target)
+        params = {
+            "source_directory": source_directory,
+            "target_directory": target_directory,
+            "files": error.names,
+        }
+        return error_response(
+            "object_directory.move_not_restored",
+            params,
+            source_directory=source_directory,
+            target_directory=target_directory,
             files=error.names,
         )
-        return JSONResponse(status_code=500, content=body.model_dump())
 
     @app.get(
         OBJECT_DIRECTORY_PATH,
@@ -353,9 +320,7 @@ def create_app(
             return _object_directory_model(settings_service.get_object_directory())
         except StoredObjectDirectoryInvalidError as error:
             logger.error("%s", error)
-            raise HTTPException(
-                status_code=503, detail=STORED_OBJECT_DIRECTORY_INVALID_TEXT
-            ) from error
+            raise ApiException("object_directory.stored_invalid") from error
 
     @app.put(
         OBJECT_DIRECTORY_PATH,
@@ -385,21 +350,19 @@ def create_app(
         try:
             setting = settings_service.set_object_directory(update.path, move=update.move)
         except InvalidObjectDirectoryError as error:
-            raise HTTPException(status_code=422, detail=INVALID_OBJECT_DIRECTORY_TEXT) from error
+            raise ApiException("object_directory.not_absolute") from error
         except ObjectConflictError as error:
-            raise HTTPException(status_code=409, detail=OBJECT_CONFLICT_TEXT) from error
+            raise ApiException("object_directory.conflict") from error
         except StoredObjectDirectoryInvalidError as error:
             # Only with move: there is no valid directory to move the files from.
             logger.error("%s", error)
-            raise HTTPException(
-                status_code=409, detail=STORED_OBJECT_DIRECTORY_NO_MOVE_TEXT
-            ) from error
+            raise ApiException("object_directory.stored_invalid_no_move") from error
         except ObjectTargetNotCreatableError as error:
             logger.error("The new object directory could not be created.", exc_info=error)
-            raise HTTPException(status_code=500, detail=OBJECT_TARGET_NOT_CREATED_TEXT) from error
+            raise ApiException("object_directory.target_not_creatable") from error
         except ObjectMoveError as error:
             logger.error("Moving the object files failed.", exc_info=error)
-            raise HTTPException(status_code=500, detail=OBJECT_MOVE_FAILED_TEXT) from error
+            raise ApiException("object_directory.move_failed") from error
         return _object_directory_model(setting)
 
     @app.get(

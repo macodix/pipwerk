@@ -25,6 +25,8 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 PROG=testenv
 STARTUP_TIMEOUT=120
 STOP_TIMEOUT=10
+# The saved strategy "EMA-Trendfolge", relative to the root of the repository.
+SAVED_STRATEGY=development/strategiedesign/wp02/acceptance/ema-trendfolge-auftraggeber.strategy.json
 
 die() {
     printf '%s: %s\n' "$PROG" "$*" >&2
@@ -292,6 +294,18 @@ SettingsService(create_session_factory(engine)).set_object_directory(sys.argv[2]
 engine.dispose()
 ' "sqlite:///$env_dir/pipwerk-studio.db" "$env_dir/objects" ||
         die "the object directory of the test environment could not be set"
+
+    # The saved strategy "EMA-Trendfolge" (a file of the format 1.0 from the
+    # basis of the work package) is put into the object directory unchanged under
+    # the file name of its identifier, unless the directory has a file with that
+    # identifier. The program reads it as it is, converts it when it is read and
+    # saves the format 2.0 only when the user saves it.
+    ema_file="$repo_root/$SAVED_STRATEGY"
+    [ -f "$ema_file" ] ||
+        die "the saved strategy of the test environment is missing in the working directory ($SAVED_STRATEGY)"
+    "$backend_dir/.venv/bin/python" -I "$script_dir/put_saved_strategy.py" \
+        "$ema_file" "$env_dir/objects" >/dev/null ||
+        die "the saved strategy could not be put into the object directory of the test environment"
 
     # The user interface passes the header Host of its own address on to the backend
     # (proxy without changeOrigin), and the backend accepts only names on its list of

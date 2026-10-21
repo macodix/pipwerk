@@ -9,6 +9,11 @@ MAX_EXPRESSION_LENGTH = 4096
 MAX_EXPRESSION_NESTING = 64
 """Nesting of an expression: parentheses and function calls inside each other."""
 
+MAX_BLOCK_DEPTH = 200
+"""Nesting of blocks: levels of an expression as a tree of blocks, in a request and in an
+answer of ``/api/v1/expressions``. An expression that makes a deeper tree (for example a sum of
+very many terms) is answered without blocks, and the answer says so."""
+
 MAX_ELEMENTS = 1000
 """Elements of a strategy."""
 

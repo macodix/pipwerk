@@ -372,7 +372,7 @@ class _Checker:
         )
 
     def _check_expected(self, tree: Node, result: ExprType, expected: ExprType) -> None:
-        mismatch = et.mismatch_with(expected, result)
+        mismatch = et.mismatch_with(expected, result, self.display)
         if mismatch is None:
             return
         if mismatch.reason == "choice_value":
@@ -530,7 +530,7 @@ class _Checker:
             (left, right, node.right),
             (right, left, node.left),
         ):
-            mismatch = et.literal_mismatch(choice_side, other)
+            mismatch = et.literal_mismatch(choice_side, other, self.display)
             if mismatch is not None:
                 self._report_choice_value(other_node, mismatch, "comparison")
 

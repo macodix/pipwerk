@@ -12,6 +12,7 @@ from pipwerk_domain.documents.convert import (
 from pipwerk_domain.documents.io import (
     DocumentError,
     document_to_json,
+    load_json,
     parse_document,
     read_document,
     write_document,
@@ -42,6 +43,7 @@ __all__ = [
     "TrendDocument",
     "document_to_json",
     "from_document",
+    "load_json",
     "parse_document",
     "read_document",
     "strategy_from_document",

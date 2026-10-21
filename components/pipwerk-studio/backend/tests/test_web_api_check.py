@@ -122,7 +122,7 @@ def test_check_does_not_normalize_so_positions_refer_to_the_text_that_was_sent(
 def test_check_names_the_findings_like_saving_does(client: TestClient) -> None:
     document = load_case("str-03")
     document["elements"].append(
-        {"id": "00000000-0000-4000-8000-0000000000bb", "type": "x.unbekannt", "title": "?"}
+        {"id": "00000000-0000-4000-8000-0000000000bb", "type": "x.unbekannt", "name": "?"}
     )
     checked = check(client, document).json()["findings"]
     saved = post(client, "strategies", document).json()["findings"]

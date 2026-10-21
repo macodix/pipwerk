@@ -94,7 +94,11 @@ def test_get_reports_a_stored_value_that_is_not_absolute_with_503(
     response = client.get(ENDPOINT)
 
     assert response.status_code == 503
-    assert response.json() == {"detail": "The stored pipwerk Studio object directory is invalid."}
+    assert response.json() == {
+        "detail": "The stored pipwerk Studio object directory is invalid.",
+        "code": "object_directory.stored_invalid",
+        "params": {},
+    }
     assert (
         client.put(ENDPOINT, json={"path": str(tmp_path / "ok"), "move": False}).status_code == 200
     )
@@ -170,7 +174,11 @@ def test_put_rejects_a_path_that_is_not_absolute_with_a_fixed_text(
     response = client.put(ENDPOINT, json={"path": path, "move": True})
 
     assert response.status_code == 422
-    assert response.json() == {"detail": "The object directory must be an absolute path."}
+    assert response.json() == {
+        "detail": "The object directory must be an absolute path.",
+        "code": "object_directory.not_absolute",
+        "params": {},
+    }
     assert "secret" not in response.text
     assert names_in(default_directory) == sorted(NAMES)
     assert client.get(ENDPOINT).json()["is_default"] is True
@@ -203,7 +211,9 @@ def test_put_rejects_an_invalid_body_with_a_fixed_text(client: TestClient, body:
         "detail": (
             "The request body must be a JSON object with the fields path (text) and move "
             "(true or false)."
-        )
+        ),
+        "code": "object_directory.invalid_body",
+        "params": {},
     }
     assert "secret" not in response.text
     assert client.get(ENDPOINT).json()["is_default"] is True
@@ -243,7 +253,9 @@ def test_put_rejects_a_conflict_with_409_and_moves_nothing(
         "detail": (
             "The new object directory already contains files with the same names. "
             "Nothing was moved."
-        )
+        ),
+        "code": "object_directory.conflict",
+        "params": {},
     }
     assert str(new) not in response.text
     assert names_in(default_directory) == sorted(NAMES)
@@ -278,7 +290,9 @@ def test_put_reports_a_failed_move_with_500_after_bringing_the_files_back(
         "detail": (
             "Moving the object files failed. The files were brought back and the object "
             "directory is unchanged."
-        )
+        ),
+        "code": "object_directory.move_failed",
+        "params": {},
     }
     assert "secret" not in response.text
     assert "exploded" not in response.text
@@ -316,6 +330,12 @@ def test_put_names_both_directories_and_the_files_if_bringing_back_fails(
             "Moving the object files failed and some files could not be brought back. "
             "The object directory is unchanged."
         ),
+        "code": "object_directory.move_not_restored",
+        "params": {
+            "source_directory": str(default_directory),
+            "target_directory": str(new),
+            "files": [sorted_names[0]],
+        },
         "source_directory": str(default_directory),
         "target_directory": str(new),
         "files": [sorted_names[0]],
@@ -340,7 +360,9 @@ def test_put_with_moving_rejects_a_stored_value_that_is_not_absolute_with_409(
         "detail": (
             "The stored pipwerk Studio object directory is invalid, so no files can be moved. "
             "Save the object directory without moving files to repair it."
-        )
+        ),
+        "code": "object_directory.stored_invalid_no_move",
+        "params": {},
     }
     assert "secret" not in response.text
     assert not new.exists()
@@ -366,7 +388,9 @@ def test_put_says_that_the_new_directory_could_not_be_created_and_not_that_files
         "detail": (
             "The new object directory could not be created. Nothing was moved and the object "
             "directory is unchanged."
-        )
+        ),
+        "code": "object_directory.target_not_creatable",
+        "params": {},
     }
     assert "brought back" not in response.text
     assert names_in(default_directory) == sorted(NAMES)
@@ -392,5 +416,10 @@ def test_the_existing_endpoints_behave_as_before(client: TestClient) -> None:
     }
     rejected = client.put("/api/studio/settings/language", json={"language": "fr"})
     assert rejected.status_code == 422
-    assert isinstance(rejected.json()["detail"], list)
+    assert rejected.json() == {
+        "detail": "The request is invalid.",
+        "code": "request.invalid",
+        "params": {},
+        "errors": [{"location": ["body", "language"], "type": "literal_error"}],
+    }
     assert set(client.get("/api/studio/revision").json()) == {"revision", "commit", "committed_at"}

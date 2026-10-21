@@ -1,11 +1,10 @@
 """Public web API of pipwerk Studio under ``/api/v1/`` (specification 4.2).
 
-Type descriptions, strategies, templates, usages and the consistency check. This
-module only connects HTTP with the shared library (``pipwerk_domain``) and the
-object service; it has no knowledge of single element types or object types
-(specification E2). The documents are the Pydantic models of
-``pipwerk_domain.documents``; the responses are models of this module that
-reject additional fields.
+Type descriptions, strategies, templates, usages, the consistency check, the expressions and
+the keys. This module only connects HTTP with the shared library (``pipwerk_domain``) and the
+object service; it has no knowledge of single element types or object types (specification
+E2). The documents are the Pydantic models of ``pipwerk_domain.documents``; the responses are
+models of this module that reject additional fields.
 
 Rules (specification 4.1, 4.2, 8):
 
@@ -15,10 +14,11 @@ Rules (specification 4.1, 4.2, 8):
   at most 2 MiB (HTTP 413, checked by ``BodyLimitMiddleware`` before any JSON is
   read). The body is read as a whole and checked by the library: a document that
   does not fit the schema, also by a limit of the library, is answered with
-  HTTP 422.
-- Error texts are fixed. They name no path and no exception text; for a
-  document that does not fit the schema the answer names the place of each error
-  in the document and its error type, never the value.
+  HTTP 422. The library reads documents of the format 2.0 and 1.0; it writes 2.0.
+- Every error answer has the fixed English ``detail``, the ``code`` of the cause and the
+  ``params`` for the text (``errors.py``). The texts name no path and no exception text; for a
+  document that does not fit the schema the answer names the place of each error in the document
+  and its error type, never the value.
 """
 
 from __future__ import annotations
@@ -26,16 +26,15 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Path, Request
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, Depends, FastAPI, Path, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
-from pipwerk_domain.consistency import CheckResult, Finding
-from pipwerk_domain.defaults import builtin_templates
+from pipwerk_domain.consistency import CheckResult
+from pipwerk_domain.defaults import builtin_template_texts, builtin_templates
 from pipwerk_domain.documents import (
     DOCUMENT_MODELS,
     DocumentError,
@@ -44,6 +43,8 @@ from pipwerk_domain.documents import (
     RulesetDocument,
     StrategyDocument,
     TrendDocument,
+    from_document,
+    load_json,
     parse_document,
     to_document,
 )
@@ -53,13 +54,34 @@ from pipwerk_domain.expressions.functions import (
     ResultKind,
     list_functions,
 )
-from pipwerk_domain.limits import MAX_DOCUMENT_BYTES
+from pipwerk_domain.limits import MAX_BLOCK_DEPTH, MAX_DOCUMENT_BYTES
 from pipwerk_domain.registry import ElementRegistry
-from pipwerk_domain.typedesc import BindingKind, DataType, ElementKind, ObjectCategory
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError, create_model
+from pipwerk_domain.typedesc import BindingKind, DataType, ElementKind, Group, ObjectCategory
+from pydantic import AwareDatetime, ConfigDict, Field, ValidationError, create_model
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from pipwerk_studio.api_models import (
+    ApiError,
+    ApiModel,
+    ErrorBody,
+    FindingModel,
+    InvalidRequest,
+    LabelModel,
+    finding_model,
+)
 from pipwerk_studio.body_limit import BodyLimitMiddleware
+from pipwerk_studio.errors import ApiException, error_response
+from pipwerk_studio.expressions_api import (
+    ExpressionsRequest,
+    ExpressionsResponse,
+    KeyRequest,
+    KeyResponse,
+    answer_expressions,
+    answer_key,
+    block_depth_in_data,
+)
 from pipwerk_studio.object_service import (
+    MAX_STORED_FILE_BYTES,
     BuiltinObjectError,
     DocumentIdentifierError,
     DocumentKindError,
@@ -78,6 +100,16 @@ from pipwerk_studio.object_service import (
 from pipwerk_studio.settings_service import StoredObjectDirectoryInvalidError
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "API_PREFIX",
+    "ApiError",
+    "FindingModel",
+    "InvalidRequest",
+    "LabelModel",
+    "install_public_api",
+    "is_public_path",
+]
 
 API_PREFIX = "/api/v1"
 """The path below which the public web API lives."""
@@ -99,74 +131,18 @@ ART_OF_KIND: dict[KindName, ArtName] = {
     "ruleset": "rulesets",
 }
 
-OBJECT_NOT_FOUND_TEXT = "The object does not exist."
-OBJECT_UNREADABLE_TEXT = (
-    "The object file cannot be read or does not fit the document schema. It is left unchanged."
-)
-OBJECT_KIND_CONFLICT_TEXT = (
-    "An entry of another kind has this identifier in the object directory (any entry, for "
-    "example a file, a symbolic link or a directory). Nothing was written."
-)
-OBJECT_NAME_TAKEN_TEXT = (
-    "The file name of the object in the object directory is taken by an entry that is no "
-    "readable regular file (for example a symbolic link or a directory). Nothing was written."
-)
-BUILTIN_OBJECT_TEXT = "A delivered template cannot be changed or deleted."
-DOCUMENT_INVALID_TEXT = "The document does not fit the document schema."
-FORMAT_MISMATCH_TEXT = "The format of the document does not fit the kind of object."
-IDENTIFIER_MISMATCH_TEXT = "The identifier of the document differs from the identifier in the path."
-REQUEST_INVALID_TEXT = "The request is invalid."
-UNSUPPORTED_MEDIA_TEXT = "The request body must be JSON (Content-Type: application/json)."
-DOCUMENT_TOO_LARGE_TEXT = "The document is too large to be stored."
-DIRECTORY_NOT_SET_TEXT = "The object directory of pipwerk Studio is not set."
-STORED_OBJECT_DIRECTORY_INVALID_TEXT = "The stored pipwerk Studio object directory is invalid."
-DIRECTORY_UNREADABLE_TEXT = "The object directory of pipwerk Studio cannot be read."
-WRITE_FAILED_TEXT = "The object file could not be written or deleted."
-
 
 # --- models ------------------------------------------------------------------------------
 
 
-class _Model(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class ApiError(_Model):
-    """Error body with a fixed text. It names no path, no exception text and no input."""
-
-    detail: str
-
-
-class ErrorPlace(_Model):
-    """One error of a request: the place in the request or document and the error type."""
-
-    location: list[str | int]
-    type: str
-
-
-class InvalidRequest(_Model):
-    """Error body for a request or document that does not fit the schema (HTTP 422). Names
-    at most 50 places and the error type of each, never the values."""
-
-    detail: str
-    errors: list[ErrorPlace]
-
-
-class LabelModel(_Model):
-    """A text in German and English."""
-
-    de: str
-    en: str
-
-
-class ChoiceModel(_Model):
+class ChoiceModel(ApiModel):
     """A fixed value of a choice."""
 
     id: str
     label: LabelModel
 
 
-class ConditionModel(_Model):
+class ConditionModel(ApiModel):
     """The parameter or property applies only if the parameter or property ``name`` has
     ``value``."""
 
@@ -174,7 +150,7 @@ class ConditionModel(_Model):
     value: str
 
 
-class ParameterModel(_Model):
+class ParameterModel(ApiModel):
     """A parameter of a type."""
 
     id: str
@@ -186,9 +162,10 @@ class ParameterModel(_Model):
     bindings: list[BindingKind]
     applies_when: ConditionModel | None
     object_type: str | None
+    explanation: LabelModel
 
 
-class PropertyModel(_Model):
+class PropertyModel(ApiModel):
     """A property of a type."""
 
     id: str
@@ -200,19 +177,23 @@ class PropertyModel(_Model):
     choices: list[ChoiceModel]
     applies_when: ConditionModel | None
     object_type: str | None
+    explanation: LabelModel
 
 
-class OutputModel(_Model):
+class OutputModel(ApiModel):
     """An output of an element of the flow."""
 
     id: str
     label: LabelModel
     holds_management: bool
+    explanation: LabelModel
 
 
-class TypeDescriptionModel(_Model):
+class TypeDescriptionModel(ApiModel):
     """Description of an element type or object type: the data the user interface is built
-    from (specification 3.1)."""
+    from (specification 3.1). ``group`` is the group of the element library (``null`` for a
+    type that is not in it); ``explanation`` is the short text on pointing at the type, in
+    the language of a trader."""
 
     id: str
     kind: ElementKind
@@ -228,24 +209,30 @@ class TypeDescriptionModel(_Model):
     by_user: bool
     named: bool
     strategy_parameters: bool
+    explanation: LabelModel
+    group: Group | None
 
 
-class FunctionParameterModel(_Model):
+class FunctionParameterModel(ApiModel):
     """A parameter of a function of expressions."""
 
     name: str
     kind: ArgumentKind
     optional: bool
+    label: LabelModel
+    explanation: LabelModel
 
 
-class FunctionModel(_Model):
-    """A function of expressions with its signature."""
+class FunctionModel(ApiModel):
+    """A function of expressions with its signature, its name in trader language and its
+    explanation."""
 
     name: str
     parameters: list[FunctionParameterModel]
     variadic: ArgumentKind | None
     result: ResultKind
-    description: LabelModel
+    label: LabelModel
+    explanation: LabelModel
     min_arguments: int
     max_arguments: int | None
 
@@ -256,60 +243,61 @@ TemplateDocument = Annotated[
 ]
 
 
-class ElementTypesResponse(_Model):
+class TemplateTextsModel(ApiModel):
+    """The name and the explanation of a delivered template in both languages (the document
+    stores one name only) and its group of the element library."""
+
+    id: str
+    name: LabelModel
+    explanation: LabelModel
+    group: Group
+
+
+class ElementTypesResponse(ApiModel):
     """All type descriptions of the element register, the delivered templates as documents
-    and the functions of expressions."""
+    with their texts in both languages, and the functions of expressions."""
 
     types: list[TypeDescriptionModel]
     templates: list[TemplateDocument]
+    template_texts: list[TemplateTextsModel]
     functions: list[FunctionModel]
 
 
-class ObjectListEntry(_Model):
+class ObjectListEntry(ApiModel):
     """An object in the list. A file that is not readable (cannot be read, does not fit the
     schema or names another identifier than its file name) has only the identifier, the time
     of its last change and ``unreadable`` true; it is not changed."""
 
     id: str
-    title: str | None
+    name: str | None
     description: str | None
     object_type: str | None
     modified: AwareDatetime
     unreadable: bool
 
 
-class ObjectList(_Model):
-    """The objects of one kind, sorted by title; the not readable ones come last."""
+class ObjectList(ApiModel):
+    """The objects of one kind, sorted by name; the not readable ones come last."""
 
     items: list[ObjectListEntry]
 
 
-class FindingModel(_Model):
-    """A finding of the consistency check (specification 3.6)."""
-
-    level: Literal["error", "hint"]
-    code: str
-    element: str | None
-    subject: str | None
-    details: dict[str, Any]
-
-
-class UsageEntry(_Model):
+class UsageEntry(ApiModel):
     """A strategy or template that contains an instance made from the template."""
 
     art: ArtName
     id: str
-    title: str
+    name: str
 
 
-class UsagesResponse(_Model):
+class UsagesResponse(ApiModel):
     """The usages of a template. Files that are not readable are skipped and counted."""
 
     usages: list[UsageEntry]
     skipped_unreadable: int
 
 
-class NameSegmentModel(_Model):
+class NameSegmentModel(ApiModel):
     """One part of a recognized name."""
 
     identifier: str
@@ -317,7 +305,7 @@ class NameSegmentModel(_Model):
     end: int
 
 
-class NameModel(_Model):
+class NameModel(ApiModel):
     """A name recognized in an expression; ``start`` is the first character and ``end`` the
     position after the last character."""
 
@@ -329,7 +317,7 @@ class NameModel(_Model):
     segments: list[NameSegmentModel]
 
 
-class ExpressionNamesModel(_Model):
+class ExpressionNamesModel(ApiModel):
     """The names recognized in one expression. ``element`` and ``subject`` tell where the
     expression stands, ``field`` which expression it is (as for a finding)."""
 
@@ -339,7 +327,7 @@ class ExpressionNamesModel(_Model):
     names: list[NameModel]
 
 
-class CheckResponse(_Model):
+class CheckResponse(ApiModel):
     """Result of the consistency check of a document that was not saved."""
 
     findings: list[FindingModel]
@@ -368,6 +356,20 @@ def _template_documents() -> list[
     return documents
 
 
+def _template_texts() -> list[TemplateTextsModel]:
+    return [
+        TemplateTextsModel.model_validate(
+            {
+                "id": item.template_id,
+                "name": dataclasses.asdict(item.name),
+                "explanation": dataclasses.asdict(item.explanation),
+                "group": item.group,
+            }
+        )
+        for item in builtin_template_texts()
+    ]
+
+
 def _function_model(item: FunctionSignature) -> FunctionModel:
     data = dataclasses.asdict(item)
     data["min_arguments"] = item.min_arguments
@@ -379,13 +381,9 @@ def _functions() -> list[FunctionModel]:
     return [_function_model(item) for item in list_functions()]
 
 
-def _finding_model(finding: Finding) -> FindingModel:
-    return FindingModel.model_validate(jsonable_encoder(finding.to_dict()))
-
-
 def _check_response(result: CheckResult) -> CheckResponse:
     return CheckResponse(
-        findings=[_finding_model(item) for item in result.findings],
+        findings=[finding_model(item) for item in result.findings],
         expressions=[
             ExpressionNamesModel.model_validate(dataclasses.asdict(item))
             for item in result.expressions
@@ -397,7 +395,7 @@ def _check_response(result: CheckResult) -> CheckResponse:
 def _list_entry(entry: ListEntry) -> ObjectListEntry:
     return ObjectListEntry(
         id=entry.object_id,
-        title=entry.title,
+        name=entry.name,
         description=entry.description,
         object_type=entry.object_type,
         modified=entry.modified,
@@ -409,7 +407,7 @@ def _saved_body(saved: SavedObject) -> dict[str, Any]:
     return {
         "id": saved.object_id,
         "document": json.loads(saved.text),
-        "findings": [_finding_model(item).model_dump(mode="json") for item in saved.findings],
+        "findings": [finding_model(item).model_dump(mode="json") for item in saved.findings],
     }
 
 
@@ -420,41 +418,43 @@ def _short(text: str) -> str:
     return text if len(text) <= MAX_LOCATION_TEXT else text[:MAX_LOCATION_TEXT] + "…"
 
 
-def invalid_request(
-    detail: str, error: ValidationError | RequestValidationError | None = None
-) -> JSONResponse:
-    """HTTP 422 with the places of the errors and their types, never the values. At most
+def _places(
+    error: ValidationError | RequestValidationError, prefix: Sequence[str | int] = ()
+) -> list[dict[str, Any]]:
+    """The places of the errors and their types, never the values. At most
     ``MAX_LISTED_ERRORS`` errors are named; each text in a place is shortened."""
     places: list[dict[str, Any]] = []
-    if error is not None:
-        items = (
-            error.errors()
-            if isinstance(error, RequestValidationError)
-            else error.errors(include_url=False, include_context=False, include_input=False)
-        )
-        for item in items[:MAX_LISTED_ERRORS]:
-            parts = list(item["loc"])
-            if isinstance(error, ValidationError) and parts and parts[0] in DOCUMENT_MODELS:
-                parts = parts[1:]  # the tag of the format that selected the model is no place
-            location = [part if isinstance(part, int) else _short(str(part)) for part in parts]
-            places.append({"location": location, "type": str(item["type"])})
-    return JSONResponse(status_code=422, content={"detail": detail, "errors": places})
-
-
-def _place(detail: str, location: list[str | int], kind: str) -> JSONResponse:
-    return JSONResponse(
-        status_code=422,
-        content={"detail": detail, "errors": [{"location": location, "type": kind}]},
+    items = (
+        error.errors()
+        if isinstance(error, RequestValidationError)
+        else error.errors(include_url=False, include_context=False, include_input=False)
     )
+    for item in items[:MAX_LISTED_ERRORS]:
+        parts = list(item["loc"])
+        if isinstance(error, ValidationError) and parts and parts[0] in DOCUMENT_MODELS:
+            parts = parts[1:]  # the tag of the format that selected the model is no place
+        location = [part if isinstance(part, int) else _short(str(part)) for part in parts]
+        places.append({"location": [*prefix, *location], "type": str(item["type"])})
+    return places
 
 
-def _error(status: int, text: str) -> JSONResponse:
-    return JSONResponse(status_code=status, content={"detail": text})
+def invalid_request(
+    code: str,
+    error: ValidationError | RequestValidationError | None = None,
+    prefix: Sequence[str | int] = (),
+) -> JSONResponse:
+    """HTTP 422 with the code, the places of the errors and their types, never the values."""
+    places = [] if error is None else _places(error, prefix)
+    return error_response(code, errors=places)
+
+
+def _place(code: str, location: list[str | int], kind: str) -> JSONResponse:
+    return error_response(code, errors=[{"location": location, "type": kind}])
 
 
 def request_validation_response(error: RequestValidationError) -> JSONResponse:
-    """The answer to a request below ``/api/v1/`` that does not fit its parameters."""
-    return invalid_request(REQUEST_INVALID_TEXT, error)
+    """The answer to a request that does not fit its parameters."""
+    return invalid_request("request.invalid", error)
 
 
 def _log_failure(text: str, error: BaseException) -> None:
@@ -470,41 +470,56 @@ def _log_failure(text: str, error: BaseException) -> None:
     logger.error("%s (%s)", text, detail)
 
 
+def handle_api_exception(_request: Request, error: ApiException) -> JSONResponse:
+    """The answer to an :class:`ApiException`: the table status, the text, the code and the
+    params, and the fields the exception adds (for example ``errors``)."""
+    return error_response(error.code, error.params, **error.extra)
+
+
+def handle_http_exception(_request: Request, error: StarletteHTTPException) -> JSONResponse:
+    """The answer to an error of the framework (a path or method that does not exist)."""
+    codes = {404: "request.not_found", 405: "request.method_not_allowed"}
+    code = codes.get(error.status_code, "request.failed")
+    if code == "request.failed":
+        return error_response(code, status=error.status_code)
+    return error_response(code)
+
+
 def _guarded(call: Callable[[], Response]) -> Response:
     """Run an endpoint and answer the errors of the object service with fixed texts."""
     try:
         return call()
     except ObjectNotFoundError:
-        return _error(404, OBJECT_NOT_FOUND_TEXT)
+        return error_response("object.not_found")
     except ObjectUnreadableError:
-        return _error(409, OBJECT_UNREADABLE_TEXT)
+        return error_response("object.unreadable")
     except ObjectKindConflictError:
-        return _error(409, OBJECT_KIND_CONFLICT_TEXT)
+        return error_response("object.kind_conflict")
     except ObjectNameTakenError:
-        return _error(409, OBJECT_NAME_TAKEN_TEXT)
+        return error_response("object.name_taken")
     except BuiltinObjectError:
-        return _error(403, BUILTIN_OBJECT_TEXT)
+        return error_response("object.builtin")
     except DocumentKindError:
-        return _place(FORMAT_MISMATCH_TEXT, ["format"], "format_mismatch")
+        return _place("document.format_mismatch", ["format"], "format_mismatch")
     except DocumentIdentifierError:
-        return _place(IDENTIFIER_MISMATCH_TEXT, ["id"], "id_mismatch")
+        return _place("document.id_mismatch", ["id"], "id_mismatch")
     except DocumentError as error:
-        return invalid_request(DOCUMENT_INVALID_TEXT, error)
+        return invalid_request("document.invalid", error)
     except DocumentTooLargeError:
-        return _error(413, DOCUMENT_TOO_LARGE_TEXT)
+        return error_response("document.too_large", {"limit_bytes": MAX_STORED_FILE_BYTES})
     except ObjectDirectoryMissingError:
-        return _error(503, DIRECTORY_NOT_SET_TEXT)
+        return error_response("object_directory.not_set")
     except StoredObjectDirectoryInvalidError as error:
         # the stored setting is not an absolute path: the same answer as the internal
         # endpoint of the setting gives
         logger.error("%s", error)
-        return _error(503, STORED_OBJECT_DIRECTORY_INVALID_TEXT)
+        return error_response("object_directory.stored_invalid")
     except ObjectDirectoryUnreadableError as error:
         _log_failure("The object directory cannot be read.", error)
-        return _error(500, DIRECTORY_UNREADABLE_TEXT)
+        return error_response("object_directory.unreadable")
     except ObjectWriteFailedError as error:
         _log_failure("An object file could not be written or deleted.", error)
-        return _error(500, WRITE_FAILED_TEXT)
+        return error_response("object.write_failed")
 
 
 async def _json_body(request: Request) -> bytes:
@@ -512,7 +527,7 @@ async def _json_body(request: Request) -> bytes:
     of another origin needs a preflight request for this media type.)"""
     media_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
     if media_type != "application/json":
-        raise HTTPException(status_code=415, detail=UNSUPPORTED_MEDIA_TEXT)
+        raise ApiException("request.not_json")
     return await request.body()
 
 
@@ -524,7 +539,7 @@ ObjectId = Annotated[
 
 
 def _error_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
-    texts = {
+    texts: dict[int, tuple[str, type[ErrorBody]]] = {
         403: ("A delivered template cannot be changed or deleted.", ApiError),
         404: ("There is no such object.", ApiError),
         409: (
@@ -558,8 +573,18 @@ def _document_body(schema: dict[str, Any], description: str) -> dict[str, Any]:
     }
 
 
-def _ref(model: type[BaseModel]) -> dict[str, Any]:
+def _ref(model: type[Any]) -> dict[str, Any]:
     return {"$ref": f"#/components/schemas/{model.__name__}"}
+
+
+def _any_document_schema() -> dict[str, Any]:
+    return {
+        "oneOf": [_ref(model) for model in DOCUMENT_MODELS.values()],
+        "discriminator": {
+            "propertyName": "format",
+            "mapping": {name: _ref(model)["$ref"] for name, model in DOCUMENT_MODELS.items()},
+        },
+    }
 
 
 # --- routes ------------------------------------------------------------------------------
@@ -582,7 +607,10 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         findings=(list[FindingModel], ...),
     )
     tags: list[str | Any] = [art]
-    body_text = f"A document of the format pipwerk.{kind}."
+    body_text = (
+        f"A document of the format pipwerk.{kind}, format 2.0 or 1.0 (a document of the "
+        "format 1.0 is converted and saved as 2.0)."
+    )
 
     @router.get(
         f"/{art}",
@@ -591,7 +619,7 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         summary=f"List the {art}",
         description=(
             f"Lists the {art} in the object directory of pipwerk Studio with identifier, "
-            "title, description, object type and the time of the last change. A file that is "
+            "name, description, object type and the time of the last change. A file that is "
             "not readable is listed with the identifier from its file name and the mark "
             "unreadable; it is not changed."
         ),
@@ -617,8 +645,8 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         description=(
             "Saves the document under a new identifier; an identifier in the document is "
             "replaced. The expressions are saved in the normalized spelling. The answer names "
-            "the identifier, the saved document and the findings of the consistency check; "
-            "findings do not prevent saving."
+            "the identifier, the saved document (format 2.0) and the findings of the "
+            "consistency check; findings do not prevent saving."
         ),
         responses={
             201: {"description": "The object was saved.", "model": saved_model},
@@ -641,8 +669,9 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
         tags=tags,
         summary=f"Read an object of the kind {kind}",
         description=(
-            "Returns the document as saved. A file that is not readable is answered with "
-            "HTTP 409 and not changed."
+            "Returns the document as saved, in the format 2.0. A file of the format 1.0 in "
+            "the object directory is returned converted and stays as it is until it is saved. "
+            "A file that is not readable is answered with HTTP 409 and not changed."
         ),
         response_model=None,
         responses={
@@ -669,14 +698,15 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
             "in the current object directory (for example after the directory was changed "
             "without moving the files), the file is created, and the directory too if it is "
             "missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are "
-            "saved in the normalized spelling. The answer names the saved document and the "
-            "findings of the consistency check; findings do not prevent saving. A delivered "
-            "template cannot be changed (HTTP 403). The same rule holds for creating and "
-            "replacing: if an entry lies under the file name of this kind that is no readable "
-            "regular file (for example a file that is not readable, a symbolic link with or "
-            "without target, or a directory), or if any entry of the same identifier with "
-            "another kind lies in the object directory (for example a file, a symbolic link "
-            "or a directory), nothing is written (HTTP 409). Links are never followed."
+            "saved in the normalized spelling. The answer names the saved document (format "
+            "2.0) and the findings of the consistency check; findings do not prevent saving. "
+            "A delivered template cannot be changed (HTTP 403). The same rule holds for "
+            "creating and replacing: if an entry lies under the file name of this kind that is "
+            "no readable regular file (for example a file that is not readable, a symbolic "
+            "link with or without target, or a directory), or if any entry of the same "
+            "identifier with another kind lies in the object directory (for example a file, a "
+            "symbolic link or a directory), nothing is written (HTTP 409). Links are never "
+            "followed."
         ),
         response_model=None,
         responses={
@@ -741,7 +771,7 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
             result = service.usages(kind, str(object_id))
             body = UsagesResponse(
                 usages=[
-                    UsageEntry(art=ART_OF_KIND[item.kind], id=item.object_id, title=item.title)
+                    UsageEntry(art=ART_OF_KIND[item.kind], id=item.object_id, name=item.name)
                     for item in result.usages
                 ],
                 skipped_unreadable=result.skipped_unreadable,
@@ -749,6 +779,31 @@ def _add_kind_routes(router: APIRouter, service: ObjectService, kind: KindName) 
             return JSONResponse(content=body.model_dump(mode="json"))
 
         return _guarded(run)
+
+
+def _load_request(body: bytes) -> object:
+    """The parsed JSON of a request body; ``request.invalid`` if it is no JSON."""
+    try:
+        return load_json(body)
+    except DocumentError as error:
+        raise ApiException(
+            "request.invalid", errors=[{"location": [], "type": "json_invalid"}]
+        ) from error
+
+
+def _check_block_depth(data: object) -> None:
+    """Reject blocks nested deeper than the limit before the models are built, so that deep
+    nesting cannot exhaust the stack."""
+    items = data.get("items") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return
+    for index, item in enumerate(items):
+        blocks = item.get("blocks") if isinstance(item, dict) else None
+        if blocks is not None and block_depth_in_data(blocks) > MAX_BLOCK_DEPTH:
+            raise ApiException(
+                "expressions.blocks_invalid",
+                {"index": index, "reason": "too_deep", "details": {"limit": MAX_BLOCK_DEPTH}},
+            )
 
 
 def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter:
@@ -761,29 +816,23 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
         tags=["element-types"],
         summary="List the type descriptions",
         description=(
-            "All type descriptions of the element register with names and descriptions in "
-            "German and English, the delivered templates as documents and the functions of "
-            "expressions. The user interface builds the element library and the property view "
-            "from this."
+            "All type descriptions of the element register with names, descriptions, "
+            "explanations and groups in German and English, the delivered templates as "
+            "documents with their names and explanations in both languages, and the functions "
+            "of expressions. The user interface builds the element library and the property "
+            "view from this."
         ),
     )
     def element_types() -> ElementTypesResponse:
         return ElementTypesResponse(
             types=_type_descriptions(registry),
             templates=_template_documents(),
+            template_texts=_template_texts(),
             functions=_functions(),
         )
 
     for kind in ART_OF_KIND:
         _add_kind_routes(router, service, kind)
-
-    any_document: dict[str, Any] = {
-        "oneOf": [_ref(model) for model in DOCUMENT_MODELS.values()],
-        "discriminator": {
-            "propertyName": "format",
-            "mapping": {name: _ref(model)["$ref"] for name, model in DOCUMENT_MODELS.items()},
-        },
-    }
 
     @router.post(
         "/check",
@@ -791,17 +840,17 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
         tags=["check"],
         summary="Check a document",
         description=(
-            "Runs the consistency check on a document of any kind without saving it, as it "
-            "is written (positions refer to the given expressions). The answer names the "
-            "findings and, for each expression, the recognized names with position and "
-            "identifier."
+            "Runs the consistency check on a document of any kind (format 2.0 or 1.0) without "
+            "saving it, as it is written (positions refer to the given expressions). The "
+            "answer names the findings and, for each expression, the recognized names with "
+            "position and identifier."
         ),
         response_model=None,
         responses={
             200: {"description": "The result of the check.", "model": CheckResponse},
             **_error_responses(413, 415, 422),
         },
-        openapi_extra=_document_body(any_document, "A document of any format."),
+        openapi_extra=_document_body(_any_document_schema(), "A document of any format."),
     )
     def check_document(body: JsonBody) -> Response:
         def run() -> Response:
@@ -810,13 +859,122 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
 
         return _guarded(run)
 
+    @router.post(
+        "/expressions",
+        operation_id="answer_expressions",
+        tags=["expressions"],
+        summary="Show expressions in both forms, as blocks and as a sentence",
+        description=(
+            "For 1 to 50 places of expressions in a document (strategy or template, format "
+            "2.0 or 1.0) the answer gives the expression in the stored form and in the display "
+            "form in the language of the request, the sentence, the blocks, the tokens with "
+            "their kinds, the findings and the names visible at the place with their "
+            "properties. An item names the place by a JSON Pointer to the document as the "
+            "format 2.0 writes it (the place itself may be missing, the object it belongs to "
+            "must be there) and gives exactly one of the stored form, the display form (in "
+            "either language) and blocks. A pointer that names no place of an expression is "
+            "answered with HTTP 422 and the code expressions.pointer_invalid. Positions of "
+            "tokens and findings refer to the display form. Where an answer is cut it says so "
+            "(blocks_omitted, findings_truncated, names_truncated, properties_truncated)."
+        ),
+        response_model=None,
+        responses={
+            200: {"description": "The answers.", "model": ExpressionsResponse},
+            **_error_responses(413, 415, 422),
+        },
+        openapi_extra=_document_body(
+            _ref(ExpressionsRequest), "The document, the language and the items."
+        ),
+    )
+    def expressions(body: JsonBody) -> Response:
+        def run() -> Response:
+            data = _load_request(body)
+            _check_block_depth(data)
+            try:
+                request = ExpressionsRequest.model_validate(data, strict=True)
+            except ValidationError as error:
+                return invalid_request("request.invalid", error)
+            try:
+                value = from_document(parse_document(request.document))
+            except DocumentError as error:
+                return invalid_request("document.invalid", error, ("document",))
+            result = answer_expressions(value, request, registry)
+            return JSONResponse(content=result.model_dump(mode="json"))
+
+        return _guarded(run)
+
+    @router.post(
+        "/keys",
+        operation_id="form_key",
+        tags=["expressions"],
+        summary="Form the key for a new object from a name",
+        description=(
+            "The key under which an expression addresses a new object: formed from the name, "
+            "different from the other keys of its namespace, from the identifiers of the "
+            "objects of the application and from the names of the functions. The scope is a "
+            "JSON Pointer to the list of the document that takes the new object (for example "
+            "/parameters or /elements). The user interface does not form keys itself."
+        ),
+        response_model=None,
+        responses={
+            200: {"description": "The key.", "model": KeyResponse},
+            **_error_responses(413, 415, 422),
+        },
+        openapi_extra=_document_body(
+            _ref(KeyRequest), "The document, the scope and the name of the new object."
+        ),
+    )
+    def keys(body: JsonBody) -> Response:
+        def run() -> Response:
+            data = _load_request(body)
+            try:
+                request = KeyRequest.model_validate(data, strict=True)
+            except ValidationError as error:
+                return invalid_request("request.invalid", error)
+            try:
+                value = from_document(parse_document(request.document))
+            except DocumentError as error:
+                return invalid_request("document.invalid", error, ("document",))
+            result = answer_key(value, request, registry)
+            return JSONResponse(content=result.model_dump(mode="json"))
+
+        return _guarded(run)
+
     return router
 
 
+def _add_request_models(app: FastAPI) -> None:
+    """Add the schemas of the requests that are read from the bytes of the body (they are
+    not parameters of the functions) to the description of the interface."""
+    original = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema is None:
+            description = original()
+            schemas = description.setdefault("components", {}).setdefault("schemas", {})
+            for model in (ExpressionsRequest, KeyRequest):
+                schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+                for key, definition in schema.pop("$defs", {}).items():
+                    schemas.setdefault(key, definition)
+                document = schema["properties"]["document"]
+                schema["properties"]["document"] = {
+                    "description": document.get("description", ""),
+                    **_any_document_schema(),
+                }
+                schemas[model.__name__] = schema
+        return app.openapi_schema or {}
+
+    app.openapi = openapi  # type: ignore[method-assign]
+
+
 def install_public_api(app: FastAPI, service: ObjectService, registry: ElementRegistry) -> None:
-    """Add the public web API and its limit of the body size to the application."""
+    """Add the public web API, its error answers and its limit of the body size to the
+    application."""
     app.include_router(build_router(service, registry))
     app.add_middleware(BodyLimitMiddleware, limit=MAX_BODY_BYTES, prefix=API_PREFIX)
+    app.add_exception_handler(ApiException, handle_api_exception)  # type: ignore[arg-type]
+    app.add_exception_handler(StarletteHTTPException, handle_http_exception)  # type: ignore[arg-type]
+    _add_request_models(app)
 
 
 def is_public_path(path: str) -> bool:

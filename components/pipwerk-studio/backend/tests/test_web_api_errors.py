@@ -47,6 +47,8 @@ def test_an_additional_field_is_422(client: TestClient, path: str) -> None:
     assert response.status_code == 422
     assert response.json() == {
         "detail": "The document does not fit the document schema.",
+        "code": "document.invalid",
+        "params": {},
         "errors": [{"location": ["zusaetzlich"], "type": "extra_forbidden"}],
     }
     assert MARKER not in response.text
@@ -83,33 +85,33 @@ def test_an_additional_field_deep_in_the_document_is_named_with_its_place(
 
 def test_a_wrong_type_names_the_place_and_not_the_value(client: TestClient) -> None:
     document = load_case("str-03")
-    document["elements"][0]["x"] = MARKER
+    document["elements"][0]["position"] = MARKER
     response = post(client, "strategies", document)
     assert response.status_code == 422
-    assert response.json()["errors"][0]["location"] == ["elements", 0, "x"]
+    assert response.json()["errors"][0]["location"] == ["elements", 0, "position"]
     assert_no_leak(response.text)
 
 
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda d: d.update(format_version="2.0"),
+        lambda d: d.update(format_version="3.0"),
         lambda d: d.update(format_version="1"),
         lambda d: d.update(id="not-a-uuid"),
         lambda d: d.update(id=str(d["id"]).upper()),
-        lambda d: d.pop("title"),
-        lambda d: d.update(title=5),
+        lambda d: d.pop("name"),
+        lambda d: d.update(name=5),
         lambda d: d.update(elements="no list"),
-        lambda d: d["parameters"].append({"name": "p", "datatype": "unknown"}),
-        lambda d: d["elements"][0].update(x=float("inf")),
+        lambda d: d["parameters"].append({"key": "p", "name": "p", "datatype": "unknown"}),
+        lambda d: d["elements"][0].update(position={"x": float("inf"), "y": 0}),
     ],
     ids=[
         "higher major version",
         "version without minor",
         "identifier not a UUID",
         "identifier in capitals",
-        "missing title",
-        "title not a text",
+        "missing name",
+        "name not a text",
         "elements not a list",
         "unknown data type",
         "infinite number",
@@ -126,6 +128,7 @@ def test_documents_that_do_not_fit_the_schema_are_422(client: TestClient, mutate
     assert response.status_code == 422
     answer = response.json()
     assert answer["detail"] == "The document does not fit the document schema."
+    assert (answer["code"], answer["params"]) == ("document.invalid", {})
     assert answer["errors"]
     assert_no_leak(response.text)
     assert client.get("/api/v1/strategies").json() == {"items": []}
@@ -149,7 +152,7 @@ def test_documents_that_do_not_fit_the_schema_are_422(client: TestClient, mutate
         b'{"a": 1, "a": 2}',
         b'{"format": "pipwerk.rule", "x": NaN}',
         b'{"format": "pipwerk.rule", "x": Infinity}',
-        b'{"format": "pipwerk.rule", "title": "\\ud800"}',
+        b'{"format": "pipwerk.rule", "name": "\\ud800"}',
         b"[" * 100000,
     ],
     ids=[
@@ -179,6 +182,7 @@ def test_a_body_that_is_no_document_is_422_with_a_fixed_text(
         response = client.post(path, content=raw, headers=JSON)
         assert response.status_code == 422, (path, raw[:20])
         assert response.json()["detail"] == "The document does not fit the document schema."
+        assert response.json()["code"] == "document.invalid"
         assert isinstance(response.json()["errors"], list)
         assert_no_leak(response.text)
 
@@ -197,21 +201,21 @@ def test_the_limits_of_the_library_are_422(client: TestClient) -> None:
     ]
     many_rules = load_case("str-03")
     many_rules["rules"] = [
-        {"name": f"r{number}", "object_type": "Regel"}
+        {"name": f"r{number}", "key": f"r{number}", "object_type": "Regel"}
         for number in range(limits.MAX_RULES_PER_LIST + 1)
     ]
     many_parameters = load_case("str-03")
     many_parameters["parameters"] = [
-        {"name": f"p{number}", "datatype": "number", "value": 1}
+        {"key": f"p{number}", "name": f"p{number}", "datatype": "number", "value": 1}
         for number in range(limits.MAX_STRATEGY_PARAMETERS + 1)
     ]
     many_connections = load_case("str-03")
     many_connections["connections"] = [
         many_connections["connections"][0] for _ in range(limits.MAX_CONNECTIONS + 1)
     ]
-    nested: dict[str, Any] = {"name": "innen", "object_type": "Regelwerk"}
+    nested: dict[str, Any] = {"name": "innen", "key": "innen", "object_type": "Regelwerk"}
     for _ in range(limits.MAX_INSTANCE_NESTING + 1):
-        nested = {"name": "aussen", "object_type": "Regelwerk", "rules": [nested]}
+        nested = {"name": "aussen", "key": "aussen", "object_type": "Regelwerk", "rules": [nested]}
     deep_instances = load_case("str-03")
     deep_instances["rules"] = [nested]
     for art, document in (
@@ -237,7 +241,7 @@ def test_the_limits_of_the_library_are_met_exactly_at_the_value(client: TestClie
     assert post(client, "rules", at_limit).status_code == 201
     parameters = load_case("str-03")
     parameters["parameters"] = [
-        {"name": f"p{number}", "datatype": "number", "value": 1}
+        {"key": f"p{number}", "name": f"p{number}", "datatype": "number", "value": 1}
         for number in range(limits.MAX_STRATEGY_PARAMETERS)
     ]
     assert post(client, "strategies", parameters).status_code == 201
@@ -263,7 +267,12 @@ def test_the_error_of_a_request_names_the_place_and_never_the_value(client: Test
     response = client.get(f"/api/v1/strategies/{MARKER}")
     assert response.status_code == 422
     assert_no_leak(response.text)
-    assert response.json()["errors"] == [{"location": ["path", "id"], "type": "uuid_parsing"}]
+    assert response.json() == {
+        "detail": "The request is invalid.",
+        "code": "request.invalid",
+        "params": {},
+        "errors": [{"location": ["path", "id"], "type": "uuid_parsing"}],
+    }
 
 
 # --- the media type -----------------------------------------------------------------------------
@@ -291,7 +300,9 @@ def test_a_body_that_is_not_declared_as_json_is_415(
         response = client.request(method, path, content=body(rule_document()), headers=headers)
         assert response.status_code == 415, (path, headers)
         assert response.json() == {
-            "detail": "The request body must be JSON (Content-Type: application/json)."
+            "detail": "The request body must be JSON (Content-Type: application/json).",
+            "code": "request.not_json",
+            "params": {},
         }
     assert client.get("/api/v1/strategies").json() == {"items": []}
 
@@ -371,7 +382,11 @@ def test_a_body_above_two_mebibytes_is_413_before_the_json_is_read(
         method, path, content=padded_rule(limits.MAX_DOCUMENT_BYTES + 1), headers=JSON
     )
     assert response.status_code == 413
-    assert response.json() == {"detail": "The request body is larger than the limit of 2 MiB."}
+    assert response.json() == {
+        "detail": "The request body is larger than the limit of 2 MiB.",
+        "code": "request.too_large",
+        "params": {"limit_bytes": limits.MAX_DOCUMENT_BYTES},
+    }
 
 
 def test_a_big_body_that_is_not_json_is_413_not_415_or_422(client: TestClient) -> None:
@@ -390,6 +405,7 @@ def test_the_limit_applies_to_the_public_web_api_only(client: TestClient) -> Non
         headers=JSON,
     )
     assert response.status_code == 422  # answered by the endpoint, not by the limit
+    assert response.json()["code"] == "request.invalid"
 
 
 # --- failures of the object directory -----------------------------------------------------
@@ -406,11 +422,19 @@ def test_a_directory_that_cannot_be_written_is_500_with_a_fixed_text(
     assert answer.status_code == 200
     response = post(client, "rules", rule_document())
     assert response.status_code == 500
-    assert response.json() == {"detail": "The object file could not be written or deleted."}
+    assert response.json() == {
+        "detail": "The object file could not be written or deleted.",
+        "code": "object.write_failed",
+        "params": {},
+    }
     assert str(tmp_path) not in response.text
     listing = client.get("/api/v1/rules")  # the setting names a file, the directory cannot be read
     assert listing.status_code == 500
-    assert listing.json() == {"detail": "The object directory of pipwerk Studio cannot be read."}
+    assert listing.json() == {
+        "detail": "The object directory of pipwerk Studio cannot be read.",
+        "code": "object_directory.unreadable",
+        "params": {},
+    }
     assert str(tmp_path) not in listing.text
     assert client.get("/api/v1/rules/11111111-2222-4333-8444-555555555555").status_code == 404
 
@@ -448,4 +472,42 @@ def test_without_an_object_directory_writing_is_503_and_reading_is_empty(
     assert client.get("/api/v1/strategies/11111111-2222-4333-8444-555555555555").status_code == 404
     response = post(client, "rules", rule_document())
     assert response.status_code == 503
-    assert response.json() == {"detail": "The object directory of pipwerk Studio is not set."}
+    assert response.json() == {
+        "detail": "The object directory of pipwerk Studio is not set.",
+        "code": "object_directory.not_set",
+        "params": {},
+    }
+
+
+def test_a_document_that_is_too_large_to_be_stored_is_413_with_the_limit(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pipwerk_studio import object_service
+
+    monkeypatch.setattr(object_service, "MAX_STORED_FILE_BYTES", 100)
+    monkeypatch.setattr(web_api, "MAX_STORED_FILE_BYTES", 100)
+    response = post(client, "rules", rule_document())
+    assert response.status_code == 413
+    assert response.json() == {
+        "detail": "The document is too large to be stored.",
+        "code": "document.too_large",
+        "params": {"limit_bytes": 100},
+    }
+    assert client.get("/api/v1/rules").json() == {"items": []}
+
+
+def test_an_error_of_the_framework_without_a_code_of_its_own_is_answered_with_a_code() -> None:
+    """A status of the framework that no code names keeps its status and gets the code
+    ``request.failed``."""
+    from starlette.exceptions import HTTPException
+
+    bad = web_api.handle_http_exception(None, HTTPException(status_code=400))  # type: ignore[arg-type]
+    assert bad.status_code == 400
+    assert json.loads(bytes(bad.body)) == {
+        "detail": "The request cannot be processed.",
+        "code": "request.failed",
+        "params": {},
+    }
+    conflict = web_api.handle_http_exception(None, HTTPException(status_code=409))  # type: ignore[arg-type]
+    assert conflict.status_code == 409
+    assert json.loads(bytes(conflict.body))["code"] == "request.failed"

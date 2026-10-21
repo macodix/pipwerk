@@ -138,11 +138,14 @@ class Mismatch:
     allowed: tuple[str, ...] = ()
 
 
-def mismatch_with(expected: ExprType, actual: ExprType) -> Mismatch | None:
+def mismatch_with(
+    expected: ExprType, actual: ExprType, accept_labels: bool = False
+) -> Mismatch | None:
     """``None`` if ``actual`` can be used where ``expected`` is required, else the reason.
 
     Fixed texts are checked against the allowed values of a choice and, where an instrument
-    is expected, against the designations of instruments (specification 3.1).
+    is expected, against the designations of instruments (specification 3.1). With
+    ``accept_labels`` (the display form) the names of the values of a choice are values too.
     """
     if expected.is_unknown or actual.is_unknown:
         return None
@@ -152,7 +155,7 @@ def mismatch_with(expected: ExprType, actual: ExprType) -> Mismatch | None:
     if expected_type in (DataType.CHOICE, DataType.TIME_UNIT):
         if not actual.is_text_like:
             return Mismatch("type")
-        return _check_literals(expected, actual)
+        return _check_literals(expected, actual, accept_labels)
     if expected_type is DataType.TEXT:
         return None if actual.is_text_like else Mismatch("type")
     if expected_type is DataType.OBJECT:
@@ -179,18 +182,38 @@ def _check_instrument_texts(actual: ExprType) -> Mismatch | None:
     return Mismatch("instrument", bad) if bad else None
 
 
-def _check_literals(expected: ExprType, actual: ExprType) -> Mismatch | None:
+def _spelled(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+def _check_literals(
+    expected: ExprType, actual: ExprType, accept_labels: bool = False
+) -> Mismatch | None:
+    """With ``accept_labels`` (an expression in the display form) a text that is the name of a
+    value in German or English is a value too."""
     if expected.choices is None or actual.literals is None:
         return None
-    bad = tuple(sorted(value for value in actual.literals if value not in expected.choices))
+    named: set[str] = set()
+    if accept_labels and expected.labels is not None:
+        for label in expected.labels:
+            named.update((_spelled(label.de), _spelled(label.en)))
+    bad = tuple(
+        sorted(
+            value
+            for value in actual.literals
+            if value not in expected.choices and _spelled(value) not in named
+        )
+    )
     if bad:
         return Mismatch("choice_value", bad, expected.choices)
     return None
 
 
-def literal_mismatch(choice_side: ExprType, other: ExprType) -> Mismatch | None:
+def literal_mismatch(
+    choice_side: ExprType, other: ExprType, accept_labels: bool = False
+) -> Mismatch | None:
     """Mismatch of the fixed texts of ``other`` with the values of the choice
     ``choice_side``; ``None`` if ``choice_side`` is no choice."""
     if choice_side.datatype not in (DataType.CHOICE, DataType.TIME_UNIT):
         return None
-    return _check_literals(choice_side, other)
+    return _check_literals(choice_side, other, accept_labels)

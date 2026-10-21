@@ -20,7 +20,6 @@ from pipwerk_studio.app import create_app
 from pipwerk_studio.config import StartupConfigError, load_startup_config
 from pipwerk_studio.host_check import (
     DEFAULT_ALLOWED_HOSTS,
-    HOST_NOT_ALLOWED_TEXT,
     HostCheckMiddleware,
     InvalidAllowedHostError,
     build_allowed_hosts,
@@ -28,7 +27,11 @@ from pipwerk_studio.host_check import (
     normalize_entry,
 )
 
-REJECTED = {"detail": "The Host header of the request is not allowed."}
+REJECTED = {
+    "detail": "The Host header of the request is not allowed.",
+    "code": "host.not_allowed",
+    "params": {},
+}
 
 
 def make_client(tmp_path: Path, *allowed: str) -> TestClient:
@@ -83,7 +86,6 @@ def test_a_foreign_name_is_rejected_with_a_fixed_text(tmp_path: Path, host: str)
     assert response.status_code == 400, host
     assert response.json() == REJECTED
     assert host.split(":")[0] not in response.text  # the name is not repeated
-    assert response.json()["detail"] == HOST_NOT_ALLOWED_TEXT
 
 
 @pytest.mark.parametrize(

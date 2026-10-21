@@ -140,6 +140,13 @@ def _load_json(data: str | bytes) -> object:
         raise _error(str(error) if isinstance(error, ValueError) else "nested too deep") from None
 
 
+def load_json(data: str | bytes) -> object:
+    """Parse JSON text as strictly as a document: UTF-8 without a byte order mark, no ``NaN``
+    or ``Infinity``, no key twice in an object, no nesting that exhausts the stack. Raises
+    :class:`DocumentError` for anything else."""
+    return _load_json(data)
+
+
 def read_document(data: str | bytes) -> Strategy | Template:
     """Read a document and translate it into the object model. A document of the format 1.0
     is converted to the format 2.0 first."""

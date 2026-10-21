@@ -8,7 +8,7 @@ import pytest
 
 from pipwerk_domain import catalog
 from pipwerk_domain.consistency import check_with_contexts
-from pipwerk_domain.consistency.engine import Checker, ExpressionContext
+from pipwerk_domain.consistency.engine import ExpressionContext
 from pipwerk_domain.documents import read_document
 from pipwerk_domain.expressions import (
     Block,
@@ -632,12 +632,21 @@ def test_instances_with_content_list_it() -> None:
     )
     inner.key = "mein_indikator"
     inner.instances.append(indicator_instance("inneren"))
-    checker = Checker(__import__("pipwerk_domain.defaults", fromlist=["x"]).default_registry())
-    del checker
     env = env_of(strategy, "kreuzen")
     names, _ = visible_names(env, "de")
     mine = next(item for item in names if item.path == ("mein_indikator",))
     assert {item.path[-1] for item in mine.contents} == {"pruefung", "inneren"}
+
+
+def test_a_value_of_a_choice_by_its_name_is_valid_in_the_display_form_only() -> None:
+    env = env_of(load("str-03"), "kreuzen")
+    for text in ('Order.Status = "ausgeführt"', 'Order.Status = "filled"'):
+        assert analyze(text, env, display=True).issues == [], text
+    unknown = analyze('Order.Status = "executed"', env, display=True)
+    assert [item.kind.value for item in unknown.issues] == ["unknown_choice_value"]
+    stored = analyze('Order.status = "ausgeführt"', env)
+    assert [item.kind.value for item in stored.issues] == ["unknown_choice_value"]
+    assert analyze('Order.status = "ausgefuehrt"', env).issues == []
 
 
 def test_json_shape_of_blocks_is_stable() -> None:
