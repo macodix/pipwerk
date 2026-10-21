@@ -256,7 +256,13 @@ export class FakeApi {
       const names = namesOf(asRecord(body.document));
       const items = asArray(body.items).map((entry) => {
         const stored = entry.blocks !== undefined ? blocksToStored(asRecord(entry.blocks)) : String(entry.stored ?? entry.display ?? '');
-        return { stored, display: stored, sentence: stored, blocks: storedToBlocks(stored), tokens: [], findings: [], names };
+        const blocks = storedToBlocks(stored);
+        // a text outside of the part of the language the fake knows is reported as a typing error at its end
+        const findings =
+          blocks === null
+            ? [{ level: 'error', code: 'expression.invalid', element: null, subject: null, details: { issue: 'syntax', reason: 'unexpected_end', start: stored.length - 1, end: stored.length } }]
+            : [];
+        return { stored, display: stored, sentence: blocks === null ? null : stored, blocks, tokens: [], findings, names };
       });
       return { status: 200, body: { items } };
     }

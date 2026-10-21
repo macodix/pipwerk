@@ -6,7 +6,7 @@ import { placePointer, placeStored, setPlaceStored, type ExpressionPlace } from 
 import type { StrategyDocument } from '../document/types';
 import { useStudio } from '../state/StudioContext';
 import { documentSignature } from '../state/useExpressions';
-import { EMPTY, type Block } from './blocks';
+import { EMPTY, hasEmptyPlace, type Block } from './blocks';
 import { ownerElement, withInputs } from './inputs';
 
 /**
@@ -86,9 +86,12 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
     }
   }, [stored]);
 
-  // Once the answer for what was written has arrived, the blocks follow the answer again.
+  // Once the answer for what was written has arrived, the blocks follow the answer again. An unfinished tree stays as the
+  // user made it: with empty places the expression text cannot tell what was meant (a crossing becomes two comparisons).
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
   useEffect(() => {
-    if (answer !== undefined && answer.stored === emitted.current && inflight.current === 0) {
+    if (answer !== undefined && answer.stored === emitted.current && inflight.current === 0 && !(draftRef.current !== null && hasEmptyPlace(draftRef.current))) {
       setDraft(null);
     }
   }, [answer]);
@@ -155,6 +158,7 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
   const setText = useCallback(
     (text: string) => {
       setTyped(text);
+      setDraft(null);
       setFailed(false);
       const mine = sequence.current + 1;
       sequence.current = mine;

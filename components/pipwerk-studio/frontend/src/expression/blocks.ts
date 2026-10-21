@@ -76,6 +76,11 @@ export function isEmptyBlock(block: Block): boolean {
   return block.kind === 'empty';
 }
 
+/** Some place in the tree is still empty: the expression is not finished (a crossing, for one, is only one when complete). */
+export function hasEmptyPlace(block: Block): boolean {
+  return isEmptyBlock(block) || (block.children ?? []).some(hasEmptyPlace);
+}
+
 /** The key of a name for lists: the identifiers of its path. */
 export function pathKey(path: readonly string[]): string {
   return path.map((part) => part.toLowerCase()).join('\u001f');

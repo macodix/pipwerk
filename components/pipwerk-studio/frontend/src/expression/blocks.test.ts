@@ -10,6 +10,7 @@ import {
   crossingBlock,
   emptyWhere,
   functionBlock,
+  hasEmptyPlace,
   ifBlock,
   instanceReferences,
   literalBlock,
@@ -53,6 +54,12 @@ describe('the tree of blocks', () => {
   it('replaces a child and adds the missing ones as empty places', () => {
     const tree = withChild(functionBlock('MIN', []), 2, numberBlock(3));
     expect(tree.children).toEqual([EMPTY, EMPTY, numberBlock(3)]);
+  });
+
+  it('knows whether an empty place is left in the tree', () => {
+    expect(hasEmptyPlace(crossingBlock('any', nameBlock(['a', 'wert']), EMPTY))).toBe(true);
+    expect(hasEmptyPlace(crossingBlock('any', nameBlock(['a', 'wert']), nameBlock(['b', 'wert'])))).toBe(false);
+    expect(hasEmptyPlace(EMPTY)).toBe(true);
   });
 
   it('forms whole numbers as integers and others as numbers', () => {

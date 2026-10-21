@@ -138,7 +138,8 @@ export async function add(page: Page, entry: string, name?: string): Promise<voi
 export async function select(page: Page, name: string): Promise<void> {
   await showArea(page, 'canvas');
   const target = node(page, name).or(card(page, name)).first();
-  if ((page.viewportSize()?.width ?? 1366) < 700) {
+  const size = page.viewportSize();
+  if ((size?.width ?? 1366) < 1100 || (size?.height ?? 768) < 500) {
     // on a narrow window the step may lie outside of it: the whole drawing is brought into the window first
     await page.getByTestId('zoom-fit').click();
     await target.click();
