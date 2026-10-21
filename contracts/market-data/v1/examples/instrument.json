@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "instrument",
+  "broker": "ExampleBroker-Live",
+  "instrument": "EURUSD",
+  "acquired_at": "2024-01-02T09:30:00Z",
+  "tick_size": 0.00001,
+  "tick_value": 0.92,
+  "tick_value_currency": "EUR",
+  "point": 0.00001,
+  "pip": 0.0001,
+  "spread": 0.00008,
+  "min_volume": 0.01,
+  "volume_step": 0.01,
+  "contract_size": 100000,
+  "swap_long": -4.5,
+  "swap_short": 1.2,
+  "swap_triple_weekday": "wednesday",
+  "margin_per_lot": 3650
+}

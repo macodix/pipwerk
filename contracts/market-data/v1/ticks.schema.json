@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "PeriodDocument": {
+      "additionalProperties": false,
+      "description": "Period the source was asked for and covers, even where it delivers no candle or tick.",
+      "properties": {
+        "start": {
+          "description": "Moment in UTC, ISO 8601 with Z, for example 2024-01-02T10:15:00Z; up to 6 fractional digits.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "description": "End of the period, not included.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "PeriodDocument",
+      "type": "object"
+    },
+    "TickEntry": {
+      "additionalProperties": false,
+      "description": "A tick.",
+      "properties": {
+        "time": {
+          "description": "Moment in UTC with milliseconds.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+          "title": "Time",
+          "type": "string"
+        },
+        "bid": {
+          "exclusiveMinimum": 0,
+          "title": "Bid",
+          "type": "number"
+        },
+        "ask": {
+          "exclusiveMinimum": 0,
+          "title": "Ask",
+          "type": "number"
+        }
+      },
+      "required": [
+        "time",
+        "bid",
+        "ask"
+      ],
+      "title": "TickEntry",
+      "type": "object"
+    },
+    "TradingSessionDocument": {
+      "additionalProperties": false,
+      "description": "A weekly trading session in UTC. Sessions across midnight are split at midnight.",
+      "properties": {
+        "weekday": {
+          "enum": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ],
+          "title": "Weekday",
+          "type": "string"
+        },
+        "from": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "From",
+          "type": "string"
+        },
+        "to": {
+          "description": "End of the session, 24:00 for the end of the day.",
+          "pattern": "^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+          "title": "To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "weekday",
+        "from",
+        "to"
+      ],
+      "title": "TradingSessionDocument",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A series of ticks of one broker and one instrument.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "kind": {
+      "const": "ticks",
+      "title": "Kind",
+      "type": "string"
+    },
+    "broker": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+      "title": "Broker",
+      "type": "string"
+    },
+    "instrument": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+      "title": "Instrument",
+      "type": "string"
+    },
+    "period": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PeriodDocument"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "trading_hours": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/TradingSessionDocument"
+          },
+          "maxItems": 70,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Replaces the trading hours of the series.",
+      "title": "Trading Hours"
+    },
+    "ticks": {
+      "items": {
+        "$ref": "#/$defs/TickEntry"
+      },
+      "title": "Ticks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "kind",
+    "broker",
+    "instrument",
+    "ticks"
+  ],
+  "title": "TickSeriesDocument",
+  "type": "object"
+}

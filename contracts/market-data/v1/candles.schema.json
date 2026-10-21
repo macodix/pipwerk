@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CandleEntry": {
+      "additionalProperties": false,
+      "description": "A candle with bid prices; ``time`` is the opening moment.",
+      "properties": {
+        "time": {
+          "description": "Moment in UTC, ISO 8601 with Z, for example 2024-01-02T10:15:00Z; up to 6 fractional digits.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+          "title": "Time",
+          "type": "string"
+        },
+        "open": {
+          "exclusiveMinimum": 0,
+          "title": "Open",
+          "type": "number"
+        },
+        "high": {
+          "exclusiveMinimum": 0,
+          "title": "High",
+          "type": "number"
+        },
+        "low": {
+          "exclusiveMinimum": 0,
+          "title": "Low",
+          "type": "number"
+        },
+        "close": {
+          "exclusiveMinimum": 0,
+          "title": "Close",
+          "type": "number"
+        },
+        "volume": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tick volume.",
+          "title": "Volume"
+        },
+        "spread": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Spread in points, if the source delivers it.",
+          "title": "Spread"
+        }
+      },
+      "required": [
+        "time",
+        "open",
+        "high",
+        "low",
+        "close"
+      ],
+      "title": "CandleEntry",
+      "type": "object"
+    },
+    "PeriodDocument": {
+      "additionalProperties": false,
+      "description": "Period the source was asked for and covers, even where it delivers no candle or tick.",
+      "properties": {
+        "start": {
+          "description": "Moment in UTC, ISO 8601 with Z, for example 2024-01-02T10:15:00Z; up to 6 fractional digits.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "description": "End of the period, not included.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "PeriodDocument",
+      "type": "object"
+    },
+    "TradingSessionDocument": {
+      "additionalProperties": false,
+      "description": "A weekly trading session in UTC. Sessions across midnight are split at midnight.",
+      "properties": {
+        "weekday": {
+          "enum": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ],
+          "title": "Weekday",
+          "type": "string"
+        },
+        "from": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "From",
+          "type": "string"
+        },
+        "to": {
+          "description": "End of the session, 24:00 for the end of the day.",
+          "pattern": "^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+          "title": "To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "weekday",
+        "from",
+        "to"
+      ],
+      "title": "TradingSessionDocument",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A series of candles of one broker, one instrument and one time unit.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "kind": {
+      "const": "candles",
+      "title": "Kind",
+      "type": "string"
+    },
+    "broker": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+      "title": "Broker",
+      "type": "string"
+    },
+    "instrument": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+      "title": "Instrument",
+      "type": "string"
+    },
+    "time_unit": {
+      "enum": [
+        "m1",
+        "m2",
+        "m3",
+        "m4",
+        "m5",
+        "m6",
+        "m10",
+        "m12",
+        "m15",
+        "m20",
+        "m30",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h6",
+        "h8",
+        "h12",
+        "d1",
+        "w1",
+        "mn1"
+      ],
+      "title": "Time Unit",
+      "type": "string"
+    },
+    "period": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PeriodDocument"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "trading_hours": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/TradingSessionDocument"
+          },
+          "maxItems": 70,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Replaces the trading hours of the series.",
+      "title": "Trading Hours"
+    },
+    "candles": {
+      "items": {
+        "$ref": "#/$defs/CandleEntry"
+      },
+      "title": "Candles",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "kind",
+    "broker",
+    "instrument",
+    "time_unit",
+    "candles"
+  ],
+  "title": "CandleSeriesDocument",
+  "type": "object"
+}
