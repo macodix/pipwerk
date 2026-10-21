@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pipwerk_marketdata.errors import ImportFileError
 from pipwerk_marketdata.filetext import decode_text
-from pipwerk_marketdata.limits import ImportLimits
+from pipwerk_marketdata.limits import MAX_INTEGER_VALUE, ImportLimits
 from pipwerk_marketdata.parsed import (
     KIND_CANDLES,
     KIND_TICKS,
@@ -30,6 +30,7 @@ from pipwerk_marketdata.records import Candle, FileErrorCode, RejectReason, Tick
 _DELIMITERS = ("\t", ";", ",")
 
 _NUMBER = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
+# At most 18 digits keeps ``int`` cheap; the value itself is limited by MAX_INTEGER_VALUE.
 _INTEGER = re.compile(r"^\d{1,18}$")
 _MOMENT = re.compile(
     r"^(\d{4})[.\-/](\d{2})[.\-/](\d{2})"
@@ -176,7 +177,10 @@ def _optional_integer(cells: list[str], index: int | None) -> int | None:
         return None
     if not _INTEGER.match(text):
         raise _RowError(RejectReason.VALUE_INVALID)
-    return int(text)
+    value = int(text)
+    if value > MAX_INTEGER_VALUE:
+        raise _RowError(RejectReason.VALUE_INVALID)
+    return value
 
 
 def _moment(cells: list[str], roles: dict[str, int], zone: ZoneInfo) -> datetime:

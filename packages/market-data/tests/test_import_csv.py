@@ -14,6 +14,7 @@ from pipwerk_marketdata import (
     RejectReason,
 )
 from pipwerk_marketdata.csvimport import local_to_utc
+from pipwerk_marketdata.limits import MAX_INTEGER_VALUE
 from tests.helpers import BROKER, INSTRUMENT, minutes, utc
 
 SEPARATE_HEADER = "<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>"
@@ -412,3 +413,31 @@ def test_rejections_listed_up_to_the_limit(store: MarketDataStore) -> None:
     )
     assert result.rejected_count == 6
     assert [row.row for row in result.rejected] == [2, 3]
+
+
+@pytest.mark.parametrize("column", ["TICKVOL", "SPREAD"])
+def test_integer_column_at_the_limit_is_taken_over(store: MarketDataStore, column: str) -> None:
+    data = csv(
+        f"<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<{column}>",
+        f"2024.01.02\t10:00:00\t1.1\t1.2\t1.0\t1.15\t{MAX_INTEGER_VALUE}",
+    )
+    result = import_candles(store, data)
+    assert (result.accepted, result.rejected_count) == (1, 0)
+    candle = store.read_candles(BROKER, INSTRUMENT, "m1", utc(2024, 1, 1), utc(2024, 2, 1)).items[0]
+    assert (candle.volume if column == "TICKVOL" else candle.spread) == MAX_INTEGER_VALUE
+
+
+@pytest.mark.parametrize("column", ["TICKVOL", "SPREAD"])
+@pytest.mark.parametrize("value", [MAX_INTEGER_VALUE + 1, 2**63, 10**18 - 1, 10**30, 10**400])
+def test_integer_column_above_the_limit_is_rejected(
+    store: MarketDataStore, column: str, value: int
+) -> None:
+    data = csv(
+        f"<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<{column}>",
+        f"2024.01.02\t10:00:00\t1.1\t1.2\t1.0\t1.15\t{value}",
+        "2024.01.02\t10:01:00\t1.1\t1.2\t1.0\t1.15\t5",
+    )
+    result = import_candles(store, data)
+    assert result.accepted == 1
+    assert [(row.row, row.reason) for row in result.rejected] == [(2, RejectReason.VALUE_INVALID)]
+    assert stored(store) == [utc(2024, 1, 2, 10, 1)]

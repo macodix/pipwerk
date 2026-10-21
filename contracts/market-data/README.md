@@ -2,7 +2,7 @@
 
 Versioned JSON file formats for historical price data: the files the import of the data store reads and the files a source of price data (for example `pipwerk-fetch-mt5`) delivers.
 
-- `v1/candles.schema.json`: a series of candles of one broker, one instrument and one time unit (opening moments in UTC, bid prices, optional volume and spread in points).
+- `v1/candles.schema.json`: a series of candles of one broker, one instrument and one time unit (opening moments in UTC, bid prices, optional volume and spread in points, each 0 to 2147483647).
 - `v1/ticks.schema.json`: a series of ticks of one broker and one instrument (moments in UTC with milliseconds, bid and ask).
 - `v1/instrument.schema.json`: the data of one instrument at one broker with the moment it was obtained.
 - `v1/examples/`: one valid example file per schema. A test checks every example against its schema and against the import.

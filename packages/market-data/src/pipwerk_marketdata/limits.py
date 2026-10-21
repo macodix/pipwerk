@@ -7,6 +7,11 @@ DEFAULT_MAX_ROWS = 500_000
 DEFAULT_MAX_REPORTED_REJECTIONS = 1000
 DEFAULT_MAX_PAGE_SIZE = 10_000
 
+MAX_INTEGER_VALUE = 2_147_483_647
+"""Largest value of ``volume`` and ``spread`` of a candle, in JSON and CSV files (2 ** 31 - 1).
+
+The column ``spread`` is a 32-bit integer, so this value fits into it in every database."""
+
 
 @dataclass(frozen=True, slots=True)
 class ImportLimits:

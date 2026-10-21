@@ -5,7 +5,7 @@ import re
 import pytest
 
 from pipwerk_marketdata import FileErrorCode, ImportLimits, RejectReason
-from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE
+from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, MAX_INTEGER_VALUE
 from pipwerk_marketdata.records import CompletenessRules
 from pipwerk_marketdata.tables import metadata
 from tests.helpers import LIBRARY_SOURCE, REPOSITORY, TECHNICAL_DOCUMENT
@@ -34,6 +34,7 @@ def test_default_limits_are_documented() -> None:
     assert f"{limits.max_rows:,}".replace(",", " ") in DOCUMENT
     assert str(limits.max_reported_rejections) in DOCUMENT
     assert f"{DEFAULT_MAX_PAGE_SIZE:,}".replace(",", " ") in DOCUMENT
+    assert f"{MAX_INTEGER_VALUE:,}".replace(",", " ") in DOCUMENT
 
 
 def test_default_thresholds_are_documented() -> None:

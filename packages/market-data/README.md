@@ -5,3 +5,5 @@ Data store of historical price data of pipwerk (package `pipwerk_marketdata`): c
 Documentation: [docs/technical/pipwerk-marketdata.md](../../docs/technical/pipwerk-marketdata.md)
 
 Checks (run in this directory with `uv`): `uv run pytest`, `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`.
+
+Prüfskript: `packages/market-data/scripts/check`, Aufruf `check`.

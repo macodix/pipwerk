@@ -16,6 +16,7 @@ from pipwerk_marketdata import (
     RejectReason,
     Weekday,
 )
+from pipwerk_marketdata.limits import MAX_INTEGER_VALUE
 from tests.helpers import (
     BROKER,
     EXAMPLE_DIRECTORY,
@@ -427,3 +428,71 @@ def test_several_series_next_to_each_other(store: MarketDataStore) -> None:
         ("Other", "EURUSD", "m1"),
         (BROKER, "EURUSD", "ticks"),
     }
+
+
+@pytest.mark.parametrize("field", ["volume", "spread"])
+def test_integer_field_at_the_limit_is_taken_over(store: MarketDataStore, field: str) -> None:
+    entry = candle_entry(START, **{field: MAX_INTEGER_VALUE})
+    result = store.import_json(to_bytes(candle_document([entry])))
+    assert (result.accepted, result.rejected_count) == (1, 0)
+    assert getattr(read_all(store)[0], field) == MAX_INTEGER_VALUE
+
+
+@pytest.mark.parametrize("field", ["volume", "spread"])
+@pytest.mark.parametrize("value", [MAX_INTEGER_VALUE + 1, 2**63, 10**30, 10**400])
+def test_integer_field_above_the_limit_is_rejected(
+    store: MarketDataStore, field: str, value: int
+) -> None:
+    good = candle_entry(utc(2024, 1, 2, 11))
+    bad = candle_entry(START, **{field: value})
+    result = store.import_json(to_bytes(candle_document([bad, good])))
+    assert result.accepted == 1
+    assert [(row.row, row.reason) for row in result.rejected] == [(1, RejectReason.VALUE_INVALID)]
+    assert [item.time for item in read_all(store)] == [utc(2024, 1, 2, 11)]
+
+
+@pytest.mark.parametrize("value", [1.7e308, 1e308, 10**30, 10**400, -(10**400), 2**63])
+@pytest.mark.parametrize("field", ["open", "high", "low", "close"])
+def test_extreme_candle_price_never_raises(store: MarketDataStore, field: str, value: Any) -> None:
+    entry = candle_entry(START, **{field: value})
+    result = store.import_json(to_bytes(candle_document([entry])))
+    assert result.accepted + result.rejected_count == 1
+
+
+@pytest.mark.parametrize("value", [1.7e308, 1e308, 10**30, 10**400, -(10**400), 2**63])
+@pytest.mark.parametrize("field", ["bid", "ask"])
+def test_extreme_tick_price_never_raises(store: MarketDataStore, field: str, value: Any) -> None:
+    entry = {"time": iso(START), "bid": 1.0, "ask": 1.1, field: value}
+    result = store.import_json(to_bytes(tick_document([entry])))
+    assert result.accepted + result.rejected_count == 1
+
+
+INSTRUMENT_NUMBERS = [
+    "tick_size",
+    "tick_value",
+    "point",
+    "pip",
+    "spread",
+    "min_volume",
+    "volume_step",
+    "contract_size",
+    "swap_long",
+    "swap_short",
+    "margin_per_lot",
+]
+
+
+@pytest.mark.parametrize("value", ["1.7e308", "-1.7e308", "1e999", str(10**30), str(10**400)])
+@pytest.mark.parametrize("field", INSTRUMENT_NUMBERS)
+def test_extreme_instrument_number_never_raises(
+    store: MarketDataStore, field: str, value: str
+) -> None:
+    document = json.loads((EXAMPLE_DIRECTORY / "instrument.json").read_text(encoding="utf-8"))
+    document[field] = 0
+    text = json.dumps(document).replace(f'"{field}": 0', f'"{field}": {value}')
+    try:
+        result = store.import_json(text.encode("utf-8"))
+    except ImportFileError as error:
+        assert error.code is FileErrorCode.DOCUMENT_INVALID
+    else:
+        assert result.accepted == 1

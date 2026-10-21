@@ -17,6 +17,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from pipwerk_marketdata.limits import MAX_INTEGER_VALUE
+
 SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 VERSION = 1
 
@@ -97,9 +99,12 @@ class CandleEntry(_Strict):
     high: Price
     low: Price
     close: Price
-    volume: Annotated[int, Field(ge=0)] | None = Field(default=None, description="Tick volume.")
-    spread: Annotated[int, Field(ge=0)] | None = Field(
-        default=None, description="Spread in points, if the source delivers it."
+    volume: Annotated[int, Field(ge=0, le=MAX_INTEGER_VALUE)] | None = Field(
+        default=None, description=f"Tick volume, 0 to {MAX_INTEGER_VALUE}."
+    )
+    spread: Annotated[int, Field(ge=0, le=MAX_INTEGER_VALUE)] | None = Field(
+        default=None,
+        description=f"Spread in points, 0 to {MAX_INTEGER_VALUE}, if the source delivers it.",
     )
 
 

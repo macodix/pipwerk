@@ -91,7 +91,7 @@ Geprüft wird in dieser Reihenfolge: Spalten, Zeitpunkt, Felder, Kurse, Beziehun
 | `entry_invalid` | JSON: Eintrag ist kein Objekt |
 | `field_unknown` | JSON: zusätzliches Feld im Eintrag |
 | `field_missing` | Pflichtfeld fehlt, bei CSV ist die Zelle leer (zum Beispiel Geld oder Brief eines Ticks) |
-| `value_invalid` | Wert ist keine Zahl, keine ganze Zahl, nicht endlich, Volumen oder Spread negativ, falscher Typ |
+| `value_invalid` | Wert ist keine Zahl, keine ganze Zahl, nicht endlich, Volumen oder Spread negativ oder größer als 2 147 483 647 (Abschnitt 4.4), falscher Typ |
 | `time_invalid` | Zeitpunkt entspricht dem Muster nicht oder ist kein wirkliches Datum und keine wirkliche Uhrzeit |
 | `local_time_not_existing` | CSV: die Ortszeit gibt es beim Wechsel der Sommerzeit nicht (Uhr vorgestellt) |
 | `price_not_positive` | ein Kurs ist null oder kleiner |
@@ -132,7 +132,9 @@ Die Bibliothek meldet `ImportFileError` mit `code` (`FileErrorCode`) und fester 
 | `max_rows` | 500 000 Zeilen oder Einträge, abgelehnte eingeschlossen |
 | `max_reported_rejections` | 1000 aufgelistete abgelehnte Zeilen; `rejected_count` zählt alle |
 
-Grund: Die Datei wird vollständig im Speicher geprüft, bevor die Transaktion beginnt. 500 000 Zeilen decken ein Jahr M1-Kerzen ab. Tickdaten sind viel umfangreicher; die Beschaffung teilt sie in mehrere Dateien (Zeiträume), jede mit eigener Begrenzung. Zusätzlich begrenzt `max_page_size` (Standard 10 000) die Zahl der Kerzen oder Ticks je Leseaufruf.
+Obergrenze für Zahlen: `volume` und `spread` einer Kerze sind ganze Zahlen von 0 bis 2 147 483 647 (2^31 − 1, Konstante `MAX_INTEGER_VALUE` in `limits`), in JSON und in CSV gleich. Ein größerer Wert macht die Zeile zu einer abgelehnten Zeile (`value_invalid`). Grund: Die Spalte `spread` der Datenbank ist eine 32-Bit-Zahl; die Grenze sorgt dafür, dass jeder übernommene Wert in jeder Datenbank in die Spalte passt und nie eine Ausnahme beim Speichern entsteht. Das Schema nennt sie als `maximum`. Kurse und die Zahlen der Angaben zum Instrument sind Gleitkommazahlen: Nicht endliche Werte lehnt die Prüfung ab, jeder endliche Wert passt in die Spalte (geprüft bis 1,7 · 10^308) und braucht keine Obergrenze.
+
+Grund der Begrenzungen von `ImportLimits`: Die Datei wird vollständig im Speicher geprüft, bevor die Transaktion beginnt. 500 000 Zeilen decken ein Jahr M1-Kerzen ab. Tickdaten sind viel umfangreicher; die Beschaffung teilt sie in mehrere Dateien (Zeiträume), jede mit eigener Begrenzung. Zusätzlich begrenzt `max_page_size` (Standard 10 000) die Zahl der Kerzen oder Ticks je Leseaufruf.
 
 ## 5. Dateiformate
 
