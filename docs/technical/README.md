@@ -21,3 +21,4 @@ Technical documentation for development, installation, operation, interfaces, fo
 ## Gemeinsame Bibliotheken
 
 - [Gemeinsame Python-Bibliothek `pipwerk_domain` – technische Dokumentation](pipwerk-domain.md) – Typbeschreibungen, Objektmodell, Ausdrücke, Konsistenzprüfung, Dokumentformat und Schemata
+- [Bibliothek `pipwerk_marketdata` – technische Dokumentation](pipwerk-marketdata.md) – Datenbestand historischer Kursdaten, Import, Vollständigkeit und Lesen

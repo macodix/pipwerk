@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "candles",
+  "broker": "ExampleBroker-Live",
+  "instrument": "EURUSD",
+  "time_unit": "m1",
+  "period": {
+    "start": "2024-01-02T10:00:00Z",
+    "end": "2024-01-02T10:05:00Z"
+  },
+  "trading_hours": [
+    {"weekday": "monday", "from": "00:00", "to": "24:00"},
+    {"weekday": "tuesday", "from": "00:00", "to": "24:00"},
+    {"weekday": "wednesday", "from": "00:00", "to": "24:00"},
+    {"weekday": "thursday", "from": "00:00", "to": "24:00"},
+    {"weekday": "friday", "from": "00:00", "to": "22:00"},
+    {"weekday": "sunday", "from": "22:00", "to": "24:00"}
+  ],
+  "candles": [
+    {"time": "2024-01-02T10:00:00Z", "open": 1.09512, "high": 1.09530, "low": 1.09501, "close": 1.09525, "volume": 87, "spread": 8},
+    {"time": "2024-01-02T10:01:00Z", "open": 1.09525, "high": 1.09541, "low": 1.09518, "close": 1.09533, "volume": 92, "spread": 8},
+    {"time": "2024-01-02T10:02:00Z", "open": 1.09533, "high": 1.09536, "low": 1.09510, "close": 1.09514, "volume": 75, "spread": 9},
+    {"time": "2024-01-02T10:03:00Z", "open": 1.09514, "high": 1.09522, "low": 1.09500, "close": 1.09507, "volume": 68},
+    {"time": "2024-01-02T10:04:00Z", "open": 1.09507, "high": 1.09519, "low": 1.09503, "close": 1.09517, "volume": 71, "spread": 8}
+  ]
+}
