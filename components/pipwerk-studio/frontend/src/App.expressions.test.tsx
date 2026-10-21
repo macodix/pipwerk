@@ -233,6 +233,26 @@ describe('own indicators and trends (specification 5.4)', () => {
   });
 });
 
+describe('renaming (specification 5.4)', () => {
+  it('needs no question, changes the name only and leaves the identifier in the expressions', async () => {
+    const user = userEvent.setup();
+    const api = await open(user);
+    clickNode(nodeByName('EMA50'));
+    const field = await screen.findByTestId('element-name');
+
+    await user.clear(field);
+    await user.type(field, 'Schnelle EMA');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => {
+      expect(nodeByName('Schnelle EMA')).toBeInTheDocument();
+    });
+    const document = (await saved(user, api)) as unknown as { elements: { id: string; instance: { name: string; key: string } | null }[] };
+    expect(document.elements.find((element) => element.id === EMA_ELEMENT_IDS.ema50)?.instance).toMatchObject({ name: 'Schnelle EMA', key: 'ema50' });
+    expect(expressionOf(document as unknown as Stored, EMA_ELEMENT_IDS.direction)).toBe('IF(ema20.wert > ema50.wert; "buy"; "sell")');
+  });
+});
+
 describe('removing (specification 5.4)', () => {
   it('asks, lists the steps that use the object, and leaves an empty place in their expressions', async () => {
     const user = userEvent.setup();

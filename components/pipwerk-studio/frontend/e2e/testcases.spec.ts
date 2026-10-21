@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { add, addOwnRule, addRiskRule, bindExpr, bindFixed, bindParam, createParam, newStrategyFromScratch, select, setCalculation, setCondition, type C, type V } from './builder';
 import { canonical, namesOf, removeStored, storedStrategy, testCase } from './compare';
-import { clickMenu, expect, node, openApp, showArea, STUB, test } from './support';
+import { clickMenu, expect, node, openApp, openStrategy, showArea, STUB, test } from './support';
 
 // Specification 7 and the order 06: the test cases str-03 and str-01 are built only by operating the interface (no
 // expression is typed as text) and compared with the documents of `contracts/strategies/v2/testcases`. The steps are
@@ -34,6 +34,16 @@ async function saveAndCompare(page: Page, name: string, id: 'str-01' | 'str-03')
   expect(canonical(stored)).toEqual(canonical(testCase(id)));
   // the names are not part of the comparison, but the steps were named as the instructions say
   expect(namesOf(stored)).toEqual(namesOf(testCase(id)));
+
+  // after loading the page anew the strategy opens as it was saved, and the check has no finding
+  await page.reload();
+  await expect(page.getByTestId('app')).toBeVisible();
+  await expect(page.getByTestId('lib-item').first()).toBeAttached({ timeout: 15_000 });
+  await openStrategy(page, name);
+  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await clickMenu(page, 'check');
+  await expect(page.getByTestId('findings-count')).toContainText('keine Befunde');
+  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
 }
 
 // ---- str-03 ---------------------------------------------------------------------------------------------------------

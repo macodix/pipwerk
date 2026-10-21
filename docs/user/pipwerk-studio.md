@@ -331,7 +331,7 @@ Ein **eigenes Regelwerk** enthält Regeln (Abschnitt 6.6) und kann den Ausdruck 
 - Wird das Objekt oder der Strategieparameter von anderen Elementen verwendet, fragt pipwerk Studio zuerst und nennt in einer Liste die Elemente, die ihn verwenden. „Abbrechen“ lässt alles, wie es war.
 - Bei „Order aufgeben“ entfernt pipwerk Studio mit dem Element auch seine Verwaltung und nennt deren Schritte in der Liste.
 - Nach dem Entfernen steht in den Ausdrücken, die den Namen verwendet haben, ein leerer Platz „Wert wählen …“. Ein Feld, das den Strategieparameter oder einen Wert des Objekts belegt hat, ist „nicht belegt“. Die Linien und Eingänge, die von dem Objekt kamen, sind weg.
-- Hatte ein entfernter Schritt genau eine eingehende und eine ausgehende Verbindung, wird die Lücke geschlossen: sein Vorgänger wird mit seinem Nachfolger verbunden. Ein Schritt ohne Verwendung und ohne Verwaltung wird ohne Rückfrage entfernt.
+- Hatte ein entfernter Schritt genau eine eingehende und eine ausgehende Verbindung, wird die Lücke geschlossen: sein Vorgänger wird mit seinem Nachfolger verbunden. Ein Schritt ohne Verwendung und ohne Verwaltung wird ohne Rückfrage entfernt. Eine Regel entfernen Sie ebenfalls ohne Rückfrage.
 
 ### 6.9 Speichern, Prüfen, Schließen, Öffnen, Löschen
 
