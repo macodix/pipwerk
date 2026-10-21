@@ -6,22 +6,22 @@
 - stand: 2026-10-21
 - komponenten: `packages/domain-core`, `packages/market-data` (neu), `packages/ui-components`, `components/pipwerk-replay` (neu, bisher `components/pipwerk-backtest`), `components/pipwerk-fetch-mt5` (neu), `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html))
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung Beginn von `wp01`: [plan-3.md](reviews/plan-3.md)
 
 ## Übersicht
 
 | Paket | Titel | hängt ab von | Stand |
 |---|---|---|---|
-| `wp01` | Auslöser „Manuell“ in Bibliothek und pipwerk Studio | `strategiedesign/wp02` | `open` |
+| `wp01` | Auslöser „Manuell“ in Bibliothek und pipwerk Studio | Beginn: keine; Übernahme: `strategiedesign/wp02` | `open` |
 | `wp02` | Datenbestand und Testkonten | – | `open` |
 | `wp03` | Backtest | `wp01`, `wp02`, Referenzwerte aus MetaTrader 5 | `open` |
 | `wp04` | Einzelschritt-Test | `wp03`, `strategiedesign/wp03` | `open` |
 
-Die Pakete folgen dem, was der Auftraggeber selbst prüfen kann. `wp02` braucht nichts aus `strategiedesign` und beginnt sofort: pipwerk replay mit Datenbestand, Import, Beschaffung und Testkonten. `wp01` stellt Bibliothek und pipwerk Studio auf die Entscheidungen vom 2026-10-21 um und braucht dafür das Format 2.0 aus `strategiedesign/wp02`. `wp03` bringt die Ausführung der Strategie und den Backtest; es endet mit dem Nachweis, dass `str-01` und `str-03` im Backtest laufen. `wp04` bringt den Einzelschritt-Test und dafür die Darstellung der Strategie als gemeinsamen Baustein.
+Die Pakete folgen dem, was der Auftraggeber selbst prüfen kann. `wp02` braucht nichts aus `strategiedesign` und beginnt sofort: pipwerk replay mit Datenbestand, Import, Beschaffung und Testkonten. `wp01` stellt Bibliothek und pipwerk Studio auf die Entscheidungen vom 2026-10-21 um und braucht dafür das Format 2.0 aus `strategiedesign/wp02`. Es beginnt trotzdem sofort, auf dem von der QA geprüften Stand von `strategiedesign/wp02`, und wird erst nach diesem Paket übernommen (Abschnitt „Abhängigkeiten“ von `wp01`). `wp03` bringt die Ausführung der Strategie und den Backtest; es endet mit dem Nachweis, dass `str-01` und `str-03` im Backtest laufen. `wp04` bringt den Einzelschritt-Test und dafür die Darstellung der Strategie als gemeinsamen Baustein.
 
 `wp04` hängt auch von `strategiedesign/wp03` ab. Grund: Es verlegt Zeichenfläche, Elemente, Verbindungen und Eigenschaftenansicht von pipwerk Studio nach `packages/ui-components` (Spezifikation 8.2). `strategiedesign/wp03` ändert dieselben Teile; beide gleichzeitig ergäben zwei Fassungen derselben Bausteine.
 
-Pakete aus `strategiedesign` meldet der Entwicklungsleiter dort mit `integrated` an den Projektleiter. Der Projektleiter stößt danach die Pakete dieses Plans an, deren Abhängigkeiten damit erfüllt sind.
+Pakete aus `strategiedesign` meldet der Entwicklungsleiter dort mit `integrated` an den Projektleiter. Der Projektleiter stößt danach die Pakete dieses Plans an, deren Abhängigkeiten damit erfüllt sind. Ausgenommen ist `wp01`: Es beginnt nach Bestätigung dieser Planänderung, ohne die Übernahme von `strategiedesign/wp02` abzuwarten.
 
 Abschnittsangaben beziehen sich auf die [Spezifikation](specification.md). Endpunkte, Grenzwerte gegen Überlast, Schwellen für Lücken (5.2), die Höchstzahl von Kerzen je Anfrage (8.2) und die Einzelheiten der Tests legen die Aufträge fest.
 
@@ -51,7 +51,14 @@ Bibliothek und pipwerk Studio folgen den Entscheidungen des Auftraggebers vom 20
 
 ### Abhängigkeiten
 
-`strategiedesign/wp02` (Format 2.0, Oberfläche von pipwerk Studio)
+`strategiedesign/wp02` (Format 2.0, Oberfläche von pipwerk Studio). Abweichend von der Regel, dass ein Paket erst nach Abnahme und Übernahme seiner Abhängigkeiten beginnt, gilt für `wp01`:
+
+1. Beginn sofort. Der Arbeitszweig `backtest/wp01` wird nicht von `main` angelegt, sondern von Commit `2cac35b4a45e9d5499c92e3762670faf1021c821` auf `strategiedesign/wp02`. Diesen Commit hat die QA in Durchlauf 4 geprüft und bestanden; er ist in der Abnahme. Die Aufträge und alle weiteren Zweige des Pakets setzen auf dem Arbeitszweig auf.
+2. Neue Commits auf `strategiedesign/wp02` aus dessen Abnahme führt der Entwicklungsleiter mit einem Merge-Commit in `backtest/wp01` zusammen, spätestens bevor die QA `wp01` prüft. Ändert ein solcher Merge-Commit Code, prüfen Tester und QA danach erneut nach den Regeln von Phase 4.
+3. Der Commit von `wp01`, der in die Abnahme geht, enthält den neuesten Commit von `strategiedesign/wp02` mit Änderungen an der Software.
+4. Übernahme in `main` erst nach der Übernahme von `strategiedesign/wp02`. Enthält der abgenommene Commit von `wp01` den übernommenen Commit von `strategiedesign/wp02` nicht, führt der Entwicklungsleiter `origin/main` in `backtest/wp01` zusammen, lässt Tester und QA erneut prüfen und das Paket erneut abnehmen. Übernommen wird der neu abgenommene Commit.
+
+Begründung: Der Auftraggeber will keine Wartezeit, die Abnahme von `strategiedesign/wp02` kann sich über mehrere Runden ziehen. Umfang und Abnahmekriterien bleiben unverändert.
 
 ### Abnahmekriterien
 
@@ -249,3 +256,4 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 2026-10-21 | Plan angelegt: vier Pakete. `wp02` ohne Abhängigkeit, `wp01` nach `strategiedesign/wp02`, `wp03` nach `wp01` und `wp02`, `wp04` nach `wp03` und `strategiedesign/wp03`. |
 | 2026-10-21 | Nach dem Prüfbericht [plan-1.md](reviews/plan-1.md): B1 Typbeschreibung des `ZigZag` mit den Eigenschaften für `str-01` in `wp01` (Umfang, umgesetzte Teile, Abdeckung), Berechnung bleibt in `wp03`. Hinweise: 1 Kriterium 1 zur Bedienbarkeit in `wp01` (übrige Kriterien um eins weitergezählt); 2 Testlauf mit Ablehnung in `wp04` Kriterium 2; 5 Voraussetzung in `wp02` Kriterium 3. Verworfen: 3 (`wp01` ändert in pipwerk Studio nur Texte, keine Bausteine, die `strategiedesign/wp03` umbaut), 4 (der Weg ist beschrieben, den Zeitpunkt bestimmt der Entwicklungsleiter), 6 (Testdetail). |
 | 2026-10-21 | Hinweise aus [plan-2.md](reviews/plan-2.md) (bestanden), ohne weitere Prüfung: 1 Formulierung der Berechnung in `wp03`; 2 Eigenschaften des `ZigZag` im Ziel von `wp01`. Verworfen: 3 (pipwerk Studio führt Strategien nicht aus; Kriterium 1 betrifft nur die Konsistenzprüfung). |
+| 2026-10-21 | Auf Wunsch des Auftraggebers (Meldung `plan` des Projektleiters): `wp01` beginnt sofort auf Commit `2cac35b4a45e9d5499c92e3762670faf1021c821` von `strategiedesign/wp02`, übernimmt spätere Änderungen aus dessen Abnahme und wird erst nach `strategiedesign/wp02` übernommen (Übersicht, Erläuterung, Abhängigkeiten von `wp01`). Rein technisch: Umfang und Abnahmekriterien unverändert. |
