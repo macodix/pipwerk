@@ -23,14 +23,19 @@ from pathlib import Path
 from typing import Any
 
 from pipwerk_studio.app import create_app
+from pipwerk_studio.errors import error_codes_markdown
 from pipwerk_studio.web_api import is_public_path
 
 CONTRACT_VERSION = "1.0.0"
 CONTRACT_DESCRIPTION = (
     "Public web API of pipwerk Studio, version 1: type descriptions, strategies and "
-    "templates (indicators, trends, rules, rulesets), their usages and the consistency "
-    "check. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk "
-    "Studio under /api/ are not part of this description."
+    "templates (indicators, trends, rules, rulesets) in the document format 2.0 (documents of "
+    "the format 1.0 are accepted and converted), their usages, the consistency check, the "
+    "expressions in stored form, display form, blocks and as a sentence, and the keys of new "
+    "objects. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk "
+    "Studio under /api/ are not part of this description.\n\n"
+    "Every error answer has the fixed English text `detail`, the `code` of the cause and the "
+    "`params` for the text in the language of the user. The codes:\n\n" + error_codes_markdown()
 )
 
 

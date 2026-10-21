@@ -49,6 +49,8 @@ def test_the_description_names_the_public_endpoints_of_the_specification() -> No
     expected: dict[str, set[str]] = {
         "/api/v1/element-types": {"get"},
         "/api/v1/check": {"post"},
+        "/api/v1/expressions": {"post"},
+        "/api/v1/keys": {"post"},
     }
     for art in ART_OF_KIND.values():
         expected[f"/api/v1/{art}"] = {"get", "post"}
@@ -89,6 +91,14 @@ def test_only_the_schemas_that_the_public_paths_use_are_in_the_file() -> None:
         assert model.__name__ in schemas
     assert "ElementTypesResponse" in schemas
     assert "CheckResponse" in schemas
+    for name in (
+        "ExpressionsRequest",
+        "ExpressionsResponse",
+        "BlockModel",
+        "KeyRequest",
+        "KeyResponse",
+    ):
+        assert name in schemas, name
 
 
 def test_every_reference_is_resolved() -> None:
@@ -113,7 +123,7 @@ def test_the_operation_identifiers_are_unique() -> None:
         for operations in paths.values()  # type: ignore[attr-defined]
         for operation in operations.values()
     ]
-    assert len(identifiers) == len(set(identifiers)) == 2 + 5 * 6
+    assert len(identifiers) == len(set(identifiers)) == 4 + 5 * 6
 
 
 def test_title_and_texts_spell_the_name() -> None:

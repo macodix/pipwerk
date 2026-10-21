@@ -8,7 +8,7 @@
 #
 # Checks: the shared Python library in packages/domain-core (uv sync --frozen,
 # pytest, ruff check, ruff format --check, mypy, comparison of the generated
-# JSON schemas with contracts/strategies/v1), backend (uv sync --frozen,
+# JSON schemas with contracts/strategies/v2 and v1), backend (uv sync --frozen,
 # pytest, ruff check, ruff format --check, mypy), search in the repository for
 # the spelling of the name, frontend (npm ci, typecheck, Vitest, build) and the
 # browser test with Playwright on the given ports. --with-audit adds pip-audit
@@ -54,8 +54,8 @@ frontend_dir="$component_dir/frontend"
 # component, in the same working directory.
 library_dir=$(CDPATH='' cd -- "$component_dir/../../packages/domain-core" && pwd -P) ||
     die "cannot determine the directory of the library packages/domain-core"
-schemas_dir=$(CDPATH='' cd -- "$component_dir/../../contracts/strategies/v1" && pwd -P) ||
-    die "cannot determine the directory of the schemas contracts/strategies/v1"
+schemas_dir=$(CDPATH='' cd -- "$component_dir/../../contracts/strategies" && pwd -P) ||
+    die "cannot determine the directory of the schemas contracts/strategies"
 
 # require_port <parameter> <value>: sets PORT_VALUE to the value without
 # leading zeros. The length check keeps numbers out of the shell's integer
@@ -209,8 +209,10 @@ step "library: pytest" in_library run --frozen pytest
 step "library: ruff check" in_library run --frozen ruff check
 step "library: ruff format --check" in_library run --frozen ruff format --check
 step "library: mypy" in_library run --frozen mypy
+step "library: schemas equal to contracts/strategies/v2" in_library run --frozen \
+    python -m pipwerk_domain.documents.schemas --check "$schemas_dir/v2"
 step "library: schemas equal to contracts/strategies/v1" in_library run --frozen \
-    python -m pipwerk_domain.documents.schemas --check "$schemas_dir"
+    python -m pipwerk_domain.documents.schemas --check --format-version 1 "$schemas_dir/v1"
 if [ "$with_audit" = 1 ]; then
     step "library: pip-audit" pip_audit in_library
 fi

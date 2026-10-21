@@ -68,7 +68,7 @@ def test_the_finding_identifiers_of_the_documentation_are_those_of_the_code() ->
         for name, value in vars(findings_module).items()
         if name.isupper() and isinstance(value, str) and re.match(r"^[a-z_]+\.[a-z_]+$", value)
     }
-    assert len(codes) == 26
+    assert len(codes) == 33
     documented = set(first_cells(section("9", "10")))
     assert documented == codes
 
@@ -77,8 +77,14 @@ def test_the_table_of_the_specification_is_complete() -> None:
     table = set(first_cells(section("9", "10").split("### 9.2")[0]))
     assert table == {
         "trigger.unconnected",
-        "flow.no_incoming",
+        "flow.not_reached",
+        "flow.main_without_trigger",
+        "instrument.invalid",
         "expression.invalid",
+        "expression.empty",
+        "data.unknown",
+        "data.type_mismatch",
+        "input.unused",
         "rule.result_mismatch",
         "flow.unending_loop",
         "parameter.missing",
@@ -141,6 +147,13 @@ def test_every_limit_is_listed_with_its_value() -> None:
         "MAX_RULES_PER_LIST": str(limits.MAX_RULES_PER_LIST),
         "MAX_STRATEGY_PARAMETERS": str(limits.MAX_STRATEGY_PARAMETERS),
         "MAX_INSTANCE_NESTING": str(limits.MAX_INSTANCE_NESTING),
+        "MAX_BLOCK_DEPTH": str(limits.MAX_BLOCK_DEPTH),
+        "MAX_NAME_LENGTH": str(limits.MAX_NAME_LENGTH),
+        "MAX_KEY_LENGTH": str(limits.MAX_KEY_LENGTH),
+        "MAX_INPUTS_PER_ELEMENT": str(limits.MAX_INPUTS_PER_ELEMENT),
+        "MAX_ITEMS_PER_REQUEST": str(limits.MAX_ITEMS_PER_REQUEST),
+        "MAX_NAMES_PER_ITEM": str(limits.MAX_NAMES_PER_ITEM),
+        "MAX_PROPERTIES_PER_NAME": str(limits.MAX_PROPERTIES_PER_NAME),
         "MAX_FINDINGS_PER_EXPRESSION": str(limits.MAX_FINDINGS_PER_EXPRESSION),
         "MAX_FINDINGS_PER_CHECK": str(limits.MAX_FINDINGS_PER_CHECK),
         "MAX_NAMES_PER_CHECK": str(limits.MAX_NAMES_PER_CHECK),

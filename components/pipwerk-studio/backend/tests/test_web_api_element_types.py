@@ -12,8 +12,12 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 from pipwerk_domain.defaults import default_registry
-from pipwerk_domain.expressions.functions import list_functions
-from pipwerk_domain.risk_rule import RISK_PER_TRADE_EXPRESSION, RISK_PER_TRADE_RULE_ID
+from pipwerk_domain.expressions.functions import FunctionParameter, list_functions
+from pipwerk_domain.risk_rule import (
+    RISK_PER_TRADE_EXPLANATION,
+    RISK_PER_TRADE_EXPRESSION,
+    RISK_PER_TRADE_RULE_ID,
+)
 from pipwerk_domain.typedesc import (
     Choice,
     Condition,
@@ -41,7 +45,7 @@ def fetch(client: TestClient) -> dict[str, object]:
 
 def test_the_answer_lists_every_type_of_the_register(client: TestClient) -> None:
     answer = fetch(client)
-    assert set(answer) == {"types", "templates", "functions"}
+    assert set(answer) == {"types", "templates", "template_texts", "functions"}
     types = answer["types"]
     assert isinstance(types, list)
     assert [item["id"] for item in types] == [item.id for item in default_registry().list()]
@@ -59,6 +63,56 @@ def test_every_type_has_labels_in_german_and_english(client: TestClient) -> None
             assert parameter["label"]["en"].strip(), (item["id"], parameter["id"])
             for choice in parameter.get("choices", []):
                 assert choice["label"]["de"].strip() and choice["label"]["en"].strip()
+
+
+def test_every_type_of_the_library_has_a_group_and_an_explanation_in_both_languages(
+    client: TestClient,
+) -> None:
+    """Acceptance criterion 3: all types with group and explanation in both languages."""
+    types = fetch(client)["types"]
+    assert isinstance(types, list)
+    groups = {item["group"] for item in types}
+    assert groups - {None} == {"when", "actions", "market", "indicators", "trends", "rules"}
+    for item in types:
+        if item["group"] is not None:
+            assert item["explanation"]["de"].strip(), item["id"]
+            assert item["explanation"]["en"].strip(), item["id"]
+        for part in item["parameters"] + item["properties"] + item["outputs"]:
+            assert set(part["explanation"]) == {"de", "en"}
+
+
+_PROGRAMMING = re.compile(r"[A-Za-z0-9]_[A-Za-z0-9]|[a-z][A-Z]|[a-z0-9]\.[a-z]")
+
+
+def _texts(value: object) -> list[str]:
+    """The names, labels and explanations of a type: every text under a key ``de`` or ``en``."""
+    found: list[str] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in ("de", "en") and isinstance(item, str):
+                found.append(item)
+            else:
+                found.extend(_texts(item))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(_texts(item))
+    return found
+
+
+def test_no_name_label_or_explanation_contains_an_identifier_in_programming_spelling(
+    client: TestClient,
+) -> None:
+    """Acceptance criterion 3 (specification 5.2: the user sees the language of a trader)."""
+    answer = fetch(client)
+    texts = _texts(answer["types"]) + _texts(answer["functions"]) + _texts(answer["template_texts"])
+    assert len(texts) > 500
+    # the names of two products are written with a capital letter inside the word
+    offending = [
+        text
+        for text in texts
+        if _PROGRAMMING.search(text.replace("ZigZag", "Zickzack").replace("MetaTrader", "Meta"))
+    ]
+    assert offending == []
 
 
 def test_the_types_are_the_descriptions_of_the_library_without_loss(client: TestClient) -> None:
@@ -121,15 +175,18 @@ def test_the_delivered_template_risk_per_trade_has_the_expression_of_the_specifi
     template = templates[0]
     assert RISK_TEMPLATE_ID == RISK_PER_TRADE_RULE_ID
     assert template["format"] == "pipwerk.rule"
-    assert template["title"] == "Risiko je Trade"
+    assert template["name"] == "Risiko je Trade"
+    assert template["format_version"] == "2.0"
     assert template["object_type"] == "Regel"
     assert template["expression"] == RISK_PER_TRADE_EXPRESSION
     assert template["determined_property"] == "volumen"
     assert template["comparison"] == "hoechstens"
     assert template["parameters"] == [
         {
-            "name": "risikogrenze",
+            "key": "risikogrenze",
+            "name": "Risikogrenze",
             "datatype": "percent",
+            "object_type": None,
             "required": True,
             "default": 0.01,
             "choices": [],
@@ -137,6 +194,23 @@ def test_the_delivered_template_risk_per_trade_has_the_expression_of_the_specifi
     ]
     assert "IF(ISNA(Position.volumen);" in template["expression"]
     assert "FLOOR(" in template["expression"]
+
+
+def test_the_delivered_template_has_its_name_and_explanation_in_both_languages(
+    client: TestClient,
+) -> None:
+    texts = fetch(client)["template_texts"]
+    assert texts == [
+        {
+            "id": RISK_TEMPLATE_ID,
+            "name": {"de": "Risiko je Trade", "en": "Risk per trade"},
+            "explanation": {
+                "de": RISK_PER_TRADE_EXPLANATION.de,
+                "en": RISK_PER_TRADE_EXPLANATION.en,
+            },
+            "group": "rules",
+        }
+    ]
 
 
 def test_the_functions_are_those_of_the_library(client: TestClient) -> None:
@@ -150,13 +224,20 @@ def test_the_functions_are_those_of_the_library(client: TestClient) -> None:
     for item, signature in zip(functions, signatures, strict=True):
         assert item["min_arguments"] == signature.min_arguments
         assert item["max_arguments"] == signature.max_arguments
-        assert item["description"] == {
-            "de": signature.description.de,
-            "en": signature.description.en,
+        assert item["label"] == {"de": signature.label.de, "en": signature.label.en}
+        assert item["explanation"] == {
+            "de": signature.explanation.de,
+            "en": signature.explanation.en,
         }
         assert [part["name"] for part in item["parameters"]] == [
             part.name for part in signature.parameters
         ]
+        for part, parameter in zip(item["parameters"], signature.parameters, strict=True):
+            assert part["label"] == {"de": parameter.label.de, "en": parameter.label.en}
+            assert part["explanation"] == {
+                "de": parameter.explanation.de,
+                "en": parameter.explanation.en,
+            }
         assert item["variadic"] == (
             None if signature.variadic is None else signature.variadic.value
         )
@@ -182,9 +263,13 @@ def test_the_models_follow_the_classes_of_the_library_field_by_field() -> None:
         "parameters",
         "variadic",
         "result",
-        "description",
+        "label",
+        "explanation",
         "min_arguments",
         "max_arguments",
+    ]
+    assert list(web_api.FunctionParameterModel.model_fields) == [
+        item.name for item in dataclasses.fields(FunctionParameter)
     ]
 
 

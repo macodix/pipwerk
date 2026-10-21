@@ -25,10 +25,10 @@ from web_api_support import (
 )
 
 
-def strategy_with_rule(template_id: str, title: str, name: str = "mindest") -> dict[str, Any]:
+def strategy_with_rule(template_id: str, name: str, key: str = "mindest") -> dict[str, Any]:
     document = load_case("str-03")
-    document["title"] = f"Strategie mit {title}"
-    document["rules"].append(instance_of(template_id, title, name))
+    document["name"] = f"Strategie mit {name}"
+    document["rules"].append(instance_of(template_id, name, key))
     return document
 
 
@@ -51,14 +51,14 @@ def test_a_rule_template_is_created_changed_and_deleted_and_the_strategy_stays_u
     answer = client.get(f"/api/v1/rules/{template_id}/usages").json()
     assert answer == {
         "usages": [
-            {"art": "strategies", "id": strategy_id, "title": "Strategie mit Mindestvolumen"}
+            {"art": "strategies", "id": strategy_id, "name": "Strategie mit Mindestvolumen"}
         ],
         "skipped_unreadable": 0,
     }
     before = client.get(f"/api/v1/strategies/{strategy_id}").text
 
     changed = copy.deepcopy(template["document"])
-    changed["title"] = "Mindestvolumen 2"
+    changed["name"] = "Mindestvolumen 2"
     changed["expression"] = "Order.volumen >= 2 * Instrument.mindestvolumen"
     assert put(client, "rules", template_id, changed).status_code == 200
     assert client.get(f"/api/v1/strategies/{strategy_id}").text == before  # E4: no effect
@@ -97,7 +97,7 @@ def test_usages_are_found_in_every_place_an_instance_can_be(client: TestClient) 
 
     # a strategy with an instance of the rule in a rule of an element, inside a ruleset
     nested = load_case("str-03")
-    nested["title"] = "Strategie verschachtelt"
+    nested["name"] = "Strategie verschachtelt"
     order = next(item for item in nested["elements"] if item["type"] == "flow.place_order")
     order["rules"].append(
         instance(
@@ -111,7 +111,7 @@ def test_usages_are_found_in_every_place_an_instance_can_be(client: TestClient) 
 
     # a strategy with an instance of the rule in the instance of an element
     inside = load_case("str-03")
-    inside["title"] = "Strategie Element"
+    inside["name"] = "Strategie Element"
     inside["elements"][0]["instance"]["rules"] = [instance_of(rule_id, "Mindestvolumen", "regel")]
     inside_id = post(client, "strategies", inside).json()["id"]
 
@@ -127,8 +127,8 @@ def test_usages_are_found_in_every_place_an_instance_can_be(client: TestClient) 
         ("strategies", inside_id),
     }
     assert answer["skipped_unreadable"] == 0
-    titles = [item["title"] for item in answer["usages"]]
-    assert titles == sorted(titles, key=str.casefold)
+    names = [item["name"] for item in answer["usages"]]
+    assert names == sorted(names, key=str.casefold)
 
     # the ruleset is used by the strategy that contains an instance made from it
     assert usage_ids(client, "rulesets", ruleset_id) == [nested_id]
@@ -142,7 +142,7 @@ def test_a_strategy_with_an_instance_made_from_an_indicator_template_is_a_usage(
     document["elements"][0]["instance"]["origin"] = {
         "object_type": "Indikator",
         "template_id": indicator_id,
-        "template_title": "Mein Indikator",
+        "template_name": "Mein Indikator",
     }
     strategy_id = post(client, "strategies", document).json()["id"]
     assert usage_ids(client, "indicators", indicator_id) == [strategy_id]

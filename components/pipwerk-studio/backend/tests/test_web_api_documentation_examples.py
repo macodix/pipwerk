@@ -1,14 +1,14 @@
-"""Tests of the examples in the user documentation (order 04, acceptance criteria 5 and 7 of
-``wp01``).
+"""Tests of the examples in the section "Web-API ausprobieren" of the technical documentation
+(order 04 point 13; acceptance criteria 5 and 7 of ``wp01``).
 
-The examples are files in ``contracts/strategies/v1/examples/``; the user documentation
-(``docs/user/pipwerk-studio.md``, "Web-API ausprobieren") names them and describes the steps.
-Every example is loaded, checked against the document format and used through the web API
-exactly as the documentation says: the rule template with its changed version and the flow with
-``usages`` and deleting (criterion 7), and the seven changed versions of the test case ``str-03``
-with the findings of ``check`` and of ``PUT`` (criterion 5). The tests also read the
-documentation: it must name every file and the findings of every change, and the instance that
-it shows is the one used here.
+The section was part of the user documentation until order 04; it is now section 5.4 of
+``docs/technical/pipwerk-studio.md``, and the user documentation points to it. The examples are
+files in ``contracts/strategies/v2/examples/`` (format 2.0). Every example is loaded, checked
+against the document format and used through the web API exactly as the documentation says: the
+rule template with its changed version and the flow with ``usages`` and deleting (criterion 7),
+and the seven changed versions of the test case ``str-03`` with the findings of ``check`` and of
+``PUT`` (criterion 5). The tests also read the documentation: it must name every file and the
+findings of every change, and the instance that it shows is the one used here.
 """
 
 import copy
@@ -21,19 +21,35 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from pipwerk_domain.documents import read_document
-from web_api_support import REPOSITORY, check, codes, load_case, post, put, without_id
+from web_api_support import (
+    EXAMPLE_DIRECTORY,
+    REPOSITORY,
+    check,
+    codes,
+    load_case,
+    post,
+    post_json,
+    put,
+    without_id,
+)
 
-DOCUMENTATION = REPOSITORY / "docs" / "user" / "pipwerk-studio.md"
-EXAMPLES = REPOSITORY / "contracts" / "strategies" / "v1" / "examples"
+DOCUMENTATION = REPOSITORY / "docs" / "technical" / "pipwerk-studio.md"
+USER_DOCUMENTATION = REPOSITORY / "docs" / "user" / "pipwerk-studio.md"
+EXAMPLES = EXAMPLE_DIRECTORY
 TEMPLATE_FILE = "regel-vorlage.rule.json"
 CHANGED_TEMPLATE_FILE = "regel-vorlage-geaendert.rule.json"
 PLACEHOLDER = "<Kennung der Vorlage>"
+SECTION = "### 5.4 Web-API ausprobieren"
+END_OF_SECTION = "## 6. Prüfungen"
 
 CONDITION = "7e1ab090-5a18-5414-9f00-5541c0e4b325"  # the element "Kreuzen" of str-03
+DIRECTION = "81ddf1b2-15f1-54f0-8a7e-7387b4dd119f"  # the element "Richtung"
 STOP_CALCULATION = "d68f936b-4e65-5d0c-a4eb-a1438baaa470"  # the element "Stop-Loss" of str-03
+PLACE_ORDER = "7896d1ad-8c07-517d-b451-80fe53d46681"  # the element "Order aufgeben"
 MAIN_TRIGGER = "fd3b87fb-a152-51fa-bd12-4579eba0a33d"
 NEW_A = "00000000-0000-4000-8000-0000000000aa"
 NEW_B = "00000000-0000-4000-8000-0000000000bb"
+NEW_CONNECTION = "00000000-0000-4000-8000-0000000000cc"
 
 Finding = tuple[str, str, str | None]
 
@@ -42,15 +58,49 @@ def example(name: str) -> dict[str, Any]:
     return json.loads((EXAMPLES / name).read_text(encoding="utf-8"))  # type: ignore[no-any-return]
 
 
-def documentation_section(start: str, end: str) -> str:
-    """The text from the heading ``start`` up to the heading ``end``."""
+def documentation_section(start: str, end: str | None = None) -> str:
+    """The text of the documentation from the heading ``start`` up to the heading ``end`` (up to
+    the end of the section if there is none), both inside section 5.4."""
     text = DOCUMENTATION.read_text(encoding="utf-8")
-    begin = text.index(start)
-    return text[begin : text.index(end, begin)]
+    section = text[text.index(SECTION) : text.index(END_OF_SECTION)]
+    begin = section.index(start)
+    return section[begin:] if end is None else section[begin : section.index(end, begin)]
 
 
-def condition(document: dict[str, Any]) -> dict[str, Any]:
-    return next(item for item in document["elements"] if item["id"] == CONDITION)
+def element(document: dict[str, Any], identifier: str) -> dict[str, Any]:
+    return next(item for item in document["elements"] if item["id"] == identifier)
+
+
+def new_element(identifier: str, type_id: str, **fields: Any) -> dict[str, Any]:
+    """An element as the web API stores it (written out with all fields)."""
+    return {
+        "id": identifier,
+        "type": type_id,
+        "name": None,
+        "key": None,
+        "position": None,
+        "parameters": {},
+        "properties": {},
+        "inputs": [],
+        "rules": [],
+        "management_of": None,
+        "instance": None,
+        **fields,
+    }
+
+
+def empty_content() -> dict[str, Any]:
+    return {
+        "parameter_values": {},
+        "parameters": [],
+        "properties": [],
+        "instances": [],
+        "rules": [],
+        "expression": None,
+        "determined_property": None,
+        "comparison": None,
+        "result_expression": None,
+    }
 
 
 # --- the seven changes, written out as the documentation describes them -------------------------
@@ -65,35 +115,46 @@ def remove_the_trigger(document: dict[str, Any]) -> None:
 
 def set_expression(text: str) -> Callable[[dict[str, Any]], None]:
     def change(document: dict[str, Any]) -> None:
-        condition(document)["parameters"]["ausdruck"]["value"] = text
+        condition = element(document, CONDITION)
+        condition["parameters"]["ausdruck"]["value"] = text
+        condition["inputs"] = []  # the new expression uses no property of an instance
 
     return change
 
 
 def add_an_indicator_with_an_order_rule(document: dict[str, Any]) -> None:
-    document["elements"].append(
-        {
-            "id": NEW_A,
-            "type": "Indikator",
-            "title": "Eigener Indikator",
-            "instance": {
-                "name": "eigener_indikator",
-                "object_type": "Indikator",
-                "rules": [
-                    {"name": "regel", "object_type": "Regel", "expression": "Order.volumen > 0"}
-                ],
-            },
-        }
-    )
+    rule = {
+        **empty_content(),
+        "name": "Regel",
+        "key": "regel",
+        "object_type": "Regel",
+        "origin": {"object_type": "Regel", "template_id": None, "template_name": None},
+        "expression": "Order.volumen > 0",
+    }
+    indicator = {
+        **empty_content(),
+        "name": "Eigener Indikator",
+        "key": "eigener_indikator",
+        "object_type": "Indikator",
+        "origin": {"object_type": "Indikator", "template_id": None, "template_name": None},
+        "parameter_values": {
+            "zeiteinheit": {"kind": "fixed", "value": "h1"},
+            "instrument": {"kind": "fixed", "value": "instrument_der_anwendung"},
+        },
+        "rules": [rule],
+    }
+    document["elements"].append(new_element(NEW_A, "Indikator", instance=indicator))
 
 
 def add_modify_order_outside_a_management(document: dict[str, Any]) -> None:
-    document["elements"].append({"id": NEW_A, "type": "flow.modify_order", "title": "Order ändern"})
-    document["connections"].append({"source": MAIN_TRIGGER, "output": "weiter", "target": NEW_A})
+    document["elements"].append(new_element(NEW_A, "flow.modify_order", name="Order ändern"))
+    document["connections"].append(
+        {"id": NEW_CONNECTION, "source": MAIN_TRIGGER, "output": "weiter", "target": NEW_A}
+    )
 
 
 def add_an_unknown_element_type(document: dict[str, Any]) -> None:
-    document["elements"].append({"id": NEW_B, "type": "x.unbekannt", "title": "?"})
+    document["elements"].append(new_element(NEW_B, "x.unbekannt", name="?"))
 
 
 CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
@@ -101,9 +162,11 @@ CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
         "str-03-ohne-ausloeser.strategy.json",
         remove_the_trigger,
         [
-            ("error", "flow.no_incoming", CONDITION),
-            ("hint", "flow.no_order_reachable", None),
-            ("error", "candle.no_instance", STOP_CALCULATION),
+            ("error", "flow.not_reached", CONDITION),
+            ("error", "flow.not_reached", DIRECTION),
+            ("error", "flow.not_reached", STOP_CALCULATION),
+            ("error", "flow.not_reached", PLACE_ORDER),
+            ("hint", "flow.main_without_trigger", None),
         ],
     ),
     (
@@ -147,13 +210,29 @@ def reported(findings: list[dict[str, Any]]) -> list[Finding]:
 # --- the documents ------------------------------------------------------------------------------
 
 
-def test_every_example_is_a_valid_document_and_named_in_the_user_documentation() -> None:
+def test_every_example_is_a_valid_document_and_named_in_the_documentation() -> None:
     names = sorted(item.name for item in EXAMPLES.iterdir())
     assert names == sorted([TEMPLATE_FILE, CHANGED_TEMPLATE_FILE, *(item[0] for item in CASES)])
     documentation = DOCUMENTATION.read_text(encoding="utf-8")
     for name in names:
         read_document((EXAMPLES / name).read_bytes())  # strict: unknown fields are rejected
+        assert example(name)["format_version"] == "2.0", name
         assert f"`{name}`" in documentation, name
+
+
+def test_the_user_documentation_points_to_the_section_and_no_longer_holds_it() -> None:
+    text = USER_DOCUMENTATION.read_text(encoding="utf-8")
+    assert "docs/technical/pipwerk-studio.md" in text
+    assert "Abschnitt 5.4" in text
+    for gone in (
+        "#### Beispieldokumente",
+        "#### Vorlage anlegen",
+        "str-03-ohne-ausloeser",
+        "regel-vorlage",
+    ):
+        assert gone not in text, gone
+    assert "contracts/strategies/v1/examples" not in text
+    assert "Web-API ausprobieren" in text
 
 
 def test_the_documentation_names_the_findings_of_every_change() -> None:
@@ -161,7 +240,7 @@ def test_the_documentation_names_the_findings_of_every_change() -> None:
         match.group(2): match.group(0)
         for match in re.finditer(
             r"^\| (\d) \| `(\S+)` \| .* \|$",
-            documentation_section("#### Befunde der Konsistenzprüfung", "### Zweiter Weg"),
+            documentation_section("#### Befunde der Konsistenzprüfung", "#### Ausdrücke"),
             re.MULTILINE,
         )
     }
@@ -205,7 +284,7 @@ def test_the_documentation_names_the_fields_and_counting_of_the_position() -> No
     row = next(
         line
         for line in documentation_section(
-            "#### Befunde der Konsistenzprüfung", "### Zweiter Weg"
+            "#### Befunde der Konsistenzprüfung", "#### Ausdrücke"
         ).splitlines()
         if "`str-03-schreibfehler.strategy.json`" in line
     )
@@ -214,13 +293,11 @@ def test_the_documentation_names_the_fields_and_counting_of_the_position() -> No
 
 
 def test_the_steps_replace_the_identifier_in_the_request_body_not_in_the_file() -> None:
-    documentation = DOCUMENTATION.read_text(encoding="utf-8")
+    documentation = documentation_section("### 5.4", "#### Ausdrücke")
     assert "Ersetzen Sie vorher im Feld `id` der Datei" not in documentation
     assert documentation.count("Die Datei im Arbeitsverzeichnis bleibt unverändert.") == 2
     top_level = "im Feld `id` auf der obersten Ebene des Dokuments"
-    assert (
-        documentation.count(f"Ersetzen Sie dann im eingefügten Text die Kennung {top_level}") == 2
-    )
+    assert documentation.count(f"Dann wird im eingefügten Text die Kennung {top_level}") == 2
     step = documentation.split("4. `PUT /api/v1/strategies/{id}`")[1].split("\n")[0]
     assert "Das Feld `id` auf der obersten Ebene des Dokuments" in step
     assert documentation.count("Die Felder `id` der Elemente bleiben unverändert.") == 2
@@ -288,9 +365,7 @@ def instance_of_the_documentation(template_id: str) -> dict[str, Any]:
     return json.loads(blocks[0].replace(PLACEHOLDER, template_id))  # type: ignore[no-any-return]
 
 
-def test_the_flow_with_a_template_of_the_user_documentation(
-    client: TestClient, objects: Path
-) -> None:
+def test_the_flow_with_a_template_of_the_documentation(client: TestClient, objects: Path) -> None:
     # step 1: create the template
     created = post(client, "rules", example(TEMPLATE_FILE))
     assert created.status_code == 201
@@ -305,7 +380,7 @@ def test_the_flow_with_a_template_of_the_user_documentation(
 
     # steps 3 and 4: take the document and insert the instance after the entry "risiko"
     document = client.get(f"/api/v1/strategies/{strategy_id}").json()
-    position = [item["name"] for item in document["rules"]].index("risiko")
+    position = [item["key"] for item in document["rules"]].index("risiko")
     document["rules"].insert(position + 1, instance_of_the_documentation(template_id))
 
     # step 5: save it
@@ -317,7 +392,7 @@ def test_the_flow_with_a_template_of_the_user_documentation(
     usages = client.get(f"/api/v1/rules/{template_id}/usages")
     assert usages.status_code == 200
     assert usages.json() == {
-        "usages": [{"art": "strategies", "id": strategy_id, "title": "EMA-Trendfolge"}],
+        "usages": [{"art": "strategies", "id": strategy_id, "name": "EMA-Trendfolge"}],
         "skipped_unreadable": 0,
     }
 
@@ -330,7 +405,7 @@ def test_the_flow_with_a_template_of_the_user_documentation(
     changed["id"] = template_id
     replaced = put(client, "rules", template_id, changed)
     assert replaced.status_code == 200
-    assert replaced.json()["document"]["title"] == "Mindestvolumen doppelt"
+    assert replaced.json()["document"]["name"] == "Mindestvolumen doppelt"
     assert replaced.json()["findings"] == []
     assert client.get(f"/api/v1/strategies/{strategy_id}").text == before
 
@@ -341,15 +416,70 @@ def test_the_flow_with_a_template_of_the_user_documentation(
     # step 10: the strategy is unchanged and keeps the instance
     after = client.get(f"/api/v1/strategies/{strategy_id}")
     assert after.text == before
-    names = [item["name"] for item in after.json()["rules"]]
-    assert names == ["risiko", "mindest"]
+    keys = [item["key"] for item in after.json()["rules"]]
+    assert keys == ["risiko", "mindest"]
     assert after.json()["rules"][1]["origin"]["template_id"] == template_id
     assert sorted(item.name for item in objects.iterdir()) == [f"{strategy_id}.strategy.json"]
 
 
-def test_the_changed_template_differs_in_title_description_and_expression_only() -> None:
+def test_the_changed_template_differs_in_name_description_and_expression_only() -> None:
     first = example(TEMPLATE_FILE)
     second = copy.deepcopy(example(CHANGED_TEMPLATE_FILE))
     differing = {key for key in first if first[key] != second[key]}
-    assert differing == {"title", "description", "expression"}
+    assert differing == {"name", "description", "expression"}
     assert first["object_type"] == "Regel"
+
+
+# --- expressions, keys and the saved strategy -----------------------------------------------------
+
+
+def test_the_example_of_the_expressions_endpoint_is_what_the_documentation_says(
+    client: TestClient,
+) -> None:
+    section = documentation_section("#### Ausdrücke und Kennungen", "#### Gesicherte Strategie")
+    for text in (
+        "/elements/4/parameters/ausdruck/value",
+        "ema20.wert > ema50.wert",
+        "[EMA 20].Wert > [EMA 50].Wert",
+        "EMA 20 ist größer als EMA 50",
+        "stop_abstand_2",
+    ):
+        assert text in section, text
+    answer = post_json(
+        client,
+        "/api/v1/expressions",
+        {
+            "document": load_case("str-03"),
+            "language": "de",
+            "items": [
+                {
+                    "pointer": "/elements/4/parameters/ausdruck/value",
+                    "stored": "ema20.wert > ema50.wert",
+                }
+            ],
+        },
+    ).json()["items"][0]
+    assert answer["display"] == "[EMA 20].Wert > [EMA 50].Wert"
+    assert answer["sentence"] == "EMA 20 ist größer als EMA 50"
+    assert answer["blocks"]["kind"] == "comparison"
+    assert [child["kind"] for child in answer["blocks"]["children"]] == ["name", "name"]
+    assert answer["findings"] == []
+    key = post_json(
+        client,
+        "/api/v1/keys",
+        {"document": load_case("str-03"), "scope": "/parameters", "name": "Stop-Abstand"},
+    )
+    assert key.json() == {"key": "stop_abstand_2"}
+
+
+def test_the_documentation_of_the_saved_strategy_names_what_the_test_environment_holds() -> None:
+    section = documentation_section("#### Gesicherte Strategie")
+    for text in (
+        "7209de70-2fdc-49fc-a242-33251216ed22",
+        "EMA-Trendfolge",
+        "Stop abstand",
+        "stop_abstand",
+        "EMA20",
+        "ema20",
+    ):
+        assert text in section, text

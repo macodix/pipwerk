@@ -6,6 +6,7 @@ from typing import Annotated
 
 from pydantic import Field, TypeAdapter, ValidationError
 
+from pipwerk_domain.documents import v1
 from pipwerk_domain.documents.convert import from_document, to_document
 from pipwerk_domain.documents.models import (
     AnyDocument,
@@ -15,6 +16,7 @@ from pipwerk_domain.documents.models import (
     StrategyDocument,
     TrendDocument,
 )
+from pipwerk_domain.documents.upgrade import upgrade_document
 from pipwerk_domain.model import Strategy, Template
 
 DocumentError = ValidationError
@@ -27,23 +29,47 @@ _ADAPTER: TypeAdapter[AnyDocument] = TypeAdapter(
         Field(discriminator="format"),
     ]
 )
+_ADAPTER_V1: TypeAdapter[v1.AnyDocument] = TypeAdapter(
+    Annotated[
+        v1.StrategyDocument
+        | v1.IndicatorDocument
+        | v1.TrendDocument
+        | v1.RuleDocument
+        | v1.RulesetDocument,
+        Field(discriminator="format"),
+    ]
+)
 
 _SURROGATE = re.compile("[\ud800-\udfff]")
 _LEAVE = object()  # marks, on the stack of the walk, that all parts of a container are done
 _BYTE_ORDER_MARKS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
+_MAJOR_ONE = re.compile(r"^1\.[0-9]+$")
 
-_HEAD = ("format", "format_version", "id", "title", "description", "object_type")
+_HEAD = ("format", "format_version", "id", "name", "description", "object_type")
 
 
 def parse_document(data: str | bytes | dict[str, object]) -> AnyDocument:
-    """Validate a document given as JSON text or as the parsed JSON object.
+    """Validate a document given as JSON text or as the parsed JSON object and return it in
+    the format 2.0. A document of the format 1.0 is validated by the models of 1.0 and
+    converted (specification 3.7).
 
     Raises :class:`DocumentError` (a Pydantic ``ValidationError``) if it does not fit.
     """
     if isinstance(data, str | bytes):
         data = _load_json(data)  # type: ignore[assignment]
     _reject_lone_surrogates(data)
+    if _is_format_one(data):
+        return upgrade_document(_ADAPTER_V1.validate_python(data, strict=True))
     return _ADAPTER.validate_python(data, strict=True)
+
+
+def _is_format_one(data: object) -> bool:
+    """Whether the document says that it is of the major version 1 (the models of 1.0 then
+    decide whether it is valid)."""
+    if not isinstance(data, dict):
+        return False
+    version = data.get("format_version")
+    return isinstance(version, str) and _MAJOR_ONE.match(version) is not None
 
 
 def _reject_lone_surrogates(data: object) -> None:
@@ -114,14 +140,22 @@ def _load_json(data: str | bytes) -> object:
         raise _error(str(error) if isinstance(error, ValueError) else "nested too deep") from None
 
 
+def load_json(data: str | bytes) -> object:
+    """Parse JSON text as strictly as a document: UTF-8 without a byte order mark, no ``NaN``
+    or ``Infinity``, no key twice in an object, no nesting that exhausts the stack. Raises
+    :class:`DocumentError` for anything else."""
+    return _load_json(data)
+
+
 def read_document(data: str | bytes) -> Strategy | Template:
-    """Read a document and translate it into the object model."""
+    """Read a document and translate it into the object model. A document of the format 1.0
+    is converted to the format 2.0 first."""
     return from_document(parse_document(data))
 
 
 def document_to_json(document: AnyDocument) -> str:
     """The JSON text of a document: the head fields (``format``, ``format_version``, ``id``,
-    ``title``, ``description``, ``object_type``) first, then the other fields in the order
+    ``name``, ``description``, ``object_type``) first, then the other fields in the order
     of the model, indented, with a final line feed."""
     data = document.model_dump(mode="json")
     ordered = {key: data[key] for key in _HEAD if key in data}
@@ -133,5 +167,6 @@ def document_to_json(document: AnyDocument) -> str:
 
 
 def write_document(value: Strategy | Template) -> str:
-    """Translate a strategy or template into a document and write it as JSON text."""
+    """Translate a strategy or template into a document of the format 2.0 and write it as JSON
+    text."""
     return document_to_json(to_document(value))

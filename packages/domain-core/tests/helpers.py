@@ -77,6 +77,7 @@ def calculation(number: int, name: str, text: str, **kwargs: object) -> Element:
         number,
         catalog.FLOW_CALCULATION,
         name=name,
+        key=name,
         parameters={"ausdruck": expr(text)},
         **kwargs,
     )
@@ -86,7 +87,7 @@ def valid_strategy() -> Strategy:
     """The smallest strategy without findings: a trigger and an order."""
     return Strategy(
         id=uid(900),
-        title="Test",
+        name="Test",
         elements=[trigger(1), place_order(2)],
         connections=[connect(1, "weiter", 2)],
     )
@@ -95,6 +96,7 @@ def valid_strategy() -> Strategy:
 def rule(name: str, text: str, **kwargs: object) -> Instance:
     return Instance(
         name=name,
+        key=name,
         object_type=catalog.TYPE_RULE,
         origin=Origin(catalog.TYPE_RULE),
         expression=text,
@@ -105,6 +107,7 @@ def rule(name: str, text: str, **kwargs: object) -> Instance:
 def ruleset(name: str, rules: list[Instance], **kwargs: object) -> Instance:
     return Instance(
         name=name,
+        key=name,
         object_type=catalog.TYPE_RULESET,
         origin=Origin(catalog.TYPE_RULESET),
         rules=rules,
@@ -113,8 +116,10 @@ def ruleset(name: str, rules: list[Instance], **kwargs: object) -> Instance:
 
 
 def indicator_instance(name: str, **kwargs: object) -> Instance:
+    kwargs.setdefault("parameter_values", {"zeiteinheit": fixed("h1")})
     return Instance(
         name=name,
+        key=name,
         object_type=catalog.TYPE_INDICATOR,
         origin=Origin(catalog.TYPE_INDICATOR),
         **kwargs,  # type: ignore[arg-type]
@@ -124,6 +129,7 @@ def indicator_instance(name: str, **kwargs: object) -> Instance:
 def ema(name: str, period: int = 20, unit: str = "h1") -> Instance:
     return Instance(
         name=name,
+        key=name,
         object_type="EMA",
         origin=Origin("EMA"),
         parameter_values={"zeiteinheit": fixed(unit), "periode": fixed(period)},
@@ -131,9 +137,11 @@ def ema(name: str, period: int = 20, unit: str = "h1") -> Instance:
 
 
 def template(object_type: str, **kwargs: object) -> Template:
+    if object_type == catalog.TYPE_INDICATOR:
+        kwargs.setdefault("parameter_values", {"zeiteinheit": fixed("h1")})
     return Template(
         id=uid(800),
-        title="Vorlage",
+        name="Vorlage",
         object_type=object_type,
         **kwargs,  # type: ignore[arg-type]
     )

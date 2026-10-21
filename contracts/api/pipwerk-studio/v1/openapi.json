@@ -3,7 +3,7 @@
   "info": {
     "title": "pipwerk Studio",
     "version": "1.0.0",
-    "description": "Public web API of pipwerk Studio, version 1: type descriptions, strategies and templates (indicators, trends, rules, rulesets), their usages and the consistency check. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk Studio under /api/ are not part of this description."
+    "description": "Public web API of pipwerk Studio, version 1: type descriptions, strategies and templates (indicators, trends, rules, rulesets) in the document format 2.0 (documents of the format 1.0 are accepted and converted), their usages, the consistency check, the expressions in stored form, display form, blocks and as a sentence, and the keys of new objects. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk Studio under /api/ are not part of this description.\n\nEvery error answer has the fixed English text `detail`, the `code` of the cause and the `params` for the text in the language of the user. The codes:\n\n- `object.not_found` (HTTP 404): The object does not exist.\n- `object.unreadable` (HTTP 409): The object file cannot be read or does not fit the document schema. It is left unchanged.\n- `object.kind_conflict` (HTTP 409): An entry of another kind has this identifier in the object directory (any entry, for example a file, a symbolic link or a directory). Nothing was written.\n- `object.name_taken` (HTTP 409): The file name of the object in the object directory is taken by an entry that is no readable regular file (for example a symbolic link or a directory). Nothing was written.\n- `object.builtin` (HTTP 403): A delivered template cannot be changed or deleted.\n- `object.write_failed` (HTTP 500): The object file could not be written or deleted.\n- `document.invalid` (HTTP 422): The document does not fit the document schema.\n- `document.format_mismatch` (HTTP 422): The format of the document does not fit the kind of object.\n- `document.id_mismatch` (HTTP 422): The identifier of the document differs from the identifier in the path.\n- `document.too_large` (HTTP 413): The document is too large to be stored. Params: limit_bytes.\n- `request.invalid` (HTTP 422): The request is invalid.\n- `request.not_json` (HTTP 415): The request body must be JSON (Content-Type: application/json).\n- `request.too_large` (HTTP 413): The request body is larger than the limit of 2 MiB. Params: limit_bytes.\n- `request.not_found` (HTTP 404): There is no such path.\n- `request.method_not_allowed` (HTTP 405): The method is not allowed for this path.\n- `request.failed` (HTTP 400): The request cannot be processed.\n- `host.not_allowed` (HTTP 400): The Host header of the request is not allowed.\n- `expressions.pointer_invalid` (HTTP 422): The pointer of an item does not name a place of an expression in the document. Params: index.\n- `expressions.blocks_invalid` (HTTP 422): The blocks of an item are no expression. Params: index, reason, details.\n- `keys.scope_invalid` (HTTP 422): The pointer names no list of the document that takes a new object.\n- `object_directory.not_set` (HTTP 503): The object directory of pipwerk Studio is not set.\n- `object_directory.stored_invalid` (HTTP 503): The stored pipwerk Studio object directory is invalid.\n- `object_directory.unreadable` (HTTP 500): The object directory of pipwerk Studio cannot be read.\n- `object_directory.not_absolute` (HTTP 422): The object directory must be an absolute path.\n- `object_directory.invalid_body` (HTTP 422): The request body must be a JSON object with the fields path (text) and move (true or false).\n- `object_directory.conflict` (HTTP 409): The new object directory already contains files with the same names. Nothing was moved.\n- `object_directory.stored_invalid_no_move` (HTTP 409): The stored pipwerk Studio object directory is invalid, so no files can be moved. Save the object directory without moving files to repair it.\n- `object_directory.target_not_creatable` (HTTP 500): The new object directory could not be created. Nothing was moved and the object directory is unchanged.\n- `object_directory.move_failed` (HTTP 500): Moving the object files failed. The files were brought back and the object directory is unchanged.\n- `object_directory.move_not_restored` (HTTP 500): Moving the object files failed and some files could not be brought back. The object directory is unchanged. Params: source_directory, target_directory, files.\n- `language.stored_invalid` (HTTP 503): The stored pipwerk Studio language is invalid."
   },
   "paths": {
     "/api/v1/element-types": {
@@ -12,7 +12,7 @@
           "element-types"
         ],
         "summary": "List the type descriptions",
-        "description": "All type descriptions of the element register with names and descriptions in German and English, the delivered templates as documents and the functions of expressions. The user interface builds the element library and the property view from this.",
+        "description": "All type descriptions of the element register with names, descriptions, explanations and groups in German and English, the delivered templates as documents with their names and explanations in both languages, and the functions of expressions. The user interface builds the element library and the property view from this.",
         "operationId": "list_element_types",
         "responses": {
           "200": {
@@ -34,7 +34,7 @@
           "strategies"
         ],
         "summary": "List the strategies",
-        "description": "Lists the strategies in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "description": "Lists the strategies in the object directory of pipwerk Studio with identifier, name, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
         "operationId": "list_strategies",
         "responses": {
           "200": {
@@ -74,10 +74,10 @@
           "strategies"
         ],
         "summary": "Create an object of the kind strategy",
-        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving.",
         "operationId": "create_strategies",
         "requestBody": {
-          "description": "A document of the format pipwerk.strategy.",
+          "description": "A document of the format pipwerk.strategy, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -157,7 +157,7 @@
           "strategies"
         ],
         "summary": "Read an object of the kind strategy",
-        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "description": "Returns the document as saved, in the format 2.0. A file of the format 1.0 in the object directory is returned converted and stays as it is until it is saved. A file that is not readable is answered with HTTP 409 and not changed.",
         "operationId": "read_strategies",
         "parameters": [
           {
@@ -231,7 +231,7 @@
           "strategies"
         ],
         "summary": "Save an object of the kind strategy",
-        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
+        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
         "operationId": "replace_strategies",
         "parameters": [
           {
@@ -341,7 +341,7 @@
         },
         "requestBody": {
           "required": true,
-          "description": "A document of the format pipwerk.strategy.",
+          "description": "A document of the format pipwerk.strategy, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -531,7 +531,7 @@
           "indicators"
         ],
         "summary": "List the indicators",
-        "description": "Lists the indicators in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "description": "Lists the indicators in the object directory of pipwerk Studio with identifier, name, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
         "operationId": "list_indicators",
         "responses": {
           "200": {
@@ -571,10 +571,10 @@
           "indicators"
         ],
         "summary": "Create an object of the kind indicator",
-        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving.",
         "operationId": "create_indicators",
         "requestBody": {
-          "description": "A document of the format pipwerk.indicator.",
+          "description": "A document of the format pipwerk.indicator, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -654,7 +654,7 @@
           "indicators"
         ],
         "summary": "Read an object of the kind indicator",
-        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "description": "Returns the document as saved, in the format 2.0. A file of the format 1.0 in the object directory is returned converted and stays as it is until it is saved. A file that is not readable is answered with HTTP 409 and not changed.",
         "operationId": "read_indicators",
         "parameters": [
           {
@@ -728,7 +728,7 @@
           "indicators"
         ],
         "summary": "Save an object of the kind indicator",
-        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
+        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
         "operationId": "replace_indicators",
         "parameters": [
           {
@@ -838,7 +838,7 @@
         },
         "requestBody": {
           "required": true,
-          "description": "A document of the format pipwerk.indicator.",
+          "description": "A document of the format pipwerk.indicator, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -1028,7 +1028,7 @@
           "trends"
         ],
         "summary": "List the trends",
-        "description": "Lists the trends in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "description": "Lists the trends in the object directory of pipwerk Studio with identifier, name, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
         "operationId": "list_trends",
         "responses": {
           "200": {
@@ -1068,10 +1068,10 @@
           "trends"
         ],
         "summary": "Create an object of the kind trend",
-        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving.",
         "operationId": "create_trends",
         "requestBody": {
-          "description": "A document of the format pipwerk.trend.",
+          "description": "A document of the format pipwerk.trend, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -1151,7 +1151,7 @@
           "trends"
         ],
         "summary": "Read an object of the kind trend",
-        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "description": "Returns the document as saved, in the format 2.0. A file of the format 1.0 in the object directory is returned converted and stays as it is until it is saved. A file that is not readable is answered with HTTP 409 and not changed.",
         "operationId": "read_trends",
         "parameters": [
           {
@@ -1225,7 +1225,7 @@
           "trends"
         ],
         "summary": "Save an object of the kind trend",
-        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
+        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
         "operationId": "replace_trends",
         "parameters": [
           {
@@ -1335,7 +1335,7 @@
         },
         "requestBody": {
           "required": true,
-          "description": "A document of the format pipwerk.trend.",
+          "description": "A document of the format pipwerk.trend, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -1525,7 +1525,7 @@
           "rules"
         ],
         "summary": "List the rules",
-        "description": "Lists the rules in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "description": "Lists the rules in the object directory of pipwerk Studio with identifier, name, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
         "operationId": "list_rules",
         "responses": {
           "200": {
@@ -1565,10 +1565,10 @@
           "rules"
         ],
         "summary": "Create an object of the kind rule",
-        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving.",
         "operationId": "create_rules",
         "requestBody": {
-          "description": "A document of the format pipwerk.rule.",
+          "description": "A document of the format pipwerk.rule, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -1648,7 +1648,7 @@
           "rules"
         ],
         "summary": "Read an object of the kind rule",
-        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "description": "Returns the document as saved, in the format 2.0. A file of the format 1.0 in the object directory is returned converted and stays as it is until it is saved. A file that is not readable is answered with HTTP 409 and not changed.",
         "operationId": "read_rules",
         "parameters": [
           {
@@ -1722,7 +1722,7 @@
           "rules"
         ],
         "summary": "Save an object of the kind rule",
-        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
+        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
         "operationId": "replace_rules",
         "parameters": [
           {
@@ -1832,7 +1832,7 @@
         },
         "requestBody": {
           "required": true,
-          "description": "A document of the format pipwerk.rule.",
+          "description": "A document of the format pipwerk.rule, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -2022,7 +2022,7 @@
           "rulesets"
         ],
         "summary": "List the rulesets",
-        "description": "Lists the rulesets in the object directory of pipwerk Studio with identifier, title, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
+        "description": "Lists the rulesets in the object directory of pipwerk Studio with identifier, name, description, object type and the time of the last change. A file that is not readable is listed with the identifier from its file name and the mark unreadable; it is not changed.",
         "operationId": "list_rulesets",
         "responses": {
           "200": {
@@ -2062,10 +2062,10 @@
           "rulesets"
         ],
         "summary": "Create an object of the kind ruleset",
-        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document and the findings of the consistency check; findings do not prevent saving.",
+        "description": "Saves the document under a new identifier; an identifier in the document is replaced. The expressions are saved in the normalized spelling. The answer names the identifier, the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving.",
         "operationId": "create_rulesets",
         "requestBody": {
-          "description": "A document of the format pipwerk.ruleset.",
+          "description": "A document of the format pipwerk.ruleset, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -2145,7 +2145,7 @@
           "rulesets"
         ],
         "summary": "Read an object of the kind ruleset",
-        "description": "Returns the document as saved. A file that is not readable is answered with HTTP 409 and not changed.",
+        "description": "Returns the document as saved, in the format 2.0. A file of the format 1.0 in the object directory is returned converted and stays as it is until it is saved. A file that is not readable is answered with HTTP 409 and not changed.",
         "operationId": "read_rulesets",
         "parameters": [
           {
@@ -2219,7 +2219,7 @@
           "rulesets"
         ],
         "summary": "Save an object of the kind ruleset",
-        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
+        "description": "Saves the object under the identifier of the path in the current object directory. The identifier in the path is authoritative; a different identifier in the document is answered with HTTP 422. If no file with this identifier lies in the current object directory (for example after the directory was changed without moving the files), the file is created, and the directory too if it is missing: HTTP 201. An existing file is replaced: HTTP 200. The expressions are saved in the normalized spelling. The answer names the saved document (format 2.0) and the findings of the consistency check; findings do not prevent saving. A delivered template cannot be changed (HTTP 403). The same rule holds for creating and replacing: if an entry lies under the file name of this kind that is no readable regular file (for example a file that is not readable, a symbolic link with or without target, or a directory), or if any entry of the same identifier with another kind lies in the object directory (for example a file, a symbolic link or a directory), nothing is written (HTTP 409). Links are never followed.",
         "operationId": "replace_rulesets",
         "parameters": [
           {
@@ -2329,7 +2329,7 @@
         },
         "requestBody": {
           "required": true,
-          "description": "A document of the format pipwerk.ruleset.",
+          "description": "A document of the format pipwerk.ruleset, format 2.0 or 1.0 (a document of the format 1.0 is converted and saved as 2.0).",
           "content": {
             "application/json": {
               "schema": {
@@ -2519,7 +2519,7 @@
           "check"
         ],
         "summary": "Check a document",
-        "description": "Runs the consistency check on a document of any kind without saving it, as it is written (positions refer to the given expressions). The answer names the findings and, for each expression, the recognized names with position and identifier.",
+        "description": "Runs the consistency check on a document of any kind (format 2.0 or 1.0) without saving it, as it is written (positions refer to the given expressions). The answer names the findings and, for each expression, the recognized names with position and identifier.",
         "operationId": "check_document",
         "requestBody": {
           "description": "A document of any format.",
@@ -2601,6 +2601,132 @@
           }
         }
       }
+    },
+    "/api/v1/expressions": {
+      "post": {
+        "tags": [
+          "expressions"
+        ],
+        "summary": "Show expressions in both forms, as blocks and as a sentence",
+        "description": "For 1 to 50 places of expressions in a document (strategy or template, format 2.0 or 1.0) the answer gives the expression in the stored form and in the display form in the language of the request, the sentence, the blocks, the tokens with their kinds, the findings and the names visible at the place with their properties. An item names the place by a JSON Pointer to the document as the format 2.0 writes it (the place itself may be missing, the object it belongs to must be there) and gives exactly one of the stored form, the display form (in either language) and blocks. A pointer that names no place of an expression is answered with HTTP 422 and the code expressions.pointer_invalid. Positions of tokens and findings refer to the display form. Where an answer is cut it says so (blocks_omitted, findings_truncated, names_truncated, properties_truncated).",
+        "operationId": "answer_expressions",
+        "requestBody": {
+          "description": "The document, the language and the items.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpressionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The answers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpressionsResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/keys": {
+      "post": {
+        "tags": [
+          "expressions"
+        ],
+        "summary": "Form the key for a new object from a name",
+        "description": "The key under which an expression addresses a new object: formed from the name, different from the other keys of its namespace, from the identifiers of the objects of the application and from the names of the functions. The scope is a JSON Pointer to the list of the document that takes the new object (for example /parameters or /elements). The user interface does not form keys itself.",
+        "operationId": "form_key",
+        "requestBody": {
+          "description": "The document, the scope and the name of the new object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2610,15 +2736,59 @@
           "detail": {
             "type": "string",
             "title": "Detail"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "object.not_found",
+              "object.unreadable",
+              "object.kind_conflict",
+              "object.name_taken",
+              "object.builtin",
+              "object.write_failed",
+              "document.invalid",
+              "document.format_mismatch",
+              "document.id_mismatch",
+              "document.too_large",
+              "request.invalid",
+              "request.not_json",
+              "request.too_large",
+              "request.not_found",
+              "request.method_not_allowed",
+              "request.failed",
+              "host.not_allowed",
+              "expressions.pointer_invalid",
+              "expressions.blocks_invalid",
+              "keys.scope_invalid",
+              "object_directory.not_set",
+              "object_directory.stored_invalid",
+              "object_directory.unreadable",
+              "object_directory.not_absolute",
+              "object_directory.invalid_body",
+              "object_directory.conflict",
+              "object_directory.stored_invalid_no_move",
+              "object_directory.target_not_creatable",
+              "object_directory.move_failed",
+              "object_directory.move_not_restored",
+              "language.stored_invalid"
+            ],
+            "title": "Code"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "detail"
+          "detail",
+          "code",
+          "params"
         ],
         "title": "ApiError",
-        "description": "Error body with a fixed text. It names no path, no exception text and no input."
+        "description": "Error body."
       },
       "ArgumentKind": {
         "type": "string",
@@ -2639,6 +2809,7 @@
             "enum": [
               "fixed",
               "parameter",
+              "connection",
               "expression",
               "application"
             ],
@@ -2657,6 +2828,9 @@
               },
               {
                 "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/DataLinkDocument"
               },
               {
                 "type": "null"
@@ -2678,11 +2852,135 @@
         "enum": [
           "fixed",
           "parameter",
+          "connection",
           "expression",
           "application"
         ],
         "title": "BindingKind",
         "description": "How a parameter or property receives its value (glossary \"Bindungsart\")."
+      },
+      "BlockModel": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "empty",
+              "name",
+              "literal",
+              "comparison",
+              "arithmetic",
+              "logic",
+              "if",
+              "function",
+              "crossing"
+            ],
+            "title": "Kind"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "datatype": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "number",
+                  "integer",
+                  "percent",
+                  "text",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datatype"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Function"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down",
+                  "any"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/BlockModel"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "BlockModel",
+        "description": "A block of an expression (specification 3.4). Every kind uses the fields that belong\nto it: ``name`` the keys in ``path`` (for example ``[\"ema20\", \"wert\"]``), ``literal`` its\n``value`` and ``datatype`` (a percentage is the number as written: 5 for 5 %),\n``comparison`` and ``arithmetic`` their ``operator`` (an arithmetic block with one child is\na sign), ``logic`` ``and``, ``or`` or ``not``, ``function`` the name of the function from the\nlist of the functions, ``crossing`` its ``direction``; ``children`` are the operands in the\norder of the expression."
       },
       "CheckResponse": {
         "properties": {
@@ -2734,6 +3032,25 @@
         "title": "ChoiceModel",
         "description": "A fixed value of a choice."
       },
+      "ChoiceValueModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ChoiceValueModel",
+        "description": "A possible value of a property that is a choice."
+      },
       "ConditionModel": {
         "properties": {
           "name": {
@@ -2756,6 +3073,11 @@
       },
       "ConnectionDocument": {
         "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
           "source": {
             "type": "string",
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -2774,12 +3096,39 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "id",
           "source",
           "output",
           "target"
         ],
         "title": "ConnectionDocument",
         "description": "A connection from an output of an element to an element."
+      },
+      "DataLinkDocument": {
+        "properties": {
+          "instance": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Instance",
+            "description": "Key of an object in an expression: a simple name"
+          },
+          "property": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Property",
+            "description": "Key of an object in an expression: a simple name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance",
+          "property"
+        ],
+        "title": "DataLinkDocument",
+        "description": "The value of a data connection: a property of an instance on the drawing area, by the\nkeys of the instance and of the property."
       },
       "DataType": {
         "type": "string",
@@ -2810,15 +3159,12 @@
             "type": "string",
             "title": "Type"
           },
-          "title": {
-            "type": "string",
-            "title": "Title",
-            "default": ""
-          },
           "name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 200,
+                "description": "Name of the user, free text"
               },
               {
                 "type": "null"
@@ -2826,15 +3172,29 @@
             ],
             "title": "Name"
           },
-          "x": {
-            "type": "number",
-            "title": "X",
-            "default": 0.0
+          "key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                "description": "Key of an object in an expression: a simple name"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
           },
-          "y": {
-            "type": "number",
-            "title": "Y",
-            "default": 0.0
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "parameters": {
             "additionalProperties": {
@@ -2849,6 +3209,14 @@
             },
             "type": "object",
             "title": "Properties"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/InputDocument"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Inputs"
           },
           "rules": {
             "items": {
@@ -2888,7 +3256,7 @@
           "type"
         ],
         "title": "ElementDocument",
-        "description": "An element on the drawing area. The type is a text; an unknown type is valid and\nits values are kept."
+        "description": "An element on the drawing area. The type is a text; an unknown type is valid and\nits values are kept. An element with an instance has no name and no key of its own."
       },
       "ElementKind": {
         "type": "string",
@@ -2941,6 +3309,13 @@
             "type": "array",
             "title": "Templates"
           },
+          "template_texts": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateTextsModel"
+            },
+            "type": "array",
+            "title": "Template Texts"
+          },
           "functions": {
             "items": {
               "$ref": "#/components/schemas/FunctionModel"
@@ -2954,10 +3329,11 @@
         "required": [
           "types",
           "templates",
+          "template_texts",
           "functions"
         ],
         "title": "ElementTypesResponse",
-        "description": "All type descriptions of the element register, the delivered templates as documents\nand the functions of expressions."
+        "description": "All type descriptions of the element register, the delivered templates as documents\nwith their texts in both languages, and the functions of expressions."
       },
       "ErrorPlace": {
         "properties": {
@@ -2987,7 +3363,142 @@
           "type"
         ],
         "title": "ErrorPlace",
-        "description": "One error of a request: the place in the request or document and the error type."
+        "description": "One error of a request or document: the place and the error type."
+      },
+      "ExpressionAnswer": {
+        "properties": {
+          "stored": {
+            "type": "string",
+            "title": "Stored"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentence"
+          },
+          "blocks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blocks_omitted": {
+            "type": "boolean",
+            "title": "Blocks Omitted"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/TokenModel"
+            },
+            "type": "array",
+            "title": "Tokens"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingModel"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "findings_truncated": {
+            "type": "boolean",
+            "title": "Findings Truncated"
+          },
+          "names": {
+            "items": {
+              "$ref": "#/components/schemas/VisibleNameModel"
+            },
+            "type": "array",
+            "title": "Names"
+          },
+          "names_truncated": {
+            "type": "boolean",
+            "title": "Names Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stored",
+          "display",
+          "sentence",
+          "blocks",
+          "blocks_omitted",
+          "tokens",
+          "findings",
+          "findings_truncated",
+          "names",
+          "names_truncated"
+        ],
+        "title": "ExpressionAnswer",
+        "description": "The answer for one item. ``stored`` and ``display`` (in the language of the request)\nare the expression in both forms. ``sentence`` and ``blocks`` are ``null`` for an\nexpression with a syntax problem; ``blocks_omitted`` is true if the blocks were left out\nbecause they are nested deeper than the limit. The positions of ``tokens`` and of the\nfindings refer to ``display``. ``findings_truncated`` is true if the expression has\nmore findings than are listed; ``names_truncated`` if the list of names was cut at\nthe limit."
+      },
+      "ExpressionItem": {
+        "additionalProperties": false,
+        "description": "One place of an expression and the text to answer for. ``pointer`` is a JSON Pointer\n(RFC 6901) to the place in the document as the format 2.0 writes it, for example\n``/elements/3/parameters/ausdruck/value``; the place itself may be missing in the\ndocument, the object it belongs to must be there. Exactly one of ``stored`` (stored form),\n``display`` (display form in either language) and ``blocks`` is given.",
+        "properties": {
+          "pointer": {
+            "maxLength": 1000,
+            "title": "Pointer",
+            "type": "string"
+          },
+          "stored": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stored"
+          },
+          "display": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display"
+          },
+          "blocks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "pointer"
+        ],
+        "title": "ExpressionItem",
+        "type": "object"
       },
       "ExpressionNamesModel": {
         "properties": {
@@ -3035,6 +3546,84 @@
         ],
         "title": "ExpressionNamesModel",
         "description": "The names recognized in one expression. ``element`` and ``subject`` tell where the\nexpression stands, ``field`` which expression it is (as for a finding)."
+      },
+      "ExpressionsRequest": {
+        "additionalProperties": false,
+        "description": "The request of ``/api/v1/expressions``: the document (strategy or template, format 2.0\nor 1.0), the language of the answer and 1 to 50 items.",
+        "properties": {
+          "document": {
+            "description": "",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyDocument"
+              },
+              {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              },
+              {
+                "$ref": "#/components/schemas/TrendDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RuleDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "format",
+              "mapping": {
+                "pipwerk.strategy": "#/components/schemas/StrategyDocument",
+                "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                "pipwerk.trend": "#/components/schemas/TrendDocument",
+                "pipwerk.rule": "#/components/schemas/RuleDocument",
+                "pipwerk.ruleset": "#/components/schemas/RulesetDocument"
+              }
+            }
+          },
+          "language": {
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExpressionItem"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document",
+          "language",
+          "items"
+        ],
+        "title": "ExpressionsRequest",
+        "type": "object"
+      },
+      "ExpressionsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExpressionAnswer"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ExpressionsResponse",
+        "description": "The answers in the order of the items of the request."
       },
       "FindingModel": {
         "properties": {
@@ -3088,7 +3677,7 @@
           "details"
         ],
         "title": "FindingModel",
-        "description": "A finding of the consistency check (specification 3.6)."
+        "description": "A finding of the consistency check (specification 3.6): the identifier of the finding\nwith the data for the text; the library writes no text."
       },
       "FunctionModel": {
         "properties": {
@@ -3116,7 +3705,10 @@
           "result": {
             "$ref": "#/components/schemas/ResultKind"
           },
-          "description": {
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "explanation": {
             "$ref": "#/components/schemas/LabelModel"
           },
           "min_arguments": {
@@ -3142,12 +3734,13 @@
           "parameters",
           "variadic",
           "result",
-          "description",
+          "label",
+          "explanation",
           "min_arguments",
           "max_arguments"
         ],
         "title": "FunctionModel",
-        "description": "A function of expressions with its signature."
+        "description": "A function of expressions with its signature, its name in trader language and its\nexplanation."
       },
       "FunctionParameterModel": {
         "properties": {
@@ -3161,6 +3754,12 @@
           "optional": {
             "type": "boolean",
             "title": "Optional"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LabelModel"
           }
         },
         "additionalProperties": false,
@@ -3168,10 +3767,25 @@
         "required": [
           "name",
           "kind",
-          "optional"
+          "optional",
+          "label",
+          "explanation"
         ],
         "title": "FunctionParameterModel",
         "description": "A parameter of a function of expressions."
+      },
+      "Group": {
+        "type": "string",
+        "enum": [
+          "when",
+          "actions",
+          "market",
+          "indicators",
+          "trends",
+          "rules"
+        ],
+        "title": "Group",
+        "description": "Group of the element library (specification 5.2)."
       },
       "IndicatorDocument": {
         "properties": {
@@ -3266,18 +3880,20 @@
           },
           "format_version": {
             "type": "string",
-            "pattern": "^1\\.[0-9]+$",
+            "pattern": "^2\\.[0-9]+$",
             "title": "Format Version",
-            "description": "Version of the format; a document of a higher major version is rejected"
+            "description": "Version of the format; a document of a higher major version is rejected, one of the major version 1 is read by converting it"
           },
           "id": {
             "type": "string",
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "title": "Title"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "description": {
             "type": "string",
@@ -3299,18 +3915,53 @@
         "required": [
           "format_version",
           "id",
-          "title",
+          "name",
           "format",
           "object_type"
         ],
         "title": "IndicatorDocument",
         "description": "Document of an indicator: ``Indikator`` or a delivered indicator type."
       },
+      "InputDocument": {
+        "properties": {
+          "instance": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Instance",
+            "description": "Key of an object in an expression: a simple name"
+          },
+          "property": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Property",
+            "description": "Key of an object in an expression: a simple name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance",
+          "property"
+        ],
+        "title": "InputDocument",
+        "description": "An input of an element: a property of an instance on the drawing area."
+      },
       "InstanceDocument": {
         "properties": {
           "name": {
             "type": "string",
-            "title": "Name"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Key",
+            "description": "Key of an object in an expression: a simple name"
           },
           "object_type": {
             "type": "string",
@@ -3420,16 +4071,59 @@
         "type": "object",
         "required": [
           "name",
+          "key",
           "object_type"
         ],
         "title": "InstanceDocument",
-        "description": "A complete copy of a template or object type (E4). The base classes are in this\norder so that name, object type and origin come before the content."
+        "description": "A complete copy of a template or object type (E4). The base classes are in this\norder so that name, key, object type and origin come before the content."
       },
       "InvalidRequest": {
         "properties": {
           "detail": {
             "type": "string",
             "title": "Detail"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "object.not_found",
+              "object.unreadable",
+              "object.kind_conflict",
+              "object.name_taken",
+              "object.builtin",
+              "object.write_failed",
+              "document.invalid",
+              "document.format_mismatch",
+              "document.id_mismatch",
+              "document.too_large",
+              "request.invalid",
+              "request.not_json",
+              "request.too_large",
+              "request.not_found",
+              "request.method_not_allowed",
+              "request.failed",
+              "host.not_allowed",
+              "expressions.pointer_invalid",
+              "expressions.blocks_invalid",
+              "keys.scope_invalid",
+              "object_directory.not_set",
+              "object_directory.stored_invalid",
+              "object_directory.unreadable",
+              "object_directory.not_absolute",
+              "object_directory.invalid_body",
+              "object_directory.conflict",
+              "object_directory.stored_invalid_no_move",
+              "object_directory.target_not_creatable",
+              "object_directory.move_failed",
+              "object_directory.move_not_restored",
+              "language.stored_invalid"
+            ],
+            "title": "Code"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
           },
           "errors": {
             "items": {
@@ -3443,10 +4137,113 @@
         "type": "object",
         "required": [
           "detail",
+          "code",
+          "params",
           "errors"
         ],
         "title": "InvalidRequest",
         "description": "Error body for a request or document that does not fit the schema (HTTP 422). Names\nat most 50 places and the error type of each, never the values."
+      },
+      "KeyRequest": {
+        "additionalProperties": false,
+        "description": "The request of ``/api/v1/keys``: the document (strategy or template, format 2.0 or\n1.0), the JSON Pointer to the list that takes the new object (for example ``/parameters`` or\n``/elements``) and the name. ``kind`` and ``object_type`` decide the key when the name gives\nnone (a condition becomes ``bedingung``, an instance takes the identifier of its object\ntype).",
+        "properties": {
+          "document": {
+            "description": "",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyDocument"
+              },
+              {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              },
+              {
+                "$ref": "#/components/schemas/TrendDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RuleDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "format",
+              "mapping": {
+                "pipwerk.strategy": "#/components/schemas/StrategyDocument",
+                "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                "pipwerk.trend": "#/components/schemas/TrendDocument",
+                "pipwerk.rule": "#/components/schemas/RuleDocument",
+                "pipwerk.ruleset": "#/components/schemas/RulesetDocument"
+              }
+            }
+          },
+          "scope": {
+            "maxLength": 1000,
+            "title": "Scope",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "parameter",
+                  "property",
+                  "instance",
+                  "rule",
+                  "condition",
+                  "calculation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Kind"
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Object Type"
+          }
+        },
+        "required": [
+          "document",
+          "scope",
+          "name"
+        ],
+        "title": "KeyRequest",
+        "type": "object"
+      },
+      "KeyResponse": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "KeyResponse",
+        "description": "The key for the new object: different from the other keys of its namespace, from the\nidentifiers of the objects of the application and from the names of the functions."
       },
       "LabelModel": {
         "properties": {
@@ -3563,7 +4360,7 @@
           "items"
         ],
         "title": "ObjectList",
-        "description": "The objects of one kind, sorted by title; the not readable ones come last."
+        "description": "The objects of one kind, sorted by name; the not readable ones come last."
       },
       "ObjectListEntry": {
         "properties": {
@@ -3571,7 +4368,7 @@
             "type": "string",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "anyOf": [
               {
                 "type": "string"
@@ -3580,7 +4377,7 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Name"
           },
           "description": {
             "anyOf": [
@@ -3618,7 +4415,7 @@
         "type": "object",
         "required": [
           "id",
-          "title",
+          "name",
           "description",
           "object_type",
           "modified",
@@ -3645,16 +4442,18 @@
             ],
             "title": "Template Id"
           },
-          "template_title": {
+          "template_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 200,
+                "description": "Name of the user, free text"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Template Title"
+            "title": "Template Name"
           }
         },
         "additionalProperties": false,
@@ -3663,7 +4462,7 @@
           "object_type"
         ],
         "title": "OriginDocument",
-        "description": "Origin of an instance: object type and, if known, identifier and title of the template."
+        "description": "Origin of an instance: object type and, if known, the identifier of the template and,\nfor a template of the user only, its name at the time of insertion."
       },
       "OutputModel": {
         "properties": {
@@ -3677,6 +4476,9 @@
           "holds_management": {
             "type": "boolean",
             "title": "Holds Management"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LabelModel"
           }
         },
         "additionalProperties": false,
@@ -3684,16 +4486,26 @@
         "required": [
           "id",
           "label",
-          "holds_management"
+          "holds_management",
+          "explanation"
         ],
         "title": "OutputModel",
         "description": "An output of an element of the flow."
       },
       "ParameterDefinitionDocument": {
         "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Key",
+            "description": "Key of an object in an expression: a simple name"
+          },
           "name": {
             "type": "string",
-            "title": "Name"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "datatype": {
             "type": "string",
@@ -3711,6 +4523,17 @@
               "object"
             ],
             "title": "Datatype"
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type"
           },
           "required": {
             "type": "boolean",
@@ -3748,6 +4571,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "key",
           "name",
           "datatype"
         ],
@@ -3824,6 +4648,9 @@
               }
             ],
             "title": "Object Type"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LabelModel"
           }
         },
         "additionalProperties": false,
@@ -3837,16 +4664,46 @@
           "choices",
           "bindings",
           "applies_when",
-          "object_type"
+          "object_type",
+          "explanation"
         ],
         "title": "ParameterModel",
         "description": "A parameter of a type."
       },
+      "PositionDocument": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "title": "Y"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PositionDocument",
+        "description": "The place of an element on the drawing area, set by the user."
+      },
       "PropertyDefinitionDocument": {
         "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Key",
+            "description": "Key of an object in an expression: a simple name"
+          },
           "name": {
             "type": "string",
-            "title": "Name"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "datatype": {
             "type": "string",
@@ -3865,6 +4722,17 @@
             ],
             "title": "Datatype"
           },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type"
+          },
           "expression": {
             "type": "string",
             "maxLength": 4096,
@@ -3882,6 +4750,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "key",
           "name",
           "datatype",
           "expression"
@@ -3956,6 +4825,9 @@
               }
             ],
             "title": "Object Type"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LabelModel"
           }
         },
         "additionalProperties": false,
@@ -3969,7 +4841,8 @@
           "default",
           "choices",
           "applies_when",
-          "object_type"
+          "object_type",
+          "explanation"
         ],
         "title": "PropertyModel",
         "description": "A property of a type."
@@ -4078,18 +4951,20 @@
           },
           "format_version": {
             "type": "string",
-            "pattern": "^1\\.[0-9]+$",
+            "pattern": "^2\\.[0-9]+$",
             "title": "Format Version",
-            "description": "Version of the format; a document of a higher major version is rejected"
+            "description": "Version of the format; a document of a higher major version is rejected, one of the major version 1 is read by converting it"
           },
           "id": {
             "type": "string",
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "title": "Title"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "description": {
             "type": "string",
@@ -4112,7 +4987,7 @@
         "required": [
           "format_version",
           "id",
-          "title",
+          "name",
           "format",
           "object_type"
         ],
@@ -4212,18 +5087,20 @@
           },
           "format_version": {
             "type": "string",
-            "pattern": "^1\\.[0-9]+$",
+            "pattern": "^2\\.[0-9]+$",
             "title": "Format Version",
-            "description": "Version of the format; a document of a higher major version is rejected"
+            "description": "Version of the format; a document of a higher major version is rejected, one of the major version 1 is read by converting it"
           },
           "id": {
             "type": "string",
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "title": "Title"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "description": {
             "type": "string",
@@ -4246,7 +5123,7 @@
         "required": [
           "format_version",
           "id",
-          "title",
+          "name",
           "format",
           "object_type"
         ],
@@ -4388,13 +5265,62 @@
         "title": "SavedTrend",
         "description": "Answer to saving a document of the kind trend: the identifier, the document as saved (expressions in the normalized spelling) and the findings of the consistency check."
       },
+      "SectionDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
+          },
+          "flow": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flow"
+          },
+          "elements": {
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Elements"
+          },
+          "collapsed": {
+            "type": "boolean",
+            "title": "Collapsed",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "SectionDocument",
+        "description": "A section: a named group of elements of one flow that can be collapsed. ``flow`` is the\nidentifier of the element \"Order aufgeben\" whose management the section belongs to, or\n``null`` for the main flow."
+      },
       "StrategyDocument": {
         "properties": {
           "format_version": {
             "type": "string",
-            "pattern": "^1\\.[0-9]+$",
+            "pattern": "^2\\.[0-9]+$",
             "title": "Format Version",
-            "description": "Version of the format; a document of a higher major version is rejected"
+            "description": "Version of the format; a document of a higher major version is rejected, one of the major version 1 is read by converting it"
           },
           "format": {
             "type": "string",
@@ -4406,9 +5332,11 @@
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "title": "Title"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "description": {
             "type": "string",
@@ -4446,6 +5374,32 @@
             "type": "array",
             "maxItems": 4000,
             "title": "Connections"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SectionDocument"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Sections"
+          },
+          "orientation": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "horizontal"
+            ],
+            "title": "Orientation",
+            "default": "vertical"
+          },
+          "collapsed_managements": {
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Collapsed Managements"
           }
         },
         "additionalProperties": false,
@@ -4454,16 +5408,25 @@
           "format_version",
           "format",
           "id",
-          "title"
+          "name"
         ],
         "title": "StrategyDocument",
         "description": "Document of a strategy (format ``pipwerk.strategy``)."
       },
       "StrategyParameterDocument": {
         "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "title": "Key",
+            "description": "Key of an object in an expression: a simple name"
+          },
           "name": {
             "type": "string",
-            "title": "Name"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "datatype": {
             "type": "string",
@@ -4481,6 +5444,17 @@
               "object"
             ],
             "title": "Datatype"
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type"
           },
           "value": {
             "anyOf": [
@@ -4518,11 +5492,84 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "key",
           "name",
           "datatype"
         ],
         "title": "StrategyParameterDocument",
         "description": "Parameter of a strategy: a value or \"at the application\"."
+      },
+      "TemplateTextsModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "group": {
+            "$ref": "#/components/schemas/Group"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "explanation",
+          "group"
+        ],
+        "title": "TemplateTextsModel",
+        "description": "The name and the explanation of a delivered template in both languages (the document\nstores one name only) and its group of the element library."
+      },
+      "TokenModel": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "name",
+              "function",
+              "value",
+              "operator",
+              "bracket",
+              "separator"
+            ],
+            "title": "Kind"
+          },
+          "partner": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partner"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "kind",
+          "partner"
+        ],
+        "title": "TokenModel",
+        "description": "A part of an expression: ``start`` is the first character and ``end`` the position\nafter the last. For a bracket ``partner`` is the index of the bracket that belongs to it in\nthe list."
       },
       "TrendDocument": {
         "properties": {
@@ -4617,18 +5664,20 @@
           },
           "format_version": {
             "type": "string",
-            "pattern": "^1\\.[0-9]+$",
+            "pattern": "^2\\.[0-9]+$",
             "title": "Format Version",
-            "description": "Version of the format; a document of a higher major version is rejected"
+            "description": "Version of the format; a document of a higher major version is rejected, one of the major version 1 is read by converting it"
           },
           "id": {
             "type": "string",
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "title": "Title"
+            "maxLength": 200,
+            "title": "Name",
+            "description": "Name of the user, free text"
           },
           "description": {
             "type": "string",
@@ -4651,7 +5700,7 @@
         "required": [
           "format_version",
           "id",
-          "title",
+          "name",
           "format",
           "object_type"
         ],
@@ -4727,6 +5776,19 @@
           "strategy_parameters": {
             "type": "boolean",
             "title": "Strategy Parameters"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Group"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -4745,10 +5807,12 @@
           "builtin",
           "by_user",
           "named",
-          "strategy_parameters"
+          "strategy_parameters",
+          "explanation",
+          "group"
         ],
         "title": "TypeDescriptionModel",
-        "description": "Description of an element type or object type: the data the user interface is built\nfrom (specification 3.1)."
+        "description": "Description of an element type or object type: the data the user interface is built\nfrom (specification 3.1). ``group`` is the group of the element library (``null`` for a\ntype that is not in it); ``explanation`` is the short text on pointing at the type, in\nthe language of a trader."
       },
       "UsageEntry": {
         "properties": {
@@ -4767,9 +5831,9 @@
             "type": "string",
             "title": "Id"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "title": "Title"
+            "title": "Name"
           }
         },
         "additionalProperties": false,
@@ -4777,7 +5841,7 @@
         "required": [
           "art",
           "id",
-          "title"
+          "name"
         ],
         "title": "UsageEntry",
         "description": "A strategy or template that contains an instance made from the template."
@@ -4804,6 +5868,130 @@
         ],
         "title": "UsagesResponse",
         "description": "The usages of a template. Files that are not readable are skipped and counted."
+      },
+      "VisibleNameModel": {
+        "properties": {
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Path"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "result",
+              "strategy_parameter",
+              "parameter",
+              "application_object",
+              "rule"
+            ],
+            "title": "Kind"
+          },
+          "datatype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datatype"
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/VisiblePropertyModel"
+            },
+            "type": "array",
+            "title": "Properties"
+          },
+          "properties_truncated": {
+            "type": "boolean",
+            "title": "Properties Truncated"
+          },
+          "contents": {
+            "items": {
+              "$ref": "#/components/schemas/VisibleNameModel"
+            },
+            "type": "array",
+            "title": "Contents"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display",
+          "path",
+          "kind",
+          "datatype",
+          "properties",
+          "properties_truncated",
+          "contents"
+        ],
+        "title": "VisibleNameModel",
+        "description": "A name that an expression can address at the place. ``display`` is the name in the\nlanguage of the request and ``path`` the keys. ``contents`` are the instances and rules\ncontained in an instance or ruleset. ``properties_truncated`` is true if the list of\nproperties was cut at the limit."
+      },
+      "VisiblePropertyModel": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
+          "datatype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datatype"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceValueModel"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "previous_value": {
+            "type": "boolean",
+            "title": "Previous Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "datatype",
+          "explanation",
+          "choices",
+          "previous_value"
+        ],
+        "title": "VisiblePropertyModel",
+        "description": "A property of a visible name. ``previous_value`` tells that ``PREVIOUS`` may stand around\nit."
       }
     }
   },
@@ -4813,6 +6001,9 @@
     },
     {
       "name": "element-types"
+    },
+    {
+      "name": "expressions"
     },
     {
       "name": "indicators"

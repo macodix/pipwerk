@@ -7,11 +7,13 @@ chunks.
 """
 
 import asyncio
+import json
 from typing import Any
 
 from starlette.types import Message, Receive, Scope, Send
 
-from pipwerk_studio.body_limit import BODY_TOO_LARGE_TEXT, BodyLimitMiddleware
+from pipwerk_studio.body_limit import BodyLimitMiddleware
+from pipwerk_studio.errors import ERROR_CODES
 
 LIMIT = 100
 
@@ -105,7 +107,11 @@ def test_a_declared_size_above_the_limit_is_413_without_reading_the_body() -> No
     assert status(sent) == 413
     assert read == 0
     assert app.calls == 0
-    assert BODY_TOO_LARGE_TEXT.encode() in answer(sent)
+    assert json.loads(answer(sent)) == {
+        "detail": ERROR_CODES["request.too_large"].text,
+        "code": "request.too_large",
+        "params": {"limit_bytes": LIMIT},
+    }
 
 
 def test_without_a_declared_size_the_body_is_counted() -> None:

@@ -1,5 +1,13 @@
-"""Expressions (specification 3.4): parser, type check, functions and normalization."""
+"""Expressions (specification 3.4): parser, type check, functions, normalization, stored and
+display form, blocks, sentence, characters and visible names."""
 
+from pipwerk_domain.expressions.blocks import (
+    Block,
+    BlockError,
+    BlockKind,
+    blocks_to_text,
+    to_blocks,
+)
 from pipwerk_domain.expressions.checker import (
     Analysis,
     ExpressionIssue,
@@ -11,13 +19,18 @@ from pipwerk_domain.expressions.checker import (
     normalize_expression,
 )
 from pipwerk_domain.expressions.exprtypes import ExprType
+from pipwerk_domain.expressions.forms import Rendering, display_part, is_simple_name, render
 from pipwerk_domain.expressions.functions import (
+    FunctionParameter,
     FunctionSignature,
     find_function,
     list_functions,
 )
+from pipwerk_domain.expressions.names import ChoiceInfo, PropertyInfo, VisibleName, visible_names
 from pipwerk_domain.expressions.parser import ParseResult, SyntaxIssue, parse
+from pipwerk_domain.expressions.sentence import sentence
 from pipwerk_domain.expressions.symbols import Environment, Scope, Symbol, SymbolKind
+from pipwerk_domain.expressions.tokens import Character, CharacterKind, characters
 
 
 def nesting_depth(source: str) -> int:
@@ -48,23 +61,41 @@ def nesting_depth(source: str) -> int:
 
 __all__ = [
     "Analysis",
+    "Block",
+    "BlockError",
+    "BlockKind",
+    "Character",
+    "CharacterKind",
+    "ChoiceInfo",
     "Environment",
     "ExprType",
     "ExpressionIssue",
+    "FunctionParameter",
     "FunctionSignature",
     "IssueKind",
     "ParseResult",
+    "PropertyInfo",
     "RecognizedFunction",
     "RecognizedName",
     "RecognizedSegment",
+    "Rendering",
     "Scope",
     "Symbol",
     "SymbolKind",
     "SyntaxIssue",
+    "VisibleName",
     "analyze",
+    "blocks_to_text",
+    "characters",
+    "display_part",
     "find_function",
+    "is_simple_name",
     "list_functions",
     "nesting_depth",
     "normalize_expression",
     "parse",
+    "render",
+    "sentence",
+    "to_blocks",
+    "visible_names",
 ]

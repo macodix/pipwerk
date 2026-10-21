@@ -303,7 +303,8 @@ def test_the_branches_of_if_need_a_common_type() -> None:
 
 
 def test_previous_needs_a_name_and_a_positive_integer() -> None:
-    assert only_issue(run("PREVIOUS(1 + 2)")).reason == "argument"
+    issue = only_issue(run("PREVIOUS(1 + 2)"))
+    assert (issue.kind, issue.reason) == (IssueKind.PREVIOUS_ARGUMENT, "not_a_name")
     assert only_issue(run("PREVIOUS(EMA21.Wert; 0)")).reason == "argument"
     assert only_issue(run("PREVIOUS(EMA21.Wert; 1.5)")).reason == "argument"
     assert only_issue(run('PREVIOUS(EMA21.Wert; "a")')).reason == "argument"

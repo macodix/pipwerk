@@ -195,7 +195,11 @@ def test_invalid_stored_value_is_reported_as_503_not_500(tmp_path: Path) -> None
     response = client.get("/api/studio/settings/language")
 
     assert response.status_code == 503
-    assert response.json() == {"detail": "The stored pipwerk Studio language is invalid."}
+    assert response.json() == {
+        "detail": "The stored pipwerk Studio language is invalid.",
+        "code": "language.stored_invalid",
+        "params": {},
+    }
 
 
 def test_writing_a_valid_language_repairs_an_invalid_stored_value(tmp_path: Path) -> None:
