@@ -33,7 +33,10 @@ export interface RunInput {
   from: number;
   to: number;
   trace: boolean;
-  manualStart: boolean;
+  /** Time at which the trigger "Manual" occurs once; null means the start of the test period, before the first candle. */
+  manualAt: number | null;
+  /** Single-step test: triggers "Manual" started by the command; each entry is the number of evaluations (without such triggers) after which it follows. */
+  manualExtra: number[];
 }
 
 export interface Progress {
@@ -73,6 +76,8 @@ export interface EvalRec {
   inst: number | null;
   steps: StepRec[];
   acting: boolean;
+  /** Started by the command "Trigger manually" of the single-step test, not by the test period. */
+  extra?: boolean;
   bid: number;
   ask: number;
 }
@@ -218,6 +223,9 @@ export class Engine {
   private bars: Bars;
   private spreadFactor: number;
   private mainTriggers: El[] = [];
+  private manualTriggers: El[] = [];
+  /** Evaluations so far that were not started by the command. */
+  private baseCount = 0;
   private mgmtTriggers = new Map<string, El[]>();
   out: RunOutput;
   private params: Record<string, string | number | boolean>;
@@ -230,6 +238,7 @@ export class Engine {
     this.spreadFactor = BROKERS.find((b) => b.id === input.brokerId)?.spreadFactor ?? 1;
     this.balance = input.account.capital;
     for (const e of input.strategy.els) {
+      if (e.type === 'trigger.manual' && !e.mgmt) this.manualTriggers.push(e);
       if (e.type !== 'trigger.candle_close' && e.type !== 'trigger.tick') continue;
       if (e.mgmt) {
         if (!this.mgmtTriggers.has(e.mgmt)) this.mgmtTriggers.set(e.mgmt, []);
@@ -760,6 +769,7 @@ export class Engine {
     switch (el.type) {
       case 'trigger.candle_close':
       case 'trigger.tick':
+      case 'trigger.manual':
         step.out = 'weiter';
         break;
       case 'flow.condition': {
@@ -785,13 +795,6 @@ export class Engine {
         step.out = 'weiter';
         if (v === null) step.note = T('Das Ergebnis ist nicht verfügbar, weil ein verwendeter Wert fehlt.', 'The result is not available because a value used is missing.');
         this.results.set(el.id, v);
-        break;
-      }
-      case 'flow.set_parameter': {
-        const sp = el.bind.strategieparameter;
-        const v = this.bindingValue(el, 'ausdruck');
-        if (sp && sp.k === 'param' && v !== null) this.params[sp.id] = v as string | number | boolean;
-        step.out = 'weiter';
         break;
       }
       case 'flow.place_order': this.execPlace(el, step); break;
@@ -948,14 +951,24 @@ export class Engine {
     this.world();
   }
 
-  private runFlow(trig: El, inst: Inst | null, kind: 'candle' | 'tick', tf: string | null): void {
+  /** The trigger "Manual" occurs: all of them in the main flow, one evaluation each. */
+  private fireManual(extra: boolean): void {
+    for (const tr of this.manualTriggers) {
+      this.tfNow = this.defaultTf;
+      this.runFlow(tr, null, 'manual', this.defaultTf, extra);
+    }
+  }
+
+  private defaultTf = 'h1';
+
+  private runFlow(trig: El, inst: Inst | null, kind: 'candle' | 'tick' | 'manual', tf: string | null, extra = false): void {
     const trace = this.input.trace;
     const prevCur = this.cur;
     this.cur = inst;
     const rec: EvalRec | null = trace
       ? {
         id: this.out.evals.length, seq0: this.seqNo + 1, t: this.now, kind, trig: trig.id, tf, flow: trig.mgmt ?? null, inst: inst ? inst.order.id : null, steps: [], acting: false,
-        bid: this.tick.bid, ask: this.tick.ask,
+        bid: this.tick.bid, ask: this.tick.ask, ...(extra ? { extra: true } : {}),
       }
       : null;
     let el: El | undefined = trig;
@@ -973,6 +986,11 @@ export class Engine {
     }
     if (rec) this.out.evals.push(rec);
     this.cur = prevCur;
+    if (rec && !extra) {
+      // commands of the single-step test: a trigger "Manual" follows right after this evaluation
+      this.baseCount += 1;
+      for (const n of this.input.manualExtra) if (n === this.baseCount) this.fireManual(true);
+    }
   }
 
   /** Runs the test. Yields progress; the result is the return value. */
@@ -986,22 +1004,24 @@ export class Engine {
     const mainTf = this.mainTriggers.find((t) => t.type === 'trigger.candle_close');
     const defaultTf = (mainTf ? this.tfOfEl(mainTf) : null) ?? 'h1';
     this.tfNow = defaultTf;
+    this.defaultTf = defaultTf;
     // time frames that close: all candle triggers of the main flow and of the management frames
     const tfOf = (t: El): string => this.tfOfEl(t) ?? defaultTf;
     const fixedSpread = account.spreadMode === 'fixed' ? account.spreadFixed * this.input.instr.pip : null;
     let lastEq = account.capital;
-    if (this.input.trace && this.input.manualStart) {
-      this.now = bars.t[b0] ?? from;
-      this.tick = { t: this.now, bid: bars.o[b0], ask: bars.o[b0] + (fixedSpread ?? bars.sp[b0] * this.spreadFactor) };
-      this.out.evals.push({
-        id: 0, seq0: this.seq(), t: this.now, kind: 'manual', trig: null, tf: null, flow: null, inst: null, steps: [], acting: false, bid: this.tick.bid, ask: this.tick.ask,
-      });
-    }
+    // the trigger "Manual" occurs once: at the start of the test period before the first candle, or at the given time
+    const manualT = this.manualTriggers.length ? (this.input.manualAt ?? bars.t[b0] ?? from) : null;
+    let manualDone = manualT === null;
     this.world();
     for (let j = b0; j < b1; j++) {
       ticksOfBar(bars, j, this.spreadFactor, fixedSpread, ticks);
       for (let k = 0; k < 4; k++) {
         this.tick = ticks[k];
+        if (!manualDone && manualT !== null && ticks[k].t >= manualT) {
+          manualDone = true;
+          this.now = manualT;
+          this.fireManual(false);
+        }
         this.now = ticks[k].t;
         this.processTick();
         // tick triggers: management of live orders first, then the main flow
@@ -1044,6 +1064,10 @@ export class Engine {
         this.out.equity.push({ t: end, eq: lastEq });
       }
       if ((j - b0) % chunk === chunk - 1) yield { done: j - b0 + 1, total, t: end, trades: this.out.trades.length, equity: lastEq };
+    }
+    if (!manualDone && manualT !== null) {
+      this.now = manualT;
+      this.fireManual(false);
     }
     // the end of the test period: open positions are closed at the last price
     this.now = bars.t[b1 - 1] + BASE_MIN * MIN;

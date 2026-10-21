@@ -15,8 +15,9 @@ import type { StepRec, Val } from './sim/engine';
 import { fmtTime, seriesFor } from './sim/market';
 import type { Cursor } from './sim/replay';
 import {
-  backToPrepare, gotoEval, jumpNext, selectEl, setState, stepOnce, toBegin, toFirstActing, toggleBreakpoint, useApp,
+  backToPrepare, canTriggerManual, gotoEval, jumpNext, selectEl, setState, stepOnce, toBegin, toFirstActing, toggleBreakpoint, triggerManual, useApp,
 } from './store';
+import { hasManualTrigger } from './data';
 import type { RunPanel, Single } from './store';
 import { bindingText } from './summary';
 import { Btn, Icon, Info, Section, useL } from './ui';
@@ -154,7 +155,7 @@ function RunBar({ sg, info }: { sg: Single; info: Info }) {
     step: '',
     end: '',
   };
-  const tfLabel = ev.kind === 'manual' ? L('Start von Hand', 'Start by hand') : ev.kind === 'tick' ? 'Tick' : `${L('Kerzenschluss', 'Candle close')} ${(ev.tf ?? '').toUpperCase()}`;
+  const tfLabel = ev.kind === 'manual' ? L('Manuell', 'Manual') : ev.kind === 'tick' ? 'Tick' : `${L('Kerzenschluss', 'Candle close')} ${(ev.tf ?? '').toUpperCase()}`;
   const flowLabel = ev.flow === null ? L('Hauptablauf', 'Main flow') : `${L('Verwaltung der Order', 'Management of order')} ${ev.inst !== null ? `#${ev.inst}` : ''}`;
   return (
     <header className="region run-bar" data-region="bar" data-testid="run-bar">
@@ -171,6 +172,14 @@ function RunBar({ sg, info }: { sg: Single; info: Info }) {
         <Btn icon="flag" kind="ghost" testid="btn-first" disabled={sg.noActing} onClick={toFirstActing} tip={L('Zurück an die erste handelnde Stelle des Testzeitraums.', 'Back to the first acting place of the test period.')}>
           {L('Erste handelnde Stelle', 'First acting place')}
         </Btn>
+        {hasManualTrigger(sg.strategy) && (
+          <Btn icon="hand" kind="ghost" testid="btn-manual" disabled={!canTriggerManual(sg)} onClick={triggerManual}
+            tip={canTriggerManual(sg)
+              ? L('Startet eine Auswertung „Manuell“ zum aktuellen Zeitpunkt. Sie folgt als nächste.', 'Starts an evaluation "Manual" at the current point in time. It follows next.')
+              : L('Nur zwischen zwei Auswertungen bedienbar: Gehen Sie mit „Einzelschritt“ bis zum Ende der aktuellen Auswertung.', 'Only usable between two evaluations: go with "Step" to the end of the current evaluation.')}>
+            {L('Manuell auslösen', 'Trigger manually')}
+          </Btn>
+        )}
         {sg.bps.length > 0 && (
           <Btn kind="quiet" icon="x" testid="btn-clear-bps" onClick={() => setState({ single: { ...sg, bps: [] } })} tip={L('Entfernt alle Haltepunkte.', 'Removes all breakpoints.')}>
             {L(`${sg.bps.length} Haltepunkt(e) entfernen`, `Remove ${sg.bps.length} breakpoint(s)`)}
@@ -228,7 +237,9 @@ function ChartsRegion({ sg, info }: { sg: Single; info: Info }) {
     id: `r${e.seq}`, t: Math.max(sg.from, e.t - 1), kind: 'reject', price: e.price as number, title: tx(e.text, lang),
   }));
   const markers = [...acting, ...rejected];
-  if (input.manualStart) markers.push({ id: 'manual', t: sg.from, kind: 'manual', title: L('Start von Hand (Vorschlag: einmal zu Beginn des Testzeitraums)', 'Start by hand (proposal: once at the start of the test period)') });
+  for (const e of rp.evals) {
+    if (e.kind === 'manual') markers.push({ id: `m${e.id}`, t: Math.max(sg.from, e.t), kind: 'manual', title: `${L('Manuell', 'Manual')}: ${fmtTime(e.t, lang)}` });
+  }
   const points: ChartPoint[] = events.filter((e) => e.kind !== 'rejected' && e.price !== null).slice(-120).map((e) => ({
     id: `p${e.seq}`, t: Math.max(sg.from, e.t - 1), price: e.price as number, kind: e.kind as ChartPoint['kind'], dir: e.dir, title: tx(e.text, lang),
   }));

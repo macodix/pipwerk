@@ -42,17 +42,12 @@ export function summaryOf(el: El, s: Strategy, sc: Scope): string {
   switch (el.type) {
     case 'trigger.candle_close': return `${de ? 'Bei jedem Kerzenschluss' : 'At every candle close'}, ${de ? 'Zeiteinheit' : 'time unit'} ${txt('zeiteinheit')}`;
     case 'trigger.tick': return de ? 'Bei jedem neuen Kurs' : 'At every new quote';
+    case 'trigger.manual': return de ? 'Einmal, von Hand ausgelöst' : 'Once, triggered by hand';
     case 'flow.condition':
     case 'flow.calculation': {
       const b = el.bind.ausdruck;
       if (!b || b.k !== 'expr' || b.e.t === 'empty') return de ? 'Noch leer – wählen Sie die Bausteine.' : 'Still empty – choose the blocks.';
       return describe(b.e, sc);
-    }
-    case 'flow.set_parameter': {
-      const b = el.bind.strategieparameter;
-      const name = b && b.k === 'param' ? s.params.find((p) => p.id === b.id)?.name ?? '?' : '?';
-      const v = el.bind.ausdruck;
-      return `${name} ← ${v && v.k === 'expr' ? describe(v.e, sc) : '…'}`;
     }
     case 'flow.place_order': {
       const ot = el.bind.ordertyp;

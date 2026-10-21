@@ -2,6 +2,7 @@
 // that runs before a test run (req-test-003) and the simulated procurement and import.
 import { isTrigger } from './catalog';
 import { sampleStrategies } from './samples';
+import { newEl } from './factory';
 import type { Strategy, Txt } from './model';
 import { clone } from './model';
 import { BROKERS, DAY, LAST_DAY, TF_MINUTES, isoDate, parseIsoDate, tfSupported } from './sim/market';
@@ -26,6 +27,11 @@ export function strategyEntries(): StrategyEntry[] {
   example.name = 'EMA-Trendfolge mit Vergleichsinstrument';
   example.description = 'Beispiel für einen Strategieparameter vom Typ Instrument: wie der Testfall str-03, dazu ein Vergleichsinstrument, dessen Kursdaten der Testlauf ebenfalls braucht.';
   example.params.push({ id: 'p-vergl', name: 'Vergleichsinstrument', dtype: 'instrument', value: 'GBPUSD', atApplication: false });
+  // a trigger "Manual" in the main flow, so that the setting "Trigger Manual" can be tried out
+  const manual = newEl('trigger.manual', 'Manuell', { id: 'trg-man' });
+  example.els.push(manual);
+  example.conns.push({ from: 'trg-man', out: 'weiter', to: 'richtung' });
+  example.sections.find((x) => x.id === 'sec-1')?.els.push('trg-man');
   return [
     { id: by('auftraggeber').id, strategy: by('auftraggeber'), badge: T('Ihre Strategie', 'Your strategy') },
     { id: by('str03').id, strategy: by('str03'), badge: T('Testfall str-03', 'Test case str-03') },
@@ -190,6 +196,11 @@ export function usedTimeframes(strategy: Strategy, params: Record<string, string
     if (typeof v === 'string' && !out.includes(v.toLowerCase())) out.push(v.toLowerCase());
   }
   return out;
+}
+
+/** Whether the strategy has the trigger "Manual" in its main flow. */
+export function hasManualTrigger(strategy: Strategy): boolean {
+  return strategy.els.some((e) => e.type === 'trigger.manual' && !e.mgmt);
 }
 
 export function usesTicks(strategy: Strategy): boolean {

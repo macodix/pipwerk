@@ -2,13 +2,12 @@
 // live in the browser's local storage; on every start the strategies and the default test account are present.
 import { useSyncExternalStore } from 'react';
 import {
-  STANDARD_ACCOUNT, addRows, checkNeeds, initialRows, strategyEntries, usedTimeframes,
+  STANDARD_ACCOUNT, addRows, checkNeeds, hasManualTrigger, initialRows, strategyEntries, usedTimeframes,
 } from './data';
 import type { Account, DataRow, NeedResult, RunSettings, StrategyEntry } from './data';
 import type { Lang, Strategy, Txt } from './model';
 import { clone } from './model';
-import { Engine, runSync, summarize } from './sim/engine';
-import type { EquityPoint, Progress, Rejection, RunInput, Summary, Trade } from './sim/engine';
+import { Engine, runSync, summarize } from './sim/engine';import type { EquityPoint, Progress, Rejection, RunInput, Summary, Trade } from './sim/engine';
 import { DAY, LAST_DAY, TF_MINUTES, instrumentInfo, isoDate, parseIsoDate } from './sim/market';
 import type { InstrumentInfo } from './sim/market';
 import { Replayer } from './sim/replay';
@@ -29,7 +28,8 @@ export interface Prep {
   acc: Account;
   instr: InstrumentInfo;
   params: Record<string, string | number | boolean>;
-  manualStart: boolean;
+  /** Time of the trigger "Manual" (UTC, "YYYY-MM-DDTHH:mm"); empty means the start of the test period. */
+  manualAt: string;
 }
 
 export interface CheckView {
@@ -174,7 +174,7 @@ export function newPrep(strategyId: string, accounts: Account[], prev?: Prep): P
     acc: prev ? prev.acc : clone(acc),
     instr: prev ? prev.instr : instrumentInfo(instrument, broker),
     params: paramsOf(e.strategy),
-    manualStart: prev?.manualStart ?? false,
+    manualAt: prev?.manualAt ?? '',
   };
 }
 
@@ -331,6 +331,32 @@ export function periodError(p: Prep, mode: Mode): Txt | null {
   return null;
 }
 
+/** The time of the trigger "Manual" in milliseconds (UTC), or null for the start of the test period; NaN if incomplete. */
+export function manualTime(p: Prep): number | null {
+  if (!p.manualAt) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(p.manualAt);
+  return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5])) : Number.NaN;
+}
+
+/** The reason why the time of the trigger "Manual" prevents the start, or null. */
+export function manualError(p: Prep, mode: Mode): Txt | null {
+  if (!hasManualTrigger(entryOf(p.strategyId).strategy) || !p.manualAt) return null;
+  const t = manualTime(p);
+  if (t === null || Number.isNaN(t)) return { de: 'Bitte geben Sie für „Manuell“ Datum und Uhrzeit vollständig an oder leeren Sie das Feld.', en: 'Please enter date and time for "Manual" completely or clear the field.' };
+  const per = p.periods[mode];
+  const f = parseIsoDate(per.from);
+  const e = parseIsoDate(per.to) + DAY;
+  if (Number.isNaN(f) || Number.isNaN(e)) return null;
+  if (t < f || t >= e) {
+    const de = (ms: number) => isoDate(ms).split('-').reverse().join('.');
+    return {
+      de: `Der Zeitpunkt für „Manuell“ liegt außerhalb des Testzeitraums (${de(f)} bis ${de(e - DAY)}, UTC). Der Testlauf startet nicht. Wählen Sie einen Zeitpunkt im Testzeitraum oder setzen Sie ihn auf den Beginn des Testzeitraums zurück.`,
+      en: `The time for "Manual" is outside the test period (${isoDate(f)} to ${isoDate(e - DAY)}, UTC). The test run does not start. Choose a time within the test period or reset it to the start of the test period.`,
+    };
+  }
+  return null;
+}
+
 export function runSettings(p: Prep, mode: Mode): RunSettings {
   const per = p.periods[mode];
   return { strategy: entryOf(p.strategyId).strategy, params: p.params, instrument: p.instrument, broker: p.broker, from: parseIsoDate(per.from), to: parseIsoDate(per.to) };
@@ -349,13 +375,13 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 function inputOf(p: Prep, mode: Mode, trace: boolean): RunInput {
   const rs = runSettings(p, mode);
   return {
-    strategy: rs.strategy, params: p.params, instr: p.instr, brokerId: p.broker, account: p.acc, from: rs.from, to: rs.to, trace, manualStart: p.manualStart,
+    strategy: rs.strategy, params: p.params, instr: p.instr, brokerId: p.broker, account: p.acc, from: rs.from, to: rs.to, trace, manualAt: manualTime(p), manualExtra: [],
   };
 }
 
 export async function startTest() {
   const s = state;
-  if (periodError(s.prep, s.mode)) return;
+  if (periodError(s.prep, s.mode) || manualError(s.prep, s.mode)) return;
   stopRun();
   const token = runToken;
   const mode = s.mode;
@@ -474,6 +500,26 @@ export function toFirstActing() {
   if (!sg) return;
   const f = sg.rp.firstActing();
   if (f) setState({ single: { ...sg, cursor: f, why: 'start' } });
+}
+
+/** Whether the command "Trigger manually" is usable: the strategy has the trigger and the current evaluation is finished. */
+export function canTriggerManual(sg: Single): boolean {
+  const ev = sg.rp.evalAt(sg.cursor);
+  return !!ev && sg.cursor.s >= ev.steps.length - 1;
+}
+
+/** Starts an evaluation "Manual" at the current point in time; it follows next. */
+export function triggerManual() {
+  const sg = state.single;
+  if (!sg || !canTriggerManual(sg)) return;
+  const input = sg.rp.out.engine.input;
+  const evals = sg.rp.evals;
+  let ordinal = 0;
+  for (let i = 0; i <= sg.cursor.e; i++) if (!evals[i].extra) ordinal += 1;
+  const out = runSync({ ...input, manualExtra: [...input.manualExtra, ordinal] });
+  const rp = new Replayer(out);
+  setState({ single: { ...sg, rp, why: 'step' } });
+  toast('Eine Auswertung „Manuell“ folgt als Nächstes. „Einzelschritt“ geht hinein.', 'An evaluation "Manual" follows next. "Step" enters it.');
 }
 
 export function toggleBreakpoint(elId: string) {

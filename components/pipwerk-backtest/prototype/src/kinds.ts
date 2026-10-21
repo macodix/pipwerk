@@ -6,7 +6,7 @@ export const kindClass = (type: string): string => {
   if (!d) return 'unknown';
   if (d.kind === 'trigger') return 'trg';
   if (d.id === 'flow.condition') return 'cond';
-  if (d.id === 'flow.calculation' || d.id === 'flow.set_parameter') return 'calc';
+  if (d.id === 'flow.calculation') return 'calc';
   if (d.id === 'flow.place_order') return 'order';
   if (d.kind === 'flow') return 'act';
   if (d.kind === 'app') return 'app';

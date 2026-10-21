@@ -142,6 +142,10 @@ const defs: TypeDef[] = [
     params: [P_INSTR], props: [], outputs: [O_NEXT],
   },
   {
+    id: 'trigger.manual', kind: 'trigger', group: 'when', icon: 'hand', de: 'Manuell', en: 'Manual',
+    params: [], props: [], outputs: [O_NEXT],
+  },
+  {
     id: 'flow.condition', kind: 'flow', group: 'actions', icon: 'diamond', de: 'Bedingung', en: 'Condition',
     params: [prm('ausdruck', 'Bedingung', 'Condition', 'expression', { required: true, bindings: ['expr'] })],
     props: [prp('ergebnis', 'Ergebnis', 'Result', 'boolean')],
@@ -151,14 +155,6 @@ const defs: TypeDef[] = [
     id: 'flow.calculation', kind: 'flow', group: 'actions', icon: 'calc', de: 'Berechnung', en: 'Calculation',
     params: [prm('ausdruck', 'Berechnung', 'Calculation', 'expression', { required: true, bindings: ['expr'] })],
     props: [prp('ergebnis', 'Ergebnis', 'Result', 'number')], outputs: [O_NEXT], named: true,
-  },
-  {
-    id: 'flow.set_parameter', kind: 'flow', group: 'actions', icon: 'sliders', de: 'Strategieparameter ändern', en: 'Change strategy parameter',
-    params: [
-      prm('strategieparameter', 'Strategieparameter', 'Strategy parameter', 'text', { required: true, bindings: ['param'] }),
-      prm('ausdruck', 'Neuer Wert', 'New value', 'expression', { required: true, bindings: ['expr'] }),
-    ],
-    props: [], outputs: [O_NEXT],
   },
   {
     id: 'flow.place_order', kind: 'flow', group: 'actions', icon: 'order', de: 'Order aufgeben', en: 'Place order',
@@ -490,9 +486,9 @@ export const TIPS: Record<string, Txt> = {
   // library entries
   'type:trigger.candle_close': t('Die Strategie rechnet jedes Mal, wenn eine Kerze der gewählten Länge abgeschlossen ist, zum Beispiel jede Stunde bei H1.', 'The strategy calculates whenever a candle of the chosen length closes, for example every hour with H1.'),
   'type:trigger.tick': t('Die Strategie rechnet bei jedem neuen Kurs (Tick). Das ist sehr oft, daher eher für die Überwachung einer Order geeignet.', 'The strategy calculates at every new quote (tick). That is very often, so it suits monitoring an order.'),
+  'type:trigger.manual': t('Die Strategie rechnet einmal, wenn der Anwender sie von Hand auslöst. Im Testlauf tritt „Manuell“ einmal ein, standardmäßig zu Beginn des Testzeitraums.', 'The strategy calculates once when the user triggers it by hand. In a test run "Manual" occurs once, by default at the start of the test period.'),
   'type:flow.condition': t('Prüft etwas, zum Beispiel „EMA 20 kreuzt EMA 50“. Bei „wahr“ geht es auf dem einen Weg weiter, bei „falsch“ auf dem anderen.', 'Checks something, for example "EMA 20 crosses EMA 50". If true the flow continues one way, if false the other.'),
   'type:flow.calculation': t('Rechnet einen Wert aus, zum Beispiel den Stop-Loss. Das Ergebnis können spätere Schritte verwenden.', 'Calculates a value, for example the stop loss. Later steps can use the result.'),
-  'type:flow.set_parameter': t('Ändert den Wert eines Strategieparameters, zum Beispiel um mit einer anderen Zeiteinheit erneut zu prüfen.', 'Changes the value of a strategy parameter, for example to check again with another time unit.'),
   'type:flow.place_order': t('Gibt eine Order an den Markt. Am Ausgang „gestellt“ steht danach die Verwaltung dieser Order.', 'Sends an order to the market. After "placed" follows the management of this order.'),
   'type:flow.modify_order': t('Ändert eine wartende Order, zum Beispiel Stop-Loss oder Take-Profit. Was leer bleibt, bleibt unverändert.', 'Modifies a pending order, for example stop loss or take profit. Whatever stays empty stays unchanged.'),
   'type:flow.delete_order': t('Löscht die wartende Order dieser Verwaltung.', 'Deletes the pending order of this management.'),

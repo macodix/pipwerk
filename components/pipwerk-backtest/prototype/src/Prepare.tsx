@@ -1,9 +1,9 @@
 // Preparing a test run: strategy, instrument, test period, test account, strategy parameters,
 // the check of the price data and the start.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ENTRIES, accountChanged, currentCheck, defaultPeriods, entryOf, instrChanged, periodError, saveAccountFromRun, selectAccount, selectInstrument, selectStrategy, setView, startTest, updatePrep, useApp } from './store';
+import { ENTRIES, accountChanged, currentCheck, defaultPeriods, entryOf, instrChanged, manualError, periodError, saveAccountFromRun, selectAccount, selectInstrument, selectStrategy, setView, startTest, updatePrep, useApp } from './store';
 import { Field, ParamInput, paramTip } from './fields';
-import { CURRENCIES, accountName, brokerName, fmtRange, usedTimeframes, usesTicks } from './data';
+import { CURRENCIES, accountName, brokerName, fmtRange, hasManualTrigger, usedTimeframes, usesTicks } from './data';
 import type { NeedResult } from './data';
 import { fmtN } from './fmt';
 import { BROKERS, INSTRUMENTS, instrumentInfo, parseIsoDate } from './sim/market';
@@ -197,8 +197,8 @@ export function Prepare() {
             })}
           </section>
 
-          {/* open point 2: start by hand */}
-          <ManualStart />
+          {/* setting of the trigger "Manual", only for strategies that have it */}
+          {hasManualTrigger(s) && <ManualSetting />}
         </div>
 
         <DataCheck />
@@ -207,31 +207,32 @@ export function Prepare() {
   );
 }
 
-function ManualStart() {
+/** The setting "Trigger Manual": shown only if the chosen strategy has the trigger "Manual". */
+function ManualSetting() {
   const app = useApp();
   const L = useL();
-  const on = app.prep.manualStart;
+  const lang = app.settings.lang;
+  const at = app.prep.manualAt;
+  const err = manualError(app.prep, app.mode);
   return (
-    <section className="card-box proposal" data-testid="card-manual">
-      <h2><Icon name="flag" size={16} />{L('Auslöser „Start von Hand“ (Vorschlag)', 'Trigger "Start by hand" (proposal)')}</h2>
-      <p className="muted">{L('Offener Punkt der Anforderungen: Wann tritt dieser Auslöser im Testlauf ein? Vorschlag: genau einmal, zu Beginn des Testzeitraums, vor der ersten Kerze.', 'Open point of the requirements: when does this trigger occur in a test run? Proposal: exactly once, at the start of the test period, before the first candle.')}</p>
+    <section className="card-box" data-testid="card-manual">
+      <h2><Icon name="hand" size={16} />{L('Auslöser Manuell', 'Trigger Manual')}</h2>
+      <p className="muted" data-testid="manual-text">{L('„Manuell“ tritt einmal ein, standardmäßig zu Beginn des Testzeitraums vor der ersten Kerze. Wahlweise geben Sie einen Zeitpunkt im Testzeitraum an (Datum und Uhrzeit, UTC).', '"Manual" occurs once, by default at the start of the test period before the first candle. Optionally you enter a point in time within the test period (date and time, UTC).')}</p>
       <div className="timeline" aria-hidden="true">
-        <span className="tl-mark"><Icon name="flag" size={12} /></span>
+        <span className="tl-mark"><Icon name="hand" size={12} /></span>
         <span className="tl-bar" />
         <span className="tl-end" />
       </div>
-      <p className="muted tl-labels"><span>{L('Beginn: Start von Hand', 'Start: start by hand')}</span><span>{L('Ende des Testzeitraums', 'End of the test period')}</span></p>
-      <label className="toggle" data-tip={L('Zeigt im Test eine zusätzliche Auswertung „Start von Hand“ am Beginn. Die Testfälle verwenden diesen Auslöser nicht; das ist nur eine Vorführung des Vorschlags.', 'Shows an additional evaluation "Start by hand" at the start of the test. The test cases do not use this trigger; this only demonstrates the proposal.')}>
-        <input type="checkbox" checked={on} onChange={(ev) => { const v = ev.target.checked; updateManual(v); }} data-testid="manual-start" />
-        <span className="toggle-box" aria-hidden="true">{on && <Icon name="check" size={13} />}</span>
-        <span>{L('Den Vorschlag im Testlauf zeigen', 'Show the proposal in the test run')}</span>
-      </label>
+      <p className="muted tl-labels"><span>{L('Beginn: Manuell', 'Start: Manual')}</span><span>{L('Ende des Testzeitraums', 'End of the test period')}</span></p>
+      <Field label={L('Zeitpunkt (UTC)', 'Point in time (UTC)')} tip={L('Wann „Manuell“ im Testlauf eintritt. Leer heißt: zu Beginn des Testzeitraums, vor der ersten Kerze. Der Zeitpunkt muss im Testzeitraum liegen, sonst startet der Testlauf nicht.', 'When "Manual" occurs in the test run. Empty means: at the start of the test period, before the first candle. The point in time must lie within the test period, otherwise the test run does not start.')} changed={!!at} testid="field-manual-at">
+        <input className="input" type="datetime-local" value={at} onChange={(ev) => updatePrep((q) => { q.manualAt = ev.target.value; })} aria-label={L('Zeitpunkt für Manuell, UTC', 'Point in time for Manual, UTC')} data-testid="input-manual-at" />
+      </Field>
+      {err && <p className="error-note" role="alert" data-testid="manual-error"><Icon name="warn" size={15} />{tx(err, lang)}</p>}
+      <div className="btn-row">
+        <Btn small kind="ghost" icon="refresh" disabled={!at} testid="manual-reset" onClick={() => updatePrep((q) => { q.manualAt = ''; })} tip={L('Setzt „Manuell“ auf den Beginn des Testzeitraums zurück.', 'Resets "Manual" to the start of the test period.')}>{L('Zu Beginn des Testzeitraums', 'At the start of the test period')}</Btn>
+      </div>
     </section>
   );
-}
-
-function updateManual(v: boolean) {
-  updatePrep((q) => { q.manualStart = v; });
 }
 
 // ---- check of the price data ----------------------------------------------------------------------------------------
@@ -252,6 +253,7 @@ export function DataCheck() {
   const blocked = results.filter((r) => r.status === 'blocked');
   const fetchN = results.filter((r) => r.status === 'fetchable').length;
   const err = periodError(app.prep, mode);
+  const merr = manualError(app.prep, mode);
   const busy = app.phase === 'checking';
   const box = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -313,11 +315,12 @@ export function DataCheck() {
         </div>
       )}
       <div className="start-row">
-        <Btn kind="primary" icon="play" testid="start-test" disabled={!!err || busy || app.accounts.length === 0} onClick={() => { void startTest(); }}
+        <Btn kind="primary" icon="play" testid="start-test" disabled={!!err || !!merr || busy || app.accounts.length === 0} onClick={() => { void startTest(); }}
           tip={mode === 'single' ? L('Prüft die Kursdaten, beschafft Fehlendes und läuft bis zur ersten handelnden Stelle.', 'Checks the price data, fetches what is missing and runs to the first acting place.') : L('Prüft die Kursdaten, beschafft Fehlendes und lässt die Strategie über den ganzen Testzeitraum laufen.', 'Checks the price data, fetches what is missing and lets the strategy run over the whole test period.')}>
           {mode === 'single' ? L('Einzelschritt-Test starten', 'Start single-step test') : L('Backtest starten', 'Start backtest')}
         </Btn>
         <span className="muted" data-testid="start-hint">
+          {merr ? L('Der Start ist gesperrt: Der Zeitpunkt für „Manuell“ liegt nicht im Testzeitraum oder ist unvollständig (siehe Karte „Auslöser Manuell“).', 'The start is blocked: the time for "Manual" is not within the test period or incomplete (see the card "Trigger Manual").') : ''}
           {fetchN > 0 && !busy ? L(`${fetchN} Datensatz/Datensätze werden beim Start beschafft.`, `${fetchN} data set(s) will be fetched at the start.`) : ''}
           {blocked.length > 0 && app.phase !== 'blocked' ? L('Mindestens ein Datensatz lässt sich nicht beschaffen; der Start meldet das.', 'At least one data set cannot be fetched; the start reports this.') : ''}
         </span>

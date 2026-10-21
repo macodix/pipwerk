@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { BUILT, CLIENT, EXAMPLE, STR01, STR03, chooseStrategy, jumpUntil, node, nowNode, openApp, runBacktest, startSingle } from './support';
 
 // Functions of the prototype beyond the walk-through: preparation, test accounts, price data, data stock,
-// open point "Start von Hand", values at the steps, language, stored data.
+// trigger Manual, values at the steps, language, stored data.
 
 test('preparation: the three strategies, presets per mode, period, parameters, explanations', async ({ page }) => {
   const errors = await openApp(page);
@@ -148,18 +148,65 @@ test('data stock: overview, import with check and result, fetch by hand', async 
   expect(errors).toEqual([]);
 });
 
-test('open point "Start von Hand": the proposal can be shown in the test run', async ({ page }) => {
+test('trigger Manual: the setting, a time in the test period, a time outside, the command between two evaluations', async ({ page }) => {
   const errors = await openApp(page);
-  await expect(page.getByTestId('card-manual')).toContainText('einmal, zu Beginn des Testzeitraums');
-  await page.getByTestId('manual-start').check();
-  await startSingle(page, STR03);
+  // the test cases str-01 and str-03 have no trigger Manual: no setting
+  for (const id of [STR03, STR01]) {
+    await chooseStrategy(page, id);
+    await expect(page.getByTestId('card-manual')).toHaveCount(0);
+  }
+  // the example strategy shows the setting
+  await chooseStrategy(page, EXAMPLE);
+  await expect(page.getByTestId('card-manual')).toContainText('Auslöser Manuell');
+  await expect(page.getByTestId('card-manual')).toContainText('tritt einmal ein, standardmäßig zu Beginn des Testzeitraums');
+  // a time outside of the test period prevents the start, the message names the reason
+  await page.getByTestId('input-manual-at').fill('2026-01-05T10:00');
+  await expect(page.getByTestId('manual-error')).toContainText('außerhalb des Testzeitraums');
+  await expect(page.getByTestId('start-test')).toBeDisabled();
+  await page.getByTestId('manual-reset').click();
+  await expect(page.getByTestId('manual-error')).toHaveCount(0);
+  await expect(page.getByTestId('start-test')).toBeEnabled();
+  // a time in the test period: the single-step test evaluates "Manual" at this time
+  await page.getByTestId('input-manual-at').fill('2026-09-21T03:30');
+  await expect(page.getByTestId('manual-error')).toHaveCount(0);
+  await page.getByTestId('start-test').click();
+  await expect(page.getByTestId('run')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByTestId('eval-trigger')).toContainText('Manuell');
+  await expect(page.getByTestId('eval-time')).toContainText('21.09.2026 03:30');
+  await expect(page.getByTestId('marker-manual').first()).toBeVisible();
+  // the command is usable only between two evaluations
   await page.getByTestId('btn-begin').click();
-  await expect(page.getByTestId('eval-trigger')).toContainText('Start von Hand');
-  await expect(page.getByTestId('marker-manual')).toBeVisible();
-  await page.getByTestId('btn-step').click();
   await expect(page.getByTestId('eval-trigger')).toContainText('Kerzenschluss');
+  await expect(page.getByTestId('btn-manual')).toBeDisabled();
+  await page.getByTestId('btn-step').click();
+  await expect(page.getByTestId('btn-manual')).toBeEnabled();
+  const time = await page.getByTestId('eval-time').textContent();
+  await page.getByTestId('btn-manual').click();
+  await page.getByTestId('btn-step').click();
+  await expect(page.getByTestId('eval-trigger')).toContainText('Manuell');
+  await expect(page.getByTestId('eval-time')).toHaveText(time ?? '');
+  // str-01 has neither the setting nor the command
+  await page.getByTestId('btn-end').click();
+  await chooseStrategy(page, STR01);
+  await expect(page.getByTestId('card-manual')).toHaveCount(0);
+  await page.getByTestId('start-test').click();
+  await expect(page.getByTestId('run')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByTestId('btn-manual')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('trigger Manual: by default once at the start of the test period', async ({ page }) => {
+  const errors = await openApp(page);
+  await startSingle(page, EXAMPLE);
+  await page.getByTestId('btn-begin').click();
+  await expect(page.getByTestId('eval-trigger')).toContainText('Manuell');
+  await expect(page.getByTestId('eval-time')).toContainText('21.09.2026');
+  await page.getByTestId('btn-step').click();
+  await page.getByTestId('btn-jump').click();
+  await expect(page.getByTestId('eval-trigger')).not.toContainText('Manuell');
+  expect(errors).toEqual([]);
+});
+
 
 test('an indicator without values: the condition counts as not satisfied and the run goes on', async ({ page }) => {
   const errors = await openApp(page);

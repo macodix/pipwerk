@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SIZES, STR01, STR03, chooseStrategy, jumpUntil, openApp, runBacktest, startSingle, stepUntil } from './support';
+import { EXAMPLE, SIZES, STR01, STR03, chooseStrategy, jumpUntil, openApp, runBacktest, startSingle, stepUntil } from './support';
 
 // Acceptance criterion 4: screenshots. The single-step test of str-01 and the result of the backtest of
 // str-03 in all six window sizes (for the small sizes, where the areas follow one another, one image per
@@ -72,6 +72,16 @@ test('1366 x 768: preparation of the test run', async ({ page }) => {
   await openApp(page, { width: 1366, height: 768 });
   await settle(page);
   await shot(page, 'vorbereitung-1366x768');
+});
+
+test('1366 x 768: preparation with the setting "Trigger Manual"', async ({ page }) => {
+  await openApp(page, { width: 1366, height: 768 });
+  await chooseStrategy(page, EXAMPLE);
+  await page.getByTestId('input-manual-at').fill('2026-09-28T09:00');
+  await page.getByTestId('card-manual').scrollIntoViewIfNeeded();
+  await page.mouse.move(2, 2);
+  await settle(page);
+  await shot(page, 'vorbereitung-ausloeser-manuell-1366x768');
 });
 
 test('1366 x 768: price data check with fetching', async ({ page }) => {
