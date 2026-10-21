@@ -6,7 +6,7 @@
 - stand: 2026-10-21
 - komponenten: `packages/domain-core`, `packages/market-data` (neu), `packages/ui-components`, `components/pipwerk-replay` (neu, bisher `components/pipwerk-backtest`), `components/pipwerk-fetch-mt5` (neu), `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html))
-- prüfung: offen
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Nachprüfung in Durchlauf 2
 
 ## Übersicht
 
@@ -34,7 +34,8 @@ Bibliothek und pipwerk Studio folgen den Entscheidungen des Auftraggebers vom 20
 ### Umfang
 
 - Bibliothek: Name, englischer Name, Beschreibung und Erklärung des Auslösers bei unveränderter Kennung `trigger.manual_start`; Befund `trigger.manual_in_management`; Entfall von `flow.set_parameter` aus Katalog, Konsistenzprüfung und Operationen (3.6).
-- pipwerk Studio: Texte, Tests und Anwenderdokumentation, die einen der beiden Begriffe nennen (3.6).
+- Bibliothek: Typbeschreibung des `ZigZag` um die Eigenschaften `letztes_hoch`, `vorletztes_hoch`, `letztes_tief`, `vorletztes_tief` ergänzt (3.3, letzter Satz des zweiten Absatzes), damit `str-01` ohne Befund geprüft werden kann. Die Berechnung folgt in `wp03`.
+- pipwerk Studio: Texte, Tests und Anwenderdokumentation, die einen der beiden Begriffe nennen (3.6); die neuen Eigenschaften des `ZigZag` erscheinen über den Katalog.
 - Testfalldokumente `str-01` und `str-03` unter `contracts/strategies/v2/testcases/`, soweit sie eines der beiden Elemente enthalten; `str-01` nach der Fassung des Testfalls vom 2026-10-21 (Abschnitt 9).
 - Tests nach Abschnitt 10, Punkt „Testfälle“, Teil Befund `trigger.manual_in_management`.
 - Dokumentation (Abschnitt 12): `docs/technical/pipwerk-domain.md` zu Auslöser `Manuell` und Entfall von `flow.set_parameter`, Anwenderdokumentation von pipwerk Studio.
@@ -46,7 +47,7 @@ Bibliothek und pipwerk Studio folgen den Entscheidungen des Auftraggebers vom 20
 
 ### Umgesetzte Teile der Spezifikation
 
-3.6 vollständig, Abschnitt 9 Testfalldokument `str-01`, Abschnitt 10 Befund `trigger.manual_in_management`, Abschnitt 12 Punkt 1 für `pipwerk-domain.md` (Auslöser, `flow.set_parameter`) und Punkt 2.
+3.3 Typbeschreibung des `ZigZag`, 3.6 vollständig, Abschnitt 9 Testfalldokument `str-01`, Abschnitt 10 Befund `trigger.manual_in_management`, Abschnitt 12 Punkt 1 für `pipwerk-domain.md` (Auslöser, `flow.set_parameter`, Eigenschaften des `ZigZag`) und Punkt 2.
 
 ### Abhängigkeiten
 
@@ -56,11 +57,12 @@ Bibliothek und pipwerk Studio folgen den Entscheidungen des Auftraggebers vom 20
 
 Der Auftraggeber kann in der Testumgebung von pipwerk Studio selbst prüfen:
 
-1. Die Elementbibliothek zeigt den Auslöser „Manuell“, in Englisch „Manual“, mit Erklärung. Ein Element „Parameter setzen“ gibt es nicht.
-2. Ein Auslöser „Manuell“ in der Verwaltung einer Order ist ein Fehler am Auslöser; im Hauptablauf ist er keiner.
-3. Eine vor diesem Paket gespeicherte Strategie mit dem Auslöser öffnet sich und zeigt ihn als „Manuell“.
-4. Die Testfälle `str-01` und `str-03` öffnen sich ohne Fehler der Konsistenzprüfung.
-5. Die Anwenderdokumentation von pipwerk Studio nennt den Auslöser „Manuell“ und kein Element „Parameter setzen“.
+1. Bedienbarkeit: Der Auftraggeber legt ohne Anleitung, so wie im bestätigten Prototyp von pipwerk Studio, eine Strategie mit dem Auslöser „Manuell“ an und verwendet in einer Bedingung `letztes Hoch` eines `ZigZag`. Die Konsistenzprüfung meldet keinen Fehler.
+2. Die Elementbibliothek zeigt den Auslöser „Manuell“, in Englisch „Manual“, mit Erklärung. Ein Element „Parameter setzen“ gibt es nicht.
+3. Ein Auslöser „Manuell“ in der Verwaltung einer Order ist ein Fehler am Auslöser; im Hauptablauf ist er keiner.
+4. Eine vor diesem Paket gespeicherte Strategie mit dem Auslöser öffnet sich und zeigt ihn als „Manuell“.
+5. Die Testfälle `str-01` und `str-03` öffnen sich ohne Fehler der Konsistenzprüfung.
+6. Die Anwenderdokumentation von pipwerk Studio nennt den Auslöser „Manuell“ und kein Element „Parameter setzen“.
 
 Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit. Positive Testberichte beider Tester liegen vor.
 
@@ -101,7 +103,7 @@ Der Auftraggeber kann in der Testumgebung selbst prüfen:
 
 1. Bedienbarkeit: Der Auftraggeber importiert ohne Anleitung, so wie im bestätigten Prototyp, eine CSV-Datei mit Kerzen aus dem Export von MetaTrader 5 mit Broker, Instrument, Zeiteinheit und Zeitzone. Der Datenbestand zeigt die Reihe mit Zeitraum und Lücken.
 2. Der Import einer fehlerhaften Datei nennt die abgelehnten Zeilen mit Grund. Ein erneuter Import desselben Zeitraums ersetzt die Kerzen.
-3. Nach Einrichtung von `pipwerk-fetch-mt5` auf seinem Rechner mit MetaTrader 5 nach der Anwenderdokumentation beschafft er von Hand Kerzen, Ticks und Angaben zu einem Instrument. Ein unbekanntes Symbol ergibt eine Meldung mit Grund.
+3. Voraussetzung: MetaTrader 5 auf einem Rechner des Auftraggebers, der die Testumgebung über das Netz erreicht. Nach Einrichtung von `pipwerk-fetch-mt5` auf diesem Rechner mit MetaTrader 5 nach der Anwenderdokumentation beschafft er von Hand Kerzen, Ticks und Angaben zu einem Instrument. Ein unbekanntes Symbol ergibt eine Meldung mit Grund.
 4. Er legt ein Testkonto an, ändert, speichert und löscht es. Nach Löschen des Standard-Testkontos und Neustart ist es wieder da.
 5. In den Fenstergrößen nach 8.4 Punkt 1 liegt nichts übereinander, alle Bereiche, Menü und Dialoge sind erreichbar. Alle Texte erscheinen in Deutsch und Englisch, jedes Feld hat eine Erklärung beim Zeigen.
 6. Die Anwenderdokumentation beschreibt Testkonten, Datenbestand, Import, Beschaffung und die Einrichtung von `pipwerk-fetch-mt5` verständlich und vollständig.
@@ -116,7 +118,7 @@ Der Anwender bereitet einen Testlauf vor und testet eine Strategie im Backtest �
 
 ### Umfang
 
-- Ausführung in der Bibliothek, `pipwerk_domain.execution` (E1, E7, 3.1 bis 3.5): Schnittstellen, Auswertung von Ausdrücken, `EMA`, `ATR`, `ZigZag` mit den neuen Eigenschaften und ergänzter Typbeschreibung, eigene Indikatoren und Trends, Ablauf mit Auslösern und Verwaltungen, Auslöser `Manuell` zum Zeitpunkt nach 6.1, Orders und Regeln.
+- Ausführung in der Bibliothek, `pipwerk_domain.execution` (E1, E7, 3.1 bis 3.5): Schnittstellen, Auswertung von Ausdrücken, `EMA`, `ATR`, `ZigZag` mit Berechnung der Eigenschaften aus `wp01`, eigene Indikatoren und Trends, Ablauf mit Auslösern und Verwaltungen, Auslöser `Manuell` zum Zeitpunkt nach 6.1, Orders und Regeln.
 - Interne Abwicklung `pipwerk_replay.broker` (E2, Abschnitt 4).
 - Testlauf (6.1) mit Strategien aus dem Objektverzeichnis oder als hochgeladene Datei (E6), Prüfung und Beschaffung der Kursdaten beim Start (5.4), Backtest im eigenen Prozess mit Fortschritt und Abbrechen (6.4), gespeicherte Backtests mit Liste, Löschen, Vergleich und Herunterladen der Kopie der Strategie (6.5).
 - Web-API (Abschnitt 7) für diese Teile.
@@ -189,7 +191,7 @@ E8, 6.3, 6.5 Darstellung der getesteten Fassung, Abschnitt 7 Einzelschritt-Sitzu
 Der Auftraggeber kann in der Testumgebung selbst prüfen:
 
 1. Bedienbarkeit: Der Auftraggeber prüft ohne Anleitung, so wie im bestätigten Prototyp, `str-03` im Einzelschritt-Test bis zur ersten Eröffnung einer Position und sieht dabei die Werte der Objekte und den Unterschied zum vorigen Schritt.
-2. Ebenso `str-01` bis zu einer abgelehnten Stop-Order; der Grund steht am Element, in der Eigenschaftenansicht, im Protokoll und als rotes Kreuz im Chart, die Auswertung trägt vorab ihre Marke.
+2. Ebenso `str-01` bis zu einer abgelehnten Stop-Order, in einem Testlauf, in dem eine solche Ablehnung eintritt; diesen Testlauf nennt der Entwicklungsleiter zur Abnahme; der Grund steht am Element, in der Eigenschaftenansicht, im Protokoll und als rotes Kreuz im Chart, die Auswertung trägt vorab ihre Marke.
 3. Start hält an der ersten handelnden Stelle. „Nächste handelnde Stelle“ hält auch an einem Haltepunkt; Haltepunkte lassen sich an jedem Element setzen und entfernen. „Einzelschritt“ geht am Ende einer Auswertung zur nächsten.
 4. „Zum Testbeginn“ zeigt die ersten Auswertungen, in denen Indikatoren noch keine Werte haben; Haltepunkte bleiben.
 5. Fallen Verwaltung und Hauptablauf auf denselben Zeitpunkt, zeigt die Leiste die Reihenfolge, zuerst die Verwaltung.
@@ -211,7 +213,7 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 2 E3 bis E5 | `wp02` |
 | 2 E6 | `wp02` (Testkonten), `wp03` (Ergebnisse, gespeicherte Backtests, Strategien) |
 | 2 E8 | `wp04` |
-| 3.1 bis 3.5 | `wp03` |
+| 3.1 bis 3.5 | `wp03`; Typbeschreibung des `ZigZag` (3.3) `wp01` |
 | 3.6 | `wp01` |
 | 4 | `wp03` |
 | 5.1 bis 5.4 | `wp02`; Beschaffung beim Start eines Testlaufs `wp03` |
@@ -245,3 +247,4 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | Datum | Änderung |
 |---|---|
 | 2026-10-21 | Plan angelegt: vier Pakete. `wp02` ohne Abhängigkeit, `wp01` nach `strategiedesign/wp02`, `wp03` nach `wp01` und `wp02`, `wp04` nach `wp03` und `strategiedesign/wp03`. |
+| 2026-10-21 | Nach dem Prüfbericht [plan-1.md](reviews/plan-1.md): B1 Typbeschreibung des `ZigZag` mit den Eigenschaften für `str-01` in `wp01` (Umfang, umgesetzte Teile, Abdeckung), Berechnung bleibt in `wp03`. Hinweise: 1 Kriterium 1 zur Bedienbarkeit in `wp01` (übrige Kriterien um eins weitergezählt); 2 Testlauf mit Ablehnung in `wp04` Kriterium 2; 5 Voraussetzung in `wp02` Kriterium 3. Verworfen: 3 (`wp01` ändert in pipwerk Studio nur Texte, keine Bausteine, die `strategiedesign/wp03` umbaut), 4 (der Weg ist beschrieben, den Zeitpunkt bestimmt der Entwicklungsleiter), 6 (Testdetail). |
