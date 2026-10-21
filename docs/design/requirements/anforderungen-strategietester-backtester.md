@@ -3,13 +3,13 @@
 ## Dokumentstatus
 
 - status: `draft`
-- zweck: Anforderungen an den Strategietester (Modul pipwerk backtest) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
+- zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
 - zuletzt aktualisiert: `2026-10-19`
 - abgestimmt: Festlegungen des Auftraggebers im Chat am 19. Oktober 2026. Prüfung durch die QA und Präsentation stehen aus.
 
 ## 1. Zweck und Abgrenzung
 
-Dieses Dokument enthält die Anforderungen an den Strategietester, Produktname pipwerk backtest (Projektziel, Abschnitt Module). Er hat zwei Betriebsarten:
+Dieses Dokument enthält die Anforderungen an den Strategietester, Produktname pipwerk replay (Projektziel, Abschnitt Module). Er hat zwei Betriebsarten:
 
 - **Einzelschritt-Test:** Eine Strategie läuft an historischen Kursdaten Schritt für Schritt ab. Der Anwender sieht dabei Ablauf, Werte der Objekte und Chart und prüft so, ob die Strategie arbeitet wie gedacht.
 - **Backtest:** Eine Strategie läuft an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen.
@@ -134,4 +134,5 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-20 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1), vom Projektleiter: Instrumente des Testlaufs einschließlich weiterer Instrumente der Strategie (req-test-001, -003, -005, -007; B4), Angaben zum Instrument nach req-system-025 (B1), Auswahl von Instrument und Testzeitraum (H8). |
 | 2026-10-20 | Offener Punkt 2: Eintreten von „Start von Hand“ im Testlauf. Vom Projektleiter nach den Hinweisen T1-H1 bis T1-H6 aus `development/strategiedesign/reviews/specification-9.md`, Folge der Entscheidungen vom selben Tag. |
 | 2026-10-21 | req-test-003: Ticks gehören zu den benötigten Kursdaten, wenn ein Auslöser `Tick` verwendet wird, keine Nachbildung aus Kerzen. Entscheidung des Auftraggebers im Chat am 2026-10-20 (B2). |
-| 2026-10-21 | Benennung: Hauptkomponente Strategietester (pipwerk backtest) mit den Betriebsarten Einzelschritt-Test und Backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, H7). |
+| 2026-10-21 | Benennung: Hauptkomponente Strategietester (pipwerk replay) mit den Betriebsarten Einzelschritt-Test und Backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, H7). |
+| 2026-10-21 | Produktname pipwerk replay. Entscheidung des Auftraggebers im Chat am 2026-10-21. |

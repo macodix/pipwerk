@@ -56,7 +56,7 @@ pipwerk ist, soweit technisch sinnvoll machbar, aus Modulen aufgebaut. Jedes Mod
 | Modul | Name | Aufgabe |
 |---|---|---|
 | Strategiedesigner | pipwerk Studio | Strategien gestalten und prüfen |
-| Strategietester | pipwerk backtest | Strategien gegen historische Kursdaten testen, Ergebnis grafisch auswerten |
+| Strategietester | pipwerk replay | Strategien gegen historische Kursdaten testen, Ergebnis grafisch auswerten |
 | Handelssystem | pipwerk trader | Strategien auf Handelskonten anwenden, gehandelte Strategien grafisch auswerten |
 | Kontoverwaltung | pipwerk vault | Handelskonten mit Broker, Instrumenten und deren Eigenschaften, Kontostand, Positionen und Orders. Liefert diese Informationen an alle Module. |
 | Verbindungsmodul | pipwerk bridge | Je Handelsplattform oder Datenquelle ein Modul, zunächst pipwerk bridge mt5 für MetaTrader 5. Übersetzt zwischen pipwerk und der jeweiligen Schnittstelle: Orders, Kontodaten, laufende und historische Kursdaten. |
@@ -75,3 +75,4 @@ Der Name des Systems wird klein geschrieben: pipwerk.
 | 2026-10-12 | Erstanlage aus der Abstimmung mit dem Auftraggeber. Abgrenzung, Aufbau und Module ergänzt. |
 | 2026-10-13 | Schreibweise „pipwerk Studio“ (Auftraggeber im Chat). |
 | 2026-10-14 | Begriff „Testfall“ statt „Prüffall“ (Auftraggeber im Chat). |
+| 2026-10-21 | Produktname des Strategietesters pipwerk replay statt pipwerk backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21. |

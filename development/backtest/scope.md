@@ -1,6 +1,6 @@
 # Vorhaben backtest
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien testen. Der Strategietester (Modul pipwerk backtest) führt Strategien gegen historische Kursdaten aus, in zwei Betriebsarten: schrittweise zur Prüfung des Ablaufs und durchgehend über einen Testzeitraum mit Kontoentwicklung, Trades und Kennzahlen. Dazu gehören der Datenbestand historischer Kursdaten mit Beschaffung und Import sowie die Testkonten.
+Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien testen. Der Strategietester (Modul pipwerk replay) führt Strategien gegen historische Kursdaten aus, in zwei Betriebsarten: schrittweise zur Prüfung des Ablaufs und durchgehend über einen Testzeitraum mit Kontoentwicklung, Trades und Kennzahlen. Dazu gehören der Datenbestand historischer Kursdaten mit Beschaffung und Import sowie die Testkonten.
 
 Nachweis des Vorhabens sind die beiden Testfälle: Jeder muss sich im Einzelschritt-Test prüfen und im Backtest über den vorbelegten Testzeitraum testen lassen, ohne die Strategie dafür zu bearbeiten.
 

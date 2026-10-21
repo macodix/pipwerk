@@ -63,7 +63,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Standardwert | Der Wert eines Parameters, den eine Vorlage vorgibt. Er wird beim Einfügen in eine Strategie von der Instanz übernommen und dort geändert. |
 | Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Kennung des Befunds, dem betroffenen Element, der betroffenen Instanz oder Regel (oder keinem) und Angaben für den Text. Die Texte stehen in der Oberfläche, nicht in der Bibliothek. |
 | Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
-| Strategietester | Hauptkomponente, Produktname pipwerk backtest. Führt Strategien gegen historische Kursdaten aus, in den Betriebsarten Einzelschritt-Test und Backtest (req-system-001, Anforderungen an den Strategietester). |
+| Strategietester | Hauptkomponente, Produktname pipwerk replay. Führt Strategien gegen historische Kursdaten aus, in den Betriebsarten Einzelschritt-Test und Backtest (req-system-001, Anforderungen an den Strategietester). |
 | Einzelschritt-Test | Betriebsart des Strategietesters, in der eine Strategie an historischen Kursdaten Schritt für Schritt abläuft, um zu prüfen, ob sie arbeitet wie gedacht. |
 | Backtest | Betriebsart des Strategietesters, in der eine Strategie an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum abläuft, und ein einzelner solcher Lauf. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen. |
 | Testlauf | Anwendung einer Strategie in einem Testzeitraum mit einem Testkonto, im Einzelschritt-Test oder im Backtest (req-test-001). |
@@ -79,7 +79,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Elementtypen. pipwerk Studio, pipwerk backtest und pipwerk trader binden es ein. |
+| Gemeinsame Python-Bibliothek | Das Python-Paket `packages/domain-core` (Paketname `pipwerk_domain`). Es enthält die fachlichen Objekte, ihre Prüf- und Rechenlogik und die Beschreibung der Elementtypen. pipwerk Studio, pipwerk replay und pipwerk trader binden es ein. |
 | Typbeschreibung | Die maschinenlesbare Beschreibung eines Elementtyps oder Objekttyps mit den Feldern Kennung, Art (Auslöser, Element des Ablaufs, Objekttyp, Objekt der Anwendung, Ordertyp, Berechnungsverfahren des Trends), Beschriftung (Name und Beschreibung in Deutsch und Englisch), Parameter (Kennung, Datentyp, Pflicht oder optional, Standardwert, zulässige Werte, erlaubte Bindungsarten, Beschriftung), Eigenschaften (Kennung, Datentyp, MUSS oder KANN, Beschriftung; bei Ordertypen, ob der Anwender sie belegt), Ausgänge, „Regeln zulässig“ und „auf Zeichenfläche“. Die Oberfläche baut daraus Elementbibliothek, Elemente und Eigenschaftenansicht auf. |
 | Elementregister | Die Stelle in der gemeinsamen Python-Bibliothek, an der alle Elementtypen und Objekttypen (und die Berechnungsverfahren des Trends) angemeldet sind und von der sie nach Kennung oder als Liste abgefragt werden. Weitere Python-Pakete melden Typen über den Einstiegspunkt `pipwerk.element_types` an. |
 | Strategiedokument | Die Darstellung einer Strategie als JSON-Text. Sie wird für Datei, Web-API und Nachrichten verwendet. |
@@ -138,3 +138,4 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |
 | 2026-10-21 | Strategietester als Hauptkomponente, Einzelschritt-Test und Backtest als Betriebsarten; Backtester entfällt. |
+| 2026-10-21 | Produktname pipwerk replay. |
