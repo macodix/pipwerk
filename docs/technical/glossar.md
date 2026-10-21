@@ -63,14 +63,15 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Standardwert | Der Wert eines Parameters, den eine Vorlage vorgibt. Er wird beim Einfügen in eine Strategie von der Instanz übernommen und dort geändert. |
 | Befund | Ein einzelnes Ergebnis der Konsistenzprüfung: eine Unstimmigkeit mit Stufe (Fehler oder Hinweis), Kennung des Befunds, dem betroffenen Element, der betroffenen Instanz oder Regel (oder keinem) und Angaben für den Text. Die Texte stehen in der Oberfläche, nicht in der Bibliothek. |
 | Testfall | Eine Teststrategie, an der nachgewiesen wird, dass eine Funktion wie vorgesehen arbeitet. |
-| Strategietester | Funktion, in der eine Strategie an historischen Kursdaten Schritt für Schritt abläuft, um zu prüfen, ob sie arbeitet wie gedacht (Anforderungen Strategietester und Backtester). |
-| Backtester | Funktion, in der eine Strategie an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum abläuft. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen. Ein einzelner solcher Lauf heißt Backtest. |
-| Testlauf | Anwendung einer Strategie auf ein Instrument in einem Testzeitraum mit einem Testkonto, im Strategietester oder im Backtester (req-test-001). |
+| Strategietester | Hauptkomponente, Produktname pipwerk backtest. Führt Strategien gegen historische Kursdaten aus, in den Betriebsarten Einzelschritt-Test und Backtest (req-system-001, Anforderungen an den Strategietester). |
+| Einzelschritt-Test | Betriebsart des Strategietesters, in der eine Strategie an historischen Kursdaten Schritt für Schritt abläuft, um zu prüfen, ob sie arbeitet wie gedacht. |
+| Backtest | Betriebsart des Strategietesters, in der eine Strategie an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum abläuft, und ein einzelner solcher Lauf. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen. |
+| Testlauf | Anwendung einer Strategie in einem Testzeitraum mit einem Testkonto, im Einzelschritt-Test oder im Backtest (req-test-001). |
 | Testzeitraum | Zeitraum der historischen Kursdaten, über den ein Testlauf geht (req-test-002). |
 | Testkonto | Benannter, gespeicherter Satz von Kontowerten für die Abwicklung eines Testlaufs: Anfangskapital, Kontowährung, Hebel, Spread, Kommission (req-test-005). |
-| Interne Order | Order im Strategietester oder Backtester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
-| Handelnde Stelle | Auswertung im Strategietester, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
-| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem Strategietester und Backtester lesen (req-system-025). |
+| Interne Order | Order im Strategietester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
+| Handelnde Stelle | Auswertung im Einzelschritt-Test, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
+| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem der Strategietester liest (req-system-025). |
 | Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten (req-system-026). |
 | Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). |
 
@@ -135,3 +136,4 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Objekttyp, Element, Elementtyp, Elementbibliothek, Auslöser, Order aufgeben, Regelwerk, Eigenschaft, Parameter, Ergebnis. Baustein, Ausgabe und Order-Aktion entfallen. |
 | 2026-10-12 | Testumgebung und Entwicklungsrechner an den neuen Entwicklungsprozess angepasst, Begriffe des Entwicklungsprozesses verwiesen. |
 | 2026-10-11 | Erstfassung. „Teststand“ durch „Testumgebung“ ersetzt. |
+| 2026-10-21 | Strategietester als Hauptkomponente, Einzelschritt-Test und Backtest als Betriebsarten; Backtester entfällt. |

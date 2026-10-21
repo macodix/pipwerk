@@ -109,7 +109,7 @@ pipwerk führt einen eigenen Datenbestand historischer Kursdaten. Er enthält:
 - Ticks je Instrument, soweit verfügbar
 - Angaben zum Instrument je Broker: die Eigenschaften des Objekts `Instrument` (Fachmodell req-fach-051: Bezeichnung, Tickgröße, Tickwert, Punkt, Pip, Spread, Mindestvolumen, Volumenschritt), dazu Kontraktgröße, Swap und Margin-Anforderung
 
-pipwerk berechnet keine Kerzen aus Ticks. Strategietester und Backtester lesen Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
+pipwerk berechnet keine Kerzen aus Ticks. Der Strategietester liest Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
 
 ### req-system-026 -- Import
 
@@ -121,7 +121,7 @@ Die Beschaffung holt Kursdaten und Angaben zum Instrument aus einer Quelle und l
 
 Die erste Quelle ist MetaTrader 5. Die Beschaffung für MetaTrader 5 läuft auf dem Rechner, auf dem MetaTrader 5 läuft, und lässt sich von pipwerk anstoßen.
 
-Fehlen für einen Testlauf Daten im Datenbestand, werden sie automatisch beschafft und importiert (Anforderungen Strategietester und Backtester req-test-003). Der Anwender kann die Beschaffung auch von Hand anstoßen.
+Fehlen für einen Testlauf Daten im Datenbestand, werden sie automatisch beschafft und importiert (Anforderungen an den Strategietester req-test-003). Der Anwender kann die Beschaffung auch von Hand anstoßen.
 
 ## 4. Dokumentation
 

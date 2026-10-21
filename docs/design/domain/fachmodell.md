@@ -62,7 +62,7 @@ Ein Zustandswechsel wie „Trendrichtung wechselt zu Aufwärts“ ist kein eigen
 
 ### req-fach-016 -- Strategieentscheidung und Order getrennt
 
-Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ablauf nach Auswertung der erforderlichen Bedingungen eine Order veranlassen soll, erreicht er das Element `Order aufgeben`. Dieses legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem, im Testlauf an die interne Abwicklung des Strategietesters (Anforderungen Strategietester und Backtester req-test-004). Ein zusätzliches Objekt `Signal` wird dafür derzeit nicht benötigt.
+Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ablauf nach Auswertung der erforderlichen Bedingungen eine Order veranlassen soll, erreicht er das Element `Order aufgeben`. Dieses legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem, im Testlauf an die interne Abwicklung des Strategietesters (Anforderungen an den Strategietester req-test-004). Ein zusätzliches Objekt `Signal` wird dafür derzeit nicht benötigt.
 
 Erstellung, Bestimmung und Prüfung einer konkreten Order richten sich nach dem fachlichen Ordermodell. Freigegebene Orders werden anschließend zur weiteren Verwaltung an den `OrderManager` übergeben.
 
@@ -121,7 +121,7 @@ Dabei muss es:
 
 Kann eine erforderliche Eigenschaft nicht bestimmt werden oder ergibt eine erforderliche Prüfung mittels `prüfen()` kein positives Ergebnis, wird die Order nicht zur Ausführung freigegeben.
 
-Wurde eine `MarketOrder` mit einem angenommenen Preis freigegeben (req-fach-028), werden die prüfenden Regeln nach der Ausführung erneut angewendet, auf die entstandene Position (req-fach-052) mit ihrem Einstiegspreis. Ist eine prüfende Regel für die Position nicht erfüllt, wird die Position teilweise geschlossen, bis die Regel erfüllt ist, soweit das Volumenschritt und Mindestvolumen erlauben. Ist das nicht möglich, wird die Position ganz geschlossen. Der Vorgang wird vermerkt, im Backtest bei dem Trade. Das gilt im Handelssystem und im Testlauf (Anforderungen Strategietester und Backtester req-test-004).
+Wurde eine `MarketOrder` mit einem angenommenen Preis freigegeben (req-fach-028), werden die prüfenden Regeln nach der Ausführung erneut angewendet, auf die entstandene Position (req-fach-052) mit ihrem Einstiegspreis. Ist eine prüfende Regel für die Position nicht erfüllt, wird die Position teilweise geschlossen, bis die Regel erfüllt ist, soweit das Volumenschritt und Mindestvolumen erlauben. Ist das nicht möglich, wird die Position ganz geschlossen. Der Vorgang wird vermerkt, im Backtest bei dem Trade. Das gilt im Handelssystem und im Testlauf (Anforderungen an den Strategietester req-test-004).
 
 ### req-fach-023 -- Spezialisierung nach Ordertyp
 

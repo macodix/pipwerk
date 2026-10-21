@@ -1,20 +1,20 @@
-# Anforderungen an Strategietester und Backtester
+# Anforderungen an den Strategietester
 
 ## Dokumentstatus
 
 - status: `draft`
-- zweck: Anforderungen an das schrittweise Prüfen einer Strategie (Strategietester) und an den Test einer Strategie über einen Zeitraum (Backtester), beide mit historischen Kursdaten
+- zweck: Anforderungen an den Strategietester (Modul pipwerk backtest) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
 - zuletzt aktualisiert: `2026-10-19`
 - abgestimmt: Festlegungen des Auftraggebers im Chat am 19. Oktober 2026. Prüfung durch die QA und Präsentation stehen aus.
 
 ## 1. Zweck und Abgrenzung
 
-Dieses Dokument enthält die Anforderungen an zwei Funktionen:
+Dieses Dokument enthält die Anforderungen an den Strategietester, Produktname pipwerk backtest (Projektziel, Abschnitt Module). Er hat zwei Betriebsarten:
 
-- **Strategietester:** Eine Strategie läuft an historischen Kursdaten Schritt für Schritt ab. Der Anwender sieht dabei Ablauf, Werte der Objekte und Chart und prüft so, ob die Strategie arbeitet wie gedacht.
-- **Backtester:** Eine Strategie läuft an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen.
+- **Einzelschritt-Test:** Eine Strategie läuft an historischen Kursdaten Schritt für Schritt ab. Der Anwender sieht dabei Ablauf, Werte der Objekte und Chart und prüft so, ob die Strategie arbeitet wie gedacht.
+- **Backtest:** Eine Strategie läuft an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen.
 
-Die historischen Kursdaten, ihre Beschaffung und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Beide Funktionen gehören zu einer Hauptkomponente, dem Strategietester (Gesamtsystem req-system-001, Modul pipwerk backtest im Projektziel), als zwei Betriebsarten.
+Die historischen Kursdaten, ihre Beschaffung und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Der Strategietester ist eine Hauptkomponente nach Gesamtsystem req-system-001.
 
 ## 2. Gemeinsame Anforderungen
 
@@ -26,12 +26,12 @@ Ein Testlauf wendet eine Strategie in einem Testzeitraum an und verwendet dafür
 
 Jeder Testlauf hat einen Testzeitraum. Er ist vorbelegt und endet mit dem letzten vollständigen Handelstag:
 
-- Strategietester: die letzten 30 Tage
-- Backtester: die letzten 2 Jahre
+- Einzelschritt-Test: die letzten 30 Tage
+- Backtest: die letzten 2 Jahre
 
 ### req-test-003 -- Kursdaten eines Testlaufs
 
-Strategietester und Backtester lesen Kursdaten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
+Der Strategietester liest Kursdaten in beiden Betriebsarten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
 
 Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt.
 
@@ -41,7 +41,7 @@ Zeiten, in denen beim Broker nicht gehandelt wird, zum Beispiel Wochenenden, Fei
 
 ### req-test-004 -- Interne Abwicklung von Orders
 
-Strategietester und Backtester haben keine Verbindung zu einem Broker. Jede Order, die die Strategie aufgibt, ist eine interne Order. pipwerk wickelt sie gegen die historischen Kurse und mit den Werten des Testkontos ab: Ausführung, Positionen, Stop-Loss, Kursziel, Kosten und Kontostand entstehen rechnerisch. Strategietester und Backtester wickeln Orders auf dieselbe Weise ab.
+Der Strategietester hat keine Verbindung zu einem Broker. Jede Order, die die Strategie aufgibt, ist eine interne Order. pipwerk wickelt sie gegen die historischen Kurse und mit den Werten des Testkontos ab: Ausführung, Positionen, Stop-Loss, Kursziel, Kosten und Kontostand entstehen rechnerisch. Beide Betriebsarten wickeln Orders auf dieselbe Weise ab.
 
 ### req-test-005 -- Testkonto
 
@@ -62,17 +62,17 @@ Ein Testkonto ist an kein Instrument gebunden und speichert keine Angaben zum In
 
 ### req-test-006 -- Testbarkeit
 
-Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategietester und im Backtester testbar.
+Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategietester in beiden Betriebsarten testbar.
 
 ### req-test-007 -- Strategieparameter je Testlauf
 
 Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Das gilt auch für Strategieparameter vom Objekttyp `Instrument`.
 
-## 3. Strategietester
+## 3. Einzelschritt-Test
 
 ### req-test-010 -- Darstellung
 
-Der Strategietester zeigt die Strategie so wie der Strategiedesigner und dazu den Chart des Instruments in jeder Zeiteinheit, die die Strategie verwendet. Orders, Positionen und Kontostand sind im Chart und als Werte sichtbar. Die Werte der Objekte sind mit dem Stand des aktuellen Schritts sichtbar.
+Der Einzelschritt-Test zeigt die Strategie so wie der Strategiedesigner und dazu den Chart des Instruments in jeder Zeiteinheit, die die Strategie verwendet. Orders, Positionen und Kontostand sind im Chart und als Werte sichtbar. Die Werte der Objekte sind mit dem Stand des aktuellen Schritts sichtbar.
 
 Die Darstellung der Kerzen KANN so sein: steigende Kerzen grün, fallende Kerzen rot, jeweils mit schwarzem Rahmen und schwarzem Docht.
 
@@ -82,26 +82,26 @@ Eine handelnde Stelle ist eine Auswertung, in der der Ablauf ein handelndes Elem
 
 ### req-test-012 -- Schrittweiser Ablauf
 
-Beim Start läuft der Strategietester bis zur ersten handelnden Stelle im Testzeitraum. Er hält am ersten Element des Ablaufs dieser Auswertung an, mit dem Zustand, den die Objekte zu diesem Zeitpunkt haben.
+Beim Start läuft der Einzelschritt-Test bis zur ersten handelnden Stelle im Testzeitraum. Er hält am ersten Element des Ablaufs dieser Auswertung an, mit dem Zustand, den die Objekte zu diesem Zeitpunkt haben.
 
 Von dort kann der Anwender:
 
 - mit einem Einzelschritt zum nächsten Element des Ablaufs gehen. Das gerade ausgeführte Element ist hervorgehoben.
-- zur nächsten handelnden Stelle springen. Der Strategietester hält dort wie beim Start am ersten Element des Ablaufs an. Liegt vorher ein Haltepunkt (req-test-013), hält er dort.
+- zur nächsten handelnden Stelle springen. Der Einzelschritt-Test hält dort wie beim Start am ersten Element des Ablaufs an. Liegt vorher ein Haltepunkt (req-test-013), hält er dort.
 
 ### req-test-013 -- Haltepunkte
 
-Der Anwender kann an jedem Element einen Haltepunkt setzen und entfernen. Beim Sprung nach req-test-012 hält der Strategietester an der nächsten handelnden Stelle oder am nächsten Haltepunkt, je nachdem, was zuerst erreicht wird. Haltepunkte gelten nur für den laufenden Testlauf und werden nicht in der Strategie gespeichert.
+Der Anwender kann an jedem Element einen Haltepunkt setzen und entfernen. Beim Sprung nach req-test-012 hält der Einzelschritt-Test an der nächsten handelnden Stelle oder am nächsten Haltepunkt, je nachdem, was zuerst erreicht wird. Haltepunkte gelten nur für den laufenden Testlauf und werden nicht in der Strategie gespeichert.
 
 ### req-test-014 -- Anzeige der Werte
 
 Wählt der Anwender ein Element an, zeigt die Eigenschaftenansicht wie im Strategiedesigner dessen Parameter, Eigenschaften und Ergebnisse mit den Werten des aktuellen Schritts. Beim Überfahren eines Elements mit der Maus erscheinen seine wichtigsten Werte als kurze Einblendung. Werte, die sich seit dem letzten Schritt geändert haben, sind hervorgehoben.
 
-## 4. Backtester
+## 4. Backtest
 
 ### req-test-020 -- Ablauf
 
-Der Backtester lässt die Strategie ohne Unterbrechung über den Testzeitraum laufen.
+Der Backtest lässt die Strategie ohne Unterbrechung über den Testzeitraum laufen.
 
 ### req-test-021 -- Ergebnis
 
@@ -134,3 +134,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-20 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1), vom Projektleiter: Instrumente des Testlaufs einschließlich weiterer Instrumente der Strategie (req-test-001, -003, -005, -007; B4), Angaben zum Instrument nach req-system-025 (B1), Auswahl von Instrument und Testzeitraum (H8). |
 | 2026-10-20 | Offener Punkt 2: Eintreten von „Start von Hand“ im Testlauf. Vom Projektleiter nach den Hinweisen T1-H1 bis T1-H6 aus `development/strategiedesign/reviews/specification-9.md`, Folge der Entscheidungen vom selben Tag. |
 | 2026-10-21 | req-test-003: Ticks gehören zu den benötigten Kursdaten, wenn ein Auslöser `Tick` verwendet wird, keine Nachbildung aus Kerzen. Entscheidung des Auftraggebers im Chat am 2026-10-20 (B2). |
+| 2026-10-21 | Benennung: Hauptkomponente Strategietester (pipwerk backtest) mit den Betriebsarten Einzelschritt-Test und Backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, H7). |
