@@ -25,8 +25,10 @@ Rows that cannot be delivered are left out and counted; the first ``MAX_REPORTED
 - ``double_local_time``: a server time that occurs twice (the clocks were put back). A time
   that occurs twice counts as the earlier one (rule of the import), so the second occurrence
   would get the UTC time of the first. The program recognises the second occurrence by its
-  order (the server time goes backwards) and leaves it out instead of delivering two rows for
-  one UTC time. The first occurrence is always delivered.
+  order (the server time goes backwards; for candles also when a server time of the repeated
+  hour occurs again, which is all that happens with a time unit of one hour and coarser) and
+  leaves it out instead of delivering two rows for one UTC time. The first occurrence is
+  always delivered. See ``_Order``.
 - ``duplicate_time``: a candle with the server time of the candle before it.
 - ``invalid_price``: a candle or tick without prices above zero.
 
@@ -110,17 +112,35 @@ class _Omissions:
 class _Order:
     """Recognises the second occurrence of a repeated hour in the rows of one read.
 
-    The server time of the rows rises. When it falls (the clocks were put back), the rows are
-    the second occurrence until the time passes the highest time seen before; a row with
-    exactly that time is still part of the second occurrence.
+    The rows come in the order of the server time, which rises. In the repeated hour the clock
+    shows each time twice: once in the first pass and once in the second. The rows of the
+    second pass are recognised by the order:
+
+    - The server time falls below the highest time seen before (the clocks were put back):
+      the rows are the second pass until the time passes that highest time. A row with exactly
+      that time is still part of the second pass.
+    - With ``one_row_per_time`` (candles: one candle per server time and pass) a row whose
+      server time equals the highest time seen, and that lies in the repeated hour, is the
+      second pass as well. With a time unit of one hour and coarser each pass has only one
+      row, so the second row has the same server time as the first and the time does not
+      fall. The rule holds for every time unit: a server time of the repeated hour occurs at
+      most once per pass. Outside the repeated hour an equal time is not a second pass but a
+      duplicate.
+
+    Ticks may share a server time within one pass (milliseconds), so for them only a falling
+    time counts.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, one_row_per_time: bool) -> None:
+        self._one_row_per_time = one_row_per_time
         self._high: datetime | None = None
         self._repeating = False
 
-    def is_repeat(self, server_time: datetime) -> bool:
-        if self._high is not None and server_time < self._high:
+    def is_repeat(self, server_time: datetime, *, in_repeated_hour: bool) -> bool:
+        if self._high is not None and (
+            server_time < self._high
+            or (self._one_row_per_time and in_repeated_hour and server_time == self._high)
+        ):
             self._repeating = True
         elif self._high is None or server_time > self._high:
             self._repeating = False
@@ -227,7 +247,7 @@ class FetchService:
             if step.start <= meaning.first < step.end:
                 omitted.add(server_time, "time_does_not_exist")
             return None
-        if order.is_repeat(server_time):
+        if order.is_repeat(server_time, in_repeated_hour=meaning.second is not None):
             moment = meaning.second or meaning.first
             if step.start <= moment < step.end:
                 omitted.add(server_time, "double_local_time")
@@ -268,7 +288,7 @@ class FetchService:
         omitted = _Omissions()
         rows: list[CandleEntry] = []
         for step in self._steps(start_utc, end_utc, duration * CANDLE_CHUNK):
-            order = _Order()
+            order = _Order(one_row_per_time=True)
             last_time: datetime | None = None
             for candle in self._gateway.candles(
                 symbol, time_unit, step.server_start, step.server_end
@@ -322,7 +342,7 @@ class FetchService:
         omitted = _Omissions()
         rows: list[TickEntry] = []
         for step in self._steps(start_utc, end_utc, timedelta(hours=TICK_CHUNK_HOURS)):
-            order = _Order()
+            order = _Order(one_row_per_time=False)
             for tick in self._gateway.ticks(symbol, step.server_start, step.server_end):
                 moment = self._place(tick.time, step, order, omitted)
                 if moment is None:
