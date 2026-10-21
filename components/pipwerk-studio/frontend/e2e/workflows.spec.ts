@@ -181,6 +181,15 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
   await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
   await expect(directory).toHaveValue(second);
+
+  // The backend of the run is shared by the tests that follow. The strategies lie in `first`: go back there, so that
+  // the following tests find "EMA-Trendfolge" again.
+  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  await clickMenu(page, 'settings');
+  await directory.fill(first);
+  await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
+  await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
+  await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
 });
 
 test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page, api }) => {
