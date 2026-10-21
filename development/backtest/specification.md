@@ -25,7 +25,7 @@ Nicht Gegenstand: das Handelssystem, die Kontoverwaltung, die Anzeige der Unters
 - E5 Beschaffung aus MetaTrader 5 als eigenständiges kleines Programm `components/pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 (req-system-027). Es bietet eine HTTP-Schnittstelle, liest mit dem Python-Paket `MetaTrader5` Kerzen, Ticks und Angaben zum Instrument und liefert sie als Dateien im Format des Imports. pipwerk replay stößt es an und importiert das Ergebnis. Weitere Quellen sind weitere Programme mit derselben Schnittstelle (Abschnitt 5.4).
 - E6 Testkonten, Ergebnisse und gespeicherte Backtests liegen in der Datenbank von pipwerk replay über SQLAlchemy (req-system-015, „übrige Daten“). Strategien liest pipwerk replay als Dokument im Format 2.0 aus dem Objektverzeichnis (Einstellung wie in pipwerk Studio) oder als hochgeladene Datei; es ändert sie nie.
 - E7 Gleiche Eingaben, gleiche Ergebnisse. Ein Testlauf ist vollständig durch Strategie, Werte der Strategieparameter, Testkonto, Angaben zum Instrument, Testzeitraum und Kursdaten bestimmt. Die Ausführung verwendet keine Uhrzeit des Rechners und keine Zufallszahlen. Einzelschritt-Test und Backtest verwenden denselben Ablauf und dieselbe Abwicklung (req-test-004); der Einzelschritt-Test hält nur an.
-- E8 Der Einzelschritt-Test läuft im Backend als Sitzung, die die Ausführung an jedem Element anhält. Die Oberfläche fragt nach jedem Schritt den Zustand ab. Ein Zurückgehen gibt es nicht (req-test-012 verlangt es nicht).
+- E8 Der Einzelschritt-Test läuft im Backend als Sitzung, die die Ausführung an jedem Element anhält. Die Oberfläche fragt nach jedem Schritt den Zustand ab. Ein Zurückgehen um einzelne Schritte gibt es nicht (req-test-012 verlangt es nicht). „Zum Testbeginn“ beginnt die Sitzung mit denselben Eingaben neu; nach E7 ergibt das denselben Ablauf (Abschnitt 6.3).
 
 ## 3. Ausführung in der Bibliothek
 
@@ -54,9 +54,9 @@ Die Bibliothek berechnet `EMA`, `ATR` und `ZigZag` aus abgeschlossenen Kerzen ih
 
 - `EMA`: Glättungsfaktor 2 / (Periode + 1), Start mit dem einfachen Durchschnitt der ersten Periode, `Anwenden auf` wie MetaTrader 5, `Verschiebung` verschiebt um ganze Kerzen. Vor der vollen Periode „leer“.
 - `ATR`: einfacher gleitender Durchschnitt der True Range über die Periode, wie MetaTrader 5. Vor der vollen Periode „leer“.
-- `ZigZag`: Verfahren des ZigZag von MetaTrader 5 mit `Depth`, `Deviation` (in Punkten des Instruments) und `Backstep`. Der jüngste Wendepunkt kann sich mit neuen Kerzen noch verschieben; alle älteren sind endgültig.
+- `ZigZag`: Verfahren des ZigZag von MetaTrader 5 mit `Depth`, `Deviation` (in Punkten des Instruments) und `Backstep`. Jüngere Wendepunkte können sich mit neuen Kerzen noch verschieben, wie bei MetaTrader 5.
 
-Eigenschaften des `ZigZag` für die Ausführung: Neben den Wendepunkten nach Spezifikation `strategiedesign`, Abschnitt 3.2, hat der `ZigZag` die Eigenschaften `letztes Hoch`, `vorletztes Hoch`, `letztes Tief`, `vorletztes Tief` (Kennungen `letztes_hoch`, `vorletztes_hoch`, `letztes_tief`, `vorletztes_tief`, Zahl): der Kurs des jüngsten beziehungsweise zweitjüngsten endgültigen Hochs und Tiefs. Grund: Fachmodell req-fach-054 verlangt sie für `str-01`; mit den drei jüngsten Wendepunkten sind zwei endgültige Hochs und Tiefs nicht immer erreichbar. Gibt es den Wendepunkt noch nicht, ist die Eigenschaft „leer“. Die Typbeschreibung des `ZigZag` wird darum ergänzt.
+Eigenschaften des `ZigZag` für die Ausführung: Neben den Wendepunkten nach Spezifikation `strategiedesign`, Abschnitt 3.2, hat der `ZigZag` die Eigenschaften `letztes Hoch`, `vorletztes Hoch`, `letztes Tief`, `vorletztes Tief` (Kennungen `letztes_hoch`, `vorletztes_hoch`, `letztes_tief`, `vorletztes_tief`, Zahl): der Kurs des jüngsten beziehungsweise zweitjüngsten endgültigen Hochs und Tiefs. Grund: Fachmodell req-fach-054 verlangt sie für `str-01`; mit den drei jüngsten Wendepunkten sind zwei endgültige Hochs und Tiefs nicht immer erreichbar. Gibt es den Wendepunkt noch nicht, ist die Eigenschaft „leer“. Endgültig heißt: nach dem Verfahren von MetaTrader 5 nicht mehr verschiebbar; welche Wendepunkte das innerhalb von `Backstep` sind, legt der Vergleich mit Werten aus MetaTrader 5 fest (Abschnitt 10). Die Typbeschreibung des `ZigZag` wird darum ergänzt.
 
 Ein Indikator wird nur aus Kerzen berechnet, die im Testzeitraum liegen. Kursdaten vor dem Testzeitraum werden nicht geladen (req-test-008 lässt den Testlauf ohne Werte beginnen).
 
@@ -70,7 +70,7 @@ Ein Ereignis startet jede Auswertung, deren Auslöser dazu passt: zuerst die Ver
 
 Eine Auswertung folgt den Verbindungen ab dem Auslöser. Rückführungen sind zulässig (req-fach-047); gegen Endlosschleifen bricht eine Auswertung nach 10 000 Elementen ab, vermerkt einen Fehler und der Testlauf läuft weiter.
 
-`Strategie.wartende Orders` und `Strategie.offene Positionen` zählen die Orders mit Status `wartend` und die offenen Positionen dieses Testlaufs auf dem Instrument des Zusammenhangs (req-fach-046).
+`Strategie.wartende Orders` und `Strategie.offene Positionen` zählen die Orders mit Status `wartend` und die offenen Positionen dieses Testlaufs auf jedem Instrument (req-fach-046).
 
 Auslöser `Manuell` (Fachmodell req-fach-053, Anforderungen req-test-015): Die Ausführung kennt ihn als Ereignis ohne Instrument und ohne Zeiteinheit. Er startet nur den Hauptablauf, nie eine Verwaltung. Wann er eintritt, bestimmt die Anwendung: im Testlauf einmal zum Zeitpunkt nach Abschnitt 6.1, im Einzelschritt-Test zusätzlich auf Befehl (Abschnitt 6.3). Fallen `Manuell` und andere Ereignisse auf denselben Zeitpunkt, kommt `Manuell` zuerst. Grund: Standardmäßig tritt er vor der ersten Kerze ein (req-test-015); dieselbe Regel gilt dann auch für einen eingegebenen Zeitpunkt.
 
@@ -79,6 +79,8 @@ Strategieparameter behalten während eines Testlaufs den Wert, mit dem er gestar
 ### 3.5 Orders und Regeln
 
 „Order aufgeben“ bildet die Order nach req-fach-021: direkt übergebene Werte, dann bestimmende Regeln der Strategie, dann der Elemente in der Reihenfolge des Ablaufs (req-fach-046), Vollständigkeit, prüfende Regeln. Ist das erfolgreich, übergibt sie die Order dem Broker. Lehnt der Broker ab, nimmt „Order aufgeben“ den Ausgang `nicht gestellt`, die Order hat den Status `abgelehnt` und der Grund ist vermerkt (req-test-004). Sonst Ausgang `gestellt`.
+
+„Order ändern“ und „Position ändern“ wenden vor der Übergabe an den Broker die prüfenden Regeln der Strategie und des Elements auf die geänderte Order beziehungsweise Position an. Ist eine nicht erfüllt, nehmen sie den Ausgang `nicht geändert`, ohne Übergabe an den Broker (req-fach-049a).
 
 Ablehnung durch den Broker bei den übrigen Elementen (Hinweis H8 aus `requirements-4.md`): „Order ändern“ und „Position ändern“ nehmen den Ausgang `nicht geändert`, Order beziehungsweise Position bleiben unverändert. „Order löschen“ und „Position schließen“ gehen weiter; Order beziehungsweise Position bleiben bestehen. In jedem Fall ist der Grund vermerkt und sichtbar wie bei „Order aufgeben“.
 
@@ -107,7 +109,7 @@ Die Abwicklung verfolgt den Kurs feiner als die Zeiteinheiten der Strategie:
 ### 4.2 Ausführung
 
 - Kontoform: Jede ausgeführte Order ergibt eine eigene Position (wie ein Konto mit gegenläufigen Positionen bei MetaTrader 5). Grund: Jede Order hat ihre eigene Verwaltung (req-fach-049a).
-- Marktorder: Ausführung zum nächsten Kurs nach dem Ereignis, das die Auswertung gestartet hat (Brief bei `buy`, Geld bei `sell`). Angenommener Preis für die Regeln ist der letzte Kurs zum Zeitpunkt des Ereignisses (req-fach-019).
+- Marktorder und „Position schließen“: sofortige Ausführung beim Element, zum letzten Kurs zum Zeitpunkt des Ereignisses, das die Auswertung gestartet hat (Eröffnung `buy` und Schließen `sell` am Brief, Eröffnung `sell` und Schließen `buy` am Geld). Dieser Kurs ist auch der angenommene Preis für die Regeln (req-fach-019). Position, Konto, freie Margin, `Order.Status`, `Strategie.wartende Orders` und `Strategie.offene Positionen` zeigen danach in derselben und in jeder folgenden Auswertung den neuen Stand. Grund: Eine Verwaltung schließt so die alte Position, bevor der Hauptablauf desselben Ereignisses eine neue eröffnet (req-fach-049a, `str-03`). Auch „Order ändern“, „Order löschen“ und „Position ändern“ wirken sofort.
 - Stop-Order und Limit-Order: Ausführung, sobald der Kurs den Preis erreicht (Kauf am Brief, Verkauf am Geld), zum Preis der Order; springt der Kurs über den Preis hinweg, zum ersten Kurs danach. Stop-Limit-Order: Beim Erreichen des Auslösepreises entsteht eine Limit-Order zum Limitpreis.
 - Stop-Loss und Take-Profit einer Position: geprüft am Geld bei `buy`, am Brief bei `sell`; geschlossen zum Preis von Stop-Loss beziehungsweise Take-Profit, bei einem Sprung zum ersten Kurs danach.
 - Gültigkeit: „bis Tagesende“ endet mit dem Tageswechsel der Kursdaten, „bis Zeitpunkt“ und „bis Ende eines Tages“ zur angegebenen Zeit; Status `abgelaufen`.
@@ -115,7 +117,7 @@ Die Abwicklung verfolgt den Kurs feiner als die Zeiteinheiten der Strategie:
 - Kosten: Kommission des Testkontos je Lot und Seite in Kontowährung, bei Eröffnung und Schließung. Swap nach den Angaben zum Instrument je Lot und Tag beim Tageswechsel, dreifach an dem Wochentag, den die Angaben nennen.
 - Gewinn oder Verlust: Kursdifferenz / Tickgröße × Tickwert × Volumen. Der Tickwert der Angaben zum Instrument gilt als Wert in der Kontowährung und für den ganzen Testlauf. Weicht die Währung der Angabe von der Kontowährung des Testkontos ab, zeigt die Vorbereitung einen Hinweis; der Anwender kann den Tickwert für den Testlauf ändern (req-test-005).
 - Kapital = Kontostand + offener Gewinn oder Verlust aller Positionen. Freie Margin = Kapital − Margin aller offenen Positionen. Margin einer Position = Volumen × Margin-Anforderung je Lot, wenn die Angaben sie nennen, sonst Volumen × Preis × Tickwert / Tickgröße / Hebel des Testkontos.
-- Fällt das Kapital auf null oder darunter, schließt die Abwicklung alle Positionen, löscht alle Orders und beendet den Testlauf mit dem Vermerk „Konto aufgebraucht“.
+- Fällt das Kapital auf null oder darunter, schließt die Abwicklung alle Positionen, löscht alle Orders und beendet den Testlauf mit dem Vermerk „Konto aufgebraucht“. Grund: Ein Broker schließt bei aufgebrauchtem Kapital alle Positionen und nimmt keine Order mehr an (req-test-004); ein Weiterlaufen bis zum Ende des Testzeitraums (req-test-020) ergäbe nur noch Ablehnungen.
 
 ### 4.3 Ablehnungsgründe
 
@@ -128,6 +130,7 @@ Die Abwicklung lehnt ab wie ein Broker (req-test-004, Hinweis H7 aus `requiremen
 | `volume_invalid` | Volumen unter dem Mindestvolumen oder kein Vielfaches des Volumenschritts |
 | `no_money` | freie Margin reicht für die Margin der Order nicht |
 | `market_closed` | für das Instrument liegt zu diesem Zeitpunkt kein Kurs vor (Handelspause) |
+| `no_prices` | für das Instrument liegen im Testlauf keine Kursdaten vor, weil erst ein Ausdruck bei der Ausführung es bildet (Abschnitt 6.1) |
 | `not_pending` | Order ändern oder löschen bei einer Order, die nicht mehr wartet; Position ändern oder schließen ohne offene Position |
 | `close_volume_invalid` | Volumen von „Position schließen“ größer als die Position oder Rest unter dem Mindestvolumen |
 
@@ -141,10 +144,12 @@ Beim Testfall `str-01` liegt der Einstieg einer Stop-Order zum Kauf über dem Ei
 
 - Kerzen je Zeiteinheit: Eröffnungszeitpunkt (UTC), Eröffnung, Hoch, Tief, Schluss, Volumen, Spread (Punkte, wenn geliefert)
 - Ticks: Zeitpunkt (UTC, Millisekunden), Geld, Brief
-- Angaben zum Instrument nach req-system-025 mit Zeitpunkt der Beschaffung, Währung des Tickwerts, Swap long und short, Wochentag des dreifachen Swaps, Margin-Anforderung je Lot
+- Angaben zum Instrument nach req-system-025, darunter die Kontraktgröße, mit Zeitpunkt der Beschaffung, Währung des Tickwerts, Swap long und short, Wochentag des dreifachen Swaps, Margin-Anforderung je Lot
 - für jede Reihe die abgedeckten Zeiträume und die Handelszeiten, die die Quelle liefert
 
 pipwerk berechnet keine Kerzen aus Ticks und keine Ticks aus Kerzen (req-system-025, req-test-003).
+
+Zeitpunkte werden in UTC gespeichert. MetaTrader 5 und sein CSV-Export liefern die Serverzeit des Brokers. Import und Beschaffung rechnen sie in UTC um: beim Import einer CSV-Datei nach der Zeitzone, die der Anwender angibt (Name nach IANA, zum Beispiel mit Sommerzeit), bei `pipwerk-fetch-mt5` nach der Zeitzone in seiner Startkonfiguration. Grund: Tageswechsel, Swap, Gültigkeit von Orders und die Grenzen des Wochenendes (5.2) beziehen sich dann im ganzen Datenbestand auf dieselbe Zeit.
 
 Welcher Broker im Testlauf gilt, ist eine Einstellung von pipwerk replay (Standardquelle), änderbar in der Vorbereitung eines Testlaufs.
 
@@ -166,7 +171,7 @@ Schnittstelle einer Quelle (beschrieben unter `contracts/api/pipwerk-fetch/v1/`)
 
 `pipwerk-fetch-mt5` ordnet die Bezeichnung des Instruments einem Symbol des Brokers über eine Zuordnungstabelle in seiner Konfiguration zu. Grund: Die Zuordnung je Konto gehört zur noch nicht beschriebenen Kontoverwaltung (Fachmodell req-fach-053); bis dahin genügt eine Tabelle je Quelle. Ohne Eintrag gilt die Bezeichnung selbst als Symbol.
 
-pipwerk replay stößt die Beschaffung vor dem Start eines Testlaufs für alle fehlenden Teile an (req-test-003), auch für Teile eines Zeitraums, und von Hand aus dem Datenbestand. Die Adresse der Quelle und ein gemeinsamer Schlüssel stehen in der Betriebskonfiguration von pipwerk replay beziehungsweise in der Startkonfiguration von `pipwerk-fetch-mt5`. Fehlen danach Daten, startet der Testlauf nicht; die Meldung nennt je fehlendem Teil Instrument, Art, Zeitraum und den Grund der Quelle.
+pipwerk replay stößt die Beschaffung vor dem Start eines Testlaufs für alle fehlenden Teile an (req-test-003), auch für Teile eines Zeitraums, und von Hand aus dem Datenbestand. Die Adresse der Quelle und ein gemeinsamer Schlüssel stehen in der Startkonfiguration von pipwerk replay und von `pipwerk-fetch-mt5`, nicht in der Datenbank. Die Startkonfiguration von `pipwerk-fetch-mt5` folgt req-system-017 und req-system-018 wie die übrigen Komponenten. Die Übertragung läuft im vom Betreiber kontrollierten Netz (req-system-011, Abschnitt 11). Fehlen danach Daten, startet der Testlauf nicht; die Meldung nennt je fehlendem Teil Instrument, Art, Zeitraum und den Grund der Quelle.
 
 ## 6. Strategietester
 
@@ -174,30 +179,35 @@ pipwerk replay stößt die Beschaffung vor dem Start eines Testlaufs für alle f
 
 Ein Testlauf hat: Strategie (Kopie des Dokuments zum Start), Betriebsart, Instrument der Anwendung, Testzeitraum, Broker der Kursdaten, Werte der Strategieparameter, Testkonto mit den verwendeten Werten, Angaben zu jedem Instrument des Testlaufs mit den verwendeten Werten (req-test-001, req-test-005, req-test-007).
 
-Vorbelegung des Testzeitraums (req-test-002): Ende ist das Ende des letzten vollständigen Handelstags vor dem heutigen Datum (UTC); Beginn 30 Tage beziehungsweise 2 Jahre davor.
+Vorbelegung des Testzeitraums (req-test-002): Ende ist das Ende des letzten vollständigen Handelstags vor dem heutigen Datum (UTC), also des letzten Montags bis Freitags davor; Beginn 30 Tage beziehungsweise 2 Jahre davor.
 
 Zeitpunkt des Auslösers `Manuell` (req-test-015): Hat die Strategie diesen Auslöser, gehört zum Testlauf sein Zeitpunkt. Ohne Eingabe ist es der Beginn des Testzeitraums, vor der ersten Kerze. Ein eingegebener Zeitpunkt (UTC, auf die Minute) muss im Testzeitraum liegen, sonst startet der Testlauf nicht und die Meldung nennt den Grund. Er wird mit dem Testlauf und im gespeicherten Backtest gespeichert.
 
 Vor dem Start: Konsistenzprüfung der Strategie mit der Bibliothek; ein Fehler verhindert den Start und wird angezeigt. Strategieparameter „bei der Anwendung“ ohne Wert verhindern den Start. Danach Prüfung und Beschaffung der Kursdaten (Abschnitt 5).
 
-Instrumente des Testlaufs (req-test-001): das Instrument der Anwendung und jedes feste Instrument oder jeder Wert eines Strategieparameters vom Objekttyp `Instrument`, die die Strategie verwendet. Ein Instrument, das erst ein Ausdruck bei der Ausführung bildet, kann vorher nicht bestimmt werden; fehlen dafür bei der Ausführung Daten, ist der Wert „nicht verfügbar“ und eine Order darauf wird mit `market_closed` abgelehnt.
+Instrumente des Testlaufs (req-test-001): das Instrument der Anwendung und jedes feste Instrument oder jeder Wert eines Strategieparameters vom Objekttyp `Instrument`, die die Strategie verwendet. Ein Instrument, das erst ein Ausdruck bei der Ausführung bildet, kann vorher nicht bestimmt werden; fehlen dafür bei der Ausführung Daten, ist der Wert „nicht verfügbar“ und eine Order darauf wird mit `no_prices` abgelehnt. Grund: Kursdaten werden vor dem Start geprüft und beschafft (req-test-003); während eines Testlaufs wird nichts beschafft, sonst hinge das Ergebnis von der Erreichbarkeit der Quelle ab (E7).
 
 ### 6.2 Testkonto
 
-Felder (req-test-005): Name, Anfangskapital, Kontowährung, Hebel, Spread („aus den Kerzen“ oder fester Wert in Punkten), Kommission je Lot und Seite. Das Standard-Testkonto ist mitgeliefert (10 000 EUR, Hebel 30, Spread aus den Kerzen, Kommission 0), lässt sich ändern, aber nicht löschen. Angaben zum Instrument gehören nicht zum Testkonto.
+Felder (req-test-005): Name, Anfangskapital, Kontowährung, Hebel, Spread („aus den Kerzen“ oder fester Wert in Punkten), Kommission je Lot und Seite. Das Standard-Testkonto ist mitgeliefert (10 000 EUR, Hebel 30, Spread aus den Kerzen, Kommission 0), lässt sich ändern und löschen wie jedes Testkonto (req-test-005). Fehlt es beim Start von pipwerk replay, legt pipwerk replay es neu an, wie im bestätigten Prototyp; so kann ein Testlauf immer ohne Vorarbeit starten. Angaben zum Instrument gehören nicht zum Testkonto.
 
 ### 6.3 Einzelschritt-Test
 
-Sitzung im Backend nach E8 mit den Befehlen: Start (bis zur ersten handelnden Stelle, req-test-012), Einzelschritt, Sprung zur nächsten handelnden Stelle oder zum nächsten Haltepunkt (req-test-013), Haltepunkt setzen und entfernen, „Manuell auslösen“, Ende. „Manuell auslösen“ (req-test-015) ist nur zulässig, wenn die Strategie den Auslöser `Manuell` hat und keine Auswertung läuft, also zwischen zwei Auswertungen. Er fügt zum aktuellen Zeitpunkt eine Auswertung `Manuell` ein, die als nächste folgt; danach geht der Testlauf mit den übrigen Ereignissen weiter. Grund für die Einschränkung auf „zwischen zwei Auswertungen“: Mitten in einer Auswertung wäre der Zustand von Konto und Orders nicht abgeschlossen. Der Einzelschritt-Test kann deshalb andere Trades ergeben als der Backtest desselben Zeitraums (Einschränkung zu E7). Der Zustand nach jedem Befehl enthält: aktuelles Element und Auswertung, Werte aller Objekte, Elemente und Ergebnisse, Unterschiede zum vorigen Schritt (req-test-014), Konto, Orders, Positionen, Ablehnungen mit Grund, Kursdaten für die Charts bis zum aktuellen Zeitpunkt und die handelnden Stellen bis dahin (req-test-011). Haltepunkte gehören zur Sitzung, nicht zur Strategie. Eine Sitzung endet nach Ende, nach dem Testzeitraum oder nach 60 Minuten ohne Befehl.
+Sitzung im Backend nach E8 mit den Befehlen: Start (bis zur ersten handelnden Stelle, req-test-012), Einzelschritt, Sprung zur nächsten handelnden Stelle oder zum nächsten Haltepunkt (req-test-013), Haltepunkt setzen und entfernen, „Zum Testbeginn“, „Manuell auslösen“, Ende.
+
+„Zum Testbeginn“ beginnt die Sitzung mit denselben Eingaben neu und hält am ersten Element der ersten Auswertung, auch wenn sie keine handelnde Stelle ist; so sind die Auswertungen zu sehen, in denen Indikatoren noch keine Werte haben (req-test-008). Haltepunkte bleiben erhalten. Mit „Manuell auslösen“ eingefügte Auswertungen entfallen, weil sie nicht zu den Eingaben gehören.
+
+„Manuell auslösen“ (req-test-015) gibt es nur, wenn die Strategie den Auslöser `Manuell` hat. Der Befehl fügt zum aktuellen Zeitpunkt eine Auswertung `Manuell` ein. Steht die Sitzung zwischen zwei Auswertungen, folgt sie als nächste; steht sie mitten in einer Auswertung, folgt sie unmittelbar nach deren Ende. Danach geht der Testlauf mit den übrigen Ereignissen weiter. Grund: Auswertungen laufen nacheinander, nie ineinander (3.4); eine Auswertung, die eine andere unterbricht, gäbe es im Handelssystem nicht. Der Einzelschritt-Test kann mit diesem Befehl andere Trades ergeben als der Backtest desselben Zeitraums (Einschränkung zu E7). Der Zustand nach jedem Befehl enthält: aktuelles Element und Auswertung, Werte aller Objekte, Elemente und Ergebnisse, Unterschiede zum vorigen Schritt (req-test-014), Konto, Orders, Positionen, Ablehnungen mit Grund, Kursdaten für die Charts bis zum aktuellen Zeitpunkt und die handelnden Stellen bis dahin (req-test-011). Haltepunkte gehören zur Sitzung, nicht zur Strategie. Eine Sitzung endet nach Ende, nach dem Testzeitraum oder nach 60 Minuten ohne Befehl. Grund für die Frist: Eine Sitzung hält Kursdaten und Zustand im Speicher des Backends; ohne Frist blieben verlassene Sitzungen bestehen (Abschnitt 11, Zahl gleichzeitiger Sitzungen).
 
 ### 6.4 Backtest
 
 Der Backtest läuft im Backend in einem eigenen Prozess, damit Anfragen beantwortet bleiben; die Oberfläche fragt den Fortschritt ab und kann abbrechen. Ergebnis (req-test-021):
 
-- Kontoentwicklung: Kapital und Kontostand je Kerzenschluss der kleinsten Zeiteinheit der Strategie, höchstens 5 000 Punkte, bei mehr verdichtet auf Höchst- und Tiefstwert je Abschnitt; dazu der Rückgang vom Höchststand
-- Trades: je Position Eröffnung und Schließung (Zeitpunkt, Preis), Richtung, Volumen, Gewinn oder Verlust, Kosten (Kommission, Swap), Grund der Schließung (Stop-Loss, Take-Profit, Position schließen, Ende des Testzeitraums, Konto aufgebraucht), Vermerke nach req-fach-021
+- Kontoentwicklung: Kapital und Kontostand je Kerzenschluss der kleinsten Zeiteinheit der Strategie, höchstens 5 000 Punkte, bei mehr verdichtet auf Höchst- und Tiefstwert je Abschnitt, sodass Höchststände und Rückgänge erhalten bleiben; dazu der Rückgang vom Höchststand. Grund: Mehr Punkte, als ein Bildschirm in der Breite zeigen kann, machen die Kurve nicht genauer, aber Antwort und gespeicherten Backtest groß. Kennzahlen werden aus allen Werten berechnet, nicht aus den verdichteten.
+- Trades: je Position Eröffnung und Schließung (Zeitpunkt, Preis), Richtung, Volumen, Gewinn oder Verlust nach Spread, Kommission und Swap, Kosten (Kommission, Swap und Spreadanteil, zur Information), Grund der Schließung (Stop-Loss, Take-Profit, Position schließen, Ende des Testzeitraums, Konto aufgebraucht), Vermerke nach req-fach-021
 - Kennzahlen: Nettogewinn, Anzahl der Trades, Trefferquote, Verhältnis Gesamtgewinn zu Gesamtverlust, größter Rückgang vom Höchststand (Betrag und Prozent), durchschnittlicher Gewinn und durchschnittlicher Verlust je Trade, Anzahl abgelehnter Orders
-- Abgelehnte Orders und Änderungen einzeln mit Zeitpunkt, Element und Grund (req-test-004, Hinweis H9 aus `requirements-4.md`), höchstens 10 000; darüber hinaus nur gezählt, die Anzahl aller steht bei den Kennzahlen
+- Abgelehnte Orders und Änderungen einzeln mit Zeitpunkt, Element und Grund (req-test-004, Hinweis H9 aus `requirements-4.md`), höchstens 10 000; darüber hinaus nur gezählt, die Anzahl aller steht bei den Kennzahlen, und jeder Grund bleibt in der Zusammenfassung je Element und Grund sichtbar. Grund: Eine Strategie, die bei jedem Tick eine abgelehnte Order erzeugt, ergäbe sonst Millionen Einträge in Antwort und Datenbank (Abschnitt 11, Umfang von Antworten); die Zusammenfassung erfüllt req-test-004 für alle.
+- Zusammenfassung der abgelehnten Orders und Änderungen je Element und Grund mit Anzahl und erstem Zeitpunkt
 - Fehler der Auswertung mit Element und Ausdruck, zusammengefasst je Element und Grund mit Anzahl und erstem Zeitpunkt
 - Kursdaten für den Chart werden nicht gespeichert, sondern bei Bedarf aus dem Datenbestand gelesen
 
@@ -205,7 +215,7 @@ Positionen, die am Ende des Testzeitraums offen sind, schließt die Abwicklung z
 
 ### 6.5 Gespeicherte Backtests
 
-Gespeichert wird nur auf ausdrücklichen Befehl (req-test-022): Kopie der Strategie (Dokument), Werte der Strategieparameter, Testkonto mit den verwendeten Werten, Instrument und Angaben zu den Instrumenten mit den verwendeten Werten, Testzeitraum, Broker der Kursdaten, Ergebnis nach 6.4. Liste mit Name der Strategie, Zeitraum, Zeitpunkt des Speicherns und Nettogewinn; Löschen nach Rückfrage. Vergleich von zwei oder mehr gespeicherten Backtests mit Kennzahlen und übereinandergelegten Kontokurven. Die Kopie der Strategie kann pipwerk replay als Dokument liefern; angesehen wird sie in der Darstellung des Strategiedesigners, nur lesend (Abschnitt 8).
+Gespeichert wird nur auf ausdrücklichen Befehl (req-test-022): Kopie der Strategie (Dokument), Werte der Strategieparameter, Testkonto mit den verwendeten Werten, Instrument und Angaben zu den Instrumenten mit den verwendeten Werten, Testzeitraum, Broker der Kursdaten, Ergebnis nach 6.4. Liste mit Name der Strategie, Zeitraum, Zeitpunkt des Speicherns und Nettogewinn; Löschen nach Rückfrage. Vergleich von zwei oder mehr gespeicherten Backtests mit Kennzahlen und übereinandergelegten Kontokurven. Die getestete Fassung ist in pipwerk replay in der Darstellung des Strategiedesigners zu sehen, nur lesend (Abschnitt 8.2, bestätigter Prototyp). Außerdem liefert pipwerk replay die Kopie als Dokument zum Herunterladen; so lässt sie sich im Strategiedesigner selbst öffnen (req-test-022).
 
 ## 7. Web-API
 
@@ -243,24 +253,24 @@ Kopfzeile mit Menü (Testlauf, Datenbestand, Testkonten, Gespeicherte Backtests)
 | Backtest | Fortschritt mit Abbrechen; Ergebnis mit Kennzahlen, Kontoentwicklung und Rückgang, Chart, Reitern Trades und Abgelehnte Orders; Speichern | req-test-004, req-test-020 bis req-test-022 |
 | Gespeicherte Backtests | Liste, Löschen nach Rückfrage, Vergleich von zwei oder mehr, getestete Fassung nur lesend | req-test-022 |
 | Datenbestand | Übersicht je Broker, Instrument, Zeiteinheit und Ticks mit Zeiträumen und Lücken, Angaben zu den Instrumenten; Import einer Datei; Beschaffung von Hand | req-system-025 bis req-system-027 |
-| Testkonten | anlegen, bearbeiten, speichern, löschen; Standard-Testkonto nicht löschbar | req-test-005 |
+| Testkonten | anlegen, bearbeiten, speichern, löschen; Standard-Testkonto nach 6.2 | req-test-005 |
 
 ### 8.4 Festlegungen
 
 Mit der Bestätigung des Prototyps festgelegt (Frage backtest-01, Punkte 1 bis 7):
 
 1. Anordnung nach Fenstergröße: ab 1500 Pixel Breite Strategie, Chart, Konto und Orders sowie Eigenschaften gleichzeitig. Von 1100 bis 1499 Pixel teilen sich Konto und Orders und die Eigenschaften einen Bereich mit Reitern. Unter 1100 Pixel ein Bereich nach dem anderen mit einer Leiste unten; bei hohen Tablets bleibt der Chart oben. Das Ergebnis des Backtests folgt derselben Staffelung. Geprüft wird in den Fenstergrößen 390 × 844, 844 × 390, 820 × 1180, 1180 × 820, 1366 × 768 und 1920 × 1080 (req-system-024).
-2. Jedes Ereignis nach Abschnitt 3.4 ergibt eine Auswertung. Fallen Verwaltung und Hauptablauf auf denselben Zeitpunkt, zeigt eine Leiste die Reihenfolge, zuerst die Verwaltung.
+2. Jede Auswertung nach Abschnitt 3.4 (jede Verwaltung und der Hauptablauf, die ein Ereignis startet) ist im Einzelschritt-Test eine eigene Auswertung. Fallen Verwaltung und Hauptablauf auf denselben Zeitpunkt, zeigt eine Leiste die Reihenfolge, zuerst die Verwaltung.
 3. „Einzelschritt“ am Ende einer Auswertung geht zum ersten Element der nächsten. „Nächste handelnde Stelle“ hält auch an einem Haltepunkt. Ein Haltepunkt wird mit einem kleinen Kreis an der Ecke eines Elements gesetzt und entfernt. „Zum Testbeginn“ zeigt die ersten Auswertungen, in denen Indikatoren noch keine Werte haben.
 4. Abgelehnte Order: Die Auswertung trägt vorab die Marke „endet mit abgelehnter Order“. Der Grund steht am Element, in der Eigenschaftenansicht, im Protokoll und als rotes Kreuz im Chart. Im Ergebnis stehen abgelehnte Orders mit Grund auf einem eigenen Reiter neben den Trades, ihre Anzahl bei den Kennzahlen. Gründe in Händlersprache nach Abschnitt 4.3.
 5. Testkonto: Änderungen im Testlauf gelten nur für diesen Testlauf. Gespeichert wird nur über „Änderung im Testkonto speichern“ oder „Als neues Testkonto speichern“. Geänderte Angaben zum Instrument gelten nur für den Testlauf und werden nie gespeichert.
 6. Kursdaten beim Start nach der Ansicht „Kursdaten beim Start“: Fehlendes wird beim Start beschafft; lässt es sich nicht beschaffen, startet der Testlauf nicht.
-7. Ergebnis: Der Gewinn eines Trades ist nach Spread und Kommission. Die Spalte „Kosten“ nennt Kommission und Spreadanteil zur Information. Ein Klick auf einen Trade zeigt seine Stelle im Chart: Pfeil bei Eröffnung, Kreis bei Schließung, Linie dazwischen grün bei Gewinn, rot bei Verlust.
+7. Ergebnis: Der Gewinn eines Trades ist nach Spread und Kommission. Die Spalte „Kosten“ nennt Kommission und Spreadanteil zur Information. Der Prototyp rechnet keinen Swap; im Produkt enthalten Gewinn und Kosten auch den Swap (6.4). Ein Klick auf einen Trade zeigt seine Stelle im Chart: Pfeil bei Eröffnung, Kreis bei Schließung, Linie dazwischen grün bei Gewinn, rot bei Verlust.
 
 Aus den Entscheidungen zu `Manuell` (req-test-015, Abschnitte 6.1 und 6.3):
 
 8. Die Vorbereitung zeigt die Einstellung „Auslöser Manuell“ nur bei einer Strategie mit diesem Auslöser: Standard ist der Beginn des Testzeitraums, wahlweise ein eingegebener Zeitpunkt. Ein Zeitpunkt außerhalb des Testzeitraums verhindert den Start mit Meldung.
-9. Im Einzelschritt-Test erscheint `Manuell` als eigene Auswertung und im Chart mit eigenem Zeichen. Der Befehl „Manuell auslösen“ ist nur bei einer Strategie mit diesem Auslöser zu sehen und nur zwischen zwei Auswertungen bedienbar.
+9. Im Einzelschritt-Test erscheint `Manuell` als eigene Auswertung und im Chart mit eigenem Zeichen. Der Befehl „Manuell auslösen“ ist nur bei einer Strategie mit diesem Auslöser zu sehen. Er ist jederzeit bedienbar; mitten in einer Auswertung zeigt eine Meldung, dass die Auswertung `Manuell` nach deren Ende folgt (6.3). Abweichung vom Prototyp, der den Befehl erst am Ende einer Auswertung freigibt: Eine Sperre ist nicht nötig, weil die Auswertung ohnehin erst danach beginnt.
 
 Bedienerführung wie im Prototyp: Jeder leere Zustand nennt den nächsten Schritt, jedes Feld hat eine Erklärung in Händlersprache beim Zeigen mit Maus oder Tastatur. Kerzen steigend grün, fallend rot, mit schwarzem Rahmen und Docht (req-test-010).
 
@@ -318,3 +328,4 @@ Entscheidungen des Auftraggebers zu Frage [backtest-01](questions/backtest-01.md
 |---|---|
 | 2026-10-21 | Erstfassung ohne Oberfläche, vor der Bestätigung des Prototyps. |
 | 2026-10-21 | Nach den Antworten zu Frage backtest-01: Abschnitt 8 (Oberfläche) nach dem bestätigten Prototyp; Auslöser `Manuell` (3.4, 3.6, 6.1, 6.3, 10); Entfall von „Parameter setzen“ (3.4, 3.6); abgelehnte Orders einzeln im Ergebnis (6.4); Abschnitt 13 mit den Entscheidungen. |
+| 2026-10-21 | Nach dem Prüfbericht [specification-1.md](reviews/specification-1.md): B1 Zählung auf jedem Instrument (3.4); B2 sofortige Ausführung von Marktorder und Schließen mit neuem Stand für folgende Auswertungen (4.2); B3 Befehl „Zum Testbeginn“ (E8, 6.3); B4 Standard-Testkonto löschbar, wird beim Start neu angelegt (6.2, 8.3). Hinweise 1 bis 13: Begründungen der Begrenzungen (6.3, 6.4), „Manuell auslösen“ jederzeit (6.3, 8.4), Begründung „Konto aufgebraucht“ (4.2), Zeitzone bei Import und Beschaffung (5.1), Auswertungen im Einzelschritt-Test (8.4), Kosten und Swap (6.4, 8.4), prüfende Regeln bei Ändern (3.5), Ablehnungsgrund `no_prices` (4.3, 6.1), Handelstag (6.1), getestete Fassung auch als Dokument (6.5), Schlüssel und Startkonfiguration (5.4), Kontraktgröße (5.1), Wendepunkte des `ZigZag` (3.3). |
