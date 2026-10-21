@@ -67,12 +67,15 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Backtest | Betriebsart des Strategietesters, in der eine Strategie an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum abläuft, und ein einzelner solcher Lauf. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen. |
 | Testlauf | Anwendung einer Strategie in einem Testzeitraum mit einem Testkonto, im Einzelschritt-Test oder im Backtest (req-test-001). |
 | Testzeitraum | Zeitraum der historischen Kursdaten, über den ein Testlauf geht (req-test-002). |
-| Testkonto | Benannter, gespeicherter Satz von Kontowerten für die Abwicklung eines Testlaufs: Anfangskapital, Kontowährung, Hebel, Spread, Kommission (req-test-005). |
+| Testkonto | Benannter, gespeicherter Satz von Kontowerten für die Abwicklung eines Testlaufs: Anfangskapital, Kontowährung, Hebel, Spread (aus den Kerzen oder fest in Punkten), Kommission je Lot und Seite (req-test-005). Es gehört zu keinem Instrument. Das mitgelieferte Standard-Testkonto (10 000 EUR, Hebel 30, Spread aus den Kerzen, Kommission 0) lässt sich ändern und löschen wie jedes Testkonto; pipwerk replay legt es beim Start mit diesen Werten neu an, wenn es fehlt. |
 | Interne Order | Order im Strategietester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
 | Handelnde Stelle | Auswertung im Einzelschritt-Test, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
-| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem der Strategietester liest (req-system-025). |
-| Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten (req-system-026). |
-| Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). |
+| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument je Broker, aus dem der Strategietester liest (req-system-025). Alle Zeitpunkte stehen in UTC. Pipwerk berechnet keine Kerzen aus Ticks und keine Ticks aus Kerzen. Die Ansicht „Datenbestand“ zeigt, was vorliegt, mit Zeiträumen und Lücken. |
+| Import | Übernahme von Dateien im festgelegten Dateiformat (JSON, CSV im Exportformat von MetaTrader 5) in den Datenbestand historischer Kursdaten (req-system-026). Bei CSV gibt der Anwender Broker, Instrument, Zeiteinheit und Zeitzone an, weil die Datei sie nicht enthält. Vorhandene Daten desselben Zeitpunkts werden ersetzt; fehlerhafte Zeilen werden abgelehnt und mit Grund genannt. |
+| Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). Sie läuft im Hintergrund; der Anwender stößt sie von Hand an, der Testlauf stößt sie für fehlende Teile an. |
+| Quelle | Ein Programm mit der Schnittstelle von `contracts/api/pipwerk-fetch/v1/`, aus dem die Beschaffung Daten holt, zum Beispiel `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5. Adresse und gemeinsamer Schlüssel der Quelle stehen in der Startkonfiguration von pipwerk replay, nie in der Datenbank. |
+| Standardquelle | Der Broker, dessen Daten ein Testlauf verwendet; eine Einstellung von pipwerk replay. Sie ist nicht die Quelle der Beschaffung. |
+| Lücke | Ein Zeitraum einer Reihe im Datenbestand, in dem zu den Handelszeiten Kerzen oder Ticks fehlen, obwohl die Reihe den Zeitraum sonst abdeckt (Spezifikation 5.2). |
 
 ## Technische Begriffe
 
@@ -114,6 +117,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-21 | Vorhaben `backtest`, Arbeitspaket `wp02`, Auftrag 05: Testkonto (Standard-Testkonto), Datenbestand historischer Kursdaten, Import und Beschaffung ergänzt und genauer gefasst; Quelle, Standardquelle und Lücke neu (Spezifikation 5.1 bis 5.4, 6.2, 12). |
 | 2026-10-21 | Auslöser und Auswertung: „Manuell“ statt „Start von Hand“, nur im Hauptablauf. Strategieparameter: im Ablauf nicht geändert; Element: ohne „Parameter setzen“; Eintrag „Parameter setzen“ entfernt. Folgt aus den Entscheidungen des Auftraggebers vom 2026-10-21 (req-fach-047, req-fach-053; `development/backtest/questions/backtest-01.md`). |
 | 2026-10-21 | leer: Ausnahme im Strategietester nach req-test-008 ergänzt. Folgt aus der Festlegung des Auftraggebers vom 2026-10-21 (req-test-008). Hinweis H6 aus `development/backtest/reviews/requirements-4.md`. |
 | 2026-10-21 | Kennung: Beispielwert `trendrichtung` statt `trend_intakt`. Folgt aus der Entscheidung des Auftraggebers vom 2026-10-20 und 2026-10-21 zu B5 und B6 (`Trend intakt` gestrichen, `indikator-markttechnik.md`). Hinweis N5 aus `development/backtest/reviews/requirements-2.md`. |
