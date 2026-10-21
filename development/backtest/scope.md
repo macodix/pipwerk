@@ -11,10 +11,15 @@ Anforderungsdokumente:
 - [Anforderungen an das Gesamtsystem](../../docs/design/requirements/anforderungen-gesamtsystem.md)
 - [Anforderungen an Strategietester und Backtester](../../docs/design/requirements/anforderungen-strategietester-backtester.md)
 
-Fachmodell und Strategiebeschreibungen des Auftraggebers, die für dieses Vorhaben gelten und von der QA ebenfalls auf Widersprüche, Lücken und mehrdeutige Begriffe geprüft werden:
+Fachmodell des Auftraggebers, das für dieses Vorhaben gilt und von der QA ebenfalls auf Widersprüche, Lücken und mehrdeutige Begriffe geprüft wird:
 
 - [Fachmodell des Trading-Systems](../../docs/design/domain/fachmodell.md), insbesondere die Ausführung von Strategien, Orders, Positionen und Regeln
-- [Indikator Markttechnik](../../docs/design/domain/indikator-markttechnik.md)
+- [Indikator Markttechnik](../../docs/design/domain/indikator-markttechnik.md), weil der Strategietester ihn berechnet
+
+## Prüfmaterial
+
+Die beiden Testfälle sind Prüfmaterial, nicht Gegenstand des Vorhabens. In diesem Vorhaben werden keine Strategien entwickelt. Die QA prüft nur, ob Strategietester und Backtester sie so ausführen können, wie sie beschrieben sind, nicht ihren fachlichen Inhalt:
+
 - Testfall [Scalping Punkt 2 Ausbruch – einfache Strategie](../../docs/design/strategies/str-01-fachlich-scalping-punkt-2-ausbruch-einfach.md) (`str-01`)
 - Testfall [EMA-Trendfolge](../../docs/design/strategies/str-03-fachlich-ema-trendfolge.md) (`str-03`)
 
@@ -34,3 +39,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 ## Stand
 
 2026-10-19: Phase 1. Offene Punkte des Anforderungsdokuments vom Auftraggeber im Chat am 19. Oktober 2026 entschieden. Prüfung der Dokumente des Auftraggebers durch die QA mit `check` angestoßen.
+
+2026-10-20/21: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (6 blockierende Befunde). B1, B4, H8, H16 vom Projektleiter bearbeitet. Entscheidungen des Auftraggebers im Chat: B2 Auslöser `Tick` verlangt echte Ticks im Datenbestand; B3 Volumen nach der Ausführung durch Teilschließung anpassen, sonst schließen und vermerken; B5, B6 Bestimmung im Indikator Markttechnik neu gefasst. Testfälle als Prüfmaterial abgegrenzt.

@@ -5,17 +5,17 @@
 - strategie-id: `str-01`
 - status: `understood`
 - quelle: `scalping-punkt-2-ausbruch-einfach(1).md` und bestätigte Klärungen im Projektchat
-- zuletzt geprüft: `2026-10-16`
+- zuletzt geprüft: `2026-10-21`
 
 ## Handelsidee
 
 Bei einem markttechnisch intakten Trend entstehen am Punkt 2 häufig Bewegungen in Trendrichtung. Die Strategie soll einen kleinen Teil einer solchen Bewegung mit kurzer Verweildauer im Markt nutzen.
 
-Die größere Zeiteinheit bestimmt, ob ein intakter Trend vorliegt und sich der Markt in der Bewegung befindet. Der konkrete Trade wird anschließend auf einer kleineren Handelszeiteinheit geplant. Long und Short werden nicht als getrennte Strategien behandelt. Gehandelt wird immer in Richtung des erkannten Trends.
+Die größere Zeiteinheit bestimmt, ob ein Trend vorliegt. Der konkrete Trade wird anschließend auf einer kleineren Handelszeiteinheit geplant. Long und Short werden nicht als getrennte Strategien behandelt. Gehandelt wird immer in Richtung des erkannten Trends.
 
 ## Voraussetzungen
 
-Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie Trend und Phase werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Trend intakt, Phase, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
+Für die Strategie werden Kursdaten einer größeren Signalzeiteinheit und einer dazu passenden kleineren Handelszeiteinheit benötigt. Die Punkte 1, 2 und 3 sowie der Trend werden nach der Markttechnik von Michael Voigt auf Grundlage des ZigZag bestimmt. Dafür gibt es den Indikator `Markttechnik`, beschrieben in [indikator-markttechnik.md](../domain/indikator-markttechnik.md). Er liefert Trendrichtung, Punkt 2, Punkt 1/3 und Punkt 1/3 endgültig.
 
 Für die Tradeplanung werden außerdem vom Instrument Spread, Pip, Tickgröße, Tickwert, Mindestvolumen und Volumenschritt und vom Konto das Kapital benötigt (Objekte der Anwendung `Konto` und `Instrument`, Fachmodell req-fach-051) sowie die Risikoregel der Strategie (Abschnitt 4).
 
@@ -27,9 +27,9 @@ Signalzeiteinheit, Handelszeiteinheit, Entry-Puffer und Stop-Puffer sind Strateg
 
 Die Strategie wird bei jedem Kerzenschluss der Handelszeiteinheit ausgewertet (Auslöser `Kerzenschluss` mit der Zeiteinheit aus dem Strategieparameter Handelszeiteinheit). Dort ändern sich die ZigZag-Punkte der Handelszeiteinheit.
 
-Auf einer größeren Zeiteinheit wird geprüft, ob ein intakter markttechnischer Trend vorliegt. Diese größere Zeiteinheit dient als Signalzeiteinheit. Dafür kommen M15, H1, H4 oder D1 infrage.
+Auf einer größeren Zeiteinheit wird geprüft, ob ein markttechnischer Trend vorliegt (`Trendrichtung` aufwärts oder abwärts). Diese größere Zeiteinheit dient als Signalzeiteinheit. Dafür kommen M15, H1, H4 oder D1 infrage.
 
-Liegt kein intakter Trend vor, wird kein Trade geplant. Liegt ein intakter Trend vor, wird zusätzlich geprüft, ob sich der Markt in der Bewegung und nicht in der Korrektur befindet. Nur während der Bewegung wird die Strategie fortgesetzt.
+Liegt kein Trend vor, wird kein Trade geplant. Eine Prüfung der Bewegung entfällt: Die Stop-Order an Punkt 2 der Handelszeiteinheit wird erst ausgeführt, wenn der Kurs Punkt 2 überschreitet.
 
 ### 2. Handelsmöglichkeit erkennen
 
@@ -113,7 +113,7 @@ Der ZigZag-Indikator ist ein Indikator von pipwerk. Er rechnet nach demselben Ve
 ## Bestätigungsvermerk
 
 - fachlich geprüft durch: Auftraggeber
-- Ergebnis: bestätigt im Chat am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15, Klarstellungen zur Handelszeiteinheit (kein Wechsel im Ablauf) und zur Risikoregel (bestimmt das Volumen) im Chat am 2026-10-15, Margin-Prüfung aus dem Testfall genommen im Chat am 2026-10-16
+- Ergebnis: bestätigt im Chat am 2026-10-14, Präzisierungen nach dem Prüfbericht der QA bestätigt im Chat am 2026-10-15, Klarstellungen zur Handelszeiteinheit (kein Wechsel im Ablauf) und zur Risikoregel (bestimmt das Volumen) im Chat am 2026-10-15, Margin-Prüfung aus dem Testfall genommen im Chat am 2026-10-16, Prüfung der Bewegung gestrichen nach Änderung des Indikators im Chat am 2026-10-21
 - Datum: `2026-10-16`
 
 ## Herkunft

@@ -30,44 +30,51 @@ Der ZigZag liefert eine Folge von Wendepunkten, abwechselnd Hoch und Tief. Der j
 
 | Eigenschaft | Werte | Bestimmung |
 |---|---|---|
-| `Trendrichtung` | `aufwärts`, `abwärts`, `kein Trend` | siehe 4.1 |
-| `Trend intakt` | `ja`, `nein` | siehe 4.2 |
-| `Phase` | `Bewegung`, `Korrektur` | siehe 4.3, nur bei Trendrichtung aufwärts oder abwärts belegt |
-| `Punkt 2` | Kurs | siehe 4.1 |
-| `Punkt 1/3` | Kurs | siehe 4.1 |
+| `Trendrichtung` | `aufwärts`, `abwärts`, `kein Trend` | siehe 4.1 und 4.2 |
+| `Punkt 2` | Kurs | siehe 4.1, nur bei Trendrichtung aufwärts oder abwärts belegt |
+| `Punkt 1/3` | Kurs | siehe 4.1, nur bei Trendrichtung aufwärts oder abwärts belegt |
 | `Punkt 1/3 endgültig` | `ja`, `nein` | `ja`, wenn der Wendepunkt von Punkt 1/3 endgültig ist (Abschnitt 3) |
 
 Alle Angaben gelten für den Aufwärtstrend. Für den Abwärtstrend gilt alles spiegelbildlich, Hoch und Tief sowie über und unter vertauscht.
 
-### 4.1 Trendrichtung und Punkte
+Ob ein Trend gebrochen ist und ob sich der Markt in Bewegung oder Korrektur befindet, liefert der Indikator nicht als eigene Eigenschaft. Beides ergibt sich aus `Trendrichtung`, den Punkten und dem Kurs (4.3).
 
-Ein Aufwärtstrend besteht aus den Punkten 1, 2 und 3:
+### 4.1 Entstehung des Trends und Punkte
+
+Ein Aufwärtstrend entsteht aus den Punkten 1, 2 und 3:
 
 - `Punkt 1`: ein Tief,
 - `Punkt 2`: das folgende Hoch,
 - `Punkt 3`: das folgende Tief, das über Punkt 1 liegt.
 
-Steigt der Kurs danach über Punkt 2, wird Punkt 3 zum Punkt 1 des nächsten Abschnitts. Deshalb heißt das jeweils letzte Korrekturtief `Punkt 1/3`.
+Bestätigt ist der Aufwärtstrend erst, wenn eine Kerze über Punkt 2 schließt (4.4). Ab dann ist `Trendrichtung` gleich `aufwärts`. Vorher ist sie `kein Trend`.
 
-`Trendrichtung` ist `aufwärts`, sobald die letzten drei Wendepunkte ein Tief (Punkt 1), das folgende Hoch (Punkt 2) und ein Tief über Punkt 1 (Punkt 3) bilden. Ein Ausbruch über Punkt 2 ist dafür nicht nötig. Der vorläufige jüngste Wendepunkt zählt mit, `Punkt 1/3 endgültig` zeigt, ob er sich noch verschieben kann. `Punkt 2` ist das jüngste Hoch dieser Folge, `Punkt 1/3` das jüngste Tief. Liegt weder ein Aufwärts- noch ein Abwärtstrend vor, ist die Trendrichtung `kein Trend` und die Punkte sind nicht belegt.
+Im bestätigten Trend gilt:
 
-### 4.2 Trend intakt
+- `Punkt 1/3` ist das letzte Tief, an dem eine Bewegung in Trendrichtung begonnen hat. Zu Beginn ist es Punkt 3.
+- `Punkt 2` ist das letzte Hoch, das der ZigZag gesetzt hat.
+- Setzt der ZigZag nach `Punkt 2` ein Tief, beginnt die Korrektur. `Punkt 1/3` bleibt das bisherige Tief, solange es nicht durchbrochen ist.
+- Setzt der ZigZag nach dem Tief der Korrektur ein neues Hoch, ist das Tief der Korrektur ein Wendepunkt. Es wird zum neuen `Punkt 1/3`, und das neue Hoch zum neuen `Punkt 2`.
 
-Der Aufwärtstrend ist intakt, solange keine abgeschlossene Kerze der Zeiteinheit des Indikators unter `Punkt 1/3` geschlossen hat. Ist er unterschritten, ist `Trend intakt` gleich `nein`, bis ein neuer Trend nach 4.1 entstanden ist.
+Läuft der Kurs weiter in Trendrichtung, bleibt der Trend bestehen. Es entsteht dabei kein neuer Trend.
 
-### 4.3 Phase
+### 4.2 Trendbruch
 
-`Bewegung`: Eine abgeschlossene Kerze hat über `Punkt 2` geschlossen und der ZigZag hat seitdem kein neues Hoch gesetzt.
+Schließt eine Kerze unter `Punkt 1/3` (4.4), ist der Aufwärtstrend gebrochen. `Trendrichtung` ist dann `kein Trend`, und die Punkte sind nicht belegt, bis ein neuer Trend nach 4.1 bestätigt ist.
 
-`Korrektur`: Der ZigZag hat nach `Punkt 2` ein Hoch gesetzt und der Kurs liegt unter diesem Hoch und über `Punkt 1/3`. Dieses Hoch ist dann der neue `Punkt 2`.
+Seitwärts laufende Kurse sind kein Trend.
 
-## 5. Verwendung im Punkt-2-Ausbruch
+### 4.3 Bewegung und Korrektur
 
-Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit werden `Trendrichtung` (sie bestimmt die Handelsrichtung), `Trend intakt` und `Phase` verwendet. Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, `Punkt 1/3` und `Punkt 1/3 endgültig` verwendet.
+Im bestätigten Aufwärtstrend befindet sich der Markt in der Bewegung, solange der Kurs über `Punkt 2` liegt, und in der Korrektur, solange er unter `Punkt 2` und über `Punkt 1/3` liegt. Eine Strategie, die das braucht, vergleicht den Kurs mit den Punkten.
 
 ### 4.4 Durchbruch
 
 Der Indikator wertet einen Durchbruch durch `Punkt 1/3` oder `Punkt 2` nur auf abgeschlossenen Kerzen aus: Die Kerze muss jenseits des Punkts schließen. Ein Docht jenseits des Punkts ist kein Durchbruch. Soll eine Strategie schon bei einem einzelnen Kurs reagieren, vergleicht sie den Kurs selbst mit dem Punkt.
+
+## 5. Verwendung im Punkt-2-Ausbruch
+
+Der Punkt-2-Ausbruch verwendet zwei Instanzen des Indikators. Auf der Signalzeiteinheit wird `Trendrichtung` verwendet (sie bestimmt die Handelsrichtung). Auf der Handelszeiteinheit werden `Trendrichtung` (muss mit der Signalzeiteinheit übereinstimmen), `Punkt 2`, `Punkt 1/3` und `Punkt 1/3 endgültig` verwendet.
 
 ## 6. Offen
 
@@ -82,3 +89,4 @@ Keine offenen Punkte.
 | 2026-10-19 | Bezeichnung in der Oberfläche „1-2-3-Trend (Markttechnik)“, Gruppe Trends, Grundlage `ZigZag`. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 9): Parameter `Instrument` (Fachmodell req-fach-053, B5), rechnet selbst nach dem Verfahren des `ZigZag` (H9). |
 | 2026-10-19 | Bestimmung bestätigt: Aufwärtstrend ab vollständigem 1-2-3-Abschnitt ohne Ausbruch über Punkt 2, vorläufiger Wendepunkt zählt mit. Durchbruch nur auf Schlusskurs abgeschlossener Kerzen (4.4), ohne eigenen Parameter. Entscheidung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-21 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1, B5, B6): Trend erst nach Schluss über Punkt 2 bestätigt, bleibt bei weiterem Lauf in Trendrichtung bestehen, nach Trendbruch `kein Trend`; Punkte folgen den Wendepunkten des ZigZag. Eigenschaften `Trend intakt` und `Phase` gestrichen, Bewegung und Korrektur aus Kurs und Punkten (4.3). Entscheidung des Auftraggebers im Chat am 2026-10-20 und 2026-10-21. |

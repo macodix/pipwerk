@@ -35,7 +35,7 @@ Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Pha
 - Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR, ZigZag und Markttechnik hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
 - Fachmodell: weitere Bezeichnungen fester Instrumente außer nach ISO (req-fach-053).
 - Fachmodell, die Ausführung betreffend: wann `Start von Hand` in einer Verwaltung und in einem Testlauf eintritt (req-fach-053).
-- Aus den Nachprüfungen, alle die Ausführung betreffend: Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Maßnahme nach der Prüfung mit dem Ausführungspreis (req-fach-021), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
+- Aus den Nachprüfungen, alle die Ausführung betreffend: Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
 
 ## Stand
 
@@ -47,4 +47,6 @@ Phase 4, `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1, [specificati
 
 2026-10-19: Prüfung der geänderten Stellen [requirements-9.md](reviews/requirements-9.md) nicht bestanden (5 blockierende Befunde, alle Folge einer Festlegung). Vom Projektleiter bearbeitet ([requirements-9-response.md](reviews/requirements-9-response.md)), Nachprüfung mit `check`. Durchläufe 10 und 11 bestanden, Hinweise bearbeitet ([requirements-11-response.md](reviews/requirements-11-response.md)). Phase 2 mit `specify`: Prototyp, danach Spezifikation und neuer Plan.
 
-2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, Durchbruch nur auf Schlusskurs. Parameter und Eigenschaften unverändert, keine Auswirkung auf dieses Vorhaben.
+2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, Durchbruch nur auf Schlusskurs.
+
+2026-10-21: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Eigenschaften `Trend intakt` und `Phase` gestrichen. Betrifft die Typbeschreibung des Indikators (Spezifikation 3.x, `wp01`) und `str-01` (Prüfung der Bewegung gestrichen). Vom Softwarearchitekten in der laufenden Spezifikation nachzuziehen.

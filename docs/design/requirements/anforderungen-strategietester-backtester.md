@@ -33,7 +33,7 @@ Jeder Testlauf hat einen Testzeitraum. Er ist vorbelegt und endet mit dem letzte
 
 Strategietester und Backtester lesen Kursdaten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
 
-Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt.
+Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt.
 
 Fehlen danach Daten oder sind sie lückenhaft, startet der Testlauf nicht. Eine Meldung nennt die fehlenden Daten und den Grund, warum sie nicht beschafft werden konnten.
 
@@ -133,3 +133,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-20 | Offener Punkt „Auswertung ohne Auslöser“ erledigt: Auslöser „Start von Hand“ (Anforderungen an den Strategiedesigner req-fach-015, Fachmodell req-fach-053). Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
 | 2026-10-20 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1), vom Projektleiter: Instrumente des Testlaufs einschließlich weiterer Instrumente der Strategie (req-test-001, -003, -005, -007; B4), Angaben zum Instrument nach req-system-025 (B1), Auswahl von Instrument und Testzeitraum (H8). |
 | 2026-10-20 | Offener Punkt 2: Eintreten von „Start von Hand“ im Testlauf. Vom Projektleiter nach den Hinweisen T1-H1 bis T1-H6 aus `development/strategiedesign/reviews/specification-9.md`, Folge der Entscheidungen vom selben Tag. |
+| 2026-10-21 | req-test-003: Ticks gehören zu den benötigten Kursdaten, wenn ein Auslöser `Tick` verwendet wird, keine Nachbildung aus Kerzen. Entscheidung des Auftraggebers im Chat am 2026-10-20 (B2). |
