@@ -43,6 +43,12 @@ Zeiten, in denen beim Broker nicht gehandelt wird, zum Beispiel Wochenenden, Fei
 
 Der Strategietester hat keine Verbindung zu einem Broker. Jede Order, die die Strategie aufgibt, ist eine interne Order. pipwerk wickelt sie gegen die historischen Kurse und mit den Werten des Testkontos ab: Ausführung, Positionen, Stop-Loss, Kursziel, Kosten und Kontostand entstehen rechnerisch. Beide Betriebsarten wickeln Orders auf dieselbe Weise ab.
 
+Die interne Abwicklung verhält sich wie ein Broker. Eine Order, die ein Broker ablehnen würde, zum Beispiel eine Kauf-Stop-Order unter dem aktuellen Kurs, wird abgelehnt: „Order aufgeben“ nimmt den Ausgang „nicht gestellt“. Der Grund der Ablehnung ist sichtbar, im Einzelschritt-Test am Element, im Backtest im Ergebnis.
+
+### req-test-008 -- Indikatoren ohne Werte
+
+Solange ein Indikator zu Beginn eines Testlaufs noch keine Werte liefert, zum Beispiel weil der `ZigZag` noch keine Wendepunkte gesetzt hat, läuft der Testlauf weiter. Bedingungen, die solche Werte verwenden, gelten als nicht erfüllt; die Auswertung bricht nicht ab.
+
 ### req-test-005 -- Testkonto
 
 Ein Testkonto ist ein benannter, gespeicherter Satz von Werten für die Abwicklung eines Testlaufs. Der Anwender kann Testkonten anlegen, bearbeiten, speichern und löschen. Ein Standard-Testkonto ist mitgeliefert, damit ein Testlauf ohne Vorarbeit starten kann.
@@ -136,3 +142,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-21 | req-test-003: Ticks gehören zu den benötigten Kursdaten, wenn ein Auslöser `Tick` verwendet wird, keine Nachbildung aus Kerzen. Entscheidung des Auftraggebers im Chat am 2026-10-20 (B2). |
 | 2026-10-21 | Benennung: Hauptkomponente Strategietester (pipwerk replay) mit den Betriebsarten Einzelschritt-Test und Backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, H7). |
 | 2026-10-21 | Produktname pipwerk replay. Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | req-test-004: Abwicklung wie ein Broker, Ablehnung mit sichtbarem Grund; req-test-008 Indikatoren ohne Werte zu Beginn. Nach Prüfbericht der QA (`backtest`, Durchlauf 3, M1, M2), Festlegung des Auftraggebers im Chat am 2026-10-21. |

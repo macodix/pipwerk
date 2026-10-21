@@ -31,11 +31,11 @@ Auf einer größeren Zeiteinheit wird geprüft, ob ein Trend vorliegt:
 
 - Aufwärtstrend: Das letzte Hoch liegt über dem vorletzten Hoch, und das letzte Tief liegt über dem vorletzten Tief.
 - Abwärtstrend: Das letzte Hoch liegt unter dem vorletzten Hoch, und das letzte Tief liegt unter dem vorletzten Tief.
-- Sonst liegt kein Trend vor.
+- Sonst liegt kein Trend vor, auch solange der `ZigZag` noch keine zwei endgültigen Hochs und Tiefs geliefert hat.
 
  Diese größere Zeiteinheit dient als Signalzeiteinheit. Dafür kommen M15, H1, H4 oder D1 infrage.
 
-Liegt kein Trend vor, wird kein Trade geplant. Eine Prüfung der Marktphase entfällt: Die Stop-Order am Einstiegsbezug wird erst ausgeführt, wenn der Kurs ihn überschreitet.
+Liegt kein Trend vor, wird kein Trade geplant. Eine Prüfung, ob sich der Markt in Bewegung oder Korrektur befindet, entfällt: Die Stop-Order am Einstiegsbezug wird erst ausgeführt, wenn der Kurs ihn überschreitet. Hat der Kurs den Einstieg bereits überschritten, lehnt der Broker die Stop-Order ab, „Order aufgeben“ nimmt den Ausgang „nicht gestellt“, und es entsteht kein Trade.
 
 ### 2. Handelsmöglichkeit erkennen
 
