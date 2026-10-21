@@ -21,7 +21,7 @@
 # This file names the old identifiers as check values; it is excluded from
 # the search in the repository.
 #
-# Documentation: docs/technical/pipwerk-replay.md, section 6.2 "Prüfskript".
+# Documentation: docs/technical/pipwerk-replay.md, section 6.3 "Prüfskript".
 
 set -u
 

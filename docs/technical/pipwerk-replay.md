@@ -5,13 +5,13 @@
 - status: `draft`
 - stand: 2026-10-21
 - komponente: `pipwerk-replay`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Aufträge 01 und 04
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Aufträge 01, 04 und 05
 
 ## 1. Gegenstand
 
 Dieses Dokument beschreibt den technischen Aufbau von pipwerk replay (dem Strategietester), die Einrichtung einer Entwicklungsumgebung, den Start im Entwicklungsbetrieb und als Testumgebung und die Prüfungen. Grundlage ist die Spezifikation des Vorhabens `backtest` (E3 bis E6, 5.1 bis 5.4, 6.2, 7, 10, 11); Aufbau, Startkonfiguration, Alembic und die Prüfung des Kopfs `Host` folgen pipwerk Studio ([technische Dokumentation pipwerk Studio](pipwerk-studio.md), Abschnitte 2.1, 2.2 und 2.10).
 
-Der beschriebene Stand ist das Backend aus den Aufträgen 01 und 04. Auftrag 01: Das Backend startet aus der Startkonfiguration, legt seine Datenbank mit Alembic an, prüft den Kopf `Host`, begrenzt die Größe von Anfragen, verwaltet Testkonten und läuft als Testumgebung aus einem Commit. Auftrag 04: Es bindet den Datenbestand historischer Kursdaten ein ([technische Dokumentation des Datenbestands](pipwerk-marketdata.md), Paket `pipwerk_marketdata` aus Auftrag 02) und eine Quelle für die Beschaffung (`pipwerk-fetch-mt5` oder eine gleichartige, [technische Dokumentation](pipwerk-fetch-mt5.md), Auftrag 03). Es bietet dafür die Web-API für Übersicht, Import, Vollständigkeit und Beschaffung und die internen Endpunkte für die Einstellungen Sprache und Standardquelle und für den Stand. Die Oberfläche (Auftrag 05) und der Testlauf (Arbeitspaket `wp03`) fehlen noch und werden hier ergänzt, sobald sie umgesetzt sind.
+Der beschriebene Stand sind das Backend aus den Aufträgen 01 und 04 und die Oberfläche aus Auftrag 05. Auftrag 01: Das Backend startet aus der Startkonfiguration, legt seine Datenbank mit Alembic an, prüft den Kopf `Host`, begrenzt die Größe von Anfragen, verwaltet Testkonten und läuft als Testumgebung aus einem Commit. Auftrag 04: Es bindet den Datenbestand historischer Kursdaten ein ([technische Dokumentation des Datenbestands](pipwerk-marketdata.md), Paket `pipwerk_marketdata` aus Auftrag 02) und eine Quelle für die Beschaffung (`pipwerk-fetch-mt5` oder eine gleichartige, [technische Dokumentation](pipwerk-fetch-mt5.md), Auftrag 03). Es bietet dafür die Web-API für Übersicht, Import, Vollständigkeit und Beschaffung und die internen Endpunkte für die Einstellungen Sprache und Standardquelle und für den Stand. Auftrag 05: Die Browseroberfläche (`frontend/`, Abschnitt 9) bietet die Ansichten „Datenbestand“ und „Testkonten“ nach dem bestätigten Prototyp, angeschlossen an diese Web-API; das Testumgebungsskript baut und startet sie und richtet auf Wunsch eine Quelle ein (Abschnitt 4a). Der Testlauf (Arbeitspaket `wp03`) und die gespeicherten Backtests fehlen noch und werden hier ergänzt, sobald sie umgesetzt sind.
 
 ## 2. Aufbau der Komponente
 
@@ -22,8 +22,9 @@ pipwerk replay liegt im Verzeichnis `components/pipwerk-replay/` (das frühere V
 | `backend/` | Python-Paket `pipwerk_replay` mit der HTTP-Anwendung, den Backend-Tests, `pyproject.toml` und der Lockdatei `uv.lock` |
 | `backend/pipwerk-replay.example.ini` | Beispiel der Startkonfiguration |
 | `scripts/testenv` | Testumgebungsskript (Abschnitt 4a) |
-| `frontend/` | Browseroberfläche; noch nicht vorhanden (Auftrag 05) |
-| `.gitignore` | schließt `backend/.venv/`, lokale Konfiguration und Datenbank und `.testenv/` aus |
+| `frontend/` | Browseroberfläche: React, TypeScript, Vite, Vitest, Playwright (Abschnitt 9) |
+| `README.md` | Kurzbeschreibung der Komponente |
+| `.gitignore` | schließt `backend/.venv/`, `frontend/node_modules/`, `frontend/dist/`, `frontend/dist-e2e/`, die Ergebnisse der Browsertests, lokale Konfiguration und Datenbank und `.testenv/` aus |
 
 ### 2.1 Module des Backends
 
@@ -261,7 +262,7 @@ Tests (`tests/test_acquisition.py`): `test_the_key_appears_in_no_answer_no_log_n
 
 ## 3. Voraussetzungen für die Entwicklung
 
-Wie bei pipwerk Studio ([technische Dokumentation pipwerk Studio](pipwerk-studio.md), Abschnitt 3): Python 3.14 oder neuer und uv. Node.js wird erst mit der Oberfläche gebraucht. Alle Python-Pakete installiert uv in `backend/.venv`.
+Wie bei pipwerk Studio ([technische Dokumentation pipwerk Studio](pipwerk-studio.md), Abschnitt 3): Python 3.14 oder neuer und uv, für die Oberfläche Node.js 24 oder neuer mit npm (`engines` in `frontend/package.json`). Alle Python-Pakete installiert uv in `backend/.venv`, alle Pakete der Oberfläche npm in `frontend/node_modules`. Die Browsertests brauchen Browser für Playwright: `npx playwright install chromium` (zusätzlich `firefox` und `webkit` für die Prüfung des Starts in diesen Engines).
 
 ## 4. Einrichtung und Start im Entwicklungsbetrieb
 
@@ -270,6 +271,8 @@ Wie bei pipwerk Studio ([technische Dokumentation pipwerk Studio](pipwerk-studio
 ```sh
 cd components/pipwerk-replay/backend
 uv sync --frozen
+cd ../frontend
+npm ci
 ```
 
 ### 4.2 Start
@@ -279,6 +282,15 @@ cp pipwerk-replay.example.ini pipwerk-replay.ini
 uv run --frozen pipwerk-replay -c pipwerk-replay.ini --host 127.0.0.1 --port 8000
 ```
 
+Die Oberfläche startet im Entwicklungsbetrieb in einem zweiten Terminal:
+
+```sh
+cd components/pipwerk-replay/frontend
+npm run dev
+```
+
+Der Entwicklungsserver von Vite hört auf `127.0.0.1` und dem Vorgabeport von Vite (5173; ist er belegt, endet der Start, `strictPort`) und leitet Anfragen unter `/api` an das Backend weiter. Dessen Adresse steht in der Umgebungsvariablen `PIPWERK_REPLAY_BACKEND_URL` (Vorgabe `http://127.0.0.1:8000`). Der Kopf `Host` bleibt wie der Browser ihn sendet (`changeOrigin: false`); das Backend prüft ihn (Abschnitt 2.4). `npm run build` prüft die Typen (`tsc --noEmit`, `strict`) und baut nach `frontend/dist`; `npm run typecheck`, `npm test` (Vitest) und `npm run e2e` (Playwright) sind die Prüfungen (Abschnitt 6.2).
+
 Ohne `-c` wird einer der Suchorte aus Abschnitt 2.2 verwendet. `--host` und `--port` überschreiben die Einträge der Startkonfiguration; der Port muss eine ganze Zahl von 1 bis 65535 sein. Die Beschreibung der Web-API zeigt `http://127.0.0.1:8000/docs`. Die lokal erzeugten Dateien `backend/pipwerk-replay.ini` (sie enthält den Schlüssel der Quelle), `backend/pipwerk-replay.db` und `backend/pipwerk-marketdata.db` (jeweils mit `-journal`, `-wal`, `-shm`) schließt `components/pipwerk-replay/.gitignore` aus; versioniert bleibt nur `backend/pipwerk-replay.example.ini`.
 
 ## 4a. Start als Testumgebung
@@ -286,7 +298,7 @@ Ohne `-c` wird einer der Suchorte aus Abschnitt 2.2 verwendet. `--host` und `--p
 Die Testumgebung ist pipwerk replay, gestartet aus genau einem Commit. Das Skript `components/pipwerk-replay/scripts/testenv` (POSIX-Shell) arbeitet auf dem Arbeitsverzeichnis, in dem es liegt, und enthält keine festen Ports, Pfade oder Rechnernamen. Es wird mit absolutem Pfad aus einem beliebigen Verzeichnis oder mit relativem Pfad aus dem Wurzelverzeichnis des Arbeitsverzeichnisses aufgerufen:
 
 ```sh
-<Arbeitsverzeichnis>/components/pipwerk-replay/scripts/testenv start --frontend-port <port> --backend-port <port> [--host <adresse>]
+<Arbeitsverzeichnis>/components/pipwerk-replay/scripts/testenv start --frontend-port <port> --backend-port <port> [--host <adresse>] [--source-url <adresse> --source-key-file <datei>]
 <Arbeitsverzeichnis>/components/pipwerk-replay/scripts/testenv status
 <Arbeitsverzeichnis>/components/pipwerk-replay/scripts/testenv stop
 ```
@@ -295,19 +307,27 @@ Voraussetzungen: Git, Python 3 (Prüfung der Ports und der Erreichbarkeit), `ps`
 
 `start`:
 
-1. Prüft die Parameter. `--frontend-port` und `--backend-port` sind Pflicht, ganze Zahlen von 1 bis 65535 und verschieden. `--host` ist die Adresse, an die sich die Oberfläche bindet; ohne Angabe `127.0.0.1`. Das Backend bindet sich immer an `127.0.0.1`.
+1. Prüft die Parameter. `--frontend-port` und `--backend-port` sind Pflicht, ganze Zahlen von 1 bis 65535 und verschieden. `--host` ist die Adresse, an die sich die Oberfläche bindet; ohne Angabe `127.0.0.1`. Das Backend bindet sich immer an `127.0.0.1`. `--source-url` und `--source-key-file` sind freiwillig und gehören zusammen (siehe „Quelle einrichten“ unten); jede andere Angabe, auch `--source-key`, ist ein unbekannter Parameter.
 2. Prüft, dass das Verzeichnis des Skripts in einem Arbeitsverzeichnis von Git liegt, und mit `git status --porcelain` für die ganze Wurzel, dass es keine nicht committeten Änderungen und keine nicht ignorierten neuen Dateien gibt. Vorher wird nichts installiert, gebaut oder gestartet.
-3. Stellt fest, ob `components/pipwerk-replay/frontend/` vorhanden ist. Nur dann wird die Oberfläche gebaut und gestartet und `npm` gebraucht.
+3. Stellt fest, ob `components/pipwerk-replay/frontend/` vorhanden ist. Nur dann wird die Oberfläche gebaut und gestartet und `npm` gebraucht. Seit Auftrag 05 ist es vorhanden; der Zweig ohne Oberfläche bleibt für Stände ohne `frontend/` erhalten (siehe unten).
 4. Prüft die Programme, dass keine laufende Testumgebung verzeichnet ist und dass die Ports frei sind (den Port der Oberfläche nur mit Oberfläche).
 5. Installiert die Abhängigkeiten nach der Lockdatei (`uv sync --frozen`; mit Oberfläche `npm ci` und `npm run build`).
-6. Legt unter `components/pipwerk-replay/.testenv/` eine INI-Startkonfiguration mit einer eigenen SQLite-Datei an (nur der Abschnitt `[database]`: der Datenbestand liegt in derselben Datei, und es ist keine Quelle eingerichtet, die Beschaffung antwortet also mit „Keine Quelle eingerichtet“; offener Punkt 2 in Abschnitt 8) und startet das Backend mit `-c` auf `127.0.0.1:<backend-port>`; mit `--host` mit `--allowed-host <Wert>`, bei `0.0.0.0` und `::` zusätzlich mit `--allowed-host '*ip'`. Mit Oberfläche startet es danach `vite preview` auf `<host>:<frontend-port>`; `vite preview` leitet Anfragen unter `/api` an das Backend weiter (Umgebungsvariable `PIPWERK_REPLAY_BACKEND_URL`, vom Skript gesetzt).
-7. Wartet, bis `/api/health` `{"status": "ok"}` liefert (Zeitbegrenzung 120 Sekunden): mit Oberfläche über den Port der Oberfläche, sonst am Port des Backends. Danach meldet es die Adresse.
+6. Legt unter `components/pipwerk-replay/.testenv/` eine INI-Startkonfiguration mit einer eigenen SQLite-Datei an (der Abschnitt `[database]`: der Datenbestand liegt in derselben Datei; mit `--source-url` zusätzlich der Abschnitt `[source]` mit `fetch_url` und `fetch_key`; ohne sie ist keine Quelle eingerichtet, und die Beschaffung antwortet mit „Keine Quelle eingerichtet“) und startet das Backend mit `-c` auf `127.0.0.1:<backend-port>`; mit `--host` mit `--allowed-host <Wert>`, bei `0.0.0.0` und `::` zusätzlich mit `--allowed-host '*ip'`. Mit Oberfläche startet es danach `vite preview` auf `<host>:<frontend-port>`; `vite preview` leitet Anfragen unter `/api` an das Backend weiter (Umgebungsvariable `PIPWERK_REPLAY_BACKEND_URL`, vom Skript gesetzt).
+7. Wartet, bis `/api/health` `{"status": "ok"}` liefert (Zeitbegrenzung 120 Sekunden): mit Oberfläche über den Port der Oberfläche, also durch den Proxy bis zum Backend, sonst am Port des Backends. Danach meldet es die Adresse.
 
-Ohne Verzeichnis `frontend/` läuft nur das Backend. Der Parameter `--frontend-port` ist trotzdem Pflicht und wird geprüft, damit sich der Aufruf nicht ändert, wenn Auftrag 05 die Oberfläche ergänzt; der Port wird nicht belegt. `start` meldet dann `pipwerk replay is running: backend only, http://127.0.0.1:<backend-port>/docs (this commit has no user interface)`.
+**Quelle einrichten (Entscheidung des Entwicklers in Auftrag 05; offener Punkt 2 des Auftrags 04).** `--source-url <adresse>` ist die Adresse der Quelle, `--source-key-file <datei>` der Pfad einer Datei, deren erste Zeile der gemeinsame Schlüssel ist. Beides gehört zusammen; fehlt eines, bricht `start` ab, bevor etwas geschieht. Die Prüfung im Skript ist eine Vorprüfung; das Backend prüft beides beim Start noch einmal (Abschnitt 2.2):
 
-Abbruchfälle von `start` (Exitcode ungleich 0, Ursache auf der Fehlerausgabe): ungültige oder fehlende Parameter; das Verzeichnis liegt nicht in einem Arbeitsverzeichnis von Git; eine nicht committete Änderung oder nicht ignorierte neue Datei (die Meldung nennt die ersten Dateien; bei diesen beiden Fällen wurde nichts angelegt); ein Programm fehlt, es läuft schon eine Testumgebung oder ein Port ist belegt; Installation oder Bau scheitert, ein Prozess endet beim Start oder `/api/health` antwortet nicht rechtzeitig (das Skript gibt die letzten Zeilen der Protokolle aus, beendet die gestarteten Prozesse und entfernt `.testenv/`).
+- Adresse: beginnt mit `http://` oder `https://` und hat danach mindestens ein Zeichen, höchstens 2048 Zeichen, keine Leerzeichen und Steuerzeichen, kein `@` (kein Benutzer, kein Kennwort).
+- Schlüsseldatei: eine lesbare Datei (kein Verzeichnis); die erste Zeile ist der Schlüssel, weitere Zeilen werden nicht beachtet, das Zeilenende fehlt oder ist `\n`. Der Schlüssel besteht aus 16 bis 256 sichtbaren Zeichen ohne Leerzeichen (`[:graph:]`; Steuerzeichen, auch ein `\r` einer Datei mit Windows-Zeilenenden, Tabulator und Zeichen außerhalb von ASCII lassen den Start scheitern).
+- Keine Meldung wiederholt den Schlüssel, auch die Meldungen der Prüfung nicht (sie nennen die Datei nur als „die mit `--source-key-file` angegebene Datei“, nicht ihren Pfad).
+- **Der Schlüssel ist kein Argument eines Programms.** Er ist kein Parameter des Skripts (er wäre in der Prozessliste sichtbar), er wird mit dem Shell-Befehl `read` aus der Datei gelesen, mit `case` und `${#…}` geprüft und mit `printf` in die Startkonfiguration geschrieben; alle drei sind eingebaute Befehle der Shell, die keinen Prozess starten. Das Skript setzt weder `set -x` noch gibt es den Schlüssel aus. Das Backend erhält nur `-c <INI>`. Die Datei `.testenv/pipwerk-replay.ini` wird mit `umask 077` geschrieben (nur der Benutzer kann sie lesen) und liegt im Verzeichnis `.testenv/` (Modus 700), das `stop` entfernt. Das Backend schreibt den Schlüssel in kein Protokoll (Abschnitt 2.9).
+- Der Zustand (`.testenv/state`) hält die Adresse der Quelle für `status`, nie den Schlüssel.
 
-`status` nennt, ob die Testumgebung läuft, und ihre Adressen. Exitcode 0 bei laufender, 1 bei nicht oder nur teilweise laufender Testumgebung. Ohne Oberfläche gibt es genau den Zustand „läuft“ mit dem Zusatz `(backend only, this commit has no user interface)`. `stop` beendet die Prozesse (zuerst SIGTERM, nach 10 Sekunden SIGKILL) und entfernt `.testenv/`, also auch die Datenbank mit den Testkonten und Einstellungen. Zustand, Prozesskennungen, Protokolle (`backend.log`, `frontend.log`), die INI und die Datenbank liegen in `components/pipwerk-replay/.testenv/`, das in `components/pipwerk-replay/.gitignore` steht. Test: `backend/tests/test_testenv.py` (Abschnitt 6.1).
+Ohne Verzeichnis `frontend/` läuft nur das Backend. Der Parameter `--frontend-port` ist trotzdem Pflicht und wird geprüft, damit sich der Aufruf nicht ändert; der Port wird nicht belegt. `start` meldet dann `pipwerk replay is running: backend only, http://127.0.0.1:<backend-port>/docs (this commit has no user interface)`. Mit Oberfläche meldet es `pipwerk replay is running: http://<host>:<frontend-port>/ (backend on 127.0.0.1:<backend-port>)`.
+
+Abbruchfälle von `start` (Exitcode ungleich 0, Ursache auf der Fehlerausgabe): ungültige oder fehlende Parameter, auch eine ungültige Adresse oder Schlüsseldatei der Quelle; das Verzeichnis liegt nicht in einem Arbeitsverzeichnis von Git; eine nicht committete Änderung oder nicht ignorierte neue Datei (die Meldung nennt die ersten Dateien; bei diesen Fällen wurde nichts angelegt); ein Programm fehlt, es läuft schon eine Testumgebung oder ein Port ist belegt; Installation oder Bau scheitert, ein Prozess endet beim Start oder `/api/health` antwortet nicht rechtzeitig (das Skript gibt die letzten Zeilen der Protokolle aus, beendet die gestarteten Prozesse und entfernt `.testenv/`).
+
+`status` nennt, ob die Testumgebung läuft, ihre Adressen von Oberfläche und Backend und die eingerichtete Quelle (`source: <adresse>` oder `source: not set up`). Exitcode 0 bei laufender, 1 bei nicht oder nur teilweise laufender Testumgebung; läuft nur eines der beiden Programme, meldet es `not running completely`. Ohne Oberfläche gibt es genau den Zustand „läuft“ mit dem Zusatz `(backend only, this commit has no user interface)`. `stop` beendet die Prozesse (zuerst SIGTERM, nach 10 Sekunden SIGKILL) und entfernt `.testenv/`, also auch die Datenbank mit den Testkonten und Einstellungen. Zustand, Prozesskennungen, Protokolle (`backend.log`, `frontend.log`), die INI und die Datenbank liegen in `components/pipwerk-replay/.testenv/`, das in `components/pipwerk-replay/.gitignore` steht. Test: `backend/tests/test_testenv.py` (Abschnitt 6.1).
 
 Adressen: Oberfläche (mit Oberfläche) `http://<host>:<frontend-port>/`; Schnittstellenbeschreibung des Backends `http://127.0.0.1:<backend-port>/docs` und `/openapi.json`, nur auf `127.0.0.1` des Rechners der Testumgebung. Das Risiko bei `--host` außerhalb der Loopback-Adresse ist das von pipwerk Studio: Ohne Authentisierung sind alle Endpunkte, auch die schreibenden, für jeden im Netz erreichbar, sobald die Oberfläche erreichbar ist; eine solche Adresse ist nur in einem Netz zu verwenden, dem alle Teilnehmer vertraut werden.
 
@@ -420,16 +440,53 @@ Die Tests liegen in `backend/tests/`:
 | `test_accounts_api.py` | Testkonten: alle Vorgänge der Web-API und jeder Fehlerfall der Prüfung (jedes Feld mit jedem Fehler, fehlende und zusätzliche Felder, Name, Regel für den Spread, JSON-Fehler, Medientyp, Kennung, Methoden, Fehlerformat) |
 | `test_settings.py` | Einstellung Sprache (`/api/replay/settings/language`): Vorgabe, Lesen, Schreiben, ungültige Bodys, 503 und Reparatur, Neustart des Prozesses, kein Pfad `/api/v1/settings` |
 | `test_contract.py` | Beschreibung unter `contracts/api/`: gleich der erzeugten, Abweichung gefunden, Pfade (nur `/api/v1/`), Schemata, Befehl |
-| `test_testenv.py` | Testumgebungsskript (Abschnitt 4a): Prüfung auf nicht committete Änderungen, Parameter, Ports, nur Backend ohne `frontend/`, Oberfläche mit `frontend/`, erlaubte Namen, Ablauf `start`, `status`, `stop` |
+| `test_testenv.py` | Testumgebungsskript (Abschnitt 4a): Prüfung auf nicht committete Änderungen, Parameter, Ports, nur Backend ohne `frontend/`, Oberfläche mit `frontend/` (Installation und Bau, Ablauf `start`, `status`, `stop` mit Backend und Oberfläche, `status` bei ausgefallener Oberfläche), erlaubte Namen, Quelle (Adresse und Schlüsseldatei: Startkonfiguration mit `[source]`, Modus 600, jeder Fehlerfall der Parameter ohne Wiederholung des Schlüssels, Schlüssel in keiner Ausgabe, keinem Protokoll, keinem Zustand, keiner Prozessliste und in keiner Kommandozeile der aufgerufenen Programme) |
 | `test_health.py` | `/api/health`, 405, 404, Name der Anwendung |
 
-`test_testenv.py` arbeitet auf einem Abbild der versionierten Dateien (`LICENSE`, `components/pipwerk-replay/**`) in einem temporären Verzeichnis mit Platzhaltern für `uv`, `npm` und `npx`; die Tests werden ohne installiertes Git und außerhalb eines Git-Arbeitsverzeichnisses mit Begründung übersprungen. Er liest die versionierten Dateien aus Git: Neue Dateien müssen mit `git add` vorgemerkt sein, damit das Abbild sie enthält.
+`test_testenv.py` arbeitet auf einem Abbild der versionierten Dateien (`LICENSE`, `components/pipwerk-replay/**`, die der Oberfläche nur, wo ein Test sie verlangt) in einem temporären Verzeichnis mit Platzhaltern für `uv`, `npm` und `npx` und je einem kleinen Programm anstelle des Backends und von `vite preview`; die Tests werden ohne installiertes Git und außerhalb eines Git-Arbeitsverzeichnisses mit Begründung übersprungen. Er liest die versionierten Dateien aus Git: Neue Dateien müssen mit `git add` vorgemerkt sein, damit das Abbild sie enthält. Die Prozessliste (`ps -e -ww -o args=`) wird ohne Kürzung gelesen; `ps` kürzt Zeilen bei der Ausgabe in eine Pipe sonst auf 80 Zeichen, und die Prüfung „es läuft kein Prozess aus dem Abbild“ wäre leer. Für die Aussage „der Schlüssel steht in keiner Kommandozeile“ stehen vor den echten Programmen `python3`, `sed`, `head`, `tail`, `cat`, `ps`, `git`, `kill`, `sleep`, `chmod`, `mkdir`, `rm` und `dirname` Hüllen, die ihre Argumente aufschreiben und das echte Programm aufrufen.
 
 Die Prüfung mit `ruff` und `mypy` entspricht der von pipwerk Studio (`strict = true`, Regeln `E`, `W`, `F`, `I`, `N`, `UP`, `B`, `S`, `A`, `C4`, `SIM`, `RUF`, Zeilenlänge 100).
 
-### 6.2 Prüfskript
+### 6.2 Oberfläche
 
-Das Prüfskript `components/pipwerk-replay/scripts/check` (POSIX-Shell) führt die Prüfungen aus Abschnitt 6.1 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
+Im Verzeichnis `components/pipwerk-replay/frontend`:
+
+```sh
+npm ci
+npm run typecheck     # tsc --noEmit, strict
+npm test              # Vitest mit Testing Library (jsdom)
+npm run build         # Typprüfung und Bau nach dist/
+npm run e2e           # Playwright gegen die gebaute Oberfläche und ein echtes Backend
+```
+
+**Vitest** (`src/**/*.test.ts(x)`, `buildinfo/**/*.test.ts`). Die Komponenten laufen gegen `FakeBackend` (`src/test-utils.tsx`), einen Ersatz für `fetch`, der die Web-API mit ihren Antworten nachbildet und jeden Aufruf aufschreibt:
+
+| Datei | Prüft |
+| --- | --- |
+| `AccountsView.test.tsx` | Liste und Formular, Standard-Testkonto (deutscher und englischer Name), neues Testkonto mit den Ausgangswerten, Speichern (Anfrage, Meldung), Ändern mit festem Spread, Verwerfen, jeder ungültige Wert mit Meldung und gesperrtem Speichern, Löschen erst nach der Rückfrage, nächstes Testkonto nach dem Löschen, Fehler beim Speichern, Namen als Text und nicht als HTML, Erklärung an jedem Feld |
+| `DataView.test.tsx` | Übersicht (Reihen, Zeiträume, Lücken, Menge, Zeitformat beider Sprachen, abgeschnittene Antwort, Fehler), Angaben zum Instrument, Standardquelle (festlegen, entfernen, ungültiger Name), Import (CSV mit Anfrage und Ergebnis, Ticks ohne Zeiteinheit, JSON, falsches Format, Ablehnung als Ganzes mit Grund je Kennung, abgelehnte Zeilen in beiden Sprachen, zu große Datei, erneuter Import), Beschaffung (Teile für Kerzen, Ticks und Angaben, Fortschritt, Ergebnis, jede Fehlerart mit ihrem Text, „Keine Quelle eingerichtet“, unbekannte Kennung, Zeitraum in Minuten, ungültiger Zeitraum), Erklärung an jedem Feld, leere Zustände mit dem nächsten Schritt |
+| `App.test.tsx` | Menü (nur „Datenbestand“ und „Testkonten“, kein Eintrag späterer Arbeitspakete, keine Kennzeichnung „Prototyp“), kompaktes Menü, Sprache (im Backend gespeichert, Fehler, nichts im Browser), Fußzeile (Backend erreichbar oder nicht, Stand mit Tooltip), Dialog „Über pipwerk replay“ (Inhalt, Fokus), Texte des Anwenders nur als Text |
+| `useReplayLanguage.test.tsx`, `settingsApi.test.ts` | Zustand der Sprache wie bei pipwerk Studio: Standard, Lesen, Speichern, jeder Fehlerfall, Zeitbegrenzung von 10 Sekunden, Abbruch |
+| `marketDataApi.test.ts`, `errors.test.ts`, `format.test.ts`, `accountForm.test.ts` | Lesen und Prüfen der Antworten, Aufbau der Anfragen (Medientyp, Abfrage, Anführungszeichen), Texte jeder Kennung in beiden Sprachen, Zeit- und Zahlenformate, Grenzen der Testkonten |
+| `i18n.test.ts` | gleiche Schlüssel und Platzhalter in `de.json` und `en.json`, keine leeren Texte, keine deutschen Zeichen in den englischen Texten |
+| `buildRevision.test.ts`, `commitDate.test.ts`, `timestamp.test.ts`, `repository.test.ts`, `buildinfo/*.test.ts` | Stand und Adresse des Repositorys wie bei pipwerk Studio; `vite.config.ts` (Proxy, Freigabe von `LICENSE`) |
+
+**Playwright** (`e2e/`) arbeitet gegen die gebaute Oberfläche (`vite build --outDir dist-e2e`, dann `vite preview`) und ein echtes Backend, das die Tests selbst starten (`e2e/stack.ts`): das Backend `pipwerk-replay` mit eigener Startkonfiguration und eigener SQLite-Datei und die nachgebildete Quelle `pipwerk_fetch_mt5.fake_source` als Programm (aus der Entwicklungsgruppe des Backends, `uv run --frozen --project backend python -m pipwerk_fetch_mt5.fake_source`). Vor jedem Test beginnt das Backend mit leeren Datenbanken (`stack.reset()`); die Tests können Backend und Quelle beenden und neu starten (`restartBackend`, `stopSource`). Chromium führt alle Tests aus. Firefox und WebKit führen `smoke.spec.ts` aus (Start der gebauten Oberfläche ohne Fehler in der Konsole), soweit die Browser installiert sind.
+
+**Ports und Datenbank sind Parameter**, keine festen Werte: `PIPWERK_REPLAY_E2E_FRONTEND_PORT`, `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_SOURCE_PORT` und `PIPWERK_REPLAY_E2E_DATA_DIR` (Verzeichnis der Datenbanken). Ein Port, der fehlt, ist ein freier Port, den `playwright.config.ts` einmal bestimmt und an Läufer und Arbeitsprozesse weitergibt; ohne Verzeichnis legen die Tests ein neues temporäres an und entfernen es am Ende. Der Schlüssel zur nachgebildeten Quelle ist ein Testwert und kein Geheimnis.
+
+| Datei in `e2e/` | Inhalt |
+| --- | --- |
+| `smoke.spec.ts` | Start der gebauten Oberfläche und Öffnen beider Ansichten ohne Fehler in der Konsole (alle drei Browser) |
+| `data.spec.ts` | Import einer CSV-Datei im Exportformat von MetaTrader 5 mit Anzeige der Reihe, des Zeitraums und der Lücke; Umrechnung der Zeitzone; Import einer fehlerhaften Datei mit abgelehnten Zeilen und Gründen; erneuter Import ersetzt; Datei als Ganzes abgelehnt; falsches Format; JSON mit Angaben zum Instrument; Beschaffung von Hand mit Erfolg (Kerzen, Ticks, Angaben) und mit Fehler (unbekanntes Symbol, Quelle nicht erreichbar, keine Quelle eingerichtet); ungültiger Zeitraum; Standardquelle (festlegen, nach Neustart, entfernen, als Vorschlag beim Import) |
+| `accounts.spec.ts` | Standard-Testkonto; anlegen, ändern, speichern, löschen; Testkonten nach dem Neustart des Backends; Standard-Testkonto nach Löschen und Neustart wieder da; geändertes Standard-Testkonto bleibt; ungültige Werte; verwerfen; Name als Text |
+| `language.spec.ts` | Sprache im Backend gespeichert, nach Neuladen und Neustart erhalten; keine deutschen Texte in der englischen Oberfläche (Datenbestand leer und gefüllt, Import mit abgelehnten Zeilen, Fehler, Testkonten, Rückfrage, Dialog), kein Englisch in der deutschen; Erklärung an jedem Feld mit Maus und Tastatur; nichts im Speicher des Browsers (`localStorage`, `sessionStorage`, Cookies, IndexedDB, Caches) |
+| `layout.spec.ts` | die sechs Fenstergrößen 390 × 844, 844 × 390, 820 × 1180, 1180 × 820, 1366 × 768 und 1920 × 1080 für beide Ansichten, mit gefüllten Tabellen, geöffnetem Importformular, Ergebnis und Fehler: keine Bildlaufleiste der Seite, Kopfzeile, Hauptbereich und Fußzeile übereinander statt ineinander, Bedienelemente der Kopfzeile nebeneinander und im Fenster, keine Überlappung der Karten, kein Bedienelement außerhalb seiner Karte, jede Karte und das Ende der Ansicht erreichbar, Menü (voll oder kompakt), Dialoge im Fenster mit erreichbaren Schaltflächen |
+| `about.spec.ts` | Dialog „Über pipwerk replay“ (Name, Stand aus dem Bau, Lizenz, Adresse), gesperrte Seite, Fokus bleibt im Dialog und kehrt zurück, Tooltip der Standanzeige, Anzeige bei nicht erreichbarem Backend |
+
+### 6.3 Prüfskript
+
+Das Prüfskript `components/pipwerk-replay/scripts/check` (POSIX-Shell) führt die Prüfungen aus den Abschnitten 6.1 und 6.2 nacheinander aus und endet mit Exitcode 0 nur, wenn alle bestehen. Es legt und hält der Tester Funktion. Es prüft das Arbeitsverzeichnis, in dem das Skript liegt; das Verzeichnis wird aus dem Pfad des Skripts bestimmt. Das Skript wird mit absolutem Pfad aus einem beliebigen Verzeichnis aufgerufen und enthält keine festen Ports, Pfade oder Rechnernamen.
 
 ```sh
 <Arbeitsverzeichnis>/components/pipwerk-replay/scripts/check [--backend-port <port> --frontend-port <port>] [--with-audit]
@@ -439,21 +496,23 @@ Das Prüfskript `components/pipwerk-replay/scripts/check` (POSIX-Shell) führt d
 | --- | --- |
 | `--backend-port <port>` | Port des Backends im Browsertest, ganze Zahl von 1 bis 65535. Pflicht, sobald `frontend/` vorhanden ist; sonst darf er fehlen. |
 | `--frontend-port <port>` | Port der Oberfläche im Browsertest, ganze Zahl von 1 bis 65535, verschieden vom Port des Backends. Pflicht, sobald `frontend/` vorhanden ist; sonst darf er fehlen. |
-| `--with-audit` | Optional. Führt zusätzlich `pip-audit` für `backend/uv.lock` und mit Oberfläche `npm audit` aus (Zugriff auf das Internet nötig). |
+| `--with-audit` | Optional. Führt zusätzlich `pip-audit` für `backend/uv.lock` und `npm audit` für die Oberfläche aus (Zugriff auf das Internet nötig). |
 
 Reihenfolge der Prüfungen:
 
 1. Backend im Verzeichnis `backend`: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`
-2. Vergleich der Beschreibung `contracts/api/pipwerk-replay/v1/openapi.json` mit der Anwendung (`python -m pipwerk_replay.contract … --check`, Auftrag 04, Abnahmekriterium 2)
-3. Suche im Repository (`git grep`) nach den alten Bezeichnern der Komponente (Muster `pipwerk[-_ ]?backtest`, ohne Beachtung der Schreibweise) in allen versionierten Dateien außerhalb von `docs/design/` und `development/`; ein Treffer lässt die Prüfung scheitern (Auftrag 01, Abnahmekriterium 1)
+2. Vergleich der Beschreibung `contracts/api/pipwerk-replay/v1/openapi.json` mit der Anwendung (`python -m pipwerk_replay.contract … --check`)
+3. Suche im Repository (`git grep`) nach den alten Bezeichnern der Komponente (Muster `pipwerk[-_ ]?backtest`, ohne Beachtung der Schreibweise) in allen versionierten Dateien außerhalb von `docs/design/` und `development/`; ein Treffer lässt die Prüfung scheitern
 4. mit `--with-audit`: `pip-audit` für das Backend
-5. Oberfläche im Verzeichnis `frontend`: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`; mit `--with-audit` zusätzlich `npm audit`; danach der Browsertest `npm run e2e` mit den beiden Ports (Umgebungsvariablen `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_FRONTEND_PORT`). Ohne Verzeichnis `frontend/` überspringt das Skript diese Schritte mit Hinweis in der Ausgabe; das gilt nicht als Fehler.
+5. Oberfläche im Verzeichnis `frontend` (seit Auftrag 05): `npm ci`, `npm run typecheck`, `npm test`, `npm run build`; mit `--with-audit` zusätzlich `npm audit`; danach der Browsertest `npm run e2e` mit den beiden Ports (Umgebungsvariablen `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_FRONTEND_PORT`), nach dem Muster von `components/pipwerk-studio/scripts/check`. Ohne Verzeichnis `frontend/` überspringt das Skript diese Schritte mit Hinweis in der Ausgabe; das gilt nicht als Fehler. Installation und Browsertest dauern lange; sie laufen beim Aufruf durch den Tester im Hintergrund.
 
 Am Ende nennt das Skript die bestandenen, die übersprungenen und die gescheiterten Prüfungen. Exitcode 2 bei ungültigen Parametern oder fehlenden Programmen.
 
 ## 7. Abhängigkeiten
 
 Laufzeit (festgeschrieben in `backend/uv.lock`): `alembic`, `fastapi` (mit `pydantic` und `starlette`), `httpx2` (HTTP-Client zur Quelle; vorher nur Testclient von FastAPI, deshalb aus der Entwicklungsgruppe in die Laufzeit verschoben), `pipwerk-marketdata` (Pfadabhängigkeit `packages/market-data`, Version `==0.1.0`, bringt `tzdata` mit), `sqlalchemy`, `uvicorn`. Entwicklung und Prüfung: `pipwerk-fetch-mt5` (Pfadabhängigkeit `components/pipwerk-fetch-mt5` für die nachgebildete Quelle), `mypy`, `pytest`, `ruff`. Mindestversionen stehen in `backend/pyproject.toml`: alembic 1.20.0, fastapi 0.141.1, httpx2 2.13.1, sqlalchemy 2.1.3, uvicorn 0.54.0, mypy 2.3.1, pytest 9.1.1, ruff 0.16.9; gelockt sind im Stand von Auftrag 04 unter anderem alembic 1.20.0, fastapi 0.156.8, httpx2 2.16.0, pydantic 2.13.5 (festgelegt durch `pipwerk-marketdata`), starlette 1.9.0, sqlalchemy 2.1.5, uvicorn 0.54.0. Die Seite `/docs` lädt Swagger UI von `cdn.jsdelivr.net` (Abschnitt 2.5).
+
+Oberfläche (`frontend/package.json`, festgeschrieben in `frontend/package-lock.json`, Versionen wie bei pipwerk Studio): Laufzeit `react` und `react-dom` 19.3.0, `@tanstack/react-query` 5.104.0, `i18next` 26.4.2, `react-i18next` 17.0.15; Entwicklung und Prüfung `typescript` 7.0.2, `vite` 8.3.1, `@vitejs/plugin-react` 6.1.1, `vitest` 5.0.2, `jsdom` 30.1.1, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/jest-dom` 7.0.1, `@testing-library/user-event` 14.6.7, `@playwright/test` 1.63.0, `@types/node`, `@types/react`, `@types/react-dom`. Gegenüber pipwerk Studio fehlt `@xyflow/react`: Zeichenfläche und Eigenschaftenansicht gehören zu `wp03`. Weitere Abhängigkeiten gibt es nicht: keine Bibliothek für Tabellen, Formulare, Diagramme oder Symbole (die Symbole sind eigene SVG-Pfade in `src/ui.tsx`). Die Lizenz `GPL-3.0-only` und die Adresse des Repositorys stehen in `frontend/package.json`.
 
 ## 8. Entscheidungen und offene Punkte
 
@@ -479,8 +538,89 @@ Entscheidungen in Auftrag 04. Aus dem Auftrag (entschieden vom Entwicklungsleite
 - `httpx2` als Laufzeitabhängigkeit; `pydantic` durch die Bibliothek auf 2.13.5 festgelegt (Abschnitte 2.8 und 7).
 - `info.version` der Beschreibung bleibt `1.0.0` (Abschnitt 5.3).
 
+Entscheidungen in Auftrag 05 (Oberfläche, Testumgebung). Die Spezifikation und der Auftrag lassen sie dem Entwickler; die Oberfläche folgt sonst dem bestätigten Prototyp:
+
+- Die Oberfläche hält keinen eigenen Zustand der Daten: Alle Daten kommen aus der Web-API und liegen in der Zwischenablage von TanStack Query; Entwürfe von Formularen, die gewählte Datei und der laufende Auftrag sind Zustand der Komponenten (Abschnitt 9.2). Der Browser speichert nichts.
+- Die Ansicht ist Zustand von `App`, nicht Teil der Adresse (keine Wiederherstellung nach Neuladen): Der Auftrag verlangt keine Adressen für Ansichten, und der Browser soll nichts speichern.
+- Der Spread eines Testkontos heißt in der Oberfläche „Punkte“ (Spezifikation 6.2 und Feld `spread_points`), nicht „Pips“ wie im Prototyp.
+- Die Kontowährung ist ein Textfeld mit Vorschlägen (EUR, USD, GBP, CHF, JPY) und der Prüfung „drei Großbuchstaben“, nicht eine Auswahl: Das Backend kennt keine Liste der Währungen (Abschnitt 2.6).
+- Den englischen Namen des Standard-Testkontos setzt die Oberfläche selbst (Abschnitt 2.6); sie erkennt es an `is_default` und dem gespeicherten Namen `Standard-Testkonto`. Ein umbenanntes Standard-Testkonto zeigt seinen Namen.
+- Beschaffung von Hand: Der Zeitraum sind Datum und Uhrzeit in UTC (Feld `datetime-local`, Minuten), „Bis“ ist ausgeschlossen, wie `end` der Web-API. Der Prototyp hatte ganze Tage. Grund: Die Quelle liefert höchstens `max_rows_per_request` Zeilen (Vorgabe 50 000); ein Tag Ticks hat mehr, und die Beschaffung wäre nie möglich gewesen. Vorbelegt sind die letzten sieben ganzen Tage bis 00:00 Uhr des heutigen Tages (UTC). Broker und Quelle wählt der Anwender nicht: Der Broker steht in den Dateien der Quelle, die Quelle ist die eine der Startkonfiguration.
+- Die Beschaffung fragt den Stand alle 700 Millisekunden ab (`POLL_INTERVAL_MS`), solange er `running` ist. Der Fortschritt ist ein Balken ohne Prozentwert: Ein Auftrag hat hier einen Teil, und die Quelle meldet keinen Fortschritt innerhalb eines Teils. Wechselt der Anwender die Ansicht, bevor der Auftrag endet, zeigt die Oberfläche das Ergebnis nicht mehr; der Auftrag läuft im Backend zu Ende, und die Daten stehen im Datenbestand.
+- Texte der Fehler zeigt die Oberfläche in der gewählten Sprache nach der Kennung (`src/errors.ts`): Kennungen der Quelle und von pipwerk replay (Abschnitt 2.9), Gründe abgelehnter Zeilen und ganzer Dateien. Nur für eine Kennung, die die Oberfläche nicht kennt, zeigt sie `reason` des Backends (deutsch). `src/errors.test.ts` prüft, dass jede Kennung der Aufzählungen beider Sprachen einen Text hat. Dem steht gegenüber, dass die deutschen Texte des Backends fest sind: Die englische Oberfläche darf keinen deutschen Text zeigen (`language.spec.ts`).
+- Den Stand der Dateiliste prüft die Oberfläche nur an der Endung (`.json`, `.csv`); alles Weitere prüft der Import. Bei CSV sind Broker, Instrument und Zeitzone Pflicht, die Zeitzone ohne Vorgabe (eine Vorgabe wie `UTC` wäre ein Raten; Zeitzone und Sommerzeit sind der häufigste Fehler beim Import). Der Broker ist mit der Standardquelle vorbelegt.
+- Die Kopfzeile zeigt das Menü ab 700 Pixel Breite ausgeschrieben, darunter als Liste hinter der Schaltfläche „Menü“ (der Prototyp ab 1280 Pixel, weil sein Menü vier Einträge und die Betriebsart hat). Die Betriebsart und die Menüeinträge von `wp03` und `wp04` gibt es nicht.
+- Erklärungen zeigt eine eigene Ebene (`TipLayer`, nach dem Prototyp) bei Maus und Fokus, nicht das Attribut `title`; Tastatur erreicht sie über das Symbol „i“ jedes Felds (`tabindex=0`). Auch der Tooltip der Standanzeige nutzt sie (pipwerk Studio nutzt `title`); `aria-describedby` nennt denselben Text.
+- Dialoge sind `<dialog>` mit `showModal()` und demselben Fokusfang wie der Dialog von pipwerk Studio (Abschnitt 9.5).
+- Die Anzeige „Backend“ fragt ohne Wiederholungsversuche und danach alle 10 Sekunden (`HEALTH_INTERVAL_MS`): Ein nicht erreichbares Backend erscheint sofort (mit den Vorgaben von TanStack Query erst nach etwa 7 Sekunden Wiederholungen), und die Anzeige folgt dem Backend, wenn es zurückkommt.
+- Die Angaben zu den Instrumenten liest die Oberfläche je Eintrag der Übersicht mit einer eigenen Anfrage (`GET /api/v1/market-data/instrument`); der Schlüssel der Anfrage enthält den Zeitpunkt der Beschaffung, neue Angaben ersetzen die gezeigten also von selbst. Bei sehr vielen Instrumenten sind das viele Anfragen; die Übersicht nennt höchstens `max_listed_items` (Vorgabe 1000).
+- Den Prototyp-Bestandteil „Beispieldatei verwenden“ gibt es nicht: Er täuschte einen Import vor.
+- Die Browsertests starten Backend und Quelle selbst (`e2e/stack.ts`) und nehmen freie Ports, wenn keine gegeben sind (Abschnitt 6.2); Firefox und WebKit führen nur den Start aus.
+- Das Testumgebungsskript liest den Schlüssel nur mit eingebauten Befehlen der Shell und verlangt `--source-url` und `--source-key-file` zusammen (Abschnitt 4a).
+
+Meldungen an den Entwicklungsleiter (keine Änderung der Web-API nötig; Vorschläge für `wp03`):
+
+- Die Oberfläche kann erst beim Versuch erfahren, ob eine Quelle eingerichtet ist (`409 no_source` bei `POST …/acquisitions`). Ein Lesepfad, der nur sagt, ob eine Quelle eingerichtet ist (nie den Schlüssel), würde die Beschaffung schon vorher sperren und erklären; denkbar unter `/api/replay/settings/`.
+- Ein Tag Ticks ist bei der Vorgabe `max_rows_per_request` der Quelle meist zu groß (Abschnitt 2.9, Entscheidung „Keine Zerlegung großer Zeiträume“). Die Oberfläche lässt deshalb Minuten zu; die Zerlegung beim Start eines Testlaufs (offener Punkt 1) bleibt `wp03`.
+
 Offene Punkte, die der Entwicklungsleiter entscheidet:
 
 1. Große Zeiträume der Beschaffung: pipwerk replay zerlegt sie nicht (Abschnitt 2.9); die Quelle antwortet bei zu vielen Zeilen mit `range_too_large`. Die Beschaffung beim Start eines Testlaufs (`wp03`, Spezifikation 5.4 „auch für Teile eines Zeitraums“) braucht eine Zerlegung nach den Grenzen der Quelle oder die Meldung an den Anwender. Das gehört zu `wp03`; hier ist nichts entschieden.
-2. Die Testumgebung (`scripts/testenv`) schreibt nur `[database]` in die INI und kennt weder `fetch_url` noch `fetch_key`. Abnahmekriterium 3 von `wp02` (Beschaffung bei MetaTrader 5 in der Testumgebung) braucht eine eingerichtete Quelle. Der Schlüssel darf nicht auf der Kommandozeile stehen (sie kann für andere Benutzer des Rechners sichtbar sein); denkbar ist ein Parameter, der auf eine Datei mit Adresse und Schlüssel zeigt. Der Auftrag nennt das Testumgebungsskript nicht; es ist unverändert.
+2. (Erledigt in Auftrag 05.) Die Testumgebung richtet auf Wunsch eine Quelle ein: `--source-url` und `--source-key-file` (Abschnitt 4a).
 3. Die Übersicht des Datenbestands berechnet die Lücken über alle Zeiten jeder Reihe (Bibliothek, Abschnitt 2.8). Bei sehr großen Reihen (viele Millionen Ticks) dauert ein Aufruf entsprechend; begrenzt ist nur die Antwort, nicht die Rechenzeit. Eine Änderung braucht die Bibliothek (`packages/market-data`), die nicht Teil dieses Auftrags ist.
+
+## 9. Oberfläche
+
+Gegenstand dieses Abschnitts ist die Browseroberfläche in `components/pipwerk-replay/frontend/` (Auftrag 05, Spezifikation E3, 8.1 bis 8.4, 11). Stand: Kopfzeile, Fußzeile und die Ansichten „Datenbestand“ und „Testkonten“ nach dem bestätigten Prototyp, angeschlossen an die Web-API und die internen Endpunkte (Abschnitte 5.1 und 5.2). Die Ansichten für den Testlauf und die gespeicherten Backtests, die Betriebsart und die gemeinsamen Bausteine in `packages/ui-components` folgen mit `wp03` und `wp04`.
+
+### 9.1 Aufbau
+
+Technik wie pipwerk Studio ([technische Dokumentation pipwerk Studio](pipwerk-studio.md), Abschnitte 2.3 bis 2.7): React 19 mit TypeScript (`strict`, `noUncheckedIndexedAccess`), Vite, TanStack Query, i18next mit `src/locales/de.json` und `src/locales/en.json`, Sprache als Einstellung im Backend, Dialog „Über pipwerk replay“.
+
+| Datei in `src/` | Aufgabe |
+| --- | --- |
+| `main.tsx`, `App.tsx` | Einstieg; Kopfzeile mit Menü („Datenbestand“, „Testkonten“), Schaltfläche „Über pipwerk replay“, Sprachwahl; die gewählte Ansicht; Fußzeile |
+| `DataView.tsx`, `ImportCard.tsx`, `AcquireCard.tsx`, `dataQueries.ts` | Ansicht „Datenbestand“: Übersicht, Angaben zu den Instrumenten, Standardquelle, Import, Beschaffung von Hand |
+| `AccountsView.tsx`, `accountForm.ts` | Ansicht „Testkonten“: Liste und Formular; `accountForm.ts` enthält die Prüfung der Werte nach den Grenzen des Backends (Abschnitt 2.6) |
+| `AboutDialog.tsx`, `Modal.tsx` | Dialog „Über pipwerk replay“ und der Dialog mit dem Fokusfang (Abschnitt 9.5) |
+| `BackendStatus.tsx`, `RevisionDisplay.tsx`, `LanguageSelect.tsx`, `useReplayLanguage.ts` | Fußzeile (Erreichbarkeit über `/api/health`, Stand über `/api/replay/revision` mit Tooltip) und Sprachwahl über `/api/replay/settings/language` |
+| `http.ts`, `api.ts`, `accountsApi.ts`, `marketDataApi.ts`, `revisionApi.ts`, `settingsApi.ts` | Zugriff auf das Backend: `request()` sendet JSON oder eine Datei unverändert und macht aus jedem Status ab 400 einen `ApiError` mit dem Body; jede Antwort wird gelesen und geprüft (`asRecord`, `str`, `num` …), eine Antwort anderer Form ist ein Fehler der Oberfläche (`UnexpectedAnswerError`), keine falsche Anzeige |
+| `errors.ts` | Texte für Fehler der Anfragen und für Kennungen (Abschnitt 8, Entscheidungen) |
+| `format.ts` | Zahlen- und Zeitformate beider Sprachen; Zeiten des Datenbestands sind UTC, auf die Minute |
+| `ui.tsx` | Symbole (eigene SVG-Pfade), `TipLayer`, `Btn`, `Select`, `TextInput`, `NumberInput`, `Info`, `Field` |
+| `i18n.ts`, `locales/` | Texte; `timestamp.ts`, `commitDate.ts`, `buildRevision.ts`, `repository.ts` und `buildinfo/gitRevision.ts` wie bei pipwerk Studio |
+| `styles.css` | Farben, Schrift, Abstände und Steuerelemente des Prototyps; Anordnung nach Fenstergröße |
+
+`vite.config.ts` bettet beim Bau Commit und Datum des Commits ein (`__PIPWERK_REPLAY_BUILD_REVISION__`, für den Dialog), erlaubt dem Entwicklungsserver genau die Datei `LICENSE` außerhalb des Projekts (`?raw`, sie wird als Text in den Dialog eingebettet) und leitet `/api` an `PIPWERK_REPLAY_BACKEND_URL` weiter, ohne den Kopf `Host` zu ändern.
+
+### 9.2 Zustand
+
+- **Daten des Backends** liegen in TanStack Query (Schlüssel: `health`, `revision`, `replay-language`, `accounts`, `market-data-overview`, `market-data-instrument`, `default-source`, `acquisition`). Schreibende Aufrufe (`useMutation`) laden die betroffenen Abfragen neu: nach dem Speichern oder Löschen eines Testkontos `accounts`, nach einem Import und am Ende einer Beschaffung `market-data-overview` und `market-data-instrument`.
+- **Sprache:** wie pipwerk Studio (`useReplayLanguage`): die Sprache aus dem Backend gilt, solange keine Änderung läuft; während des Speicherns gilt die gewählte; ein Fehler lässt die zuletzt bestätigte Sprache stehen. Die Anfragen haben eine Zeitbegrenzung von 10 Sekunden und werden auch gesendet, wenn der Browser „offline“ meldet.
+- **Zustand der Komponenten:** gewählte Ansicht und Menü (`App`); Entwurf des Testkontos, gewähltes Testkonto, Hinweis „gespeichert“ (`AccountsView`); gewählte Datei, Felder des CSV-Imports (`ImportCard`); Felder der Beschaffung und die Kennung des laufenden Auftrags (`AcquireCard`); Eingabe der Standardquelle (`DefaultSourceCard`).
+- **Der Browser speichert nichts** (kein `localStorage`, `sessionStorage`, kein Cookie, keine IndexedDB, keine Caches; `language.spec.ts` prüft das nach einer Sitzung mit Sprachwechsel, Import und Testkonto).
+- **Texte des Anwenders** (Namen von Testkonten, Brokern, Instrumenten, Dateinamen) setzt React als Text; es gibt kein `dangerouslySetInnerHTML` und kein `innerHTML` (Spezifikation 11). Tests mit Namen wie `<img src=x onerror=…>` prüfen es in Vitest und im Browser.
+
+### 9.3 Ansichten
+
+**Datenbestand** (Spezifikation 5.1 bis 5.4, 8.3) in fünf Karten:
+
+1. *Was vorliegt* (`GET /api/v1/market-data/overview`): je Reihe Broker, Instrument, Art (`Kerzen <Zeiteinheit>` oder `Ticks`), die abgedeckten Zeiträume (die ersten drei, dann „und N weitere“, `covered_count` zählt alle), die Lücken (Eintrag `missing`, Grund `gap`, mit Warnsymbol, oder „keine“) und die Menge. Zeiten in UTC. Wird die Antwort abgeschnitten (`series_total` größer als die Zahl der Reihen), nennt ein Hinweis die Zahlen. „Aktualisieren“ liest neu.
+2. *Angaben zum Instrument je Broker*: je Eintrag der Übersicht die neuesten Angaben (`GET …/instrument`).
+3. *Standardquelle* (`GET`, `PUT /api/replay/settings/default-source`): Eingabe mit Vorschlägen aus den Brokern des Datenbestands, „Als Standardquelle festlegen“, „Keine Standardquelle“; Prüfung des Namens wie `names.py` (Abschnitt 2.7).
+4. *Datei von Hand importieren* (`POST …/imports/json`, `…/imports/csv`): Der Anwender wählt die Datei; die Endung entscheidet das Format. JSON braucht nichts weiter. Bei CSV sind Broker, Instrument, Art, Zeiteinheit und Zeitzone Pflicht (Spezifikation 5.1 und 5.3, 8.3); die Datei geht als Body mit dem Medientyp `text/csv`, die Angaben als Abfrageparameter. Das Ergebnis nennt übernommene und ersetzte Zeilen, Reihe, Zeitraum (erste und letzte Zeit der übernommenen Zeilen, UTC) und die abgelehnten Zeilen mit Nummer und Grund; ein ganz abgelehntes Dokument (`422`, `The file is refused.`) zeigt den Grund nach `code`.
+5. *Beschaffung von Hand anstoßen* (`POST …/acquisitions`, `GET …/acquisitions/{id}`): ein Teil (Instrument, Art, Zeitraum); Fortschritt als Balken, solange der Auftrag `running` ist; danach Ergebnis oder Meldung mit Grund (Abschnitt 8).
+
+**Testkonten** (Spezifikation 6.2, 8.3): links die Liste (`GET /api/v1/accounts`), rechts das Formular. „Neues Testkonto“ zeigt die Ausgangswerte des Standard-Testkontos und legt erst beim Speichern an (`POST`); eine Änderung speichert `PUT` mit allen Werten; „Löschen“ fragt zuerst (`DELETE`); nach dem Löschen steht das erste Testkonto im Formular. „Speichern“ ist gesperrt, solange nichts geändert oder ein Wert ungültig ist (`checkAccountForm`, jede Meldung nennt die Regel). Die Prüfung der Oberfläche entspricht der des Backends (Abschnitt 2.6); das Backend prüft nochmals, ein trotzdem abgelehnter Wert erscheint als „… konnte nicht gespeichert werden.“ mit dem Grund. Leere Zustände nennen den nächsten Schritt.
+
+### 9.4 Anordnung und Bedienung
+
+Das Fenster ist ein Raster aus Kopfzeile, Hauptbereich und Fußzeile (`.app`, `100dvh`); der Hauptbereich scrollt in sich (`.page-scroll`), die Seite selbst nie. Karten stehen untereinander; in „Testkonten“ stehen Liste und Formular nebeneinander ab 800 Pixel Breite, darunter untereinander. Tabellen scrollen in ihrem Rahmen (`.tbl-wrap`). Das Menü ist ab 700 Pixel Breite ausgeschrieben, darunter eine Liste hinter „Menü“. Bei einer Höhe von höchstens 460 Pixel (Querformat eines Telefons) sind Kopf- und Fußzeile und die Dialoge enger. `.page-scroll` ist `position: relative`: Das verborgene Feld für die Dateiwahl ist absolut positioniert und vergrößerte sonst die scrollbare Höhe der ganzen Seite (`e2e/layout.spec.ts` fand das). Die Bedienung folgt dem Prototyp: jeder leere Zustand nennt den nächsten Schritt, jedes Feld hat eine Erklärung in Händlersprache bei Maus und Tastatur (`Field` mit `data-tip` am Namen und am Symbol „i“, das mit `tabindex=0` den Fokus nimmt), Pflichtfelder tragen einen Stern.
+
+Geprüft wird in den sechs Fenstergrößen der Spezifikation (8.4, Punkt 1) mit `e2e/layout.spec.ts` (Abschnitt 6.2): keine Bildlaufleiste der Seite, Kopfzeile, Hauptbereich und Fußzeile überlappen nicht, die Teile der Kopfzeile stehen nebeneinander und im Fenster, die Karten überlappen nicht, kein Bedienelement liegt außerhalb seiner Karte, jede Karte und das Ende der Ansicht sind erreichbar, Menü und Dialoge sind erreichbar. Die Prüfung sieht die Oberfläche nicht wie ein Mensch: Sie misst Rechtecke. Die Bilder der Ansichten bei 390 × 844, 844 × 390 und 1366 × 768 wurden bei der Umsetzung angesehen, sie gehören nicht zum Repository.
+
+### 9.5 Dialog, Sprache, Stand
+
+- **Dialog „Über pipwerk replay“** (`AboutDialog`, `Modal`): Element `<dialog>` mit `showModal()`: Die Seite dahinter ist gesperrt, Escape schließt, der Fokus geht beim Öffnen auf „Schließen“ und kehrt beim Schließen zur Schaltfläche zurück. Den Fokusfang hat der Dialog von pipwerk Studio übernommen: ohne eigenen Code verlässt der Fokus den Dialog oder landet auf dem Element selbst (in Chromium, Firefox und WebKit gemessen, dort für den Dialog von pipwerk Studio); solange der Dialog offen ist, geht Tab vom letzten Element zum ersten und Umschalt+Tab vom ersten zum letzten. Der Inhalt: Name, Stand (Commit und Datum des Commits aus dem Bau, `__PIPWERK_REPLAY_BUILD_REVISION__`), Lizenz (Name und Text aus `LICENSE`, beim Bau eingebettet) und Adresse des Repositorys (aus `package.json`, `https://github.com/<Benutzer>/<Name>` oder „unbekannt“).
+- **Sprache:** `DE` und `EN` in der Kopfzeile; Zustand und Meldungen wie bei pipwerk Studio (Abschnitt 9.2). `document.documentElement.lang` folgt der Sprache.
+- **Fußzeile:** „Backend: verbunden“, „… nicht erreichbar“ oder „… Verbindung wird geprüft“ (`GET /api/health`); „Stand: <7 Zeichen>“ (`GET /api/replay/revision`) mit dem Text „Commit <40 Zeichen> vom TT.MM.JJJJ, hh:mm Uhr“ (englisch „from YYYY-MM-DD hh:mm“, Ortszeit des Browsers) als Erklärung bei Maus und Fokus und als `aria-describedby`; ohne ermittelbaren Stand „Stand: unbekannt“ ohne Erklärung. Die Antwort wird wie bei pipwerk Studio streng geprüft (Form, Länge, Kurzform gleich Anfang des Commits).
