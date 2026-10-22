@@ -64,9 +64,29 @@ export type TypeKind =
   | 'trend'
   | 'app'
   | 'rule'
-  | 'ruleset';
+  | 'ruleset'
+  /** A tool of the library that creates no element (the flow connection). */
+  | 'tool';
 
-export type GroupId = 'when' | 'actions' | 'market' | 'indicators' | 'trends' | 'rules';
+export type GroupId = 'flow' | 'calc' | 'indicators' | 'trends' | 'marketdata' | 'account' | 'actions' | 'rules';
+
+export interface MethodArg {
+  id: string;
+  de: string;
+  en: string;
+}
+
+/** A method of an object type: it returns a value, calculated from arguments (req-fach-055). */
+export interface MethodDef {
+  id: string;
+  /** Name as used in the formula view and in lists. */
+  de: string;
+  en: string;
+  dtype: DType;
+  args: MethodArg[];
+  /** Default values of the arguments when the method is chosen. */
+  defaults: number[];
+}
 
 export interface TypeDef {
   id: string;
@@ -85,6 +105,12 @@ export interface TypeDef {
   own?: boolean;
   /** Objects of the application that are only addressed by expressions, not placed. */
   placeable?: boolean;
+  /** Methods that return a value (next to the properties). */
+  methods?: MethodDef[];
+  /** The type provides the switch "Update" at a use (req-fach-055). Assumption of the prototype. */
+  refresh?: boolean;
+  /** The property that a new connection passes on by default. */
+  main?: string;
 }
 
 // ---- expressions -----------------------------------------------------------
@@ -94,7 +120,7 @@ export type Expr =
   | { t: 'num'; v: number }
   | { t: 'str'; v: string }
   | { t: 'bool'; v: boolean }
-  | { t: 'ref'; obj: string; prop: string }
+  | { t: 'ref'; obj: string; prop: string; args?: number[] }
   | { t: 'sp'; id: string }
   | { t: 'par'; id: string }
   | { t: 'bin'; op: string; l: Expr; r: Expr }
@@ -160,14 +186,36 @@ export interface RuleInst {
   builtin?: string;
 }
 
+/** One use of a value of an object: a property, or a method with its arguments. */
+export interface Use {
+  obj: string;
+  prop: string;
+  args?: number[];
+  /**
+   * Created by connecting the instance, not chosen by the user: the main value. It carries the line
+   * until the element uses a value of the instance in an expression.
+   */
+  auto?: boolean;
+}
+
 export interface El {
   id: string;
   type: string;
   name: string;
   bind: Record<string, Binding>;
   rules: RuleInst[];
-  /** Explicit data inputs: values of objects that are wired to this element. */
-  inputs: { obj: string; prop: string }[];
+  /** Values of objects that the user connected to this element (data connections). */
+  inputs: Use[];
+  /**
+   * Objects only: the element of the first use, the one the user connected the instance with first.
+   * Without it, the first element that uses the instance in an expression counts (req-fach-055).
+   */
+  host?: string | null;
+  /** Keys of the uses (see uses.ts) for which this element asks the object to update its values first. */
+  refresh?: string[];
+  /** Objects without a first use: position on the canvas where the user dropped them. */
+  fx?: number;
+  fy?: number;
   /** Id of the "place order" element whose management this element belongs to. */
   mgmt: string | null;
   origin: Origin | null;

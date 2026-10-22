@@ -1,6 +1,6 @@
 // Own view of a template (indicator, trend, rule, rule set) with Save, Check, Close, Delete.
 // The open strategy stays open behind it.
-import { DTYPE_LABEL, TYPES, fieldTip, fieldsOf, propsOf, tx, typeLabel } from './catalog';
+import { DTYPE_LABEL, TYPES, fieldTip, fieldsOf, membersOf, methodText, tx, typeLabel } from './catalog';
 import { problems } from './expr';
 import type { Scope } from './expr';
 import { FieldRow } from './fields';
@@ -95,23 +95,31 @@ export function TemplateView() {
         {t.kind === 'indicator' && t.type !== 'Indikator' && baseType && (
           <Section title={L('Standardwerte der Einstellungen', 'Default values of the settings')} testid="tpl-defaults">
             <p className="muted">{L(`Objekttyp ${typeLabel(t.type, lang)}. Instanzen aus dieser Vorlage übernehmen diese Werte; sie lassen sich in der Strategie ändern.`, `Object type ${typeLabel(t.type, lang)}. Instances from this template take these values; they can be changed in the strategy.`)}</p>
+            {baseType.refresh && (
+              <p className="muted" data-testid="tpl-refresh-inherited">{L('„Aktualisieren“ übernimmt die Vorlage von ihrem Objekttyp: Bei jeder Verwendung einer Instanz lässt es sich einstellen.', 'The template takes "Update" from its object type: it can be set at each use of an instance.')}</p>
+            )}
             {fieldsOf({ type: t.type, bind: t.defaults, own: null }).filter((f) => f.dtype !== 'instrument').map((f) => (
               <FieldRow key={f.id} f={{ ...f, bindings: ['fixed'], required: false }} b={t.defaults[f.id]} sc={sc} onChange={(b) => set((q) => { q.defaults[f.id] = b; })}
                 unsetNote={L('Kein Standardwert: Wer die Vorlage verwendet, belegt diese Angabe.', 'No default value: whoever uses the template assigns this entry.')} />
             ))}
           </Section>
         )}
-        {isType && baseType && propsOf({ type: t.type, own: null, name: t.name }).length > 0 && (
+        {isType && baseType && membersOf({ type: t.type, own: null, name: t.name }).length > 0 && (
           <Section title={L('Liefert', 'Delivers')} testid="tpl-delivers">
             <ul className="prop-list">
-              {propsOf({ type: t.type, own: null, name: t.name }).map((p) => (
-                <li key={p.id} className="prop-row" data-tip={fieldTip(p.id, lang, 'p')}>
-                  <span className="prop-name">{tx(p, lang)}</span>
-                  <span className="dtype-chip">{tx(DTYPE_LABEL[p.dtype], lang)}</span>
+              {membersOf({ type: t.type, own: null, name: t.name }).map((p) => (
+                <li key={p.id} className="prop-row" data-tip={fieldTip(p.id, lang, 'p')} data-method={p.method ? '1' : '0'}>
+                  <span className="prop-name">{p.method ? methodText(p.method, undefined, lang) : tx(p, lang)}</span>
+                  {p.method
+                    ? <span className="dtype-chip method-chip">{L('Methode', 'Method')} · {p.method.args.map((a) => tx(a, lang)).join('; ')}</span>
+                    : <span className="dtype-chip">{tx(DTYPE_LABEL[p.dtype], lang)}</span>}
                   {p.choices && <span className="prop-values">{p.choices.map((c) => tx(c, lang)).join(' · ')}</span>}
                 </li>
               ))}
             </ul>
+            {baseType.refresh && (
+              <p className="muted" data-testid="tpl-refresh">{L('Dieser Objekttyp sieht „Aktualisieren“ vor: Bei jeder Verwendung lässt sich einstellen, dass das Objekt seine Werte vorher neu ermittelt.', 'This object type provides "Update": at each use you can set that the object determines its values anew first.')}</p>
+            )}
           </Section>
         )}
       </fieldset>

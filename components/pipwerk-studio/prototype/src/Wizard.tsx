@@ -96,6 +96,11 @@ export function Wizard() {
       el.inputs = [{ obj: ao, prop: ap }, { obj: bo, prop: bp }].filter((x, i, arr) => arr.findIndex((y) => y.obj === x.obj && y.prop === x.prop) === i);
       st.els.push(el);
       id = el.id;
+      // the condition is the first use of both indicators: they lie at it
+      for (const oid of [ao, bo]) {
+        const o = st.els.find((e) => e.id === oid);
+        if (o && !o.host) o.host = el.id;
+      }
       const t = wz.trigger ? st.els.find((e) => e.id === wz.trigger) : undefined;
       if (t) st.conns.push({ from: t.id, out: 'weiter', to: el.id });
     });
@@ -181,7 +186,7 @@ export function Wizard() {
       )}
       {step === 3 && (
         <div className="wz-body" data-testid="wz-step-3">
-          <p>{L('Welche Indikatoren braucht die Strategie? Sie erscheinen im Bereich „Objekte und ihre Werte“ der Fläche.', 'Which indicators does the strategy need? They appear in the area "Objects and their values" of the canvas.')}</p>
+          <p>{L('Welche Indikatoren braucht die Strategie? Sie liegen auf der Fläche bei dem Element, das sie zuerst verwendet, hier der Bedingung.', 'Which indicators does the strategy need? They lie on the canvas at the element that uses them first, here the condition.')}</p>
           <div className="btn-row">
             {['EMA', 'ATR', 'ZigZag', 'Markttechnik'].map((t) => (
               <Btn key={t} icon="plus" testid={`wz-add-${t}`} onClick={() => addIndicator(t)}>{typeLabel(t, lang)}</Btn>

@@ -1,19 +1,21 @@
 // Properties view: strategy, element or instance, rule, management frame.
 import { useEffect, useRef, useState } from 'react';
-import { DTYPE_LABEL, TYPES, choiceLabel, fieldTip, fieldsOf, isFlowEl, isObjectEl, isTrigger, propsOf, tx, typeLabel } from './catalog';
+import { DTYPE_LABEL, TYPES, choiceLabel, fieldTip, fieldsOf, isFlowEl, isObjectEl, isTrigger, memberLabel, membersOf, methodOf, methodText, supportsRefresh, tx, typeLabel } from './catalog';
 import { ExprPanel } from './ExprEditor';
-import { EMPTY, propList, refsOf } from './expr';
+import { EMPTY, memberList, propList, refsOf, sameMember } from './expr';
+import { collectUsage, placements } from './uses';
+import type { UseRec } from './uses';
 import { FieldRow, ValueByType } from './fields';
 import { levelOf, scopeFor } from './findings';
 import type { Finding } from './findings';
 import { OwnEditor, RuleBody, RulesEditor, ownScope } from './OwnEditor';
 import { defaultBinding } from './factory';
 import { isUnset, uid } from './model';
-import type { El, RuleInst, SParam, SPType } from './model';
+import type { El, RuleInst, SParam, SPType, Use } from './model';
 import {
-  addParam, allTemplates, getState, paramUsers, requestRemove, runCheck, select, setSection, setState, toast, update, useApp,
+  addParam, allTemplates, changeUse, connectObject, getState, noteValues, paramUsers, removeUse, requestRemove, runCheck, select, setHost, setRefresh, setSection, setState, toast, update, useApp,
 } from './store';
-import { Btn, Icon, Info, Section, Select, TextInput, Toggle, fmtDate, useL } from './ui';
+import { Btn, Icon, Info, NumberInput, Section, Select, TextInput, Toggle, fmtDate, useL } from './ui';
 
 export const kindClass = (type: string): string => {
   const d = TYPES[type];
@@ -22,7 +24,7 @@ export const kindClass = (type: string): string => {
   if (d.id === 'flow.condition') return 'cond';
   if (d.id === 'flow.calculation' || d.id === 'flow.set_parameter') return 'calc';
   if (d.id === 'flow.place_order') return 'order';
-  if (d.kind === 'flow') return 'act';
+  if (d.kind === 'flow' || d.kind === 'tool') return 'act';
   if (d.kind === 'app') return 'app';
   if (d.kind === 'trend' || d.id === 'Markttechnik') return 'trend';
   return 'ind';
@@ -226,13 +228,7 @@ export function ElementProps({ el, findings }: { el: El; findings: Finding[] }) 
         for (const f of fieldsOf(x)) if (x.bind[f.id] === undefined) x.bind[f.id] = defaultBinding(f);
       }
     });
-  const addInputs = (e: import('./model').Expr) =>
-    setEl((x) => {
-      for (const r of refsOf(e)) {
-        const target = s.els.find((q) => q.id === r.obj);
-        if (target && isObjectEl(target.type) && !x.inputs.some((i) => i.obj === r.obj && i.prop === r.prop)) x.inputs.push(r);
-      }
-    });
+  const addInputs = (e: import('./model').Expr) => noteValues(el.id, e);
 
   if (!d) {
     return (
@@ -259,18 +255,19 @@ export function ElementProps({ el, findings }: { el: El; findings: Finding[] }) 
     return g?.k === 'fixed' && g.v === f.appliesWhen.value;
   };
   const sectionOf = s.sections.find((x) => x.els.includes(el.id));
-  const props = propsOf(el);
+  const props = membersOf(el);
+  const allUses = collectUsage(s);
+  const places = placements(s, allUses);
+  const place = places.get(el.id);
   const usage = new Map<string, string[]>();
-  for (const e of s.els) {
-    const hits = new Set<string>();
-    for (const i of e.inputs) if (i.obj === el.id) hits.add(i.prop);
-    for (const b of Object.values(e.bind)) {
-      if (b.k === 'expr') refsOf(b.e).filter((r) => r.obj === el.id).forEach((r) => hits.add(r.prop));
-      if (b.k === 'ref' && b.obj === el.id) hits.add(b.prop);
-    }
-    hits.forEach((p) => { if (!usage.has(p)) usage.set(p, []); usage.get(p)?.push(e.name); });
+  for (const u of allUses.filter((x) => x.src === el.id)) {
+    const n = s.els.find((x) => x.id === u.dst)?.name ?? '?';
+    if (!usage.has(u.prop)) usage.set(u.prop, []);
+    if (!usage.get(u.prop)?.includes(n)) usage.get(u.prop)?.push(n);
   }
+  const myUses = allUses.filter((u) => u.dst === el.id);
   const objectsForInputs = s.els.filter((e) => isObjectEl(e.type) && e.id !== el.id);
+  const hostCandidates = s.els.filter((e) => e.id !== el.id && (isFlowEl(e.type) || isObjectEl(e.type)));
 
   return (
     <div className="props" ref={root} data-testid="props-element" data-kind={el.type}>
@@ -327,15 +324,17 @@ export function ElementProps({ el, findings }: { el: El; findings: Finding[] }) 
       )}
 
       {(obj || d.named) && props.length > 0 && (
-        <Section title={L('Liefert', 'Delivers')} testid="sec-delivers" aside={<span className="muted">{L('Jeder Wert ist ein Ausgang für eine Linie', 'Each value is an output for a line')}</span>}>
+        <Section title={L('Liefert', 'Delivers')} testid="sec-delivers" aside={<span className="muted">{L('Jeder Wert und jede Methode ist ein Ausgang für eine Linie', 'Each value and each method is an output for a line')}</span>}>
           <ul className="prop-list">
             {props.map((p) => {
               const tip = fieldTip(p.id, lang, 'p');
               const used = usage.get(p.id);
               return (
-                <li key={p.id} className="prop-row" data-tip={tip} data-testid="prop-row">
-                  <span className="prop-name">{tx(p, lang)}</span>
-                  <span className="dtype-chip">{tx(DTYPE_LABEL[p.dtype], lang)}</span>
+                <li key={p.id} className="prop-row" data-tip={tip} data-testid="prop-row" data-method={p.method ? '1' : '0'}>
+                  <span className="prop-name">{p.method ? methodText(p.method, undefined, lang) : tx(p, lang)}</span>
+                  {p.method
+                    ? <span className="dtype-chip method-chip">{L('Methode', 'Method')} · {p.method.args.map((a) => tx(a, lang)).join('; ')}</span>
+                    : <span className="dtype-chip">{tx(DTYPE_LABEL[p.dtype], lang)}</span>}
                   {p.choices && <span className="prop-values">{p.choices.map((c) => tx(c, lang)).join(' · ')}</span>}
                   {used && <span className="prop-used"><Icon name="link" size={12} />{used.join(', ')}</span>}
                 </li>
@@ -345,26 +344,57 @@ export function ElementProps({ el, findings }: { el: El; findings: Finding[] }) 
         </Section>
       )}
 
-      {(flow || obj) && (
-        <Section title={L('Eingänge', 'Inputs')} testid="sec-inputs" aside={<Info tip={L('Werte von Objekten, die mit diesem Element verbunden sind. Sie stehen in der Bedingung oder Berechnung unter ihrem Namen zur Auswahl.', 'Values of objects connected to this element. They are available by name in the condition or calculation.')} />}>
-          {el.inputs.length === 0 && <p className="empty-note">{L('Noch kein Wert verbunden. Wählen Sie unten einen Wert oder ziehen Sie auf der Fläche eine Linie von der Eigenschaft eines Objekts hierher.', 'No value connected yet. Choose a value below or drag a line from the property of an object to here on the canvas.')}</p>}
-          <div className="chips">
-            {el.inputs.map((i) => {
-              const o = s.els.find((x) => x.id === i.obj);
-              const p = o ? propList(o.id, sc).find((x) => x.id === i.prop) : undefined;
-              return (
-                <span key={`${i.obj}.${i.prop}`} className="chip chip-input" data-testid="input-chip">
-                  <Icon name="link" size={12} />{o?.name ?? '?'} › {p ? tx(p, lang) : i.prop}
-                  <button type="button" aria-label={L('Eingang entfernen', 'Remove input')} onClick={() => setEl((x) => { x.inputs = x.inputs.filter((q) => !(q.obj === i.obj && q.prop === i.prop)); })}><Icon name="x" size={12} /></button>
-                </span>
-              );
-            })}
+      {obj && el.type !== 'Strategie' && (
+        <Section title={L('Erste Verwendung', 'First use')} testid="sec-first-use" aside={<Info tip={fieldTip('erste_verwendung', lang, 'f')} />}>
+          <div className="field" data-field="host">
+            {place ? (
+              <p className="first-use" data-testid="first-use-text">
+                <Icon name="link" size={14} />
+                {L('Liegt bei ', 'Lies at ')}<b>{s.els.find((x) => x.id === place.host)?.name}</b>
+                {place.depth > 1 ? L(' (über ein anderes Objekt)', ' (via another object)') : ''}
+              </p>
+            ) : (
+              <p className="hint" data-testid="first-use-none">
+                <Icon name="warn" size={15} />
+                <span>{L('Noch mit keinem Element verbunden. Wählen Sie unten das Element, das diese Instanz zuerst verwendet, oder ziehen Sie ihre Karte auf der Fläche darauf.', 'Not connected to an element yet. Choose below the element that uses this instance first, or drag its card onto it on the canvas.')}</span>
+              </p>
+            )}
+            <Select value={place?.host ?? ''} onChange={(v) => setHost(el.id, v || null)} ariaLabel={L('Element der ersten Verwendung', 'Element of the first use')} testid="host-select">
+              <option value="">{L('– mit Element verbinden … –', '– connect to element … –')}</option>
+              {hostCandidates.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+            </Select>
           </div>
-          <Select value="" onChange={(v) => { if (!v) return; const [o, p] = v.split('|'); setEl((x) => { if (!x.inputs.some((q) => q.obj === o && q.prop === p)) x.inputs.push({ obj: o, prop: p }); }); }} ariaLabel={L('Wert verbinden', 'Connect value')} testid="input-add">
+          {allUses.filter((u) => u.src === el.id && u.dst !== place?.host).length > 0 && (
+            <div className="further" data-testid="further-uses">
+              <h4 className="sub-h">{L('Weitere Verwendungen', 'Further uses')}</h4>
+              <ul className="prop-list">
+                {[...new Set(allUses.filter((u) => u.src === el.id && u.dst !== place?.host).map((u) => u.dst))].map((dst) => (
+                  <li key={dst} className="prop-row" data-testid="further-use">
+                    <button type="button" className="link-btn" onClick={() => select({ k: 'el', id: dst })}>{s.els.find((x) => x.id === dst)?.name}</button>
+                    <span className="prop-values">{allUses.filter((u) => u.src === el.id && u.dst === dst).map((u) => memberLabel(el, u.prop, u.args, lang) + (u.refresh ? ' ↻' : '')).join(', ')}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Section>
+      )}
+
+      {(flow || obj) && (
+        <Section title={L('Verwendete Werte', 'Values used')} testid="sec-inputs" aside={<Info tip={L('Werte von Objekten, die dieses Element verwendet. Bei jeder Verwendung wählen Sie die Eigenschaft oder Methode und, wo das Objekt es vorsieht, ob es seine Werte vorher neu ermittelt (Aktualisieren). Die Werte stehen in der Bedingung oder Berechnung zur Auswahl.', 'Values of objects that this element uses. At each use you choose the property or method and, where the object provides it, whether it determines its values anew first (Update). The values are available in the condition or calculation.')} />}>
+          {myUses.length === 0 && <p className="empty-note">{L('Noch kein Wert verwendet. Wählen Sie unten einen Wert, ziehen Sie auf der Fläche eine Linie von der Eigenschaft eines Objekts hierher oder wählen Sie den Wert in der Bedingung oder Berechnung.', 'No value used yet. Choose a value below, drag a line from the property of an object to here on the canvas or choose the value in the condition or calculation.')}</p>}
+          {myUses.map((u) => <UseRow key={`${u.dst}|${u.key}`} el={el} u={u} first={places.get(u.src)?.host === el.id} />)}
+          <Select value="" onChange={(v) => {
+            if (!v) return;
+            const [o, p] = v.split('|');
+            const oe = s.els.find((x) => x.id === o);
+            const m = oe ? methodOf(oe.type, p) : undefined;
+            connectObject(o, el.id, { obj: o, prop: p, ...(m ? { args: [...m.defaults] } : {}) });
+          }} ariaLabel={L('Wert verbinden', 'Connect value')} testid="input-add">
             <option value="">{L('+ Wert verbinden …', '+ Connect value …')}</option>
             {objectsForInputs.map((o) => (
               <optgroup key={o.id} label={o.name}>
-                {propList(o.id, sc).map((p) => <option key={p.id} value={`${o.id}|${p.id}`}>{o.name} › {tx(p, lang)}</option>)}
+                {memberList(o.id, sc).map((p) => <option key={p.id} value={`${o.id}|${p.id}`}>{o.name} › {p.method ? `${methodText(p.method, undefined, lang)} (${L('Methode', 'method')})` : tx(p, lang)}</option>)}
               </optgroup>
             ))}
           </Select>
@@ -394,6 +424,53 @@ export function ElementProps({ el, findings }: { el: El; findings: Finding[] }) 
           {L('Entfernen', 'Remove')}
         </Btn>
       </footer>
+    </div>
+  );
+}
+
+/** One use of an object by this element: property or method, its arguments, the switch "Update". */
+function UseRow({ el, u, first }: { el: El; u: UseRec; first: boolean }) {
+  const L = useL();
+  const app = useApp();
+  const lang = app.settings.lang;
+  const s = app.strategy;
+  const src = s?.els.find((x) => x.id === u.src);
+  if (!s || !src) return null;
+  const members = membersOf(src);
+  const method = members.find((m) => m.id === u.prop)?.method;
+  const from: Use = { obj: u.src, prop: u.prop, args: u.args };
+  const toMember = (prop: string) => {
+    const m = methodOf(src.type, prop);
+    changeUse(el.id, from, { obj: u.src, prop, ...(m ? { args: [...m.defaults] } : {}) });
+  };
+  const removable = el.inputs.some((i) => i.obj === u.src && sameMember(i, u));
+  return (
+    <div className="use-row" data-testid="use-row" data-field={`use:${u.key}`} data-use-src={src.name}>
+      <div className="use-head">
+        <Icon name="link" size={13} />
+        <b>{src.name}</b>
+        {first && <span className="chip first-chip" data-testid="use-first" data-tip={fieldTip('erste_verwendung', lang, 'f')}>{L('erste Verwendung', 'first use')}</span>}
+        {removable && (
+          <button type="button" className="use-remove" aria-label={L('Verbindung entfernen', 'Remove connection')} data-testid="use-remove" onClick={() => removeUse(el.id, from)}><Icon name="x" size={13} /></button>
+        )}
+      </div>
+      <div className="use-body">
+        <Select value={u.prop} onChange={toMember} ariaLabel={L('Eigenschaft oder Methode', 'Property or method')} testid="use-member">
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>{m.method ? `${methodText(m.method, undefined, lang)} (${L('Methode', 'method')})` : tx(m, lang)}</option>
+          ))}
+        </Select>
+        {method && method.args.map((a, i) => (
+          <NumberInput key={a.id} value={u.args?.[i] ?? method.defaults[i] ?? 1} ariaLabel={tx(a, lang)} testid="use-arg"
+            onChange={(v) => changeUse(el.id, from, { obj: u.src, prop: u.prop, args: method.args.map((_, j) => (j === i ? Math.max(1, Math.round(v === '' ? 1 : v)) : u.args?.[j] ?? method.defaults[j] ?? 1)) })} />
+        ))}
+        {method && <span className="muted">{tx(method.args[0], lang)}</span>}
+        {supportsRefresh(src) && (
+          <span className="use-refresh" data-tip={fieldTip('aktualisieren', lang, 'f')}>
+            <Toggle checked={u.refresh} onChange={(v) => setRefresh(el.id, u.key, v)} label={L('Aktualisieren', 'Update')} testid="use-refresh" />
+          </span>
+        )}
+      </div>
     </div>
   );
 }

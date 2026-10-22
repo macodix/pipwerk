@@ -114,6 +114,8 @@ export async function clickNode(page: Page, name: string, nth = 0): Promise<void
   await n.click({ position: { x: 44, y: 14 } });
 }
 
+export const wire = (page: Page, src: string, dst: string): Locator => page.locator(`[data-testid="wire"][data-src="${src}"][data-dst="${dst}"]`);
+
 export const props = (page: Page): Locator => page.getByTestId('props-element');
 export const field = (page: Page, id: string): Locator => props(page).locator(`[data-field="${id}"]`);
 
@@ -187,7 +189,7 @@ export async function addOwnRule(page: Page, name: string, c: C): Promise<void> 
 /** Reads the saved strategy from the local storage of the page. */
 export async function savedStrategy(page: Page, id?: string, name?: string): Promise<unknown> {
   return page.evaluate(([sid, sname]) => {
-    const raw = window.localStorage.getItem('pipwerk-studio-prototype-v1');
+    const raw = window.localStorage.getItem('pipwerk-studio-prototype-v2');
     const data = JSON.parse(raw ?? '{}') as { saved: { id: string; name: string }[] };
     return data.saved.find((s) => (sid ? s.id === sid : s.name === sname));
   }, [id ?? '', name ?? '']);

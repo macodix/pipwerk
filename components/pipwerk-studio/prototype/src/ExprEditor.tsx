@@ -1,8 +1,8 @@
 // Conditions and calculations from blocks (req-ui-015) and the formula editor for advanced users.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { TYPES, isObjectEl, tx, typeLabel } from './catalog';
+import { TYPES, isObjectEl, methodText, tx, typeLabel } from './catalog';
 import {
-  ARITH_LABEL, CMP_LABEL, COMPARE_OPS, EMPTY, FUNCTIONS, bracketMatch, callAt, completionsAt, describe, highlight, objOf, parse, prettyPrint, propList,
+  ARITH_LABEL, CMP_LABEL, COMPARE_OPS, EMPTY, FUNCTIONS, bracketMatch, callAt, completionsAt, describe, highlight, memberList, methodIn, objOf, parse, prettyPrint, propList,
   refsOf, spName, typeOf,
 } from './expr';
 import type { Completion, Scope, VType } from './expr';
@@ -20,15 +20,17 @@ interface OptGroup {
   items: Opt[];
 }
 
-function valueGroups(sc: Scope, L: (de: string, en: string) => string, inputs: { obj: string; prop: string }[]): OptGroup[] {
+function valueGroups(sc: Scope, L: (de: string, en: string) => string, inputs: { obj: string; prop: string; args?: number[] }[]): OptGroup[] {
   const lang = sc.lang;
   const groups: OptGroup[] = [];
   const refOpt = (obj: string, prop: string, label: string): Opt => ({ v: `ref:${obj}|${prop}`, label });
   const nameOf = (obj: string) => objOf(obj, sc);
-  if (inputs.length) {
+  // methods are chosen with their arguments in the block itself
+  const props = inputs.filter((i) => !methodIn(i.obj, i.prop, sc));
+  if (props.length) {
     groups.push({
       label: L('Verbundene Werte', 'Connected values'),
-      items: inputs.map((i) => {
+      items: props.map((i) => {
         const o = nameOf(i.obj);
         const p = o ? propList(i.obj, sc).find((x) => x.id === i.prop) : undefined;
         return refOpt(i.obj, i.prop, `${o?.el?.name ?? '?'} › ${p ? tx(p, lang) : i.prop}`);
@@ -36,8 +38,12 @@ function valueGroups(sc: Scope, L: (de: string, en: string) => string, inputs: {
     });
   }
   const objects = sc.els.filter((e) => isObjectEl(e.type) && e.id !== sc.self && e.name.trim());
-  const connected = new Set(inputs.map((i) => `${i.obj}|${i.prop}`));
-  const objItems = objects.flatMap((e) => propList(e.id, sc).filter((p) => !connected.has(`${e.id}|${p.id}`)).map((p) => refOpt(e.id, p.id, `${e.name} › ${tx(p, lang)}`)));
+  const connected = new Set(props.map((i) => `${i.obj}|${i.prop}`));
+  const objItems = objects.flatMap((e) => memberList(e.id, sc).filter((p) => !connected.has(`${e.id}|${p.id}`)).map((p) => (
+    p.method
+      ? { v: `refm:${e.id}|${p.id}`, label: `${e.name} › ${methodText(p.method, undefined, lang)} (${L('Methode', 'method')})` }
+      : refOpt(e.id, p.id, `${e.name} › ${tx(p, lang)}`)
+  )));
   if (objItems.length) {
     groups.push({ label: L('Indikatoren, Trends und Objekte', 'Indicators, trends and objects'), items: objItems });
   }
@@ -52,7 +58,7 @@ function valueGroups(sc: Scope, L: (de: string, en: string) => string, inputs: {
   const market = ['Kerze', 'Instrument', 'Konto', 'Tick'].filter((t) => !placed.has(t));
   if (market.length) {
     groups.push({
-      label: L('Markt und Konto', 'Market and account'),
+      label: L('Objekte der Anwendung', 'Objects of the application'),
       items: market.flatMap((t) => (TYPES[t]?.props ?? []).map((p) => refOpt(t, p.id, `${typeLabel(t, lang)} › ${tx(p, lang)}`))),
     });
   }
@@ -85,9 +91,9 @@ function valueGroups(sc: Scope, L: (de: string, en: string) => string, inputs: {
   return groups;
 }
 
-function valueKey(e: Expr): string {
+function valueKey(e: Expr, sc: Scope): string {
   switch (e.t) {
-    case 'ref': return `ref:${e.obj}|${e.prop}`;
+    case 'ref': return `${methodIn(e.obj, e.prop, sc) ? 'refm' : 'ref'}:${e.obj}|${e.prop}`;
     case 'sp': return `sp:${e.id}`;
     case 'par': return `par:${e.id}`;
     case 'num': return 'k:num';
@@ -107,10 +113,14 @@ function valueKey(e: Expr): string {
 
 const isEmptyish = (e: Expr) => e.t === 'empty';
 
-function fromKey(key: string, cur: Expr): Expr {
+function fromKey(key: string, cur: Expr, sc: Scope): Expr {
   if (key.startsWith('ref:')) {
     const [obj, prop] = key.slice(4).split('|');
     return { t: 'ref', obj, prop };
+  }
+  if (key.startsWith('refm:')) {
+    const [obj, prop] = key.slice(5).split('|');
+    return { t: 'ref', obj, prop, args: [...(methodIn(obj, prop, sc)?.defaults ?? [1])] };
   }
   if (key.startsWith('sp:')) return { t: 'sp', id: key.slice(3) };
   if (key.startsWith('par:')) return { t: 'par', id: key.slice(4) };
@@ -139,7 +149,7 @@ const FN_LABEL: Record<string, { de: string; en: string }> = {
 
 export interface EdProps {
   sc: Scope;
-  inputs?: { obj: string; prop: string }[];
+  inputs?: { obj: string; prop: string; args?: number[] }[];
 }
 
 export function ValueEditor({
@@ -147,8 +157,9 @@ export function ValueEditor({
 }: EdProps & { value: Expr; onChange: (e: Expr) => void; hint?: VType; testid?: string }) {
   const L = useL();
   const groups = useMemo(() => valueGroups(sc, L, inputs), [sc, inputs, L]);
-  const key = valueKey(value);
+  const key = valueKey(value, sc);
   const known = groups.some((g) => g.items.some((i) => i.v === key));
+  const method = value.t === 'ref' ? methodIn(value.obj, value.prop, sc) : undefined;
   const sub = (e: Expr, fn: (x: Expr) => void, h?: VType) => (
     <ValueEditor value={e} onChange={fn} sc={sc} inputs={inputs} hint={h} />
   );
@@ -156,7 +167,7 @@ export function ValueEditor({
     <span className="vb" data-testid={testid}>
       <Select
         value={key}
-        onChange={(k) => onChange(fromKey(k, value))}
+        onChange={(k) => onChange(fromKey(k, value, sc))}
         ariaLabel={L('Wert wählen', 'Choose value')}
         className={isEmptyish(value) || value.t === 'bad' ? 'select-empty' : ''}
         testid={testid ? `${testid}-select` : 'value-select'}
@@ -169,6 +180,15 @@ export function ValueEditor({
           </optgroup>
         ))}
       </Select>
+      {value.t === 'ref' && method && (
+        <span className="vb-arg" data-testid="method-args">
+          {method.args.map((a, i) => (
+            <NumberInput key={a.id} value={value.args?.[i] ?? method.defaults[i] ?? 1} ariaLabel={tx(a, sc.lang)} testid={testid ? `${testid}-arg` : 'method-arg'}
+              onChange={(v) => onChange({ ...value, args: method.args.map((_, j) => (j === i ? Math.max(1, Math.round(v === '' ? 1 : v)) : value.args?.[j] ?? method.defaults[j] ?? 1)) })} />
+          ))}
+          <span className="vb-unit">{tx(method.args[0], sc.lang)}</span>
+        </span>
+      )}
       {value.t === 'num' && (
         <NumberInput value={value.v} onChange={(v) => onChange({ t: 'num', v: v === '' ? 0 : v })} ariaLabel={L('Zahl', 'Number')} testid={testid ? `${testid}-num` : 'value-num'} />
       )}

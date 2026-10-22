@@ -6,6 +6,8 @@ export interface LNode {
   id: string;
   w: number;
   h: number;
+  /** Position across the rank that the neighbours align to; default: the middle of the box. */
+  ax?: number;
 }
 export interface LEdge {
   key: string;
@@ -31,6 +33,7 @@ interface Item {
   id: string;
   w: number;
   h: number;
+  ax: number;
   dummy: boolean;
   rank: number;
   x: number;
@@ -111,7 +114,7 @@ function layoutComponent(nodes: LNode[], edges: LEdge[], gapX: number, gapY: num
 
   // items with dummies
   const items = new Map<string, Item>();
-  nodes.forEach((n) => items.set(n.id, { id: n.id, w: n.w, h: n.h, dummy: false, rank: rank.get(n.id) ?? 0, x: 0, y: 0 }));
+  nodes.forEach((n) => items.set(n.id, { id: n.id, w: n.w, h: n.h, ax: n.ax ?? n.w / 2, dummy: false, rank: rank.get(n.id) ?? 0, x: 0, y: 0 }));
   interface Seg { key: string; chain: string[] }
   const segs: Seg[] = [];
   const succ = new Map<string, string[]>();
@@ -129,7 +132,7 @@ function layoutComponent(nodes: LNode[], edges: LEdge[], gapX: number, gapY: num
     const chain = [e.from];
     for (let r = ra + 1; r < rb; r++) {
       const did = `~${e.key}~${r}`;
-      items.set(did, { id: did, w: DUMMY_W, h: 0, dummy: true, rank: r, x: 0, y: 0 });
+      items.set(did, { id: did, w: DUMMY_W, h: 0, ax: DUMMY_W / 2, dummy: true, rank: r, x: 0, y: 0 });
       chain.push(did);
     }
     chain.push(e.to);
@@ -181,11 +184,11 @@ function layoutComponent(nodes: LNode[], edges: LEdge[], gapX: number, gapY: num
       x += widthOf(id);
     });
   });
-  const center = (id: string) => (items.get(id) as Item).x + widthOf(id) / 2;
+  const center = (id: string) => (items.get(id) as Item).x + (items.get(id) as Item).ax;
   const settle = (layer: string[], getNb: (id: string) => string[] | undefined) => {
     const want = layer.map((id) => {
       const ns = getNb(id) ?? [];
-      return ns.length ? ns.reduce((s, n) => s + center(n), 0) / ns.length - widthOf(id) / 2 : (items.get(id) as Item).x;
+      return ns.length ? ns.reduce((s, n) => s + center(n), 0) / ns.length - (items.get(id) as Item).ax : (items.get(id) as Item).x;
     });
     let minX = -Infinity;
     layer.forEach((id, i) => {

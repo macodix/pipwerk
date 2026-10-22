@@ -1,21 +1,31 @@
-// Geometry of the canvas: automatic arrangement of flow, management frames, sections and the
-// area for objects without flow connection, plus the data wires between them.
-import { TYPES, isFlowEl, isObjectEl, isTrigger, propsOf } from './catalog';
+// Geometry of the canvas: automatic arrangement of the flow, the management frames and the sections.
+// Every instance of an indicator, a trend or an object of the application lies at the element of its
+// first use and is connected with it: next to it in the vertical flow, above it in the horizontal flow
+// (req-ui-017). Instances without a first use lie where the user dropped them. The data connections
+// between the instances and the elements that use them are drawn on top.
+import { TYPES, isFlowEl, isObjectEl, isTrigger, membersOf } from './catalog';
 import { layered } from './layout';
 import type { LEdge, LNode, Pt } from './layout';
-import { refsOf } from './expr';
-import type { Binding, El, Expr, Strategy } from './model';
+import type { El, Strategy } from './model';
+import { collectUsage, memberKey, placements } from './uses';
+import type { Placement, UseRec } from './uses';
 
 export type Dir = 'v' | 'h';
 
 export const EL_W = 236;
 export const EL_H = 96;
 export const SEC_H = 58;
-export const CARD_W = 236;
+export const CARD_W = 210;
 export const ROW_H = 27;
 export const CARD_HEAD = 50;
 export const FRAME_HEAD = 36;
 export const FRAME_PAD = 18;
+/** Space for the label of the line between an instance and its element. */
+const BAND_GAP_V = 150;
+const BAND_GAP_H = 64;
+const CARD_GAP = 16;
+/** Height of the hint on an instance that is not connected yet. */
+export const FREE_HINT = 44;
 
 export interface Box {
   x: number;
@@ -33,28 +43,42 @@ export interface FlowEdgeGeo {
   mgmt?: boolean;
 }
 
-export interface Usage {
-  src: string;
+export interface CardRow {
+  /** Property id, or for a method with arguments `id(args)`. */
+  key: string;
   prop: string;
-  dst: string;
-  solid: boolean;
+  args?: number[];
+  used: boolean;
+  method: boolean;
 }
 
 export interface CardGeo extends Box {
   id: string;
-  rows: string[];
+  rows: CardRow[];
+  /** Number of rows that are folded away. */
   more: number;
+  /** The card can unfold. */
+  foldable: boolean;
   rowY: Map<string, number>;
+  /** No first use: the card lies where it was dropped. */
+  free: boolean;
+  host: string | null;
 }
 
 export interface WireGeo {
   key: string;
   src: string;
   dst: string;
-  props: string[];
-  solid: boolean;
+  /** The uses this line carries, in the order of the rows. */
+  uses: { prop: string; args?: number[]; refresh: boolean; key: string }[];
+  /** The connection of the first use: always visible. */
+  first: boolean;
+  refresh: boolean;
   pts: Pt[];
   stubs: Pt[][];
+  mid: Pt;
+  /** The line leaves the card to the side ('x') or downward ('y'). */
+  lead: 'x' | 'y';
 }
 
 export interface FrameGeo extends Box {
@@ -76,38 +100,10 @@ export interface Scene {
   bands: BandGeo[];
   edges: FlowEdgeGeo[];
   wires: WireGeo[];
-  lane: Box | null;
   bounds: Box;
   rep: Map<string, string>;
-  usage: Usage[];
-}
-
-// ---- data usage ----------------------------------------------------------------
-
-function exprsOf(b: Binding | undefined): Expr[] {
-  return b && b.k === 'expr' ? [b.e] : [];
-}
-
-export function collectUsage(s: Strategy): Usage[] {
-  const out: Usage[] = [];
-  const add = (src: string, prop: string, dst: string, solid: boolean) => {
-    const ex = out.find((u) => u.src === src && u.prop === prop && u.dst === dst);
-    if (ex) { ex.solid = ex.solid || solid; return; }
-    out.push({ src, prop, dst, solid });
-  };
-  for (const e of s.els) {
-    for (const i of e.inputs) add(i.obj, i.prop, e.id, true);
-    for (const b of Object.values(e.bind)) {
-      for (const x of exprsOf(b)) for (const r of refsOf(x)) add(r.obj, r.prop, e.id, false);
-      if (b.k === 'ref') add(b.obj, b.prop, e.id, true);
-    }
-    for (const r of e.rules) for (const x of [r.e]) for (const rr of refsOf(x)) add(rr.obj, rr.prop, e.id, false);
-    if (e.own) {
-      for (const p of e.own.props) for (const r of refsOf(p.e)) add(r.obj, r.prop, e.id, false);
-      if (e.own.direction) for (const r of refsOf(e.own.direction)) add(r.obj, r.prop, e.id, false);
-    }
-  }
-  return out;
+  usage: UseRec[];
+  places: Map<string, Placement>;
 }
 
 // ---- helpers -------------------------------------------------------------------
@@ -119,12 +115,63 @@ export function outPort(b: Box, i: number, n: number, dir: Dir): Pt {
 export function inPort(b: Box, dir: Dir): Pt {
   return dir === 'v' ? { x: b.x + b.w / 2, y: b.y } : { x: b.x, y: b.y + b.h / 2 };
 }
+/** Where the data connections end: left of the element in the vertical flow, on top in the horizontal flow. */
 export function dataPort(b: Box, dir: Dir): Pt {
   return dir === 'v' ? { x: b.x, y: b.y + b.h / 2 } : { x: b.x + b.w / 2, y: b.y };
 }
 
 function outputsOf(e: El) {
   return TYPES[e.type]?.outputs ?? [];
+}
+
+interface CardMetrics {
+  rows: CardRow[];
+  more: number;
+  foldable: boolean;
+  h: number;
+}
+
+function sortArgs(a?: number[]): number {
+  return a && a.length ? a[0] : 0;
+}
+
+/** The rows of a card: the values that are used; unfolded: everything the object delivers. */
+export function cardMetrics(e: El, usage: UseRec[], free: boolean): CardMetrics {
+  const members = membersOf(e);
+  const mine = usage.filter((u) => u.src === e.id);
+  const order = (prop: string) => members.findIndex((m) => m.id === prop);
+  const usedRows: CardRow[] = [];
+  for (const u of [...mine].sort((a, b) => order(a.prop) - order(b.prop) || sortArgs(a.args) - sortArgs(b.args))) {
+    const key = memberKey(u.prop, u.args);
+    if (usedRows.some((r) => r.key === key)) continue;
+    usedRows.push({ key, prop: u.prop, args: u.args, used: true, method: !!members.find((m) => m.id === u.prop)?.method });
+  }
+  const all: CardRow[] = [];
+  for (const m of members) {
+    if (m.method) {
+      const used = usedRows.filter((r) => r.prop === m.id);
+      if (used.length) all.push(...used);
+      else all.push({ key: m.id, prop: m.id, used: false, method: true });
+    } else {
+      all.push(usedRows.find((r) => r.prop === m.id) ?? { key: m.id, prop: m.id, used: false, method: false });
+    }
+  }
+  const closed: CardRow[] = usedRows.length > 0
+    ? usedRows
+    : members.filter((m) => !m.method).slice(0, 3).map((m) => ({ key: m.id, prop: m.id, used: false, method: false }));
+  const foldable = all.length > closed.length;
+  const rows = e.open && foldable ? all : closed;
+  const h = CARD_HEAD + rows.length * ROW_H + (foldable ? 30 : 8) + (free ? FREE_HINT : 0);
+  return { rows, more: all.length - rows.length, foldable, h };
+}
+
+interface Footprint {
+  W: number;
+  H: number;
+  ex: number;
+  ey: number;
+  /** Cards attached to the element, relative to the top left corner of the footprint. */
+  cards: { id: string; x: number; y: number }[];
 }
 
 interface FlowPlan {
@@ -155,6 +202,72 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
   const hiddenOrders = new Set<string>();
   for (const e of flowEls) if (rep.has(e.id)) hiddenOrders.add(e.id);
 
+  // ---- instances: first use, rows, footprint of every element with its cards ----
+  const usage = collectUsage(s);
+  const places = placements(s, usage);
+  const objects = s.els.filter((e) => isObjectEl(e.type));
+  const metrics = new Map<string, CardMetrics>();
+  for (const o of objects) metrics.set(o.id, cardMetrics(o, usage, !places.has(o.id)));
+  const attached = new Map<string, { id: string; depth: number; parent: string }[]>();
+  for (const o of objects) {
+    const pl = places.get(o.id);
+    if (!pl) continue;
+    if (!attached.has(pl.root)) attached.set(pl.root, []);
+    attached.get(pl.root)?.push({ id: o.id, depth: pl.depth, parent: pl.host });
+  }
+  for (const list of attached.values()) list.sort((a, b) => a.depth - b.depth || objects.findIndex((o) => o.id === a.id) - objects.findIndex((o) => o.id === b.id));
+  const cardH = (id: string) => (metrics.get(id) as CardMetrics).h;
+
+  const footprints = new Map<string, Footprint>();
+  function footprintOf(e: El): Footprint {
+    const cached = footprints.get(e.id);
+    if (cached) return cached;
+    const att = attached.get(e.id) ?? [];
+    let fp: Footprint;
+    if (att.length === 0) {
+      fp = { W: EL_W, H: EL_H, ex: 0, ey: 0, cards: [] };
+    } else {
+      const maxDepth = Math.max(...att.map((a) => a.depth));
+      const band = (d: number) => att.filter((a) => a.depth === d);
+      if (dir === 'v') {
+        const colX = (d: number) => (maxDepth - d) * (CARD_W + BAND_GAP_V);
+        const bandH = (d: number) => band(d).reduce((sum, a, i) => sum + cardH(a.id) + (i > 0 ? CARD_GAP : 0), 0);
+        const H = Math.max(EL_H, ...Array.from({ length: maxDepth }, (_, i) => bandH(i + 1)));
+        const cards: Footprint['cards'] = [];
+        for (let d = 1; d <= maxDepth; d++) {
+          let y = (H - bandH(d)) / 2;
+          for (const a of band(d)) {
+            cards.push({ id: a.id, x: colX(d), y });
+            y += cardH(a.id) + CARD_GAP;
+          }
+        }
+        fp = { W: maxDepth * (CARD_W + BAND_GAP_V) + EL_W, H, ex: maxDepth * (CARD_W + BAND_GAP_V), ey: (H - EL_H) / 2, cards };
+      } else {
+        const rowW = (d: number) => band(d).length * CARD_W + (band(d).length - 1) * CARD_GAP;
+        const rowH = (d: number) => Math.max(0, ...band(d).map((a) => cardH(a.id)));
+        const W = Math.max(EL_W, ...Array.from({ length: maxDepth }, (_, i) => rowW(i + 1)));
+        // the farthest row on top, the nearest just above the element
+        let y = 0;
+        const rowY = new Map<number, number>();
+        for (let d = maxDepth; d >= 1; d--) {
+          rowY.set(d, y);
+          y += rowH(d) + BAND_GAP_H;
+        }
+        const cards: Footprint['cards'] = [];
+        for (let d = 1; d <= maxDepth; d++) {
+          let x = (W - rowW(d)) / 2;
+          for (const a of band(d)) {
+            cards.push({ id: a.id, x, y: (rowY.get(d) as number) + rowH(d) - cardH(a.id) });
+            x += CARD_W + CARD_GAP;
+          }
+        }
+        fp = { W, H: y + EL_H, ex: (W - EL_W) / 2, ey: y, cards };
+      }
+    }
+    footprints.set(e.id, fp);
+    return fp;
+  }
+
   const plans = new Map<string | null, FlowPlan>();
 
   function plan(key: string | null): FlowPlan {
@@ -174,7 +287,8 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
           secNodes.push({ id: r, secId: sid, ids: s.sections.find((x) => x.id === sid)?.els ?? [] });
         }
       } else {
-        nodeSize.set(e.id, { w: EL_W, h: EL_H });
+        const fp = footprintOf(e);
+        nodeSize.set(e.id, { w: fp.W, h: fp.H });
         nodeIds.push(e.id);
       }
     }
@@ -210,11 +324,13 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
       const idx = outputsOf(a).findIndex((o) => o.id === c.out);
       edges.push({ key: `${c.from}|${c.out}|${c.to}`, from: ra, to: rb, order: idx < 0 ? 0 : idx });
     }
-    // layout
+    // layout: across the rank the element itself is what neighbours align to, not its cards
     const sw = dir === 'v';
     const lnodes: LNode[] = nodeIds.map((id) => {
       const sz = nodeSize.get(id) as { w: number; h: number };
-      return sw ? { id, w: sz.w, h: sz.h } : { id, w: sz.h, h: sz.w };
+      const fp = byId.has(id) ? footprintOf(byId.get(id) as El) : null;
+      if (sw) return fp ? { id, w: sz.w, h: sz.h, ax: fp.ex + EL_W / 2 } : { id, w: sz.w, h: sz.h };
+      return fp ? { id, w: sz.h, h: sz.w, ax: fp.ey + EL_H / 2 } : { id, w: sz.h, h: sz.w };
     });
     const res = layered(lnodes, edges, sw ? 48 : 26, sw ? 66 : 76);
     const pos = new Map<string, Pt>();
@@ -235,6 +351,7 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
   const nodes = new Map<string, Box>();
   const secNodes = new Map<string, Box>();
   const frames: FrameGeo[] = [];
+  const cardPos = new Map<string, Pt>();
   const rawEdges: { key: string; from: string; out: string; to: string; via: Pt[]; mgmt: boolean; ox: number; oy: number }[] = [];
 
   function emit(pl: FlowPlan, ox: number, oy: number) {
@@ -252,7 +369,15 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
         secNodes.set(id, { x: ox + p.x, y: oy + p.y, w: sz.w, h: sz.h });
       } else {
         const e = byId.get(id) as El;
-        nodes.set(id, { x: ox + p.x + (e.dx ?? 0), y: oy + p.y + (e.dy ?? 0), w: sz.w, h: sz.h });
+        const fp = footprintOf(e);
+        const dx = e.dx ?? 0;
+        const dy = e.dy ?? 0;
+        nodes.set(id, { x: ox + p.x + fp.ex + dx, y: oy + p.y + fp.ey + dy, w: EL_W, h: EL_H });
+        // the cards follow the element, plus their own shift
+        for (const c of fp.cards) {
+          const ce = byId.get(c.id) as El;
+          cardPos.set(c.id, { x: ox + p.x + c.x + dx + (ce.dx ?? 0), y: oy + p.y + c.y + dy + (ce.dy ?? 0) });
+        }
       }
     }
     for (const ed of pl.edges) {
@@ -270,7 +395,17 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
       rawEdges.push({ key: ed.key, from, out, to, via, mgmt: isMg, ox, oy });
     }
   }
-  emit(main, 0, 0);
+  // the first element of the main flow stays at the origin, so the picture does not shift when instances are added
+  let ox0 = 0;
+  let oy0 = 0;
+  const rid = main.ids[0];
+  const rp = rid ? main.pos.get(rid) : undefined;
+  if (rid && rp) {
+    const fp = byId.has(rid) ? footprintOf(byId.get(rid) as El) : null;
+    ox0 = -(rp.x + (fp?.ex ?? 0));
+    oy0 = -(rp.y + (fp?.ey ?? 0));
+  }
+  emit(main, ox0, oy0);
 
   const boxOf = (id: string): Box | undefined => {
     const r = repOf(id);
@@ -310,11 +445,31 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
     edges.push({ key: re.key, from: re.from, out: re.out, to: re.to, pts: [fromPt, ...re.via, toPt] });
   }
 
-  // ---- section bands ----
+  // ---- cards ----
+  const cards = new Map<string, CardGeo>();
+  const mkCard = (o: El, x: number, y: number, free: boolean) => {
+    const m = metrics.get(o.id) as CardMetrics;
+    const rowY = new Map<string, number>();
+    m.rows.forEach((r, i) => rowY.set(r.key, y + CARD_HEAD + i * ROW_H + ROW_H / 2));
+    cards.set(o.id, {
+      id: o.id, x, y, w: CARD_W, h: m.h, rows: m.rows, more: m.more, foldable: m.foldable, rowY, free, host: places.get(o.id)?.host ?? null,
+    });
+  };
+  for (const o of objects) {
+    const p = cardPos.get(o.id);
+    if (p) mkCard(o, p.x, p.y, false);
+  }
+
+  // ---- section bands (they include the cards of their elements) ----
   const bands: BandGeo[] = [];
   for (const sec of s.sections) {
     if (sec.collapsed) continue;
-    const bs = sec.els.map((id) => nodes.get(id)).filter((b): b is Box => !!b);
+    const bs: Box[] = [];
+    for (const id of sec.els) {
+      const nb = nodes.get(id);
+      if (nb) bs.push(nb);
+      for (const [cid, pl] of places) if (pl.root === id) { const cb = cards.get(cid); if (cb) bs.push(cb); }
+    }
     if (bs.length === 0) continue;
     const x0 = Math.min(...bs.map((b) => b.x)) - 12;
     const y0 = Math.min(...bs.map((b) => b.y)) - 14;
@@ -323,69 +478,38 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
     bands.push({ id: sec.id, name: sec.name, x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
   }
 
-  // ---- objects without flow connection ----
-  const usage = collectUsage(s);
-  const objects = s.els.filter((e) => isObjectEl(e.type));
-  const usedProps = new Map<string, Set<string>>();
-  for (const u of usage) {
-    if (!usedProps.has(u.src)) usedProps.set(u.src, new Set());
-    usedProps.get(u.src)?.add(u.prop);
-  }
-  const consumerY = (id: string): number => {
-    const ys = usage.filter((u) => u.src === id).map((u) => {
-      const b = nodes.get(u.dst);
-      return b ? (dir === 'v' ? b.y : b.x) : Infinity;
-    });
-    return ys.length ? Math.min(...ys) : Infinity;
-  };
-  const ordered = [...objects].sort((a, b) => {
-    const ya = consumerY(a.id);
-    const yb = consumerY(b.id);
-    if (ya === yb) return objects.indexOf(a) - objects.indexOf(b);
-    return ya - yb;
-  });
-  const cards = new Map<string, CardGeo>();
-  const heights = ordered.map((e) => {
-    const all = propsOf(e).map((p) => p.id);
-    const used = all.filter((p) => usedProps.get(e.id)?.has(p));
-    const rows = e.open ? all : used.length > 0 ? used : all.slice(0, 3);
-    const more = all.length - rows.length;
-    return { e, rows, more, h: CARD_HEAD + rows.length * ROW_H + (all.length > 3 || e.open ? 30 : 8) };
-  });
-  let lane: Box | null = null;
-  if (heights.length) {
-    if (dir === 'v') {
-      const x = -(CARD_W + 96);
-      let y = 0;
-      for (const hh of heights) {
-        const rowY = new Map<string, number>();
-        hh.rows.forEach((p, i) => rowY.set(p, y + CARD_HEAD + i * ROW_H + ROW_H / 2));
-        cards.set(hh.e.id, { id: hh.e.id, x: x + (hh.e.dx ?? 0), y: y + (hh.e.dy ?? 0), w: CARD_W, h: hh.h, rows: hh.rows, more: hh.more, rowY });
-        y += hh.h + 22;
-      }
-      lane = { x: x - 14, y: -44, w: CARD_W + 28, h: y + 44 };
+  // ---- instances without a first use: where the user dropped them, otherwise beside the flow ----
+  const flowBoxes: Box[] = [...nodes.values(), ...secNodes.values(), ...frames, ...bands, ...cards.values()];
+  const fx0 = flowBoxes.length ? Math.min(...flowBoxes.map((b) => b.x)) : 0;
+  const fy0 = flowBoxes.length ? Math.min(...flowBoxes.map((b) => b.y)) : 0;
+  let nextFree = 0;
+  for (const o of objects) {
+    if (places.has(o.id)) continue;
+    const m = metrics.get(o.id) as CardMetrics;
+    let x: number;
+    let y: number;
+    if (o.fx !== undefined && o.fy !== undefined) {
+      x = o.fx;
+      y = o.fy;
+    } else if (dir === 'v') {
+      x = fx0 - CARD_W - 70;
+      y = fy0 + nextFree;
+      nextFree += m.h + CARD_GAP;
     } else {
-      const maxH = Math.max(...heights.map((x) => x.h));
-      const y = -(maxH + 120);
-      let x = 0;
-      for (const hh of heights) {
-        const rowY = new Map<string, number>();
-        hh.rows.forEach((p, i) => rowY.set(p, y + CARD_HEAD + i * ROW_H + ROW_H / 2));
-        cards.set(hh.e.id, { id: hh.e.id, x: x + (hh.e.dx ?? 0), y: y + (hh.e.dy ?? 0), w: CARD_W, h: hh.h, rows: hh.rows, more: hh.more, rowY });
-        x += CARD_W + 22;
-      }
-      lane = { x: -14, y: y - 44, w: x + 14, h: maxH + 58 };
+      x = fx0 + nextFree;
+      y = fy0 - m.h - 70;
+      nextFree += CARD_W + CARD_GAP;
     }
+    mkCard(o, x + (o.dx ?? 0), y + (o.dy ?? 0), true);
   }
 
-  // ---- data wires ----
+  // ---- data connections ----
   const wires: WireGeo[] = [];
-  const groups = new Map<string, Usage[]>();
+  const groups = new Map<string, UseRec[]>();
   for (const u of usage) {
-    if (!cards.has(u.src)) continue;
-    const dstBox = nodes.get(u.dst) ?? cards.get(u.dst);
-    const dstVisible = !!dstBox || rep.has(u.dst);
-    if (!dstVisible || u.src === u.dst) continue;
+    if (!cards.has(u.src) || u.src === u.dst) continue;
+    const dstVisible = nodes.has(u.dst) || cards.has(u.dst) || rep.has(u.dst);
+    if (!dstVisible) continue;
     const k = `${u.src}>${u.dst}`;
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k)?.push(u);
@@ -395,26 +519,53 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
     const dstId = us[0].dst;
     const dst: Box | undefined = nodes.get(dstId) ?? cards.get(dstId) ?? secNodes.get(repOf(dstId));
     if (!dst) continue;
-    const ys = us.map((u) => src.rowY.get(u.prop)).filter((y): y is number => y !== undefined);
+    const keys = [...new Set(us.map((u) => memberKey(u.prop, u.args)))];
+    const ys = keys.map((kk) => src.rowY.get(kk)).filter((y): y is number => y !== undefined);
     const avgY = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : src.y + src.h / 2;
-    const stubs = ys.length > 1 ? ys.map((y) => [{ x: src.x + src.w, y }, { x: src.x + src.w + 14, y }]) : [];
-    const start: Pt = { x: src.x + src.w + (ys.length > 1 ? 14 : 0), y: avgY };
     const end = dataPort(dst, dir);
-    wires.push({
-      key: k, src: us[0].src, dst: dstId, props: us.map((u) => u.prop), solid: us.some((u) => u.solid), pts: [start, end], stubs,
-    });
+    let pts: Pt[];
+    let stubs: Pt[][] = [];
+    let lead: 'x' | 'y';
+    if (dir === 'v') {
+      stubs = ys.length > 1 ? ys.map((y) => [{ x: src.x + src.w, y }, { x: src.x + src.w + 14, y }]) : [];
+      pts = [{ x: src.x + src.w + (ys.length > 1 ? 14 : 0), y: avgY }, end];
+      lead = 'x';
+    } else {
+      pts = [{ x: src.x + src.w / 2, y: src.y + src.h }, end];
+      lead = 'y';
+    }
+    const first = places.get(us[0].src)?.host === dstId;
+    // the label names the values in the order of the rows of the card
+    const rowIndex = (kk: string) => { const i = src.rows.findIndex((r) => r.key === kk); return i < 0 ? 999 : i; };
+    const ordered = keys.sort((a, b) => rowIndex(a) - rowIndex(b)).map((kk) => us.find((u) => memberKey(u.prop, u.args) === kk) as UseRec);
+    const w: WireGeo = {
+      key: k, src: us[0].src, dst: dstId, first, refresh: ordered.some((u) => u.refresh), pts, stubs, lead, mid: { x: 0, y: 0 },
+      uses: ordered.map((u) => ({ prop: u.prop, args: u.args, refresh: u.refresh, key: u.key })),
+    };
+    w.mid = wireMid(w, dir);
+    wires.push(w);
+  }
+  // the connection to the first use is there even when the element uses no value yet
+  for (const [oid, pl] of places) {
+    const src = cards.get(oid);
+    const dst = nodes.get(pl.host) ?? cards.get(pl.host);
+    if (!src || !dst || groups.has(`${oid}>${pl.host}`)) continue;
+    const end = dataPort(dst, dir);
+    const pts = dir === 'v' ? [{ x: src.x + src.w, y: src.y + CARD_HEAD / 2 }, end] : [{ x: src.x + src.w / 2, y: src.y + src.h }, end];
+    const w: WireGeo = { key: `${oid}>${pl.host}`, src: oid, dst: pl.host, first: true, refresh: false, pts, stubs: [], lead: dir === 'v' ? 'x' : 'y', mid: { x: 0, y: 0 }, uses: [] };
+    w.mid = wireMid(w, dir);
+    wires.push(w);
   }
 
   // ---- bounds ----
   const all: Box[] = [...nodes.values(), ...secNodes.values(), ...cards.values(), ...frames, ...bands];
-  if (lane) all.push(lane);
   if (all.length === 0) all.push({ x: 0, y: 0, w: EL_W, h: EL_H });
   const x0 = Math.min(...all.map((b) => b.x));
   const y0 = Math.min(...all.map((b) => b.y));
   const x1 = Math.max(...all.map((b) => b.x + b.w));
   const y1 = Math.max(...all.map((b) => b.y + b.h));
 
-  return { nodes, secNodes, cards, frames, bands, edges, wires, lane, bounds: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, rep, usage };
+  return { nodes, secNodes, cards, frames, bands, edges, wires, bounds: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, rep, usage, places };
 }
 
 /** Smooth path through points with tangents along the main axis. */
@@ -435,17 +586,26 @@ export function pathThrough(pts: Pt[], dir: Dir): string {
   return d;
 }
 
-/** Wire path: leaves the card to the right (vertical) or downward (horizontal). */
-export function wirePath(w: WireGeo, dir: Dir): string {
+function wireControls(w: Pick<WireGeo, 'pts' | 'lead'>): [Pt, Pt, Pt, Pt] {
   const a = w.pts[0];
   const b = w.pts[1];
-  if (dir === 'v') {
+  if (w.lead === 'x') {
     const k = Math.max(40, Math.abs(b.x - a.x) * 0.5);
-    return `M ${a.x} ${a.y} C ${a.x + k} ${a.y}, ${b.x - k} ${b.y}, ${b.x} ${b.y}`;
+    return [a, { x: a.x + k, y: a.y }, { x: b.x - k, y: b.y }, b];
   }
-  const kx = Math.max(30, Math.abs(b.x - a.x) * 0.3);
-  const ky = Math.max(40, Math.abs(b.y - a.y) * 0.5);
-  return `M ${a.x} ${a.y} C ${a.x + kx} ${a.y}, ${b.x} ${b.y - ky}, ${b.x} ${b.y}`;
+  const k = Math.max(30, Math.abs(b.y - a.y) * 0.5);
+  return [a, { x: a.x, y: a.y + k }, { x: b.x, y: b.y - k }, b];
+}
+
+/** The line between an instance and the element that uses it. */
+export function wirePath(w: WireGeo, _dir?: Dir): string {
+  const [a, c1, c2, b] = wireControls(w);
+  return `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
+}
+
+function wireMid(w: Pick<WireGeo, 'pts' | 'lead'>, _dir?: Dir): Pt {
+  const [a, c1, c2, b] = wireControls(w);
+  return { x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8, y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8 };
 }
 
 export { isTrigger };

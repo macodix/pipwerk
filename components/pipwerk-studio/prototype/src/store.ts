@@ -2,13 +2,14 @@
 // the browser's local storage (simulated object directory); on every start the client's
 // strategy and the test cases are present again.
 import { useSyncExternalStore } from 'react';
-import { TYPES, fieldsOf, isFlowEl, isObjectEl, isTrigger } from './catalog';
-import { EMPTY, mapExpr } from './expr';
+import { TYPES, fieldsOf, isFlowEl, isObjectEl, isTrigger, methodOf, propsOf } from './catalog';
+import { EMPTY, mapExpr, refsOf, sameMember } from './expr';
+import { exprsOfEl, flowElementOf, placements, useKey } from './uses';
 import {
   BUILTIN_RISK_ID, builtinTemplates, defaultBinding, defaultName, instanceFromTemplate, newEl, newOwnRule, newRuleFromTemplate, newStrategy, uniqueName,
 } from './factory';
 import { clone, emptyOwn, uid } from './model';
-import type { Binding, Conn, El, Lang, RuleInst, Section, Settings, Strategy, Template } from './model';
+import type { Binding, Conn, El, Expr, Lang, RuleInst, Section, Settings, Strategy, Template, Use } from './model';
 import { sampleStrategies, sampleTemplates } from './samples';
 import type { Dir } from './scene';
 
@@ -77,7 +78,7 @@ export interface State {
   openCount: number;
 }
 
-const KEY = 'pipwerk-studio-prototype-v1';
+const KEY = 'pipwerk-studio-prototype-v2';
 
 interface Persisted {
   saved: Strategy[];
@@ -116,7 +117,7 @@ function initialState(): State {
   const first = clone(saved.find((x) => x.sample === 'auftraggeber') as Strategy);
   return {
     settings, saved, templates, strategy: first, dirty: false, sel: { k: 'strategy' }, checked: false, tplView: null, wizard: null,
-    dialog: null, panel: 'canvas', orient: stored?.orient ?? 'v', wires: 'all', armed: null, lastAdded: null, toast: null, focusField: null,
+    dialog: null, panel: 'canvas', orient: stored?.orient ?? 'v', wires: 'sel', armed: null, lastAdded: null, toast: null, focusField: null,
     menuOpen: false, openCount: 1,
   };
 }
@@ -170,11 +171,24 @@ export function langOf(): Lang {
   return state.settings.lang;
 }
 
+/** The element a selection stands for in the flow: the element itself, or the element an instance lies at. */
+export function selectedFlowElement(): string | null {
+  const s = state.strategy;
+  if (!s) return null;
+  const sel = state.sel;
+  const id = sel.k === 'el' ? sel.id : sel.k === 'rule' ? sel.owner : null;
+  if (!id) return null;
+  return flowElementOf(id, placements(s), new Map(s.els.map((e) => [e.id, e])));
+}
+
 export function currentFlow(): string | null {
   const s = state.strategy;
   if (!s) return null;
   if (state.sel.k === 'frame') return state.sel.id;
-  if (state.sel.k === 'el') return s.els.find((e) => e.id === (state.sel as { id: string }).id)?.mgmt ?? null;
+  if (state.sel.k === 'el') {
+    const id = selectedFlowElement();
+    return s.els.find((e) => e.id === id)?.mgmt ?? null;
+  }
   if (state.sel.k === 'rule' && state.sel.owner) return s.els.find((e) => e.id === (state.sel as { owner: string }).owner)?.mgmt ?? null;
   return null;
 }
@@ -283,6 +297,55 @@ function firstFreeOutput(s: Strategy, from: El): string | null {
 export interface AddOptions {
   after?: string;
   flow?: string | null;
+  /** An instance is connected with this element at once (dropped onto it). */
+  host?: string;
+  /** An instance lies where it was dropped on free space until the user connects it. */
+  free?: { x: number; y: number };
+}
+
+/** Entries that become an instance with a first use: indicators, trends, objects of the application. */
+export function isObjectEntry(entry: LibEntry): boolean {
+  if (entry.k === 'tpl') {
+    const t = allTemplates(state).find((x) => x.id === entry.id);
+    return !!t && (t.kind === 'indicator' || t.kind === 'trend');
+  }
+  const d = TYPES[entry.id];
+  return !!d && (d.kind === 'indicator' || d.kind === 'trend' || d.kind === 'app');
+}
+
+/** The value a new connection passes on: the main value of the object type. */
+function defaultUse(el: El): Use | null {
+  const main = TYPES[el.type]?.main;
+  const prop = propsOf(el).find((p) => p.id === main) ?? propsOf(el)[0];
+  return prop ? { obj: el.id, prop: prop.id, auto: true } : null;
+}
+
+/** Connects an instance with the element of its first use. The connection carries the main value. */
+function connectFirst(s: Strategy, el: El, targetId: string) {
+  el.host = targetId;
+  const target = s.els.find((e) => e.id === targetId);
+  const u = defaultUse(el);
+  if (target && u && !target.inputs.some((i) => i.obj === u.obj)) target.inputs.push(u);
+}
+
+/** "Connection" in the library: the selected step is the start, the next click the end. */
+function startConnection() {
+  const s = state.strategy;
+  if (!s) {
+    toast('Öffnen Sie zuerst eine Strategie oder legen Sie eine neue an.', 'Open a strategy first or create a new one.');
+    return;
+  }
+  const from = s.els.find((e) => e.id === selectedFlowElement());
+  if (!from || !isFlowEl(from.type)) {
+    toast('Wählen Sie zuerst den Schritt, von dem die Verbindung ausgeht, und klicken Sie dann „Verbindung“.', 'First select the step the connection starts at, then click "Connection".');
+    return;
+  }
+  const out = firstFreeOutput(s, from);
+  if (!out) {
+    toast('Alle Ausgänge dieses Schritts sind schon verbunden. Ziehen Sie vom Anschluss, um anders zu verbinden.', 'All exits of this step are connected already. Drag from the port to connect differently.');
+    return;
+  }
+  setState({ armed: { from: from.id, out } });
 }
 
 export function addEntry(entry: LibEntry, opts: AddOptions = {}): string | null {
@@ -294,6 +357,16 @@ export function addEntry(entry: LibEntry, opts: AddOptions = {}): string | null 
   const lang = state.settings.lang;
   const sel = state.sel;
   let newId: string | null = null;
+  if (entry.k === 'type' && TYPES[entry.id]?.kind === 'tool') {
+    startConnection();
+    return null;
+  }
+  const isObj = isObjectEntry(entry);
+  const target = isObj && !opts.free ? opts.host ?? selectedFlowElement() : null;
+  const place = (s: Strategy, el: El) => {
+    if (opts.free) { el.fx = opts.free.x; el.fy = opts.free.y; }
+    if (target) connectFirst(s, el, target);
+  };
 
   if (entry.k === 'tpl') {
     const t = allTemplates(state).find((x) => x.id === entry.id);
@@ -305,6 +378,7 @@ export function addEntry(entry: LibEntry, opts: AddOptions = {}): string | null 
       const el = instanceFromTemplate(t, defaultName(t.type, lang, s.els.map((e) => e.name)));
       el.name = uniqueName(t.name, s.els.map((e) => e.name));
       s.els.push(el);
+      place(s, el);
       newId = el.id;
     });
   } else {
@@ -321,25 +395,150 @@ export function addEntry(entry: LibEntry, opts: AddOptions = {}): string | null 
       s.els.push(el);
       newId = el.id;
       if (flowLike && !isTrigger(entry.id)) {
-        const afterId = opts.after ?? (sel.k === 'el' ? sel.id : null);
+        const afterId = opts.after ?? selectedFlowElement() ?? (sel.k === 'el' ? sel.id : null);
         const from = afterId ? s.els.find((e) => e.id === afterId) : undefined;
         if (from && isFlowEl(from.type) && (from.mgmt ?? null) === (flow ?? null)) {
           const out = firstFreeOutput(s, from);
           if (out) s.conns.push({ from: from.id, out, to: el.id });
         }
       }
+      if (isObj) place(s, el);
       // keep named elements unique
       if (TYPES[entry.id].named) el.name = uniqueName(el.name, s.els.filter((e) => e !== el).map((e) => e.name));
     });
   }
   if (newId) {
     setState({ sel: { k: 'el', id: newId }, lastAdded: newId });
-    if (isNarrow()) {
-      const name = state.strategy?.els.find((e) => e.id === newId)?.name ?? '';
+    const name = state.strategy?.els.find((e) => e.id === newId)?.name ?? '';
+    if (isObj) {
+      const host = target ? state.strategy?.els.find((e) => e.id === target)?.name ?? '' : '';
+      if (target) toast(`„${name}“ ist mit „${host}“ verbunden und liegt dort.`, `"${name}" is connected to "${host}" and lies there.`);
+      else toast(`„${name}“ ist noch mit keinem Element verbunden. Ziehen Sie es auf das Element, das es zuerst verwendet.`, `"${name}" is not connected to an element yet. Drag it onto the element that uses it first.`);
+    } else if (isNarrow()) {
       toast(`„${name}“ ist eingefügt. Sie sehen es auf der Zeichenfläche.`, `"${name}" is inserted. You can see it on the canvas.`);
     }
   }
   return newId;
+}
+
+// ---- uses of objects ------------------------------------------------------------------------
+
+/** Walks up the chain of first uses: true when `start` hangs, directly or indirectly, at `obj`. */
+function hangsAt(s: Strategy, start: string, obj: string): boolean {
+  const pl = placements(s);
+  let cur: string | undefined = start;
+  for (let i = 0; i < 12 && cur; i++) {
+    if (cur === obj) return true;
+    cur = pl.get(cur)?.host;
+  }
+  return false;
+}
+
+/**
+ * The user connects a value of an object with an element: dropping the card, dragging a line from a row,
+ * choosing the element in the properties. For an instance without a first use this is the first use, the
+ * instance lies at the element from then on. Otherwise it is a further use: a data connection.
+ */
+export function connectObject(objId: string, targetId: string, use?: Use): 'first' | 'further' | null {
+  const s = state.strategy;
+  const o = s?.els.find((e) => e.id === objId);
+  const t = s?.els.find((e) => e.id === targetId);
+  if (!s || !o || !t || objId === targetId || !isObjectEl(o.type)) return null;
+  if (isObjectEl(t.type) && hangsAt(s, targetId, objId)) {
+    toast('Dieses Objekt hängt selbst an dem Ziel. Eine Verbindung im Kreis ist nicht möglich.', 'This object itself hangs at the target. A connection in a circle is not possible.');
+    return null;
+  }
+  const placeNow = placements(s).get(objId);
+  const had = !!placeNow;
+  const u: Use = use ?? defaultUse(o) ?? { obj: objId, prop: '' };
+  const m = methodOf(o.type, u.prop);
+  const withArgs: Use = m && !u.args ? { ...u, args: [...m.defaults] } : u;
+  update((st) => {
+    const oo = st.els.find((e) => e.id === objId) as El;
+    const tt = st.els.find((e) => e.id === targetId) as El;
+    // the first use stays where it is, even if the new use lies earlier in the flow
+    if (!had) oo.host = targetId;
+    else if (!oo.host && placeNow) oo.host = placeNow.host;
+    if (withArgs.prop && !tt.inputs.some((i) => i.obj === objId && sameMember(i, withArgs))) tt.inputs.push(withArgs);
+  });
+  setState({ sel: { k: 'el', id: targetId } });
+  if (!had) toast(`„${o.name}“ ist jetzt mit „${t.name}“ verbunden und liegt dort.`, `"${o.name}" is now connected to "${t.name}" and lies there.`);
+  else toast(`Der Wert ist jetzt ein Eingang von „${t.name}“. Verwenden Sie ihn in der Bedingung oder Berechnung.`, `The value is now an input of "${t.name}". Use it in the condition or calculation.`);
+  return had ? 'further' : 'first';
+}
+
+/** Properties view: the element of the first use. */
+export function setHost(objId: string, hostId: string | null) {
+  update((s) => {
+    const o = s.els.find((e) => e.id === objId);
+    if (!o) return;
+    o.host = hostId;
+    const h = hostId ? s.els.find((e) => e.id === hostId) : undefined;
+    const u = defaultUse(o);
+    if (h && u && !h.inputs.some((i) => i.obj === objId) && !exprsOfEl(h).some((x) => refsOf(x).some((r) => r.obj === objId))) h.inputs.push(u);
+    if (!hostId) { delete o.fx; delete o.fy; }
+  });
+}
+
+/** Blocks and the formula view: the element uses values; they become connections. */
+export function noteValues(elId: string, e: Expr) {
+  const s = state.strategy;
+  if (!s) return;
+  const refs = refsOf(e);
+  if (refs.length === 0) return;
+  update((st) => {
+    const el = st.els.find((x) => x.id === elId);
+    if (!el) return;
+    const pl = placements(st);
+    for (const r of refs) {
+      const o = st.els.find((q) => q.id === r.obj);
+      if (!o || !isObjectEl(o.type) || o.id === elId) continue;
+      if (!methodOf(o.type, r.prop) && !el.inputs.some((i) => i.obj === r.obj && sameMember(i, r))) el.inputs.push({ obj: r.obj, prop: r.prop });
+      const place = pl.get(o.id);
+      if (!o.host) o.host = place ? place.host : elId;
+    }
+  });
+}
+
+export function setRefresh(elId: string, key: string, on: boolean) {
+  update((s) => {
+    const e = s.els.find((x) => x.id === elId);
+    if (!e) return;
+    const set = new Set(e.refresh ?? []);
+    if (on) set.add(key); else set.delete(key);
+    e.refresh = [...set];
+  });
+}
+
+/** Maps every expression of an element. */
+function mapElExprs(e: El, f: (x: Expr) => Expr) {
+  for (const [k, b] of Object.entries(e.bind)) if (b.k === 'expr') e.bind[k] = { k: 'expr', e: f(b.e) };
+  for (const r of e.rules) r.e = f(r.e);
+  if (e.own) {
+    for (const p of e.own.props) p.e = f(p.e);
+    if (e.own.direction) e.own.direction = f(e.own.direction);
+  }
+}
+
+/** Properties view: another property or method for a use (also in the expressions of the element). */
+export function changeUse(elId: string, from: Use, to: Use) {
+  update((s) => {
+    const e = s.els.find((x) => x.id === elId);
+    if (!e) return;
+    const fk = useKey(from);
+    const tk = useKey(to);
+    e.inputs = e.inputs.map((i) => (i.obj === from.obj && sameMember(i, from) ? { ...to } : i)).filter((i, n, a) => a.findIndex((q) => q.obj === i.obj && sameMember(q, i)) === n);
+    mapElExprs(e, (x) => mapExpr(x, (y) => (y.t === 'ref' && y.obj === from.obj && sameMember(y, from) ? { t: 'ref', obj: to.obj, prop: to.prop, ...(to.args ? { args: to.args } : {}) } : undefined)));
+    if (e.refresh?.includes(fk)) e.refresh = [...e.refresh.filter((k) => k !== fk), tk];
+  });
+}
+
+/** Properties view: removes the connection the user made (a use in an expression stays). */
+export function removeUse(elId: string, u: Use) {
+  update((s) => {
+    const e = s.els.find((x) => x.id === elId);
+    if (e) e.inputs = e.inputs.filter((i) => !(i.obj === u.obj && sameMember(i, u)));
+  });
 }
 
 function addRule(t: Template | null, typeId?: string): string | null {
@@ -415,6 +614,8 @@ export interface RemoveInfo {
   el: El;
   users: { id: string; name: string }[];
   managed: El[];
+  /** Instances whose first use is this element: they are not connected afterwards. */
+  hosted: El[];
 }
 
 export function removeInfo(id: string): RemoveInfo | null {
@@ -429,7 +630,9 @@ export function removeInfo(id: string): RemoveInfo | null {
     })
     .map((e) => ({ id: e.id, name: e.name }));
   const managed = el.type === 'flow.place_order' ? s.els.filter((e) => e.mgmt === id) : [];
-  return { el, users, managed };
+  const pl = placements(s);
+  const hosted = s.els.filter((e) => e.id !== id && pl.get(e.id)?.host === id && !managed.some((m) => m.id === e.id));
+  return { el, users, managed, hosted };
 }
 
 /** Removes an element. Expressions that used it get an empty block, the finding tells the user. */
@@ -450,6 +653,8 @@ export function removeEl(id: string) {
     const fix = (e: Expr0) => mapExpr(e, (x) => (x.t === 'ref' && ids.has(x.obj) ? EMPTY : undefined));
     for (const e of s.els) {
       e.inputs = e.inputs.filter((i) => !ids.has(i.obj));
+      if (e.refresh) e.refresh = e.refresh.filter((k) => !ids.has(k.split('|')[0]));
+      if (e.host && ids.has(e.host)) e.host = null;
       for (const [k, b] of Object.entries(e.bind)) {
         if (b.k === 'expr') e.bind[k] = { k: 'expr', e: fix(b.e) };
         else if (b.k === 'ref' && ids.has(b.obj)) e.bind[k] = { k: 'unset' };
@@ -468,7 +673,7 @@ type Expr0 = import('./model').Expr;
 export function requestRemove(id: string) {
   const info = removeInfo(id);
   if (!info) return;
-  if (info.users.length > 0 || info.managed.length > 0) setState({ dialog: { k: 'removeEl', id } });
+  if (info.users.length > 0 || info.managed.length > 0 || info.hosted.length > 0) setState({ dialog: { k: 'removeEl', id } });
   else removeEl(id);
 }
 

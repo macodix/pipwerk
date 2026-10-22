@@ -20,6 +20,8 @@ interface Item {
   tpl?: Template;
   /** Opens the read-only view of a delivered type. */
   openId?: string;
+  /** A tool, not an element: it cannot be dragged onto the canvas. */
+  tool?: boolean;
 }
 
 export function Library() {
@@ -51,6 +53,7 @@ export function Library() {
       items.push({
         key: d.id, entry: { k: 'type', id: d.id }, label, tip: tx(TIPS[`type:${d.id}`] ?? { de: '', en: '' }, lang), icon: d.icon, cls: kindClass(d.id),
         openId: (d.kind === 'indicator' || d.kind === 'trend') && !d.own ? `type:${d.id}` : undefined,
+        tool: d.kind === 'tool',
       });
     }
     for (const t of tpls) if (templateLibraryGroup(t) === g.id && !t.builtin) ownItems.push(tplItem(t));
@@ -64,7 +67,7 @@ export function Library() {
       <PanelTabs />
       <header className="panel-head">
         <h2>{L('Elementbibliothek', 'Element library')}</h2>
-        <p className="panel-hint">{L('Klicken fügt ein Element hinter dem gewählten Schritt ein. Sie können es auch auf die Fläche ziehen.', 'A click inserts an element after the selected step. You can also drag it onto the canvas.')}</p>
+        <p className="panel-hint">{L('Klicken fügt ein Element hinter dem gewählten Schritt ein, ein Objekt wie einen Indikator verbindet es mit dem gewählten Element. Sie können Elemente auch auf die Fläche ziehen, Objekte auf das Element, das sie verwendet.', 'A click inserts an element after the selected step; an object such as an indicator is connected to the selected element. You can also drag elements onto the canvas, objects onto the element that uses them.')}</p>
         <label className="search">
           <Icon name="search" size={15} />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={L('Suchen …', 'Search …')} aria-label={L('Elementbibliothek durchsuchen', 'Search element library')} data-testid="library-search" />
@@ -89,7 +92,7 @@ export function Library() {
                         className="lib-item"
                         role="button"
                         tabIndex={0}
-                        draggable
+                        draggable={!it.tool}
                         data-lib={it.key}
                         data-testid="lib-item"
                         data-label={it.label}

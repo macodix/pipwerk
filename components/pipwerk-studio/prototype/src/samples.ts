@@ -62,9 +62,12 @@ function ema(v: EmaNames): Strategy {
     Object.assign(el.bind, bind);
     return el;
   };
-  const ema20 = mk('EMA', 'ema20', v.e20, { zeiteinheit: param('p-zeit'), periode: fixed(20), kursquelle: fixed('schlusskurs'), verschiebung: fixed(0) });
-  const ema50 = mk('EMA', 'ema50', v.e50, { zeiteinheit: param('p-zeit'), periode: fixed(50), kursquelle: fixed('schlusskurs'), verschiebung: fixed(0) });
-  const atr14 = mk('ATR', 'atr14', v.a14, { zeiteinheit: param('p-zeit'), periode: fixed(14) });
+  // every instance lies at the element that uses it first: both EMA at the crossing condition, the ATR at the stop loss.
+  // The saved file of the client has no connection of its own: there the first use results from the expressions.
+  const at = (id: string): Partial<El> => (v.sample === 'auftraggeber' ? {} : { host: id });
+  const ema20 = mk('EMA', 'ema20', v.e20, { zeiteinheit: param('p-zeit'), periode: fixed(20), kursquelle: fixed('schlusskurs'), verschiebung: fixed(0) }, at('kreuzen'));
+  const ema50 = mk('EMA', 'ema50', v.e50, { zeiteinheit: param('p-zeit'), periode: fixed(50), kursquelle: fixed('schlusskurs'), verschiebung: fixed(0) }, at('kreuzen'));
+  const atr14 = mk('ATR', 'atr14', v.a14, { zeiteinheit: param('p-zeit'), periode: fixed(14) }, at('stop'));
   const w20 = ref('ema20', 'wert');
   const w50 = ref('ema50', 'wert');
   const trg = mk('trigger.candle_close', 'trg', 'Kerzenschluss', { zeiteinheit: param('p-zeit') });
@@ -136,8 +139,9 @@ function str01(): Strategy {
     return el;
   };
   const mtParams = (z: string) => ({ zeiteinheit: param(z), depth: fixed(12), deviation: fixed(5), backstep: fixed(3) });
-  const mtS = mk('Markttechnik', 'mt-s', 'Markttechnik Signal', mtParams('p-sig'));
-  const mtH = mk('Markttechnik', 'mt-h', 'Markttechnik Handel', mtParams('p-han'));
+  // the first condition uses the signal trend, the second one the trading trend
+  const mtS = mk('Markttechnik', 'mt-s', 'Markttechnik Signal', mtParams('p-sig'), { host: 'c1' });
+  const mtH = mk('Markttechnik', 'mt-h', 'Markttechnik Handel', mtParams('p-han'), { host: 'c2' });
   const trg = mk('trigger.candle_close', 'trg', 'Kerzenschluss', { zeiteinheit: param('p-han') });
   const c1 = mk('flow.condition', 'c1', 'Intakter Trend in der Bewegung', {
     ausdruck: ex(call('AND', ref('mt-s', 'trend_intakt'), bin('=', ref('mt-s', 'phase'), str('bewegung')))),

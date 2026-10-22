@@ -1,8 +1,9 @@
 // Expressions: formula text (view for advanced users) <-> expression tree <-> readable sentence.
 // Names in the tree are references (ids); the text shows the current names, so renaming
 // a connected object does not break any expression.
-import { APP_OBJECTS, TYPES, choiceLabel, isObjectEl, propDef, propsOf, tx, typeLabel, fieldTip } from './catalog';
-import type { El, Expr, Lang, SParam } from './model';
+import { APP_OBJECTS, TYPES, choiceLabel, isObjectEl, memberLabel, membersOf, methodOf, methodText, propDef, propsOf, tx, typeLabel, fieldTip } from './catalog';
+import type { Member } from './catalog';
+import type { El, Expr, Lang, MethodDef, SParam } from './model';
 
 export interface Scope {
   lang: Lang;
@@ -61,9 +62,11 @@ export function objName(id: string, sc: Scope): string {
   return typeLabel(o.type, sc.lang);
 }
 
-export function propLabel(obj: string, prop: string, sc: Scope): string {
+export function propLabel(obj: string, prop: string, sc: Scope, args?: number[]): string {
   const o = objOf(obj, sc);
   if (!o) return prop;
+  const m = methodOf(o.type, prop);
+  if (m) return methodText(m, args, sc.lang);
   const p = propDef(o.type, prop, o.el);
   return p ? tx(p, sc.lang) : prop;
 }
@@ -74,6 +77,25 @@ export function propList(obj: string, sc: Scope) {
   if (o.el) return propsOf(o.el);
   return TYPES[o.type]?.props ?? [];
 }
+
+/** Properties and methods of an object. */
+export function memberList(obj: string, sc: Scope): Member[] {
+  const o = objOf(obj, sc);
+  if (!o) return [];
+  if (o.el) return membersOf(o.el);
+  return membersOf({ type: o.type, own: null, name: '' });
+}
+
+export function methodIn(obj: string, prop: string, sc: Scope): MethodDef | undefined {
+  const o = objOf(obj, sc);
+  return o ? methodOf(o.type, prop) : undefined;
+}
+
+/** True when two references address the same property or method with the same arguments. */
+export const sameMember = (a: { prop: string; args?: number[] }, b: { prop: string; args?: number[] }): boolean =>
+  a.prop === b.prop && JSON.stringify(a.args ?? []) === JSON.stringify(b.args ?? []);
+
+export { memberLabel };
 
 export function spName(id: string, sc: Scope): string {
   return sc.params.find((p) => p.id === id)?.name ?? '?';
@@ -300,12 +322,42 @@ export function parse(text: string, sc: Scope): { e: Expr; errors: ParseError[] 
         err(t.a, t.b, `„${nameText}“ gibt es nur in der Verwaltung einer Order und in Regeln, nicht im Hauptablauf.`, `"${nameText}" exists only in the management of an order and in rules, not in the main flow.`);
         return EMPTY;
       }
-      const list = propList(o.id, sc);
+      const list = memberList(o.id, sc);
       const np = normName(propText);
       const prop = list.find((x) => normName(x.id) === np || normName(x.de) === np || normName(x.en) === np);
       if (!prop) {
-        err(pt.a, pt.b, `„${nameText}“ hat keine Eigenschaft „${propText}“. Möglich: ${list.map((x) => tx(x, sc.lang)).slice(0, 8).join(', ')}.`, `"${nameText}" has no property "${propText}". Possible: ${list.map((x) => tx(x, sc.lang)).slice(0, 8).join(', ')}.`);
+        err(pt.a, pt.b, `„${nameText}“ hat keine Eigenschaft oder Methode „${propText}“. Möglich: ${list.map((x) => tx(x, sc.lang)).slice(0, 8).join(', ')}.`, `"${nameText}" has no property or method "${propText}". Possible: ${list.map((x) => tx(x, sc.lang)).slice(0, 8).join(', ')}.`);
         return EMPTY;
+      }
+      if (prop.method) {
+        const m = prop.method;
+        const argNames = m.args.map((q) => tx(q, sc.lang)).join('; ');
+        const lp = peek();
+        if (!lp || lp.k !== 'lp') {
+          err(pt.a, pt.b, `„${propText}“ ist eine Methode und braucht Argumente: ${propText}(${argNames}).`, `"${propText}" is a method and needs arguments: ${propText}(${argNames}).`);
+          return EMPTY;
+        }
+        p++;
+        const args: number[] = [];
+        if (peek() && peek().k === 'rp') {
+          p++;
+        } else {
+          for (;;) {
+            const at = peek();
+            const a = expr(0);
+            if (a.t === 'num' && Number.isInteger(a.v) && a.v >= 1) args.push(a.v);
+            else if (at) err(at.a, at.b, 'Das Argument muss eine ganze Zahl ab 1 sein.', 'The argument must be a whole number from 1.');
+            const c = peek();
+            if (c && c.k === 'semi') { p++; continue; }
+            if (c && c.k === 'rp') { p++; break; }
+            err(lp.a, lp.b, `Die Klammer von ${propText} wird nicht geschlossen.`, `The parenthesis of ${propText} is not closed.`);
+            break;
+          }
+        }
+        if (args.length !== m.args.length) {
+          err(pt.a, pt.b, `${propText} erwartet ${m.args.length} Argument(e): ${argNames}.`, `${propText} expects ${m.args.length} argument(s): ${argNames}.`);
+        }
+        return { t: 'ref', obj: o.id, prop: prop.id, args };
       }
       return { t: 'ref', obj: o.id, prop: prop.id };
     }
@@ -416,7 +468,9 @@ function fmtNum(v: number): string {
   return String(v);
 }
 
-function refText(o: string, prop: string, sc: Scope): string {
+function refText(o: string, prop: string, sc: Scope, args?: number[]): string {
+  const m = methodIn(o, prop, sc);
+  if (m) return `${nm(objName(o, sc))}.${nm(tx(m, sc.lang))}(${(args ?? m.defaults).join('; ')})`;
   return `${nm(objName(o, sc))}.${nm(propLabel(o, prop, sc))}`;
 }
 
@@ -430,7 +484,7 @@ export function print(e: Expr, sc: Scope, outer = 0): string {
     case 'num': return fmtNum(e.v);
     case 'str': return `"${e.v.replace(/"/g, '""')}"`;
     case 'bool': return e.v ? 'TRUE()' : 'FALSE()';
-    case 'ref': return refText(e.obj, e.prop, sc);
+    case 'ref': return refText(e.obj, e.prop, sc, e.args);
     case 'sp': return `${sc.lang === 'de' ? 'Strategie' : 'Strategy'}.${nm(spName(e.id, sc))}`;
     case 'par': return nm(sc.rulePars.find((x) => x.id === e.id)?.name ?? '?');
     case 'neg': return `-${print(e.e, sc, 6)}`;
@@ -525,6 +579,7 @@ export function typeOf(e: Expr, sc: Scope): VType {
     case 'bool': return { kind: 'boolean' };
     case 'ref': {
       const o = objOf(e.obj, sc);
+      if (o && methodOf(o.type, e.prop)) return { kind: 'number' };
       const p = o ? propDef(o.type, e.prop, o.el) : undefined;
       if (!p) return { kind: 'unknown' };
       if (p.dtype === 'choice') return { kind: 'choice', choices: p.choices };
@@ -578,7 +633,7 @@ export function describe(e: Expr, sc: Scope, ctx?: VType): string {
     }
     case 'bool': return e.v ? (de ? 'wahr' : 'true') : (de ? 'falsch' : 'false');
     case 'ref': {
-      const pl = propLabel(e.obj, e.prop, sc);
+      const pl = propLabel(e.obj, e.prop, sc, e.args);
       const on = objName(e.obj, sc);
       // the main value of an object or the result of a step is called by its name
       if (e.prop === 'wert' || e.prop === 'ergebnis') return on;
@@ -635,10 +690,10 @@ export function walk(e: Expr, f: (x: Expr) => void): void {
   }
 }
 
-export function refsOf(e: Expr): { obj: string; prop: string }[] {
-  const out: { obj: string; prop: string }[] = [];
+export function refsOf(e: Expr): { obj: string; prop: string; args?: number[] }[] {
+  const out: { obj: string; prop: string; args?: number[] }[] = [];
   walk(e, (x) => {
-    if (x.t === 'ref' && !out.some((r) => r.obj === x.obj && r.prop === x.prop)) out.push({ obj: x.obj, prop: x.prop });
+    if (x.t === 'ref' && !out.some((r) => r.obj === x.obj && sameMember(r, x))) out.push(x.args ? { obj: x.obj, prop: x.prop, args: x.args } : { obj: x.obj, prop: x.prop });
   });
   return out;
 }
@@ -685,7 +740,7 @@ export function problems(e: Expr, sc: Scope): { de: string; en: string }[] {
     if (x.t === 'ref') {
       const o = objOf(x.obj, sc);
       if (!o) out.push({ de: 'Der Ausdruck verwendet ein Objekt, das es nicht mehr gibt.', en: 'The expression uses an object that no longer exists.' });
-      else if (!propList(x.obj, sc).some((p) => p.id === x.prop)) out.push({ de: `„${objName(x.obj, sc)}“ hat die Eigenschaft nicht mehr, die der Ausdruck verwendet.`, en: `"${objName(x.obj, sc)}" no longer has the property the expression uses.` });
+      else if (!memberList(x.obj, sc).some((p) => p.id === x.prop)) out.push({ de: `„${objName(x.obj, sc)}“ hat die Eigenschaft oder Methode nicht mehr, die der Ausdruck verwendet.`, en: `"${objName(x.obj, sc)}" no longer has the property or method the expression uses.` });
     }
     if (x.t === 'sp' && !sc.params.some((p) => p.id === x.id)) out.push({ de: 'Der Ausdruck verwendet einen Strategieparameter, den es nicht mehr gibt.', en: 'The expression uses a strategy parameter that no longer exists.' });
   });
@@ -764,14 +819,21 @@ export function completionsAt(text: string, caret: number, sc: Scope): { from: n
     }
     const o = findObj(nameText, sc);
     if (!o) return null;
-    const items = propList(o.id, sc)
+    const items = memberList(o.id, sc)
       .filter((p) => normName(tx(p, sc.lang)).startsWith(prefix) || normName(p.id).startsWith(prefix))
-      .map((p) => ({
-        label: tx(p, sc.lang),
-        insert: nm(tx(p, sc.lang)),
-        detail: dtypeShort(p.dtype, sc.lang),
-        tip: fieldTip(p.id, sc.lang, 'p'),
-      }));
+      .map((p) => p.method
+        ? {
+          label: methodText(p.method, undefined, sc.lang),
+          insert: `${nm(tx(p, sc.lang))}(${p.method.defaults.join('; ')})`,
+          detail: `${de ? 'Methode' : 'method'}: ${p.method.args.map((q) => tx(q, sc.lang)).join('; ')}`,
+          tip: fieldTip(p.id, sc.lang, 'p'),
+        }
+        : {
+          label: tx(p, sc.lang),
+          insert: nm(tx(p, sc.lang)),
+          detail: dtypeShort(p.dtype, sc.lang),
+          tip: fieldTip(p.id, sc.lang, 'p'),
+        });
     return { from, items };
   }
   const wordM = /([\p{L}_][\p{L}\p{N}_]*)$/u.exec(before);
@@ -785,7 +847,7 @@ export function completionsAt(text: string, caret: number, sc: Scope): { from: n
     for (const id of APP_OBJECTS) {
       if ((id === 'Order' || id === 'Position') && !sc.orderPosition) continue;
       const lab = typeLabel(id, sc.lang);
-      if (normName(lab).startsWith(prefix)) items.push({ label: lab, insert: nm(lab), detail: de ? 'Markt und Konto' : 'market and account' });
+      if (normName(lab).startsWith(prefix)) items.push({ label: lab, insert: nm(lab), detail: de ? 'Objekt der Anwendung' : 'object of the application' });
     }
     const sl = de ? 'Strategie' : 'Strategy';
     if (normName(sl).startsWith(prefix)) items.push({ label: sl, insert: sl, detail: de ? 'Strategieparameter' : 'strategy parameters' });

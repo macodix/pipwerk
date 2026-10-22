@@ -331,7 +331,6 @@ code { font-family: var(--mono); font-size: 0.92em; background: var(--panel-2); 
 .legend summary { cursor: pointer; font-weight: 700; color: var(--muted); }
 .legend-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
 .legend-wire { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
-.legend-wire.name { stroke-dasharray: 2 4; opacity: 0.6; }
 @media (max-width: 699px), (max-height: 520px) { .legend { display: none; } }
 .sel-bar { display: none; position: absolute; z-index: 25; right: 10px; bottom: 10px; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line-strong); border-radius: 12px; padding: 5px 6px 5px 12px; box-shadow: var(--shadow); font-weight: 600; max-width: calc(100% - 20px); }
 .sel-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -340,10 +339,8 @@ code { font-family: var(--mono); font-size: 0.92em; background: var(--panel-2); 
 .wz-leave { display: flex; justify-content: flex-end; margin-top: -6px; }
 @media (max-width: 699px) { .canvas-tools { top: 6px; left: 6px; right: 6px; gap: 5px; } .armed-banner { top: 46px; } }
 
-.lane, .lane-empty { position: absolute; z-index: 0; border: 1.5px dashed #aebdcf; border-radius: 16px; background: rgba(226, 232, 240, 0.38); pointer-events: none; }
-.lane-empty { width: 262px; padding: 12px 14px; color: var(--muted); font-size: 12.5px; }
-.lane-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
-.lane > .lane-title { position: absolute; left: 14px; top: 13px; margin: 0; }
+.seg-cap { display: none; align-items: center; padding: 0 10px; font-size: 12px; color: var(--muted); border-right: 1px solid var(--line); background: var(--panel-2); white-space: nowrap; }
+@media (min-width: 1600px) { .seg-cap { display: inline-flex; } }
 
 .band { position: absolute; z-index: 0; border: 1.5px solid rgba(37, 99, 235, 0.3); background: rgba(37, 99, 235, 0.05); border-radius: 16px; pointer-events: none; }
 .band-label { position: absolute; left: 14px; top: -14px; pointer-events: auto; display: flex; align-items: center; gap: 2px; background: #fff; border: 1px solid rgba(37, 99, 235, 0.4); border-radius: 999px; padding: 1px 10px 1px 3px; }
@@ -366,14 +363,20 @@ code { font-family: var(--mono); font-size: 0.92em; background: var(--panel-2); 
 .edge-del circle { fill: #fff; stroke: var(--bad); stroke-width: 1.6; }
 .edge-del path { stroke: var(--bad); stroke-width: 1.8; fill: none; }
 .wire-line { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-dasharray: 8 5; opacity: 0.85; }
-.wire.name .wire-line { stroke-dasharray: 2 5; stroke-linecap: round; opacity: 0.6; }
-.wire.on .wire-line { stroke-width: 3.2; opacity: 1; }
+.wire.first .wire-line { stroke-dasharray: none; stroke-width: 2.8; opacity: 1; }
+.wire.refresh .wire-line { stroke-width: 3.6; stroke-dasharray: 12 4 2 4; opacity: 1; }
+.wire.refresh.first .wire-line { stroke-dasharray: none; stroke-width: 4.2; }
+.wire.on .wire-line { stroke-width: 3.4; opacity: 1; }
 .wire.dim { opacity: 0.28; }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; }
 .wire-end { fill: currentColor; }
 .wire-stub { stroke: currentColor; stroke-width: 2.2; fill: none; opacity: 0.85; }
-.wire-badge rect { fill: #fff; stroke: currentColor; stroke-width: 1.5; }
-.wire-badge text { font-size: 11px; font-weight: 700; fill: currentColor; font-family: var(--font); }
+.wire-label { pointer-events: all; cursor: default; }
+.wire-label rect { fill: #fff; stroke: currentColor; stroke-width: 1.4; }
+.wire-label text { font-size: 11.5px; font-weight: 600; fill: #1f2d3d; font-family: var(--font); }
+.wire.refresh .wire-label rect { fill: color-mix(in srgb, currentColor 14%, #fff); stroke-width: 2.2; }
+.legend-wire.first { stroke-dasharray: none; stroke-width: 2.8; }
+.legend-wire.refresh { stroke-width: 3.6; stroke-dasharray: 12 4 2 4; }
 .preview-line { stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 4 4; fill: none; }
 
 .node, .card {
@@ -598,3 +601,25 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 .usage-list .chip { margin-left: auto; }
 @media (max-width: 699px) { .modal-back { padding: 0; align-items: end; } .modal, .modal.wide { width: 100%; border-radius: 16px 16px 0 0; max-height: 92dvh; } }
 @media (max-height: 460px) { .modal-head, .modal-foot { padding: 8px 14px; } .modal-body { padding: 10px 14px; } }
+
+/* instances at the element of their first use, uses of values, methods */
+.card-free { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; display: flex; gap: 7px; align-items: center; padding: 0 12px 0 14px; background: var(--warn-bg); border-top: 1px solid #f1d49a; border-radius: 0 0 12px 12px; color: #6a4204; font-size: 11.5px; line-height: 1.25; }
+.card-free .icon { flex: none; color: #c27803; }
+.card-row.method .row-name { font-style: italic; }
+.method-chip { background: #eef5ff; border-color: #bcd4f3; color: #1e3a8a; }
+.vb-arg { display: inline-flex; align-items: center; gap: 6px; }
+.vb-arg .num-wrap { width: 78px; }
+.vb-unit { color: var(--muted); font-size: 12px; }
+.first-use { display: flex; align-items: center; gap: 7px; margin: 0 0 8px; font-size: 13px; }
+.first-chip { background: #eaf6ee; border-color: #b5dcc2; color: #14532d; font-size: 11px; padding: 0 8px; }
+.use-row { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; background: var(--panel-2); display: flex; flex-direction: column; gap: 7px; }
+.use-head { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.use-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.use-remove { margin-left: auto; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; color: var(--muted); padding: 3px; border-radius: 50%; }
+.use-remove:hover { background: #e8edf3; color: var(--bad); }
+.use-body { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.use-body .select { min-width: 150px; flex: 1 1 150px; }
+.use-body .num-wrap { width: 80px; }
+.use-refresh { display: inline-flex; }
+.link-btn { border: 0; background: transparent; padding: 0; color: var(--accent); cursor: pointer; font: inherit; font-weight: 600; text-decoration: underline; }
+.further { margin-top: 10px; }

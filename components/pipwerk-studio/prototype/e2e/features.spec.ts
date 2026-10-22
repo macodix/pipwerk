@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { add, clickNode, field, newStrategyFromScratch, props, reveal, setCalculation } from './builder';
+import { add, clickNode, field, newStrategyFromScratch, props, reveal, setCalculation, wire } from './builder';
 import { card, lib, node, openApp } from './support';
 
 const viewOf = async (page: Page) => (await page.getByTestId('canvas').getAttribute('data-view')) as string;
@@ -17,17 +17,18 @@ test.describe('library, explanations, names', () => {
         tips: Array.from(g.querySelectorAll('[data-testid="lib-item"]')).map((i) => (i as HTMLElement).dataset.tip ?? ''),
       })),
     );
+    // req-ui-018: by task; the visible names are the technical group names without a common heading
     expect(groups.map((g) => g.title)).toEqual([
-      'Wann wird gerechnet', 'Bedingungen und Aktionen', 'Markt und Konto', 'Indikatoren', 'Trends', 'Regeln',
+      'Ablaufsteuerung', 'Berechnung', 'Indikatoren', 'Trends', 'Marktdaten', 'Konto', 'Aktionen', 'Regeln und Regelwerke',
     ]);
-    expect(groups[0].items).toEqual(['Kerzenschluss', 'Tick']);
-    expect(groups[1].items).toEqual([
-      'Bedingung', 'Berechnung', 'Strategieparameter ändern', 'Order aufgeben', 'Order ändern', 'Order löschen', 'Position ändern', 'Position schließen',
-    ]);
-    expect(groups[2].items).toEqual(['Konto', 'Instrument', 'Kerze', 'Tick']);
-    expect(groups[3].items).toEqual(['EMA', 'ATR', 'ZigZag', 'eigener Indikator', 'Schneller EMA 9']);
-    expect(groups[4].items).toEqual(['1-2-3-Trend (Markttechnik)', 'eigener Trend']);
-    expect(groups[5].items).toEqual(['Risiko je Trade', 'eigene Regel', 'eigenes Regelwerk']);
+    expect(groups[0].items).toEqual(['Kerzenschluss', 'Tick', 'Bedingung', 'Verbindung']);
+    expect(groups[1].items).toEqual(['Berechnung', 'Strategieparameter ändern']);
+    expect(groups[2].items).toEqual(['EMA', 'ATR', 'ZigZag', 'eigener Indikator', 'Schneller EMA 9']);
+    expect(groups[3].items).toEqual(['1-2-3-Trend (Markttechnik)', 'eigener Trend']);
+    expect(groups[4].items).toEqual(['Instrument', 'Kerze', 'Tick']);
+    expect(groups[5].items).toEqual(['Konto']);
+    expect(groups[6].items).toEqual(['Order aufgeben', 'Order ändern', 'Order löschen', 'Position ändern', 'Position schließen']);
+    expect(groups[7].items).toEqual(['Risiko je Trade', 'eigene Regel', 'eigenes Regelwerk']);
     for (const g of groups) for (const t of g.tips) expect(t.length, `explanation in ${g.title}`).toBeGreaterThan(20);
     // stored templates stand in their group, marked as own
     await expect(page.locator('[data-testid="lib-item"][data-label="Schneller EMA 9"] .tag-own')).toHaveText('eigene');
@@ -175,13 +176,24 @@ test.describe('canvas', () => {
     expect(Math.abs(b2.x - b0.x)).toBeLessThan(3);
   });
 
-  test('values: dragging a value of an object to an element makes a solid line; usage in the expression is dotted; bundles show a number', async ({ page }) => {
-    await openApp(page);
-    const dotted = page.locator('[data-testid="wire"][data-src="EMA50"][data-dst="Richtung"]');
-    await expect(dotted).toHaveAttribute('data-solid', '0');
-    const port = card(page, 'EMA50').locator('[data-port-prop="wert"]');
+  test('further uses: the connection to the first use is always shown, further uses are shown and hidden, a dragged value is a further use (req-ui-014, req-ui-017)', async ({ page }) => {
+    await openApp(page, { width: 1920, height: 1080 });
+    const further = wire(page, 'EMA50', 'Richtung');
+    // the switch starts at "Selection": nothing selected, so no further use; the first use is there
+    await expect(page.getByTestId('wires-sel')).toHaveClass(/on/);
+    await expect(further).toHaveCount(0);
+    await expect(wire(page, 'EMA50', 'Kreuzen')).toHaveAttribute('data-first', '1');
+    await clickNode(page, 'Richtung');
+    await expect(further).toHaveAttribute('data-first', '0');
+    await page.getByTestId('wires-off').click();
+    await expect(further).toHaveCount(0);
+    await expect(wire(page, 'EMA50', 'Kreuzen')).toHaveCount(1);
+    await page.getByTestId('wires-all').click();
+    await expect(further).toHaveCount(1);
+    // dragging a value from the row of a card onto another element: a further use, listed in its properties
+    const port = card(page, 'ATR14').locator('[data-port-prop="wert"]');
+    const target = node(page, 'Kreuzen');
     await reveal(page, port);
-    const target = node(page, 'Richtung');
     await reveal(page, target);
     const pb = await box(port);
     const tb = await box(target);
@@ -190,8 +202,10 @@ test.describe('canvas', () => {
     await page.mouse.move(tb.x + 60, tb.y + 30, { steps: 8 });
     await page.mouse.up();
     await expect(page.getByTestId('toast')).toContainText('Eingang');
-    await expect(dotted).toHaveAttribute('data-solid', '1');
-    await expect(page.getByTestId('input-chip')).toContainText('EMA50 › Wert');
+    await expect(wire(page, 'ATR14', 'Kreuzen')).toHaveAttribute('data-first', '0');
+    await expect(page.getByTestId('use-row').filter({ hasText: 'ATR14' })).toHaveCount(1);
+    // the first use of ATR14 stays where it is
+    await expect(wire(page, 'ATR14', 'StopLoss')).toHaveAttribute('data-first', '1');
   });
 
   test('a parameter of an object can take the value of another object, the line leads from card to card', async ({ page }) => {
@@ -203,7 +217,7 @@ test.describe('canvas', () => {
     await period.getByTestId('ref-prop').selectOption({ label: 'Wert' });
     const w = page.locator('[data-testid="wire"][data-src="ATR14"][data-dst="EMA20"]');
     await expect(w).toHaveCount(1);
-    await expect(w).toHaveAttribute('data-solid', '1');
+    await expect(w).toHaveAttribute('data-first', '0');
     await expect(card(page, 'EMA20').locator('.card-sub')).toContainText('Periode');
   });
 
@@ -246,7 +260,9 @@ test.describe('canvas', () => {
     await page.locator('[data-testid="open-row"][data-sample="str01"]').click();
     const w = page.locator('[data-testid="wire"][data-src="Markttechnik Signal"][data-dst="Intakter Trend in der Bewegung"]');
     await expect(w).toHaveCount(1);
-    await expect(w.locator('.wire-badge text')).toHaveText('2');
+    // one line, its label names both values the element uses
+    await expect(w).toHaveAttribute('data-label', 'Trend intakt, Phase');
+    await expect(w.locator('.wire-label text')).toHaveText('Trend intakt, Phase');
     await card(page, 'Markttechnik Handel').getByTestId('card-more').click();
     await expect(card(page, 'Markttechnik Handel').locator('.card-row')).toHaveCount(6);
   });
@@ -273,6 +289,9 @@ test.describe('assistant, findings, rules', () => {
     await expect(page.getByTestId('wizard')).toHaveCount(0);
     await expect(page.locator('[data-testid="node"]')).toHaveCount(3);
     await expect(page.locator('[data-testid="card"]')).toHaveCount(2);
+    // both indicators lie at the condition, the first use, nothing waits to be connected
+    await expect(page.getByTestId('card-free')).toHaveCount(0);
+    await expect(page.locator('[data-testid="wire"][data-first="1"]')).toHaveCount(2);
     await expect(page.getByTestId('param-chip')).toContainText('Zeiteinheit');
     await expect(page.getByTestId('findings-count')).toBeVisible();
     // leaving works at any step, what was created stays
@@ -305,6 +324,7 @@ test.describe('assistant, findings, rules', () => {
     await expect(props(page).getByTestId('finding').first()).toContainText('So beheben Sie es');
     await clickNode(page, 'Kerze');
     await expect(props(page).getByTestId('finding').first()).toContainText('Pflichtparameter ohne Wert');
+    await expect(props(page).getByTestId('finding').filter({ hasText: 'Instanz ohne Verbindung zum Element ihrer ersten Verwendung' })).toHaveCount(1);
     // faulty expression: set by the formula view
     await clickNode(page, 'Prüfung');
     await page.getByTestId('view-formula').click();
@@ -447,7 +467,7 @@ test.describe('lifecycle and settings', () => {
     await page.getByTestId('lang-en').click();
     await page.getByTestId('settings-apply').click();
     await expect(page.getByTestId('menu-new')).toContainText('New strategy');
-    await expect(page.locator('[data-testid="lib-group"] .lib-group-head span').first()).toHaveText('When to calculate');
+    await expect(page.locator('[data-testid="lib-group"] .lib-group-head span').first()).toHaveText('Flow control');
     await expect(page.locator('[data-testid="lib-item"][data-lib="tpl-risiko"]')).toHaveAttribute('data-label', 'Risk per trade');
     await expect(node(page, 'Kreuzen')).toContainText('EMA20 crosses EMA50 in either direction');
     await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');

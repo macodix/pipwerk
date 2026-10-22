@@ -26,6 +26,47 @@ for (const size of SIZES) {
 }
 
 test.describe('notebook 1366 x 768', () => {
+  test('EMA-Trendfolge vertical and horizontal', async ({ page }) => {
+    await openApp(page, { width: 1366, height: 768 });
+    await page.waitForTimeout(300);
+    await shot(page, 'ema-trendfolge-senkrecht-1366x768.png');
+    await page.getByTestId('orient-h').click();
+    await page.waitForTimeout(300);
+    // the horizontal flow is wide: zoomed out twice, so that more of the strategy is in the picture
+    await page.getByTestId('zoom-out').click();
+    await page.getByTestId('zoom-out').click();
+    await page.waitForTimeout(300);
+    await shot(page, 'ema-trendfolge-waagerecht-1366x768.png');
+    // and the whole strategy at once (small)
+    await page.getByTestId('zoom-fit').click();
+    await page.waitForTimeout(300);
+    await shot(page, 'ema-trendfolge-waagerecht-gesamt-1366x768.png');
+  });
+
+  test('properties view of a use with a method and "Update"', async ({ page }) => {
+    await openApp(page, { width: 1366, height: 768 });
+    await clickNode(page, 'Richtung');
+    const use = page.getByTestId('props-element').getByTestId('use-row').filter({ hasText: 'EMA20' });
+    await use.getByTestId('use-member').selectOption({ label: 'Wert vor … Kerzen (Methode)' });
+    await use.getByTestId('use-arg').fill('3');
+    await use.locator('.use-refresh').click();
+    await page.getByTestId('sec-inputs').scrollIntoViewIfNeeded();
+    await page.getByTestId('sec-inputs').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await shot(page, 'verwendung-methode-aktualisieren-1366x768.png');
+  });
+
+  test('element library with the groups', async ({ page }) => {
+    await openApp(page, { width: 1366, height: 768 });
+    // overview: all eight groups with the number of their entries
+    for (const head of await page.locator('[data-testid="lib-group"] .lib-group-head').all()) await head.click();
+    await page.waitForTimeout(200);
+    await shot(page, 'bibliothek-gruppen-1366x768.png');
+    // the groups with their entries: market data, account and actions open
+    for (const g of ['marketdata', 'account', 'actions']) await page.locator(`[data-testid="lib-group"][data-group="${g}"] .lib-group-head`).click();
+    await page.getByTestId('library').locator('.lib-scroll').evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await shot(page, 'bibliothek-gruppen-offen-1366x768.png');
+  });
+
   test('library with explanation on hover', async ({ page }) => {
     await openApp(page, { width: 1366, height: 768 });
     await lib(page, 'EMA').hover();

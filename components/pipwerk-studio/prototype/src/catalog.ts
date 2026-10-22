@@ -1,6 +1,6 @@
 // Type descriptions of the prototype (simulated element register) with labels
 // in German and English and short explanations in trader language.
-import type { BindingKind, Choice, DType, El, GroupId, Lang, ParamDef, PropDef, TypeDef, Txt } from './model';
+import type { BindingKind, Choice, DType, El, GroupId, Lang, MethodDef, ParamDef, PropDef, TypeDef, Txt } from './model';
 
 const t = (de: string, en: string): Txt => ({ de, en });
 const ch = (id: string, de: string, en = de): Choice => ({ id, de, en });
@@ -54,6 +54,12 @@ const prp = (
   id: string, de: string, en: string, dtype: DType,
   o: Partial<PropDef> = {},
 ): PropDef => ({ id, de, en, dtype, ...o });
+
+/** Assumed for the prototype: EMA and ATR return their value some candles ago (req-fach-055, open point). */
+const VALUE_BEFORE: MethodDef = {
+  id: 'wert_vor', de: 'Wert vor', en: 'Value before', dtype: 'number', defaults: [1],
+  args: [{ id: 'anzahl', de: 'Anzahl Kerzen', en: 'Number of candles' }],
+};
 
 const P_TIME = prm('zeiteinheit', 'Zeiteinheit', 'Time unit', 'time_unit', { required: true, choices: TIME_UNITS });
 const P_INSTR = prm('instrument', 'Instrument', 'Instrument', 'instrument', { def: 'app', bindings: ['app', 'param', 'fixed'] });
@@ -134,26 +140,30 @@ function zigzagProps(): PropDef[] {
 
 const defs: TypeDef[] = [
   {
-    id: 'trigger.candle_close', kind: 'trigger', group: 'when', icon: 'clock', de: 'Kerzenschluss', en: 'Candle close',
+    id: 'trigger.candle_close', kind: 'trigger', group: 'flow', icon: 'clock', de: 'Kerzenschluss', en: 'Candle close',
     params: [P_INSTR, P_TIME], props: [], outputs: [O_NEXT],
   },
   {
-    id: 'trigger.tick', kind: 'trigger', group: 'when', icon: 'bolt', de: 'Tick', en: 'Tick',
+    id: 'trigger.tick', kind: 'trigger', group: 'flow', icon: 'bolt', de: 'Tick', en: 'Tick',
     params: [P_INSTR], props: [], outputs: [O_NEXT],
   },
   {
-    id: 'flow.condition', kind: 'flow', group: 'actions', icon: 'diamond', de: 'Bedingung', en: 'Condition',
+    id: 'flow.condition', kind: 'flow', group: 'flow', icon: 'diamond', de: 'Bedingung', en: 'Condition',
     params: [prm('ausdruck', 'Bedingung', 'Condition', 'expression', { required: true, bindings: ['expr'] })],
     props: [prp('ergebnis', 'Ergebnis', 'Result', 'boolean')],
     outputs: [{ id: 'wahr', de: 'wahr', en: 'true' }, { id: 'falsch', de: 'falsch', en: 'false' }], named: true,
   },
   {
-    id: 'flow.calculation', kind: 'flow', group: 'actions', icon: 'calc', de: 'Berechnung', en: 'Calculation',
+    id: 'flow.connection', kind: 'tool', group: 'flow', icon: 'link', de: 'Verbindung', en: 'Connection',
+    params: [], props: [], outputs: [],
+  },
+  {
+    id: 'flow.calculation', kind: 'flow', group: 'calc', icon: 'calc', de: 'Berechnung', en: 'Calculation',
     params: [prm('ausdruck', 'Berechnung', 'Calculation', 'expression', { required: true, bindings: ['expr'] })],
     props: [prp('ergebnis', 'Ergebnis', 'Result', 'number')], outputs: [O_NEXT], named: true,
   },
   {
-    id: 'flow.set_parameter', kind: 'flow', group: 'actions', icon: 'sliders', de: 'Strategieparameter ändern', en: 'Change strategy parameter',
+    id: 'flow.set_parameter', kind: 'flow', group: 'calc', icon: 'sliders', de: 'Strategieparameter ändern', en: 'Change strategy parameter',
     params: [
       prm('strategieparameter', 'Strategieparameter', 'Strategy parameter', 'text', { required: true, bindings: ['param'] }),
       prm('ausdruck', 'Neuer Wert', 'New value', 'expression', { required: true, bindings: ['expr'] }),
@@ -203,7 +213,7 @@ const defs: TypeDef[] = [
   },
   // objects of the application
   {
-    id: 'Konto', kind: 'app', group: 'market', icon: 'wallet', de: 'Konto', en: 'Account', placeable: true,
+    id: 'Konto', kind: 'app', group: 'account', icon: 'wallet', de: 'Konto', en: 'Account', placeable: true, refresh: true, main: 'kapital',
     params: [],
     props: [
       prp('kapital', 'Kapital', 'Equity', 'number'),
@@ -213,7 +223,7 @@ const defs: TypeDef[] = [
     outputs: [],
   },
   {
-    id: 'Instrument', kind: 'app', group: 'market', icon: 'chart', de: 'Instrument', en: 'Instrument', placeable: true,
+    id: 'Instrument', kind: 'app', group: 'marketdata', icon: 'chart', de: 'Instrument', en: 'Instrument', placeable: true, refresh: true, main: 'spread',
     params: [P_INSTR],
     props: [
       prp('bezeichnung', 'Bezeichnung', 'Designation', 'text'),
@@ -228,7 +238,7 @@ const defs: TypeDef[] = [
     outputs: [],
   },
   {
-    id: 'Kerze', kind: 'app', group: 'market', icon: 'candle', de: 'Kerze', en: 'Candle', placeable: true,
+    id: 'Kerze', kind: 'app', group: 'marketdata', icon: 'candle', de: 'Kerze', en: 'Candle', placeable: true, refresh: true, main: 'schluss',
     params: [P_INSTR, P_TIME],
     props: [
       prp('eroeffnung', 'Eröffnung', 'Open', 'number'),
@@ -241,7 +251,7 @@ const defs: TypeDef[] = [
     outputs: [],
   },
   {
-    id: 'Tick', kind: 'app', group: 'market', icon: 'dots', de: 'Tick', en: 'Tick', placeable: true,
+    id: 'Tick', kind: 'app', group: 'marketdata', icon: 'dots', de: 'Tick', en: 'Tick', placeable: true, refresh: true, main: 'geld',
     params: [P_INSTR],
     props: [
       prp('geld', 'Geld', 'Bid', 'number'),
@@ -250,9 +260,9 @@ const defs: TypeDef[] = [
     ],
     outputs: [],
   },
-  { id: 'Order', kind: 'app', group: 'market', icon: 'order', de: 'Order', en: 'Order', params: [], props: mkProps(), outputs: [] },
+  { id: 'Order', kind: 'app', group: 'marketdata', icon: 'order', de: 'Order', en: 'Order', params: [], props: mkProps(), outputs: [], refresh: true },
   {
-    id: 'Position', kind: 'app', group: 'market', icon: 'order', de: 'Position', en: 'Position', params: [],
+    id: 'Position', kind: 'app', group: 'marketdata', refresh: true, icon: 'order', de: 'Position', en: 'Position', params: [],
     props: [
       prp('instrument', 'Instrument', 'Instrument', 'object'),
       prp('richtung', 'Richtung', 'Direction', 'choice', { choices: DIRECTION }),
@@ -265,7 +275,7 @@ const defs: TypeDef[] = [
     outputs: [],
   },
   {
-    id: 'Strategie', kind: 'app', group: 'market', icon: 'sliders', de: 'Strategie', en: 'Strategy', params: [],
+    id: 'Strategie', kind: 'app', group: 'marketdata', refresh: true, icon: 'sliders', de: 'Strategie', en: 'Strategy', params: [],
     props: [
       prp('bezeichnung', 'Name', 'Name', 'text'),
       prp('beschreibung', 'Beschreibung', 'Description', 'text'),
@@ -276,7 +286,7 @@ const defs: TypeDef[] = [
   },
   // indicators
   {
-    id: 'EMA', kind: 'indicator', group: 'indicators', icon: 'wave', de: 'EMA', en: 'EMA',
+    id: 'EMA', kind: 'indicator', group: 'indicators', icon: 'wave', de: 'EMA', en: 'EMA', refresh: true, main: 'wert', methods: [VALUE_BEFORE],
     params: [
       P_INSTR, P_TIME,
       prm('periode', 'Periode', 'Period', 'integer', { required: true }),
@@ -286,12 +296,12 @@ const defs: TypeDef[] = [
     props: [prp('wert', 'Wert', 'Value', 'number')], outputs: [],
   },
   {
-    id: 'ATR', kind: 'indicator', group: 'indicators', icon: 'wave', de: 'ATR', en: 'ATR',
+    id: 'ATR', kind: 'indicator', group: 'indicators', icon: 'wave', de: 'ATR', en: 'ATR', refresh: true, main: 'wert', methods: [VALUE_BEFORE],
     params: [P_INSTR, P_TIME, prm('periode', 'Periode', 'Period', 'integer', { required: true })],
     props: [prp('wert', 'Wert', 'Value', 'number')], outputs: [],
   },
   {
-    id: 'ZigZag', kind: 'indicator', group: 'indicators', icon: 'zigzag', de: 'ZigZag', en: 'ZigZag',
+    id: 'ZigZag', kind: 'indicator', group: 'indicators', icon: 'zigzag', de: 'ZigZag', en: 'ZigZag', refresh: true, main: 'wp1_kurs',
     params: [
       P_INSTR, P_TIME,
       prm('depth', 'Depth', 'Depth', 'integer', { def: 12 }),
@@ -301,12 +311,12 @@ const defs: TypeDef[] = [
     props: zigzagProps(), outputs: [],
   },
   {
-    id: 'Indikator', kind: 'indicator', group: 'indicators', icon: 'wave', de: 'Indikator', en: 'Indicator', own: true,
+    id: 'Indikator', kind: 'indicator', group: 'indicators', icon: 'wave', de: 'Indikator', en: 'Indicator', own: true, refresh: true,
     params: [], props: [], outputs: [],
   },
   // trends
   {
-    id: 'Markttechnik', kind: 'indicator', group: 'trends', icon: 'trend', de: '1-2-3-Trend (Markttechnik)', en: '1-2-3 trend (market technique)',
+    id: 'Markttechnik', kind: 'indicator', group: 'trends', icon: 'trend', de: '1-2-3-Trend (Markttechnik)', en: '1-2-3 trend (market technique)', refresh: true, main: 'trendrichtung',
     params: [
       P_INSTR, P_TIME,
       prm('depth', 'Depth', 'Depth', 'integer', { def: 12 }),
@@ -324,7 +334,7 @@ const defs: TypeDef[] = [
     outputs: [],
   },
   {
-    id: 'Trend', kind: 'trend', group: 'trends', icon: 'trend', de: 'Trend', en: 'Trend', own: true,
+    id: 'Trend', kind: 'trend', group: 'trends', icon: 'trend', de: 'Trend', en: 'Trend', own: true, refresh: true, main: 'richtung',
     params: [
       P_INSTR, P_TIME,
       prm('methode', 'Berechnungsverfahren', 'Calculation procedure', 'choice', {
@@ -353,13 +363,16 @@ export const LIB_LABEL: Record<string, Txt> = {
   Regelwerk: t('eigenes Regelwerk', 'own rule set'),
 };
 
+/** Groups of the element library (req-ui-018): by task, like the structure of a programming language. */
 export const GROUPS: { id: GroupId; de: string; en: string }[] = [
-  { id: 'when', de: 'Wann wird gerechnet', en: 'When to calculate' },
-  { id: 'actions', de: 'Bedingungen und Aktionen', en: 'Conditions and actions' },
-  { id: 'market', de: 'Markt und Konto', en: 'Market and account' },
+  { id: 'flow', de: 'Ablaufsteuerung', en: 'Flow control' },
+  { id: 'calc', de: 'Berechnung', en: 'Calculation' },
   { id: 'indicators', de: 'Indikatoren', en: 'Indicators' },
   { id: 'trends', de: 'Trends', en: 'Trends' },
-  { id: 'rules', de: 'Regeln', en: 'Rules' },
+  { id: 'marketdata', de: 'Marktdaten', en: 'Market data' },
+  { id: 'account', de: 'Konto', en: 'Account' },
+  { id: 'actions', de: 'Aktionen', en: 'Actions' },
+  { id: 'rules', de: 'Regeln und Regelwerke', en: 'Rules and rule sets' },
 ];
 
 /** Application objects that Order/Position-like expressions can address. */
@@ -464,6 +477,57 @@ export function propDef(objType: string, propId: string, el?: Pick<El, 'type' | 
   return d?.props.find((p) => p.id === propId);
 }
 
+// ---- members: properties and methods ------------------------------------------------
+
+/** What an object passes on: a property, or a method with arguments (req-ui-014, req-fach-055). */
+export interface Member {
+  id: string;
+  de: string;
+  en: string;
+  dtype: DType;
+  method?: MethodDef;
+  choices?: Choice[];
+}
+
+export function methodsOf(el: Pick<El, 'type'>): MethodDef[] {
+  return TYPES[el.type]?.methods ?? [];
+}
+
+export function methodOf(type: string, prop: string): MethodDef | undefined {
+  return TYPES[type]?.methods?.find((m) => m.id === prop);
+}
+
+/** Properties first, then methods. */
+export function membersOf(el: Pick<El, 'type' | 'own' | 'name'>): Member[] {
+  const out: Member[] = propsOf(el).map((p) => ({ id: p.id, de: p.de, en: p.en, dtype: p.dtype, choices: p.choices }));
+  for (const m of methodsOf(el)) out.push({ id: m.id, de: m.de, en: m.en, dtype: m.dtype, method: m });
+  return out;
+}
+
+/** "Value before 3 candles" with the arguments, "Value before … candles" without. */
+export function methodText(m: MethodDef, args: number[] | undefined, lang: Lang): string {
+  const n = args && args.length ? args[0] : undefined;
+  if (m.id === 'wert_vor') {
+    if (lang === 'en') return n === undefined ? 'Value … candles ago' : `Value ${n} ${n === 1 ? 'candle' : 'candles'} ago`;
+    return n === undefined ? 'Wert vor … Kerzen' : `Wert vor ${n} ${n === 1 ? 'Kerze' : 'Kerzen'}`;
+  }
+  const a = args && args.length ? `(${args.join('; ')})` : '(…)';
+  return `${tx(m, lang)}${a}`;
+}
+
+/** Label of what a use passes on, as written at a data connection. */
+export function memberLabel(el: Pick<El, 'type' | 'own' | 'name'> | undefined, prop: string, args: number[] | undefined, lang: Lang): string {
+  if (!el) return prop;
+  const m = methodOf(el.type, prop);
+  if (m) return methodText(m, args, lang);
+  const p = propsOf(el).find((q) => q.id === prop);
+  return p ? tx(p, lang) : prop;
+}
+
+export function supportsRefresh(el: Pick<El, 'type'>): boolean {
+  return !!TYPES[el.type]?.refresh;
+}
+
 export function choiceLabel(c: Choice[] | undefined, id: string, lang: Lang): string {
   const f = c?.find((x) => x.id === id);
   return f ? tx(f, lang) : id;
@@ -491,6 +555,10 @@ export const TIPS: Record<string, Txt> = {
   'type:trigger.candle_close': t('Die Strategie rechnet jedes Mal, wenn eine Kerze der gewählten Länge abgeschlossen ist, zum Beispiel jede Stunde bei H1.', 'The strategy calculates whenever a candle of the chosen length closes, for example every hour with H1.'),
   'type:trigger.tick': t('Die Strategie rechnet bei jedem neuen Kurs (Tick). Das ist sehr oft, daher eher für die Überwachung einer Order geeignet.', 'The strategy calculates at every new quote (tick). That is very often, so it suits monitoring an order.'),
   'type:flow.condition': t('Prüft etwas, zum Beispiel „EMA 20 kreuzt EMA 50“. Bei „wahr“ geht es auf dem einen Weg weiter, bei „falsch“ auf dem anderen.', 'Checks something, for example "EMA 20 crosses EMA 50". If true the flow continues one way, if false the other.'),
+  'type:flow.connection': t('Verbindet zwei Schritte: Wählen Sie zuerst den Schritt, von dem es weitergeht, klicken Sie hier und dann den Schritt, der folgt. Sie können auch vom Anschluss unten am Schritt ziehen.', 'Connects two steps: first select the step the flow continues from, click here and then click the step that follows. You can also drag from the port at the bottom of the step.'),
+  'f:aktualisieren': t('Aktualisieren: Das Objekt ermittelt seine Werte neu, bevor es sie an dieses Element übergibt. Ohne den Schalter übergibt es den Stand, den es an der Stelle seiner ersten Verwendung hatte.', 'Update: the object determines its values anew before it passes them to this element. Without the switch it passes the state it had at the place of its first use.'),
+  'f:erste_verwendung': t('Die Instanz liegt beim Element, das sie zuerst verwendet. Dort werden ihre Werte ermittelt, wenn der Ablauf diese Stelle erreicht.', 'The instance lies at the element that uses it first. Its values are determined there when the flow reaches this place.'),
+  'p:wert_vor': t('Methode: der Wert des Indikators vor der gewählten Anzahl Kerzen, zum Beispiel vor 1 Kerze.', 'Method: the value of the indicator the chosen number of candles ago, for example 1 candle ago.'),
   'type:flow.calculation': t('Rechnet einen Wert aus, zum Beispiel den Stop-Loss. Das Ergebnis können spätere Schritte verwenden.', 'Calculates a value, for example the stop loss. Later steps can use the result.'),
   'type:flow.set_parameter': t('Ändert den Wert eines Strategieparameters, zum Beispiel um mit einer anderen Zeiteinheit erneut zu prüfen.', 'Changes the value of a strategy parameter, for example to check again with another time unit.'),
   'type:flow.place_order': t('Gibt eine Order an den Markt. Am Ausgang „gestellt“ steht danach die Verwaltung dieser Order.', 'Sends an order to the market. After "placed" follows the management of this order.'),

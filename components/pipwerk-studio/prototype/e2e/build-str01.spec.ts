@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import {
   add, addOwnRule, bindExpr, bindFixed, bindParam, clickNode, createParam, newStrategyFromScratch, normalize, reveal, savedStrategy,
-  setCalculation, setCondition,
+  setCalculation, setCondition, wire,
 } from './builder';
 import type { C, V } from './builder';
-import { node, openApp } from './support';
+import { card, node, openApp } from './support';
 
 // Acceptance criterion 2 (second part): the main flow and the management of str-01, only by operating the interface.
 test('str-01 Scalping Punkt 2 Ausbruch is built from the empty canvas and equals the test case', async ({ page }) => {
@@ -19,13 +19,6 @@ test('str-01 Scalping Punkt 2 Ausbruch is built from the empty canvas and equals
   await add(page, 'trigger.candle_close');
   await bindParam(page, 'zeiteinheit', 'Handelszeiteinheit');
 
-  // two instances of the 1-2-3 trend (market technique), on two time units
-  await add(page, 'Markttechnik', 'Markttechnik Signal');
-  await bindParam(page, 'zeiteinheit', 'Signalzeiteinheit');
-  await add(page, 'Markttechnik', 'Markttechnik Handel');
-  await bindParam(page, 'zeiteinheit', 'Handelszeiteinheit');
-  await expect(page.locator('[data-testid="card"]')).toHaveCount(2);
-
   const S = (p: string): V => ({ pick: `Markttechnik Signal › ${p}` });
   const H = (p: string): V => ({ pick: `Markttechnik Handel › ${p}` });
   const spread: V = { pick: 'Instrument › Spread' };
@@ -33,10 +26,35 @@ test('str-01 Scalping Punkt 2 Ausbruch is built from the empty canvas and equals
   const up: C = { cmp: [S('Trendrichtung'), '=', { choice: 'aufwärts' }] };
   const mul = (param: string): V => ({ calc: [{ pick: param }, '*', pip] });
 
+  // two instances of the 1-2-3 trend (market technique), on two time units. The signal trend lies at the first condition
+  // (a click in the library with the condition selected), the trading trend is dropped on free space and then
+  // connected by dragging its card onto the second condition.
   await clickNode(page, 'Kerzenschluss');
   await add(page, 'flow.condition', 'Intakter Trend in der Bewegung');
+  await add(page, 'Markttechnik', 'Markttechnik Signal');
+  await bindParam(page, 'zeiteinheit', 'Signalzeiteinheit');
+  await expect(wire(page, 'Markttechnik Signal', 'Intakter Trend in der Bewegung')).toHaveAttribute('data-first', '1');
+  await clickNode(page, 'Intakter Trend in der Bewegung');
   await setCondition(page, { and: [{ truthy: S('Trend intakt') }, { cmp: [S('Phase'), '=', { choice: 'Bewegung' }] }] });
   await add(page, 'flow.condition', 'Handelszeiteinheit in Trendrichtung');
+  await page.getByTestId('status-pill').click();
+  await add(page, 'Markttechnik', 'Markttechnik Handel');
+  await bindParam(page, 'zeiteinheit', 'Handelszeiteinheit');
+  await expect(card(page, 'Markttechnik Handel').getByTestId('card-free')).toBeVisible();
+  const free = card(page, 'Markttechnik Handel');
+  const target = node(page, 'Handelszeiteinheit in Trendrichtung');
+  await reveal(page, free);
+  await reveal(page, target);
+  const fb = (await free.boundingBox()) as { x: number; y: number; width: number; height: number };
+  const sb = (await target.boundingBox()) as { x: number; y: number; width: number; height: number };
+  await page.mouse.move(fb.x + 90, fb.y + 22);
+  await page.mouse.down();
+  await page.mouse.move(sb.x + 120, sb.y + 40, { steps: 12 });
+  await page.mouse.up();
+  await expect(card(page, 'Markttechnik Handel').getByTestId('card-free')).toHaveCount(0);
+  await expect(wire(page, 'Markttechnik Handel', 'Handelszeiteinheit in Trendrichtung')).toHaveAttribute('data-first', '1');
+  await expect(page.locator('[data-testid="card"]')).toHaveCount(2);
+  await clickNode(page, 'Handelszeiteinheit in Trendrichtung');
   await setCondition(page, { cmp: [H('Trendrichtung'), '=', S('Trendrichtung')] });
   await add(page, 'flow.condition', 'Keine Order und keine Position');
   await setCondition(page, {

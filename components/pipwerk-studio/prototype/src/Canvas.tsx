@@ -1,21 +1,27 @@
-// The canvas: vertical flow (entry on top, exits below), management frames, collapsible sections,
-// the area for objects with their value outputs and the data wires.
+// The canvas: vertical or horizontal flow, management frames, collapsible sections. Instances lie at the
+// element of their first use and are connected with it; further uses are data connections with labels.
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as RPointerEvent } from 'react';
-import { TYPES, fieldTip, isFlowEl, isObjectEl, isTrigger, propsOf, tx, typeLabel, DTYPE_LABEL } from './catalog';
+import { TYPES, fieldTip, isFlowEl, isObjectEl, isTrigger, memberLabel, methodOf, tx, typeLabel, DTYPE_LABEL, membersOf } from './catalog';
 import { scopeFor } from './findings';
 import type { Finding } from './findings';
 import { levelOf } from './findings';
 import type { El, Strategy } from './model';
 import { kindClass } from './Properties';
-import { CARD_HEAD, EL_H, EL_W, ROW_H, SEC_H, buildScene, dataPort, inPort, outPort, pathThrough, wirePath } from './scene';
+import { CARD_W, EL_H, EL_W, ROW_H, SEC_H, buildScene, dataPort, inPort, outPort, pathThrough, wirePath } from './scene';
 import type { Box, Scene } from './scene';
-import { addEntry, connect, disconnect, getState, newStrategyAction, select, setOrient, setState, toast, update, useApp } from './store';
+import { addEntry, connect, connectObject, disconnect, getState, isObjectEntry, newStrategyAction, select, setOrient, setState, toast, update, useApp } from './store';
 import type { LibEntry } from './store';
 import { cardSubtitle, summaryOf } from './summary';
 import { Btn, Icon, useL } from './ui';
 
-const WIRE_COLORS = ['#2f6fb0', '#c2410c', '#15803d', '#a21caf', '#0e7490', '#b45309', '#be123c', '#4d7c0f'];
+/** Height at the top of the canvas that the toolbar covers, with room for the label of a section above its frame. */
+function toolbarRoom(canvas: HTMLElement): number {
+  const tools = canvas.querySelector('.canvas-tools') as HTMLElement | null;
+  return Math.max(58, (tools ? tools.offsetHeight : 36) + 34);
+}
+
+const WIRE_COLORS =['#2f6fb0', '#c2410c', '#15803d', '#a21caf', '#0e7490', '#b45309', '#be123c', '#4d7c0f'];
 
 type Interact =
   | { k: 'pan'; sx: number; sy: number; vx: number; vy: number; moved: boolean; frame?: string }
@@ -49,31 +55,31 @@ export function Canvas({ findings }: { findings: Finding[] }) {
     const sceneNow = buildScene(st, getState().orient);
     const b = sceneNow.bounds;
     if (st.els.length === 0) {
-      // room for the first steps and for the area of the objects next to them
+      // room for the first steps; instances lie next to the element that uses them
       if (getState().orient === 'h') setView({ x: 40, y: Math.min(300, vh / 2), z: 1 });
-      else setView({ x: vw >= 640 ? (vw - 568) / 2 + 332 : vw / 2 - EL_W / 2, y: Math.min(110, vh / 4), z: 1 });
+      else setView({ x: vw >= 640 ? (vw - EL_W) / 2 + 150 : vw / 2 - EL_W / 2, y: Math.min(110, vh / 4), z: 1 });
       return;
     }
     const pad = 22;
-    const top = 58; // room for the toolbar
+    const top = toolbarRoom(el); // room for the toolbar, which wraps into two rows in a narrow canvas
     const horizontal = getState().orient === 'h';
     const raw = horizontal ? (vh - top - pad) / b.h : (vw - 2 * pad) / b.w;
     const z = Math.max(0.8, Math.min(1, raw));
-    // the flow itself, without the area for objects: where the view starts when everything does not fit
-    const flow = [...sceneNow.nodes.values(), ...sceneNow.secNodes.values(), ...sceneNow.frames, ...sceneNow.bands];
+    // the steps themselves, without the instances beside them: where the view starts when everything does not fit
+    const flow = [...sceneNow.nodes.values(), ...sceneNow.secNodes.values(), ...sceneNow.frames];
     const fx = flow.length ? Math.min(...flow.map((q) => q.x)) : b.x;
     const fy = flow.length ? Math.min(...flow.map((q) => q.y)) : b.y;
     const fitsW = b.w * z + 2 * pad <= vw;
     const fitsH = b.h * z + top + pad <= vh;
-    // not everything fits: show the area for objects together with the beginning of the flow if both fit,
-    // otherwise the beginning of the flow (the objects are one pan away)
-    const lane = { x: pad - b.x * z, y: top - b.y * z };
+    // not everything fits: the first step with the instances beside it if both fit, otherwise the first step
+    // (the instances are one pan away)
+    const all = { x: pad - b.x * z, y: top - b.y * z };
     const x = fitsW
       ? (vw - b.w * z) / 2 - b.x * z
-      : horizontal || (fx + EL_W + 24 - b.x) * z + 2 * pad <= vw ? lane.x : pad - fx * z;
+      : horizontal || (fx + EL_W + 24 - b.x) * z + 2 * pad <= vw ? all.x : pad - fx * z;
     const y = fitsH
       ? top + (vh - top - b.h * z) / 2 - b.y * z
-      : !horizontal || (fy + EL_H + 24 - b.y) * z + top + pad <= vh ? lane.y : top - (fy - 40) * z;
+      : !horizontal || (fy + EL_H + 24 - b.y) * z + top + pad <= vh ? all.y : top - (fy - 40) * z;
     setView({ x, y, z });
   }, []);
 
@@ -84,7 +90,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
     if (!el || !st) return;
     const b = buildScene(st, getState().orient).bounds;
     const pad = 24;
-    const top = 58;
+    const top = toolbarRoom(el);
     const z = Math.max(0.2, Math.min(1, (el.clientWidth - 2 * pad) / b.w, (el.clientHeight - top - pad) / b.h));
     setView({ z, x: (el.clientWidth - b.w * z) / 2 - b.x * z, y: top + (el.clientHeight - top - b.h * z) / 2 - b.y * z });
   }, []);
@@ -245,7 +251,18 @@ export function Canvas({ findings }: { findings: Finding[] }) {
         }
       }
     } else if (it.k === 'node') {
-      if (it.moved) finishDrag(it.id);
+      if (it.moved) {
+        const dragged = s.els.find((x) => x.id === it.id);
+        if (dragged && isObjectEl(dragged.type)) {
+          // an instance without a first use is connected by dropping its card onto the element that uses it
+          const w = toWorld(e.clientX, e.clientY);
+          const hit = hitElement(w.x, w.y, it.id);
+          if (hit && !scene?.places.has(it.id)) {
+            connectObject(it.id, hit);
+            update((st) => { const q = st.els.find((x) => x.id === it.id); if (q) { delete q.dx; delete q.dy; delete q.fx; delete q.fy; } });
+          }
+        } else finishDrag(it.id);
+      }
       else if (armed && armed.from !== it.id) connect(armed.from, armed.out, it.id);
       else {
         setState({ wizard: null });
@@ -262,18 +279,30 @@ export function Canvas({ findings }: { findings: Finding[] }) {
       if (it.moved && targetId && targetId !== it.obj) {
         const target = s.els.find((x) => x.id === targetId);
         if (target && (isFlowEl(target.type) || isObjectEl(target.type))) {
-          update((st) => {
-            const x = st.els.find((q) => q.id === targetId);
-            if (x && !x.inputs.some((i) => i.obj === it.obj && i.prop === it.prop)) x.inputs.push({ obj: it.obj, prop: it.prop });
+          const row = scene?.cards.get(it.obj)?.rows.find((r) => r.key === it.prop);
+          const oe = s.els.find((x) => x.id === it.obj);
+          const m = oe ? methodOf(oe.type, row?.prop ?? it.prop) : undefined;
+          connectObject(it.obj, targetId, {
+            obj: it.obj, prop: row?.prop ?? it.prop, ...(row?.args ? { args: row.args } : m ? { args: [...m.defaults] } : {}),
           });
-          setState({ sel: { k: 'el', id: targetId } });
-          toast('Der Wert ist jetzt ein Eingang des Elements. Verwenden Sie ihn in der Bedingung oder Berechnung.', 'The value is now an input of the element. Use it in the condition or calculation.');
         }
       } else if (!it.moved) {
         setState({ wizard: null });
         select({ k: 'el', id: it.obj });
       }
     }
+  };
+
+  /** The flow element or card (not the one dragged) at a point of the canvas. */
+  const hitElement = (wx: number, wy: number, except: string): string | null => {
+    if (!scene) return null;
+    for (const [id, b] of scene.nodes) {
+      if (id !== except && wx >= b.x && wx <= b.x + b.w && wy >= b.y && wy <= b.y + b.h) return id;
+    }
+    for (const [id, b] of scene.cards) {
+      if (id !== except && wx >= b.x && wx <= b.x + b.w && wy >= b.y && wy <= b.y + b.h) return id;
+    }
+    return null;
   };
 
   /** After moving: the element belongs to the frame it lies in, never to one it only touches. */
@@ -315,7 +344,11 @@ export function Canvas({ findings }: { findings: Finding[] }) {
     const hit = [...scene.nodes.entries()].find(([, b]) => w.x >= b.x && w.x <= b.x + b.w && w.y >= b.y && w.y <= b.y + b.h);
     const frame = scene.frames.find((f) => !f.collapsed && w.x >= f.x && w.x <= f.x + f.w && w.y >= f.y && w.y <= f.y + f.h);
     const hitEl = hit ? s.els.find((x) => x.id === hit[0]) : undefined;
-    if (hitEl && isFlowEl(hitEl.type)) addEntry(entry, { after: hitEl.id, flow: hitEl.mgmt ?? null });
+    if (isObjectEntry(entry)) {
+      // onto an element: connected at once; onto free space: it lies there until it is connected
+      if (hitEl && isFlowEl(hitEl.type)) addEntry(entry, { host: hitEl.id });
+      else addEntry(entry, { free: { x: w.x - CARD_W / 2, y: w.y - 24 } });
+    } else if (hitEl && isFlowEl(hitEl.type)) addEntry(entry, { after: hitEl.id, flow: hitEl.mgmt ?? null });
     else addEntry(entry, { flow: frame ? frame.order : null, after: '' });
   };
 
@@ -356,10 +389,11 @@ export function Canvas({ findings }: { findings: Finding[] }) {
             <Icon name="right" size={15} /><span>{L('Waagerecht', 'Horizontal')}</span>
           </button>
         </div>
-        <div className="seg" role="group" aria-label={L('Werte-Linien', 'Value lines')}>
+        <div className="seg" role="group" aria-label={L('Weitere Verwendungen', 'Further uses')} data-testid="uses-switch">
+          <span className="seg-cap" aria-hidden="true">{L('Weitere Verwendungen', 'Further uses')}</span>
           {(['all', 'sel', 'off'] as const).map((m) => (
             <button key={m} type="button" className={wiresMode === m ? 'on' : ''} onClick={() => setState({ wires: m })} data-testid={`wires-${m}`}
-              data-tip={m === 'all' ? L('Alle Werte-Linien zeigen', 'Show all value lines') : m === 'sel' ? L('Nur die Werte-Linien des gewählten Elements zeigen', 'Show only the value lines of the selected element') : L('Werte-Linien ausblenden', 'Hide value lines')}>
+              data-tip={m === 'all' ? L('Alle weiteren Verwendungen als Linien zeigen. Die Verbindung zum Element der ersten Verwendung ist immer da.', 'Show all further uses as lines. The connection to the element of the first use is always there.') : m === 'sel' ? L('Nur die weiteren Verwendungen des gewählten Elements zeigen', 'Show only the further uses of the selected element') : L('Weitere Verwendungen ausblenden', 'Hide further uses')}>
               {m === 'all' ? <Icon name="link" size={15} /> : m === 'sel' ? <Icon name="eye" size={15} /> : <Icon name="x" size={15} />}
               <span>{m === 'all' ? L('Alle', 'All') : m === 'sel' ? L('Auswahl', 'Selection') : L('Aus', 'Off')}</span>
             </button>
@@ -420,25 +454,29 @@ export function Canvas({ findings }: { findings: Finding[] }) {
                 </g>
               );
             })}
-            {wiresMode !== 'off' && scene.wires.map((w) => {
+            {scene.wires.map((w) => {
               const rel = relatedWire(w);
-              if (wiresMode === 'sel' && !rel) return null;
+              // the connection to the element of the first use is always shown, further uses as chosen
+              if (!w.first && (wiresMode === 'off' || (wiresMode === 'sel' && !rel))) return null;
               const color = WIRE_COLORS[(cardIndex.get(w.src) ?? 0) % WIRE_COLORS.length];
-              const mid = { x: (w.pts[0].x + w.pts[1].x) / 2, y: (w.pts[0].y + w.pts[1].y) / 2 };
               const srcEl = s.els.find((x) => x.id === w.src);
               const dstEl = s.els.find((x) => x.id === w.dst);
-              const label = `${srcEl?.name ?? ''} → ${dstEl?.name ?? ''}: ${w.props.map((p) => (srcEl ? tx(propsOf(srcEl).find((q) => q.id === p) ?? { de: p, en: p }, lang) : p)).join(', ')}${w.solid ? '' : ` (${L('nur im Ausdruck verwendet', 'only used in the expression')})`}`;
+              const parts = w.uses.map((u) => `${u.refresh ? '↻ ' : ''}${memberLabel(srcEl, u.prop, u.args, lang)}`);
+              const text = parts.join(', ');
+              const tip = `${srcEl?.name ?? ''} → ${dstEl?.name ?? ''}: ${parts.join(', ')}${w.first ? ` (${L('erste Verwendung', 'first use')})` : ''}${w.refresh ? ` – ${L('Aktualisieren: Das Objekt ermittelt seine Werte neu, bevor es sie übergibt', 'Update: the object determines its values anew before it passes them')}` : ''}`;
+              const lw = Math.max(28, text.length * 6.4 + 18);
               return (
-                <g key={w.key} className={`wire${w.solid ? ' solid' : ' name'}${rel ? ' on' : ''}${selId !== null && !rel ? ' dim' : ''}`} style={{ color }} data-testid="wire" data-src={srcEl?.name} data-dst={dstEl?.name} data-solid={w.solid ? '1' : '0'}>
+                <g key={w.key} className={`wire${w.first ? ' first' : ' further'}${w.refresh ? ' refresh' : ''}${rel ? ' on' : ''}${selId !== null && !rel && !w.first ? ' dim' : ''}`} style={{ color }}
+                  data-testid="wire" data-src={srcEl?.name} data-dst={dstEl?.name} data-first={w.first ? '1' : '0'} data-refresh={w.refresh ? '1' : '0'} data-label={text}>
                   {w.stubs.map((st, i) => <path key={i} d={`M ${st[0].x} ${st[0].y} L ${st[1].x} ${st[1].y}`} className="wire-stub" />)}
                   {w.stubs.length > 1 && <path d={`M ${w.stubs[0][1].x} ${w.stubs[0][1].y} L ${w.stubs[w.stubs.length - 1][1].x} ${w.stubs[w.stubs.length - 1][1].y}`} className="wire-stub" />}
                   <path d={wirePath(w, dir)} className="wire-line" />
-                  <path d={wirePath(w, dir)} className="wire-hit" data-tip={label} />
+                  <path d={wirePath(w, dir)} className="wire-hit" data-tip={tip} />
                   <circle cx={w.pts[1].x} cy={w.pts[1].y} r="4" className="wire-end" />
-                  {w.props.length > 1 && (
-                    <g transform={`translate(${mid.x} ${mid.y})`} className="wire-badge">
-                      <rect x="-13" y="-9" width="26" height="18" rx="9" />
-                      <text textAnchor="middle" dy="4">{w.props.length}</text>
+                  {text && (
+                    <g transform={`translate(${w.mid.x} ${w.mid.y})`} className="wire-label" data-testid="wire-label" data-tip={tip}>
+                      <rect x={-lw / 2} y="-9" width={lw} height="18" rx="9" />
+                      <text textAnchor="middle" dy="4">{text}</text>
                     </g>
                   )}
                 </g>
@@ -446,18 +484,6 @@ export function Canvas({ findings }: { findings: Finding[] }) {
             })}
             {preview && <path d={`M ${preview.x1} ${preview.y1} L ${preview.x2} ${preview.y2}`} className="preview-line" />}
           </svg>
-
-          {scene.lane && (
-            <div className="lane" style={{ left: scene.lane.x, top: scene.lane.y, width: scene.lane.w, height: scene.lane.h }} data-testid="lane">
-              <span className="lane-title"><Icon name="layers" size={14} />{L('Objekte und ihre Werte', 'Objects and their values')}</span>
-            </div>
-          )}
-          {!scene.lane && s.els.length > 0 && (
-            <div className="lane-empty" style={dir === 'v' ? { left: -(236 + 96) - 14, top: -44 } : { left: -14, top: -170 }} data-testid="lane-empty">
-              <span className="lane-title"><Icon name="layers" size={14} />{L('Objekte und ihre Werte', 'Objects and their values')}</span>
-              <p>{L('Hier erscheinen Indikatoren, Trends und Markt-Objekte. Ihre Werte verbinden Sie per Linie mit Bedingungen und Berechnungen.', 'Indicators, trends and market objects appear here. You connect their values with conditions and calculations by lines.')}</p>
-            </div>
-          )}
 
           {scene.bands.map((b) => {
             const sec = s.sections.find((x) => x.id === b.id) as NonNullable<Strategy['sections'][number]>;
@@ -532,7 +558,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
           <div className="empty-card">
             <Icon name="wand" size={28} />
             <h2>{L('Die Zeichenfläche ist leer', 'The canvas is empty')}</h2>
-            <p>{L('Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Klicken Sie in der Elementbibliothek in der Gruppe „Wann wird gerechnet“ auf „Kerzenschluss“ – oder lassen Sie sich vom Assistenten führen.', 'Next step: start with a trigger. It defines when the strategy calculates. In the element library, group "When to calculate", click "Candle close" – or let the assistant guide you.')}</p>
+            <p>{L('Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Klicken Sie in der Elementbibliothek in der Gruppe „Ablaufsteuerung“ auf „Kerzenschluss“ – oder lassen Sie sich vom Assistenten führen.', 'Next step: start with a trigger. It defines when the strategy calculates. In the element library, group "Flow control", click "Candle close" – or let the assistant guide you.')}</p>
             <div className="btn-row">
               <Btn kind="primary" icon="wand" testid="empty-wizard" onClick={() => setState({ wizard: { step: 1 }, panel: 'props' })}>{L('Assistent starten', 'Start assistant')}</Btn>
               <Btn icon="clock" testid="empty-trigger" onClick={() => addEntry({ k: 'type', id: 'trigger.candle_close' })}>{L('Kerzenschluss einfügen', 'Insert candle close')}</Btn>
@@ -544,8 +570,9 @@ export function Canvas({ findings }: { findings: Finding[] }) {
       <details className="legend" data-nodrag>
         <summary>{L('Legende', 'Legend')}</summary>
         <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H36" className="edge-line" /><path d="M34 2 L42 6 L34 10z" className="arrow-head" /></svg><span>{L('Ablauf: legt die Reihenfolge fest', 'Flow: defines the order')}</span></div>
-        <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H44" className="legend-wire" /></svg><span>{L('Wert: Weg eines Werts (farbig, gestrichelt)', 'Value: path of a value (coloured, dashed)')}</span></div>
-        <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H44" className="legend-wire name" /></svg><span>{L('Wert, nur im Ausdruck verwendet (gepunktet)', 'Value, only used in the expression (dotted)')}</span></div>
+        <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H44" className="legend-wire first" /></svg><span>{L('Erste Verwendung: Die Instanz liegt bei dem Element (immer sichtbar)', 'First use: the instance lies at the element (always visible)')}</span></div>
+        <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H44" className="legend-wire" /></svg><span>{L('Weitere Verwendung: Weg eines Werts, die Beschriftung nennt Eigenschaft oder Methode', 'Further use: path of a value, the label names the property or method')}</span></div>
+        <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H44" className="legend-wire refresh" /></svg><span>{L('↻ Aktualisieren: Das Objekt ermittelt seine Werte vorher neu', '↻ Update: the object determines its values anew first')}</span></div>
       </details>
 
       <div className="sel-bar" data-nodrag>
@@ -644,7 +671,7 @@ function CardView({
   const L = useL();
   const lang = app.settings.lang;
   const d = TYPES[el.type];
-  const props = propsOf(el);
+  const props = membersOf(el);
   const sc = scopeFor(s, lang, el);
   const k = kindClass(el.type);
   const sub = cardSubtitle(el, s, sc);
@@ -670,26 +697,31 @@ function CardView({
         {level && <Icon name={level === 'error' ? 'warn' : 'info'} size={16} className={`node-flag ${level}`} />}
       </div>
       <ul className="card-rows">
-        {geo.rows.map((pid) => {
-          const p = props.find((q) => q.id === pid);
+        {geo.rows.map((row) => {
+          const p = props.find((q) => q.id === row.prop);
           if (!p) return null;
-          const isUsed = used.some((u) => u.prop === pid);
           return (
-            <li key={pid} className={`card-row${isUsed ? ' used' : ''}`} data-tip={fieldTip(pid, lang, 'p')} data-testid="card-row" data-prop={pid}>
-              <span className="row-name">{tx(p, lang)}</span>
-              <span className="row-type">{tx(DTYPE_LABEL[p.dtype], lang)}</span>
-              <span className="port prop" data-port-prop={pid} data-testid={`port-prop-${pid}`} style={{ top: ROW_H / 2 }} data-tip={L('Ziehen Sie von hier auf ein Element, um diesen Wert zu verbinden', 'Drag from here to an element to connect this value')} />
+            <li key={row.key} className={`card-row${row.used ? ' used' : ''}${row.method ? ' method' : ''}`} data-tip={fieldTip(row.prop, lang, 'p')} data-testid="card-row" data-prop={row.key}>
+              <span className="row-name">{memberLabel(el, row.prop, row.args, lang)}</span>
+              <span className="row-type">{p.method ? L('Methode', 'Method') : tx(DTYPE_LABEL[p.dtype], lang)}</span>
+              <span className="port prop" data-port-prop={row.key} data-testid={`port-prop-${row.key}`} style={{ top: ROW_H / 2 }} data-tip={L('Ziehen Sie von hier auf ein Element, um diesen Wert zu verbinden', 'Drag from here to an element to connect this value')} />
             </li>
           );
         })}
       </ul>
-      {(props.length > geo.rows.length || el.open) && props.length > 3 && (
+      {geo.foldable && (
         <button type="button" className="card-more" data-nodrag data-testid="card-more" onClick={() => update((st) => { const q = st.els.find((x) => x.id === el.id); if (q) q.open = !q.open; })}>
           <Icon name={el.open ? 'up' : 'down'} size={13} />
-          {el.open ? L('weniger Eigenschaften', 'fewer properties') : L(`alle ${props.length} Eigenschaften`, `all ${props.length} properties`)}
+          {el.open ? L('weniger anzeigen', 'show fewer') : L(`alle ${geo.rows.length + geo.more} anzeigen`, `show all ${geo.rows.length + geo.more}`)}
         </button>
       )}
-      <span hidden>{CARD_HEAD}{EL_H}{SEC_H}{isTrigger(el.type) ? 1 : 0}</span>
+      {geo.free && (
+        <div className="card-free" data-testid="card-free">
+          <Icon name="warn" size={14} />
+          <span>{L('Noch nicht verbunden: Ziehen Sie die Karte auf das Element, das sie zuerst verwendet.', 'Not connected yet: drag the card onto the element that uses it first.')}</span>
+        </div>
+      )}
+      <span hidden>{EL_H}{SEC_H}{isTrigger(el.type) ? 1 : 0}</span>
     </div>
   );
 }

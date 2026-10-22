@@ -257,6 +257,12 @@ function RemoveElDialog({ id }: { id: string }) {
           <ul className="usage-list">{info.users.map((u) => <li key={u.id}><Icon name="link" size={14} />{u.name}</li>)}</ul>
         </>
       )}
+      {info.hosted.length > 0 && (
+        <>
+          <p>{L('Diese Instanzen liegen bei dem Element. Danach sind sie mit keinem Element verbunden, und die Prüfung meldet das:', 'These instances lie at the element. Afterwards they are not connected to any element, and the check reports it:')}</p>
+          <ul className="usage-list" data-testid="hosted-list">{info.hosted.map((u) => <li key={u.id}><Icon name="wave" size={14} />{u.name}</li>)}</ul>
+        </>
+      )}
       {info.managed.length > 0 && (
         <>
           <p>{L('Mit der Order wird ihre Verwaltung entfernt:', 'The management of the order is removed with it:')}</p>

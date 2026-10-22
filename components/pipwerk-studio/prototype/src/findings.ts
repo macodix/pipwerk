@@ -1,8 +1,9 @@
 // Simulated consistency check: finds a few typical problems and says how to fix them.
 // It runs in the browser on the model, nothing is calculated.
 import { TYPES, fieldsOf, isFlowEl, isObjectEl, isTrigger, typeLabel, tx } from './catalog';
-import { normName, problems, refsOf } from './expr';
+import { normName, problems, refsOf, sameMember } from './expr';
 import type { Scope } from './expr';
+import { collectUsage, flowElementOf, onEveryPath, placements } from './uses';
 import { isUnset } from './model';
 import type { El, Lang, RuleInst, Strategy, Txt } from './model';
 
@@ -119,7 +120,7 @@ export function computeFindings(s: Strategy, lang: Lang): Finding[] {
     for (const r of e.rules) checkRule(s, e, r, lang, out);
     // inputs that are not used
     for (const i of e.inputs) {
-      const used = Object.values(e.bind).some((b) => b.k === 'expr' && refsOf(b.e).some((r) => r.obj === i.obj && r.prop === i.prop));
+      const used = i.auto || Object.values(e.bind).some((b) => b.k === 'expr' && refsOf(b.e).some((r) => r.obj === i.obj && sameMember(r, i)));
       if (!used) {
         const srcName = s.els.find((x) => x.id === i.obj)?.name ?? '?';
         add({
@@ -141,10 +142,39 @@ export function computeFindings(s: Strategy, lang: Lang): Finding[] {
     if (first) {
       add({
         id: `dup:${e.id}`, level: 'error', el: e.id, field: 'name', title: T('Name doppelt vergeben', 'Duplicate name'),
-        msg: T(`Der Name ${nm(e)} wird zweimal verwendet. Ausdrücke könnten nicht unterscheiden, welches gemeint ist.`, `The name ${nm(e)} is used twice. Expressions could not tell which one is meant.`),
-        fix: T('Geben Sie einem der beiden Elemente einen anderen Namen.', 'Give one of the two elements another name.'),
+        msg: T(`Der Name ${nm(e)} wird in der Strategie mehr als einmal verwendet. Alle Instanzen und benannten Schritte teilen einen Namensraum, Ausdrücke könnten nicht unterscheiden, welches gemeint ist.`, `The name ${nm(e)} is used more than once in the strategy. All instances and named steps share one namespace, expressions could not tell which one is meant.`),
+        fix: T('Geben Sie einem der beiden Elemente in der Eigenschaftenansicht einen anderen Namen. Dasselbe Objekt mit anderen Parametern oder zu einem anderen Zeitpunkt ist eine eigene Instanz mit eigenem Namen, zum Beispiel „EMA20 Start“.', 'Give one of the two elements another name in the properties view. The same object with other parameters or at another time is an instance of its own with its own name, for example "EMA20 Start".'),
       });
     } else seen.set(k, e);
+  }
+  // instances: first use (req-fach-055)
+  const usage = collectUsage(s);
+  const places = placements(s, usage);
+  const byId = new Map(s.els.map((x) => [x.id, x]));
+  for (const e of s.els) {
+    if (!isObjectEl(e.type) || places.has(e.id)) continue;
+    add({
+      id: `nohost:${e.id}`, level: 'error', el: e.id, field: 'host', title: T('Instanz ohne Verbindung zum Element ihrer ersten Verwendung', 'Instance without connection to the element of its first use'),
+      msg: T(`${nm(e)} ist mit keinem Element verbunden. Ohne dieses Element steht nicht fest, wann ihre Werte ermittelt werden.`, `${nm(e)} is not connected to an element. Without it, it is not defined when its values are determined.`),
+      fix: T('Ziehen Sie die Karte auf das Element, das sie zuerst verwendet. Oder wählen Sie in ihren Eigenschaften unter „Erste Verwendung“ das Element.', 'Drag the card onto the element that uses it first. Or choose the element in its properties under "First use".'),
+    });
+  }
+  const reported = new Set<string>();
+  for (const u of usage) {
+    const pl = places.get(u.src);
+    if (!pl || u.dst === pl.host || reported.has(`${u.src}>${u.dst}`)) continue;
+    const hostFlow = flowElementOf(pl.host, places, byId);
+    const userFlow = flowElementOf(u.dst, places, byId);
+    if (!hostFlow || !userFlow || onEveryPath(s, hostFlow, userFlow)) continue;
+    reported.add(`${u.src}>${u.dst}`);
+    const obj = byId.get(u.src) as El;
+    const user = byId.get(u.dst) as El;
+    const host = byId.get(pl.host) as El;
+    add({
+      id: `path:${u.src}:${u.dst}`, level: 'error', el: u.dst, field: null, title: T('Verwendung auf einem Weg ohne die Stelle der ersten Verwendung', 'Use on a path that does not pass the place of the first use'),
+      msg: T(`${nm(user)} verwendet ${nm(obj)}, aber nicht jeder Weg dorthin führt über ${nm(host)}, wo ${nm(obj)} zuerst verwendet wird. Dort würden ihre Werte nie ermittelt.`, `${nm(user)} uses ${nm(obj)}, but not every path leads there through ${nm(host)}, where ${nm(obj)} is used first. Its values would never be determined there.`),
+      fix: T('Verbinden Sie die Instanz mit dem Element, das auf jedem Weg liegt. Oder legen Sie für diesen Zweig eine eigene Instanz an, zum Beispiel „EMA20 Start“ und „EMA20“.', 'Connect the instance to the element that lies on every path. Or create an instance of its own for this branch, for example "EMA20 Start" and "EMA20".'),
+    });
   }
   // strategy-level
   for (const p of s.params) {
@@ -173,7 +203,7 @@ export function computeFindings(s: Strategy, lang: Lang): Finding[] {
       add({
         id: 'noorder', level: 'hint', el: null, field: null, title: T('Keine Order erreichbar', 'No order reachable'),
         msg: T('Von keinem Auslöser aus ist ein Schritt „Order aufgeben“ erreichbar. Die Strategie kann so keine Order stellen.', 'No "Place order" step can be reached from any trigger. The strategy cannot place an order like this.'),
-        fix: T('Fügen Sie am Ende des Ablaufs „Order aufgeben“ aus der Gruppe „Bedingungen und Aktionen“ ein und verbinden Sie es mit dem vorherigen Schritt.', 'Add "Place order" from the group "Conditions and actions" at the end of the flow and connect it to the previous step.'),
+        fix: T('Fügen Sie am Ende des Ablaufs „Order aufgeben“ aus der Gruppe „Aktionen“ ein und verbinden Sie es mit dem vorherigen Schritt.', 'Add "Place order" from the group "Actions" at the end of the flow and connect it to the previous step.'),
       });
     }
   }

@@ -1,6 +1,6 @@
 # Prototyp pipwerk Studio
 
-Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Auftrag: `development/strategiedesign/prototype/order-01.md`. Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
+Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) und `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
 
 ## Bau und Start
 
@@ -13,12 +13,12 @@ npm run build        # Typprüfung (strict), Vite-Bau, dann eine einzige HTML-Da
 
 Ergebnis: `dist/pipwerk-studio-prototyp.html`. Die Datei enthält alle Skripte und Stile. Sie läuft ohne Server und ohne Internetverbindung durch Öffnen im Browser (`file://`). Zum Entwickeln: `npm run dev`.
 
-Gespeichertes (Strategien, Vorlagen, Einstellungen) liegt im lokalen Speicher des Browsers. Bei jedem Start öffnet sich die Strategie „EMA-Trendfolge“ des Auftraggebers, und die beiden Testfälle `str-01` und `str-03` sowie die Strategie des Auftraggebers stehen in „Öffnen“, auch wenn sie vorher gelöscht wurden. Der Prototyp lässt sich nur im Browser zurücksetzen, indem man die Daten der Seite löscht.
+Gespeichertes (Strategien, Vorlagen, Einstellungen) liegt im lokalen Speicher des Browsers unter dem Schlüssel `pipwerk-studio-prototype-v2`. Bei jedem Start öffnet sich die Strategie „EMA-Trendfolge“ des Auftraggebers, und die beiden Testfälle `str-01` und `str-03` sowie die Strategie des Auftraggebers stehen in „Öffnen“, auch wenn sie vorher gelöscht wurden. Der Prototyp lässt sich nur im Browser zurücksetzen, indem man die Daten der Seite löscht.
 
 ## Prüfungen
 
 ```sh
-npm run e2e                                              # Playwright, Chromium: Aufbau von str-03 und str-01, Fenstergrößen, Funktionen, Start
+npm run e2e                                              # Playwright, Chromium: Aufbau von str-03 und str-01, Objekte, Fenstergrößen, Funktionen, Start
 npm run e2e -- --project=firefox --project=webkit        # Start ohne Fehler in der Konsole in Firefox und WebKit
 npm run screenshots                                      # erzeugt die Bilder unter screenshots/
 ```
@@ -28,39 +28,43 @@ Die Tests öffnen die gebaute Datei über `file://`, also erst `npm run build`. 
 | Datei in `e2e/` | Inhalt |
 |---|---|
 | `smoke.spec.ts` | gebaute Datei öffnet sich über `file://` ohne Fehler in der Konsole (Chromium, Firefox, WebKit) |
-| `build-str03.spec.ts` | `str-03` aus der leeren Zeichenfläche nur über die Bedienung (Auslöser, drei Indikatoren, Kreuzungsbedingung aus Bausteinen, Berechnungen, „Order aufgeben“, Verwaltung), danach Vergleich mit dem Testfall |
-| `build-str01.spec.ts` | Hauptablauf und Verwaltung von `str-01` ebenso |
+| `build-str03.spec.ts` | `str-03` aus der leeren Zeichenfläche nur über die Bedienung. Jede Instanz wird mit dem Element ihrer ersten Verwendung verbunden: durch Klick in der Bibliothek bei gewähltem Element, durch Ziehen auf das Element, durch Wahl des Elements in den Eigenschaften einer freien Instanz. Danach Vergleich mit dem Testfall |
+| `build-str01.spec.ts` | Hauptablauf und Verwaltung von `str-01` ebenso, die zweite Instanz durch Ziehen ihrer Karte auf das Element |
+| `objects.spec.ts` | die drei Strategien zum Start senkrecht und waagerecht (Instanz neben beziehungsweise über oder unter dem Element ihrer ersten Verwendung, verbunden, kein Bereich für Objekte), freie Instanz mit Hinweis, Beschriftung mit Eigenschaft und Methode, Methoden in Bausteinen, Formeleditor und Typbeschreibung, Schalter „Aktualisieren“, die drei neuen Befunde, Regeln in der Eigenschaftenansicht |
 | `layout.spec.ts` | sechs Fenstergrößen mit geöffneter „EMA-Trendfolge“ |
-| `features.spec.ts` | Bibliothek, Erklärungen, Namen, Parameter, Zeichenfläche, Assistent, Befunde, Regeln, Vorlagen, Öffnen und Speichern, Sprache, Einstellungen |
+| `features.spec.ts` | Bibliothek mit den Gruppen, Erklärungen, Namen, Parameter, Zeichenfläche mit Ein- und Ausblenden weiterer Verwendungen, Assistent, Befunde, Regeln, Vorlagen, Öffnen und Speichern, Sprache, Einstellungen |
 | `screenshots.spec.ts` | Bildschirmbilder |
 
-Die Aufbautests geben keinen Ausdruck als Text ein. Der Vergleich mit dem Testfall nimmt die Strategie, die im Browser gespeichert wurde, und den mitgelieferten Testfall, ersetzt die internen Kennungen durch Namen und vergleicht Parameter, Elemente, Belegungen, Ausdrücke, Regeln und Verbindungen.
+Die Aufbautests geben keinen Ausdruck als Text ein. Der Vergleich mit dem Testfall nimmt die Strategie, die im Browser gespeichert wurde, und den mitgelieferten Testfall, ersetzt die internen Kennungen durch Namen und vergleicht Parameter, Elemente, Belegungen, Ausdrücke, Regeln und Verbindungen. Die Lage der Instanzen und das Element der ersten Verwendung gehören nicht zum Vergleich.
 
 ## Technik und Abhängigkeiten
 
 React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bestehenden Oberfläche. Playwright für die Browsertests. Weitere Abhängigkeiten gibt es nicht; `package-lock.json` legt die Versionen fest.
 
-- **Kein React Flow.** Die Zeichenfläche ist ein eigener Aufbau aus Elementen und SVG-Linien (`src/Canvas.tsx`, `src/scene.ts`, `src/layout.ts`). Gründe: Ablauf senkrecht und waagerecht, automatische Anordnung mit wenigen Kreuzungen samt Rahmen für die Verwaltung, einklappbare Abschnitte, ein eigener Bereich für Objekte und gebündelte Werte-Linien lassen sich so ohne Umwege zeigen. Für die Umsetzung ist das keine Vorentscheidung.
+- **Kein React Flow.** Die Zeichenfläche ist ein eigener Aufbau aus Elementen, Karten und SVG-Linien (`src/Canvas.tsx`, `src/scene.ts`, `src/layout.ts`). Gründe: Ablauf senkrecht und waagerecht, automatische Anordnung mit wenigen Kreuzungen samt Rahmen für die Verwaltung, einklappbare Abschnitte, Instanzen neben beziehungsweise über dem Element ihrer ersten Verwendung und beschriftete Datenverbindungen lassen sich so ohne Umwege zeigen. Für die Umsetzung ist das keine Vorentscheidung.
 - **Keine Übersetzungsbibliothek.** Jeder Text steht mit Deutsch und Englisch an der Stelle, an der er erscheint (`L('deutsch', 'english')`). So kann kein Text einer Sprache fehlen. `features.spec.ts` prüft die englische Oberfläche auf deutsche Texte.
 - Lizenztext im Dialog „Über pipwerk Studio“: die Datei `LICENSE` des Repositories, beim Bau eingebettet.
 
 ## Was simuliert ist
 
-- Es gibt kein Backend, keine Konsistenzprüfung des Backends und keinen Speicher im Objektverzeichnis. Die Prüfung läuft im Browser über das Modell (`src/findings.ts`): Element ohne Verbindung, Auslöser ohne Verbindung, Pflichtparameter ohne Wert, fehlerhafter Ausdruck (auch leerer Baustein), Strategieparameter oder Objekt nicht mehr vorhanden, doppelter Name, Regel ohne Ausdruck, nicht verwendeter Eingang (Hinweis), kein „Order aufgeben“ erreichbar (Hinweis).
-- Ausdrücke werden zerlegt und angezeigt, aber nicht ausgewertet. Der Formeleditor kennt die Funktionen `IF AND OR NOT MIN MAX ABS FLOOR CEILING ISNA IFNA ISBLANK PREVIOUS TRUE FALSE`.
+- Es gibt kein Backend, keine Konsistenzprüfung des Backends und keinen Speicher im Objektverzeichnis. Die Prüfung läuft im Browser über das Modell (`src/findings.ts`): Element ohne Verbindung, Auslöser ohne Verbindung, **Instanz ohne Verbindung zum Element ihrer ersten Verwendung**, **Name doppelt vergeben (gemeinsamer Namensraum aller Instanzen und benannten Schritte)**, **Verwendung auf einem Weg, der die Stelle der ersten Verwendung nicht durchläuft**, Pflichtparameter ohne Wert, fehlerhafter Ausdruck (auch leerer Baustein), Strategieparameter oder Objekt nicht mehr vorhanden, Regel ohne Ausdruck, nicht verwendeter Eingang (Hinweis), kein „Order aufgeben“ erreichbar (Hinweis). Jeder Befund nennt den Weg zur Behebung und springt zur Stelle.
+- Ausdrücke werden zerlegt und angezeigt, aber nicht ausgewertet. Der Formeleditor kennt die Funktionen `IF AND OR NOT MIN MAX ABS FLOOR CEILING ISNA IFNA ISBLANK PREVIOUS TRUE FALSE` und Methoden von Objekten.
 - Objektverzeichnis und „Dateien verschieben?“ ändern nur die Einstellung und zeigen die Rückfrage.
+- **Methoden (angenommen, Fachmodell req-fach-055, offener Punkt):** `EMA` und `ATR` haben die Methode „Wert vor … Kerzen“ mit dem Argument „Anzahl Kerzen“ (Standard 1). Andere Objekttypen haben keine Methode.
+- **Aktualisieren (angenommen):** Alle mitgelieferten Objekttypen (`EMA`, `ATR`, `ZigZag`, 1-2-3-Trend, eigener Indikator und Trend) und die Objekte der Anwendung (`Konto`, `Instrument`, `Kerze`, `Tick`) sehen es vor. Eine eigene Vorlage übernimmt es von ihrem Objekttyp; die Vorlagenansicht sagt das.
 - Die Wendepunkte des `ZigZag` sind als drei Wendepunkte mit Kurs, Hoch oder Tief und „endgültig“ angenommen. Das legt die Spezifikation vorläufig fest und kennzeichnet es; hier ist es nur eine Annahme für die Darstellung.
 - Die Vorlage „Schneller EMA 9“ ist ein erfundenes Beispiel, damit eine eigene Vorlage in der Bibliothek zu sehen ist.
-- Die Strategie des Auftraggebers ist aus seiner gesicherten Datei umgesetzt: Name, Beschreibung („emma ist die 2 EMA Strategie“), Strategieparameter mit seinen Werten (`Zeiteinheit` M15, `Stop-Abstand` 0), Elemente, Ausdrücke und Verbindungen. Aus Namen in Programmierschreibweise wurden Namen in Händlersprache: `order_ausgefuehrt` wurde „Order ausgeführt“, `kreuzen_gegen_die_position` „Kreuzen gegen die Position“, `zeiteinheit` „Zeiteinheit“, `stop_abstand` „Stop-Abstand“, `risiko_je_trade` „Risiko je Trade“. Namen ohne Unterstrich (`EMA20`, `StopLoss`, `StopLossVerbessert`) sind unverändert. Die Lage der Elemente in der Datei entfällt; der Prototyp ordnet selbst an.
+- Die Strategie des Auftraggebers ist aus seiner gesicherten Datei umgesetzt: Name, Beschreibung („emma ist die 2 EMA Strategie“), Strategieparameter mit seinen Werten (`Zeiteinheit` M15, `Stop-Abstand` 0), Elemente, Ausdrücke und Verbindungen. Aus Namen in Programmierschreibweise wurden Namen in Händlersprache: `order_ausgefuehrt` wurde „Order ausgeführt“, `kreuzen_gegen_die_position` „Kreuzen gegen die Position“, `zeiteinheit` „Zeiteinheit“, `stop_abstand` „Stop-Abstand“, `risiko_je_trade` „Risiko je Trade“. Namen ohne Unterstrich (`EMA20`, `StopLoss`, `StopLossVerbessert`) sind unverändert. Die Datei kennt keine Verbindung einer Instanz zu einem Element; die erste Verwendung ergibt sich aus den Ausdrücken: das erste Element im Ablauf, das die Instanz verwendet. Die Lage der Elemente in der Datei entfällt; der Prototyp ordnet selbst an.
 
 ## Aufbau der Quellen
 
 | Datei in `src/` | Inhalt |
 |---|---|
-| `model.ts` | Datenmodell: Strategie, Element, Belegung, Ausdruck, Vorlage |
-| `catalog.ts` | Typbeschreibungen (simuliertes Elementregister), Bezeichnungen und Erklärungen auf Deutsch und Englisch |
-| `expr.ts` | Ausdrücke: Zerlegen, Ausgeben, Lesen als Satz, Erkennen der Kreuzung, Vorschläge |
-| `scene.ts`, `layout.ts` | Anordnung: Rangfolge, Reihenfolge nach Schwerpunkt, Rahmen, Abschnitte, Bereich für Objekte, Werte-Linien |
+| `model.ts` | Datenmodell: Strategie, Element, Belegung, Ausdruck, Verwendung, Vorlage |
+| `catalog.ts` | Typbeschreibungen (simuliertes Elementregister) mit Eigenschaften, Methoden, Gruppen der Bibliothek, Bezeichnungen und Erklärungen auf Deutsch und Englisch |
+| `expr.ts` | Ausdrücke: Zerlegen, Ausgeben, Lesen als Satz, Erkennen der Kreuzung, Methodenaufrufe, Vorschläge |
+| `uses.ts` | Verwendungen von Objekten: wer verwendet welchen Wert, Element der ersten Verwendung, Reihenfolge im Ablauf, „jeder Weg läuft über die Stelle der ersten Verwendung“ |
+| `scene.ts`, `layout.ts` | Anordnung: Rangfolge, Reihenfolge nach Schwerpunkt, Rahmen, Abschnitte, Instanzen am Element ihrer ersten Verwendung, Datenverbindungen |
 | `Canvas.tsx` | Zeichenfläche mit Ziehen, Verbinden, Zoom, Einpassen |
 | `Library.tsx`, `Properties.tsx`, `fields.tsx`, `OwnEditor.tsx`, `TemplateView.tsx`, `Wizard.tsx` | Elementbibliothek, Eigenschaftenansicht, Belegung, eigene Objekte, Vorlagenansicht, geführter Aufbau |
 | `ExprEditor.tsx` | Bausteine und Formeleditor |
@@ -68,70 +72,76 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 
 ## Bedienung in Kürze
 
-- **Elemente einfügen:** In der Elementbibliothek klicken (das Element kommt hinter den gewählten Schritt und wird verbunden) oder auf die Fläche ziehen (auf ein Element: dahinter; in einen Rahmen: in diese Verwaltung). Auf Touchgeräten gilt das Klicken.
-- **Verbinden:** Vom unteren Anschluss eines Schritts auf den nächsten ziehen, oder den Anschluss anklicken und dann den nächsten Schritt. Eine gewählte Linie lässt sich mit dem Kreuz löschen.
-- **Werte verbinden:** Vom Punkt an einer Eigenschaft eines Objekts auf ein Element ziehen. Oder in den Bausteinen den Wert aus der Liste wählen; dabei entsteht der Eingang von selbst.
+- **Elemente einfügen:** In der Elementbibliothek klicken (das Element kommt hinter den gewählten Schritt und wird verbunden) oder auf die Fläche ziehen (auf ein Element: dahinter; in einen Rahmen: in diese Verwaltung). Auf Touchgeräten gilt das Klicken. „Verbindung“ in der Gruppe „Ablaufsteuerung“: erst den Schritt wählen, von dem es weitergeht, dann „Verbindung“, dann den Schritt, der folgt.
+- **Objekte verwenden (Indikator, Trend, Objekt der Anwendung):** Ein Klick bei gewähltem Element verbindet das Objekt sofort mit diesem Element. Dasselbe gilt, wenn man das Objekt auf ein Element zieht. Fällt es auf freie Fläche, liegt es dort und zeigt den Hinweis „Noch nicht verbunden“, bis man seine Karte auf ein Element zieht oder in seinen Eigenschaften unter „Erste Verwendung“ das Element wählt. Das Element, mit dem man ein Objekt zuerst verbindet, ist die erste Verwendung: Das Objekt liegt dort, bei senkrechtem Ablauf links daneben, bei waagerechtem darüber. Die Verbindung dorthin ist immer sichtbar.
+- **Weitere Verwendungen:** Vom Punkt an einer Zeile einer Karte auf ein anderes Element ziehen, oder in den Eigenschaften des Elements unter „Verwendete Werte“ „+ Wert verbinden …“ wählen, oder den Wert in den Bausteinen wählen. Jede weitere Verwendung ist eine Linie zum verwendenden Element.
 - **Verwaltung einer Order:** Der Rahmen hängt am Ausgang „gestellt“. Rahmen anklicken, dann Auslöser und Schritte aus der Bibliothek einfügen. Wer ein Element in den Rahmen zieht, macht es zu einem Teil der Verwaltung, wer es herauszieht, nimmt es heraus.
 - **Abschnitte:** In den Eigenschaften eines Schritts „Abschnitt“ wählen oder „Neuen Abschnitt bilden“. Auf der Fläche mit dem Pfeil am Titel einklappen.
 - **Strategieparameter:** immer sichtbar unter der Kopfzeile; ein Klick auf einen Parameter ändert ihn, „Neu“ legt einen an.
 - **Neue Strategie:** startet den Assistenten (Name, Auslöser, Indikatoren, Bedingung, Order). „Ohne Assistent weiterarbeiten“ verlässt ihn jederzeit.
+- **Regeln und Regelwerke:** wie bisher in der Eigenschaftenansicht der Strategie oder eines Elements (req-ui-012). Sie haben keine Darstellung auf der Zeichenfläche.
 
-## Entscheidungen zu den offenen Punkten
+## Entscheidungen zur geänderten Darstellung
 
-### Ausrichtung umschaltbar (req-ui-017)
+### Weitere Verwendungen ein- und ausblenden (Auftrag Punkt 3)
 
-Der Prototyp zeigt den Umschalter „Senkrecht / Waagerecht“ oben links auf der Zeichenfläche. Senkrecht ist der Standard. Waagerecht läuft der Ablauf von links nach rechts: Eingang links, Ausgänge rechts, der Bereich für Objekte liegt dann oberhalb des Ablaufs statt links davon. Die Wahl bleibt im Browser erhalten. Empfehlung: umschaltbar lassen. Der Aufwand ist gering, die Anordnung ist in beiden Richtungen dieselbe, und waagerecht nutzt breite Bildschirme besser aus. Die Entscheidung trifft der Auftraggeber.
+- Die **Verbindung zum Element der ersten Verwendung** ist immer sichtbar, unabhängig vom Umschalter. Sie ist eine durchgezogene, farbige Linie. Die Instanz liegt am Ende dieser Linie.
+- Der Umschalter oben auf der Zeichenfläche heißt jetzt **„Weitere Verwendungen: Alle / Auswahl / Aus“**. „Alle“ zeigt jede weitere Verwendung als gestrichelte, farbige Linie. „Auswahl“ zeigt nur die weiteren Verwendungen des gewählten Elements; ist ein Objekt gewählt, alle seine Verwendungen. „Aus“ blendet alle weiteren Verwendungen aus. **Der Prototyp startet mit „Auswahl“**, weil die Strategie des Auftraggebers sonst schon im Ausgangszustand viele Linien quer über die Fläche zeigt. Die Wahl gilt für die Sitzung.
+- Ein Name, der **nur im Ausdruck** steht, ist eine Datenverbindung wie jede andere und sieht genauso aus. Die frühere gepunktete Linie für „nur im Ausdruck verwendet“ entfällt. Ist er die erste Verwendung, gilt er als Verbindung zum Element der ersten Verwendung (immer sichtbar, siehe oben). Die erste Verwendung ist dann das **erste Element im Ablauf, das die Instanz verwendet**: Entfernung von den Auslösern, die Verwaltung einer Order nach dem Hauptablauf.
+- Hat der Anwender eine Instanz verbunden, gilt sein Element, auch wenn ein Element weiter vorn im Ablauf sie ebenfalls verwendet. Das meldet die Prüfung dann als Verwendung auf einem Weg ohne die Stelle der ersten Verwendung.
+- Hängt eine Instanz an einem anderen Objekt (ein Parameter nimmt den Wert eines anderen Objekts), liegt sie neben dessen Karte, eine Spalte weiter außen (waagerecht: eine Reihe weiter oben).
+- Elemente in einem eingeklappten Abschnitt oder einer eingeklappten Verwaltung zeigen ihre Instanzen nicht.
 
-### Darstellung der Ein- und Ausgänge (req-ui-014)
+### Beschriftung, Ein- und Ausgänge, Bündelung (Auftrag Punkt 4)
 
-- **Ausgänge:** Ein Objekt steht als Karte im Bereich „Objekte und ihre Werte“. Jede Eigenschaft ist eine Zeile mit Namen, Datentyp und einem Anschlusspunkt am Rand. Sichtbar sind die verwendeten Eigenschaften, bei einem Objekt ohne Verwendung die ersten drei. „Alle n Eigenschaften“ klappt die übrigen auf. Der Anwender zieht vom Punkt auf ein Element.
-- **Eingänge:** Ein Element zeigt an der Seite zum Bereich für Objekte einen einzigen Eingangspunkt, sobald mindestens eine Linie dort endet (bei senkrechtem Ablauf links, bei waagerechtem oben). Die einzelnen Eingänge nennt die Eigenschaftenansicht unter „Eingänge“ (zum Beispiel „EMA20 › Wert“), und die Bausteine bieten sie als erste Gruppe „Verbundene Werte“ an. Ein Eingang entsteht durch Ziehen, durch „+ Wert verbinden“ oder dadurch, dass der Anwender den Wert in den Bausteinen wählt. Ein Parameter eines anderen Objekts wird mit der Belegungsart „Wert eines Objekts“ verbunden; die Linie führt dann von Karte zu Karte.
-- **Linienarten:** Ablauf: durchgezogen, dunkelgrau, mit Pfeil. Verwaltung: grün gepunktet. Wert: farbig gestrichelt, eine Farbe je Objekt. Ein Name, der nur im Ausdruck steht, erscheint als blassere, gepunktete Wertlinie (M11); die Legende unten links erklärt die Linien.
+- **Beschriftung:** Jede Linie trägt in der Mitte eine Beschriftung mit der übergebenen Eigenschaft oder Methode, zum Beispiel „Wert“ oder „Wert vor 3 Kerzen“. Bei einer Methode stehen die Argumente in der Beschriftung. Verwendet ein Element mehrere Werte desselben Objekts, bleibt es **eine Linie**, und die Beschriftung nennt alle, durch Komma getrennt, in der Reihenfolge der Zeilen der Karte („Wert, Wert vor 3 Kerzen“). Beim Zeigen auf Linie oder Beschriftung erscheint dazu ein Satz mit Objekt, Element und, falls gewählt, „Aktualisieren“.
+- **Ausgänge:** Ein Objekt steht als Karte. Jede Zeile ist ein Ausgang mit Namen, Datentyp und einem Punkt am Rand. Methoden stehen kursiv in der Zeile mit „Methode“ statt des Datentyps. Die Karte zeigt nur die **verwendeten** Zeilen (bei einer Methode mit ihren Argumenten); bei einem Objekt ohne Verwendung die ersten drei Eigenschaften. „Alle n anzeigen“ klappt alle Eigenschaften und Methoden auf. Vom Punkt wird auf ein Element gezogen.
+- **Eingänge:** Ein Element zeigt einen einzigen Eingangspunkt für Datenverbindungen, sobald mindestens eine Linie dort endet (bei senkrechtem Ablauf links, bei waagerechtem oben). Welche Werte es verwendet, steht in seinen Eigenschaften unter „Verwendete Werte“, und die Bausteine bieten sie als erste Gruppe „Verbundene Werte“ an.
+- **Bündelung:** Mehrere Zeilen desselben Objekts, die dasselbe Element verwenden, laufen über kurze Stummel zu einer Linie zusammen (senkrecht). Waagerecht verlässt die Linie die Karte an der Unterkante, ohne Stummel. Eine Linie je Paar aus Objekt und Element, nie je Wert. Mehrere Objekte beim selben Element liegen untereinander (waagerecht nebeneinander) und haben je eine Linie.
+- **Grenze:** Bei vielen weiteren Verwendungen kreuzen sich Linien. „Auswahl“ und „Aus“ lösen das; die automatische Anordnung ordnet nur den Ablauf.
 
-### Bündelung vieler Ausgänge
+### Aktualisieren (Auftrag Punkt 6)
 
-1. Mehrere Eigenschaften desselben Objekts, die dasselbe Element verwenden, ergeben eine Linie. Am Objekt laufen die Anschlüsse der Zeilen über kurze Stummel zusammen, in der Mitte der Linie steht die Zahl der Werte.
-2. „Alle / Auswahl / Aus“ oben auf der Zeichenfläche: bei „Auswahl“ zeigt die Fläche nur die Linien des gewählten Elements; sonst sind alle Linien da, und die Linien des gewählten Elements sind kräftig, die übrigen blass.
-3. Eine Karte zeigt nur die verwendeten Zeilen. Die übrigen, unbenutzten Eigenschaften und ihre Anschlusspunkte erscheinen erst nach dem Aufklappen.
-
-Grenze: Bei sehr vielen Werten kreuzen sich Wertlinien, weil die Anordnung nur den Ablauf nach wenigen Kreuzungen ordnet; die Karten sortiert sie nach der Lage ihrer ersten Verwendung.
-
-### Umbenennen und Löschen eines verbundenen Objekts
-
-- **Umbenennen:** Ausdrücke verweisen auf das Objekt, nicht auf seinen Namen. Alle Verwendungen ziehen mit: Satz, Formel, Eingänge und Karten zeigen sofort den neuen Namen. Es gibt keine Rückfrage und keinen Fehler. Ein Name, den schon ein anderes Objekt oder ein benannter Schritt trägt, ist ein Befund der Prüfung.
-- **Löschen:** „Entfernen“ fragt zuerst. Die Rückfrage nennt die Elemente, die Werte des Objekts verwenden, und bei „Order aufgeben“ die Schritte der Verwaltung, die mit entfernt werden. Nach „Trotzdem entfernen“ sind die Linien und Eingänge weg. In Ausdrücken bleibt an der Stelle ein leerer Baustein („Wert wählen …“), eine Belegung „Wert eines Objekts“ wird „nicht belegt“. Die Prüfung meldet das als fehlerhaften Ausdruck mit dem Hinweis, einen anderen Wert zu wählen, und führt per Klick zur Stelle. Hat ein entfernter Schritt genau einen Eingang und einen Ausgang, schließt Studio die Lücke im Ablauf.
-- **Strategieparameter löschen:** ebenso mit Rückfrage und Liste der Elemente, die ihn verwenden.
+- **Eigenschaftenansicht:** Jedes Element zeigt unter **„Verwendete Werte“** je Verwendung eine Zeile: das Objekt, eine Auswahl der Eigenschaft oder Methode, bei einer Methode ihre Argumente, und, wo der Objekttyp es vorsieht, den Schalter **„Aktualisieren“**. Beim Zeigen auf den Schalter erscheint die Erklärung („Das Objekt ermittelt seine Werte neu, bevor es sie übergibt …“). Die Wahl von Eigenschaft oder Methode ändert auch den Ausdruck des Elements, wenn dort der Wert steht. Eine Verbindung, die der Anwender selbst gemacht hat, lässt sich in der Zeile entfernen; eine Verwendung im Ausdruck verschwindet, wenn man sie im Ausdruck entfernt.
+- **Auf der Zeichenfläche erkennbar:** Eine Linie mit Aktualisieren ist **dicker, mit Strich-Punkt-Muster** (die Verbindung zur ersten Verwendung dicker, durchgezogen), ihre Beschriftung beginnt mit **↻** und ist farbig hinterlegt. Die Legende erklärt das. Bündelt eine Linie mehrere Werte, trägt nur der Wert mit Aktualisieren das ↻, die ganze Linie ist dick.
+- **Objekttypen:** Alle mitgelieferten Objekttypen und die Objekte der Anwendung sehen es vor (Annahme für den Prototyp). Eine eigene Vorlage übernimmt es von ihrem Objekttyp. Wo ein Typ es nicht vorsähe, fehlte der Schalter in der Zeile.
 
 ### Weitere Festlegungen im Prototyp
 
-- **Namen in der Formelansicht:** Namen mit Leerzeichen oder Sonderzeichen stehen in eckigen Klammern (`[EMA 20].Wert`, `Strategie.[Stop-Abstand]`). Eigenschaften stehen mit ihrer Bezeichnung in der gewählten Sprache. Gespeichert wird nur der Verweis.
+- **Gruppen der Bibliothek (Punkt 8):** Ablaufsteuerung (Kerzenschluss, Tick, Bedingung, Verbindung), Berechnung (Berechnung, **Strategieparameter ändern**), Indikatoren, Trends, Marktdaten (Instrument, Kerze, Tick), Konto, Aktionen (Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen), Regeln und Regelwerke. „Strategieparameter ändern“ nennt der Auftrag nicht; der Prototyp ordnet es der Berechnung zu, weil es einen Wert aus einem Ausdruck setzt. „Verbindung“ ist ein Werkzeug, kein Element: Es startet die Verbindung vom gewählten Schritt. Eigene Vorlagen stehen in der Gruppe ihres Objekttyps, markiert als „eigene“.
+- **Ausrichtung (Punkt 10):** Der Umschalter „Senkrecht / Waagerecht“ oben links bleibt, die Wahl bleibt im Browser erhalten. Waagerecht läuft der Ablauf von links nach rechts, Eingang links, Ausgänge rechts, Instanzen über dem Element. Die Anordnung richtet die Elemente selbst am Ablauf aus, nicht ihre Karten; das erste Element des Hauptablaufs bleibt beim Hinzufügen von Instanzen an seinem Platz.
+- **Prüfung der Verwendung auf dem Weg (Punkt 7):** Jede Verwendung muss auf einem Weg liegen, der die Stelle der ersten Verwendung durchläuft. Für die Verwaltung einer Order gilt der Vorschlag des Projektleiters aus dem Fachmodell: Eine Instanz des Hauptablaufs behält dort den Stand, den sie beim Aufgeben der Order hatte; der Weg der Verwaltung beginnt bei „Order aufgeben“. Eine Instanz der Verwaltung im Hauptablauf, eine Instanz einer anderen Verwaltung oder eine Instanz hinter der Verwendung ist ein Fehler.
+- **Umbenennen und Löschen:** Ausdrücke verweisen auf das Objekt, nicht auf seinen Namen. Alle Verwendungen ziehen beim Umbenennen mit. „Entfernen“ fragt zuerst und nennt die Elemente, die Werte des Objekts verwenden, die Instanzen, die bei dem Element liegen (sie sind danach nicht mehr verbunden, sofern kein anderes Element sie verwendet, und die Prüfung meldet das), und bei „Order aufgeben“ die Schritte der Verwaltung. In Ausdrücken bleibt ein leerer Baustein („Wert wählen …“), den die Prüfung meldet. Hat ein entfernter Schritt genau einen Eingang und einen Ausgang, schließt Studio die Lücke im Ablauf. Strategieparameter löschen fragt ebenso.
+- **Namen in der Formelansicht:** Namen mit Leerzeichen oder Sonderzeichen stehen in eckigen Klammern (`[EMA 20].Wert`, `Strategie.[Stop-Abstand]`). Methoden stehen mit Argumenten in Klammern: `[EMA 20].[Wert vor](3)`. Eigenschaften stehen mit ihrer Bezeichnung in der gewählten Sprache. Gespeichert wird nur der Verweis.
 - **Kreuzung als Baustein:** „A kreuzt B nach oben, nach unten oder in beide Richtungen“ ist ein Baustein und ergibt die Ausdrücke aus den Testfällen (`AND(PREVIOUS(a) <= PREVIOUS(b); a > b)` und die Spiegelung). Beim Lesen eines Ausdrucks erkennt Studio das Muster wieder, auch innerhalb von `AND` und `OR`.
 - **Wert „Bedingung“ in Bausteinen:** Ein Wert kann selbst eine Bedingung sein („wenn … dann Bedingung sonst Bedingung“), damit sich die Bedingung „Stop-Loss verbessert“ des Testfalls aus Bausteinen bilden lässt.
 - **Neue Ordertypen:** Wählt der Anwender einen anderen Ordertyp, bekommen die neu gebrauchten Eigenschaften ihre Standardwerte (zum Beispiel „bis auf Widerruf“).
-- **Mitgelieferte Typen:** `EMA`, `ATR`, `ZigZag` und der 1-2-3-Trend (Markttechnik) lassen sich in der Bibliothek ansehen (Symbol rechts), nicht ändern und nicht löschen. Ebenso die Vorlage „Risiko je Trade“.
+- **Mitgelieferte Typen:** `EMA`, `ATR`, `ZigZag` und der 1-2-3-Trend (Markttechnik) lassen sich in der Bibliothek ansehen (Symbol rechts), nicht ändern und nicht löschen. Die Ansicht nennt die Eigenschaften und Methoden und ob der Typ „Aktualisieren“ vorsieht. Ebenso die Vorlage „Risiko je Trade“.
 
 ## Zuordnung zu den Mängeln der Abnahme
 
 | Mangel | Wo im Prototyp |
 |---|---|
-| M2 Fenstergröße | drei Anordnungen (nebeneinander, Seitenbereich mit Reitern, ein Bereich nacheinander), Test in sechs Größen |
+| wp02 Versuch 2, M2 Bereich „Objekte und ihre Werte“ | Der Bereich entfällt. Instanzen liegen beim Element ihrer ersten Verwendung und sind mit ihm verbunden |
+| M2 Fenstergröße (order-01) | drei Anordnungen (nebeneinander, Seitenbereich mit Reitern, ein Bereich nacheinander), Test in sechs Größen |
 | M3 Ansicht springt | Ansicht ändert sich nur beim Öffnen und auf Wunsch; ein neues Element außerhalb der Ansicht wird nur so weit sichtbar gemacht, wie nötig; Elemente liegen nie im fremden Rahmen |
 | M4 Sprache | alle Texte zweisprachig, auch Befunde und mitgelieferte Vorlagen |
 | M5 Belegung | Beschriftung „Belegung“, Option „Strategieparameter“, Hinweis und Anlegen an Ort und Stelle |
 | M6 Trend | Zeiteinheit, Berechnungsverfahren und Ausdruck für „Richtung“ in Bausteinen |
-| M7 Eigenschaften | Abschnitt „Liefert“ mit Datentyp und möglichen Werten, Karte mit Zeilen |
-| M8, M9 Bibliothek | Gruppen und Inhalte wie festgelegt, ZigZag, 1-2-3-Trend (Markttechnik) bei den Trends |
+| M7 Eigenschaften | Abschnitt „Liefert“ mit Datentyp, möglichen Werten und Methoden, Karte mit Zeilen |
+| M8, M9 Bibliothek | Gruppen nach Aufgabe (req-ui-018), ZigZag, 1-2-3-Trend (Markttechnik) bei den Trends |
 | M10 Erscheinungsbild | einheitliche Farben, Abstände, Schrift, Symbole, gestaltete Steuerelemente |
-| M11 Datenverbindungen | Karten mit Zeilen, Linien, gepunktete Linie für Namen im Ausdruck |
+| M11 Datenverbindungen | Karten mit Zeilen, beschriftete Linien, Linie der ersten Verwendung immer sichtbar |
 | M12 Strategieparameter | dauerhaft sichtbarer Streifen unter der Kopfzeile, Auswahl überall |
 | M13 Bedienerführung | Erklärungen beim Zeigen, leere Zustände, Assistent, Befunde mit Weg zur Behebung |
 | M14 Namen | ein frei wählbarer Name, keine Kennungen sichtbar |
-| M15 Vorschläge | nach `Objekt.` auch für benannte Bedingungen und Berechnungen |
+| M15 Vorschläge | nach `Objekt.` auch für benannte Bedingungen, Berechnungen und Methoden |
 | M16 Bedingungen | Bausteine, Satz, Formelansicht mit Editor |
-| M17 Zeichenfläche | senkrechter Ablauf, Bereich für Objekte, Abschnitte, Rahmen für die Verwaltung |
+| M17 Zeichenfläche | senkrechter und waagerechter Ablauf, Instanzen am Element, Abschnitte, Rahmen für die Verwaltung |
 
 ## Grenzen
 
 - Das Ziehen aus der Bibliothek auf die Fläche arbeitet mit dem Ziehen des Browsers und geht auf Touchgeräten nicht; dort gilt das Klicken. Eingabe per Touch ist nicht geprüft.
 - Die Erklärungen erscheinen beim Zeigen mit der Maus und beim Fokussieren mit der Tastatur.
-- Die automatische Anordnung ist ein einfaches Verfahren (Rangfolge und Reihenfolge nach Schwerpunkt). Sie ordnet die Testfälle und die Strategie des Auftraggebers ohne Überdeckung an; bei sehr verzweigten Abläufen sind Kreuzungen möglich.
+- Die automatische Anordnung ist ein einfaches Verfahren (Rangfolge und Reihenfolge nach Schwerpunkt). Sie ordnet die Testfälle und die Strategie des Auftraggebers ohne Überdeckung an; bei sehr verzweigten Abläufen sind Kreuzungen möglich. Viele Instanzen an einem Element machen den Ablauf an dieser Stelle breit (waagerecht) oder hoch (senkrecht).
+- Methoden und „Aktualisieren“ sind für den Prototyp angenommen; welche Methoden und Typen es in der Umsetzung gibt, legt das Fachmodell fest.
