@@ -9,6 +9,7 @@ import {
   BUILTIN_RISK_ID, builtinTemplates, defaultBinding, defaultName, instanceFromTemplate, newEl, newOwnRule, newRuleFromTemplate, newStrategy, uniqueName,
 } from './factory';
 import { clone, emptyOwn, uid } from './model';
+import { nameContent, takenNames } from './names';
 import type { Binding, Conn, El, Expr, Lang, RuleInst, Section, Settings, Strategy, Template, Use } from './model';
 import { sampleStrategies, sampleTemplates } from './samples';
 import type { Dir } from './scene';
@@ -113,6 +114,8 @@ function initialState(): State {
   const saved = stored?.saved ? [...stored.saved] : [];
   for (const sm of samples) if (!saved.some((x) => x.id === sm.id)) saved.push(sm);
   const templates = stored?.templates ? [...stored.templates] : sampleTemplates();
+  // the templates of order 03 are present on every start, like the test cases
+  for (const t of sampleTemplates()) if (t.id !== 'tpl-eigen-ema9' && !templates.some((x) => x.id === t.id)) templates.push(t);
   const settings: Settings = stored?.settings ?? { lang: 'de', objectDir: DEFAULT_DIR };
   const first = clone(saved.find((x) => x.sample === 'auftraggeber') as Strategy);
   return {
@@ -375,8 +378,11 @@ export function addEntry(entry: LibEntry, opts: AddOptions = {}): string | null 
       return addRule(t);
     }
     update((s) => {
-      const el = instanceFromTemplate(t, defaultName(t.type, lang, s.els.map((e) => e.name)));
-      el.name = uniqueName(t.name, s.els.map((e) => e.name));
+      const taken = takenNames(s);
+      const el = instanceFromTemplate(t, defaultName(t.type, lang, taken));
+      el.name = uniqueName(t.name, taken);
+      // contained instances and rules: "<name of the new instance> <former name>" (req-ablauf-003)
+      nameContent(el.own, el.name, [...taken, el.name]);
       s.els.push(el);
       place(s, el);
       newId = el.id;
@@ -556,9 +562,10 @@ export function addRuleTo(owner_: string | null, t: Template | null, typeId?: st
     const owner = owner_ ? s.els.find((e) => e.id === owner_) : undefined;
     const target: RuleInst[] = owner ? owner.rules : s.rules;
     ownerId = owner ? owner.id : null;
-    const taken = target.map((r) => r.name);
+    const taken = takenNames(s);
     if (t) {
       const r = newRuleFromTemplate(t, uniqueName(t.builtin ? (lang === 'en' ? 'Risk' : 'Risiko') : t.name, taken));
+      nameContent(r.own, r.name, [...taken, r.name]);
       target.push(r);
       created = r;
     } else {

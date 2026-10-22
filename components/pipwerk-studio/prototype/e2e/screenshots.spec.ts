@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clickNode, reveal } from './builder';
+import { clickNode, newStrategyFromScratch, reveal } from './builder';
 import { SIZES, lib, node, openApp } from './support';
 
 // Acceptance criterion 4: screenshots of the prototype. Run with: npm run screenshots
@@ -126,6 +126,17 @@ test.describe('notebook 1366 x 768', () => {
     const n = node(page, 'Trend prüfen');
     await reveal(page, n);
     await shot(page, 'befund-1366x768.png');
+  });
+
+  test('properties view of an inserted trend template with the proposed names (order 03)', async ({ page }) => {
+    await openApp(page, { width: 1366, height: 768 });
+    await newStrategyFromScratch(page, 'Namensvorschlag');
+    await lib(page, 'trigger.candle_close').click();
+    await lib(page, 'flow.condition').click();
+    await page.locator('[data-testid="lib-item"][data-label="Trend H1"]').click();
+    await page.waitForTimeout(300);
+    await page.getByTestId('own-includes').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await shot(page, 'vorlage-einfuegen-namen-1366x768.png');
   });
 
   test('template view', async ({ page }) => {

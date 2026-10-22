@@ -3,6 +3,8 @@
 import { TYPES, fieldsOf, isFlowEl, isObjectEl, isTrigger, typeLabel, tx } from './catalog';
 import { normName, problems, refsOf, sameMember } from './expr';
 import type { Scope } from './expr';
+import { containedEls, duplicateEntries, nameEntries, paramClashes } from './names';
+import type { NameEntry } from './names';
 import { collectUsage, flowElementOf, onEveryPath, placements } from './uses';
 import { isUnset } from './model';
 import type { El, Lang, RuleInst, Strategy, Txt } from './model';
@@ -19,9 +21,11 @@ export interface Finding {
 
 const T = (de: string, en: string): Txt => ({ de, en });
 
-export function scopeFor(s: Pick<Strategy, 'els' | 'params'>, lang: Lang, el?: El | null, orderPosition = false): Scope {
+/** The names an expression of the strategy can address: the elements and, in the common namespace, the contained instances and rules. */
+export function scopeFor(s: Pick<Strategy, 'els' | 'params'> & Partial<Pick<Strategy, 'rules'>>, lang: Lang, el?: El | null, orderPosition = false): Scope {
   return {
-    lang, els: s.els, params: s.params, rulePars: [], self: el?.id, orderPosition: orderPosition || !!(el && el.mgmt !== null),
+    lang, els: [...s.els, ...containedEls({ els: s.els, rules: s.rules ?? [] })], params: s.params, rulePars: [], self: el?.id,
+    orderPosition: orderPosition || !!(el && el.mgmt !== null),
   };
 }
 
@@ -133,19 +137,39 @@ export function computeFindings(s: Strategy, lang: Lang): Finding[] {
   }
 
   // duplicate names
-  const seen = new Map<string, El>();
-  for (const e of s.els) {
-    const d = TYPES[e.type];
-    if (!d || !(isObjectEl(e.type) || d.named) || !e.name.trim()) continue;
-    const k = normName(e.name);
-    const first = seen.get(k);
-    if (first) {
-      add({
-        id: `dup:${e.id}`, level: 'error', el: e.id, field: 'name', title: T('Name doppelt vergeben', 'Duplicate name'),
-        msg: T(`Der Name ${nm(e)} wird in der Strategie mehr als einmal verwendet. Alle Instanzen und benannten Schritte teilen einen Namensraum, Ausdrücke könnten nicht unterscheiden, welches gemeint ist.`, `The name ${nm(e)} is used more than once in the strategy. All instances and named steps share one namespace, expressions could not tell which one is meant.`),
-        fix: T('Geben Sie einem der beiden Elemente in der Eigenschaftenansicht einen anderen Namen. Dasselbe Objekt mit anderen Parametern oder zu einem anderen Zeitpunkt ist eine eigene Instanz mit eigenem Namen, zum Beispiel „EMA20 Start“.', 'Give one of the two elements another name in the properties view. The same object with other parameters or at another time is an instance of its own with its own name, for example "EMA20 Start".'),
-      });
-    } else seen.set(k, e);
+  // one namespace: instances, contained instances, rules and rule sets, named steps (req-fach-055)
+  const byIdAll = new Map(s.els.map((x) => [x.id, x]));
+  const allEntries = nameEntries(s);
+  const whereText = (x: NameEntry): Txt => {
+    const parent = x.parent ? (byIdAll.get(x.parent)?.name ?? allEntries.find((y) => y.id === x.parent)?.name) : null;
+    const owner = x.owner ? byIdAll.get(x.owner)?.name : null;
+    if (x.kind === 'contained' || x.kind === 'contained-rule') return T(` (enthalten in „${parent ?? '?'}“)`, ` (contained in "${parent ?? '?'}")`);
+    if (x.kind === 'rule') return owner ? T(` (Regel des Elements „${owner}“)`, ` (rule of the element "${owner}")`) : T(' (Regel der Strategie)', ' (rule of the strategy)');
+    return T('', '');
+  };
+  for (const { entry, first } of duplicateEntries(s)) {
+    const q = `„${entry.name}“`;
+    const w = whereText(entry);
+    const w1 = whereText(first);
+    const rule = entry.kind === 'rule' || entry.kind === 'contained-rule';
+    add({
+      id: `dup:${entry.id}`, level: 'error', el: entry.owner, field: rule ? `rule:${entry.id}` : entry.kind === 'contained' ? 'own-includes' : 'name', title: T('Name doppelt vergeben', 'Duplicate name'),
+      msg: T(
+        `Der Name ${q}${w.de} wird in der Strategie mehr als einmal verwendet${w1.de ? `, auch${w1.de}` : ''}. Alle Instanzen, enthaltenen Instanzen, Regeln, Regelwerke und benannten Schritte teilen einen Namensraum, Ausdrücke könnten nicht unterscheiden, welches gemeint ist.`,
+        `The name "${entry.name}"${w.en} is used more than once in the strategy${w1.en ? `, also${w1.en}` : ''}. All instances, contained instances, rules, rule sets and named steps share one namespace, expressions could not tell which one is meant.`,
+      ),
+      fix: T('Geben Sie einem der beiden in der Eigenschaftenansicht einen anderen Namen. Dasselbe Objekt mit anderen Parametern oder zu einem anderen Zeitpunkt ist eine eigene Instanz mit eigenem Namen, zum Beispiel „EMA20 Start“.', 'Give one of the two another name in the properties view. The same object with other parameters or at another time is an instance of its own with its own name, for example "EMA20 Start".'),
+    });
+  }
+  for (const c of paramClashes(s)) {
+    add({
+      id: `duppar:${c.rule.id}:${c.param}`, level: 'error', el: c.owner, field: `rule:${c.rule.id}`, title: T('Name doppelt vergeben', 'Duplicate name'),
+      msg: T(
+        `Der Parameter „${c.param}“ der Regel „${c.rule.name}“ heißt wie „${c.entry.name}“ in der Strategie. Ein Parameter steht in Ausdrücken ohne Punkt, der Name wäre nicht eindeutig.`,
+        `The parameter "${c.param}" of the rule "${c.rule.name}" has the same name as "${c.entry.name}" in the strategy. A parameter stands in expressions without a dot, so the name would be ambiguous.`,
+      ),
+      fix: T('Nennen Sie den Parameter oder die Instanz um. Öffnen Sie dazu die Regel beziehungsweise das Element in der Eigenschaftenansicht.', 'Rename the parameter or the instance. Open the rule or the element in the properties view for this.'),
+    });
   }
   // instances: first use (req-fach-055)
   const usage = collectUsage(s);

@@ -269,5 +269,40 @@ export function sampleTemplates(): Template[] {
       defaults: { periode: fixed(9), kursquelle: fixed('schlusskurs'), verschiebung: fixed(0) },
       own: null, e: { t: 'empty' }, determines: null, cmp: 'max', savedAt: SAVED,
     },
+    {
+      // A trend that contains two indicators (order 03, point 1): inserting it names them after the new instance.
+      id: 'tpl-eigen-trend-h1', kind: 'trend', type: 'Trend', name: 'Trend H1',
+      description: 'Beispielvorlage: Trend aus zwei EMA.',
+      defaults: { zeiteinheit: fixed('h1'), methode: fixed('ausdruck') },
+      own: {
+        ...emptyOwn(),
+        includes: [
+          { id: 'tinc-ema20', name: 'EMA 20', tpl: 'EMA' },
+          { id: 'tinc-ema50', name: 'EMA 50', tpl: 'EMA' },
+        ],
+        direction: call('IF', bin('>', ref('tinc-ema20', 'wert'), ref('tinc-ema50', 'wert')), str('buy'), str('sell')),
+      },
+      e: { t: 'empty' }, determines: null, cmp: 'max', savedAt: SAVED,
+    },
+    {
+      // A rule set that contains two rules (order 03, point 1).
+      id: 'tpl-eigen-regelwerk-vorpruefung', kind: 'ruleset', type: 'Regelwerk', name: 'Order-Check',
+      description: 'Beispielvorlage: Regelwerk mit zwei Regeln.',
+      defaults: {},
+      own: {
+        ...emptyOwn(),
+        rules: [
+          {
+            id: 'trul-volumen', name: 'Mindestvolumen', kind: 'rule', origin: { tplId: null, tplName: null, type: 'Regel' },
+            params: {}, own: emptyOwn(), e: bin('>=', ref('Order', 'volumen'), ref('Instrument', 'mindestvolumen')), determines: null, cmp: 'min',
+          },
+          {
+            id: 'trul-stop', name: 'Stop-Loss gesetzt', kind: 'rule', origin: { tplId: null, tplName: null, type: 'Regel' },
+            params: {}, own: emptyOwn(), e: bin('>', ref('Order', 'stop_loss'), num(0)), determines: null, cmp: 'min',
+          },
+        ],
+      },
+      e: { t: 'empty' }, determines: null, cmp: 'max', savedAt: SAVED,
+    },
   ];
 }

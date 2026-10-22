@@ -1,6 +1,6 @@
 # Prototyp pipwerk Studio
 
-Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) und `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
+Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
 
 ## Bau und Start
 
@@ -31,6 +31,7 @@ Die Tests öffnen die gebaute Datei über `file://`, also erst `npm run build`. 
 | `build-str03.spec.ts` | `str-03` aus der leeren Zeichenfläche nur über die Bedienung. Jede Instanz wird mit dem Element ihrer ersten Verwendung verbunden: durch Klick in der Bibliothek bei gewähltem Element, durch Ziehen auf das Element, durch Wahl des Elements in den Eigenschaften einer freien Instanz. Danach Vergleich mit dem Testfall |
 | `build-str01.spec.ts` | Hauptablauf und Verwaltung von `str-01` ebenso, die zweite Instanz durch Ziehen ihrer Karte auf das Element |
 | `objects.spec.ts` | die drei Strategien zum Start senkrecht und waagerecht (Instanz neben beziehungsweise über oder unter dem Element ihrer ersten Verwendung, verbunden, kein Bereich für Objekte), freie Instanz mit Hinweis, Beschriftung mit Eigenschaft und Methode, Methoden in Bausteinen, Formeleditor und Typbeschreibung, Schalter „Aktualisieren“, die drei neuen Befunde, Regeln in der Eigenschaftenansicht |
+| `names.spec.ts` | Auftrag 03: Trend-Vorlage mit zwei Indikatoren mehrfach einfügen (vorgeschlagene Namen, angehängte Zahl, einen Namen ändern, die umgebende Instanz umbenennen), Regelwerk mit zwei Regeln, Englisch, enthaltene Instanzen und Regeln in Bausteinen und Formeleditor, „Name doppelt vergeben“ in enthaltenen Instanzen und Regelwerken und für einen Parameter einer Regel, Instanz nur im Ausdruck |
 | `layout.spec.ts` | sechs Fenstergrößen mit geöffneter „EMA-Trendfolge“ |
 | `features.spec.ts` | Bibliothek mit den Gruppen, Erklärungen, Namen, Parameter, Zeichenfläche mit Ein- und Ausblenden weiterer Verwendungen, Assistent, Befunde, Regeln, Vorlagen, Öffnen und Speichern, Sprache, Einstellungen |
 | `screenshots.spec.ts` | Bildschirmbilder |
@@ -47,7 +48,7 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 
 ## Was simuliert ist
 
-- Es gibt kein Backend, keine Konsistenzprüfung des Backends und keinen Speicher im Objektverzeichnis. Die Prüfung läuft im Browser über das Modell (`src/findings.ts`): Element ohne Verbindung, Auslöser ohne Verbindung, **Instanz ohne Verbindung zum Element ihrer ersten Verwendung**, **Name doppelt vergeben (gemeinsamer Namensraum aller Instanzen und benannten Schritte)**, **Verwendung auf einem Weg, der die Stelle der ersten Verwendung nicht durchläuft**, Pflichtparameter ohne Wert, fehlerhafter Ausdruck (auch leerer Baustein), Strategieparameter oder Objekt nicht mehr vorhanden, Regel ohne Ausdruck, nicht verwendeter Eingang (Hinweis), kein „Order aufgeben“ erreichbar (Hinweis). Jeder Befund nennt den Weg zur Behebung und springt zur Stelle.
+- Es gibt kein Backend, keine Konsistenzprüfung des Backends und keinen Speicher im Objektverzeichnis. Die Prüfung läuft im Browser über das Modell (`src/findings.ts`): Element ohne Verbindung, Auslöser ohne Verbindung, **Instanz ohne Verbindung zum Element ihrer ersten Verwendung**, **Name doppelt vergeben (gemeinsamer Namensraum aller Instanzen, enthaltenen Instanzen, Regeln, Regelwerke und benannten Schritte, außerdem Parameter einer Regel mit dem Namen aus diesem Namensraum)**, **Verwendung auf einem Weg, der die Stelle der ersten Verwendung nicht durchläuft**, Pflichtparameter ohne Wert, fehlerhafter Ausdruck (auch leerer Baustein), Strategieparameter oder Objekt nicht mehr vorhanden, Regel ohne Ausdruck, nicht verwendeter Eingang (Hinweis), kein „Order aufgeben“ erreichbar (Hinweis). Jeder Befund nennt den Weg zur Behebung und springt zur Stelle.
 - Ausdrücke werden zerlegt und angezeigt, aber nicht ausgewertet. Der Formeleditor kennt die Funktionen `IF AND OR NOT MIN MAX ABS FLOOR CEILING ISNA IFNA ISBLANK PREVIOUS TRUE FALSE` und Methoden von Objekten.
 - Objektverzeichnis und „Dateien verschieben?“ ändern nur die Einstellung und zeigen die Rückfrage.
 - **Methoden (angenommen, Fachmodell req-fach-055, offener Punkt):** `EMA` und `ATR` haben die Methode „Wert vor … Kerzen“ mit dem Argument „Anzahl Kerzen“ (Standard 1). Andere Objekttypen haben keine Methode.
@@ -69,6 +70,7 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 | `Library.tsx`, `Properties.tsx`, `fields.tsx`, `OwnEditor.tsx`, `TemplateView.tsx`, `Wizard.tsx` | Elementbibliothek, Eigenschaftenansicht, Belegung, eigene Objekte, Vorlagenansicht, geführter Aufbau |
 | `ExprEditor.tsx` | Bausteine und Formeleditor |
 | `store.ts`, `findings.ts`, `samples.ts`, `factory.ts` | Zustand und Aktionen, Prüfung, Strategien zum Start, Anlegen von Elementen |
+| `names.ts` | Namensraum der Strategie: alle Namen sammeln, doppelte finden, enthaltene Instanzen und Regeln für Ausdrücke bereitstellen, Namen beim Einfügen einer Vorlage vorschlagen |
 
 ## Bedienung in Kürze
 
@@ -117,6 +119,27 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 - **Wert „Bedingung“ in Bausteinen:** Ein Wert kann selbst eine Bedingung sein („wenn … dann Bedingung sonst Bedingung“), damit sich die Bedingung „Stop-Loss verbessert“ des Testfalls aus Bausteinen bilden lässt.
 - **Neue Ordertypen:** Wählt der Anwender einen anderen Ordertyp, bekommen die neu gebrauchten Eigenschaften ihre Standardwerte (zum Beispiel „bis auf Widerruf“).
 - **Mitgelieferte Typen:** `EMA`, `ATR`, `ZigZag` und der 1-2-3-Trend (Markttechnik) lassen sich in der Bibliothek ansehen (Symbol rechts), nicht ändern und nicht löschen. Die Ansicht nennt die Eigenschaften und Methoden und ob der Typ „Aktualisieren“ vorsieht. Ebenso die Vorlage „Risiko je Trade“.
+
+## Entscheidungen zu Auftrag 03
+
+### Namensvorschlag beim Einfügen (Punkt 1)
+
+- Enthält eine Vorlage selbst Instanzen oder Regeln (Trend mit Indikatoren, Indikator mit Regeln, Regelwerk mit Regeln), heißt jede enthaltene Instanz und Regel nach dem Einfügen „<Name der neuen Instanz> <bisheriger Name>“, zum Beispiel „Trend H1 EMA 20“. Ist der Vorschlag im Namensraum der Strategie vergeben, hängt der Prototyp eine Zahl an („Trend H1 EMA 20 2“). Das gilt beim Einfügen aus der Bibliothek und beim Hinzufügen einer Regelvorlage in der Eigenschaftenansicht der Strategie oder eines Elements.
+- Die Eigenschaftenansicht der eingefügten Instanz zeigt die enthaltenen Namen im Abschnitt „Enthaltene Indikatoren“ und unter „Liefert“. Jeder Name lässt sich ändern. Bei einem Regelwerk stehen die Namen der Regeln in der Eigenschaftenansicht des Regelwerks. Umbenennen der umgebenden Instanz ändert die enthaltenen Namen nicht.
+- Jede enthaltene Instanz und Regel erhält beim Einfügen eine neue Kennung, weil dieselbe Vorlage mehrmals eingefügt werden kann. Die Ausdrücke im Inhalt (Richtung des Trends, eigene Eigenschaften, Ausdrücke der Regeln) verweisen auf die neuen Kennungen.
+- Die Vorlagen für den Nachweis liegen in der Bibliothek: **„Trend H1“** (Gruppe Trends, zwei Indikatoren „EMA 20“ und „EMA 50“, die Richtung folgt aus dem Vergleich beider) und **„Order-Check“** (Gruppe Regeln und Regelwerke, zwei Regeln „Mindestvolumen“ und „Stop-Loss gesetzt“). Beide stehen bei jedem Start in der Bibliothek, auch wenn im Browser schon Vorlagen gespeichert sind. Ihre Namen und die Namen darin sind Daten des Anwenders und deshalb in beiden Sprachen gleich; sie enthalten keine Umlaute, damit die Prüfung der englischen Oberfläche auf deutsche Texte sie nicht meldet.
+
+### Gemeinsamer Namensraum (Punkt 2)
+
+- Zum Namensraum zählen alle Instanzen auf der Zeichenfläche, die in einer Instanz enthaltenen Instanzen, alle Regeln und Regelwerke (der Strategie, der Elemente, in Instanzen und in Regelwerken) und die benannten Schritte (Bedingung, Berechnung). Ein Name steht nur einmal darin, ohne Unterscheidung von Groß- und Kleinschreibung. Strategieparameter bleiben ein eigener Namensraum (`Strategie.`).
+- **Auswählbar** sind in Bausteinen und Formeleditor die enthaltenen Instanzen („Trend H1 EMA 20 › Wert“, im Formeleditor `[Trend H1 EMA 20].Wert`) und die Regeln, die in einer Instanz oder einem Regelwerk der Strategie enthalten sind („Order-Check Mindestvolumen › Ergebnis“, im Bausteinfeld unter „Regeln in Regelwerken“). Eine Regel liefert die Eigenschaft „Ergebnis“, ein Regelwerk „Gesamtergebnis“ (Annahme für den Prototyp, aus `regel.Ergebnis` der Spezifikation 3.3 abgeleitet). Die Regeln und Regelwerke der Strategie selbst und die Regeln eines Elements stehen nicht in der Auswahl; der Auftrag nennt nur enthaltene Instanzen und Regeln in Regelwerken, und die Spezifikation lässt die Regeln eines Elements nur in den Regeln dieses Elements zu.
+- Enthaltene Instanzen haben keine Karte auf der Zeichenfläche und keine Linie: Sie gehören zu der umgebenden Instanz und haben kein eigenes Element der ersten Verwendung (Spezifikation 3.6).
+- Die Prüfung meldet „Name doppelt vergeben“ für jeden Namen, der im Namensraum schon vorkommt, auch in enthaltenen Instanzen und Regelwerken. Der Befund nennt, wo der Name steht („enthalten in …“) und springt zur Instanz. Ebenso, wenn der Parameter einer Regel so heißt wie ein Name im Namensraum. Nicht umgesetzt, weil der Auftrag es nicht nennt: Namen unter den Strategieparametern und Parameter einer Vorlage.
+- Die Ausdrücke im Inhalt einer Instanz (Spezifikation 3.3, zweiter Absatz) sind nicht auf den eigenen Inhalt beschränkt; das ist nicht Teil des Auftrags.
+
+### Verwendung nur im Ausdruck (Punkt 3)
+
+Der Prototyp setzte das schon um, es war nichts anzupassen. Eine Instanz, die nur im Ausdruck verwendet wird (zum Beispiel im Formeleditor eingetippt), hat kein Element, das der Anwender verbunden hat. Sie liegt dann beim ersten Element in der Reihenfolge des Ablaufs, das sie verwendet (`placements` in `src/uses.ts`), auch wenn nur ein späteres Element sie verwendet. „Instanz ohne Verbindung“ meldet die Prüfung nur, wenn gar kein Element sie verwendet. Der Test in `names.spec.ts` belegt es mit einer freien Instanz, die erst der zweiten Bedingung, dann auch der ersten im Ausdruck genannt wird.
 
 ## Zuordnung zu den Mängeln der Abnahme
 

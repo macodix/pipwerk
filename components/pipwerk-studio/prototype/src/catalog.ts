@@ -345,8 +345,8 @@ const defs: TypeDef[] = [
     props: [prp('richtung', 'Richtung', 'Direction', 'text', { userSet: true, must: true })], outputs: [],
   },
   // rules
-  { id: 'Regel', kind: 'rule', group: 'rules', icon: 'shield', de: 'Regel', en: 'Rule', own: true, params: [], props: [], outputs: [] },
-  { id: 'Regelwerk', kind: 'ruleset', group: 'rules', icon: 'layers', de: 'Regelwerk', en: 'Rule set', own: true, params: [], props: [], outputs: [] },
+  { id: 'Regel', kind: 'rule', group: 'rules', icon: 'shield', de: 'Regel', en: 'Rule', own: true, params: [], props: [prp('ergebnis', 'Ergebnis', 'Result', 'boolean')], outputs: [] },
+  { id: 'Regelwerk', kind: 'ruleset', group: 'rules', icon: 'layers', de: 'Regelwerk', en: 'Rule set', own: true, params: [], props: [prp('ergebnis', 'Gesamtergebnis', 'Total result', 'boolean')], outputs: [] },
 ];
 
 export const TYPES: Record<string, TypeDef> = Object.fromEntries(defs.map((d) => [d.id, d]));

@@ -24,11 +24,11 @@ test.describe('library, explanations, names', () => {
     expect(groups[0].items).toEqual(['Kerzenschluss', 'Tick', 'Bedingung', 'Verbindung']);
     expect(groups[1].items).toEqual(['Berechnung', 'Strategieparameter ändern']);
     expect(groups[2].items).toEqual(['EMA', 'ATR', 'ZigZag', 'eigener Indikator', 'Schneller EMA 9']);
-    expect(groups[3].items).toEqual(['1-2-3-Trend (Markttechnik)', 'eigener Trend']);
+    expect(groups[3].items).toEqual(['1-2-3-Trend (Markttechnik)', 'eigener Trend', 'Trend H1']);
     expect(groups[4].items).toEqual(['Instrument', 'Kerze', 'Tick']);
     expect(groups[5].items).toEqual(['Konto']);
     expect(groups[6].items).toEqual(['Order aufgeben', 'Order ändern', 'Order löschen', 'Position ändern', 'Position schließen']);
-    expect(groups[7].items).toEqual(['Risiko je Trade', 'eigene Regel', 'eigenes Regelwerk']);
+    expect(groups[7].items).toEqual(['Risiko je Trade', 'eigene Regel', 'eigenes Regelwerk', 'Order-Check']);
     for (const g of groups) for (const t of g.tips) expect(t.length, `explanation in ${g.title}`).toBeGreaterThan(20);
     // stored templates stand in their group, marked as own
     await expect(page.locator('[data-testid="lib-item"][data-label="Schneller EMA 9"] .tag-own')).toHaveText('eigene');

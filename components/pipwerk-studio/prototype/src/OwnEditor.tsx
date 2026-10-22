@@ -8,6 +8,7 @@ import type { Scope } from './expr';
 import { ValueByType } from './fields';
 import { newOwnRule, newRuleFromTemplate, uniqueName } from './factory';
 import { clone, uid } from './model';
+import { nameContent, takenNames } from './names';
 import type { DType, El, OwnDef, RuleInst, Template } from './model';
 import { allTemplates, useApp } from './store';
 import { Btn, Icon, Section, Select, TextInput, Toggle, useL } from './ui';
@@ -42,12 +43,17 @@ export function RulesEditor({
   };
   const add = (v: string) => {
     if (!v) return;
-    const taken = rules.map((r) => r.name);
+    // in the strategy the names of the whole strategy are taken (one namespace), in a template only its own rules
+    const taken = base && app.strategy ? takenNames(app.strategy) : rules.map((r) => r.name);
     if (v === '__rule') onChange([...rules, newOwnRule(uniqueName(L('Regel', 'Rule'), taken))]);
     else if (v === '__ruleset') onChange([...rules, newOwnRule(uniqueName(L('Regelwerk', 'Rule set'), taken), 'ruleset')]);
     else {
       const t = tpls.find((x) => x.id === v);
-      if (t) onChange([...rules, newRuleFromTemplate(t, uniqueName(t.builtin ? L('Risiko', 'Risk') : t.name, taken))]);
+      if (t) {
+        const r = newRuleFromTemplate(t, uniqueName(t.builtin ? L('Risiko', 'Risk') : t.name, taken));
+        if (base && app.strategy) nameContent(r.own, r.name, [...taken, r.name]);
+        onChange([...rules, r]);
+      }
     }
   };
   return (
@@ -133,7 +139,7 @@ export function OwnEditor({
               <Btn kind="quiet" small icon="x" title={L('Entfernen', 'Remove')} onClick={() => set((o) => { o.includes = o.includes.filter((x) => x.id !== i.id); })} />
             </div>
           ))}
-          <Select value="" onChange={(v) => { if (v) set((o) => { const t = indicatorTpls.find((x) => x.id === v); const type = t ? t.type : v; o.includes.push({ id: uid('inc'), name: uniqueName(t ? t.name : typeLabel(type, lang), o.includes.map((x) => x.name)), tpl: type }); }); }} ariaLabel={L('Indikator hinzufügen', 'Add indicator')}>
+          <Select value="" onChange={(v) => { if (v) set((o) => { const t = indicatorTpls.find((x) => x.id === v); const type = t ? t.type : v; o.includes.push({ id: uid('inc'), name: uniqueName(t ? t.name : typeLabel(type, lang), !app.tplView && app.strategy ? takenNames(app.strategy) : o.includes.map((x) => x.name)), tpl: type }); }); }} ariaLabel={L('Indikator hinzufügen', 'Add indicator')}>
             <option value="">{L('+ Indikator hinzufügen …', '+ Add indicator …')}</option>
             {builtinInd.map((id) => <option key={id} value={id}>{typeLabel(id, lang)}</option>)}
             {indicatorTpls.map((t) => <option key={t.id} value={t.id}>{t.name} ({L('eigene', 'own')})</option>)}

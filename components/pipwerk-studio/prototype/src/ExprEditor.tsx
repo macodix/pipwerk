@@ -1,6 +1,6 @@
 // Conditions and calculations from blocks (req-ui-015) and the formula editor for advanced users.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { TYPES, isObjectEl, methodText, tx, typeLabel } from './catalog';
+import { TYPES, isObjectEl, isRuleType, methodText, tx, typeLabel } from './catalog';
 import {
   ARITH_LABEL, CMP_LABEL, COMPARE_OPS, EMPTY, FUNCTIONS, bracketMatch, callAt, completionsAt, describe, highlight, memberList, methodIn, objOf, parse, prettyPrint, propList,
   refsOf, spName, typeOf,
@@ -52,6 +52,13 @@ function valueGroups(sc: Scope, L: (de: string, en: string) => string, inputs: {
     groups.push({
       label: L('Ergebnisse vorheriger Schritte', 'Results of previous steps'),
       items: results.map((e) => refOpt(e.id, 'ergebnis', `${e.name} › ${L('Ergebnis', 'Result')}`)),
+    });
+  }
+  const contained = sc.els.filter((e) => TYPES[e.type] && isRuleType(e.type) && e.id !== sc.self && e.name.trim());
+  if (contained.length) {
+    groups.push({
+      label: L('Regeln in Regelwerken', 'Rules in rule sets'),
+      items: contained.map((e) => refOpt(e.id, 'ergebnis', `${e.name} › ${e.type === 'Regelwerk' ? L('Gesamtergebnis', 'Total result') : L('Ergebnis', 'Result')}`)),
     });
   }
   const placed = new Set(sc.els.map((e) => e.type));
