@@ -387,7 +387,9 @@ Eine Strategie wird nach Rückfrage gelöscht. Eine Vorlage wird nach Rückfrage
 Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage (Regel, Regelwerk, Indikator, Trend) und auf Anforderung. Sie findet mindestens:
 
 - Auslöser ohne Verbindung in den Ablauf (Fehler)
-- Element des Ablaufs ohne Verbindung (Fehler). Für Objekte auf der Zeichenfläche (Indikatoren, Trends, Objekte der Anwendung) gilt das nicht, sie geben ihre Werte über Datenverbindungen oder Ausdrücke weiter.
+- Element des Ablaufs ohne Verbindung (Fehler)
+- Instanz eines Indikators, eines Trends oder eines Objekts der Anwendung ohne Verbindung zu dem Element, das sie zuerst verwendet (Fehler, req-ablauf-003, Fachmodell req-fach-055)
+- Name einer Instanz, der in der Strategie mehr als einmal vergeben ist (Fehler, Fachmodell req-fach-055)
 - Datenverbindung zwischen unverträglichen Datentypen (Fehler)
 - Eingang ohne Wert (Fehler), ausgenommen optionale Parameter (req-param-006) und Parameter, deren Wert erst bei der Anwendung übergeben wird
 - Fehlerhafter Ausdruck, zum Beispiel Schreibfehler, unbekannte Funktion oder unbekannte Eigenschaft (Fehler)
@@ -520,3 +522,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-21 | req-ui-003: Element „Parameter setzen“ entfällt (Fachmodell req-fach-047). Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
 | 2026-10-21 | req-fach-015: Liste der Auslösertypen an die Benennung „Manuell“ angeglichen. Vom Projektleiter nach dem Hinweis des Softwarearchitekten (`backtest`, Spezifikation). |
 | 2026-10-22 | req-ui-017: Objekte liegen beim Element ihrer ersten Verwendung statt in einem eigenen Bereich, Ausrichtung umschaltbar. req-ui-014: Beschriftung der Datenverbindung, Wahl von Eigenschaft oder Methode, Schalter „Aktualisieren“. req-ablauf-003: Instanz erst mit Verbindung zum ersten verwendenden Element verwendbar. req-ui-018 neu: Gruppen der Elementbibliothek, Namen offen. req-ui-012: bleibt vorerst, Darstellung von Regeln offen mit Vorschlag. Festlegung des Auftraggebers im Chat am 2026-10-22 (Abnahme `strategiedesign/wp02`, Versuch 2). |
+| 2026-10-22 | req-ablauf-007: Instanz ohne Verbindung zum Element ihrer ersten Verwendung und doppelter Name einer Instanz sind Fehler, Ausnahme für Objekte auf der Zeichenfläche entfällt. Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 13, B1 und H6), Folge der Festlegungen vom selben Tag. |
