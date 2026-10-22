@@ -58,6 +58,7 @@ Bestätigungen des Auftraggebers erfolgen formlos im Chat. Der Projektleiter ver
 
 | Begriff | Bedeutung |
 |---|---|
+| 2026-10-22 | Erfundenen Begriff „Hauptstand“ durch den Zweignamen `main` ersetzt. Forderung des Auftraggebers im Chat am 2026-10-22. |
 | Vorhaben | Ein Entwicklungsvorhaben mit eigener Spezifikation und eigenem Arbeitspaketplan, zum Beispiel ein Schritt der Produktplanung. |
 | Arbeitspaket | Teil eines Vorhabens, der mit einem Ergebnis endet, das der Auftraggeber selbst prüfen und abnehmen kann. |
 | Auftrag | Umsetzbare Einheit eines Arbeitspakets für genau einen Entwickler. |
@@ -74,7 +75,7 @@ Bestätigungen des Auftraggebers erfolgen formlos im Chat. Der Projektleiter ver
 | 3 Planung | Arbeitspaketplan |
 | 4 Umsetzung | je Arbeitspaket: Aufträge, Code, Tests, QA |
 | 5 Abnahme | Erprobung durch den Auftraggeber |
-| 6 Integration | Übernahme in den Hauptstand |
+| 6 Integration | Übernahme in `main` |
 
 Rückwege:
 
@@ -154,7 +155,7 @@ Ergebnis: abgenommenes Arbeitspaket, Abnahme im Abnahmebericht vermerkt.
 
 Der Entwicklungsleiter übernimmt genau den abgenommenen Commit mit einem Merge-Commit in `main`. Er beendet die Testumgebung, entfernt Arbeitsverzeichnisse und Zweige des Pakets und trägt das Paket im Arbeitspaketplan mit `done` ein.
 
-Ergebnis: Arbeitspaket im Hauptstand, keine Reste aus der Umsetzung. Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.
+Ergebnis: Arbeitspaket in `main`, keine Reste aus der Umsetzung. Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.
 
 ## Übergabedokumente
 
@@ -253,12 +254,12 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Projektleiter | `present` | Spezifikation oder Plan zur Präsentation und Abstimmung, auch nach `amend` | `specification.md` oder `plan.md` |
 | Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
 | Projektleiter | `question` | Frage an den Auftraggeber oder Eskalation | Frage |
-| Projektleiter | `integrated` | Paket in den Hauptstand übernommen | `plan.md` |
+| Projektleiter | `integrated` | Paket in `main` übernommen | `plan.md` |
 | Projektleiter | `failed` | Absturz oder Stillstand einer Sitzung, von `agentrun` | die Meldung, mit der die Sitzung gestartet wurde |
 
 Findet der Entwicklungsleiter in Phase 4 eine Lücke in der Spezifikation oder braucht der Plan eine Änderung, beschreibt er sie in `<arbeitspaket>/amend-<nn>.md` auf `main`, meldet `amend` an den Softwarearchitekten und beendet die Sitzung, nachdem er alle davon unabhängigen Teile erledigt hat. Der Softwarearchitekt ergänzt Spezifikation beziehungsweise Plan und lässt sie von der QA prüfen. Ist die Ergänzung rein technisch, entscheidet er sie selbst, vermerkt sie im Änderungsnachweis von Spezifikation beziehungsweise Plan und meldet nach bestandener Prüfung `amended` an den Entwicklungsleiter, der das Paket ohne Pause fortsetzt. Rein technisch ist eine Ergänzung, wenn sie keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert; ist die Zuordnung nicht eindeutig, gilt sie als nicht rein technisch. Nur dann meldet er `present`, das Paket ruht bis zur Bestätigung, und der Projektleiter setzt es danach mit `implement` an den Entwicklungsleiter fort.
 
-Eine Abhängigkeit von einem Paket gilt als erfüllt, sobald dessen Prüfung durch die QA bestanden ist. Das abhängige Paket beginnt auf diesem Stand und übernimmt spätere Korrekturen aus der Abnahme. In den Hauptstand übernommen wird es erst nach dem Paket, von dem es abhängt. Nach der Bestätigung des Plans schreibt der Projektleiter je Paket ohne offene Abhängigkeit eine Meldung `implement`. Bei der Integration schreibt der Entwicklungsleiter im selben Commit wie seine Meldung `integrated` eine Meldung `implement` an sich selbst für jedes Paket, dessen Abhängigkeiten jetzt erfüllt sind.
+Eine Abhängigkeit von einem Paket gilt als erfüllt, sobald dessen Prüfung durch die QA bestanden ist. Das abhängige Paket beginnt auf diesem Stand und übernimmt spätere Korrekturen aus der Abnahme. In `main` übernommen wird es erst nach dem Paket, von dem es abhängt. Nach der Bestätigung des Plans schreibt der Projektleiter je Paket ohne offene Abhängigkeit eine Meldung `implement`. Bei der Integration schreibt der Entwicklungsleiter im selben Commit wie seine Meldung `integrated` eine Meldung `implement` an sich selbst für jedes Paket, dessen Abhängigkeiten jetzt erfüllt sind.
 
 Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antwort. Nach `failed` entfernt der Projektleiter die ursprüngliche Meldung und stößt die Arbeit mit einer neuen Meldung erneut an.
 
@@ -342,7 +343,7 @@ Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis der
 
 | Zweig | Inhalt | angelegt von |
 |---|---|---|
-| `main` | Hauptstand. Dokumente der Phasen 1 bis 3, Meldungen, Fragen, Abnahmeberichte und übernommene Arbeitspakete | – |
+| `main` | Dokumente der Phasen 1 bis 3, Meldungen, Fragen, Abnahmeberichte und übernommene Arbeitspakete | – |
 | `<vorhaben>/<arbeitspaket>` | Arbeitszweig des Pakets mit Aufträgen, Berichten und zusammengeführten Aufträgen | Entwicklungsleiter |
 | `<vorhaben>/<arbeitspaket>-<auftrag>` | Zweig eines Entwicklers für einen Auftrag | Entwickler |
 | `<vorhaben>/<arbeitspaket>-functiontest` | Änderungen am Prüfskript, aufgesetzt auf dem zu prüfenden Commit | Tester Funktion |

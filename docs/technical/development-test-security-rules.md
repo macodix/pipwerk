@@ -84,7 +84,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 
 ## 5. Entwicklungsregeln
 
-1. Änderungen an Programmcode erfolgen in einem eigenen Zweig und kommen nach [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) in den Hauptstand.
+1. Änderungen an Programmcode erfolgen in einem eigenen Zweig und kommen nach [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) in `main`.
 2. Jede Änderung muss einer dokumentierten Anforderung, Entscheidung, Fehlerbehebung oder einem klar beschriebenen technischen Zweck zugeordnet sein.
 3. Fachkern, Transport, Persistenz und Benutzeroberfläche werden durch definierte Schnittstellen getrennt.
 4. Keine Frameworkklasse darf erforderlich sein, um eine fachliche Kernoperation auszuführen.
