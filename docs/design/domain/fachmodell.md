@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Gemeinsame, wiederverwendbare fachliche Begriffe, Objekte und Zusammenhänge für Strategiedesigner, Strategietester und Handelssystem
-- zuletzt aktualisiert: `2026-10-21`
+- zuletzt aktualisiert: `2026-10-22`
 - abgestimmt: [Präsentation Fachmodell: Orders und Regelwerke](praesentation-fachmodell.html), bestätigt vom Auftraggeber im Chat am 14. Oktober 2026. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -439,6 +439,25 @@ Der zurückgestellte Indikator `Markttechnik` heißt in der Oberfläche „1-2-3
 
 Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors als Objekte.
 
+### req-fach-055 -- Objekte an der Stelle ihrer Verwendung
+
+Eine Instanz eines Indikators, eines Trends oder eines Objekts der Anwendung (`Konto`, `Instrument`, `Kerze`, `Tick`) gehört an die Stelle des Ablaufs, an der sie zuerst verwendet wird: zu dem Element, das sie zuerst verwendet (req-fach-046). Ihre Werte werden ermittelt, wenn eine Auswertung diese Stelle erreicht. Die Stelle legt damit den Zeitpunkt fest. Bei weiteren Verwendungen behält die Instanz diesen Stand.
+
+Alle Instanzen einer Strategie liegen in einem gemeinsamen Namensraum: Über ihren Namen ist eine Instanz überall in der Strategie ansprechbar. Ein Name darf in einer Strategie nur einmal vergeben werden; ein doppelter Name ist ein Fehler der Konsistenzprüfung. Dasselbe Objekt mit anderen Parametern oder zu einem anderen Zeitpunkt ist eine weitere Instanz mit eigenem Namen, zum Beispiel in den beiden Zweigen einer Bedingung oder als `EMA20 Start` am Anfang und `EMA20` nach „Order aufgeben“.
+
+Aktualisieren: Bei jeder Verwendung kann der Anwender festlegen, dass die Instanz ihre Werte neu ermittelt, bevor sie sie übergibt. Das ist nur bei Objekttypen möglich, die das Aktualisieren vorsehen; die Typbeschreibung nennt es.
+
+Methoden: Ein Objekt kann neben Eigenschaften Methoden haben, die einen Wert zurückliefern. Eine Verwendung übergibt entweder eine Eigenschaft oder das Ergebnis einer Methode.
+
+Offen:
+
+- Welche Methoden die mitgelieferten Objekttypen haben und welche das Aktualisieren vorsehen. Beispiel für eine Methode: der Wert eines Indikators vor einer Anzahl Kerzen (heute über den Parameter `Verschiebung` des `EMA` und eine zweite Instanz).
+- Verwendung auf einem Weg, der die Stelle der ersten Verwendung nicht durchläuft. Vorschlag des Projektleiters: Fehler der Konsistenzprüfung.
+- Verwaltung einer Order mit eigenen Auslösern (req-fach-049a): Ihre Auswertungen durchlaufen den Hauptablauf nicht. Vorschlag des Projektleiters: Eine Instanz aus dem Hauptablauf behält dort den Stand, den sie beim Aufgeben der Order hatte; aktuelle Werte über Aktualisieren oder eine eigene Instanz in der Verwaltung.
+- Stand einer Instanz, wenn eine Rückführung (req-fach-047) die Stelle der ersten Verwendung in derselben Auswertung erneut erreicht.
+- Stand von `Tick` ohne Instanz (req-fach-051) innerhalb einer Auswertung.
+- Welcher Stand an einer Stelle im Testlauf gilt, legen die Anforderungen an den Strategietester fest.
+
 ## 3. Änderungsnachweis
 
 | Datum | Änderung |
@@ -496,3 +515,4 @@ Offen: weitere mitgelieferte Indikatoren und die Einbindung von Expert Advisors 
 | 2026-10-21 | req-fach-054: `Markttechnik` zurückgestellt, nicht mitgeliefert; `ZigZag` liefert mindestens das letzte und vorletzte endgültige Hoch und Tief. Entscheidung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | req-fach-053: Auslöser `Start von Hand` heißt `Manuell`; er ist nur im Hauptablauf zulässig, in der Verwaltung einer Order meldet die Konsistenzprüfung einen Fehler. Offener Punkt zum Eintreten erledigt, Eintreten im Testlauf in den Anforderungen an den Strategietester (req-test-015). Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
 | 2026-10-21 | req-fach-047: Element `Parameter setzen` entfällt, Strategieparameter werden im Ablauf nicht geändert; eine zweite Prüfung mit anderem Wert verwendet einen weiteren Strategieparameter. Beispiel mit der Handelszeiteinheit gestrichen, offener Punkt zur Geltungsdauer erledigt. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
+| 2026-10-22 | req-fach-055 neu: Instanzen an der Stelle ihrer ersten Verwendung, Werte beim Erreichen dieser Stelle, gemeinsamer Namensraum, doppelter Name ist ein Fehler, Aktualisieren bei der Verwendung, Methoden mit Rückgabewert; offene Punkte mit Vorschlag. Festlegung des Auftraggebers im Chat am 2026-10-22 (Abnahme `strategiedesign/wp02`, Versuch 2). |
