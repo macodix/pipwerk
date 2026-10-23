@@ -35,3 +35,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Abstimmung der Präsentation: Auch zwischen Komponente und Relay gilt ein austauschbarer Übertragungsweg (req-relay-002, req-relay-003), Festlegung des Auftraggebers. Nachprüfung der geänderten Stellen mit `check`.
 
 2026-10-23: Präsentation [requirements-1.html](presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. Phase 1 abgeschlossen. Phase 2 mit `specify` angestoßen; sie beginnt mit der laufenden Nachprüfung von req-relay-002 und req-relay-003 (Durchlauf 3).
+
+2026-10-23: Nachprüfung [requirements-3.md](reviews/requirements-3.md) bestanden. Spezifikation geprüft und bestanden in [specification-3.md](reviews/specification-3.md). Präsentation [specification-1.html](presentations/specification-1.html) zur Bestätigung durch den Auftraggeber.
