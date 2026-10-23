@@ -339,7 +339,7 @@ Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne F
 
 ### req-ui-016 -- Bedienerführung
 
-Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. In der Oberfläche heißt er „Assistent“. Hinweise und Dialoge des Strategiedesigners, zum Beispiel „Keine Strategie geöffnet“ oder der Assistent, erscheinen in der Eigenschaftenansicht und nur dort, nicht zusätzlich auf der Zeichenfläche. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
+Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. Die Eigenschaftenansicht eines Objekts beschreibt jede Eigenschaft und Methode, die es liefert: was der Wert aussagt und wozu er dient, zum Beispiel beim EMA, was der gelieferte Wert ist und wofür man ihn in einer Strategie verwendet. Ein Ausgang zeigt den Namen der Eigenschaft, nicht nur ihren Datentyp wie „Zahl“. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. In der Oberfläche heißt er „Assistent“. Hinweise und Dialoge des Strategiedesigners, zum Beispiel „Keine Strategie geöffnet“ oder der Assistent, erscheinen in der Eigenschaftenansicht und nur dort, nicht zusätzlich auf der Zeichenfläche. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
 
 Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „Stop-Abstand“, „EMA 20“). Ein Objekt, ein Element und ein Strategieparameter haben genau einen Namen; eine getrennte Bezeichnung entfällt. Interne Kennungen bildet die Anwendung selbst und zeigt sie nicht.
 
@@ -350,6 +350,8 @@ Der Ablauf verläuft senkrecht von oben nach unten. Jedes Element hat seinen Ein
 Objekte ohne Ablaufverbindung (Indikatoren, Trends und die Objekte der Anwendung, die auf der Zeichenfläche liegen können, nach Fachmodell req-fach-051) liegen bei dem Element, das sie zuerst verwendet, und sind mit ihm verbunden (Fachmodell req-fach-055): bei senkrechtem Ablauf daneben, bei waagerechtem darüber oder darunter. Weitere Verwendungen zeigen ihre Datenverbindungen (req-ui-014), die sich ein- und ausblenden lassen. Einen eigenen Bereich der Zeichenfläche für Objekte gibt es nicht.
 
 Auch eine einfache Strategie bleibt auf einen Blick überschaubar: Zusammengehörige Schritte lassen sich zu einem benannten Abschnitt zusammenfassen und einklappen (req-ui-006), zum Beispiel „Einstieg“, „Order“, „Verwaltung“. Die Ausrichtung lässt sich zwischen senkrecht und waagerecht umschalten.
+
+Offen, Diskussionspunkt des Auftraggebers: Löschen einer Verbindung direkt auf der Zeichenfläche, zum Beispiel Linie anklicken und mit der Entf-Taste löschen. Bisher geht das über die Eigenschaftenansicht.
 
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
 
@@ -526,3 +528,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-23 | req-ui-014: Verwendung nur im Ausdruck gilt als Verbindung, vorgesehener Weg ist das Ziehen auf die Zeichenfläche. req-ablauf-003: Namensvorschlag für Instanzen, die in einer eingefügten Vorlage enthalten sind. Festlegung des Auftraggebers im Chat am 2026-10-23 (Hinweise N1 und N3 aus `development/strategiedesign/reviews/requirements-14.md`). |
 | 2026-10-23 | req-ui-016: Der geführte Aufbau heißt in der Oberfläche „Assistent“. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-02). |
 | 2026-10-23 | req-ui-016: Hinweise und Dialoge des Strategiedesigners nur in der Eigenschaftenansicht. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
+| 2026-10-23 | req-ui-016: Beschreibung der gelieferten Eigenschaften und Methoden in der Eigenschaftenansicht eines Objekts, Ausgang mit Namen der Eigenschaft. req-ui-017: Löschen einer Verbindung auf der Zeichenfläche als offener Diskussionspunkt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |

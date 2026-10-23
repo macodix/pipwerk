@@ -51,3 +51,9 @@ Vorschlag: Prototyp bestätigen.
 Projektleiter, 2026-10-23, nach Rücksprache mit dem Auftraggeber im Chat:
 
 1. Nicht bestätigt. Einwand aus dem Test des Auftraggebers: Der Hinweis „Keine Strategie geöffnet“ erscheint zweimal, auf der Zeichenfläche und in der Eigenschaftenansicht. Hinweise und Dialoge des Strategiedesigners erscheinen nur in der Eigenschaftenansicht, auch der Assistent (req-ui-016 angeglichen). Die Schaltfläche „Elementbibliothek zeigen“ in schmalen Fenstern bleibt.
+
+Nachtrag, Projektleiter, 2026-10-23, 07:30, weitere Einwände aus dem Test des Auftraggebers:
+
+2. Indikatoren wie der EMA stehen weiterhin in einem eigenen Kasten und nicht neben dem Element ihrer ersten Verwendung (req-ui-017, Punkt 1 aus `strategiedesign-02.md`). Das ergibt wieder lange, sich kreuzende Linien quer über die Zeichenfläche.
+3. Ein eingefügter EMA zeigt als Ausgang nur „Zahl“. Die Eigenschaftenansicht des Objekts beschreibt jede gelieferte Eigenschaft und Methode: was der Wert aussagt und wozu er dient. Der Ausgang zeigt den Namen der Eigenschaft (req-ui-016 angeglichen).
+4. Löschen einer Verbindung direkt auf der Zeichenfläche ist ein offener Diskussionspunkt (req-ui-017), kein Einwand. Bisher geht es über die Eigenschaftenansicht.
