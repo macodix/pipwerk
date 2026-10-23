@@ -1,4 +1,4 @@
-"""The rule for names of brokers and instruments (the one of the data stock and of the source).
+"""The rule for names of brokers and instruments (the one of the data stock).
 
 A name has 1 to 128 characters, no control character and no blank at its beginning or end
 (``pipwerk_marketdata``, ``contracts/market-data/v1/``).

@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 import uvicorn
+from alembic import command
 from alembic import op as alembic_op
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
@@ -22,10 +23,10 @@ from sqlalchemy.exc import OperationalError
 
 from pipwerk_replay import cli
 from pipwerk_replay.app import create_app
-from pipwerk_replay.migrate import DatabaseMigrationError, migrate_database
+from pipwerk_replay.migrate import DatabaseMigrationError, _alembic_config, migrate_database
 from pipwerk_replay.storage import Base, create_replay_engine
 
-NEWEST_REVISION = "0002"
+NEWEST_REVISION = "0003"
 
 
 def database_url(tmp_path: Path) -> str:
@@ -45,7 +46,7 @@ def test_new_database_gets_the_newest_schema(tmp_path: Path) -> None:
     engine = create_replay_engine(database_url(tmp_path))
     engine.dispose()
 
-    assert column_names(tmp_path, "replay_settings") == ["id", "language", "default_source"]
+    assert column_names(tmp_path, "replay_settings") == ["id", "language", "test_run_broker"]
     assert column_names(tmp_path, "test_accounts") == [
         "id",
         "name",
@@ -118,7 +119,80 @@ def test_the_migrations_are_part_of_the_package() -> None:
 
     assert "v0001_initial.py" in names
     assert "v0002_default_source.py" in names
+    assert "v0003_test_run_broker.py" in names
     assert resources.files("pipwerk_replay").joinpath("migrations", "env.py").is_file()
+
+
+def to_revision(tmp_path: Path, revision: str, *, down: bool = False) -> None:
+    """Bring the database in the test directory to ``revision`` with Alembic, step by step."""
+    engine = create_engine(database_url(tmp_path))
+    with engine.begin() as connection:
+        config = _alembic_config(connection)
+        if down:
+            command.downgrade(config, revision)
+        else:
+            command.upgrade(config, revision)
+    engine.dispose()
+
+
+def test_the_migration_takes_over_the_default_source_as_the_broker_for_test_runs(
+    tmp_path: Path,
+) -> None:
+    to_revision(tmp_path, "0002")
+    assert column_names(tmp_path, "replay_settings") == ["id", "language", "default_source"]
+    with sqlite3.connect(tmp_path / "replay.db") as connection:
+        connection.execute(
+            "INSERT INTO replay_settings (id, language, default_source) VALUES (1, 'en', 'Live-1')"
+        )
+
+    engine = create_replay_engine(database_url(tmp_path))  # migrates to the newest schema
+    engine.dispose()
+
+    assert column_names(tmp_path, "replay_settings") == ["id", "language", "test_run_broker"]
+    assert sqlite_rows(tmp_path, "SELECT id, language, test_run_broker FROM replay_settings") == [
+        (1, "en", "Live-1")
+    ]
+    assert sqlite_rows(tmp_path, "SELECT version_num FROM alembic_version") == [(NEWEST_REVISION,)]
+
+
+def test_the_migration_keeps_a_setting_without_a_default_source_and_a_database_without_one(
+    tmp_path: Path,
+) -> None:
+    to_revision(tmp_path, "0002")
+    with sqlite3.connect(tmp_path / "replay.db") as connection:
+        connection.execute("INSERT INTO replay_settings (id, language) VALUES (1, 'de')")
+
+    create_replay_engine(database_url(tmp_path)).dispose()
+
+    assert sqlite_rows(tmp_path, "SELECT id, language, test_run_broker FROM replay_settings") == [
+        (1, "de", None)
+    ]
+    other = tmp_path / "other"
+    other.mkdir()
+    to_revision(other, "0002")
+    create_replay_engine(database_url(other)).dispose()
+    assert sqlite_rows(other, "SELECT count(*) FROM replay_settings") == [(0,)]
+
+
+def test_the_migration_back_gives_the_value_to_the_old_column(tmp_path: Path) -> None:
+    create_replay_engine(database_url(tmp_path)).dispose()
+    with sqlite3.connect(tmp_path / "replay.db") as connection:
+        connection.execute(
+            "INSERT INTO replay_settings (id, language, test_run_broker) VALUES (1, 'de', 'B')"
+        )
+
+    to_revision(tmp_path, "0002", down=True)
+
+    assert column_names(tmp_path, "replay_settings") == ["id", "language", "default_source"]
+    assert sqlite_rows(tmp_path, "SELECT language, default_source FROM replay_settings") == [
+        ("de", "B")
+    ]
+
+
+def test_the_old_name_of_the_setting_is_gone_from_the_schema(tmp_path: Path) -> None:
+    create_replay_engine(database_url(tmp_path)).dispose()
+
+    assert "default_source" not in column_names(tmp_path, "replay_settings")
 
 
 def test_there_is_no_alembic_configuration_file_with_a_fixed_url() -> None:

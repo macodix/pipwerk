@@ -26,10 +26,12 @@ from pipwerk_replay.app import create_app
 
 CONTRACT_VERSION = "1.0.0"
 CONTRACT_DESCRIPTION = (
-    "Web API of pipwerk replay, version 1: the test accounts, the data stock of historical "
-    "price data (overview, import, completeness) and the acquisition from the source. The "
-    "paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal "
-    "endpoints below /api/replay/ (settings, revision) are not part of this description."
+    "Web API of pipwerk replay, version 1: the test accounts and the data stock of historical "
+    "price data (list of series, details, brokers, import of several files, completeness). "
+    "Data come into the data stock only through the import. "
+    "The paths below /api/v1/ are versioned; the technical endpoint /api/health and the "
+    "internal endpoints below /api/replay/ (settings, revision) are not part of this "
+    "description."
 )
 
 

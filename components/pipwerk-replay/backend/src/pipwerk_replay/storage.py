@@ -39,8 +39,8 @@ class SettingsRecord(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     language: Mapped[str] = mapped_column(String(8), nullable=False)
-    #: Name of the broker of the default source (specification 5.1); ``NULL``: none is set.
-    default_source: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: Name of the broker chosen for test runs (specification 5.1); ``NULL``: none is chosen.
+    test_run_broker: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class AccountRecord(Base):

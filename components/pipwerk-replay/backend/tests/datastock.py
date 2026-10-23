@@ -1,9 +1,9 @@
-"""Helpers of the tests of the data stock and the acquisition (not a test module)."""
+"""Helpers of the tests of the data stock (not a test module)."""
 
 from __future__ import annotations
 
 import json
-import time
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -11,33 +11,33 @@ from typing import Any
 import httpx2
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from pipwerk_fetch_mt5.fake_source import FAKE_SHARED_KEY, FakeGateway, create_fake_source_app
 
-from pipwerk_replay.acquisition import ENVELOPE_ALLOWANCE, HttpSourceClient, SourceClient
 from pipwerk_replay.app import create_app
-from pipwerk_replay.config import MarketDataSettings, SourceSettings
+from pipwerk_replay.config import MarketDataSettings
 
 REPOSITORY = Path(__file__).resolve().parents[4]
 EXAMPLES = REPOSITORY / "contracts" / "market-data" / "v1" / "examples"
 
 API = "/api/v1/market-data"
+IMPORT_URL = f"{API}/imports"
+PREVIEW_URL = f"{API}/imports/preview"
+SERIES_URL = f"{API}/series"
+DETAILS_URL = f"{API}/series/details"
+BROKERS_URL = f"{API}/brokers"
+TEST_RUN_BROKER_URL = "/api/replay/settings/test-run-broker"
 JSON = {"content-type": "application/json"}
-CSV = {"content-type": "text/csv"}
 
-#: The name of the broker of the replica of the source.
-FAKE_BROKER = "Fake-Broker-Demo"
 BROKER = "TestBroker"
 #: The broker of the files in ``contracts/market-data/v1/examples/``.
 EXAMPLE_BROKER = "ExampleBroker-Live"
-
-SOURCE_URL = "http://127.0.0.1"
-#: A key that appears nowhere else; a test looks for it in answers, logs and files.
-SECRET_KEY = "SECRET-KEY-must-never-appear-4711"
 
 CANDLE_HEADER = "<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>"
 TICK_HEADER = "<DATE>\t<TIME>\t<BID>\t<ASK>\t<LAST>\t<VOLUME>\t<FLAGS>"
 
 FIRST_MINUTE = datetime(2024, 1, 2, 10, 0, tzinfo=UTC)
+
+#: A file of an upload: its name and its content.
+Upload = tuple[str, bytes]
 
 
 def example(name: str) -> bytes:
@@ -98,62 +98,63 @@ def make_app(
     tmp_path: Path,
     *,
     marketdata: MarketDataSettings | None = None,
-    source: SourceSettings | None = None,
-    source_client: SourceClient | None = None,
     name: str = "replay.db",
     **options: Any,
 ) -> FastAPI:
-    return create_app(
-        f"sqlite:///{tmp_path / name}",
-        marketdata=marketdata,
-        source=source,
-        source_client=source_client,
-        **options,
-    )
+    return create_app(f"sqlite:///{tmp_path / name}", marketdata=marketdata, **options)
 
 
-def fake_source(
-    *, key: str = FAKE_SHARED_KEY, gateway: FakeGateway | None = None, **options: Any
-) -> tuple[TestClient, FakeGateway]:
-    """The replica of the source behind a test client, and its gateway (to switch errors on)."""
-    gateway = gateway or FakeGateway()
-    app = create_fake_source_app(key, gateway=gateway, **options)
-    return TestClient(app, base_url=SOURCE_URL), gateway
-
-
-def source_client(
-    http: httpx2.Client,
+def upload(
+    client: TestClient,
+    files: Sequence[Upload],
     *,
-    key: str = FAKE_SHARED_KEY,
-    max_response_bytes: int = 32 * 1024 * 1024 + ENVELOPE_ALLOWANCE,
-) -> HttpSourceClient:
-    return HttpSourceClient(
-        SOURCE_URL,
-        key,
-        timeout_seconds=30,
-        max_response_bytes=max_response_bytes,
-        client=http,
-    )
+    broker: str | None = BROKER,
+    timezone: str | None = None,
+    instruments: Sequence[str] | None = None,
+    datas: Sequence[str] | None = None,
+    url: str = IMPORT_URL,
+    headers: dict[str, str] | None = None,
+    **fields: str,
+) -> httpx2.Response:
+    """Post the form of an import: the files, ``broker``, ``timezone`` and, for the file at the
+    same position, ``instrument`` and ``data``. ``fields`` are further text fields."""
+    data: dict[str, Any] = dict(fields)
+    if broker is not None:
+        data["broker"] = broker
+    if timezone is not None:
+        data["timezone"] = timezone
+    if instruments is not None:
+        data["instrument"] = list(instruments)
+    if datas is not None:
+        data["data"] = list(datas)
+    parts = [("file", (name, content, "application/octet-stream")) for name, content in files]
+    return client.post(url, data=data, files=parts or None, headers=headers)
 
 
-def replay_with_fake_source(
-    tmp_path: Path,
-    *,
-    key: str = FAKE_SHARED_KEY,
-    gateway: FakeGateway | None = None,
-    marketdata: MarketDataSettings | None = None,
-    source: SourceSettings | None = None,
-    **options: Any,
-) -> tuple[TestClient, FakeGateway]:
-    """pipwerk replay with a source (the replica) that is set up, and the gateway of the replica."""
-    http, gateway = fake_source(key=key, gateway=gateway, **options)
-    app = make_app(
-        tmp_path,
-        marketdata=marketdata,
-        source=source or SourceSettings(url=SOURCE_URL, key=key),
-        source_client=source_client(http, key=key),
-    )
-    return TestClient(app), gateway
+def raw_form(parts: Sequence[tuple[str, str | None, bytes]]) -> dict[str, Any]:
+    """The arguments (``content``, ``headers``) of a post of a ``multipart/form-data`` body that is
+    written by hand: ``(field name, file name or None, content)`` per part. The HTTP client
+    encodes file names and sends no form without files; this form says exactly what is given."""
+    boundary = "test-boundary-4711"
+    body = b""
+    for name, file, content in parts:
+        disposition = f'form-data; name="{name}"' + (
+            f'; filename="{file}"' if file is not None else ""
+        )
+        body += f"--{boundary}\r\nContent-Disposition: {disposition}\r\n\r\n".encode()
+        body += content + b"\r\n"
+    body += f"--{boundary}--\r\n".encode()
+    return {
+        "content": body,
+        "headers": {"content-type": f"multipart/form-data; boundary={boundary}"},
+    }
+
+
+def import_json_file(client: TestClient, content: bytes, *, broker: str = BROKER) -> None:
+    """Import one JSON file and expect that it is taken over."""
+    response = upload(client, [("file.json", content)], broker=broker)
+    assert response.status_code == 200, response.text
+    assert response.json()["refused_count"] == 0, response.text
 
 
 def part(kind: str = "candles", **changes: Any) -> dict[str, Any]:
@@ -167,23 +168,3 @@ def part(kind: str = "candles", **changes: Any) -> dict[str, Any]:
         base["end"] = "2026-01-05T09:00:00Z"
     base.update(changes)
     return base
-
-
-def wait_finished(client: TestClient, acquisition_id: str, seconds: float = 30) -> dict[str, Any]:
-    """Poll an acquisition until it is finished; return its state."""
-    deadline = time.monotonic() + seconds
-    while True:
-        response = client.get(f"{API}/acquisitions/{acquisition_id}")
-        assert response.status_code == 200, response.text
-        body: dict[str, Any] = response.json()
-        if body["state"] == "finished":
-            return body
-        assert time.monotonic() < deadline, "the acquisition did not finish"
-        time.sleep(0.01)
-
-
-def acquire(client: TestClient, *parts: dict[str, Any]) -> dict[str, Any]:
-    """Start an acquisition of the parts and wait for its end; return the finished state."""
-    response = client.post(f"{API}/acquisitions", json={"parts": list(parts)})
-    assert response.status_code == 202, response.text
-    return wait_finished(client, response.json()["id"])

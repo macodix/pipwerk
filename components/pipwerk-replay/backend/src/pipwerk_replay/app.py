@@ -1,8 +1,8 @@
 """HTTP application of pipwerk replay.
 
 The application provides a technical health check, the public web API under ``/api/v1/`` (test
-accounts, data stock and acquisition; ``web_api.py``, ``marketdata_api.py``) and the internal
-endpoints under ``/api/replay/`` (language, default source, revision; ``internal_api.py``). The
+accounts and data stock; ``web_api.py``, ``marketdata_api.py``) and the internal endpoints under
+``/api/replay/`` (language, broker for test runs, revision; ``internal_api.py``). The
 language is a component-wide, backend-authoritative setting that is never stored in the browser
 (req-ui-008). No other domain logic lives in this module.
 """
@@ -21,22 +21,16 @@ from pipwerk_marketdata import MarketDataStore
 from pydantic import BaseModel, ConfigDict
 
 from pipwerk_replay.accounts import AccountService
-from pipwerk_replay.acquisition import (
-    ENVELOPE_ALLOWANCE,
-    AcquisitionManager,
-    HttpSourceClient,
-    SourceClient,
-)
 from pipwerk_replay.api_support import is_api_path, request_validation_response
 from pipwerk_replay.config import (
     DEFAULT_MAX_BODY_BYTES,
     MarketDataSettings,
-    SourceSettings,
     load_startup_config,
 )
 from pipwerk_replay.docs_page import install_docs
 from pipwerk_replay.host_check import HostCheckMiddleware, build_allowed_hosts
-from pipwerk_replay.marketdata_service import MarketDataService, import_limits
+from pipwerk_replay.marketdata_examples import keep_nulls_in_examples
+from pipwerk_replay.marketdata_service import MarketDataService
 from pipwerk_replay.revision import (
     CommitDateLookup,
     RevisionLookup,
@@ -70,8 +64,6 @@ def create_app(
     max_body_bytes: int | None = None,
     *,
     marketdata: MarketDataSettings | None = None,
-    source: SourceSettings | None = None,
-    source_client: SourceClient | None = None,
     revision_lookup: RevisionLookup = lookup_git_revision,
     commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
 ) -> FastAPI:
@@ -80,7 +72,7 @@ def create_app(
     ``database_url`` lets callers (notably the CLI entry point and tests)
     provide an explicit SQLAlchemy database URL. When omitted, the documented
     automatic startup configuration search (req-system-016/req-system-017) is
-    used, and then ``allowed_hosts``, ``max_body_bytes``, ``marketdata`` and ``source`` default
+    used, and then ``allowed_hosts``, ``max_body_bytes`` and ``marketdata`` default
     to the values of the startup configuration unless given. If no valid startup
     configuration is found, ``StartupConfigError`` is raised; there is no
     implicit replacement database.
@@ -96,12 +88,9 @@ def create_app(
     answered with HTTP 400.
 
     ``max_body_bytes`` is the largest request body below ``/api/v1/`` and ``/api/replay/``
-    (default 2 MiB); an uploaded file of the import has the limit of ``marketdata``.
-
-    ``source`` is the source of the acquisition (``fetch_url`` and ``fetch_key``); without
-    an address no acquisition can start. ``source_client`` replaces the connection to the
-    source (tests). ``revision_lookup`` and ``commit_date_lookup`` determine the revision
-    (tests).
+    (default 2 MiB); the request of an import has the limit of ``marketdata`` (the total size
+    of the files plus the envelope). ``revision_lookup`` and ``commit_date_lookup`` determine
+    the revision (tests).
     """
     if database_url is None:
         startup_config = load_startup_config()
@@ -109,13 +98,11 @@ def create_app(
         resolved_hosts = [*startup_config.allowed_hosts, *allowed_hosts]
         resolved_limit = startup_config.max_body_bytes if max_body_bytes is None else max_body_bytes
         resolved_marketdata = startup_config.marketdata if marketdata is None else marketdata
-        resolved_source = startup_config.source if source is None else source
     else:
         resolved_database_url = database_url
         resolved_hosts = list(allowed_hosts)
         resolved_limit = DEFAULT_MAX_BODY_BYTES if max_body_bytes is None else max_body_bytes
         resolved_marketdata = MarketDataSettings() if marketdata is None else marketdata
-        resolved_source = SourceSettings() if source is None else source
     engine = create_replay_engine(resolved_database_url)
     marketdata_url = resolved_marketdata.database_url
     if marketdata_url is None or marketdata_url == resolved_database_url:
@@ -129,23 +116,8 @@ def create_app(
     if account_service.ensure_default_account():
         logger.info("The default test account was created.")
 
-    store = MarketDataStore(marketdata_engine)
+    store = MarketDataStore(marketdata_engine, max_page_size=resolved_marketdata.max_listed_items)
     marketdata_service = MarketDataService(store, resolved_marketdata, settings_service)
-    client = source_client
-    if client is None and resolved_source.url is not None and resolved_source.key is not None:
-        client = HttpSourceClient(
-            resolved_source.url,
-            resolved_source.key,
-            timeout_seconds=resolved_source.timeout_seconds,
-            max_response_bytes=resolved_marketdata.max_upload_bytes + ENVELOPE_ALLOWANCE,
-        )
-    acquisitions = AcquisitionManager(
-        store,
-        client,
-        limits=import_limits(resolved_marketdata),
-        max_running=resolved_source.max_concurrent_acquisitions,
-        max_kept=resolved_source.max_kept_acquisitions,
-    )
     revision = determine_revision(revision_lookup, commit_date_lookup)
 
     # One schema per model for requests and responses together.
@@ -156,12 +128,12 @@ def create_app(
         redoc_url=None,
     )
     install_docs(app)
+    keep_nulls_in_examples(app)
     install_api(
         app,
         accounts=account_service,
         settings=settings_service,
         marketdata=marketdata_service,
-        acquisitions=acquisitions,
         revision=revision,
         max_body_bytes=resolved_limit,
     )

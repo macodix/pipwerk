@@ -9,9 +9,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Annotated, Literal
-from uuid import UUID
 
 from pipwerk_marketdata import (
+    CONTRACT,
+    TICKS,
+    TIME_UNITS,
+    BatchErrorCode,
     FileErrorCode,
     MissingReason,
     RejectReason,
@@ -73,7 +76,7 @@ class OutModel(ApiModel):
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
 
-# --- parts (a request for completeness or acquisition) ----------------------------------------
+# --- parts (a request for completeness) --------------------------------------------------------
 
 
 def _check_period(start: datetime, end: datetime) -> None:
@@ -123,25 +126,93 @@ class InstrumentPart(ApiModel):
     instrument: Name
 
 
-#: A part that a test run needs, or that is acquired: ``kind`` selects the form.
+#: A part that a test run needs: ``kind`` selects the form.
 Part = Annotated[CandlesPart | TicksPart | InstrumentPart, Field(discriminator="kind")]
 
 
-# --- overview and instrument ------------------------------------------------------------------
+# --- list of series, details, brokers ---------------------------------------------------------
+
+#: The identifier of the data of a row: a time unit (``m1`` to ``mn1``), ``ticks`` or ``contract``
+#: (the instrument data of an instrument at a broker). The identifiers are lower case.
+DATA_IDENTIFIERS: frozenset[str] = frozenset([*TIME_UNITS, TICKS, CONTRACT])
+
+MAX_FILTER_LENGTH = MAX_NAME_LENGTH
+MAX_DATA_LENGTH = 16
 
 
-class OverviewQuery(ApiModel):
-    """Parameters of the overview: the section of the lists (series and instruments)."""
+class SeriesQuery(ApiModel):
+    """Parameters of the list of series: the filters and the section."""
 
-    offset: int = Field(0, ge=0, description="Number of items to skip in each list.")
+    broker: str | None = Field(
+        None,
+        max_length=MAX_FILTER_LENGTH,
+        description="Part of the name of the broker, without regard to case.",
+    )
+    instrument: str | None = Field(
+        None,
+        max_length=MAX_FILTER_LENGTH,
+        description="Part of the name of the instrument, without regard to case.",
+    )
+    data: str | None = Field(
+        None,
+        max_length=MAX_DATA_LENGTH,
+        description=(
+            "Part of the identifier of the data (``m1`` to ``mn1``, ``ticks``, ``contract``), "
+            "without regard to case. An identifier that no row has gives an empty list."
+        ),
+    )
+    offset: int = Field(0, ge=0, le=1_000_000_000, description="Number of rows to skip.")
     limit: int | None = Field(
         None,
         ge=1,
         description=(
-            "Largest number of items in each list. Without it, and at most, the limit of "
-            "the startup configuration (``max_listed_items``, default 1000)."
+            "Largest number of rows. Without it, and at most, the limit of the startup "
+            "configuration (``max_listed_items``, default 1000)."
         ),
     )
+
+
+class SeriesDetailsQuery(ApiModel):
+    """Parameters of the details of one row of the list."""
+
+    broker: Name
+    instrument: Name
+    data: str = Field(
+        max_length=MAX_DATA_LENGTH,
+        description="Identifier of the data: ``m1`` to ``mn1``, ``ticks`` or ``contract``.",
+    )
+
+
+class SeriesRow(OutModel):
+    """One row of the list: the candles of one time unit, the ticks, or - only for an instrument
+    that has instrument data but no series - the instrument data (``data`` is ``contract``).
+
+    ``first`` and ``last`` are the moments of the first and the last candle or tick (UTC);
+    ``null`` for ``contract``. ``gap_count`` counts the gaps over the covered range of the
+    series; 0 for ``contract``."""
+
+    broker: str
+    instrument: str
+    data: str
+    first: datetime | None
+    last: datetime | None
+    gap_count: int
+
+
+class SeriesPage(OutModel):
+    """A page of the list of series, sorted by broker, instrument and data (time units from short
+    to long, then ticks, then contract). ``total`` counts all rows that match the filters."""
+
+    items: list[SeriesRow]
+    total: int
+    offset: int
+    limit: int
+
+
+class Brokers(OutModel):
+    """The brokers that occur in the data stock, sorted without regard to case."""
+
+    items: list[str]
 
 
 class Period(OutModel):
@@ -157,49 +228,6 @@ class MissingPeriod(OutModel):
     start: datetime
     end: datetime
     reason: MissingReason
-
-
-class SeriesOverview(OutModel):
-    """One series: candles of one time unit (``unit``) or ticks (``unit`` is ``ticks``).
-
-    ``covered`` and ``missing`` list at most ``max_listed_items`` periods; ``covered_count`` and
-    ``missing_count`` count all of them. A gap lies within the covered periods and within the
-    trading time; ``missing`` of a series holds gaps only.
-    """
-
-    broker: str
-    instrument: str
-    unit: str
-    count: int
-    first: datetime | None
-    last: datetime | None
-    covered: list[Period]
-    covered_count: int
-    missing: list[MissingPeriod]
-    missing_count: int
-    has_trading_hours: bool
-
-
-class InstrumentEntry(OutModel):
-    """The newest instrument data of one instrument at one broker (moment of the acquisition)."""
-
-    broker: str
-    instrument: str
-    acquired_at: datetime
-
-
-class Overview(OutModel):
-    """The data stock: its series and the instruments with data about them.
-
-    Both lists are sorted by broker, instrument and unit and cut to the section of the request;
-    ``series_total`` and ``instruments_total`` count all items."""
-
-    series: list[SeriesOverview]
-    series_total: int
-    instruments: list[InstrumentEntry]
-    instruments_total: int
-    offset: int
-    limit: int
 
 
 class InstrumentQuery(ApiModel):
@@ -234,23 +262,20 @@ class InstrumentInfo(OutModel):
     margin_per_lot: float | None
 
 
+class SeriesDetails(OutModel):
+    """The details of one row of the list: the gaps and the instrument data.
+
+    ``gaps`` lists at most ``max_listed_items`` gaps in time order; ``row.gap_count`` counts all
+    of them. A gap lies within the covered periods and within the trading time. ``contract`` is
+    the newest instrument data of the instrument at this broker, ``null`` if there are none (the
+    data are missing, and a test run does not start without them)."""
+
+    row: SeriesRow
+    gaps: list[MissingPeriod]
+    contract: InstrumentInfo | None
+
+
 # --- import -----------------------------------------------------------------------------------
-
-
-class CsvImportQuery(ApiModel):
-    """What the caller says about an uploaded CSV file, because the file does not contain it."""
-
-    kind: Literal["candles", "ticks"]
-    broker: Name
-    instrument: Name
-    time_unit: TimeUnitName | None = Field(
-        None, description="The time unit of the candles; needed for ``candles``, not for ``ticks``."
-    )
-    timezone: Annotated[str, StringConstraints(min_length=1, max_length=MAX_TIMEZONE_LENGTH)] = (
-        Field(
-            description="IANA name of the time zone of the times in the file, e.g. Europe/Athens."
-        )
-    )
 
 
 class RejectedRow(OutModel):
@@ -282,23 +307,76 @@ class ImportResult(OutModel):
     rejected_count: int
 
 
-class FileRefused(ApiModel):
-    """Error body for a file that is refused as a whole (nothing was changed). ``message`` is a
-    fixed text that names fields, never content of the file."""
+class FileOutcome(OutModel):
+    """The result for one file of an import, in the order of the files of the request.
+
+    Either ``result`` is set (the file was taken over; single rows may be rejected, see
+    ``result``) or ``error`` and ``message`` (the whole file is refused and nothing of it was
+    changed). ``refused`` tells which. ``name`` is the name of the file without a directory.
+    ``message`` is a fixed text that names fields, never content of the file."""
+
+    name: str
+    refused: bool
+    result: ImportResult | None
+    error: FileErrorCode | None
+    message: str | None
+
+
+class ImportOutcome(OutModel):
+    """The result of an import of several files. A refused file does not stop the others.
+    ``imported_count`` counts the files that were taken over, ``refused_count`` those that
+    were refused."""
+
+    files: list[FileOutcome]
+    imported_count: int
+    refused_count: int
+
+
+class ImportRefused(ApiModel):
+    """Error body for an import that is refused as a whole (nothing was read or changed): no
+    file (HTTP 422), more files than ``max_files_per_import`` or larger together than
+    ``max_import_bytes`` (HTTP 413). ``message`` is a fixed text."""
 
     detail: str
-    code: FileErrorCode
+    code: BatchErrorCode
     message: str
+
+
+class FileHint(OutModel):
+    """What the backend recognizes about one file without importing it.
+
+    ``format`` is ``json`` or ``csv`` (from the extension of the name, else from the first
+    character of the content). ``instrument`` and ``data`` come from the content of a JSON file,
+    else from the name; ``data`` is a time unit (``m1`` to ``mn1``), ``ticks`` or ``contract``.
+    ``broker`` is the broker a JSON file names (``null`` for CSV). A value that the file does
+    not name is ``null``. ``error`` is set if a JSON file cannot be read."""
+
+    name: str
+    format: Literal["json", "csv"]
+    broker: str | None
+    instrument: str | None
+    data: str | None
+    error: FileErrorCode | None
+
+
+class ImportPreview(OutModel):
+    """The hints for the dialog of an import, one per file in the order of the request.
+
+    ``broker`` is the broker that all JSON files name, ``null`` if there is no JSON file, one of
+    them names none or they name different ones."""
+
+    files: list[FileHint]
+    broker: str | None
 
 
 # --- completeness -----------------------------------------------------------------------------
 
 
 class CompletenessRequest(ApiModel):
-    """The parts a test run needs. The broker is the default source unless given."""
+    """The parts a test run needs. The broker is the broker for test runs unless given."""
 
     broker: Name | None = Field(
-        None, description="The broker to check; without it the default source."
+        None, description="The broker to check; without it the broker for test runs."
     )
     parts: Annotated[list[Part], Field(min_length=1)] = Field(
         description="The needed parts; at most ``max_parts_per_request`` (default 100)."
@@ -326,63 +404,3 @@ class Completeness(OutModel):
 
     broker: str
     results: list[PartCompleteness]
-
-
-# --- acquisition ------------------------------------------------------------------------------
-
-
-class AcquisitionRequest(ApiModel):
-    """The parts to acquire from the source: one for an acquisition by hand, several for the
-    missing parts of a test run."""
-
-    parts: Annotated[list[Part], Field(min_length=1)] = Field(
-        description="The parts to acquire; at most ``max_parts_per_request`` (default 100)."
-    )
-
-
-class PartFailure(OutModel):
-    """Why a part could not be acquired.
-
-    ``code`` is a code of the source (``unauthorized``, ``symbol_unknown``, ``no_data``,
-    ``range_too_large``, ``terminal_unavailable``, ``broker_error``, ``broker_unknown``,
-    ``invalid_broker_data``, ``invalid_request``, ``host_not_allowed``, ``body_too_large``,
-    ``not_found``, ``internal_error``) with the reason the source gave, or a code of pipwerk
-    replay: ``source_unreachable``, ``source_response_invalid``, ``source_response_too_large``,
-    ``import_refused`` (``file_error`` names why), ``data_store_error``, ``acquisition_failed``.
-    ``reason`` is a readable German text."""
-
-    code: str
-    reason: str
-    file_error: FileErrorCode | None = None
-
-
-class AcquisitionPart(OutModel):
-    """The state of one part of an acquisition.
-
-    ``queued`` (not yet asked), ``running``, ``succeeded`` (``result`` holds the import, and
-    ``omitted_count`` the rows the source left out) or ``failed`` (``error`` says why)."""
-
-    request: Part
-    state: Literal["queued", "running", "succeeded", "failed"]
-    result: ImportResult | None
-    omitted_count: int | None
-    error: PartFailure | None
-
-
-class Acquisition(OutModel):
-    """An acquisition: its parts are worked off one after the other; a failed part does not stop
-    the others. ``running`` until every part has succeeded or failed, then ``finished``."""
-
-    id: UUID
-    state: Literal["running", "finished"]
-    created_at: datetime
-    finished_at: datetime | None
-    parts: list[AcquisitionPart]
-
-
-class AcquisitionRefused(ApiModel):
-    """Error body when no acquisition can start because no source is set up (HTTP 409)."""
-
-    detail: str
-    code: Literal["no_source"]
-    reason: str

@@ -9,7 +9,8 @@ internal endpoints (``internal_api.py``, paths below ``/api/replay/``) follow th
   before any JSON is read). It is read as a whole and checked by Pydantic with
   ``extra="forbid"`` and strict types. A body that does not fit the schema is answered with
   HTTP 422. A duplicate key and the values ``NaN`` and ``Infinity`` are errors, too.
-- An uploaded file (import) has its own media type and its own, larger limit.
+- The files of an import are the parts of a ``multipart/form-data`` body with its own, larger
+  limit (``import_form.py``).
 - ``{id}`` must be a UUID (HTTP 422 otherwise).
 - Error texts are fixed. They name no path and no exception text; for a body that does not fit
   the schema the answer names the place of each error in the body and its error type, never
@@ -165,31 +166,18 @@ async def _json_body(request: Request) -> bytes:
 JsonBody = Annotated[bytes, Depends(_json_body)]
 
 
-def uploaded_file(media_type: str) -> Callable[[Request], Any]:
-    """The dependency that reads an uploaded file of one media type as bytes (HTTP 415 for
-    another media type). The media types are none of the three of a simple request of a web
-    page, so a page of another origin needs a preflight request for them, too."""
-    text = f"The request body must be a file of the media type {media_type}."
-
-    async def read(request: Request) -> bytes:
-        if _media_type(request) != media_type:
-            raise HTTPException(status_code=415, detail=text)
-        return await request.body()
-
-    return read
-
-
 def error_responses(
     *statuses: int, not_found: str = "The object does not exist."
 ) -> dict[int | str, dict[str, Any]]:
     """The documented error answers of an endpoint (fixed texts, see the module description)."""
     texts: dict[int, tuple[str, type[BaseModel]]] = {
+        403: ("The request comes from a web page of another origin.", ApiError),
         404: (not_found, ApiError),
         409: ("The request cannot be served in the current state.", ApiError),
         413: ("The request body is larger than the limit.", ApiError),
         415: ("The request body has the wrong media type.", ApiError),
         422: ("The request or the body does not fit the schema.", InvalidRequest),
-        429: ("Too many imports or acquisitions are running.", ApiError),
+        429: ("Too many imports are running.", ApiError),
         503: ("The stored value is invalid or the data store failed.", ApiError),
     }
     return {
@@ -205,17 +193,6 @@ def body_description(model: type[BaseModel], description: str) -> dict[str, Any]
             "required": True,
             "description": description,
             "content": {"application/json": {"schema": model.model_json_schema()}},
-        }
-    }
-
-
-def file_description(media_type: str, description: str) -> dict[str, Any]:
-    """The description of a request body that is an uploaded file."""
-    return {
-        "requestBody": {
-            "required": True,
-            "description": description,
-            "content": {media_type: {"schema": {"type": "string", "format": "binary"}}},
         }
     }
 
