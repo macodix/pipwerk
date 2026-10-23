@@ -6,7 +6,7 @@
 - stand: 2026-10-23
 - komponenten: `packages/relay-core` (neu, gemeinsame Bibliothek für Nachricht und Übertragungswege), `components/pipwerk-relay` (neu, das Relay), `components/pipwerk-fetch-mt5` (Abruf über pipwerk relay, Anfrage-Programm), `contracts/messages/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers. Nachprüfung der Dokumente nach der Abstimmung der Spezifikation bestanden in [requirements-4.md](reviews/requirements-4.md), Nachprüfung von req-relay-013 bestanden in [requirements-5.md](reviews/requirements-5.md).
-- stand der arbeit: Fassung nach den Einwänden des Auftraggebers zur [Präsentation](presentations/specification-1.html) (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-4.md](reviews/specification-4.md), Hinweise eingearbeitet. Ergänzung um req-relay-013 (3.7) bestanden in [specification-5.md](reviews/specification-5.md), Hinweise eingearbeitet, zur Präsentation.
+- stand der arbeit: Fassung nach den Einwänden des Auftraggebers zur [Präsentation](presentations/specification-1.html) (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-4.md](reviews/specification-4.md), Hinweise eingearbeitet. Ergänzung um req-relay-013 (3.7) bestanden in [specification-5.md](reviews/specification-5.md), Hinweise eingearbeitet. [Präsentation](presentations/specification-2.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026.
 
 ## 1. Gegenstand
 

@@ -43,3 +43,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Empfangsbestätigung auf Wunsch des Absenders (req-relay-013 neu), Festlegung des Auftraggebers bei der Abstimmung von [specification-1.html](presentations/specification-1.html). Nachprüfung mit `check`, danach Spezifikation ergänzen.
 
 2026-10-23: Nachprüfungen [requirements-4.md](reviews/requirements-4.md) und [requirements-5.md](reviews/requirements-5.md) bestanden. Spezifikation geprüft und bestanden in [specification-4.md](reviews/specification-4.md) und [specification-5.md](reviews/specification-5.md). Präsentation [specification-2.html](presentations/specification-2.html) zur Bestätigung durch den Auftraggeber.
+
+2026-10-23: Präsentation [specification-2.html](presentations/specification-2.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. Phase 2 abgeschlossen. Phase 3 mit `plan` angestoßen.
