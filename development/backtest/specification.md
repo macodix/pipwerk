@@ -3,10 +3,10 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-21
+- stand: 2026-10-23
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek, neues Teilpaket für die Ausführung), `packages/market-data` (neu, Datenbestand historischer Kursdaten), `components/pipwerk-replay` (neu, Strategietester, Backend und Oberfläche), `components/pipwerk-fetch-mt5` (neu, Beschaffung aus MetaTrader 5), `packages/ui-components` (Darstellung der Strategie), `components/pipwerk-studio` (Auslöser `Manuell`, Entfall von „Parameter setzen“), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers. Nachprüfung der Dokumente nach der Abstimmung bestanden in [requirements-5.md](reviews/requirements-5.md).
-- stand der arbeit: vollständig, Prüfung durch die QA bestanden in [specification-2.md](reviews/specification-2.md), zur Präsentation. Prototyp bestätigt vom Auftraggeber im Chat am 2026-10-21, Entscheidungen zu Auslöser `Manuell` und „Parameter setzen“ eingearbeitet ([questions/backtest-01.md](questions/backtest-01.md)).
+- stand der arbeit: Fassung vom 2026-10-21 bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html)). Änderung vom 2026-10-23 nach der Abnahme von `wp02` (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-3.md](reviews/specification-3.md), zur Präsentation mit dem geänderten Prototyp der Ansicht „Datenbestand“.
 
 ## 1. Gegenstand
 
@@ -22,7 +22,7 @@ Nicht Gegenstand: das Handelssystem, die Kontoverwaltung, die Anzeige der Unters
 - E2 Interne Abwicklung im Strategietester. Die Abwicklung von Orders gegen historische Kurse (req-test-004) ist die Umsetzung der Broker-Schnittstelle aus E1 in pipwerk replay (`pipwerk_replay.broker`). Das Handelssystem setzt dieselbe Schnittstelle später gegen einen echten Broker um.
 - E3 Eigenständige Komponente `components/pipwerk-replay` mit Python-Paket `pipwerk_replay`, Startkonfiguration `pipwerk-replay.ini`, eigener Datenbank und eigener Oberfläche (req-system-001, req-system-002, req-system-008, req-system-016 bis req-system-018). Das Verzeichnis `components/pipwerk-backtest` mit seiner Platzhalter-README wird dazu umbenannt; Verweise ziehen mit. Aufbau, Startkonfiguration, Alembic und Prüfung des Kopfs `Host` folgen pipwerk Studio (`docs/technical/pipwerk-studio.md`, Abschnitte 2.1, 2.2, 2.10).
 - E4 Datenbestand historischer Kursdaten als eigene Bibliothek `packages/market-data` (Paket `pipwerk_marketdata`): Speichermodell über SQLAlchemy mit Alembic, Import, Prüfung auf Vollständigkeit und Lesen. Grund: Der Datenbestand gehört pipwerk und nicht dem Strategietester (req-system-025); das Handelssystem soll ihn später ebenfalls nutzen können. pipwerk replay bindet sie wie die Bibliothek als Pfadabhängigkeit mit festgeschriebener Version ein. Die Datenbank des Datenbestands ist eine eigene Angabe der Startkonfiguration und kann dieselbe wie die von pipwerk replay sein (req-system-013, req-system-014).
-- E5 Beschaffung aus MetaTrader 5 als eigenständiges kleines Programm `components/pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 (req-system-027). Es bietet eine HTTP-Schnittstelle, liest mit dem Python-Paket `MetaTrader5` Kerzen, Ticks und Angaben zum Instrument und liefert sie als Dateien im Format des Imports. pipwerk replay stößt es an und importiert das Ergebnis. Weitere Quellen sind weitere Programme mit derselben Schnittstelle (Abschnitt 5.4).
+- E5 Beschaffung aus MetaTrader 5 als eigenständiges kleines Programm `components/pipwerk-fetch-mt5`, das der Anwender auf dem Rechner von MetaTrader 5 aufruft (Übergangslösung nach req-system-027). Es liest mit dem Python-Paket `MetaTrader5` Kerzen, Ticks und Angaben zum Instrument und schreibt sie als Dateien im JSON-Format des Imports in ein Verzeichnis. Es hat keinen Server und öffnet keinen Port; pipwerk replay stößt es nicht an. Der Anwender importiert die Dateien im Datenbestand (5.3). Weitere Quellen sind weitere Programme, die Dateien im selben Format schreiben (Abschnitt 5.4). Den Austausch über pipwerk relay spezifiziert das Vorhaben, das pipwerk relay einführt.
 - E6 Testkonten, Ergebnisse und gespeicherte Backtests liegen in der Datenbank von pipwerk replay über SQLAlchemy (req-system-015, „übrige Daten“). Strategien liest pipwerk replay als Dokument im Format 2.0 aus dem Objektverzeichnis (Einstellung wie in pipwerk Studio) oder als hochgeladene Datei; es ändert sie nie.
 - E7 Gleiche Eingaben, gleiche Ergebnisse. Ein Testlauf ist vollständig durch Strategie, Werte der Strategieparameter, Testkonto, Angaben zum Instrument, Testzeitraum und Kursdaten bestimmt. Die Ausführung verwendet keine Uhrzeit des Rechners und keine Zufallszahlen. Einzelschritt-Test und Backtest verwenden denselben Ablauf und dieselbe Abwicklung (req-test-004); der Einzelschritt-Test hält nur an.
 - E8 Der Einzelschritt-Test läuft im Backend als Sitzung, die die Ausführung an jedem Element anhält. Die Oberfläche fragt nach jedem Schritt den Zustand ab. Ein Zurückgehen um einzelne Schritte gibt es nicht (req-test-012 verlangt es nicht). „Zum Testbeginn“ beginnt die Sitzung mit denselben Eingaben neu; nach E7 ergibt das denselben Ablauf (Abschnitt 6.3).
@@ -140,7 +140,7 @@ Beim Testfall `str-01` liegt der Einstieg einer Stop-Order zum Kauf über dem Ei
 
 ### 5.1 Inhalt
 
-`pipwerk_marketdata` speichert je Broker (Bezeichnung der Quelle, zum Beispiel Server von MetaTrader 5) und Instrument (Bezeichnung nach Fachmodell req-fach-053):
+`pipwerk_marketdata` speichert je Broker (Name, bei MetaTrader 5 der Name des Handelsservers, req-system-027) und Instrument (Bezeichnung nach Fachmodell req-fach-053):
 
 - Kerzen je Zeiteinheit: Eröffnungszeitpunkt (UTC), Eröffnung, Hoch, Tief, Schluss, Volumen, Spread (Punkte, wenn geliefert)
 - Ticks: Zeitpunkt (UTC, Millisekunden), Geld, Brief
@@ -151,7 +151,7 @@ pipwerk berechnet keine Kerzen aus Ticks und keine Ticks aus Kerzen (req-system-
 
 Zeitpunkte werden in UTC gespeichert. MetaTrader 5 und sein CSV-Export liefern die Serverzeit des Brokers. Import und Beschaffung rechnen sie in UTC um: beim Import einer CSV-Datei nach der Zeitzone, die der Anwender beim Import im Datenbestand angibt (Name nach IANA, zum Beispiel mit Sommerzeit; eine beim Wechsel der Sommerzeit doppelte Ortszeit gilt als die frühere, eine fehlende ist eine abgelehnte Zeile), bei `pipwerk-fetch-mt5` nach der Zeitzone in seiner Startkonfiguration. Grund: Tageswechsel, Swap, Gültigkeit von Orders und die Grenzen des Wochenendes (5.2) beziehen sich dann im ganzen Datenbestand auf dieselbe Zeit.
 
-Welcher Broker im Testlauf gilt, ist eine Einstellung von pipwerk replay (Standardquelle), änderbar in der Vorbereitung eines Testlaufs.
+Welcher Broker im Testlauf gilt, ist eine Einstellung von pipwerk replay („Broker für Testläufe“, bisher Standardquelle), wählbar in der Ansicht „Datenbestand“ unter den Brokern, die im Datenbestand vorkommen, und änderbar in der Vorbereitung eines Testlaufs. Ist kein Broker gewählt oder kommt der gewählte nicht mehr vor, gilt der erste Broker des Datenbestands in alphabetischer Reihenfolge.
 
 ### 5.2 Vollständigkeit
 
@@ -161,17 +161,28 @@ Eine Lücke ist ein Zeitraum ohne Kerze innerhalb der Handelszeiten der Quelle. 
 
 ### 5.3 Import
 
-Dateiformate (req-system-026): JSON nach dem Schema `contracts/market-data/v1/` und CSV im Exportformat von MetaTrader 5 für Kerzen und Ticks. Eine Datei enthält genau eine Reihe (Broker, Instrument, Zeiteinheit oder Ticks) beziehungsweise die Angaben zu einem Instrument. Der Import prüft Format, Zeitordnung, Kurse größer als null, Hoch ≥ Eröffnung, Schluss ≥ Tief, und übernimmt die Daten in einer Transaktion. Vorhandene Kerzen oder Ticks desselben Zeitpunkts werden ersetzt. Bei einer CSV-Datei gibt der Anwender Broker, Instrument und Zeiteinheit an, weil die Datei sie nicht enthält. Das Ergebnis nennt übernommene Zeilen, Zeitraum und abgelehnte Zeilen mit Grund.
+Dateiformate (req-system-026): JSON nach dem Schema `contracts/market-data/v1/` und CSV im Exportformat von MetaTrader 5 für Kerzen und Ticks. Eine Datei enthält genau eine Reihe (Broker, Instrument, Zeiteinheit oder Ticks) beziehungsweise die Angaben zu einem Instrument. Zeitpunkte in JSON-Dateien sind UTC. Der Import prüft Format, Zeitordnung, Kurse größer als null, Hoch ≥ Eröffnung, Schluss ≥ Tief, und übernimmt die Daten jeder Datei in einer eigenen Transaktion. Eine Datei mit Fehler im Format oder ohne lesbaren Inhalt (zum Beispiel ungültiges JSON, keine Kerzen, Ticks oder Angaben) wird ganz abgelehnt; fehlerhafte Zeilen werden mit Grund übersprungen. Vorhandene Kerzen oder Ticks desselben Zeitpunkts werden ersetzt.
 
-Begrenzungen gegen Überlast: Größe einer hochgeladenen Datei, Zahl der Zeilen; Werte legen die Aufträge fest.
+Ein Vorgang importiert beliebig viele Dateien (req-system-026, Abnahmebericht `wp02`, M3):
+
+- Broker einmal für alle Dateien des Vorgangs. Vorgeschlagen werden die Broker des Datenbestands, ein neuer Name lässt sich eingeben. Nennen alle JSON-Dateien des Vorgangs denselben Broker, ist er vorbelegt; nennen sie verschiedene, ist das Feld leer und der Anwender gibt einen ein. Der angegebene Broker gilt auch für JSON-Dateien.
+- Zeitzone einmal für alle CSV-Dateien des Vorgangs (5.1).
+- Instrument und Daten (Zeiteinheit, Ticks oder Angaben zum Instrument) je Datei: bei JSON aus dem Inhalt, bei CSV aus dem Dateinamen, soweit er sie enthält (Namen von `pipwerk-fetch-mt5` nach 5.4 und übliche Exportnamen von MetaTrader 5; die erkannten Muster legt der Auftrag fest); je Datei änderbar. Fehlt eine Angabe, wird der Vorgang erst nach ihrer Eingabe gestartet.
+- Das Ergebnis nennt je Datei übernommene Zeilen, Zeitraum und abgelehnte Zeilen mit Grund. Eine abgelehnte Datei hindert die übrigen nicht. Grund: Der Anwender sieht, welche Datei er korrigieren muss, und importiert nur diese erneut.
+
+Begrenzungen gegen Überlast: Größe einer Datei, Zahl der Zeilen, Zahl der Dateien und Gesamtgröße eines Vorgangs; Werte legen die Aufträge fest.
 
 ### 5.4 Beschaffung
 
-Schnittstelle einer Quelle (beschrieben unter `contracts/api/pipwerk-fetch/v1/`): Auftrag mit Instrument, Art (Zeiteinheit, Ticks oder Angaben) und Zeitraum; Antwort sind Dateien im JSON-Format des Imports oder ein Fehler mit Grund (zum Beispiel „Symbol beim Broker unbekannt“, „Daten beim Broker nicht vorhanden“, „MetaTrader 5 nicht erreichbar“).
+Übergangslösung bis pipwerk relay (req-system-027, req-test-003): pipwerk replay beschafft nichts, weder vor dem Start eines Testlaufs noch von Hand. Kursdaten kommen nur über den Import in den Datenbestand.
 
-`pipwerk-fetch-mt5` ordnet die Bezeichnung des Instruments einem Symbol des Brokers über eine Zuordnungstabelle in seiner Konfiguration zu. Grund: Die Zuordnung je Konto gehört zur noch nicht beschriebenen Kontoverwaltung (Fachmodell req-fach-053); bis dahin genügt eine Tabelle je Quelle. Ohne Eintrag gilt die Bezeichnung selbst als Symbol.
+Aufruf von `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 an der Befehlszeile mit: einem oder mehreren Instrumenten, den Zeiteinheiten, wahlweise Ticks, dem Zeitraum (von, bis) und dem Zielverzeichnis (Hinweis H4 aus `requirements-6.md`). Ohne Angabe des Zielverzeichnisses schreibt es in das aktuelle Verzeichnis. Die Angaben zum Instrument schreibt es zu jedem Instrument immer mit. Grund: Ohne sie startet kein Testlauf (req-test-003); der Anwender soll sie nicht gesondert anfordern müssen.
 
-pipwerk replay stößt die Beschaffung vor dem Start eines Testlaufs für alle fehlenden Teile an (req-test-003), auch für Teile eines Zeitraums, und von Hand aus dem Datenbestand. Die Adresse der Quelle und ein gemeinsamer Schlüssel stehen in der Startkonfiguration von pipwerk replay und von `pipwerk-fetch-mt5`, nicht in der Datenbank. Die Startkonfiguration von `pipwerk-fetch-mt5` folgt req-system-017 und req-system-018 wie die übrigen Komponenten. Die Übertragung läuft im vom Betreiber kontrollierten Netz (req-system-011, Abschnitt 11). Fehlen danach Daten, startet der Testlauf nicht; die Meldung nennt je fehlendem Teil Instrument, Art, Zeitraum und den Grund der Quelle.
+Ergebnis: je Reihe und je Instrument eine Datei im JSON-Format des Imports, Name `<Instrument>_<Daten>_<von>_<bis>.json` mit `<Daten>` gleich der Zeiteinheit (zum Beispiel `M1`, `H1`), `TICKS` oder `CONTRACT`. Broker in jeder Datei ist der Name des Handelsservers, an dem MetaTrader 5 angemeldet ist (req-system-027). Für jeden Teil, der sich nicht holen lässt, nennt das Programm Instrument, Art, Zeitraum und Grund (zum Beispiel „Symbol beim Broker unbekannt“, „Daten beim Broker nicht vorhanden“, „MetaTrader 5 nicht erreichbar“), schreibt die übrigen Dateien und endet mit einem Exitcode ungleich 0. Eine bestehende Datei gleichen Namens wird ersetzt.
+
+`pipwerk-fetch-mt5` ordnet die Bezeichnung des Instruments einem Symbol des Brokers über eine Zuordnungstabelle in seiner Konfiguration zu. Grund: Die Zuordnung je Konto gehört zur noch nicht beschriebenen Kontoverwaltung (Fachmodell req-fach-053); bis dahin genügt eine Tabelle je Quelle. Ohne Eintrag gilt die Bezeichnung selbst als Symbol. Zuordnungstabelle und Zeitzone des Handelsservers (5.1) stehen in der Startkonfiguration von `pipwerk-fetch-mt5`; sie folgt req-system-017 und req-system-018 wie die übrigen Komponenten.
+
+Fehlen vor dem Start eines Testlaufs Daten, startet der Testlauf nicht. Die Meldung nennt je fehlendem Teil Instrument, Art und Zeitraum und als Grund, dass pipwerk replay bis pipwerk relay nicht selbst beschafft, mit dem Weg: Daten mit `pipwerk-fetch-mt5` holen und im Datenbestand importieren (req-test-003, Hinweis H2 aus `requirements-6.md`).
 
 ## 6. Strategietester
 
@@ -183,9 +194,9 @@ Vorbelegung des Testzeitraums (req-test-002): Ende ist das Ende des letzten voll
 
 Zeitpunkt des Auslösers `Manuell` (req-test-015): Hat die Strategie diesen Auslöser, gehört zum Testlauf sein Zeitpunkt. Ohne Eingabe ist es der Beginn des Testzeitraums, vor der ersten Kerze. Ein eingegebener Zeitpunkt (UTC, auf die Minute) muss im Testzeitraum liegen, sonst startet der Testlauf nicht und die Meldung nennt den Grund. Er wird mit dem Testlauf und im gespeicherten Backtest gespeichert.
 
-Vor dem Start: Konsistenzprüfung der Strategie mit der Bibliothek; ein Fehler verhindert den Start und wird angezeigt. Strategieparameter „bei der Anwendung“ ohne Wert verhindern den Start. Danach Prüfung und Beschaffung der Kursdaten (Abschnitt 5).
+Vor dem Start: Konsistenzprüfung der Strategie mit der Bibliothek; ein Fehler verhindert den Start und wird angezeigt. Strategieparameter „bei der Anwendung“ ohne Wert verhindern den Start. Danach Prüfung der Kursdaten (Abschnitte 5.2 und 5.4).
 
-Instrumente des Testlaufs (req-test-001): das Instrument der Anwendung und jedes feste Instrument oder jeder Wert eines Strategieparameters vom Objekttyp `Instrument`, die die Strategie verwendet. Ein Instrument, das erst ein Ausdruck bei der Ausführung bildet, kann vorher nicht bestimmt werden; fehlen dafür bei der Ausführung Daten, ist der Wert „nicht verfügbar“ und eine Order darauf wird mit `no_prices` abgelehnt. Grund: Kursdaten werden vor dem Start geprüft und beschafft (req-test-003); während eines Testlaufs wird nichts beschafft, sonst hinge das Ergebnis von der Erreichbarkeit der Quelle ab (E7).
+Instrumente des Testlaufs (req-test-001): das Instrument der Anwendung und jedes feste Instrument oder jeder Wert eines Strategieparameters vom Objekttyp `Instrument`, die die Strategie verwendet. Ein Instrument, das erst ein Ausdruck bei der Ausführung bildet, kann vorher nicht bestimmt werden; fehlen dafür bei der Ausführung Daten, ist der Wert „nicht verfügbar“ und eine Order darauf wird mit `no_prices` abgelehnt. Grund: Kursdaten werden vor dem Start geprüft (req-test-003); während eines Testlaufs kommen keine Daten hinzu, sonst hinge das Ergebnis vom Zeitpunkt eines Imports ab (E7).
 
 ### 6.2 Testkonto
 
@@ -219,13 +230,13 @@ Gespeichert wird nur auf ausdrücklichen Befehl (req-test-022): Kopie der Strate
 
 ## 7. Web-API
 
-Öffentliche Web-API von pipwerk replay unter `/api/v1/` (req-system-009), beschrieben unter `contracts/api/pipwerk-replay/v1/openapi.json`: Strategien des Objektverzeichnisses lesen, Testkonten, Vorbereitung eines Testlaufs (benötigte Kursdaten, Stand, Beschaffung), Einzelschritt-Sitzungen mit den Befehlen aus 6.3, Backtests (starten, Fortschritt, abbrechen, Ergebnis), gespeicherte Backtests, Datenbestand (Übersicht, Import, Beschaffung von Hand). Interne Endpunkte für Einstellungen wie in pipwerk Studio. Die Endpunkte im Einzelnen legen die Aufträge fest.
+Öffentliche Web-API von pipwerk replay unter `/api/v1/` (req-system-009), beschrieben unter `contracts/api/pipwerk-replay/v1/openapi.json`: Strategien des Objektverzeichnisses lesen, Testkonten, Vorbereitung eines Testlaufs (benötigte Kursdaten, Stand), Einzelschritt-Sitzungen mit den Befehlen aus 6.3, Backtests (starten, Fortschritt, abbrechen, Ergebnis), gespeicherte Backtests, Datenbestand (Reihen gefiltert und seitenweise, Einzelheiten einer Reihe mit Lücken und Angaben zum Instrument, Import mehrerer Dateien, Broker für Testläufe). Interne Endpunkte für Einstellungen wie in pipwerk Studio. Die Endpunkte im Einzelnen legen die Aufträge fest.
 
 ## 8. Oberfläche
 
 ### 8.1 Vorlage
 
-Vorlage ist der Prototyp, den der Auftraggeber am 2026-10-21 bestätigt hat, angepasst an seine Entscheidungen zu `Manuell` und „Parameter setzen“ ([prototype/order-02.md](prototype/order-02.md)): gebaute Datei [prototype/pipwerk-replay-prototyp.html](prototype/pipwerk-replay-prototyp.html), Beschreibung mit allen Entscheidungen zur Bedienung in [prototype/README.md](prototype/README.md), Stand Commit `de8a0d7bd7fc8a736c25b81171a54dc44b043aa2` des Zweigs `backtest/proto-replay`. Aufbau, Bedienung, Texte in Deutsch und Englisch, Erklärungen beim Zeigen und Erscheinungsbild folgen ihm. Was dieser Abschnitt nicht anders regelt, gilt wie im Prototyp. Die Aufträge nennen die Teile des Prototyps, die sie umsetzen.
+Vorlage ist der Prototyp, den der Auftraggeber am 2026-10-21 bestätigt hat, angepasst an seine Entscheidungen zu `Manuell` und „Parameter setzen“ ([prototype/order-02.md](prototype/order-02.md)): gebaute Datei [prototype/pipwerk-replay-prototyp.html](prototype/pipwerk-replay-prototyp.html), Beschreibung mit allen Entscheidungen zur Bedienung in [prototype/README.md](prototype/README.md), Stand Commit `de8a0d7bd7fc8a736c25b81171a54dc44b043aa2` des Zweigs `backtest/proto-replay`. Ansicht „Datenbestand“, Dialog „Datei importieren“ und Ansicht „Kursdaten beim Start“ nach der Abnahme von `wp02` ([prototype/order-03.md](prototype/order-03.md)): Stand Commit `d9c2edac0ec78555d43f587635e8bf1a37b4d762` desselben Zweigs, zur Bestätigung durch den Auftraggeber. Dort prüft der Testlauf die Kontraktdaten jedes Instruments als eigenen Teil (req-test-003). Das JSON-Format des Prototyps ist nur nachgebildet, maßgeblich ist das Schema nach 5.3. Aufbau, Bedienung, Texte in Deutsch und Englisch, Erklärungen beim Zeigen und Erscheinungsbild folgen ihm. Was dieser Abschnitt nicht anders regelt, gilt wie im Prototyp. Die Aufträge nennen die Teile des Prototyps, die sie umsetzen.
 
 Abweichungen vom Prototyp, weil er nur vortäuscht:
 
@@ -248,11 +259,11 @@ Kopfzeile mit Menü (Testlauf, Datenbestand, Testkonten, Gespeicherte Backtests)
 | Ansicht | Inhalt | Anforderungen |
 |---|---|---|
 | Testlauf vorbereiten | Strategie, Instrument der Anwendung, Testzeitraum mit Vorbelegung je Betriebsart, Testkonto mit Werten für den Testlauf, Angaben zum Instrument, Strategieparameter, bei Auslöser `Manuell` dessen Zeitpunkt; Liste der benötigten Kursdaten mit Stand; Start | req-test-001 bis req-test-003, req-test-005, req-test-007, req-test-015 |
-| Kursdaten beim Start | je Instrument, Zeiteinheit oder Ticks und Zeitraum: benötigt, vorhanden, fehlt; Beschaffung mit Fortschritt; Meldung mit fehlenden Daten und Grund | req-test-003 |
+| Kursdaten beim Start | je Instrument, Zeiteinheit oder Ticks und Zeitraum: benötigt, vorhanden, fehlt; Meldung mit fehlenden Daten und Weg nach 5.4, Knopf zur Ansicht „Datenbestand“ | req-test-003 |
 | Einzelschritt-Test | Strategie, Chart je Zeiteinheit der Strategie, Konto und Orders, Eigenschaften; Steuerung mit Start, Einzelschritt, Nächste handelnde Stelle, Zum Testbeginn, Manuell auslösen, Ende; Haltepunkte; Protokoll | req-test-004, req-test-008, req-test-010 bis req-test-015 |
 | Backtest | Fortschritt mit Abbrechen; Ergebnis mit Kennzahlen, Kontoentwicklung und Rückgang, Chart, Reitern Trades und Abgelehnte Orders; Speichern | req-test-004, req-test-020 bis req-test-022 |
 | Gespeicherte Backtests | Liste, Löschen nach Rückfrage, Vergleich von zwei oder mehr, getestete Fassung nur lesend | req-test-022 |
-| Datenbestand | Übersicht je Broker, Instrument, Zeiteinheit und Ticks mit Zeiträumen und Lücken, Angaben zu den Instrumenten; Import einer Datei, bei CSV mit Broker, Instrument, Zeiteinheit und Zeitzone (5.1, 5.3; Ergänzung zum Prototyp); Beschaffung von Hand | req-system-025 bis req-system-027 |
+| Datenbestand | nach dem Abnahmebericht `wp02`, M1 bis M4: oben eine Leiste mit „Datei importieren …“ und dem Auswahlfeld „Broker für Testläufe“ (5.1); darunter eine kompakte Tabelle, eine Zeile je Reihe mit Broker, Instrument, Daten, Zeitraum und Anzahl der Lücken, filterbar und seitenweise; Klick auf eine Zeile zeigt alle Lücken und die Kontraktdaten (Angaben zum Instrument) bei diesem Broker. Liegen für ein Instrument eines Brokers nur Kontraktdaten vor, zeigt die Tabelle dafür eine Zeile mit Daten „Kontraktdaten“. Dialog „Datei importieren“ für mehrere Dateien nach 5.3. Keine Beschaffung (5.4) | req-system-025 bis req-system-027 |
 | Testkonten | anlegen, bearbeiten, speichern, löschen; Standard-Testkonto nach 6.2 | req-test-005 |
 
 ### 8.4 Festlegungen
@@ -264,7 +275,7 @@ Mit der Bestätigung des Prototyps festgelegt (Frage backtest-01, Punkte 1 bis 7
 3. „Einzelschritt“ am Ende einer Auswertung geht zum ersten Element der nächsten. „Nächste handelnde Stelle“ hält auch an einem Haltepunkt. Ein Haltepunkt wird mit einem kleinen Kreis an der Ecke eines Elements gesetzt und entfernt. „Zum Testbeginn“ zeigt die ersten Auswertungen, in denen Indikatoren noch keine Werte haben.
 4. Abgelehnte Order: Die Auswertung trägt vorab die Marke „endet mit abgelehnter Order“. Der Grund steht am Element, in der Eigenschaftenansicht, im Protokoll und als rotes Kreuz im Chart. Im Ergebnis stehen abgelehnte Orders mit Grund auf einem eigenen Reiter neben den Trades, ihre Anzahl bei den Kennzahlen. Gründe in Händlersprache nach Abschnitt 4.3.
 5. Testkonto: Änderungen im Testlauf gelten nur für diesen Testlauf. Gespeichert wird nur über „Änderung im Testkonto speichern“ oder „Als neues Testkonto speichern“. Geänderte Angaben zum Instrument gelten nur für den Testlauf und werden nie gespeichert.
-6. Kursdaten beim Start nach der Ansicht „Kursdaten beim Start“: Fehlendes wird beim Start beschafft; lässt es sich nicht beschaffen, startet der Testlauf nicht.
+6. Kursdaten beim Start nach der Ansicht „Kursdaten beim Start“: Fehlt etwas, startet der Testlauf nicht; bis pipwerk relay wird nichts beschafft (5.4, req-test-003, geändert am 2026-10-23).
 7. Ergebnis: Der Gewinn eines Trades ist nach Spread und Kommission. Die Spalte „Kosten“ nennt Kommission und Spreadanteil zur Information. Der Prototyp rechnet keinen Swap; im Produkt enthalten Gewinn und Kosten auch den Swap (6.4). Ein Klick auf einen Trade zeigt seine Stelle im Chart: Pfeil bei Eröffnung, Kreis bei Schließung, Linie dazwischen grün bei Gewinn, rot bei Verlust.
 
 Aus den Entscheidungen zu `Manuell` (req-test-015, Abschnitte 6.1 und 6.3):
@@ -285,14 +296,15 @@ Bedienerführung wie im Prototyp: Jeder leere Zustand nennt den nächsten Schrit
 - Bibliothek (pytest): Auswertung jeder Funktion und jedes Operators, „leer“, „nicht verfügbar“ und Fehler mit ihrer Wirkung je Stelle; `PREVIOUS`; `EMA`, `ATR`, `ZigZag` gegen Werte aus MetaTrader 5 für eine mitgelieferte Kursreihe; Reihenfolge der Auswertungen; Bestimmen und Prüfen mit Regeln; Rückführung mit Abbruch.
 - Abwicklung (pytest): jeder Ordertyp, Stop-Loss und Take-Profit mit und ohne Sprung, Weg innerhalb einer Kerze M1, jeder Ablehnungsgrund, Kosten, Margin, Konto aufgebraucht, Teilschließung nach req-fach-021.
 - Datenbestand (pytest): Import JSON und CSV mit gültigen und fehlerhaften Dateien, Ersetzen, Lücken und Handelspausen, Migration.
-- Beschaffung: Tests gegen eine nachgebildete Quelle mit derselben Schnittstelle; `pipwerk-fetch-mt5` mit einer nachgebildeten Schnittstelle von `MetaTrader5`. Gegen eine echte Installation von MetaTrader 5 prüft der Auftraggeber in der Abnahme.
+- Datenbestand (pytest): Import mehrerer Dateien in einem Vorgang mit gemeinsamem Broker und gemeinsamer Zeitzone, eine abgelehnte Datei neben übernommenen.
+- Beschaffung: `pipwerk-fetch-mt5` mit einer nachgebildeten Schnittstelle von `MetaTrader5`, darunter Dateinamen, Broker als Name des Handelsservers, Teile mit Grund und Exitcode; die geschriebenen Dateien lassen sich ohne Änderung importieren. Gegen eine echte Installation von MetaTrader 5 prüft der Auftraggeber in der Abnahme.
 - Testfälle: `str-01` und `str-03` laufen im Backtest über mitgelieferte Kursdaten mit erwarteten Trades; Einzelschritt-Test ohne „Manuell auslösen“ und Backtest liefern für denselben Zeitraum dieselben Trades (E7). Eine Strategie mit Auslöser `Manuell` wird zum Beginn des Testzeitraums, zu einem eingegebenen Zeitpunkt und mit „Manuell auslösen“ geprüft; `Manuell` in einer Verwaltung ergibt den Befund `trigger.manual_in_management` (3.6).
 - Backend, Oberfläche, Browsertests wie in pipwerk Studio; Einzelheiten nach Abschnitt 8.
 
 ## 11. Sicherheit
 
-- Ohne Anmeldung, nur im vom Betreiber kontrollierten Netz (req-system-011), wie pipwerk Studio. `pipwerk-fetch-mt5` nimmt nur Anfragen mit dem gemeinsamen Schlüssel an, weil es einen Rechner mit Handelssoftware erreicht.
-- Hochgeladene Dateien (Import, Strategie): Größe begrenzt, streng geprüft, nie ausgeführt; Pydantic mit Ablehnung zusätzlicher Felder.
+- Ohne Anmeldung, nur im vom Betreiber kontrollierten Netz (req-system-011), wie pipwerk Studio. `pipwerk-fetch-mt5` hat keinen Server und öffnet keinen Port (req-system-027); es liest nur aus MetaTrader 5 und schreibt nur in das angegebene Zielverzeichnis.
+- Hochgeladene Dateien (Import, Strategie): Größe je Datei, Zahl der Dateien und Gesamtgröße eines Vorgangs begrenzt (5.3), streng geprüft, nie ausgeführt; Pydantic mit Ablehnung zusätzlicher Felder. Dateinamen werden nur gelesen, nie als Pfad verwendet.
 - Ausdrücke nur über den Syntaxbaum ausgewertet; Grenzen für Schritte je Auswertung (3.4), Zahl gleichzeitiger Sitzungen und Backtests, Umfang von Antworten.
 - Texte und Namen des Anwenders setzt die Oberfläche als Text, nie als HTML.
 
@@ -300,7 +312,7 @@ Bedienerführung wie im Prototyp: Jeder leere Zustand nennt den nächsten Schrit
 
 - technische Dokumentation: `docs/technical/pipwerk-replay.md` (neu), `docs/technical/pipwerk-marketdata.md` (neu), `docs/technical/pipwerk-fetch-mt5.md` (neu), `docs/technical/pipwerk-domain.md` (Ausführung, Indikatoren, `ZigZag`, Auslöser `Manuell`, Entfall von `flow.set_parameter`), `docs/technical/pipwerk-studio.md` (gemeinsame Bausteine), Beschreibungen unter `contracts/`
 - Anwenderdokumentation von pipwerk Studio: Auslöser „Manuell“, kein Element „Parameter setzen“
-- Anwenderdokumentation `docs/user/pipwerk-replay.md`: Testlauf vorbereiten, Testkonten, Kursdaten und Datenbestand mit Import und Beschaffung, Einzelschritt-Test, Backtest, Ergebnis, Speichern und Vergleich, Ablehnungsgründe in Händlersprache; Einrichtung von `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5
+- Anwenderdokumentation `docs/user/pipwerk-replay.md`: Testlauf vorbereiten, Testkonten, Kursdaten und Datenbestand mit Import mehrerer Dateien, Einzelschritt-Test, Backtest, Ergebnis, Speichern und Vergleich, Ablehnungsgründe in Händlersprache; Einrichtung und Aufruf von `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 und Import seiner Dateien
 - Glossar: Testlauf, Testkonto, interne Abwicklung, Ablehnung, handelnde Stelle, Haltepunkt, Datenbestand historischer Kursdaten, Beschaffung, Quelle
 
 ## 13. Entscheidungen zu Hinweisen der QA und Vorschläge
@@ -316,6 +328,8 @@ Hinweise aus `requirements-4.md` und `requirements-5.md`:
 | H11 | betrifft den Dokumentstatus der Anforderungen; erledigt vom Projektleiter (Commit `a9990e8`). |
 | H12 | `pipwerk-domain.md`, Abschnitt 8, „Leer“: Ausnahme nach req-test-008 und Verhalten von `ISBLANK` ergänzt (3.2). |
 
+Hinweise aus `requirements-6.md` (Nachprüfung nach der Abnahme von `wp02`): H4 Zielverzeichnis von `pipwerk-fetch-mt5` als Angabe beim Aufruf (5.4); H2 Inhalt der Meldung bei fehlenden Daten (5.4). H1, H3 und H5 betreffen die Dokumente des Auftraggebers und gehen an den Projektleiter.
+
 Entscheidungen des Auftraggebers zu Frage [backtest-01](questions/backtest-01.md) vom 2026-10-21:
 
 1. Auslöser `Manuell` (bisher „Start von Hand“): nur im Hauptablauf, im Testlauf nach req-test-015. Umgesetzt in 3.4, 3.6, 6.1, 6.3 und 8.
@@ -330,3 +344,5 @@ Entscheidungen des Auftraggebers zu Frage [backtest-01](questions/backtest-01.md
 | 2026-10-21 | Nach den Antworten zu Frage backtest-01: Abschnitt 8 (Oberfläche) nach dem bestätigten Prototyp; Auslöser `Manuell` (3.4, 3.6, 6.1, 6.3, 10); Entfall von „Parameter setzen“ (3.4, 3.6); abgelehnte Orders einzeln im Ergebnis (6.4); Abschnitt 13 mit den Entscheidungen. |
 | 2026-10-21 | Nach dem Prüfbericht [specification-1.md](reviews/specification-1.md): B1 Zählung auf jedem Instrument (3.4); B2 sofortige Ausführung von Marktorder und Schließen mit neuem Stand für folgende Auswertungen (4.2); B3 Befehl „Zum Testbeginn“ (E8, 6.3); B4 Standard-Testkonto löschbar, wird beim Start neu angelegt (6.2, 8.3). Hinweise 1 bis 13: Begründungen der Begrenzungen (6.3, 6.4), „Manuell auslösen“ jederzeit (6.3, 8.4), Begründung „Konto aufgebraucht“ (4.2), Zeitzone bei Import und Beschaffung (5.1), Auswertungen im Einzelschritt-Test (8.4), Kosten und Swap (6.4, 8.4), prüfende Regeln bei Ändern (3.5), Ablehnungsgrund `no_prices` (4.3, 6.1), Handelstag (6.1), getestete Fassung auch als Dokument (6.5), Schlüssel und Startkonfiguration (5.4), Kontraktgröße (5.1), Wendepunkte des `ZigZag` (3.3). |
 | 2026-10-21 | Hinweise aus [specification-2.md](reviews/specification-2.md) (bestanden) ohne weitere Prüfung eingearbeitet: 1 Stelle der eingefügten Auswertung `Manuell` (6.3); 2 Feld Zeitzone beim CSV-Import und Wechsel der Sommerzeit (5.1, 8.3); 4 Kurse beim Schließen nach Richtung der Position (4.2). Hinweis 3 geht mit der Präsentation an den Auftraggeber, Hinweis 5 verworfen (Vorbelegung ist änderbar). |
+| 2026-10-23 | Nach der Abnahme von `wp02` (Abnahmebericht `wp02/acceptance/1.md`, Mängel M1 bis M4) und den geänderten Anforderungen req-system-026, req-system-027 und req-test-003 (Prüfung bestanden in [requirements-6.md](reviews/requirements-6.md)): `pipwerk-fetch-mt5` als Programm ohne Server und Port (E5, 5.4, 11); keine Beschaffung aus pipwerk replay bis pipwerk relay (5.4, 6.1, 7, 8.3, 8.4 Punkt 6); Broker als Name des Handelsservers und „Broker für Testläufe“ (5.1); Import mehrerer Dateien (5.3, 10, 11); Ansicht „Datenbestand“ und Dialog „Datei importieren“ nach M1 bis M3 (8.3), Prototyp nach [prototype/order-03.md](prototype/order-03.md) (8.1); Hinweise H2 und H4 aus `requirements-6.md` (5.4). |
+| 2026-10-23 | Hinweise aus [specification-3.md](reviews/specification-3.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Ablehnung bei Fehler in Format oder Inhalt, H2 erkannte Dateinamen, H3 Vorbelegung bei verschiedenen Brokern (alle 5.3). H4 bleibt: Der Ersatz nach 5.1 ist eine Festlegung der Spezifikation; der Prototyp muss ihn nicht zeigen. |

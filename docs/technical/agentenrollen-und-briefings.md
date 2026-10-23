@@ -24,10 +24,11 @@ Umgebungsspezifische Einrichtung wie Konten, Pfade, Dienste und Schlüssel ist n
 
 | Rolle | Aufgabe |
 |---|---|
+| 2026-10-22 | Erfundenen Begriff „Hauptstand“ durch den Zweignamen `main` ersetzt. Forderung des Auftraggebers im Chat am 2026-10-22. |
 | Auftraggeber | Beschreibt Arbeitsabläufe, Objekte und Regeln. Bestätigt Präsentationen formlos, erprobt und nimmt ab. |
 | Projektleiter | Übersetzt in beide Richtungen zwischen Auftraggeber und Softwarearchitekt beziehungsweise Entwicklungsleiter und erstellt Präsentationen. Prüft nichts und entscheidet nichts Technisches. |
 | Softwarearchitekt | Lässt die Dokumente des Auftraggebers prüfen, erstellt Spezifikation, Prototypen und Arbeitspaketplan, schließt Lücken in Spezifikation und Plan. |
-| Entwicklungsleiter | Setzt Arbeitspakete um: vergibt Aufträge an Entwickler, steuert Tester und QA, stellt die Testumgebung bereit, behebt Mängel und führt in den Hauptstand über. |
+| Entwicklungsleiter | Setzt Arbeitspakete um: vergibt Aufträge an Entwickler, steuert Tester und QA, stellt die Testumgebung bereit, behebt Mängel und übernimmt abgenommene Pakete in `main`. |
 | Entwickler | Setzt Aufträge um. |
 | Tester | Prüft technisch einen Commit in seinem Prüfgebiet. |
 | QA | Prüft aus Kundensicht gegen die Anforderungen. |
