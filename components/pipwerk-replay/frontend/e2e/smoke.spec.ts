@@ -4,7 +4,9 @@ import { expect, openApp, test } from './fixtures';
 test('the built user interface starts without an error in the console', async ({ page, consoleProblems }) => {
   await openApp(page);
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Datenbestand historischer Kursdaten');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Datenbestand');
+  await expect(page.getByTestId('data-bar')).toBeVisible();
+  await expect(page.getByTestId('stock-empty')).toBeVisible();
   await expect(page.getByTestId('header')).toContainText('pipwerk replay');
   await expect(page.getByTestId('footer')).toContainText('Backend: verbunden');
   await expect(page.getByTestId('revision')).toContainText('Stand:');

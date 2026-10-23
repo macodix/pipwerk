@@ -1,6 +1,7 @@
 // Small building blocks: icons, the layer for explanations, buttons, inputs and the labelled field.
 import { useEffect, useId, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 const PATHS: Record<string, string> = {
@@ -22,6 +23,9 @@ const PATHS: Record<string, string> = {
   download: 'M12 4v12M7 11l5 5 5-5M5 20h14',
   refresh: 'M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5',
   home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  left: 'M15 6l-6 6 6 6',
+  right: 'M9 6l6 6-6 6',
+  x: 'M6 6l12 12M18 6L6 18',
 };
 
 export function Icon({ name, size = 18, className = '' }: { name: string; size?: number; className?: string }) {
@@ -43,11 +47,14 @@ export function Icon({ name, size = 18, className = '' }: { name: string; size?:
   );
 }
 
-type Tip = { text: string; x: number; y: number; below: boolean };
+/** `host` is the open dialog the element is in, or `null`: a dialog covers everything outside of it. */
+type Tip = { text: string; x: number; y: number; below: boolean; host: HTMLElement | null };
 
 /**
  * One layer for all explanations: every element with `data-tip` shows its text when
- * the mouse points at it or when it has the keyboard focus.
+ * the mouse points at it or when it has the keyboard focus. A modal dialog is shown above
+ * everything else (in the top layer of the browser), so the explanation of an element in a dialog
+ * is placed in the dialog.
  */
 export function TipLayer() {
   const [tip, setTip] = useState<Tip | null>(null);
@@ -69,6 +76,7 @@ export function TipLayer() {
           x: Math.min(Math.max(rect.left + rect.width / 2, 150), Math.max(window.innerWidth - 150, 150)),
           y: below ? rect.bottom + 8 : rect.top - 8,
           below,
+          host: element.closest<HTMLElement>('dialog[open]'),
         });
       }, 120);
     };
@@ -101,11 +109,12 @@ export function TipLayer() {
     top: tip.y,
     transform: tip.below ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
   };
-  return (
+  const layer = (
     <div className="tip" role="tooltip" style={style} data-testid="tooltip">
       {tip.text}
     </div>
   );
+  return tip.host === null ? layer : createPortal(layer, tip.host);
 }
 
 export function Btn({
@@ -118,6 +127,7 @@ export function Btn({
   testid,
   type = 'button',
   tip,
+  small,
 }: {
   children?: ReactNode;
   onClick?: () => void;
@@ -128,11 +138,12 @@ export function Btn({
   testid?: string;
   type?: 'button' | 'submit';
   tip?: string;
+  small?: boolean;
 }) {
   return (
     <button
       type={type}
-      className={`btn btn-${kind}${children === undefined ? ' btn-icon' : ''}`}
+      className={`btn btn-${kind}${children === undefined ? ' btn-icon' : ''}${small === true ? ' btn-sm' : ''}`}
       onClick={onClick}
       disabled={disabled}
       aria-label={title}

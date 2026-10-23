@@ -7,7 +7,7 @@ The component consists of a Python backend (FastAPI, SQLAlchemy, Alembic) in `ba
 The current state provides:
 
 - the backend with its startup configuration, its own database with versioned schema, the check of the `Host` header, the test accounts (`/api/v1/accounts`, with the default test account), the data stock of historical price data (`/api/v1/market-data/`: the list of series filtered and page by page, the details of a series with its gaps and the instrument data, the brokers, the import of several JSON and CSV files in one process with a preview of what the files say about themselves, the completeness of the data a test run needs) and the internal endpoints for the language, the broker for test runs and the revision (`/api/replay/`). pipwerk replay acquires no data: price data come into the data stock only through the import (for example files written by `pipwerk-fetch-mt5` on the computer of MetaTrader 5);
-- the user interface with the header, the footer and the two views "Datenbestand" (data stock) and "Testkonten" (test accounts), in German and English. The view "Datenbestand" still shows the state of work order 05 and does not yet use the web API of the backend as described above; it is rebuilt in a later work order.
+- the user interface with the header, the footer and the two views "Datenbestand" (data stock) and "Testkonten" (test accounts), in German and English. The view "Datenbestand" has a bar with the button "Datei importieren …" (a dialog that imports any number of JSON and CSV files in one process) and the choice of the broker for test runs, and below it a compact table of the series with a filter, pages and the details of a row (all gaps and the contract data). It uses the web API of the backend as described above and acquires nothing.
 
 The test run (single-step test and backtest) and the saved backtests follow in later work packages.
 
@@ -52,7 +52,7 @@ npm run build         # type check and build into dist/
 npm run e2e           # Playwright against the built interface and a real backend
 ```
 
-The first four commands check the backend. The user interface and its browser tests are not yet matched with the backend (see above); the browser tests start their own backend and the built interface. Ports and the directory of the databases are parameters (`PIPWERK_REPLAY_E2E_FRONTEND_PORT`, `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_SOURCE_PORT`, `PIPWERK_REPLAY_E2E_DATA_DIR`); a port that is not given is a free port. Chromium runs all tests; Firefox and WebKit run the start of the built interface (`npx playwright install chromium firefox webkit`).
+The first four commands check the backend. The browser tests start their own backend and the built interface on two ports; the interface passes `/api` on to the backend, as it does in operation. Ports and the directory of the database are parameters (`PIPWERK_REPLAY_E2E_FRONTEND_PORT`, `PIPWERK_REPLAY_E2E_BACKEND_PORT`, `PIPWERK_REPLAY_E2E_DATA_DIR`); a port that is not given is a free port. Chromium runs all tests; Firefox and WebKit run the start of the built interface (`npx playwright install chromium firefox webkit`).
 
 ## Test environment
 

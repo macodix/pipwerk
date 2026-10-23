@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatBytes, formatMoment, formatNumber, formatPeriod, isMinute, minuteToMoment } from './format';
+import { formatBytes, formatDay, formatDays, formatMoment, formatNumber, formatPeriod } from './format';
 
 describe('formatMoment', () => {
   it('shows UTC to the minute in the form of the language', () => {
@@ -33,29 +33,19 @@ describe('formatNumber', () => {
   });
 });
 
-describe('minutes', () => {
-  it('turns the value of a field for date and time into a moment in UTC', () => {
-    expect(minuteToMoment('2026-01-05T08:30')).toBe('2026-01-05T08:30:00Z');
+describe('days', () => {
+  it('shows the day in UTC in the form of the language', () => {
+    expect(formatDay('2026-01-05T23:30:00Z', 'de')).toBe('05.01.2026');
+    expect(formatDay('2026-01-05T23:30:00Z', 'en')).toBe('2026-01-05');
+    expect(formatDay('2026-01-05T23:30:00-05:00', 'en')).toBe('2026-01-06');
   });
 
-  it.each(['2026-01-05T00:00', '2028-02-29T23:59'])('accepts %s', (value) => {
-    expect(isMinute(value)).toBe(true);
+  it('returns a text that is no moment unchanged', () => {
+    expect(formatDay('yesterday', 'de')).toBe('yesterday');
   });
 
-  it.each([
-    '',
-    '2026-01-05',
-    '2026-01-05 08:30',
-    '2026-01-05T08:30:15',
-    '2026-02-30T08:30',
-    '2027-02-29T08:30',
-    '2026-13-01T08:30',
-    '2026-01-05T24:00',
-    '2026-01-05T08:60',
-    '05.01.2026',
-    'abc',
-  ])('rejects "%s"', (value) => {
-    expect(isMinute(value)).toBe(false);
+  it('shows the first to the last day with an en dash', () => {
+    expect(formatDays('2026-01-05T08:00:00Z', '2026-01-09T23:00:00Z', 'de')).toBe('05.01.2026 – 09.01.2026');
   });
 });
 

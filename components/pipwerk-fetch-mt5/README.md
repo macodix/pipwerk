@@ -27,7 +27,7 @@ scripts\fetch.cmd --from 2026-01-01 --to 2026-02-01 -u H1,D1 --ticks -o data EUR
 ## Checks (Linux, without the package MetaTrader5)
 
 ```
-scripts/check
+scripts/check [--with-audit]
 ```
 
-runs `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` and `mypy`. The tests use a replica of the package `MetaTrader5` (`tests/support.py`); a test against a real MetaTrader 5 is part of the acceptance.
+runs `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` and `mypy`; with `--with-audit` also `pip-audit` for the locked packages (needs access to the internet). The tests use a replica of the package `MetaTrader5` (`tests/support.py`); a test against a real MetaTrader 5 is part of the acceptance.

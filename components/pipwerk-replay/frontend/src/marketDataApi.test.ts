@@ -2,122 +2,230 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ApiError, UnexpectedAnswerError } from './http';
 import {
-  fetchAcquisition,
-  fetchOverview,
-  importCsv,
-  importJson,
+  fetchBrokers,
+  fetchSeries,
+  fetchSeriesDetails,
+  fetchTestRunBroker,
+  importFiles,
   isTimeUnit,
   isValidName,
-  startAcquisition,
+  previewImport,
+  updateTestRunBroker,
 } from './marketDataApi';
 import {
   FakeBackend,
-  acquisitionJson,
-  importResultJson,
+  INSTRUMENT_JSON,
+  hintJson,
   json,
-  overviewJson,
-  seriesJson,
+  readForm,
+  refusedJson,
+  rowJson,
+  takenJson,
 } from './test-utils';
 
 let backend: FakeBackend;
+
+const NO_FILTER = { broker: '', instrument: '', data: '' };
 
 beforeEach(() => {
   backend = new FakeBackend();
   backend.install();
 });
 
-describe('overview', () => {
-  it('reads series, periods, gaps and instruments', async () => {
-    backend.overview = overviewJson(
-      [seriesJson({ missing: [{ start: '2026-01-07T04:00:00Z', end: '2026-01-07T09:00:00Z', reason: 'gap' }], missing_count: 1 })],
-      [{ broker: 'B', instrument: 'EURUSD', acquired_at: '2026-01-05T08:00:00Z' }],
-    );
+describe('list of series', () => {
+  it('reads the rows with the identifier of the data, the first and last moment and the gaps', async () => {
+    backend.rows = [rowJson({ gap_count: 2 }), rowJson({ data: 'contract', first: null, last: null })];
 
-    const overview = await fetchOverview();
+    const page = await fetchSeries(NO_FILTER, 0, 10);
 
-    expect(overview.series[0]).toMatchObject({ broker: 'Demo-Server', unit: 'h1', count: 120, missingCount: 1 });
-    expect(overview.series[0]?.missing[0]?.reason).toBe('gap');
-    expect(overview.instruments).toEqual([{ broker: 'B', instrument: 'EURUSD', acquiredAt: '2026-01-05T08:00:00Z' }]);
+    expect(page.total).toBe(2);
+    expect(page.items[0]).toEqual({
+      broker: 'Demo-Server',
+      instrument: 'EURUSD',
+      data: 'h1',
+      first: '2026-01-05T00:00:00Z',
+      last: '2026-01-09T23:00:00Z',
+      gapCount: 2,
+    });
+    expect(page.items[1]).toMatchObject({ data: 'contract', first: null, last: null, gapCount: 0 });
+  });
+
+  it('sends offset and limit and only the filters that are set', async () => {
+    await fetchSeries({ broker: 'Demo', instrument: '', data: 'h1' }, 20, 10);
+
+    const query = backend.callsTo('GET', '/api/v1/market-data/series')[0]?.query;
+    expect(query?.get('offset')).toBe('20');
+    expect(query?.get('limit')).toBe('10');
+    expect(query?.get('broker')).toBe('Demo');
+    expect(query?.get('data')).toBe('h1');
+    expect(query?.has('instrument')).toBe(false);
   });
 
   it('refuses an answer of another form', async () => {
-    backend.overview = { series: 'x' };
+    backend.seriesAnswer = () => json(200, { items: 'x', total: 1, offset: 0, limit: 10 });
 
-    await expect(fetchOverview()).rejects.toBeInstanceOf(UnexpectedAnswerError);
+    await expect(fetchSeries(NO_FILTER, 0, 10)).rejects.toBeInstanceOf(UnexpectedAnswerError);
+  });
+});
+
+describe('details of a row', () => {
+  it('names the row in the query and reads gaps and contract data', async () => {
+    backend.rows = [rowJson()];
+    backend.gaps['Demo-Server|EURUSD|h1'] = [{ start: '2026-01-07T04:00:00Z', end: '2026-01-07T09:00:00Z', reason: 'gap' }];
+    backend.contracts['Demo-Server|EURUSD'] = INSTRUMENT_JSON;
+
+    const details = await fetchSeriesDetails({ broker: 'Demo-Server', instrument: 'EURUSD', data: 'h1' });
+
+    const query = backend.callsTo('GET', '/api/v1/market-data/series/details')[0]?.query;
+    expect([query?.get('broker'), query?.get('instrument'), query?.get('data')]).toEqual(['Demo-Server', 'EURUSD', 'h1']);
+    expect(details.gaps).toEqual([{ start: '2026-01-07T04:00:00Z', end: '2026-01-07T09:00:00Z', reason: 'gap' }]);
+    expect(details.contract).toMatchObject({ contractSize: 100000, tickValueCurrency: 'USD', marginPerLot: null });
   });
 
-  it('refuses an unknown reason of a missing period', async () => {
-    backend.overview = overviewJson([seriesJson({ missing: [{ start: 'a', end: 'b', reason: 'other' }], missing_count: 1 })]);
+  it('reads missing contract data as null', async () => {
+    backend.rows = [rowJson()];
 
-    await expect(fetchOverview()).rejects.toBeInstanceOf(UnexpectedAnswerError);
+    const details = await fetchSeriesDetails({ broker: 'Demo-Server', instrument: 'EURUSD', data: 'h1' });
+
+    expect(details.contract).toBeNull();
+  });
+
+  it('turns an unknown row into an ApiError 404', async () => {
+    const error = await fetchSeriesDetails({ broker: 'x', instrument: 'y', data: 'h1' }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(404);
+  });
+
+  it('refuses an unknown reason of a gap', async () => {
+    backend.rows = [rowJson()];
+    backend.gaps['Demo-Server|EURUSD|h1'] = [{ start: 'a', end: 'b', reason: 'other' }];
+
+    await expect(fetchSeriesDetails({ broker: 'Demo-Server', instrument: 'EURUSD', data: 'h1' })).rejects.toBeInstanceOf(
+      UnexpectedAnswerError,
+    );
+  });
+});
+
+describe('brokers and the broker for test runs', () => {
+  it('reads the brokers', async () => {
+    backend.brokers = ['A', 'B'];
+
+    expect(await fetchBrokers()).toEqual(['A', 'B']);
+  });
+
+  it('reads the broker that applies and whether it is the choice', async () => {
+    backend.brokers = ['B', 'A'];
+
+    expect(await fetchTestRunBroker()).toEqual({ broker: 'A', chosen: false });
+  });
+
+  it('writes the choice and reads what applies afterwards', async () => {
+    backend.brokers = ['A', 'B'];
+
+    const stored = await updateTestRunBroker('B');
+
+    expect(backend.callsTo('PUT', '/api/replay/settings/test-run-broker')[0]?.body).toEqual({ broker: 'B' });
+    expect(stored).toEqual({ broker: 'B', chosen: true });
+  });
+
+  it('turns the refusal of a broker that is not in the data stock into an ApiError 422', async () => {
+    const error = await updateTestRunBroker('Z').catch((e: unknown) => e);
+
+    expect((error as ApiError).status).toBe(422);
+  });
+});
+
+describe('preview', () => {
+  it('sends a JSON file as it is and a CSV file without content, in the order of the files', async () => {
+    backend.hints['b.json'] = hintJson('b.json', { broker: 'X', instrument: 'EURUSD', data: 'h1' });
+    const csv = new File(['a,b,c\n1,2,3\n'], 'EURUSD_H1.csv');
+    const jsonFile = new File(['{"a": 1}'], 'b.json');
+
+    const hints = await previewImport([csv, jsonFile]);
+
+    const form = backend.callsTo('POST', '/api/v1/market-data/imports/preview')[0]?.body as FormData;
+    const parts = form.getAll('file') as File[];
+    expect(parts.map((part) => part.name)).toEqual(['EURUSD_H1.csv', 'b.json']);
+    expect(parts[0]?.size).toBe(0);
+    expect(parts[1]?.size).toBe(8);
+    expect(hints[1]).toMatchObject({ format: 'json', broker: 'X', instrument: 'EURUSD', data: 'h1', error: null });
+    expect(hints[0]).toMatchObject({ format: 'csv', instrument: null, data: null });
+  });
+
+  it('refuses an answer with another number of hints', async () => {
+    backend.previewAnswer = () => json(200, { files: [], broker: null });
+
+    await expect(previewImport([new File(['x'], 'a.csv')])).rejects.toBeInstanceOf(UnexpectedAnswerError);
   });
 });
 
 describe('import', () => {
-  it('sends the JSON file unchanged with its media type', async () => {
-    const file = new Blob(['{"a": 1}']);
+  it('sends one form with the broker, the time zone, the files and instrument and data per file', async () => {
+    const files = [
+      { file: new File(['x'], 'a.json'), instrument: '', data: 'm1' },
+      { file: new File(['y'], 'EURUSD_H1.csv'), instrument: 'EURUSD', data: 'h1' },
+    ];
 
-    const result = await importJson(file);
+    const outcome = await importFiles('Demo & Server', 'Europe/Athens', files);
 
-    const call = backend.callsTo('POST', '/api/v1/market-data/imports/json')[0];
-    expect(call?.contentType).toBe('application/json');
-    expect(call?.body).toBe(file);
-    expect(result).toMatchObject({ kind: 'candles', accepted: 3, rejectedCount: 0 });
+    const call = backend.callsTo('POST', '/api/v1/market-data/imports')[0];
+    expect(call?.contentType).toBeNull();
+    expect(readForm(call?.body)).toEqual({
+      broker: 'Demo & Server',
+      timezone: 'Europe/Athens',
+      files: ['a.json', 'EURUSD_H1.csv'],
+      instrument: ['', 'EURUSD'],
+      data: ['m1', 'h1'],
+    });
+    expect(outcome).toMatchObject({ importedCount: 2, refusedCount: 0 });
+    expect(outcome.files[1]?.result).toMatchObject({ kind: 'candles', accepted: 3, rejectedCount: 0 });
   });
 
-  it('names what the CSV file does not contain in the query and sends the file as text/csv', async () => {
-    const file = new Blob(['x']);
+  it('sends no time zone if none is given', async () => {
+    await importFiles('B', '', [{ file: new File(['x'], 'a.json'), instrument: '', data: '' }]);
 
-    await importCsv(file, { kind: 'candles', broker: 'A B&C', instrument: 'EURUSD', timeUnit: 'h4', timezone: 'Europe/Athens' });
-
-    const call = backend.callsTo('POST', '/api/v1/market-data/imports/csv')[0];
-    expect(call?.contentType).toBe('text/csv');
-    expect(call?.query.get('broker')).toBe('A B&C');
-    expect(call?.query.get('time_unit')).toBe('h4');
-    expect(call?.query.get('timezone')).toBe('Europe/Athens');
-    expect(call?.query.get('kind')).toBe('candles');
-    expect(call?.body).toBe(file);
+    expect(readForm(backend.calls.at(-1)?.body).timezone).toBeNull();
   });
 
-  it('turns an error status into an ApiError with the body', async () => {
-    backend.importAnswer = () => json(422, { detail: 'The file is refused.', code: 'no_rows', message: 'm' });
+  it('reads a result per file with a refused file beside a taken one', async () => {
+    backend.importAnswer = () =>
+      json(200, {
+        files: [takenJson('a.json', { rejected: [{ row: 3, reason: 'high_below_open' }], rejected_count: 1 }), refusedJson('b.json', 'json_invalid')],
+        imported_count: 1,
+        refused_count: 1,
+      });
 
-    const error = await importJson(new Blob(['{}'])).catch((e: unknown) => e);
+    const outcome = await importFiles('B', '', [
+      { file: new File(['x'], 'a.json'), instrument: '', data: '' },
+      { file: new File(['x'], 'b.json'), instrument: '', data: '' },
+    ]);
+
+    expect(outcome.files[0]?.result?.rejected).toEqual([{ row: 3, reason: 'high_below_open' }]);
+    expect(outcome.files[1]).toMatchObject({ refused: true, result: null, error: 'json_invalid' });
+  });
+
+  it('turns an import that is refused as a whole into an ApiError with the body', async () => {
+    backend.importAnswer = () => json(413, { detail: 'The import is refused as a whole.', code: 'too_many_files', message: 'm' });
+
+    const error = await importFiles('B', '', [{ file: new File(['x'], 'a.json'), instrument: '', data: '' }]).catch(
+      (e: unknown) => e,
+    );
 
     expect(error).toBeInstanceOf(ApiError);
-    expect((error as ApiError).status).toBe(422);
-    expect((error as ApiError).body).toMatchObject({ code: 'no_rows' });
+    expect((error as ApiError).status).toBe(413);
+    expect((error as ApiError).body).toMatchObject({ code: 'too_many_files' });
   });
 
-  it('refuses an import result of another form', async () => {
-    backend.importAnswer = () => json(200, importResultJson({ kind: 'other' }));
+  it('refuses an answer with another number of results and a result of another kind', async () => {
+    backend.importAnswer = () => json(200, { files: [], imported_count: 0, refused_count: 0 });
+    const one = [{ file: new File(['x'], 'a.json'), instrument: '', data: '' }];
 
-    await expect(importJson(new Blob(['{}']))).rejects.toBeInstanceOf(UnexpectedAnswerError);
-  });
-});
+    await expect(importFiles('B', '', one)).rejects.toBeInstanceOf(UnexpectedAnswerError);
 
-describe('acquisition', () => {
-  it('starts with the parts and reads the state', async () => {
-    backend.acquisitionStart = () => json(202, acquisitionJson('running', { state: 'running' }));
-    backend.acquisitionStates = [acquisitionJson('finished', { state: 'failed', error: { code: 'no_data', reason: 'r', file_error: null } })];
-
-    const started = await startAcquisition([{ kind: 'instrument', instrument: 'EURUSD' }]);
-    const finished = await fetchAcquisition(started.id);
-
-    expect(backend.callsTo('POST', '/api/v1/market-data/acquisitions')[0]?.body).toEqual({
-      parts: [{ kind: 'instrument', instrument: 'EURUSD' }],
-    });
-    expect(started.state).toBe('running');
-    expect(started.parts[0]?.request).toMatchObject({ kind: 'candles', time_unit: 'h1' });
-    expect(finished.parts[0]?.error).toEqual({ code: 'no_data', reason: 'r', fileError: null });
-  });
-
-  it('asks for the state with the identifier in the path, quoted', async () => {
-    backend.acquisitionStates = [acquisitionJson('finished', { state: 'queued' })];
-
-    await fetchAcquisition('a b');
-
-    expect(backend.calls.at(-1)?.path).toBe('/api/v1/market-data/acquisitions/a%20b');
+    backend.importAnswer = () =>
+      json(200, { files: [takenJson('a.json', { kind: 'other' })], imported_count: 1, refused_count: 0 });
+    await expect(importFiles('B', '', one)).rejects.toBeInstanceOf(UnexpectedAnswerError);
   });
 });
 

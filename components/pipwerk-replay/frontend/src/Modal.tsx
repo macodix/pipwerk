@@ -12,8 +12,11 @@ type ModalProps = {
   footer: ReactNode;
   testid: string;
   wide?: boolean;
-  /** The element that gets the focus when the dialog opens; the first button of the footer if absent. */
-  initialFocus?: 'first-field' | 'footer';
+  /**
+   * The element that gets the focus when the dialog opens: the first field, the first button of
+   * the body, or (if absent) the first button of the footer.
+   */
+  initialFocus?: 'first-field' | 'first-button' | 'footer';
 };
 
 /**
@@ -35,10 +38,14 @@ export function Modal({ open, onClose, title, icon, children, footer, testid, wi
     if (open && !dialog.open) {
       dialog.showModal();
       // The dialog is not displayed before `showModal()`, so the focus is set here.
-      const target =
-        initialFocus === 'first-field'
-          ? dialog.querySelector<HTMLElement>('input, select, textarea')
-          : dialog.querySelector<HTMLElement>('.modal-foot button');
+      let target: HTMLElement | null;
+      if (initialFocus === 'first-field') {
+        target = dialog.querySelector<HTMLElement>('input, select, textarea');
+      } else if (initialFocus === 'first-button') {
+        target = dialog.querySelector<HTMLElement>('.modal-body button:not([disabled])');
+      } else {
+        target = dialog.querySelector<HTMLElement>('.modal-foot button');
+      }
       (target ?? dialog.querySelector<HTMLElement>('button'))?.focus();
     } else if (!open && dialog.open) {
       dialog.close();

@@ -1,10 +1,30 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
-import { GAPPY_CSV, chooseView, expect, importCsv, mt5Candles, hourly, openApp, test } from './fixtures';
+import {
+  FAULTY_CSV,
+  GAPPY_CSV,
+  candlesDocument,
+  chooseImportFiles,
+  chooseView,
+  csvFile,
+  expect,
+  fillImportBasics,
+  importItem,
+  jsonFile,
+  openApp,
+  openImportDialog,
+  runImport,
+  seedStock,
+  test,
+} from './fixtures';
 
 // German texts that must not be in the English interface: umlauts, the sharp s and German
 // words that are no English words. Names the test entered itself are not German.
-const GERMAN = /[äöüÄÖÜß]|\b(der|die|das|und|nicht|ist|keine|kein|Datei|Zeitraum|Zeilen|Fehler|Konto|Testkonto|Testkonten|Datenbestand|Beschaffung|Quelle|Kerzen|Zeiteinheit|Hebel|Speichern|Löschen|Schließen|Menü|Sprache|Stand|Lücken|Menge|Zeiträume)\b/;
+const GERMAN = /[äöüÄÖÜß]|\b(der|die|das|und|nicht|ist|keine|kein|Datei|Dateien|Zeitraum|Zeilen|Fehler|Konto|Testkonto|Testkonten|Datenbestand|Beschaffung|Quelle|Kerzen|Zeiteinheit|Hebel|Speichern|Löschen|Schließen|Menü|Sprache|Stand|Lücken|Menge|Zeiträume|Kontraktdaten|Reihen|Seite|Zurück|Weiter)\b/;
+
+// English words that must not be in the German interface (the names of the data and of the
+// brokers are the exception: they are written by the test).
+const ENGLISH = /\b(The|This|data stock|Next step|Candles|Import files|Contract data|Gaps|Previous|Page)\b/;
 
 async function visibleText(page: Page): Promise<string> {
   // The text of what the user sees: the page without the license text (English by origin).
@@ -43,7 +63,7 @@ test('stores the language in the backend and keeps it after a reload', async ({ 
   await expect(page.getByTestId('menu-data')).toContainText('Data stock');
 });
 
-test('shows no German text in the English interface', async ({ page }) => {
+test('shows no German text in the English interface', async ({ page, stack }) => {
   await openApp(page);
   await setLanguage(page, 'en');
 
@@ -51,25 +71,60 @@ test('shows no German text in the English interface', async ({ page }) => {
   await expect(page.getByTestId('stock-empty')).toContainText('The data stock is empty.');
   expect(await visibleText(page)).not.toMatch(GERMAN);
 
-  // Data stock with data, an import result with rejected rows, an acquisition that fails.
-  const rows = [hourly(8), hourly(9), hourly(10)];
-  rows[1] = ['2026.01.05', '09:00:00', '1.1', '1.0', '1.2', '1.1', '1', '0', '1'];
-  await importCsv(page, { content: mt5Candles(rows), broker: 'Test-Broker', instrument: 'EURUSD', timeUnit: 'h1', timezone: 'UTC' });
-  await expect(page.getByTestId('import-rejected-row')).toContainText('High is below open.');
-  await page.getByTestId('proc-instrument').fill('NOSUCHSYMBOL');
-  await page.getByTestId('proc-start').click();
-  await expect(page.getByTestId('proc-result')).toHaveAttribute('data-state', 'failed', { timeout: 30_000 });
-  await expect(page.getByTestId('proc-error-text')).toContainText('The instrument is unknown at the broker.');
-  // A file of another kind and a refused file.
-  await page.getByTestId('import-file').setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('x') });
-  await expect(page.getByTestId('import-format-unknown')).toContainText('Format not recognised.');
+  // Data stock with data: table, details of rows with and without contract data.
+  await seedStock(stack.backendUrl);
+  await page.reload();
+  await expect(page.getByTestId('stock-row')).toHaveCount(5);
+  await expect(page.getByTestId('stock-count')).toHaveText('1–5 of 5 series');
   expect(await visibleText(page)).not.toMatch(GERMAN);
-  await page.getByTestId('import-file').setInputFiles({ name: 'x.csv', mimeType: 'text/csv', buffer: Buffer.from(GAPPY_CSV) });
-  await page.getByTestId('import-instrument').fill('EURUSD');
-  await page.getByTestId('import-timezone').fill('Europe/Nowhere');
+  await page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-data="h1"]').click();
+  await expect(page.getByTestId('contract-contractSize')).toBeVisible();
+  await expect(page.getByTestId('detail-gaps')).toContainText('Gaps');
+  expect(await visibleText(page)).not.toMatch(GERMAN);
+  await page.locator('[data-testid="stock-row"][data-instrument="GBPUSD"][data-data="h4"]').click();
+  await expect(page.getByTestId('contract-missing')).toContainText('A test run with this instrument does not start then.');
+  expect(await visibleText(page)).not.toMatch(GERMAN);
+  await page.getByTestId('filter-instrument').fill('nothing');
+  await expect(page.getByTestId('stock-nomatch')).toContainText('No series matches the filter.');
+  expect(await visibleText(page)).not.toMatch(GERMAN);
+
+  // The dialog: empty, with files that need an entry, with a result per file and rejected rows.
+  await openImportDialog(page);
+  await expect(page.getByTestId('import-empty')).toContainText('Next step: choose files');
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  const faulty = csvFile('EURUSD_H1_202601050000_202601050300.csv', FAULTY_CSV);
+  const unknown = csvFile('export.csv', GAPPY_CSV);
+  const broken = { name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{ not json', 'utf-8') };
+  await chooseImportFiles(page, [faulty, unknown, broken]);
+  await expect(importItem(page, unknown.name).getByTestId('import-missing')).toContainText('Instrument or data not recognised.');
+  await expect(importItem(page, broken.name).getByTestId('import-unreadable')).toContainText('The file is not valid JSON.');
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  await expect(page.getByTestId('import-hint')).toContainText('Next step');
+  await importItem(page, unknown.name).getByTestId('import-instrument').fill('EURUSD');
+  await importItem(page, unknown.name).getByTestId('import-data').selectOption('h1');
+  await fillImportBasics(page, { broker: 'Test-Broker', timezone: 'Europe/Nowhere' });
+  await runImport(page);
+  await expect(importItem(page, unknown.name).getByTestId('import-result')).toContainText('The time zone is unknown.');
+  await expect(importItem(page, broken.name).getByTestId('import-result')).toContainText('Refused: The file is not valid JSON.');
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  await fillImportBasics(page, { timezone: 'UTC' });
+  await runImport(page);
+  await expect(importItem(page, faulty.name).getByTestId('import-rejected-row')).toContainText(/^Row 3: High is below /);
+  await expect(page.getByTestId('import-summary')).toContainText('files are imported.');
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  await page.getByTestId('import-close').click();
+
+  // The broker for test runs and the error when the backend is gone.
+  expect(await visibleText(page)).not.toMatch(GERMAN);
+  await page.getByTestId('import-open').click();
+  await page.getByTestId('import-files').setInputFiles(jsonFile('a.json', candlesDocument({ broker: 'B', instrument: 'EURUSD', unit: 'h1', hours: [8] })));
+  await expect(page.getByTestId('import-item')).toHaveCount(1);
+  await stack.stopBackend();
   await page.getByTestId('import-run').click();
-  await expect(page.getByTestId('import-error')).toContainText('The time zone is unknown.');
-  expect(await visibleText(page)).not.toMatch(GERMAN);
+  await expect(page.getByTestId('import-error')).toContainText('Next step');
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  await page.getByTestId('import-close').click();
+  await stack.startBackend();
 
   // Test accounts, with an invalid value and the question before deleting.
   await chooseView(page, 'accounts');
@@ -92,56 +147,98 @@ test('shows no German text in the English interface', async ({ page }) => {
   await page.getByTestId('about-close').click();
 });
 
-test('shows no English text in the German interface of a view', async ({ page }) => {
+test('shows no English text in the German interface', async ({ page, stack }) => {
+  await seedStock(stack.backendUrl);
   await openApp(page);
+  await expect(page.getByTestId('stock-row')).toHaveCount(5);
+  await page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-data="h1"]').click();
+  await expect(page.getByTestId('contract-contractSize')).toBeVisible();
 
   const text = await visibleText(page);
 
-  expect(text).toContain('Datenbestand historischer Kursdaten');
-  expect(text).not.toMatch(/\b(The|This|data stock|Next step|Candles|Import a file)\b/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Datenbestand');
+  expect(text).toContain('Datenreihen');
+  expect(text).toContain('Kontraktdaten');
+  expect(text).not.toMatch(ENGLISH);
+  await openImportDialog(page);
+  await chooseImportFiles(page, [csvFile('export.csv', GAPPY_CSV)]);
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(ENGLISH);
 });
 
-test('explains every field to the mouse and to the keyboard', async ({ page }) => {
-  await openApp(page);
-  await page.getByTestId('import-file').setInputFiles({ name: 'x.csv', mimeType: 'text/csv', buffer: Buffer.from(GAPPY_CSV) });
+/** The element is what a user sees at its place: nothing (a dialog, for example) covers it. */
+async function expectOnTop(element: Locator): Promise<void> {
+  const covered = await element.evaluate((node) => {
+    // The explanation lets mouse events pass; for the measurement it does not.
+    const html = node as HTMLElement;
+    const before = html.style.pointerEvents;
+    html.style.pointerEvents = 'auto';
+    const box = html.getBoundingClientRect();
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    html.style.pointerEvents = before;
+    return top === null || !html.contains(top);
+  });
+  expect(covered, 'the explanation is covered by another element').toBe(false);
+}
 
-  for (const view of ['data', 'accounts'] as const) {
-    await chooseView(page, view);
-    if (view === 'accounts') {
-      // The form appears when the test accounts are read.
-      await expect(page.getByTestId('account-name')).toBeVisible();
-    }
-    const fields = page.locator('[data-testid^="field-"]');
-    const count = await fields.count();
-    expect(count).toBeGreaterThan(5);
-    for (let index = 0; index < count; index += 1) {
-      const field = fields.nth(index);
-      const label = field.locator('.field-label');
-      const expected = (await label.getAttribute('data-tip')) ?? '';
-      expect(expected.length, `field ${String(index)} of ${view}`).toBeGreaterThan(10);
-      // Mouse: pointing at the label shows the explanation.
-      await field.scrollIntoViewIfNeeded();
-      await label.hover();
-      await expect(page.getByTestId('tooltip')).toHaveText(expected);
-      await page.mouse.move(0, 0);
-      await expect(page.getByTestId('tooltip')).toHaveCount(0);
-      // Keyboard: the symbol is reached with focus and shows the same text.
-      await field.locator('.info').focus();
-      await expect(page.getByTestId('tooltip')).toHaveText(expected);
-      await field.locator('.info').blur();
-      await expect(page.getByTestId('tooltip')).toHaveCount(0);
-    }
-    if (view === 'data') {
-      // The import fields exist only after a CSV file is chosen; stay on the data view for the next round.
-      await expect(page.getByTestId('field-import-timezone')).toBeVisible();
-    }
+/** Every field in `scope` shows its explanation to the mouse and to the keyboard. */
+async function expectExplanations(page: Page, scope: Locator, minimum: number): Promise<void> {
+  const fields = scope.locator('[data-testid^="field-"]');
+  const count = await fields.count();
+  expect(count).toBeGreaterThanOrEqual(minimum);
+  for (let index = 0; index < count; index += 1) {
+    const field = fields.nth(index);
+    const label = field.locator('.field-label');
+    const expected = (await label.getAttribute('data-tip')) ?? '';
+    expect(expected.length, `field ${String(index)}`).toBeGreaterThan(10);
+    // Mouse: pointing at the label shows the explanation.
+    await field.scrollIntoViewIfNeeded();
+    await label.hover();
+    await expect(page.getByTestId('tooltip')).toHaveText(expected);
+    await expectOnTop(page.getByTestId('tooltip'));
+    await page.mouse.move(0, 0);
+    await expect(page.getByTestId('tooltip')).toHaveCount(0);
+    // Keyboard: the symbol is reached with focus and shows the same text.
+    await field.locator('.info').focus();
+    await expect(page.getByTestId('tooltip')).toHaveText(expected);
+    await expectOnTop(page.getByTestId('tooltip'));
+    await field.locator('.info').blur();
+    await expect(page.getByTestId('tooltip')).toHaveCount(0);
   }
+}
+
+test('explains every field to the mouse and to the keyboard', async ({ page, stack }) => {
+  await seedStock(stack.backendUrl);
+  await openApp(page);
+  await expect(page.getByTestId('stock-row')).toHaveCount(5);
+
+  // The bar and the filters of the data stock.
+  await expectExplanations(page, page.getByTestId('data'), 4);
+  // A row shows its explanation, too, when it has the focus (keyboard) or the mouse is over it.
+  const row = page.getByTestId('stock-row').first();
+  await row.focus();
+  await expect(page.getByTestId('tooltip')).toHaveText('Klicken zeigt die Einzelheiten dieser Reihe.');
+  await page.mouse.move(0, 0);
+
+  // The fields of the dialog: broker, time zone, instrument and data of a file.
+  await openImportDialog(page);
+  await chooseImportFiles(page, [csvFile('export.csv', GAPPY_CSV)]);
+  await expectExplanations(page, page.getByTestId('dialog-import'), 4);
+  await page.getByTestId('import-close').click();
+
+  await chooseView(page, 'accounts');
+  await expect(page.getByTestId('account-name')).toBeVisible();
+  await expectExplanations(page, page.getByTestId('accounts'), 5);
 });
 
 test('stores nothing in the browser', async ({ page }) => {
   await openApp(page);
   await setLanguage(page, 'en');
-  await importCsv(page, { content: GAPPY_CSV, broker: 'Test-Broker', instrument: 'EURUSD', timeUnit: 'h1', timezone: 'UTC' });
+  await openImportDialog(page);
+  await chooseImportFiles(page, [csvFile('EURUSD_H1_202601050000_202601052300.csv', GAPPY_CSV)]);
+  await fillImportBasics(page, { broker: 'Test-Broker', timezone: 'UTC' });
+  await runImport(page);
+  await page.getByTestId('import-close').click();
+  await page.getByTestId('select-test-broker').selectOption('Test-Broker');
   await chooseView(page, 'accounts');
   await page.getByTestId('account-new').click();
   await page.getByTestId('account-save').click();

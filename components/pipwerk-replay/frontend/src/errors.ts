@@ -1,6 +1,5 @@
 // Texts for errors of requests. The backend answers with fixed English texts and codes; the
-// interface shows its own texts in the chosen language (the backend text only for a code it does
-// not know).
+// interface shows its own texts in the chosen language, each with the next step.
 import type { TFunction } from 'i18next';
 
 import { ApiError } from './http';
@@ -17,7 +16,11 @@ export const FILE_ERROR_CODES = [
   'timezone_unknown',
   'period_invalid',
   'no_rows',
+  'store_failed',
 ] as const;
+
+/** The codes of an import that is refused as a whole (`BatchErrorCode`). */
+export const BATCH_ERROR_CODES = ['no_files', 'too_many_files', 'batch_too_large'] as const;
 
 /** The reasons for a rejected row (`RejectReason` of the data stock). */
 export const REJECT_REASONS = [
@@ -39,30 +42,6 @@ export const REJECT_REASONS = [
   'low_above_close',
 ] as const;
 
-/** The codes of a failed part of an acquisition (source and pipwerk replay). */
-export const ACQUISITION_ERROR_CODES = [
-  'no_source',
-  'unauthorized',
-  'host_not_allowed',
-  'body_too_large',
-  'invalid_request',
-  'not_found',
-  'symbol_unknown',
-  'no_data',
-  'range_too_large',
-  'terminal_unavailable',
-  'broker_error',
-  'broker_unknown',
-  'invalid_broker_data',
-  'internal_error',
-  'source_unreachable',
-  'source_response_invalid',
-  'source_response_too_large',
-  'import_refused',
-  'data_store_error',
-  'acquisition_failed',
-] as const;
-
 function isOneOf<T extends string>(list: readonly T[], value: unknown): value is T {
   return typeof value === 'string' && (list as readonly string[]).includes(value);
 }
@@ -75,40 +54,21 @@ export function fileErrorText(t: TFunction, code: unknown): string {
   return isOneOf(FILE_ERROR_CODES, code) ? t(`import.fileError.${code}`) : t('import.fileError.unknown');
 }
 
-/**
- * The text for a failed part of an acquisition or a refused start. A code the interface
- * knows gets its own text; for another one the reason of the backend is shown (a German text).
- */
-export function acquisitionErrorText(
-  t: TFunction,
-  code: string,
-  reason: string,
-  fileError: string | null,
-): string {
-  if (code === 'import_refused' && fileError !== null) {
-    return t('acquire.errors.import_refused_with', { reason: fileErrorText(t, fileError) });
-  }
-  if (isOneOf(ACQUISITION_ERROR_CODES, code)) {
-    return t(`acquire.errors.${code}`);
-  }
-  return reason;
-}
-
 /** The text for any error of a request, by what the backend and the network tell. */
 export function describeError(t: TFunction, error: unknown): string {
   if (error instanceof ApiError) {
     const body: unknown = error.body;
     const record =
       typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
-    if (error.status === 422 && record.detail === 'The file is refused.') {
-      return fileErrorText(t, record.code);
-    }
-    if (error.status === 409 && record.code === 'no_source') {
-      return t('acquire.errors.no_source');
+    // An import that is refused as a whole names the reason in `code`.
+    if ((error.status === 413 || error.status === 422) && isOneOf(BATCH_ERROR_CODES, record.code)) {
+      return t(`import.batchError.${record.code}`);
     }
     switch (error.status) {
       case 400:
         return t('errors.host');
+      case 403:
+        return t('errors.origin');
       case 404:
         return t('errors.notFound');
       case 413:
