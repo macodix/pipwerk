@@ -8,7 +8,8 @@ import { SIZES, openApp } from './support';
 
 type Size = { name: string; width: number; height: number };
 
-const STAGES = ['step1', 'step2', 'step3', 'step3-with-indicators', 'step4', 'step5', 'left'] as const;
+// order 05 adds the state without an open strategy and the state with the assistant stepped aside (strategy chosen)
+const STAGES = ['closed', 'step1', 'step2', 'step3', 'step3-with-indicators', 'step4', 'step5', 'left', 'step3-aside'] as const;
 type Stage = (typeof STAGES)[number];
 
 async function openMenu(page: Page, size: Size): Promise<void> {
@@ -19,12 +20,28 @@ async function prepare(page: Page, size: Size, stage: Stage): Promise<void> {
   await page.evaluate(() => { try { window.localStorage.clear(); } catch { /* ignore */ } });
   await page.reload();
   await expect(page.getByTestId('app')).toBeVisible();
+  if (stage === 'closed') {
+    if (size.width >= 1280) await page.getByTestId('menu-close').click();
+    else {
+      await page.getByTestId('menu-toggle').click();
+      await page.getByTestId('cmenu-close').click();
+    }
+    await expect(page.getByTestId('props-none')).toBeVisible();
+    return;
+  }
   if (size.width >= 1280) await page.getByTestId('menu-new').click();
   else {
     await page.getByTestId('menu-toggle').click();
     await page.getByTestId('cmenu-new').click();
   }
   await expect(page.getByTestId('wizard')).toBeVisible();
+  if (stage === 'step3-aside') {
+    await page.getByTestId('wz-next').click();
+    await page.getByTestId('wz-next').click();
+    await page.getByTestId('status-pill').click();
+    await expect(page.getByTestId('wz-resume')).toBeVisible();
+    return;
+  }
   if (stage === 'left') {
     await page.getByTestId('wz-leave').click();
     await expect(page.getByTestId('wizard')).toHaveCount(0);
@@ -101,7 +118,6 @@ for (const size of SIZES) {
       await page.getByTestId('cmenu-new').click();
     }
     await page.getByTestId('wz-leave').click();
-    if (size.width < 700) await page.getByTestId('bar-canvas').click();
     if (size.width < 1100) {
       await page.getByTestId('empty-library').click();
       await page.locator('[data-testid="lib-item"][data-lib="trigger.tick"]').click();

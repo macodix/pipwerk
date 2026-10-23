@@ -78,8 +78,7 @@ for (const size of SIZES) {
     const errors = await openApp(page, size);
     await newStrategy(page, size);
     await page.getByTestId('wz-leave').click();
-    if (size.width < 700) await page.getByTestId('bar-canvas').click();
-    await expect(page.getByTestId('canvas-empty')).toBeVisible();
+    await expect(page.getByTestId('empty-hint')).toBeVisible();
     if (size.width < 1100) {
       await page.getByTestId('empty-library').click();
       await expect(page.getByTestId('library')).toBeVisible();

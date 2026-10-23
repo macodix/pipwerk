@@ -13,7 +13,7 @@ import { defaultBinding } from './factory';
 import { isUnset, uid } from './model';
 import type { El, RuleInst, SParam, SPType, Use } from './model';
 import {
-  addParam, allTemplates, changeUse, connectObject, getState, noteValues, paramUsers, removeUse, requestRemove, runCheck, select, setHost, setRefresh, setSection, setState, toast, update, useApp,
+  addEntry, addParam, allTemplates, changeUse, connectObject, getState, noteValues, paramUsers, removeUse, requestRemove, runCheck, select, setHost, setRefresh, setSection, setState, toast, update, useApp,
 } from './store';
 import { Btn, Icon, Info, NumberInput, Section, Select, TextInput, Toggle, fmtDate, useL } from './ui';
 
@@ -145,6 +145,18 @@ export function StrategyProps({ findings }: { findings: Finding[] }) {
   const sc = scopeFor(s, app.settings.lang, null, true);
   return (
     <div className="props" ref={root} data-testid="props-strategy">
+      {s.els.length === 0 && !app.wizard && (
+        <div className="empty-card flat hint-empty" data-testid="empty-hint">
+          <Icon name="wand" size={26} />
+          <h2>{L('Die Strategie ist leer', 'The strategy is empty')}</h2>
+          <p>{L('Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Klicken Sie in der Elementbibliothek in der Gruppe „Ablaufsteuerung“ auf „Kerzenschluss“ – oder starten Sie den Assistenten.', 'Next step: start with a trigger. It defines when the strategy calculates. In the element library, group "Flow control", click "Candle close" – or start the assistant.')}</p>
+          <div className="btn-row">
+            <Btn kind="primary" icon="wand" testid="empty-wizard" onClick={() => setState({ wizard: { step: 1 }, wzShown: true, panel: 'props' })}>{L('Assistent starten', 'Start assistant')}</Btn>
+            <Btn icon="list" className="show-lib" testid="empty-library" onClick={() => setState({ panel: 'library' })}>{L('Elementbibliothek zeigen', 'Show element library')}</Btn>
+            <Btn icon="clock" testid="empty-trigger" onClick={() => addEntry({ k: 'type', id: 'trigger.candle_close' })}>{L('Kerzenschluss einfügen', 'Insert candle close')}</Btn>
+          </div>
+        </div>
+      )}
       <header className="props-head">
         <div className="badge b-strategy"><Icon name="chart" size={20} /></div>
         <div className="props-title">

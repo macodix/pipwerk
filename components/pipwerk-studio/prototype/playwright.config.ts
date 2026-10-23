@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'list',
   use: { trace: 'off' },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testMatch: /(build-str03|build-str01|layout|features|objects|names|assistant|buttons|smoke)\.spec\.ts/ },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testMatch: /(build-str03|build-str01|layout|features|objects|names|assistant|properties-only|buttons|smoke)\.spec\.ts/ },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testMatch: /smoke\.spec\.ts/ },
     { name: 'webkit', use: { ...devices['Desktop Safari'] }, testMatch: /smoke\.spec\.ts/ },
     { name: 'screenshots', use: { ...devices['Desktop Chrome'] }, testMatch: /screenshots\.spec\.ts/ },

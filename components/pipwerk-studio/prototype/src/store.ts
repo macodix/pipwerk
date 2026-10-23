@@ -66,6 +66,8 @@ export interface State {
   checked: boolean;
   tplView: TplView | null;
   wizard: Wizard | null;
+  /** The assistant runs and is shown; false while the properties view shows a selection and offers to continue. */
+  wzShown: boolean;
   dialog: Dialog | null;
   panel: Panel;
   orient: Dir;
@@ -119,7 +121,7 @@ function initialState(): State {
   const settings: Settings = stored?.settings ?? { lang: 'de', objectDir: DEFAULT_DIR };
   const first = clone(saved.find((x) => x.sample === 'auftraggeber') as Strategy);
   return {
-    settings, saved, templates, strategy: first, dirty: false, sel: { k: 'strategy' }, checked: false, tplView: null, wizard: null,
+    settings, saved, templates, strategy: first, dirty: false, sel: { k: 'strategy' }, checked: false, tplView: null, wizard: null, wzShown: true,
     dialog: null, panel: 'canvas', orient: stored?.orient ?? 'v', wires: 'sel', armed: null, lastAdded: null, toast: null, focusField: null,
     menuOpen: false, openCount: 1,
   };
@@ -205,7 +207,8 @@ export function isNarrow(): boolean {
 
 /** Selecting something: in the middle layout the side area switches to the properties. */
 export function select(sel: Sel, panel?: Panel) {
-  setState({ sel, armed: null, ...(panel ? { panel } : isMid() && state.panel === 'library' ? { panel: 'props' as Panel } : {}) });
+  // a running assistant steps aside: the properties view shows the selection and offers to continue
+  setState({ sel, armed: null, ...(state.wizard ? { wzShown: false } : {}), ...(panel ? { panel } : isMid() && state.panel === 'library' ? { panel: 'props' as Panel } : {}) });
 }
 
 // ---- strategy lifecycle ---------------------------------------------------------
@@ -225,7 +228,7 @@ export function newStrategyAction() {
     const names = state.saved.map((x) => x.name);
     const s = newStrategy(uniqueName(state.settings.lang === 'en' ? 'New strategy' : 'Neue Strategie', names));
     setState({
-      strategy: s, dirty: true, sel: { k: 'strategy' }, checked: false, wizard: { step: 1 }, dialog: null, panel: 'props',
+      strategy: s, dirty: true, sel: { k: 'strategy' }, checked: false, wizard: { step: 1 }, wzShown: true, dialog: null, panel: 'props',
       openCount: state.openCount + 1, armed: null, menuOpen: false,
     });
   };
@@ -257,7 +260,8 @@ export function saveStrategy(): boolean {
 
 export function closeStrategy() {
   guard('strategy', () => {
-    setState({ strategy: null, dirty: false, sel: { k: 'strategy' }, wizard: null, checked: false, dialog: null, armed: null, menuOpen: false });
+    // the hint "No strategy open" stands in the properties view, so that is what small windows show
+    setState({ strategy: null, dirty: false, sel: { k: 'strategy' }, wizard: null, checked: false, dialog: null, armed: null, menuOpen: false, panel: 'props' });
   });
 }
 
@@ -265,7 +269,7 @@ export function deleteStrategyConfirmed() {
   const s = state.strategy;
   if (!s) return;
   setState({
-    saved: state.saved.filter((x) => x.id !== s.id), strategy: null, dirty: false, dialog: null, wizard: null, checked: false,
+    saved: state.saved.filter((x) => x.id !== s.id), strategy: null, dirty: false, dialog: null, wizard: null, checked: false, panel: 'props',
   }, true);
   toast('Die Strategie ist gelöscht.', 'The strategy has been deleted.');
 }

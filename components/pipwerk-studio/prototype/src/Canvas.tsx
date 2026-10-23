@@ -10,7 +10,7 @@ import type { El, Strategy } from './model';
 import { kindClass } from './Properties';
 import { CARD_W, EL_H, EL_W, ROW_H, SEC_H, buildScene, dataPort, inPort, outPort, pathThrough, wirePath } from './scene';
 import type { Box, Scene } from './scene';
-import { addEntry, connect, connectObject, disconnect, getState, isObjectEntry, newStrategyAction, select, setOrient, setState, toast, update, useApp } from './store';
+import { addEntry, connect, connectObject, disconnect, getState, isObjectEntry, select, setOrient, setState, toast, update, useApp } from './store';
 import type { LibEntry } from './store';
 import { cardSubtitle, summaryOf } from './summary';
 import { Btn, Icon, useL } from './ui';
@@ -38,6 +38,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
   const scene = useMemo(() => (s ? buildScene(s, dir) : null), [s, dir]);
   const wrap = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 40, y: 40, z: 1 });
+  const fittedHidden = useRef(false);
   const viewRef = useRef(view);
   viewRef.current = view;
   const interact = useRef<Interact | null>(null);
@@ -52,6 +53,8 @@ export function Canvas({ findings }: { findings: Finding[] }) {
     if (!el || !st) return;
     const vw = el.clientWidth;
     const vh = el.clientHeight;
+    // a canvas that is not shown (small windows) has no size: fit again when it is shown for the first time
+    fittedHidden.current = vw === 0;
     const sceneNow = buildScene(st, getState().orient);
     const b = sceneNow.bounds;
     if (st.els.length === 0) {
@@ -104,7 +107,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
     if (!el || typeof ResizeObserver === 'undefined') return;
     let first = true;
     const ro = new ResizeObserver(() => {
-      if (first) { first = false; fit(); }
+      if (first) { first = false; fit(); } else if (fittedHidden.current && el.clientWidth > 0) fit();
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -247,7 +250,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
         if (it.frame) select({ k: 'frame', id: it.frame });
         else {
           setSelEdge(null);
-          setState({ armed: null, wizard: getState().wizard, sel: { k: 'strategy' } });
+          select({ k: 'strategy' });
         }
       }
     } else if (it.k === 'node') {
@@ -265,7 +268,6 @@ export function Canvas({ findings }: { findings: Finding[] }) {
       }
       else if (armed && armed.from !== it.id) connect(armed.from, armed.out, it.id);
       else {
-        setState({ wizard: null });
         select({ k: 'el', id: it.id });
         setSelEdge(null);
       }
@@ -287,7 +289,6 @@ export function Canvas({ findings }: { findings: Finding[] }) {
           });
         }
       } else if (!it.moved) {
-        setState({ wizard: null });
         select({ k: 'el', id: it.obj });
       }
     }
@@ -353,21 +354,8 @@ export function Canvas({ findings }: { findings: Finding[] }) {
   };
 
   if (!s || !scene || !sc) {
-    return (
-      <div className="canvas" ref={wrap} data-region="canvas" data-testid="canvas">
-        <div className="canvas-empty" data-testid="canvas-no-strategy">
-          <div className="empty-card">
-            <Icon name="chart" size={30} />
-            <h2>{L('Keine Strategie geöffnet', 'No strategy open')}</h2>
-            <p>{L('Nächster Schritt: Legen Sie eine neue Strategie an – der Assistent startet dann von selbst – oder öffnen Sie eine vorhandene.', 'Next step: create a new strategy – the assistant then starts on its own – or open an existing one.')}</p>
-            <div className="btn-row">
-              <Btn kind="primary" icon="plus" testid="empty-new" onClick={newStrategyAction}>{L('Neue Strategie', 'New strategy')}</Btn>
-              <Btn icon="folder" testid="empty-open" onClick={() => setState({ dialog: { k: 'open' } })}>{L('Öffnen', 'Open')}</Btn>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    // no hint here: "No strategy open" stands in the properties view only (req-ui-016)
+    return <div className="canvas" ref={wrap} data-region="canvas" data-testid="canvas" />;
   }
 
   const sel = app.sel;
@@ -553,21 +541,6 @@ export function Canvas({ findings }: { findings: Finding[] }) {
         </div>
       </div>
 
-      {s.els.length === 0 && !app.wizard && (
-        <div className="canvas-empty" data-testid="canvas-empty">
-          <div className="empty-card">
-            <Icon name="wand" size={28} />
-            <h2>{L('Die Zeichenfläche ist leer', 'The canvas is empty')}</h2>
-            <p>{L('Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Klicken Sie in der Elementbibliothek in der Gruppe „Ablaufsteuerung“ auf „Kerzenschluss“ – oder starten Sie den Assistenten.', 'Next step: start with a trigger. It defines when the strategy calculates. In the element library, group "Flow control", click "Candle close" – or start the assistant.')}</p>
-            <div className="btn-row">
-              <Btn kind="primary" icon="wand" testid="empty-wizard" onClick={() => setState({ wizard: { step: 1 }, panel: 'props' })}>{L('Assistent starten', 'Start assistant')}</Btn>
-              <Btn icon="list" className="show-lib" testid="empty-library" onClick={() => setState({ panel: 'library' })}>{L('Elementbibliothek zeigen', 'Show element library')}</Btn>
-              <Btn icon="clock" testid="empty-trigger" onClick={() => addEntry({ k: 'type', id: 'trigger.candle_close' })}>{L('Kerzenschluss einfügen', 'Insert candle close')}</Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
       <details className="legend" data-nodrag>
         <summary>{L('Legende', 'Legend')}</summary>
         <div className="legend-row"><svg width="46" height="12"><path d="M2 6 H36" className="edge-line" /><path d="M34 2 L42 6 L34 10z" className="arrow-head" /></svg><span>{L('Ablauf: legt die Reihenfolge fest', 'Flow: defines the order')}</span></div>
@@ -617,7 +590,7 @@ function NodeView({
       data-type={el.type}
       data-testid="node"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setState({ sel: { k: 'el', id: el.id }, wizard: null }); } }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select({ k: 'el', id: el.id }); } }}
       aria-label={`${d ? typeLabel(el.type, lang) : el.type}: ${el.name}`}
     >
       {!trigger && <span className="port in" style={portStyle(inPort({ x: 0, y: 0, w: box.w, h: box.h }, dir))} data-testid="port-in" />}
@@ -685,7 +658,7 @@ function CardView({
       data-type={el.type}
       data-testid="card"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setState({ sel: { k: 'el', id: el.id }, wizard: null }); } }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select({ k: 'el', id: el.id }); } }}
       aria-label={`${typeLabel(el.type, lang)}: ${el.name}`}
     >
       {wireCount > 0 && <span className="port data" style={portStyle(dataPort({ x: 0, y: 0, w: geo.w, h: geo.h }, dir))} />}

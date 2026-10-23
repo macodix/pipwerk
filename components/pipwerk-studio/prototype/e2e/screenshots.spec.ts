@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clickNode, newStrategyFromScratch, reveal } from './builder';
-import { SIZES, lib, node, openApp } from './support';
+import { SIZES, lib, node, openApp, selectNode } from './support';
 
 // Acceptance criterion 4: screenshots of the prototype. Run with: npm run screenshots
 const here = dirname(fileURLToPath(import.meta.url));
@@ -107,6 +107,35 @@ test.describe('notebook 1366 x 768', () => {
     await openApp(page, { width: 1366, height: 768 });
     await page.getByTestId('menu-new').click();
     await shot(page, 'neue-strategie-1366x768.png');
+  });
+
+  // order 05: hints and assistant only in the properties view
+  for (const [w, h] of [[1366, 768], [390, 844]] as const) {
+    test(`no strategy open, ${w} x ${h}`, async ({ page }) => {
+      await openApp(page, { width: w, height: h });
+      if (w >= 1280) await page.getByTestId('menu-close').click();
+      else {
+        await page.getByTestId('menu-toggle').click();
+        await page.getByTestId('cmenu-close').click();
+      }
+      await shot(page, `keine-strategie-${w}x${h}.png`);
+    });
+  }
+
+  test('after "New strategy", 390 x 844', async ({ page }) => {
+    await openApp(page, { width: 390, height: 844 });
+    await page.getByTestId('menu-toggle').click();
+    await page.getByTestId('cmenu-new').click();
+    await shot(page, 'neue-strategie-390x844.png');
+  });
+
+  test('element selected while the assistant runs', async ({ page }) => {
+    await openApp(page, { width: 1366, height: 768 });
+    await page.getByTestId('menu-new').click();
+    await page.getByTestId('wz-next').click();
+    await page.getByTestId('wz-next').click();
+    await selectNode(page, 'Kerzenschluss');
+    await shot(page, 'assistent-element-gewaehlt-1366x768.png');
   });
 
   test('assistant', async ({ page }) => {

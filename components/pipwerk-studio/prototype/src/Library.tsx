@@ -6,7 +6,7 @@ import type { GroupId, Template } from './model';
 import { addEntry, allTemplates, openTemplate, setState, templateLibraryGroup, useApp } from './store';
 import type { LibEntry } from './store';
 import { LIB_LABEL } from './catalog';
-import { Btn, Icon, useL } from './ui';
+import { Btn, Icon, PropsMark, useL } from './ui';
 import { kindClass } from './Properties';
 
 interface Item {
@@ -136,6 +136,7 @@ export function PanelTabs() {
       {tabs.map(([id, label]) => (
         <button key={id} type="button" role="tab" aria-selected={(id === 'library') === (app.panel === 'library')} className={(id === 'library') === (app.panel === 'library') ? 'on' : ''} onClick={() => setState({ panel: id as 'library' | 'props' })} data-testid={`tab-${id}`}>
           {label}
+          {id === 'props' && app.toast && app.panel === 'library' && <PropsMark />}
         </button>
       ))}
     </div>

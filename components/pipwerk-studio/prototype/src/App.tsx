@@ -9,7 +9,7 @@ import { PropertiesPanel } from './PropertiesPanel';
 import {
   closeStrategy, newStrategyAction, runCheck, saveStrategy, select, setState, addParam, useApp,
 } from './store';
-import { Btn, Icon, TipLayer, fmtDate, useL } from './ui';
+import { Btn, Icon, PropsMark, TipLayer, fmtDate, useL } from './ui';
 
 function Header() {
   const app = useApp();
@@ -154,20 +154,10 @@ function TabBar() {
       {tabs.map(([id, label, icon]) => (
         <button key={id} type="button" role="tab" aria-selected={app.panel === id} className={app.panel === id ? 'on' : ''} onClick={() => setState({ panel: id as 'canvas' | 'library' | 'props' })} data-testid={`bar-${id}`}>
           <Icon name={icon} size={18} /><span>{label}</span>
+          {id === 'props' && app.toast && app.panel !== 'props' && <PropsMark />}
         </button>
       ))}
     </nav>
-  );
-}
-
-function Toast() {
-  const app = useApp();
-  const L = useL();
-  if (!app.toast) return null;
-  return (
-    <div className="toast" role="status" data-testid="toast">
-      <Icon name="info" size={16} /><span>{L(app.toast.de, app.toast.en)}</span>
-    </div>
   );
 }
 
@@ -187,7 +177,6 @@ export function App() {
       <TabBar />
       <Footer />
       <Dialogs />
-      <Toast />
       <TipLayer />
     </div>
   );

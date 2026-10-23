@@ -68,6 +68,12 @@ export function Icon({ name, size = 18, className = '' }: { name: string; size?:
   );
 }
 
+/** Mark on the tab of the properties view: a short message lies there while the view is hidden. */
+export function PropsMark() {
+  const L = useL();
+  return <span className="props-mark" data-testid="props-mark" role="img" aria-label={L('Neue Meldung in der Eigenschaftenansicht', 'New message in the properties view')} />;
+}
+
 /** Global layer for explanations: any element with data-tip shows its text on hover or focus. */
 export function TipLayer() {
   const [tip, setTip] = useState<{ text: string; x: number; y: number; below: boolean; side: 'top' | 'right' | 'left' } | null>(null);

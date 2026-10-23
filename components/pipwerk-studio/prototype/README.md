@@ -1,6 +1,6 @@
 # Prototyp pipwerk Studio
 
-Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). `order-04.md` (Elementbibliothek nach „Neue Strategie“ und Name „Assistent“, Einwände des Auftraggebers vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
+Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). `order-04.md` (Elementbibliothek nach „Neue Strategie“ und Name „Assistent“, Einwände des Auftraggebers vom 23. Oktober 2026) und `order-05.md` (Hinweise und Assistent nur in der Eigenschaftenansicht, Einwand des Auftraggebers vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
 
 ## Bau und Start
 
@@ -35,7 +35,8 @@ Die Tests öffnen die gebaute Datei über `file://`, also erst `npm run build`. 
 | `layout.spec.ts` | sechs Fenstergrößen mit geöffneter „EMA-Trendfolge“ |
 | `features.spec.ts` | Bibliothek mit den Gruppen, Erklärungen, Namen, Parameter, Zeichenfläche mit Ein- und Ausblenden weiterer Verwendungen, Assistent, Befunde, Regeln, Vorlagen, Öffnen und Speichern, Sprache, Einstellungen |
 | `assistant.spec.ts` | Auftrag 04: in allen sechs Fenstergrößen nach „Neue Strategie“ die Elementbibliothek über jeden Weg öffnen, bei laufendem Assistenten und nach seinem Verlassen, ein Klick fügt ein Element ein. Der gesamte sichtbare Text, die Beschriftungen für Bildschirmleser und die Erklärungen in Deutsch und Englisch nach „Neue Strategie“ und in jedem Schritt: „geführt“, „Aufbau“ und „guided“ kommen nicht vor, „Assistent“ beziehungsweise „Assistant“ kommt vor. Der Quelltext unter `src/` hat außerhalb von Kommentaren keinen solchen Text |
-| `buttons.spec.ts` | Auftrag 04, Punkt 3: in jeder der sechs Fenstergrößen nach „Neue Strategie“, in den fünf Schritten des Assistenten (Schritt 3 auch mit zwei Indikatoren) und nach „Ohne Assistent weiterarbeiten“ wird jede sichtbare, aktivierte Schaltfläche und jeder Reiter einzeln auf frischem Stand angeklickt, bis 1279 Pixel auch die Einträge des Menüs „Menü“. Danach muss sich der Inhalt der Seite geändert haben. Ausnahmen, im Test benannt: die Statusanzeige der Strategie, ein schon gewählter Reiter und ein schon gewählter Eintrag einer Auswahl (Ausrichtung, Auslöser). „Zum Anfang“ und „Neu anordnen“ ändern bei leerer Fläche nichts; ihre Funktion belegt ein eigener Test je Größe mit verschobener Ansicht und verschobenem Element |
+| `buttons.spec.ts` | Auftrag 04, Punkt 3, mit Auftrag 05, Punkt 7 (auch ohne geöffnete Strategie und bei zur Seite getretenem Assistenten mit der Zeile „Assistent fortsetzen“): in jeder der sechs Fenstergrößen nach „Neue Strategie“, in den fünf Schritten des Assistenten (Schritt 3 auch mit zwei Indikatoren) und nach „Ohne Assistent weiterarbeiten“ wird jede sichtbare, aktivierte Schaltfläche und jeder Reiter einzeln auf frischem Stand angeklickt, bis 1279 Pixel auch die Einträge des Menüs „Menü“. Danach muss sich der Inhalt der Seite geändert haben. Ausnahmen, im Test benannt: die Statusanzeige der Strategie, ein schon gewählter Reiter und ein schon gewählter Eintrag einer Auswahl (Ausrichtung, Auslöser). „Zum Anfang“ und „Neu anordnen“ ändern bei leerer Fläche nichts; ihre Funktion belegt ein eigener Test je Größe mit verschobener Ansicht und verschobenem Element |
+| `properties-only.spec.ts` | Auftrag 05: in jeder der sechs Fenstergrößen, Deutsch und Englisch, ohne geöffnete Strategie, nach „Neue Strategie“, in jedem Schritt des Assistenten und nach „Ohne Assistent weiterarbeiten“ enthält die Zeichenfläche (auch verdeckt) keinen Hinweistext und keine Schaltfläche eines Hinweises; „Keine Strategie geöffnet“ steht im sichtbaren Text außerhalb der Fußzeile genau einmal; der Hinweis der leeren Strategie steht über den Feldern der Strategie, der Assistent ist ohne weiteren Klick sichtbar. Element oder Strategie wählen bei laufendem Assistenten: Zeile „Assistent, Schritt n von 5“ über den Feldern, „Assistent fortsetzen“ führt in denselben Schritt zurück, „Ohne Assistent weiterarbeiten“ beendet ihn. Kurze Meldung oben in der Eigenschaftenansicht; bei verdeckter Eigenschaftenansicht (bis 1099 Pixel) Markierung am Reiter, bis die Meldung verschwunden ist |
 | `screenshots.spec.ts` | Bildschirmbilder |
 
 Die Aufbautests geben keinen Ausdruck als Text ein. Der Vergleich mit dem Testfall nimmt die Strategie, die im Browser gespeichert wurde, und den mitgelieferten Testfall, ersetzt die internen Kennungen durch Namen und vergleicht Parameter, Elemente, Belegungen, Ausdrücke, Regeln und Verbindungen. Die Lage der Instanzen und das Element der ersten Verwendung gehören nicht zum Vergleich.
@@ -158,6 +159,35 @@ Der Prototyp setzte das schon um, es war nichts anzupassen. Eine Instanz, die nu
 ### Übrige Schaltflächen (Punkt 3)
 
 `buttons.spec.ts` klickt in allen sechs Größen, in allen fünf Schritten und nach dem Verlassen des Assistenten jede Schaltfläche und jeden Reiter an. Keine Schaltfläche war ohne Funktion. Der Test fand aber einen Mangel der Ansicht: In 1180 × 820 lagen die Indikatorkarten, die der Assistent in Schritt 3 anlegt, links unter der Elementbibliothek, und ihre Schaltfläche „alle … anzeigen“ war nicht zu erreichen. Der Assistent macht jetzt jedes neu angelegte Element sichtbar (`lastAdded`, wie beim Einfügen aus der Bibliothek). Gewollte Ausnahmen (schon gezeigter Zustand) stehen im Test.
+
+## Entscheidungen zu Auftrag 05
+
+Grundlage: req-ui-016 in der Fassung vom 2026-10-23. Hinweise und der Assistent stehen nur in der Eigenschaftenansicht. Die Fenster „Über pipwerk Studio“, „Öffnen“, „Einstellungen“, die Rückfragen und die zu bestätigenden Fehlermeldungen bleiben unverändert (Vorschlag, der Auftraggeber entscheidet noch).
+
+### Keine Hinweise auf der Zeichenfläche (Punkt 1)
+
+Die Zeichenfläche ohne geöffnete Strategie ist leer. Die Karte „Die Zeichenfläche ist leer“ bei leerer Strategie entfällt von der Fläche. „Keine Strategie geöffnet“ steht einmal in der Oberfläche, in der Eigenschaftenansicht (`props-none`, mit den Schaltflächen „Neue Strategie“ und „Öffnen“); die Anzeige in der Fußzeile ist kein Hinweis und bleibt. Bis 1099 Pixel zeigt die Oberfläche nach „Schließen“ und „Löschen“ die Eigenschaftenansicht, damit der Hinweis zu sehen ist.
+
+### Leere Strategie (Punkt 2)
+
+Der Hinweis zum nächsten Schritt (`empty-hint`, früher `canvas-empty`) steht oberhalb der Felder in der Eigenschaftenansicht der Strategie, mit „Assistent starten“, kurz „Kerzenschluss einfügen“ und bis 1099 Pixel „Elementbibliothek zeigen“. Er erscheint nicht, solange der Assistent läuft.
+
+### Assistent und Auswahl (Punkt 3)
+
+Wählt der Anwender bei laufendem Assistenten ein Element, einen Rahmen oder die Strategie (Fläche, Statusanzeige, Befundzähler), tritt der Assistent zur Seite (`wzShown` im Zustand). Die Eigenschaftenansicht zeigt die Auswahl, darüber die Zeile „Assistent, Schritt n von 5“ mit „Assistent fortsetzen“ (`wz-resume`). Früher beendete das Anklicken eines Elements den Assistenten. Der Assistent bleibt dabei im Bild eingehängt, aber verborgen; seine Eingaben (Auslöser, Vergleich, Werte, Ordertyp) und sein Schritt bleiben erhalten. Einfügen aus der Elementbibliothek lässt ihn sichtbar, wie nach order-04.
+
+### Kurze Meldungen (Punkt 4)
+
+Meldungen liegen oben über der Eigenschaftenansicht (nicht mehr unten am Fensterrand), nehmen keine Mausklicks weg und verschwinden nach 4,2 Sekunden wie bisher. Ist die Eigenschaftenansicht verdeckt, trägt der Reiter „Eigenschaften“ (Leiste unten bis 699 Pixel, Reiter über dem Seitenbereich von 700 bis 1099 Pixel) einen orangefarbenen Punkt (`props-mark`), bis die Meldung verschwunden ist.
+
+### Kleine Fenster (Punkt 5)
+
+Nach „Neue Strategie“ und „Assistent starten“ war die Eigenschaftenansicht schon gewählt; neu ist es nach „Schließen“ und „Löschen“. „Elementbibliothek zeigen“ wechselt zur Bibliothek, der Assistent behält seinen Schritt, der Reiter „Eigenschaften“ führt zu ihm zurück.
+
+### Weitere Befunde
+
+- Ein Mangel, den der neue Test in 390 × 844 fand: Legt der Assistent das erste Element an, während die Zeichenfläche verdeckt ist, wurde die Ansicht für eine Fläche der Breite null berechnet und das Element lag außerhalb des Bildes. Die Fläche passt ihre Ansicht jetzt an, sobald sie zum ersten Mal mit Breite sichtbar wird, aber nur, wenn sie zuvor verdeckt eingepasst wurde (die Ansicht springt sonst nicht).
+- Nicht verändert, weil der Auftrag sie nicht nennt: der Hinweis „Noch leer …“ im Rahmen einer Verwaltung, der Hinweis „Noch nicht verbunden“ an einer Karte und die Einblendung „Klicken Sie jetzt das Element an …“ beim Verbinden. Sie stehen auf der Zeichenfläche (Rahmen und Karten gehören zu ihr). Ob sie als Hinweise im Sinne von req-ui-016 gelten, entscheidet der Auftraggeber.
 
 ## Zuordnung zu den Mängeln der Abnahme
 

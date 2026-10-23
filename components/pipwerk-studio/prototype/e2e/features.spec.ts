@@ -300,7 +300,7 @@ test.describe('assistant, findings, rules', () => {
     await page.getByTestId('wz-next').click();
     await page.getByTestId('wz-leave').click();
     await expect(page.getByTestId('wizard')).toHaveCount(0);
-    await expect(page.getByTestId('canvas-empty')).toContainText('Nächster Schritt');
+    await expect(page.getByTestId('empty-hint')).toContainText('Nächster Schritt');
   });
 
   test('findings: no message to click away, marked element, text with the way to fix it, click leads to the place', async ({ page }) => {
@@ -438,7 +438,7 @@ test.describe('lifecycle and settings', () => {
     await expect(page.getByTestId('status-pill')).toContainText('Test geändert');
     await page.getByTestId('menu-close').click();
     await page.getByTestId('dirty-save').click();
-    await expect(page.getByTestId('canvas-no-strategy')).toContainText('Nächster Schritt');
+    await expect(page.getByTestId('props-none')).toContainText('Nächster Schritt');
     // open the saved one, delete it with confirmation
     await page.getByTestId('empty-open').click();
     await page.locator('[data-testid="open-row"][data-name="Test geändert"]').click();
@@ -447,7 +447,7 @@ test.describe('lifecycle and settings', () => {
     await expect(page.getByTestId('status-pill')).toContainText('Test geändert');
     await page.getByTestId('menu-delete').click();
     await page.getByTestId('delete-confirm').click();
-    await expect(page.getByTestId('canvas-no-strategy')).toBeVisible();
+    await expect(page.getByTestId('props-none')).toBeVisible();
     // new strategy, save, reload: the saved one is there, and the start shows the client strategy again
     await page.getByTestId('empty-new').click();
     await page.getByTestId('wz-leave').click();

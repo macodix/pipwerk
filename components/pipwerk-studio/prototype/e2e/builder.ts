@@ -129,7 +129,7 @@ export async function newStrategyFromScratch(page: Page, name: string): Promise<
   await page.getByTestId('menu-new').click();
   await expect(page.getByTestId('wizard')).toBeVisible();
   await page.getByTestId('wz-leave').click();
-  await expect(page.getByTestId('canvas-empty')).toBeVisible();
+  await expect(page.getByTestId('empty-hint')).toBeVisible();
   await page.getByTestId('strategy-name').fill(name);
 }
 
