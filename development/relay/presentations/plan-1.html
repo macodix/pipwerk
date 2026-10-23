@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>relay Arbeitspaketplan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;min-width:0;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:24px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.q{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+.q .card{gap:14px}
+.q .card p, .q .card li{font-size:25px;line-height:1.38}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:27px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben relay · Phase 3</p>
+<div class="col" style="flex:0">
+<h1>Arbeitspaketplan<br>pipwerk relay</h1>
+<p style="font-size:34px">In welcher Reihenfolge gebaut wird und was du je Paket abnimmst</p>
+</div>
+<p style="font-size:26px">Stand 23. Oktober 2026 · erstellt vom Softwarearchitekten · von der QA geprüft und bestanden · keine Frage an dich offen</p>
+<p class="num">1 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Vier Pakete</h2>
+<table>
+<tr><th style="width:150px">Paket</th><th style="width:560px">Inhalt</th><th style="width:300px">baut auf</th><th>Abnahme</th></tr>
+<tr><td>wp01</td><td>Relay, Programmbibliothek, Abruf über pipwerk relay, Weg über Verzeichnisse, Empfangsbestätigung</td><td>geprüfter Stand von backtest wp02</td><td>Durchgang 2: alle Strecken über Verzeichnisse</td></tr>
+<tr><td>wp02</td><td>Übertragungsweg Matrix</td><td>wp01</td><td>Durchgang 1: alle Strecken über Matrix</td></tr>
+<tr><td>wp03</td><td>Dateien über einen Weg für Dateien</td><td>wp02</td><td>Durchgang 3: Matrix mit großen Dateien über SFTP</td></tr>
+<tr><td>wp04</td><td>Web-API des Relays und Übertragungsweg darüber</td><td>wp01, läuft neben wp02 und wp03</td><td>Anfrage-Programm über die Web-API</td></tr>
+</table>
+<div class="rule">wp01 beginnt sofort. Es setzt auf den von der QA geprüften Stand des Abrufprogramms aus backtest auf und wird erst nach backtest wp02 übernommen.</div>
+<p class="num">2 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>wp01 – Relay und Abruf über Verzeichnisse</h2>
+<div class="row">
+<div class="card col"><h3>Ergebnis</h3><p>Auf zwei Rechnern läuft je ein Relay. Das Anfrage-Programm holt über die Relays Dateien vom Abruf auf dem Rechner von MetaTrader 5.</p><h3 style="margin-top:24px">Voraussetzung bei dir</h3><p>MetaTrader 5 auf einem Rechner, ein zweiter Rechner, ein SFTP-Server.</p></div>
+<div class="card col" style="flex:1.6"><h3>Abnahme durch dich</h3><ul><li>Du richtest nach der Anwenderdokumentation beide Rechner ein: Relays, Abruf, Anfrage-Programm, Schlüssel, Adressbuch.</li><li>Eine Anfrage mit Broker, Symbol, Zeiteinheiten, Ticks und Zeitraum liefert die Dateien ins Zielverzeichnis. Sie lassen sich ohne Änderung in den Datenbestand importieren.</li><li>Fremder Broker endet mit Grund. Eine Anfrage an eine unbekannte Komponente endet mit einer Meldung „unzustellbar“.</li><li>Die Warteschlange lässt sich ohne Inhalt anzeigen. Relay und Abruf öffnen keinen Port.</li><li>Der bisherige Aufruf des Abrufprogramms arbeitet wie vorher.</li><li>Die Anwenderdokumentation ist verständlich und vollständig.</li></ul></div>
+</div>
+<div class="card"><h3>Nicht in diesem Paket</h3><p>Matrix, Wege für Dateien, Web-API. Die Empfangsbestätigung zeigt keiner deiner Durchgänge, weil der Abruf sie nicht verlangt. Sie ist nur durch die Tests von Tester und QA nachgewiesen.</p></div>
+<p class="num">3 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>wp02 – Übertragungsweg Matrix</h2>
+<div class="row">
+<div class="card col"><h3>Ergebnis</h3><p>Alle Strecken laufen über Matrix. Du verfolgst den Austausch im Chat.</p><h3 style="margin-top:24px">Voraussetzung bei dir</h3><p>Dein Matrix-Server und die Einrichtung aus wp01.</p></div>
+<div class="card col" style="flex:1.6"><h3>Abnahme durch dich</h3><ul><li>Du legst nach der Anwenderdokumentation Matrix-Benutzer und Räume an und stellst alle Strecken auf Matrix um.</li><li>Eine Anfrage liefert die Dateien. Sie lassen sich in den Datenbestand importieren.</li><li>Im Chat zeigt jede Nachricht eine lesbare Zeile: Art, Absender, Empfänger, Nachrichten-ID, Namen der Dateien.</li><li>Die Anwenderdokumentation ist verständlich und vollständig.</li></ul></div>
+</div>
+<div class="card"><h3>Nicht in diesem Paket</h3><p>Wege für Dateien, Ende-zu-Ende-Verschlüsselung von Matrix.</p></div>
+<p class="num">4 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>wp03 – Dateien über einen Weg für Dateien</h2>
+<div class="row">
+<div class="card col"><h3>Ergebnis</h3><p>Große Dateien gehen über den SFTP-Server, die Nachrichten über Matrix. Jede Verbindung wählt nach ihrer Größenschwelle.</p><h3 style="margin-top:24px">Voraussetzung bei dir</h3><p>Die Einrichtung aus wp02 und ein SFTP-Server.</p></div>
+<div class="card col" style="flex:1.6"><h3>Abnahme durch dich</h3><ul><li>Du stellst nach der Anwenderdokumentation auf jeder Strecke einen Weg für Dateien mit Schwelle ein.</li><li>Eine Anfrage mit Ticks liefert alle Dateien. Große liegen unterwegs auf dem SFTP-Server, kleine erscheinen als Anlage im Chat. Alle lassen sich importieren.</li><li>Nach der Lieferung liegen keine Dateien der Anfrage mehr auf dem SFTP-Server.</li><li>Die Anwenderdokumentation ist verständlich und vollständig.</li></ul></div>
+</div>
+<div class="card"><h3>Nicht in diesem Paket</h3><p>Weitere Wege für Dateien außer Verzeichnis und SFTP.</p></div>
+<p class="num">5 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>wp04 – Web-API des Relays</h2>
+<div class="row">
+<div class="card col"><h3>Ergebnis</h3><p>Das Relay bietet Senden, Empfangen und den Stand der Warteschlange über eine Web-API. Eine Komponente kann darüber mit ihrem Relay sprechen.</p><h3 style="margin-top:24px">Voraussetzung bei dir</h3><p>Die Einrichtung aus wp01.</p></div>
+<div class="card col" style="flex:1.6"><h3>Abnahme durch dich</h3><ul><li>Du schaltest nach der Anwenderdokumentation die Web-API auf dem zweiten Rechner ein und stellst das Anfrage-Programm darauf um. Eine Anfrage liefert die Dateien wie in wp01.</li><li>Ohne Eintrag in der Startkonfiguration öffnet das Relay keinen Port. Mit Eintrag ohne Adresse ist die Web-API nur vom eigenen Rechner aus erreichbar.</li><li>Die Anwenderdokumentation ist verständlich und vollständig.</li></ul></div>
+</div>
+<div class="card"><h3>Nicht in diesem Paket</h3><p>Anmeldung weiterer Benutzer, Oberfläche des Relays.</p></div>
+<p class="num">6 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Nächster Schritt</h2>
+<div class="row">
+<div class="card col"><h3>Umsetzung</h3><p>Mit deiner Bestätigung beginnt wp01. Entwickler setzen um, Tester und QA prüfen. Sobald die Testumgebung bereitsteht, bekommst du wp01 zur Abnahme.</p></div>
+<div class="card col"><h3>Danach</h3><p>wp02 und wp04 beginnen auf dem geprüften Stand von wp01, wp03 auf dem geprüften Stand von wp02. Jedes Paket nimmst du einzeln ab.</p></div>
+</div>
+<p class="note">Bestätigungsvermerk: ausstehend.</p>
+<p class="num">7 / 7</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
