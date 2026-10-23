@@ -1,0 +1,34 @@
+# Testbericht Sicherheit, Arbeitspaket wp02, Durchlauf 2
+
+- Ergebnis: **bestanden** (kein blockierender Befund)
+- Geprüfter Commit: `2d4c78f82e307b328499aff66a6bca2280a902af` (Zweig `backtest/wp02`; ausgecheckt, mit `git rev-parse HEAD` kontrolliert)
+- Grundlage: Prüfauftrag `securitytest-2-order.md`; Änderungen seit `6b952294f441dd5a8d2313ffc06b29884a21ca2d` (`git diff`), Spezifikation Abschnitt 11, Sicherheitsregeln, Bericht `securitytest-1.md`
+- Art der Prüfung: Durchsicht des Codes, Abhängigkeitsprüfung, ein Zeitversuch für die Namenserkennung. Nicht ausgeführt: Tests der Komponenten, laufende Anwendung, Skripte für Windows (Rechner ist Linux; `fetch.cmd` nur gelesen).
+
+## Blockierende Befunde
+
+Keine.
+
+## Hinweise (verhindern das Bestehen nicht)
+
+1. **Rechenzeit der Reihenliste (OWASP API4), `store.py:762-793`, `marketdata_service.py:193-210`.** Lückenzahl wird jetzt nur für die Zeilen der Seite berechnet (besser als Durchlauf 1, Hinweis 2), liest aber je Zeile alle Zeiten der Reihe (`store.py:636-680`); Seite bis 1000 Zeilen (`config.py:80`), gleichzeitige Aufrufe nicht begrenzt. `_row_keys` lädt alle Schlüssel vor dem Schneiden. Nicht gemessen; Betrieb ohne Anmeldung im kontrollierten Netz (Spezifikation 11).
+2. **Speicher beim Import, `import_form.py:150-157`.** Jede Datei wird vollständig als `bytes` gelesen (zusätzlich zur Zwischenablage von Starlette), Obergrenze Gesamtgröße 512 MiB plus Hülle (`import_form.py:66-70`); die Grenze gleichzeitiger Importe (2) greift erst nach dem Lesen (`marketdata_service.py:142`). Die Grenze je Datei (32 MiB) greift erst beim Einlesen (`store.py`, `decode_text`). Fortsetzung von Hinweis 4 aus Durchlauf 1; nicht gemessen.
+3. **Dateinamen in Antworten, `import_form.py:104-108`.** Entfernt werden Pfadanteile und Zeichen 0x00–0x1f/0x7f; Unicode-Steuerzeichen für die Schreibrichtung (U+202E) bleiben erhalten und könnten in der Oberfläche den Namen optisch verfälschen. Die Oberfläche gibt Namen als Text aus (kein `dangerouslySetInnerHTML`/`innerHTML`), also kein Skript-Risiko.
+4. **fetch-mt5: Zieldatei wird ersetzt, auch ein Verweis (`files.py:77`, `Path.replace`).** Der Verweis wird ersetzt, nicht verfolgt; das Zielverzeichnis wählt der Aufrufer. Ein beim Abbruch (SIGKILL) zurückbleibender Hilfsname `.…tmp` wird nicht aufgeräumt. Dateirechte: `mkstemp` ergibt 0600 (unter Linux); unter Windows gelten die Rechte des Ordners.
+5. **fetch-mt5: Kennwort für MetaTrader 5 im Klartext in der Startkonfiguration, Rechte der Datei werden nicht geprüft (`config.py`, Beispielkonfiguration warnt).** Fehlermeldungen nennen nie Werte, `repr=False`. Fortsetzung von Hinweis 8 aus Durchlauf 1.
+6. **Herkunftsprüfung (`import_form.py:116-129`).** Vergleicht `netloc` des Kopfs `Origin` mit `Host`; `null`, fremde Namen und `name@host` werden abgelehnt. Die Anfrage ohne `Origin` (Programm) wird bedient; das schützt vor fremden Webseiten im Browser, nicht vor anderen Programmen im Netz. Das Schema wird nicht verglichen; gleich Name und Port gelten als gleiche Quelle. Bewusst und dokumentiert; zur Kenntnis.
+
+## Geprüft ohne Befund
+
+- **pipwerk-fetch-mt5:** Kein Server, kein Port, keine Module `app`, `auth`, `body_limit`, `host_check`, `contract`, `fake_source` mehr; keine Abhängigkeit von FastAPI/uvicorn in den Abhängigkeiten (`pip-audit` unten). Dateiname nur aus geprüften Teilen: Instrument `[A-Za-z0-9][A-Za-z0-9._#+-]{0,63}`, Daten `[A-Z][A-Z0-9]{1,7}`, Zeitstempel fest (`files.py:30-62`); Symbol des Brokers geht nie in den Namen; `write_file` lehnt Pfade, `.`, `..`, NUL ab, schreibt in Hilfsdatei im selben Verzeichnis, `fsync`, `replace`, räumt bei Fehler auf (`files.py:65-95`). Zuordnungstabelle und Anmeldung nur aus der Startkonfiguration, unbekannte Abschnitte/Einträge abgelehnt (`config.py:46-63`); `cli.py` gibt Instrument mit `_printable` und auf 80 Zeichen gekürzt aus; Zeiträume 1970–2100. `fetch.cmd`: `%~dp0..` in Anführungszeichen, `uv --frozen --no-dev`, kein Schlüssel. Beispielkonfigurationen enthalten nur leere/auskommentierte Werte.
+- **Import-Formular (`import_form.py`):** nur `multipart/form-data` (sonst 415), Herkunft vor dem Lesen des Bodys (403), Dateien höchstens `max_files+1`, Textfelder höchstens 4096 Byte, Zahl der Felder begrenzt (`:149-153`); unbekannte Felder (`extra_forbidden`), doppelte `broker`/`timezone`, ungleiche Zahl `instrument`/`data` und Dateien in anderen Feldern abgelehnt; Fehlerantwort nennt nur Orte, nie Werte (`:96-99`, Schlüssel auf 100 Zeichen gekürzt); Body-Grenze je Pfad per `BodyLimitMiddleware` (`web_api.py:196-214`); Dateiname nie als Pfad, nur Anzeige und Mustererkennung; Zeitzone auf `MAX_TIMEZONE_LENGTH` begrenzt, `ZoneInfo`-Fehler werden gefangen (Durchlauf 1).
+- **Erkennung aus Dateinamen (`filehints.py`):** Länge höchstens 255, feste Muster; Zeitversuch mit 212–255 Zeichen langen, zu Rückläufen reizenden Namen: höchstens 0,13 ms. `inspect_json` begrenzt über `decode_text`/`ImportLimits`, `parse_constant` lehnt NaN ab, `RecursionError` gefangen, Inhalt nie ausgeführt. Vorschau liegt unter derselben Sperre gleichzeitiger Importe (`marketdata_service.py:153-165`).
+- **Reihenliste und Einzelheiten:** Filter als Teiltext mit `casefold`, kein regulärer Ausdruck, kein SQL (`store.py:102-104`); `max_length` der Filter, `offset` 0–1e9, `limit` ≥1 und ≤ `max_listed_items` (`marketdata_models.py:143-172`, `marketdata_api.py:209-213`), Seitengröße im Datenbestand ebenfalls begrenzt (`store.py:444-449`).
+- **Migration `v0003`:** nur SQLAlchemy-Ausdrücke, Spalte übernommen und alte entfernt, `downgrade` gegenläufig; Namen aus `batch_alter_table`, keine Eingabe.
+- **Oberfläche:** Suche in `frontend/src` nach `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `localStorage`, `sessionStorage`: keine Treffer außerhalb der Tests; einziger Link mit `rel="noopener noreferrer"` (`AboutDialog.tsx:66`). `npm audit`: 0 Schwachstellen (auch mit `--omit=dev`; `vite`, `vitest` gehoben, Hinweis 1 aus Durchlauf 1 damit erledigt).
+- **Abhängigkeiten:** `pip-audit --no-deps --disable-pip` über aus `uv.lock` exportierte Versionen (`replay`, `fetch-mt5` mit Extras, `market-data`): jeweils „No known vulnerabilities found“.
+- **Repository:** `git grep` nach `/home/`, `/srv/aixlab`, `macodix`, privaten Schlüsseln in `components`, `packages`, `scripts`, `tools`, `tests`, `contracts`, `deploy`, `docs/technical`: nur Prüftexte in Tests und die öffentliche Adresse `github.com/macodix/pipwerk`; versioniert sind nur `*.example.ini`.
+
+## Reste meiner Prüfung
+
+Im Arbeitsverzeichnis liegen weiterhin die drei nicht versionierten Dateien `audit-req-*.txt` aus Durchlauf 1; `uv run` im Paket `market-data` hat dort außerdem eine `.venv` angelegt (nach Angabe von `git status` nicht aufgeführt, also ignoriert). Meine Wegwerfdateien dieses Durchlaufs liegen unter `reports/st2/`.
