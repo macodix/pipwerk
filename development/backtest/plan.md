@@ -17,7 +17,7 @@
 | `wp03` | Backtest | `wp01`, `wp02`, Referenzwerte aus MetaTrader 5 | `open` |
 | `wp04` | Einzelschritt-Test | `wp03`, `strategiedesign/wp03` | `open` |
 
-Die Pakete folgen dem, was der Auftraggeber selbst prüfen kann. `wp02` braucht nichts aus `strategiedesign` und beginnt sofort: pipwerk replay mit Datenbestand, Import und Testkonten, dazu das Programm `pipwerk-fetch-mt5` für die Beschaffung außerhalb von pipwerk replay. `wp01` stellt Bibliothek und pipwerk Studio auf die Entscheidungen vom 2026-10-21 um und braucht dafür das Format 2.0 aus `strategiedesign/wp02`. Es beginnt trotzdem sofort, auf dem von der QA geprüften Stand von `strategiedesign/wp02`, und wird erst nach diesem Paket übernommen (Abschnitt „Abhängigkeiten“ von `wp01`). `wp03` bringt die Ausführung der Strategie und den Backtest; es endet mit dem Nachweis, dass `str-01` und `str-03` im Backtest laufen. `wp04` bringt den Einzelschritt-Test und dafür die Darstellung der Strategie als gemeinsamen Baustein.
+Die Pakete folgen dem, was der Auftraggeber selbst prüfen kann. `wp02` braucht nichts aus `strategiedesign` und beginnt sofort: pipwerk replay mit Datenbestand, Import und Testkonten, dazu das Programm `pipwerk-fetch-mt5` für den Abruf außerhalb von pipwerk replay. `wp01` stellt Bibliothek und pipwerk Studio auf die Entscheidungen vom 2026-10-21 um und braucht dafür das Format 2.0 aus `strategiedesign/wp02`. Es beginnt trotzdem sofort, auf dem von der QA geprüften Stand von `strategiedesign/wp02`, und wird erst nach diesem Paket übernommen (Abschnitt „Abhängigkeiten“ von `wp01`). `wp03` bringt die Ausführung der Strategie und den Backtest; es endet mit dem Nachweis, dass `str-01` und `str-03` im Backtest laufen. `wp04` bringt den Einzelschritt-Test und dafür die Darstellung der Strategie als gemeinsamen Baustein.
 
 `wp04` hängt auch von `strategiedesign/wp03` ab. Grund: Es verlegt Zeichenfläche, Elemente, Verbindungen und Eigenschaftenansicht von pipwerk Studio nach `packages/ui-components` (Spezifikation 8.2). `strategiedesign/wp03` ändert dieselben Teile; beide gleichzeitig ergäben zwei Fassungen derselben Bausteine.
 
@@ -79,7 +79,7 @@ Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 
 
 pipwerk replay läuft als eigene Komponente. Der Anwender holt Kursdaten mit `pipwerk-fetch-mt5` aus MetaTrader 5, importiert sie und andere Dateien, auch mehrere auf einmal, sieht den Datenbestand historischer Kursdaten und verwaltet Testkonten.
 
-Änderung nach der Abnahme, Versuch 1 ([Abnahmebericht](wp02/acceptance/1.md), Mängel M1 bis M4): Ansicht „Datenbestand“ und Import nach Spezifikation 5.3 und 8.3, `pipwerk-fetch-mt5` als Programm ohne Server und Port nach E5 und 5.4, keine Beschaffung aus pipwerk replay. Das Paket wird auf seinem Arbeitszweig `backtest/wp02` weitergeführt.
+Änderung nach der Abnahme, Versuch 1 ([Abnahmebericht](wp02/acceptance/1.md), Mängel M1 bis M4): Ansicht „Datenbestand“ und Import nach Spezifikation 5.3 und 8.3, `pipwerk-fetch-mt5` als Programm ohne Server und Port nach E5 und 5.4, kein Abruf aus pipwerk replay. Das Paket wird auf seinem Arbeitszweig `backtest/wp02` weitergeführt.
 
 ### Umfang
 
@@ -90,17 +90,17 @@ pipwerk replay läuft als eigene Komponente. Der Anwender holt Kursdaten mit `pi
 - Web-API (Abschnitt 7) für Datenbestand, Testkonten und Einstellungen, darunter der Broker für Testläufe (5.1).
 - Oberfläche nach dem bestätigten Prototyp (8.1, 8.2): Kopfzeile mit Menü, „Über pipwerk replay“, Sprachwahl, Fußzeile mit Stand und Erreichbarkeit des Backends; Ansichten „Datenbestand“ mit Dialog „Datei importieren“ und „Testkonten“ (8.3); Fenstergrößen nach 8.4 Punkt 1 für diese Ansichten.
 - Sicherheit nach Abschnitt 11 für Import und `pipwerk-fetch-mt5`.
-- Tests nach Abschnitt 10, Punkte Datenbestand und Beschaffung; Backend, Oberfläche und Browsertests für dieses Paket.
-- Dokumentation (Abschnitt 12): `docs/technical/pipwerk-replay.md` für dieses Paket, `docs/technical/pipwerk-marketdata.md`, `docs/technical/pipwerk-fetch-mt5.md`, Beschreibungen unter `contracts/`; `docs/user/pipwerk-replay.md` zu Testkonten, Datenbestand, Import mehrerer Dateien, Einrichtung und Aufruf von `pipwerk-fetch-mt5` und Import seiner Dateien; Glossar: Testkonto, Datenbestand historischer Kursdaten, Beschaffung, Quelle.
+- Tests nach Abschnitt 10, Punkte Datenbestand und Abruf; Backend, Oberfläche und Browsertests für dieses Paket.
+- Dokumentation (Abschnitt 12): `docs/technical/pipwerk-replay.md` für dieses Paket, `docs/technical/pipwerk-marketdata.md`, `docs/technical/pipwerk-fetch-mt5.md`, Beschreibungen unter `contracts/`; `docs/user/pipwerk-replay.md` zu Testkonten, Datenbestand, Import mehrerer Dateien, Einrichtung und Aufruf von `pipwerk-fetch-mt5` und Import seiner Dateien; Glossar: Testkonto, Datenbestand historischer Kursdaten, Abruf, Quelle.
 
 ### Nicht-Umfang
 
 - Testlauf, Backtest und Einzelschritt-Test (`wp03`, `wp04`); die Menüeinträge dafür und die Umschaltung der Betriebsart erscheinen erst mit diesen Paketen.
-- Beschaffung aus pipwerk replay und Austausch über pipwerk relay (5.4)
+- Abruf aus pipwerk replay und Austausch über pipwerk relay (5.4)
 
 ### Umgesetzte Teile der Spezifikation
 
-E3 bis E6 (E6 ohne Ergebnisse und gespeicherte Backtests), Abschnitt 5 (5.2 als Prüfung im Datenbestand, 5.4 ohne die Meldung beim Start eines Testlaufs), 6.2, Abschnitt 7 für die genannten Teile, 8.1 und 8.2 erster Punkt, 8.3 Kopfzeile ohne Betriebsart, Ansichten „Datenbestand“ und „Testkonten“, 8.4 Punkt 1 und Bedienerführung für diese Ansichten, Abschnitt 10 Punkte Datenbestand und Beschaffung, Abschnitt 11 für diese Teile, Abschnitt 12 wie im Umfang.
+E3 bis E6 (E6 ohne Ergebnisse und gespeicherte Backtests), Abschnitt 5 (5.2 als Prüfung im Datenbestand, 5.4 ohne die Meldung beim Start eines Testlaufs), 6.2, Abschnitt 7 für die genannten Teile, 8.1 und 8.2 erster Punkt, 8.3 Kopfzeile ohne Betriebsart, Ansichten „Datenbestand“ und „Testkonten“, 8.4 Punkt 1 und Bedienerführung für diese Ansichten, Abschnitt 10 Punkte Datenbestand und Abruf, Abschnitt 11 für diese Teile, Abschnitt 12 wie im Umfang.
 
 ### Abhängigkeiten
 
@@ -117,7 +117,7 @@ Der Auftraggeber kann in der Testumgebung selbst prüfen:
 5. In den Fenstergrößen nach 8.4 Punkt 1 liegt nichts übereinander, alle Bereiche, Menü und Dialoge sind erreichbar. Alle Texte erscheinen in Deutsch und Englisch, mit kurzen, sachlichen Überschriften, jedes Feld hat eine Erklärung beim Zeigen.
 6. Die Anwenderdokumentation beschreibt Testkonten, Datenbestand, Import mehrerer Dateien, Einrichtung und Aufruf von `pipwerk-fetch-mt5` und den Import seiner Dateien verständlich und vollständig.
 
-Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 10 für Datenbestand und Beschaffung und die Browsertests. Positive Testberichte beider Tester liegen vor.
+Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 10 für Datenbestand und Abruf und die Browsertests. Positive Testberichte beider Tester liegen vor.
 
 ## wp03 – Backtest
 
@@ -129,7 +129,7 @@ Der Anwender bereitet einen Testlauf vor und testet eine Strategie im Backtest �
 
 - Ausführung in der Bibliothek, `pipwerk_domain.execution` (E1, E7, 3.1 bis 3.5): Schnittstellen, Auswertung von Ausdrücken, `EMA`, `ATR`, `ZigZag` einschließlich Berechnung der in `wp01` beschriebenen Eigenschaften, eigene Indikatoren und Trends, Ablauf mit Auslösern und Verwaltungen, Auslöser `Manuell` zum Zeitpunkt nach 6.1, Orders und Regeln.
 - Interne Abwicklung `pipwerk_replay.broker` (E2, Abschnitt 4).
-- Testlauf (6.1) mit Strategien aus dem Objektverzeichnis oder als hochgeladene Datei (E6), Prüfung der Kursdaten beim Start mit Meldung nach 5.4, ohne Beschaffung, Broker für Testläufe in der Vorbereitung änderbar (5.1), Backtest im eigenen Prozess mit Fortschritt und Abbrechen (6.4), gespeicherte Backtests mit Liste, Löschen, Vergleich und Herunterladen der Kopie der Strategie (6.5).
+- Testlauf (6.1) mit Strategien aus dem Objektverzeichnis oder als hochgeladene Datei (E6), Prüfung der Kursdaten beim Start mit Meldung nach 5.4, ohne Abruf, Broker für Testläufe in der Vorbereitung änderbar (5.1), Backtest im eigenen Prozess mit Fortschritt und Abbrechen (6.4), gespeicherte Backtests mit Liste, Löschen, Vergleich und Herunterladen der Kopie der Strategie (6.5).
 - Web-API (Abschnitt 7) für diese Teile.
 - Oberfläche: Menüeintrag Testlauf und Gespeicherte Backtests, Umschaltung der Betriebsart mit Backtest; Ansichten „Testlauf vorbereiten“ mit Zeitpunkt des Auslösers `Manuell`, „Kursdaten beim Start“, „Backtest“, „Gespeicherte Backtests“ ohne die Darstellung der getesteten Fassung (8.3, 8.4 Punkte 1, 4 bis 8); Kerzenchart, Kontokurve und Rückgang (8.2); Fußzeile mit dem vorbereiteten Testlauf.
 - Sicherheit nach Abschnitt 11 für Ausdrücke, hochgeladene Strategien, Zahl gleichzeitiger Backtests und Umfang von Antworten.
@@ -244,7 +244,7 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 8.4 Punkte 5 bis 8 | `wp03` |
 | 9 | `wp01` (Testfalldokument `str-01`), `wp03` (Backtest), `wp04` (Einzelschritt-Test) |
 | 10 Bibliothek, Abwicklung | `wp03` |
-| 10 Datenbestand, Beschaffung | `wp02` |
+| 10 Datenbestand, Abruf | `wp02` |
 | 10 Testfälle | `wp01` (Befund), `wp03` (Backtest, `Manuell` zum Beginn und Zeitpunkt), `wp04` (Einzelschritt-Test, „Manuell auslösen“) |
 | 10 Backend, Oberfläche, Browsertests | `wp02`, `wp03`, `wp04` |
 | 11 | `wp02`, `wp03`, `wp04` je nach Teil |
@@ -262,3 +262,4 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 2026-10-21 | Hinweise aus [plan-3.md](reviews/plan-3.md) (bestanden), ohne weitere Prüfung: 1 Punkt 4 misst wie Punkt 3 an der Software; 2 `integrate` für `wp01` erst nach `integrated` zu `strategiedesign/wp02`; 3 Satz „in der Abnahme“ gestrichen; 4 Übersicht „Beginn ohne Wartezeit“; 5 Beginn mit `implement` statt „nach Bestätigung“, den Vermerk führt der Projektleiter. |
 | 2026-10-23 | Nach der Abnahme von `wp02`, Versuch 1 (Mängel M1 bis M4), und der geänderten Spezifikation (E5, 5.1, 5.3, 5.4, 8.3): `wp02` Ziel, Umfang, Nicht-Umfang, umgesetzte Teile und Abnahmekriterien 1, 2, 3, 5 und 6 (Import mehrerer Dateien, Ansicht „Datenbestand“, `pipwerk-fetch-mt5` ohne Server und Port, keine Beschaffung aus pipwerk replay); `wp03` Umfang und Abnahmekriterien 1 und 5 ohne Beschaffung beim Start; Abdeckung 5.1 bis 5.4. Prüfung bestanden in [plan-4.md](reviews/plan-4.md). |
 | 2026-10-23 | Hinweise aus [plan-4.md](reviews/plan-4.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Broker in der Vorbereitung in `wp03` (Umfang, Abdeckung 5.1); H2 Erläuterung der Übersicht zu `wp02`. |
+| 2026-10-23 | „Abruf“ statt „Beschaffung“, nur Bezeichnung (Übersicht, `wp02`, `wp03`, Abdeckung). Folgt aus der Entscheidung des Auftraggebers vom 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`, Nachprüfung bestanden in `relay/reviews/requirements-4.md`). |
