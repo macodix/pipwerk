@@ -40,7 +40,19 @@ Die ersten Übertragungswege sind:
 
 ### req-relay-005 -- Adresse
 
-Eine Komponente kann mehrfach laufen, auch auf verschiedenen Rechnern. Der Name der Komponente genügt deshalb nicht als Adresse. Jede laufende Instanz einer Komponente hat eine eindeutige Adresse. Sie nennt den Namen der Instanz und das Relay, über das die Instanz erreichbar ist, zum Beispiel `pipwerk-trader.pipwerk-net-01.pipwerk-relay-name`. Welche Instanz für einen Zweck zuständig ist, zum Beispiel für ein Konto oder für die Beschaffung bei einem Broker, bestimmt der Absender aus seiner Konfiguration.
+Eine Komponente kann mehrfach laufen, auch auf verschiedenen Rechnern. Der Name der Komponente genügt deshalb nicht als Adresse. Jede laufende Komponente hat eine eindeutige Adresse aus drei Teilen:
+
+```text
+<laufende Komponente>.<pipwerk-Netz>.<zuständiges Relay>
+```
+
+- laufende Komponente: Name, unter dem die Komponente bei ihrem Relay läuft
+- pipwerk-Netz: Name des pipwerk-Netzes, zu dem das Relay gehört
+- zuständiges Relay: Name des Relays, über das die Komponente erreichbar ist
+
+Beispiel: `pipwerk-trader.pipwerk-net-01.pipwerk-relay-name`.
+
+Absender und Adressat einer Nachricht sind solche Adressen (Handelssystem req-grund-004). Antworten und Meldungen nach req-relay-008 gehen an die Adresse des Absenders. Welche laufende Komponente für einen Zweck zuständig ist, zum Beispiel für ein Konto oder für die Beschaffung bei einem Broker, bestimmt der Absender aus seiner Konfiguration.
 
 ### req-relay-006 -- Adressbuch und Standard-Relay
 
@@ -89,5 +101,6 @@ Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit
 | Datum | Änderung |
 | --- | --- |
 | 2026-10-23 | Erstanlage: Relay je Rechner, Übergabe und Zustellung, austauschbare Übertragungswege, erste Übertragungswege Matrix und Dateien, Adressbuch und Standard-Relay, eindeutige Adressierung, Beschaffung als erster Anwendungsfall. Festlegungen des Auftraggebers im Chat am 2026-10-23. |
-| 2026-10-23 | Adresse je Instanz mit Name der Instanz und Relay, Adressbuch nur mit Relays (req-relay-005, req-relay-006), unzustellbare Nachricht (req-relay-008), Priorität (req-relay-009), Schutz gegen Fälschung (req-relay-010), keine Verschlüsselung im ersten Entwicklungsstand (req-relay-011). Festlegungen des Auftraggebers im Chat am 2026-10-23. |
-| 2026-10-23 | req-relay-005: Die zuständige Instanz bestimmt der Absender aus seiner Konfiguration. Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | Adresse je laufender Komponente mit Name und Relay, Adressbuch nur mit Relays (req-relay-005, req-relay-006), unzustellbare Nachricht (req-relay-008), Priorität (req-relay-009), Schutz gegen Fälschung (req-relay-010), keine Verschlüsselung im ersten Entwicklungsstand (req-relay-011). Festlegungen des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | req-relay-005: Die zuständige laufende Komponente bestimmt der Absender aus seiner Konfiguration. Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | req-relay-005: Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; Absender ist ebenfalls eine Adresse; „laufende Komponente“ statt „Instanz“ (Glossar). Entscheidung des Auftraggebers im Chat am 2026-10-23 nach Prüfbericht `relay/reviews/requirements-1.md` (B2, B3). |
