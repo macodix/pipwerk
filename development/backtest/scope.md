@@ -1,6 +1,6 @@
 # Vorhaben backtest
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien testen. Der Strategietester (Modul pipwerk replay) führt Strategien gegen historische Kursdaten aus, in zwei Betriebsarten: schrittweise zur Prüfung des Ablaufs und durchgehend über einen Testzeitraum mit Kontoentwicklung, Trades und Kennzahlen. Dazu gehören der Datenbestand historischer Kursdaten mit Beschaffung und Import sowie die Testkonten.
+Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien testen. Der Strategietester (Modul pipwerk replay) führt Strategien gegen historische Kursdaten aus, in zwei Betriebsarten: schrittweise zur Prüfung des Ablaufs und durchgehend über einen Testzeitraum mit Kontoentwicklung, Trades und Kennzahlen. Dazu gehören der Datenbestand historischer Kursdaten mit Abruf und Import sowie die Testkonten.
 
 Nachweis des Vorhabens sind die beiden Testfälle: Jeder muss sich im Einzelschritt-Test prüfen und im Backtest über den vorbelegten Testzeitraum testen lassen, ohne die Strategie dafür zu bearbeiten.
 
@@ -34,7 +34,7 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 
 - Strategietester: Anzeige der Unterschiede zwischen Fassungen einer Strategie (darf durch den Aufbau nicht ausgeschlossen werden).
 - Fachmodell: Die als offen gekennzeichneten Stellen zur Ausführung von Strategien (unter anderem freie Margin, req-fach-049) betreffen dieses Vorhaben unmittelbar. Die QA meldet sie als Lücke, soweit ein Testfall sie zum Testen braucht.
-- Beschaffung über pipwerk relay (req-test-003, req-system-027): Welchen Broker ein Testlauf verwendet und woher die Beschaffung das Symbol des Brokers zum Instrument erhält (Fachmodell req-fach-053). Befund B1 aus [relay/reviews/requirements-1.md](../relay/reviews/requirements-1.md), am 2026-10-23 vom Auftraggeber in dieses Vorhaben verwiesen. Offen.
+- Abruf über pipwerk relay (req-test-003, req-system-027): Welchen Broker ein Testlauf verwendet und woher der Abruf das Symbol des Brokers zum Instrument erhält (Fachmodell req-fach-053). Befund B1 aus [relay/reviews/requirements-1.md](../relay/reviews/requirements-1.md), am 2026-10-23 vom Auftraggeber in dieses Vorhaben verwiesen. Offen.
 
 ## Stand
 

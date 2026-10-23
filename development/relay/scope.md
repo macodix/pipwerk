@@ -1,8 +1,8 @@
 # Vorhaben relay
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Beschaffung von Kursdaten. Eine Anfrage an die Beschaffung für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
+Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Abruf von Kursdaten. Eine Anfrage an den Abruf für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
 
-Nachweis des Vorhabens: Eine Anfrage mit Broker, Symbol des Instruments, Zeiteinheit und Zeitraum erreicht über pipwerk relay die Beschaffung auf dem Rechner von MetaTrader 5, und die Dateien kommen an die Adresse des Absenders zurück. Das gelingt einmal über Matrix und einmal über Dateien.
+Nachweis des Vorhabens: Eine Anfrage mit Broker, Symbol des Instruments, Zeiteinheit und Zeitraum erreicht über pipwerk relay den Abruf auf dem Rechner von MetaTrader 5, und die Dateien kommen an die Adresse des Absenders zurück. Das gelingt einmal über Matrix und einmal über Dateien.
 
 ## Geltende Dokumente
 
@@ -14,7 +14,7 @@ Anforderungsdokumente:
 
 ## Abhängigkeit
 
-Der Anwendungsfall Beschaffung baut auf dem Dateiformat des Imports und `pipwerk-fetch-mt5` aus dem Vorhaben [backtest](../backtest/scope.md) auf.
+Der Anwendungsfall Abruf baut auf dem Dateiformat des Imports und `pipwerk-fetch-mt5` aus dem Vorhaben [backtest](../backtest/scope.md) auf.
 
 ## Offene Punkte des Auftraggebers
 
@@ -37,3 +37,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Präsentation [requirements-1.html](presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. Phase 1 abgeschlossen. Phase 2 mit `specify` angestoßen; sie beginnt mit der laufenden Nachprüfung von req-relay-002 und req-relay-003 (Durchlauf 3).
 
 2026-10-23: Nachprüfung [requirements-3.md](reviews/requirements-3.md) bestanden. Spezifikation geprüft und bestanden in [specification-3.md](reviews/specification-3.md). Präsentation [specification-1.html](presentations/specification-1.html) zur Bestätigung durch den Auftraggeber.
+
+2026-10-23: Abstimmung der Präsentation [specification-1.html](presentations/specification-1.html): Dateien als Anlage oder über einen eigenen Weg für Dateien (req-relay-012 neu), „Abruf“ statt „Beschaffung“ in Anforderungen, Glossar und `scope.md`, Festlegungen des Auftraggebers. Nachprüfung der geänderten Stellen mit `check`, danach Spezifikation anpassen.

@@ -5,7 +5,7 @@
 - status: `draft`
 - zweck: Anforderungen an das Nachrichtensystem (pipwerk relay): Weg einer Nachricht vom Absender zum Empfänger, Übertragungswege, Adressierung
 - zuletzt aktualisiert: `2026-10-23`
-- abgestimmt: Festlegungen des Auftraggebers im Chat am 23. Oktober 2026. Prüfung durch die QA bestanden ([requirements-2.md](../../../development/relay/reviews/requirements-2.md)), [Präsentation](../../../development/relay/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026.
+- abgestimmt: Festlegungen des Auftraggebers im Chat am 23. Oktober 2026. Prüfung durch die QA bestanden ([requirements-2.md](../../../development/relay/reviews/requirements-2.md)), [Präsentation](../../../development/relay/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. req-relay-012 und „Abruf“ statt „Beschaffung“: Festlegung des Auftraggebers im Chat am 23. Oktober 2026, Prüfung durch die QA ausstehend.
 
 ## 1. Zweck und Abgrenzung
 
@@ -52,7 +52,7 @@ Eine Komponente kann mehrfach laufen, auch auf verschiedenen Rechnern. Der Name 
 
 Beispiel: `pipwerk-trader.pipwerk-net-01.pipwerk-relay-name`.
 
-Absender und Adressat einer Nachricht sind solche Adressen (Handelssystem req-grund-004). Antworten und Meldungen nach req-relay-008 gehen an die Adresse des Absenders. Welche laufende Komponente für einen Zweck zuständig ist, zum Beispiel für ein Konto oder für die Beschaffung bei einem Broker, bestimmt der Absender aus seiner Konfiguration.
+Absender und Adressat einer Nachricht sind solche Adressen (Handelssystem req-grund-004). Antworten und Meldungen nach req-relay-008 gehen an die Adresse des Absenders. Welche laufende Komponente für einen Zweck zuständig ist, zum Beispiel für ein Konto oder für den Abruf von Kursdaten bei einem Broker, bestimmt der Absender aus seiner Konfiguration.
 
 ### req-relay-006 -- Adressbuch und Standard-Relay
 
@@ -76,16 +76,25 @@ Das empfangende Relay erkennt eine gefälschte oder unterwegs veränderte Nachri
 
 Nachrichten werden im ersten Entwicklungsstand nicht verschlüsselt. Der Aufbau darf eine spätere Verschlüsselung nicht verhindern.
 
+### req-relay-012 -- Dateien
+
+Zu einer Nachricht können Dateien gehören. pipwerk relay überträgt sie auf zwei Arten:
+
+1. als Anlage der Nachricht über den Übertragungsweg der Nachricht,
+2. über einen eigenen Weg für Dateien, zum Beispiel für sehr große Dateien. Die Nachricht nennt dann, wo die Datei liegt.
+
+Beide Arten stehen zur Verfügung. Wann welche Art verwendet wird und über welche Wege Dateien übertragen werden, legt die Spezifikation fest. In beiden Fällen erkennt der Empfänger, ob eine Datei vollständig und unverändert angekommen ist (req-relay-010).
+
 ## 3. Erster Anwendungsfall
 
-### req-relay-007 -- Beschaffung von Kursdaten
+### req-relay-007 -- Abruf von Kursdaten
 
-Der erste Anwendungsfall ist der Austausch mit der Beschaffung für MetaTrader 5 nach Gesamtsystem req-system-027, die auf dem Rechner von MetaTrader 5 läuft:
+Der erste Anwendungsfall ist der Austausch mit dem Abruf für MetaTrader 5 nach Gesamtsystem req-system-027, der auf dem Rechner von MetaTrader 5 läuft:
 
-1. Eine laufende Komponente schickt der Beschaffung über pipwerk relay eine Anfrage. Sie nennt Broker, Symbol des Instruments beim Broker, Zeiteinheit und Zeitraum.
-2. Die Beschaffung liefert die Dateien im Dateiformat des Imports (req-system-026) an die Adresse des Absenders zurück.
+1. Eine laufende Komponente schickt dem Abruf über pipwerk relay eine Anfrage. Sie nennt Broker, Symbol des Instruments beim Broker, Zeiteinheit und Zeitraum.
+2. Der Abruf liefert die Dateien im Dateiformat des Imports (req-system-026) an die Adresse des Absenders zurück (req-relay-012).
 
-Wann und mit welchen Angaben der Strategietester die Beschaffung anfragt (Strategietester req-test-003), legt das Vorhaben `backtest` fest. Bis dahin gilt die Übergangslösung nach req-system-027.
+Wann und mit welchen Angaben der Strategietester den Abruf anfragt (Strategietester req-test-003), legt das Vorhaben `backtest` fest. Bis dahin gilt die Übergangslösung nach req-system-027.
 
 Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit dem Handelssystem.
 
@@ -104,4 +113,5 @@ Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit
 | 2026-10-23 | req-relay-005: Die zuständige laufende Komponente bestimmt der Absender aus seiner Konfiguration. Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | req-relay-005: Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; Absender ist ebenfalls eine Adresse; „laufende Komponente“ statt „Instanz“ (Glossar). Entscheidung des Auftraggebers im Chat am 2026-10-23 nach Prüfbericht `relay/reviews/requirements-1.md` (B2, B3). |
 | 2026-10-23 | req-relay-007: Anwendungsfall Beschaffung ohne Anschluss des Strategietesters; dieser gehört zum Vorhaben `backtest`. Entscheidung des Auftraggebers im Chat am 2026-10-23 (`relay`, B1). |
+| 2026-10-23 | req-relay-012 neu: Dateien als Anlage oder über einen eigenen Weg für Dateien. req-relay-005, req-relay-007: „Abruf“ statt „Beschaffung“. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
 | 2026-10-23 | req-relay-002, req-relay-003: Auch zwischen Komponente und Relay laufen Nachrichten über einen austauschbaren Übertragungsweg. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung der Präsentation `relay/presentations/requirements-1.html`). |
