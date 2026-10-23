@@ -75,7 +75,13 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Handelnde Stelle | Auswertung im Einzelschritt-Test, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
 | Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem der Strategietester liest (req-system-025). |
 | Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten (req-system-026). |
-| Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). |
+| Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). Der Strategietester fordert fehlende Daten über pipwerk relay bei der Beschaffung an (Anforderungen an das Nachrichtensystem req-relay-007). |
+| Nachrichtensystem | Produktname pipwerk relay. Überträgt Nachrichten zwischen eigenständig laufenden Komponenten, auch zwischen verschiedenen Rechnern (req-system-005, Anforderungen an das Nachrichtensystem). |
+| Nachricht | Einheit, die über das Nachrichtensystem übertragen wird, mit Nachrichten-ID, Absender, Adressat, Priorität, Nachrichtenart, Inhalt und Bezug-Nachrichten-ID (Anforderungen an das Handelssystem req-grund-004). |
+| Relay | Teil des Nachrichtensystems, der auf jedem Rechner läuft, auf dem eine Komponente Nachrichten sendet oder empfängt. Eine Komponente tauscht Nachrichten nur mit dem Relay ihres Rechners aus (req-relay-001, req-relay-002). |
+| Übertragungsweg | Austauschbarer Weg, über den Relays einander Nachrichten übertragen, zum Beispiel Matrix oder Dateien (req-relay-003, req-relay-004). |
+| Adressbuch | Liste eines Relays mit den Relays, die es kennt, je Relay mit dem Übertragungsweg, über den es erreichbar ist (req-relay-006). |
+| Standard-Relay | Relay, an das ein Relay eine Nachricht weitergibt, wenn das zuständige Relay nicht in seinem Adressbuch steht (req-relay-006). |
 
 ## Technische Begriffe
 
@@ -117,6 +123,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-23 | Einträge Nachrichtensystem, Nachricht, Relay, Übertragungsweg, Adressbuch und Standard-Relay neu, Beschaffung um pipwerk relay ergänzt. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-23 (Anforderungen an das Nachrichtensystem, Anforderungen an das Handelssystem req-grund-004; Hinweis H5 in `development/relay/reviews/requirements-1.md`). |
 | 2026-10-23 | Eintrag „Assistent“. Folgt aus der Festlegung des Auftraggebers zu req-ui-016 vom 2026-10-23 (Hinweis H3 in `development/strategiedesign/reviews/requirements-16.md`). |
 | 2026-10-23 | Namensraum: gemeinsamer Namensraum umfasst Regeln, Regelwerke und enthaltene Instanzen; kein Verdecken eines Namens der Strategie durch einen inneren; Namensvorschlag beim Einfügen. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-23 (Fachmodell req-fach-055, req-ablauf-003; Hinweis N3 in `development/strategiedesign/reviews/requirements-14.md`). Danach Parameter einer Regel und Namensraum einer Vorlage genannt (Hinweise N5 und N6 in `development/strategiedesign/reviews/requirements-15.md`, Spezifikation 3.3). |
 | 2026-10-22 | Namensraum, Datenverbindung, Ausgang, Ergebnis, Typbeschreibung an Methoden, Aktualisieren und gemeinsamen Namensraum der Instanzen angeglichen; Einträge „Methode“ und „Aktualisieren“ neu. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-22 (Fachmodell req-fach-055, req-ui-014; Befund B2 in `development/strategiedesign/reviews/requirements-13.md`). |
