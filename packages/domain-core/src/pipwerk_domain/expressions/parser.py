@@ -15,6 +15,7 @@ from pipwerk_domain.expressions.nodes import (
     Binary,
     Call,
     Group,
+    MethodCall,
     Name,
     NameSegment,
     Node,
@@ -84,6 +85,8 @@ class _Frame:
     name_end: int = 0
     arguments: list[Node] | None = None
     separators: list[int] | None = None
+    method: tuple[NameSegment, ...] | None = None
+    """The parts of the name of a method call, ``None`` for a call of a function."""
 
 
 def parse(source: str) -> ParseResult:
@@ -218,22 +221,44 @@ def _parse_tokens(tokens: list[Token]) -> Node:
             else:
                 assert closed.arguments is not None  # noqa: S101 - set when the call was opened
                 closed.arguments.append(result)
-                parent.operands.append(
-                    Call(
-                        closed.start,
-                        token.end,
-                        closed.name,
-                        closed.name_start,
-                        closed.name_end,
-                        tuple(closed.arguments),
-                        tuple(closed.separators or ()),
+                if closed.method is not None:
+                    parent.operands.append(
+                        MethodCall(
+                            closed.start,
+                            token.end,
+                            closed.method[:-1],
+                            closed.method[-1],
+                            tuple(closed.arguments),
+                            tuple(closed.separators or ()),
+                        )
                     )
-                )
+                else:
+                    parent.operands.append(
+                        Call(
+                            closed.start,
+                            token.end,
+                            closed.name,
+                            closed.name_start,
+                            closed.name_end,
+                            tuple(closed.arguments),
+                            tuple(closed.separators or ()),
+                        )
+                    )
         elif token.kind is TokenKind.END and frame.kind == "root":
             _reduce_all(frame)
             return frame.operands.pop()
         else:
             raise _unexpected(token)
+
+
+def _segments(token: Token) -> tuple[NameSegment, ...]:
+    """The parts of a name; an empty part (``[]``) inside a name is a syntax problem."""
+    for part in token.parts:
+        if part.bracketed and part.text == "":
+            raise SyntaxProblem("empty_part", part.start, part.end)
+    return tuple(
+        NameSegment(part.text, part.start, part.end, part.bracketed) for part in token.parts
+    )
 
 
 def _name_node(token: Token) -> Name | Slot:
@@ -242,27 +267,27 @@ def _name_node(token: Token) -> Name | Slot:
     parts = token.parts
     if len(parts) == 1 and parts[0].bracketed and parts[0].text == "":
         return Slot(token.start, token.end)
-    for part in parts:
-        if part.bracketed and part.text == "":
-            raise SyntaxProblem("empty_part", part.start, part.end)
-    return Name(
-        token.start,
-        token.end,
-        tuple(NameSegment(part.text, part.start, part.end, part.bracketed) for part in parts),
-    )
+    return Name(token.start, token.end, _segments(token))
 
 
 def _open_call(frames: list[_Frame], name: Token, tokens: list[Token], index: int) -> int:
-    """Open a function call; ``index`` points to the opening parenthesis. A call without
-    arguments is closed at once. Returns the index of the next token."""
+    """Open a function call or a method call (a name of several parts, the last part is the
+    method); ``index`` points to the opening parenthesis. A call without arguments is closed
+    at once. Returns the index of the next token."""
     left = tokens[index]
     if len(frames) > MAX_EXPRESSION_NESTING:
         raise SyntaxProblem("too_deep", left.start, left.end, maximum=MAX_EXPRESSION_NESTING)
     index += 1
     parent = frames[-1]
+    method = _segments(name) if len(name.parts) > 1 else None
     if tokens[index].kind is TokenKind.RIGHT_PAREN:
         closing = tokens[index]
-        parent.operands.append(Call(name.start, closing.end, name.text, name.start, name.end, ()))
+        if method is not None:
+            parent.operands.append(MethodCall(name.start, closing.end, method[:-1], method[-1], ()))
+        else:
+            parent.operands.append(
+                Call(name.start, closing.end, name.text, name.start, name.end, ())
+            )
         return index + 1
     frames.append(
         _Frame(
@@ -275,6 +300,7 @@ def _open_call(frames: list[_Frame], name: Token, tokens: list[Token], index: in
             name_end=name.end,
             arguments=[],
             separators=[],
+            method=method,
         )
     )
     return index

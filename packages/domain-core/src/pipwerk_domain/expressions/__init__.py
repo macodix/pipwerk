@@ -26,7 +26,14 @@ from pipwerk_domain.expressions.functions import (
     find_function,
     list_functions,
 )
-from pipwerk_domain.expressions.names import ChoiceInfo, PropertyInfo, VisibleName, visible_names
+from pipwerk_domain.expressions.names import (
+    ArgumentInfo,
+    ChoiceInfo,
+    MethodInfo,
+    PropertyInfo,
+    VisibleName,
+    visible_names,
+)
 from pipwerk_domain.expressions.parser import ParseResult, SyntaxIssue, parse
 from pipwerk_domain.expressions.sentence import sentence
 from pipwerk_domain.expressions.symbols import Environment, Scope, Symbol, SymbolKind
@@ -61,6 +68,7 @@ def nesting_depth(source: str) -> int:
 
 __all__ = [
     "Analysis",
+    "ArgumentInfo",
     "Block",
     "BlockError",
     "BlockKind",
@@ -73,6 +81,7 @@ __all__ = [
     "FunctionParameter",
     "FunctionSignature",
     "IssueKind",
+    "MethodInfo",
     "ParseResult",
     "PropertyInfo",
     "RecognizedFunction",

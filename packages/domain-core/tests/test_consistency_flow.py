@@ -284,16 +284,16 @@ def test_unknown_value_of_a_choice_is_an_error() -> None:
         1,
         element(
             5,
-            "Markttechnik",
+            "ZigZag",
             instance=Instance(
                 name="mt",
-                object_type="Markttechnik",
-                origin=Origin("Markttechnik"),
+                object_type="ZigZag",
+                origin=Origin("ZigZag"),
                 parameter_values={"zeiteinheit": fixed("h1")},
             ),
         ),
     )
-    strategy.elements.insert(2, condition(6, 'mt.phase = "Seitwaerts"'))
+    strategy.elements.insert(2, condition(6, 'mt.wendepunkt_1_art = "Seitwaerts"'))
     strategy.connections = [connect(1, "weiter", 6), connect(6, "wahr", 2)]
     found = only(check(strategy), fc.EXPRESSION_INVALID)
     assert found[0].details["issue"] == "unknown_choice_value"
@@ -400,17 +400,13 @@ def test_a_calculation_pointing_to_itself_never_ends() -> None:
 
 
 def test_return_to_an_earlier_condition_with_an_exit_is_valid() -> None:
-    """The return after "Parameter setzen" (req-fach-047): the condition leads out."""
+    """The return to an earlier condition (req-fach-047): the condition leads out."""
     strategy = valid_strategy()
     strategy.parameters = [StrategyParameter("zeit", DataType.TIME_UNIT, "h1")]
     strategy.elements = [
         trigger(1),
         condition(5, 'Strategie.zeit = "h1"'),
-        element(
-            6,
-            catalog.FLOW_SET_PARAMETER,
-            parameters={"strategieparameter": fixed("zeit"), "ausdruck": expr('"m15"')},
-        ),
+        calculation(6, "zaehler", "1"),
         place_order(2),
     ]
     strategy.connections = [
@@ -586,21 +582,22 @@ def test_strategy_parameter_with_a_wrong_value() -> None:
     assert found[0].details["scope"] == "strategy"
 
 
-def test_set_parameter_checks_the_target_and_the_type() -> None:
+def test_parameter_setzen_is_an_unknown_type() -> None:
+    """The element "Parameter setzen" is no longer delivered (req-fach-047): a document that
+    has it keeps it and the check reports the unknown type."""
     strategy = valid_strategy()
     strategy.parameters = [StrategyParameter("zahl", DataType.NUMBER, 1)]
-    set_element = element(
+    unknown = element(
         5,
-        catalog.FLOW_SET_PARAMETER,
+        "flow.set_parameter",
         parameters={"strategieparameter": fixed("zahl"), "ausdruck": expr("Strategie.zahl + 1")},
     )
-    strategy.elements.insert(1, set_element)
+    strategy.elements.insert(1, unknown)
     strategy.connections = [connect(1, "weiter", 5), connect(5, "weiter", 2)]
-    assert check(strategy) == []
-    set_element.parameters["ausdruck"] = expr('"text"')
-    assert only(check(strategy), fc.EXPRESSION_INVALID)
-    set_element.parameters["strategieparameter"] = fixed("anders")
-    assert only(check(strategy), fc.PARAMETER_BINDING_INVALID)
+    found = only(check(strategy), fc.TYPE_UNKNOWN)
+    assert [item.element for item in found] == [uid(5)]
+    assert found[0].details["type"] == "flow.set_parameter"
+    assert unknown.parameters["ausdruck"].value == "Strategie.zahl + 1"  # the values stay
 
 
 # MUSS-Eigenschaft der Order ----------------------------------------------------------------------
@@ -1083,7 +1080,7 @@ def test_candle_at_an_element_that_another_trigger_than_candle_close_reaches() -
     assert candle_found(strategy) == [(uid(5), None)]
     # the trigger "manual start" is another trigger than candle close too
     manual = strategy_with(
-        element(1, catalog.TRIGGER_MANUAL_START),
+        element(1, catalog.TRIGGER_MANUAL),
         condition(5, "Kerze.schluss > 1"),
         connections=[connect(1, "weiter", 5)],
     )
@@ -1156,7 +1153,7 @@ def test_candle_in_a_rule_of_an_element_of_a_management_without_trigger() -> Non
     )
     strategy.connections.append(connect(2, "gestellt", 4))
     assert candle_found(strategy) == []
-    strategy.elements.append(element(7, catalog.TRIGGER_MANUAL_START))
+    strategy.elements.append(element(7, catalog.TRIGGER_MANUAL))
     strategy.connections.append(connect(7, "weiter", 2))
     assert candle_found(strategy) == [(uid(4), "r")]
 
@@ -1244,7 +1241,7 @@ def test_candle_at_an_instance_on_the_canvas() -> None:
     # no trigger: no other trigger than candle close can start the strategy
     assert candle_found(strategy_with(instance_element())) == []
     # the trigger "manual start"
-    manual = strategy_with(element(1, catalog.TRIGGER_MANUAL_START), instance_element())
+    manual = strategy_with(element(1, catalog.TRIGGER_MANUAL), instance_element())
     assert candle_found(manual) == [(uid(50), "ema_kerze")]
     # a tick trigger
     tick = strategy_with(element(1, catalog.TRIGGER_TICK), instance_element())

@@ -134,6 +134,9 @@ class Instance(ObjectContent):
     name: str
     key: str = ""
     origin: Origin | None = None
+    first_use: str | None = None
+    """The identifier (UUID) of the element with which the user first connected the instance,
+    ``None`` if there is none (specification 3.3)."""
 
     def __post_init__(self) -> None:
         if not self.key:
@@ -157,13 +160,29 @@ class Position:
     y: float
 
 
+class InputKind(StrEnum):
+    """What an input names of the instance: a property or a method (specification 3.3)."""
+
+    PROPERTY = "property"
+    METHOD = "method"
+
+
 @dataclass(frozen=True, slots=True)
 class ElementInput:
-    """An input of an element: a value that the user has connected to the element, by the keys
-    of an instance on the drawing area and of its property (specification 3.3)."""
+    """An input of an element: a value that the user has connected to the element, by the key
+    of an instance on the drawing area and either its property or its method with the values of
+    the arguments, with the indication "Aktualisieren" (specification 3.3).
+
+    ``property`` is the identifier of the property or, for ``kind`` method, of the method.
+    ``arguments`` are the fixed values of the arguments of the method, in the order of the
+    method; an optional argument that is left out has its default value. Both are empty for a
+    property."""
 
     instance: str
     property: str
+    kind: InputKind = InputKind.PROPERTY
+    arguments: tuple[Scalar, ...] = ()
+    refresh: bool = False
 
 
 @dataclass(kw_only=True, slots=True)

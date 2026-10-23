@@ -180,6 +180,39 @@ class PropertyModel(ApiModel):
     explanation: LabelModel
 
 
+class ArgumentModel(ApiModel):
+    """An argument of a method (specification 3.1): its identifier, data type, whether it is
+    mandatory (``required``) and, if not, its ``default`` value (an expression that leaves an
+    optional argument out gets this value), the allowed values of a choice or time unit in
+    ``choices``, the ``object_type`` of an object, and its label and explanation. Arguments
+    stand in the order of this list; the mandatory ones come before the optional ones."""
+
+    id: str
+    datatype: DataType
+    label: LabelModel
+    required: bool
+    default: bool | int | float | str | None
+    choices: list[ChoiceModel]
+    object_type: str | None
+    explanation: LabelModel
+
+
+class MethodModel(ApiModel):
+    """A method of a type (specification 3.1, req-fach-055): an expression addresses it as
+    ``Object.Method(Arguments)`` with the values of the arguments separated by ``;``. ``datatype``
+    is the data type of the result, with ``choices`` (a result that is a choice or a time unit)
+    and ``object_type`` (a result that is an object) like a property; ``arguments`` are the
+    arguments in their order. The delivered types have no methods."""
+
+    id: str
+    datatype: DataType
+    label: LabelModel
+    arguments: list[ArgumentModel]
+    choices: list[ChoiceModel]
+    object_type: str | None
+    explanation: LabelModel
+
+
 class OutputModel(ApiModel):
     """An output of an element of the flow."""
 
@@ -191,9 +224,14 @@ class OutputModel(ApiModel):
 
 class TypeDescriptionModel(ApiModel):
     """Description of an element type or object type: the data the user interface is built
-    from (specification 3.1). ``group`` is the group of the element library (``null`` for a
-    type that is not in it); ``explanation`` is the short text on pointing at the type, in
-    the language of a trader."""
+    from (specification 3.1). ``group`` is the group of the element library: ``flow``,
+    ``calculation``, ``indicators``, ``trends``, ``market``, ``account``, ``actions`` or
+    ``rules``, ``null`` for a type that is not in it; the names of the groups in both languages
+    are not part of the description, the user interface has them. ``explanation`` is the short
+    text on pointing at the type, in the language of a trader. ``methods`` are the methods of
+    the type (empty for every delivered type). ``can_refresh`` tells whether a use of an
+    instance of this type can choose "Aktualisieren"; a template of the user and its instances
+    take it from their object type."""
 
     id: str
     kind: ElementKind
@@ -211,6 +249,8 @@ class TypeDescriptionModel(ApiModel):
     strategy_parameters: bool
     explanation: LabelModel
     group: Group | None
+    methods: list[MethodModel]
+    can_refresh: bool
 
 
 class FunctionParameterModel(ApiModel):
@@ -817,10 +857,13 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
         summary="List the type descriptions",
         description=(
             "All type descriptions of the element register with names, descriptions, "
-            "explanations and groups in German and English, the delivered templates as "
-            "documents with their names and explanations in both languages, and the functions "
-            "of expressions. The user interface builds the element library and the property "
-            "view from this."
+            "explanations and groups in German and English, with their methods (identifier, "
+            "data type of the result, arguments with data type, mandatory or optional, default "
+            "value, label and explanation, and label and explanation of the method) and the "
+            'indication whether a use of an instance can choose "Aktualisieren" '
+            "(`can_refresh`), the delivered templates as documents with their names and "
+            "explanations in both languages, and the functions of expressions. The user "
+            "interface builds the element library and the property view from this."
         ),
     )
     def element_types() -> ElementTypesResponse:

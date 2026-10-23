@@ -105,6 +105,20 @@
           ],
           "default": null
         },
+        "first_use": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Identifier of the element with which the user first connected the instance, or null",
+          "title": "First Use"
+        },
         "parameter_values": {
           "additionalProperties": {
             "$ref": "#/$defs/BindingDocument"

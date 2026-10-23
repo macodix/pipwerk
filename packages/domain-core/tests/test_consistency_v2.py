@@ -227,11 +227,11 @@ def test_a_data_connection_between_unfitting_types() -> None:
     strategy.elements.append(
         element(
             11,
-            "Markttechnik",
+            "ZigZag",
             instance=Instance(
                 name="mt",
                 key="mt",
-                object_type="Markttechnik",
+                object_type="ZigZag",
                 parameter_values={
                     "zeiteinheit": fixed("h1"),
                     "depth": Binding(BindingKind.CONNECTION, DataLink("ema20", "wert")),
@@ -707,9 +707,9 @@ def test_the_time_unit_of_an_indicator_template_is_a_parameter_of_every_indicato
     assert [item.details["parameter"] for item in found] == ["zeiteinheit"]
 
 
-def test_the_trigger_manual_start_has_no_parameter() -> None:
+def test_the_trigger_manual_has_no_parameter() -> None:
     strategy = valid_strategy()
-    strategy.elements[0] = element(1, catalog.TRIGGER_MANUAL_START)
+    strategy.elements[0] = element(1, catalog.TRIGGER_MANUAL)
     assert check(strategy) == []
     strategy.elements[0].parameters["zeiteinheit"] = fixed("h1")
     found = only(check(strategy), fc.PARAMETER_BINDING_INVALID)

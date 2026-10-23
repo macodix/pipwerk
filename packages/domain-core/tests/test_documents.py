@@ -26,6 +26,7 @@ from pipwerk_domain.model import (
     DataLink,
     Element,
     ElementInput,
+    InputKind,
     Instance,
     Orientation,
     Origin,
@@ -125,7 +126,12 @@ def full_strategy() -> Strategy:
         },
         name="Order",
         rules=[rule("mindestvolumen", "Order.volumen >= Order.instrument.mindestvolumen")],
-        inputs=[ElementInput("ema21", "wert")],
+        inputs=[
+            ElementInput("ema21", "wert"),
+            ElementInput("ema21", "wert", refresh=True),
+            ElementInput("ema21", "vorheriger_wert", InputKind.METHOD, (3, "h1", True, 2.5)),
+            ElementInput("ema20", "abstand", InputKind.METHOD, (), True),
+        ],
     )
     return Strategy(
         id=uid(900),
@@ -317,7 +323,36 @@ def test_the_written_text_is_json_with_the_head_first_and_a_final_line_feed() ->
 def test_the_fields_of_the_format_two_are_written() -> None:
     data = json.loads(write_document(full_strategy()))
     order = data["elements"][1]
-    assert order["inputs"] == [{"instance": "ema21", "property": "wert"}]
+    assert order["inputs"] == [
+        {
+            "instance": "ema21",
+            "property": "wert",
+            "kind": "property",
+            "arguments": [],
+            "refresh": False,
+        },
+        {
+            "instance": "ema21",
+            "property": "wert",
+            "kind": "property",
+            "arguments": [],
+            "refresh": True,
+        },
+        {
+            "instance": "ema21",
+            "property": "vorheriger_wert",
+            "kind": "method",
+            "arguments": [3, "h1", True, 2.5],
+            "refresh": False,
+        },
+        {
+            "instance": "ema20",
+            "property": "abstand",
+            "kind": "method",
+            "arguments": [],
+            "refresh": True,
+        },
+    ]
     assert order["name"] == "Order"
     assert data["elements"][0]["position"] == {"x": 10.5, "y": -3.0}
     assert data["elements"][1]["position"] is None
@@ -332,6 +367,126 @@ def test_the_fields_of_the_format_two_are_written() -> None:
     }
     assert all(set(item) == {"id", "source", "output", "target"} for item in data["connections"])
     assert data["parameters"][5]["object_type"] == "Instrument"
+
+
+def test_the_input_of_every_kind_is_written_and_read_again() -> None:
+    original = full_strategy()
+    result = read_document(write_document(original))
+    assert isinstance(result, Strategy)
+    assert result == original
+    inputs = result.elements[1].inputs
+    assert [(item.kind, item.arguments, item.refresh) for item in inputs] == [
+        (InputKind.PROPERTY, (), False),
+        (InputKind.PROPERTY, (), True),
+        (InputKind.METHOD, (3, "h1", True, 2.5), False),
+        (InputKind.METHOD, (), True),
+    ]
+    assert [type(value) for value in inputs[2].arguments] == [int, str, bool, float]
+
+
+def test_a_document_without_the_indications_of_an_input_is_read_as_a_property() -> None:
+    """Specification 3.7: ``kind`` is ``property``, ``arguments`` empty and ``refresh`` false in a
+    document of the format 2.0 that has none of these indications."""
+    data = strategy_dict(
+        elements=[element_dict(inputs=[{"instance": "ema21", "property": "wert"}])]
+    )
+    value = read_document(json.dumps(data))
+    assert isinstance(value, Strategy)
+    assert value.elements[0].inputs == [ElementInput("ema21", "wert")]
+    assert (value.elements[0].inputs[0].kind, value.elements[0].inputs[0].arguments) == (
+        InputKind.PROPERTY,
+        (),
+    )
+    assert value.elements[0].inputs[0].refresh is False
+
+
+def test_an_input_of_a_method_names_the_values_of_its_arguments() -> None:
+    entry = {
+        "instance": "ema21",
+        "property": "vorheriger_wert",
+        "kind": "method",
+        "arguments": [3, "h1"],
+        "refresh": True,
+    }
+    value = read_document(json.dumps(strategy_dict(elements=[element_dict(inputs=[entry])])))
+    assert isinstance(value, Strategy)
+    assert value.elements[0].inputs == [
+        ElementInput("ema21", "vorheriger_wert", InputKind.METHOD, (3, "h1"), True)
+    ]
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {"instance": "a", "property": "b", "kind": "other"},
+        {"instance": "a", "property": "b", "kind": "property", "arguments": [1]},
+        {"instance": "a", "property": "b", "kind": "method", "arguments": [None]},
+        {"instance": "a", "property": "b", "kind": "method", "arguments": [[1]]},
+        {"instance": "a", "property": "b", "kind": "method", "arguments": {"x": 1}},
+        {"instance": "a", "property": "b", "refresh": "ja"},
+        {"instance": "a", "property": "b", "refresh": 1},
+        {"instance": "a", "property": "b", "kind": "method", "arguments": [float("inf")]},
+        {"instance": "a", "property": "b", "kind": "method", "arguments": [0] * 21},
+    ],
+)
+def test_an_input_that_does_not_fit_the_format_is_rejected(entry: dict[str, Any]) -> None:
+    rejects(strategy_dict(elements=[element_dict(inputs=[entry])]))
+
+
+def test_the_former_identifier_of_the_manual_trigger_is_read_as_manuell() -> None:
+    """Specification 3.7: a trigger with the identifier of "Start von Hand" is read as ``Manuell``;
+    a document of the format 2.0 that was written earlier is changed this way too."""
+    data = strategy_dict(
+        elements=[
+            element_dict(id=uid(1), type="trigger.manual_start"),
+            element_dict(id=uid(2), type="trigger.manual"),
+            element_dict(id=uid(3), type="trigger.manual_starts"),
+        ]
+    )
+    document = parse_document(data)
+    assert isinstance(document, StrategyDocument)
+    assert [item.type for item in document.elements] == [
+        "trigger.manual",
+        "trigger.manual",
+        "trigger.manual_starts",  # no other identifier is changed
+    ]
+    value = read_document(json.dumps(data))
+    assert isinstance(value, Strategy)
+    assert [item.type for item in value.elements][:2] == ["trigger.manual", "trigger.manual"]
+    assert "manual_start" not in write_document(value).replace("manual_starts", "")
+
+
+def test_the_instance_has_the_element_of_its_first_use() -> None:
+    """The field ``first_use`` is the identifier of an element or ``null`` (specification 3.3)."""
+    instance = ema("ema21", 21)
+    instance.first_use = uid(2)
+    original = Strategy(
+        id=uid(900),
+        name="t",
+        elements=[Element(id=uid(4), type="EMA", instance=instance), place_order(2)],
+    )
+    text = write_document(original)
+    data = json.loads(text)
+    assert data["elements"][0]["instance"]["first_use"] == uid(2)
+    result = read_document(text)
+    assert isinstance(result, Strategy)
+    assert result.elements[0].instance is not None
+    assert result.elements[0].instance.first_use == uid(2)
+    assert result == original
+    plain = read_document(write_document(full_strategy()))
+    assert isinstance(plain, Strategy)
+    assert plain.elements[3].instance is not None
+    assert plain.elements[3].instance.first_use is None
+    assert json.loads(write_document(plain))["elements"][3]["instance"]["first_use"] is None
+
+
+@pytest.mark.parametrize("value", ["kein-uuid", 5, True, ""])
+def test_a_first_use_that_is_no_identifier_is_rejected(value: object) -> None:
+    rejects(
+        strategy_dict(
+            elements=[element_dict(instance=instance_dict(first_use=value))],
+        )
+    )
 
 
 def test_numbers_keep_their_kind() -> None:

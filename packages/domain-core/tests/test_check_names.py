@@ -15,7 +15,7 @@ from pipwerk_domain.documents import read_document
 from pipwerk_domain.model import Strategy
 from pipwerk_domain.risk_rule import RISK_PER_TRADE_RULE_ID, risk_per_trade_template
 from tests.helpers import calculation, condition, connect, place_order, trigger, uid
-from tests.paths import TESTCASE_DIRECTORY
+from tests.paths import CHECKED_TESTCASES, TESTCASE_DIRECTORY
 
 
 def load(name: str) -> Strategy:
@@ -42,7 +42,7 @@ def test_the_findings_are_those_of_the_plain_check(name: str) -> None:
     assert result.expressions
 
 
-@pytest.mark.parametrize("name", ["str-01", "str-03"])
+@pytest.mark.parametrize("name", CHECKED_TESTCASES)
 def test_every_name_stands_at_its_position_in_the_expression(name: str) -> None:
     strategy = load(name)
     texts = {

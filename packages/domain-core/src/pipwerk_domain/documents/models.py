@@ -23,6 +23,7 @@ from pipwerk_domain.limits import (
     MAX_ELEMENTS,
     MAX_EXPRESSION_LENGTH,
     MAX_EXPRESSION_NESTING,
+    MAX_INPUT_ARGUMENTS,
     MAX_INPUTS_PER_ELEMENT,
     MAX_INSTANCE_NESTING,
     MAX_KEY_LENGTH,
@@ -56,6 +57,7 @@ DataTypeName = Literal[
 BindingKindName = Literal["fixed", "parameter", "connection", "expression", "application"]
 ComparisonName = Literal["hoechstens", "mindestens", "gleich"]
 OrientationName = Literal["vertical", "horizontal"]
+InputKindName = Literal["property", "method"]
 
 
 def _check_depth(text: str) -> str:
@@ -186,6 +188,12 @@ class _InstanceHead(_Strict):
     key: Key
     object_type: str
     origin: OriginDocument | None = None
+    first_use: UuidString | None = Field(
+        default=None,
+        description=(
+            "Identifier of the element with which the user first connected the instance, or null"
+        ),
+    )
 
 
 class InstanceDocument(_Content, _InstanceHead):
@@ -201,10 +209,24 @@ class PositionDocument(_Strict):
 
 
 class InputDocument(_Strict):
-    """An input of an element: a property of an instance on the drawing area."""
+    """An input of an element: an instance on the drawing area and either its property or its
+    method with the values of the arguments, and the indication "Aktualisieren".
+
+    ``property`` is the key of the property or, with ``kind`` ``method``, of the method.
+    ``kind`` is ``property`` if it is left out, ``arguments`` is empty and ``refresh`` false
+    (a document without these indications)."""
 
     instance: Key
     property: Key
+    kind: InputKindName = "property"
+    arguments: list[ScalarValue] = Field(default_factory=list, max_length=MAX_INPUT_ARGUMENTS)
+    refresh: bool = False
+
+    @model_validator(mode="after")
+    def _check_arguments(self) -> InputDocument:
+        if self.kind == "property" and self.arguments:
+            raise ValueError("an input that names a property has no arguments")
+        return self
 
 
 class ElementDocument(_Strict):

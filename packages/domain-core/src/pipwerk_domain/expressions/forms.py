@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from pipwerk_domain.expressions.checker import Analysis, analyze, result_texts
 from pipwerk_domain.expressions.exprtypes import ExprType
-from pipwerk_domain.expressions.nodes import Binary, Node, String, postorder
+from pipwerk_domain.expressions.nodes import Binary, MethodCall, Node, String, postorder
 from pipwerk_domain.expressions.symbols import Environment, normalized_name
 
 
@@ -61,6 +61,11 @@ def choice_contexts(analysis: Analysis, expected: ExprType | None) -> dict[int, 
                 mark(node.right, left)
             if right is not None and right.choices and right.labels:
                 mark(node.left, right)
+        elif isinstance(node, MethodCall):  # the argument of a method that is a choice
+            for argument in node.args:
+                wanted = analysis.argument_types.get(id(argument))
+                if wanted is not None and wanted.choices and wanted.labels:
+                    mark(argument, wanted)
     if expected is not None and expected.choices and expected.labels:
         mark(tree, expected)
     return found

@@ -223,7 +223,7 @@
     },
     "InputDocument": {
       "additionalProperties": false,
-      "description": "An input of an element: a property of an instance on the drawing area.",
+      "description": "An input of an element: an instance on the drawing area and either its property or its\nmethod with the values of the arguments, and the indication \"Aktualisieren\".\n\n``property`` is the key of the property or, with ``kind`` ``method``, of the method.\n``kind`` is ``property`` if it is left out, ``arguments`` is empty and ``refresh`` false\n(a document without these indications).",
       "properties": {
         "instance": {
           "description": "Key of an object in an expression: a simple name",
@@ -238,6 +238,41 @@
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
           "title": "Property",
           "type": "string"
+        },
+        "kind": {
+          "default": "property",
+          "enum": [
+            "property",
+            "method"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "arguments": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 20,
+          "title": "Arguments",
+          "type": "array"
+        },
+        "refresh": {
+          "default": false,
+          "title": "Refresh",
+          "type": "boolean"
         }
       },
       "required": [
@@ -278,6 +313,20 @@
             }
           ],
           "default": null
+        },
+        "first_use": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Identifier of the element with which the user first connected the instance, or null",
+          "title": "First Use"
         },
         "parameter_values": {
           "additionalProperties": {

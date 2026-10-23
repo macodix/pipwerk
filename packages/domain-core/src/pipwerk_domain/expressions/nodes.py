@@ -72,6 +72,25 @@ class Call(Node):
     """Positions of the separators ``;`` between the arguments."""
 
 
+@dataclass(slots=True, eq=False)
+class MethodCall(Node):
+    """A method of an object with its arguments: ``Objekt.Methode(Argumente)``
+    (specification 3.4). ``owner`` are the parts of the name before the method, ``method`` is
+    the last part. ``start`` is the first character of the name, ``end`` the position after
+    the closing parenthesis."""
+
+    owner: tuple[NameSegment, ...]
+    method: NameSegment
+    args: tuple[Node, ...]
+    arg_separators: tuple[int, ...] = ()
+    """Positions of the separators ``;`` between the arguments."""
+
+    @property
+    def segments(self) -> tuple[NameSegment, ...]:
+        """All parts of the name: the owner and the method."""
+        return (*self.owner, self.method)
+
+
 def children(node: Node) -> tuple[Node, ...]:
     """The direct child nodes of a node."""
     match node:
@@ -81,16 +100,16 @@ def children(node: Node) -> tuple[Node, ...]:
             return (operand,)
         case Binary(left=left, right=right):
             return (left, right)
-        case Call(args=args):
+        case Call(args=args) | MethodCall(args=args):
             return args
         case _:
             return ()
 
 
-def names_and_calls(root: Node) -> tuple[list[Name], list[Call]]:
-    """All names and function calls of a tree, without recursion and without building the
-    list of all nodes."""
-    names: list[Name] = []
+def names_and_calls(root: Node) -> tuple[list[Name | MethodCall], list[Call]]:
+    """All names (also the names of methods, as method calls) and function calls of a tree,
+    without recursion and without building the list of all nodes."""
+    names: list[Name | MethodCall] = []
     calls: list[Call] = []
     stack: list[Node] = [root]
     while stack:
@@ -103,6 +122,9 @@ def names_and_calls(root: Node) -> tuple[list[Name], list[Call]]:
             stack.append(node.right)  # type: ignore[attr-defined]
         elif kind is Call:
             calls.append(node)  # type: ignore[arg-type]
+            stack.extend(node.args)  # type: ignore[attr-defined]
+        elif kind is MethodCall:
+            names.append(node)  # type: ignore[arg-type]
             stack.extend(node.args)  # type: ignore[attr-defined]
         elif kind is Group:
             stack.append(node.inner)  # type: ignore[attr-defined]

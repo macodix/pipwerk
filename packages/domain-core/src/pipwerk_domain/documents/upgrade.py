@@ -377,7 +377,8 @@ class _Upgrader:
     def element(
         self, source: v1.ElementDocument, key: str | None, strategy_rewrite: Rewrite
     ) -> v2.ElementDocument:
-        description = self.registry.get(source.type)
+        element_type = catalog.current_type_id(source.type)
+        description = self.registry.get(element_type)
         parameters = self.bindings(source.parameters, strategy_rewrite)
         properties = self.bindings(source.properties, strategy_rewrite)
         if description is not None and source.instance is None:
@@ -394,7 +395,7 @@ class _Upgrader:
         if source.instance is not None:
             return v2.ElementDocument(
                 id=source.id,
-                type=source.type,
+                type=element_type,
                 parameters=parameters,
                 properties=properties,
                 rules=[
@@ -414,7 +415,7 @@ class _Upgrader:
         name = _display(text) if text else None
         return v2.ElementDocument(
             id=source.id,
-            type=source.type,
+            type=element_type,
             name=name,
             key=key,
             parameters=parameters,
@@ -456,7 +457,7 @@ class _Upgrader:
             members = [item for item in source.elements if item.management_of == element.id]
             if not members:
                 continue
-            kinds = [self.registry.get(item.type) for item in members]
+            kinds = [self.registry.get(catalog.current_type_id(item.type)) for item in members]
             if any(item is not None and item.kind is ElementKind.TRIGGER for item in kinds):
                 continue
             member_ids = {item.id for item in members}
@@ -465,7 +466,8 @@ class _Upgrader:
                 item
                 for item in members
                 if item.id not in targets
-                and (description := self.registry.get(item.type)) is not None
+                and (description := self.registry.get(catalog.current_type_id(item.type)))
+                is not None
                 and description.kind is ElementKind.FLOW
             ]
             if len(without) == 1:

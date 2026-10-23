@@ -25,6 +25,7 @@ from pipwerk_domain.expressions.nodes import (
     Binary,
     Call,
     Group,
+    MethodCall,
     Name,
     Node,
     Number,
@@ -99,6 +100,9 @@ class Block:
     symbols: tuple[Symbol, ...] = field(default=(), compare=False, repr=False)
     type: ExprType | None = field(default=None, compare=False, repr=False)
     previous_value: bool = field(default=False, compare=False, repr=False)
+    call: bool = False
+    """For a value that is a name: it is a method; ``path`` ends with the method and
+    ``children`` are the blocks of the arguments (none for a method without arguments)."""
 
 
 EMPTY = Block(BlockKind.EMPTY)
@@ -134,6 +138,14 @@ def _block_of(
             return Block(BlockKind.LITERAL, value=value, datatype="text", type=node_type)
         case Name():
             return _name_block(node, names.get(node.start), node_type)
+        case MethodCall(args=args):
+            return _name_block(
+                node,
+                names.get(node.start),
+                node_type,
+                tuple(built[id(item)] for item in args),
+                call=True,
+            )
         case Group(inner=inner):
             return built[id(inner)]
         case Unary(op=op, operand=operand):
@@ -148,7 +160,14 @@ def _block_of(
     raise AssertionError("unknown node")  # pragma: no cover
 
 
-def _name_block(node: Name, recognized: RecognizedName | None, node_type: ExprType | None) -> Block:
+def _name_block(
+    node: Name | MethodCall,
+    recognized: RecognizedName | None,
+    node_type: ExprType | None,
+    children: tuple[Block, ...] = (),
+    *,
+    call: bool = False,
+) -> Block:
     path: list[str] = []
     symbols: tuple[Symbol, ...] = ()
     previous = False
@@ -162,9 +181,11 @@ def _name_block(node: Name, recognized: RecognizedName | None, node_type: ExprTy
     return Block(
         BlockKind.NAME,
         path=tuple(path),
+        children=children,
         symbols=symbols,
         type=node_type,
         previous_value=previous,
+        call=call,
     )
 
 
@@ -247,6 +268,7 @@ def _with_children(block: Block, children: tuple[Block, ...]) -> Block:
         block.symbols,
         block.type,
         block.previous_value,
+        block.call,
     )
 
 
@@ -417,6 +439,12 @@ def _text_of(block: Block, texts: dict[int, str], environment: Environment | Non
     if kind is BlockKind.EMPTY:
         return "[]"
     if kind is BlockKind.NAME:
+        if block.call:
+            if len(block.path) < 2:
+                raise BlockError("name_path")  # a method belongs to an object
+            return f"{_name_text(block.path)}({'; '.join(children)})"
+        if children:
+            raise BlockError("name_children")
         return _name_text(block.path)
     if kind is BlockKind.LITERAL:
         return literal_text(block)

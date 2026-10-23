@@ -51,12 +51,11 @@ def all_explanations(description: TypeDescription) -> list[tuple[str, Label]]:
 
 def test_the_types_of_specification_3_2_are_delivered() -> None:
     triggers = {item.id for item in REGISTRY.list(ElementKind.TRIGGER)}
-    assert triggers == {"trigger.candle_close", "trigger.tick", "trigger.manual_start"}
+    assert triggers == {"trigger.candle_close", "trigger.tick", "trigger.manual"}
     flow = {item.id for item in REGISTRY.list(ElementKind.FLOW)}
     assert flow == {
         "flow.condition",
         "flow.calculation",
-        "flow.set_parameter",
         "flow.place_order",
         "flow.modify_order",
         "flow.delete_order",
@@ -73,7 +72,6 @@ def test_the_types_of_specification_3_2_are_delivered() -> None:
         "EMA",
         "ATR",
         "ZigZag",
-        "Markttechnik",
         "Trend",
         "Regel",
         "Regelwerk",
@@ -81,6 +79,14 @@ def test_the_types_of_specification_3_2_are_delivered() -> None:
     assert [item.id for item in REGISTRY.list(ElementKind.TREND_METHOD)] == [
         catalog.TREND_METHOD_EXPRESSION
     ]
+
+
+@pytest.mark.parametrize("type_id", ["Markttechnik", "flow.set_parameter", "trigger.manual_start"])
+def test_withdrawn_and_renamed_types_are_not_registered(type_id: str) -> None:
+    """ "Parameter setzen" and "Markttechnik" are not delivered (specification 3.2); "Start von
+    Hand" is the trigger "Manuell" with a new identifier."""
+    assert REGISTRY.get(type_id) is None
+    assert type_id not in REGISTRY
 
 
 def test_every_type_has_labels_in_german_and_english() -> None:
@@ -108,18 +114,17 @@ def test_every_type_parameter_property_and_output_has_an_explanation_in_both_lan
 
 
 GROUPS = {
-    "trigger.candle_close": Group.WHEN,
-    "trigger.tick": Group.WHEN,
-    "trigger.manual_start": Group.WHEN,
-    "flow.condition": Group.ACTIONS,
-    "flow.calculation": Group.ACTIONS,
-    "flow.set_parameter": Group.ACTIONS,
+    "trigger.candle_close": Group.FLOW,
+    "trigger.tick": Group.FLOW,
+    "trigger.manual": Group.FLOW,
+    "flow.condition": Group.FLOW,
+    "flow.calculation": Group.CALCULATION,
     "flow.place_order": Group.ACTIONS,
     "flow.modify_order": Group.ACTIONS,
     "flow.delete_order": Group.ACTIONS,
     "flow.modify_position": Group.ACTIONS,
     "flow.close_position": Group.ACTIONS,
-    "Konto": Group.MARKET,
+    "Konto": Group.ACCOUNT,
     "Instrument": Group.MARKET,
     "Kerze": Group.MARKET,
     "Tick": Group.MARKET,
@@ -127,7 +132,6 @@ GROUPS = {
     "ATR": Group.INDICATORS,
     "ZigZag": Group.INDICATORS,
     "Indikator": Group.INDICATORS,
-    "Markttechnik": Group.TRENDS,
     "Trend": Group.TRENDS,
     "Regel": Group.RULES,
     "Regelwerk": Group.RULES,
@@ -137,28 +141,36 @@ GROUPS = {
 def test_the_groups_of_the_element_library_follow_specification_5_2() -> None:
     for description in REGISTRY.list():
         assert description.group == GROUPS.get(description.id), description.id
-    assert Group.RULES in {item.group for item in REGISTRY.list()}
+    assert {item.group for item in REGISTRY.list()} - {None} == set(Group)
     assert [item.value for item in Group] == [
-        "when",
-        "actions",
-        "market",
+        "flow",
+        "calculation",
         "indicators",
         "trends",
+        "market",
+        "account",
+        "actions",
         "rules",
     ]
 
 
+def test_tick_is_a_trigger_and_an_object_with_different_identifiers_and_kinds() -> None:
+    """Specification 5.2: "Tick" stands twice in the element library, as two types."""
+    trigger = get("trigger.tick")
+    market = get("Tick")
+    assert trigger.id != market.id
+    assert trigger.kind is ElementKind.TRIGGER
+    assert market.kind is ElementKind.APPLICATION_OBJECT
+    assert (trigger.group, market.group) == (Group.FLOW, Group.MARKET)
+
+
 def test_names_are_in_trader_language() -> None:
     names = {item.id: item.name for item in REGISTRY.list()}
-    assert names["flow.set_parameter"] == Label(
-        "Strategieparameter ändern", "Change strategy parameter"
-    )
-    assert names["Markttechnik"].de == "1-2-3-Trend (Markttechnik)"
     assert names["Indikator"].de == "eigener Indikator"
     assert names["Trend"].de == "eigener Trend"
     assert names["Regel"].de == "eigene Regel"
     assert names["Regelwerk"].de == "eigenes Regelwerk"
-    assert names["trigger.manual_start"].de == "Start von Hand"
+    assert names["trigger.manual"] == Label("Manuell", "Manual")
 
 
 def test_no_text_contains_an_identifier_in_programming_spelling() -> None:
@@ -195,7 +207,6 @@ def test_identifiers_follow_the_formation_rule() -> None:
     [
         ("flow.condition", ElementKind.FLOW, ["wahr", "falsch"], False),
         ("flow.calculation", ElementKind.FLOW, ["weiter"], False),
-        ("flow.set_parameter", ElementKind.FLOW, ["weiter"], False),
         ("flow.place_order", ElementKind.FLOW, ["gestellt", "nicht_gestellt"], True),
         ("flow.modify_order", ElementKind.FLOW, ["geaendert", "nicht_geaendert"], True),
         ("flow.delete_order", ElementKind.FLOW, ["weiter"], False),
@@ -203,7 +214,7 @@ def test_identifiers_follow_the_formation_rule() -> None:
         ("flow.close_position", ElementKind.FLOW, ["weiter"], True),
         ("trigger.candle_close", ElementKind.TRIGGER, ["weiter"], False),
         ("trigger.tick", ElementKind.TRIGGER, ["weiter"], False),
-        ("trigger.manual_start", ElementKind.TRIGGER, ["weiter"], False),
+        ("trigger.manual", ElementKind.TRIGGER, ["weiter"], False),
     ],
 )
 def test_elements_of_the_flow(
@@ -228,14 +239,15 @@ def test_trigger_candle_close_has_a_mandatory_time_unit() -> None:
         "instrument",
         "zeiteinheit",
     ]
-    assert get("trigger.manual_start").parameters == ()
-    assert get("trigger.manual_start").name == Label("Start von Hand", "Manual start")
+    assert get("trigger.manual").parameters == ()
+    assert get("trigger.manual").name == Label("Manuell", "Manual")
+    assert get("trigger.manual").description.de and get("trigger.manual").explanation.en
 
 
 def test_the_parameter_instrument_is_preset_with_the_instrument_of_the_application() -> None:
     """Specification 3.1: object of the type Instrument, one fixed value, any binding kind."""
     for type_id in ("trigger.candle_close", "trigger.tick", "Instrument", "Kerze", "Tick", "EMA",
-                    "ATR", "ZigZag", "Markttechnik", "Indikator", "Trend"):  # fmt: skip
+                    "ATR", "ZigZag", "Indikator", "Trend"):  # fmt: skip
         parameter = get(type_id).parameter("instrument")
         assert parameter is not None, type_id
         assert parameter.datatype is DataType.OBJECT
@@ -261,10 +273,8 @@ def test_the_parameter_instrument_is_preset_with_the_instrument_of_the_applicati
 def test_the_binding_kind_connection_is_offered_except_where_the_specification_excludes_it() -> (
     None
 ):
-    only_expression = {("flow.condition", "ausdruck"), ("flow.calculation", "ausdruck"),
-                       ("flow.set_parameter", "ausdruck")}  # fmt: skip
-    only_fixed = {("flow.set_parameter", "strategieparameter"), ("flow.place_order", "ordertyp"),
-                  ("Trend", "berechnungsverfahren")}  # fmt: skip
+    only_expression = {("flow.condition", "ausdruck"), ("flow.calculation", "ausdruck")}
+    only_fixed = {("flow.place_order", "ordertyp"), ("Trend", "berechnungsverfahren")}
     for description in REGISTRY.list():
         for parameter in description.parameters:
             where = (description.id, parameter.id)
@@ -414,48 +424,9 @@ def test_delivered_indicators() -> None:
     assert ema.parameter("kursquelle") is None
     assert [item.id for item in ema.properties] == ["wert"]
     assert [item.id for item in get("ATR").parameters] == ["instrument", "zeiteinheit", "periode"]
-    markttechnik = get("Markttechnik")
-    assert [item.id for item in markttechnik.parameters] == [
-        "instrument",
-        "zeiteinheit",
-        "depth",
-        "deviation",
-        "backstep",
-    ]
-    assert [item.default for item in markttechnik.parameters] == [
-        "instrument_der_anwendung",
-        None,
-        12,
-        5,
-        3,
-    ]
-    assert [item.id for item in markttechnik.properties] == [
-        "trendrichtung",
-        "trend_intakt",
-        "phase",
-        "punkt_2",
-        "punkt_13",
-        "punkt_13_endgueltig",
-    ]
-    direction = markttechnik.property("trendrichtung")
-    assert direction is not None
-    assert [c.id for c in direction.choices] == ["aufwaerts", "abwaerts", "kein_trend"]
-    phase = markttechnik.property("phase")
-    assert phase is not None
-    assert [c.id for c in phase.choices] == ["bewegung", "korrektur"]
-    assert not phase.must
-    kinds = {item.id: item.datatype for item in markttechnik.properties}
-    assert kinds == {
-        "trendrichtung": DataType.CHOICE,
-        "trend_intakt": DataType.BOOLEAN,
-        "phase": DataType.CHOICE,
-        "punkt_2": DataType.NUMBER,
-        "punkt_13": DataType.NUMBER,
-        "punkt_13_endgueltig": DataType.BOOLEAN,
-    }
 
 
-def test_the_zigzag_has_the_parameters_and_the_three_latest_turning_points() -> None:
+def test_the_zigzag_has_its_parameters_the_last_highs_and_lows_and_three_turning_points() -> None:
     zigzag = get("ZigZag")
     assert zigzag.category is ObjectCategory.INDICATOR
     assert [(item.id, item.default) for item in zigzag.parameters] == [
@@ -466,10 +437,27 @@ def test_the_zigzag_has_the_parameters_and_the_three_latest_turning_points() -> 
         ("backstep", 3),
     ]
     assert [item.id for item in zigzag.properties] == [
-        f"wendepunkt_{number}_{part}"
-        for number in (1, 2, 3)
-        for part in ("kurs", "art", "endgueltig")
+        "letztes_hoch",
+        "vorletztes_hoch",
+        "letztes_tief",
+        "vorletztes_tief",
+        *(
+            f"wendepunkt_{number}_{part}"
+            for number in (1, 2, 3)
+            for part in ("kurs", "art", "endgueltig")
+        ),
     ]
+    for identifier in ("letztes_hoch", "vorletztes_hoch", "letztes_tief", "vorletztes_tief"):
+        prop = zigzag.property(identifier)
+        assert prop is not None
+        assert prop.datatype is DataType.NUMBER
+        assert not prop.must  # empty as long as the ZigZag has not found one
+        assert prop.explanation.de.strip()
+        assert prop.explanation.en.strip()
+    assert zigzag.property("letztes_hoch").label == Label("Letztes Hoch", "Last high")  # type: ignore[union-attr]
+    assert zigzag.property("vorletztes_tief").label == Label(  # type: ignore[union-attr]
+        "Vorletztes Tief", "Second to last low"
+    )
     for number in (1, 2, 3):
         kind = zigzag.property(f"wendepunkt_{number}_art")
         assert kind is not None
@@ -477,7 +465,7 @@ def test_the_zigzag_has_the_parameters_and_the_three_latest_turning_points() -> 
         assert [item.id for item in kind.choices] == ["hoch", "tief"]
         assert zigzag.property(f"wendepunkt_{number}_kurs").datatype is DataType.NUMBER  # type: ignore[union-attr]
         assert zigzag.property(f"wendepunkt_{number}_endgueltig").datatype is DataType.BOOLEAN  # type: ignore[union-attr]
-    assert get("Markttechnik").group is Group.TRENDS
+    assert zigzag.group is Group.INDICATORS
 
 
 def test_general_object_types() -> None:
@@ -512,9 +500,44 @@ def test_the_named_identifiers_exist() -> None:
         "geaendert": get("flow.modify_order").output("geaendert"),
         "stop_loss": get("MarketOrder").property("stop_loss"),
         "tickgroesse": get("Instrument").property("tickgroesse"),
-        "trend_intakt": get("Markttechnik").property("trend_intakt"),
+        "letztes_hoch": get("ZigZag").property("letztes_hoch"),
     }
     assert all(value is not None for value in texts.values())
+
+
+CAN_REFRESH = {"EMA", "ATR", "ZigZag", "Indikator", "Trend", "Konto", "Instrument", "Kerze", "Tick"}
+
+
+def test_refresh_is_offered_for_the_types_of_specification_3_2_and_for_no_other() -> None:
+    for description in REGISTRY.list():
+        assert description.can_refresh == (description.id in CAN_REFRESH), description.id
+    # the object "Tick" and not the trigger "Tick"
+    assert get("Tick").can_refresh
+    assert not get("trigger.tick").can_refresh
+
+
+def test_a_template_of_the_user_takes_the_refresh_indication_from_its_object_type() -> None:
+    """Specification 3.2: "Indikator" and "Trend" are the object types of templates of the
+    user; the template and its instances have the object type and with it the indication."""
+    from pipwerk_domain.model import Template
+
+    own_indicator = Template(
+        id="00000000-0000-4000-8000-000000000800", name="v", object_type="Indikator"
+    )
+    own_trend = Template(id="00000000-0000-4000-8000-000000000801", name="t", object_type="Trend")
+    rule = Template(id="00000000-0000-4000-8000-000000000802", name="r", object_type="Regel")
+    assert REGISTRY.can_refresh(own_indicator.object_type) is True
+    assert REGISTRY.can_refresh(own_trend.object_type) is True
+    assert REGISTRY.can_refresh(rule.object_type) is False
+    assert REGISTRY.can_refresh("EMA") and not REGISTRY.can_refresh("flow.condition")
+    assert REGISTRY.can_refresh("Unbekannt") is False
+    assert REGISTRY.can_refresh("trigger.tick") is False
+    assert REGISTRY.can_refresh("Tick") is True
+
+
+def test_the_delivered_types_have_no_methods() -> None:
+    for description in REGISTRY.list():
+        assert description.methods == (), description.id
 
 
 def test_place_order_offers_the_order_types_a_user_can_choose() -> None:

@@ -30,12 +30,42 @@ class PropertyInfo:
     previous_value: bool
 
 
+@dataclass(frozen=True, slots=True)
+class ArgumentInfo:
+    """An argument of a method: key, label, data type, mandatory or optional, default value,
+    explanation and the possible values of a choice."""
+
+    key: str
+    label: Label
+    datatype: str
+    required: bool
+    default: bool | int | float | str | None
+    explanation: Label
+    choices: tuple[ChoiceInfo, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MethodInfo:
+    """A method of a visible name: key, label, data type of the result, explanation, the
+    possible values of a result that is a choice and the arguments. ``previous_value`` tells
+    that ``PREVIOUS`` may stand around the result."""
+
+    key: str
+    label: Label
+    datatype: str | None
+    explanation: Label | None
+    choices: tuple[ChoiceInfo, ...]
+    arguments: tuple[ArgumentInfo, ...]
+    previous_value: bool
+
+
 @dataclass(slots=True)
 class VisibleName:
     """A name visible at a place of an expression. ``path`` lists the keys; ``kind`` is
     ``instance``, ``result``, ``strategy_parameter``, ``parameter``, ``application_object``
     or ``rule``. ``contents`` are the contained instances and rules of an instance or
-    ruleset. ``properties_truncated`` is true if the list of properties was cut off."""
+    ruleset. ``properties_truncated`` is true if the list of properties or the list of
+    methods was cut off."""
 
     display: str
     path: tuple[str, ...]
@@ -45,6 +75,7 @@ class VisibleName:
     contents: list[VisibleName] = field(default_factory=list)
     datatype: str | None = None
     """The data type of the value of a strategy parameter or parameter."""
+    methods: list[MethodInfo] = field(default_factory=list)
 
 
 def _label_of(symbol: Symbol) -> Label:
@@ -61,6 +92,29 @@ def _property_info(symbol: Symbol) -> PropertyInfo:
         symbol.datatype.value if symbol.datatype is not None else None,
         symbol.explanation,
         tuple(ChoiceInfo(item.id, item.label) for item in symbol.choices),
+        symbol.previous_value,
+    )
+
+
+def _method_info(symbol: Symbol) -> MethodInfo:
+    return MethodInfo(
+        symbol.name,
+        _label_of(symbol),
+        symbol.datatype.value if symbol.datatype is not None else None,
+        symbol.explanation,
+        tuple(ChoiceInfo(item.id, item.label) for item in symbol.choices),
+        tuple(
+            ArgumentInfo(
+                item.id,
+                item.label,
+                item.datatype.value,
+                item.required,
+                item.default,
+                item.explanation,
+                tuple(ChoiceInfo(choice.id, choice.label) for choice in item.choices),
+            )
+            for item in symbol.arguments
+        ),
         symbol.previous_value,
     )
 
@@ -112,8 +166,13 @@ def _entry(
         if member.kind is SymbolKind.PROPERTY:
             if len(entry.properties) >= MAX_PROPERTIES_PER_NAME:
                 entry.properties_truncated = True
-                break
+                continue
             entry.properties.append(_property_info(member))
+        elif member.kind is SymbolKind.METHOD:
+            if len(entry.methods) >= MAX_PROPERTIES_PER_NAME:
+                entry.properties_truncated = True
+                continue
+            entry.methods.append(_method_info(member))
         elif member.kind in (SymbolKind.INSTANCE, SymbolKind.RULE, SymbolKind.RULESET):
             if depth < 4:
                 child = _entry(member, (*path, member.name or key), language, budget, depth + 1)

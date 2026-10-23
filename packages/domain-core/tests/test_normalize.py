@@ -25,7 +25,7 @@ from tests.helpers import (
     template,
     valid_strategy,
 )
-from tests.paths import TESTCASE_DIRECTORY
+from tests.paths import CHECKED_TESTCASES, TESTCASE_DIRECTORY
 
 Rewrite = Callable[[str], str]
 
@@ -89,7 +89,7 @@ def load(name: str) -> Strategy:
     return value
 
 
-@pytest.mark.parametrize("name", ["str-01", "str-03"])
+@pytest.mark.parametrize("name", CHECKED_TESTCASES)
 def test_a_differently_spelled_test_case_is_normalized_to_the_stored_one(name: str) -> None:
     original = load(name)
     spoiled = copy.deepcopy(original)
@@ -102,7 +102,7 @@ def test_a_differently_spelled_test_case_is_normalized_to_the_stored_one(name: s
     assert normalize_strategy(result) == result  # idempotent
 
 
-@pytest.mark.parametrize("name", ["str-01", "str-03"])
+@pytest.mark.parametrize("name", CHECKED_TESTCASES)
 def test_a_normalized_test_case_stays_as_it_is(name: str) -> None:
     original = load(name)
     assert normalize_strategy(original) == original

@@ -122,27 +122,6 @@ def test_a_binding_to_a_removed_strategy_parameter_is_not_set() -> None:
     assert len(missing) >= 4  # the triggers and the instances need a time unit again
 
 
-def test_removing_the_strategy_parameter_of_a_set_parameter_element() -> None:
-    from pipwerk_domain.model import Element
-
-    strategy = load("str-03")
-    strategy.elements.append(
-        Element(
-            id="00000000-0000-4000-8000-0000000000dd",
-            type=catalog.FLOW_SET_PARAMETER,
-            name="Setzen",
-            parameters={
-                "strategieparameter": Binding(BindingKind.FIXED, "stop_abstand"),
-                "ausdruck": Binding(BindingKind.EXPRESSION, "Strategie.stop_abstand + 1"),
-            },
-        )
-    )
-    remove_strategy_parameter(strategy, "Stop_Abstand")
-    added = strategy.elements[-1]
-    assert "strategieparameter" not in added.parameters
-    assert added.parameters["ausdruck"].value == "[] + 1"
-
-
 # removing elements ---
 
 

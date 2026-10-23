@@ -121,9 +121,7 @@ def test_new_keys_in_the_namespace_of_a_strategy() -> None:
     assert new_key(strategy, "/rules", "Kerze") == "kerze_2"  # the object of the application
     assert new_key(strategy, "/elements", "", kind="condition") == "bedingung"
     assert new_key(strategy, "/elements", "", kind="calculation") == "berechnung"
-    assert new_key(strategy, "/elements", "", kind="instance", object_type="Markttechnik") == (
-        "markttechnik"
-    )
+    assert new_key(strategy, "/elements", "", kind="instance", object_type="ZigZag") == "zigzag"
     assert new_key(strategy, "/parameters", "Zeit") == "zeit_2"
     assert new_key(strategy, "/parameters", "") == "parameter"
     assert new_key(strategy, "/parameters", "Kerze") == "kerze"  # behind "Strategie." no clash

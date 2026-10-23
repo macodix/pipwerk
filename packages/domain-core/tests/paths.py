@@ -7,6 +7,14 @@ CONTRACTS = REPOSITORY / "contracts" / "strategies"
 SCHEMA_DIRECTORY = CONTRACTS / "v2"
 TESTCASE_DIRECTORY = SCHEMA_DIRECTORY / "testcases"
 EXAMPLE_DIRECTORY = SCHEMA_DIRECTORY / "examples"
+TESTCASES = ("str-01", "str-03")
+"""The test case documents in the format 2.0 (specification 6)."""
+CHECKED_TESTCASES = ("str-03",)
+"""The test cases whose content the tests check: no finding of the consistency check, expressions
+that are recognized and normalized. ``str-01`` uses the indicator ``Markttechnik``, which is no
+longer delivered (specification 3.2); the test case documents are built anew with the ``ZigZag``
+by order 10, after which ``str-01`` joins this tuple. Until then it stands only in the tests of
+the form of the document (schema, written text, identifiers)."""
 SCHEMA_DIRECTORY_V1 = CONTRACTS / "v1"
 TESTCASE_DIRECTORY_V1 = SCHEMA_DIRECTORY_V1 / "testcases"
 EXAMPLE_DIRECTORY_V1 = SCHEMA_DIRECTORY_V1 / "examples"

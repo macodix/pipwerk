@@ -39,8 +39,8 @@ def environment() -> Scope:
             REGISTRY,
             Instance(
                 name="mt",
-                object_type="Markttechnik",
-                origin=Origin("Markttechnik"),
+                object_type="ZigZag",
+                origin=Origin("ZigZag"),
                 parameter_values={"zeiteinheit": fixed("h1")},
             ),
         )
@@ -102,8 +102,10 @@ def only_issue(analysis: Analysis) -> ExpressionIssue:
         ("Instrument.Tickgroesse", DataType.NUMBER),
         ("Strategie.wartende_orders", DataType.INTEGER),
         ("EMA21.Wert", DataType.NUMBER),
-        ("mt.trend_intakt", DataType.BOOLEAN),
-        ("mt.punkt_13_endgueltig", DataType.BOOLEAN),
+        ("mt.wendepunkt_1_endgueltig", DataType.BOOLEAN),
+        ("mt.wendepunkt_2_endgueltig", DataType.BOOLEAN),
+        ("mt.letztes_hoch", DataType.NUMBER),
+        ("mt.vorletztes_tief - mt.letztes_tief", DataType.NUMBER),
         ("Order.Konto.Kapital", DataType.NUMBER),
         ("Order.Status", DataType.CHOICE),
     ],
@@ -125,7 +127,7 @@ def test_valid_expressions(source: str, datatype: DataType) -> None:
         ("IF(x > 1; x; n)", DataType.NUMBER),
         ("AND(flag; flag)", DataType.BOOLEAN),
         ("AND(flag)", DataType.BOOLEAN),
-        ("AND(flag; x > 1; mt.trend_intakt)", DataType.BOOLEAN),
+        ("AND(flag; x > 1; mt.wendepunkt_1_endgueltig)", DataType.BOOLEAN),
         ("OR(flag; flag)", DataType.BOOLEAN),
         ("NOT(flag)", DataType.BOOLEAN),
         ("MIN(1; 2; 3)", DataType.NUMBER),
@@ -135,7 +137,7 @@ def test_valid_expressions(source: str, datatype: DataType) -> None:
         ("FLOOR(x; 0.01)", DataType.NUMBER),
         ("CEILING(x; Instrument.Volumenschritt)", DataType.NUMBER),
         ("ISNA(Position.Volumen)", DataType.BOOLEAN),
-        ("ISBLANK(mt.punkt_2)", DataType.BOOLEAN),
+        ("ISBLANK(mt.vorletztes_hoch)", DataType.BOOLEAN),
         ("IFNA(Order.Limitpreis; Order.Preis)", DataType.NUMBER),
         ("PREVIOUS(EMA21.Wert)", DataType.NUMBER),
         ("PREVIOUS(EMA21.Wert; 2)", DataType.NUMBER),
@@ -161,9 +163,12 @@ def test_unknown_function_has_the_position_of_its_name() -> None:
     assert issue.details == {"name": "FOO"}
 
 
-def test_a_name_with_a_point_before_a_parenthesis_is_an_unknown_function() -> None:
+def test_a_name_with_a_point_before_a_parenthesis_is_a_method_and_no_function() -> None:
+    """``Objekt.Name(Argumente)`` is a method (specification 3.4); a property is no method."""
     analysis = run("Konto.Kapital(1)")
-    assert only_issue(analysis).kind is IssueKind.UNKNOWN_FUNCTION
+    issue = only_issue(analysis)
+    assert issue.kind is IssueKind.UNKNOWN_METHOD
+    assert issue.reason == "not_a_method"
 
 
 def test_the_arguments_of_an_unknown_function_are_still_checked() -> None:
@@ -249,7 +254,7 @@ def test_concatenation_does_not_take_truth_values() -> None:
         "flag = 1",
         "when = day",
         "x = flag",
-        'mt.trend_intakt = "ja"',
+        'mt.wendepunkt_1_endgueltig = "ja"',
         "Order.Konto = Order.Konto",
     ],
 )
@@ -340,24 +345,24 @@ def test_argument_count(source: str, minimum: int, maximum: int | None) -> None:
 
 
 def test_a_text_that_is_a_value_of_the_choice_is_valid() -> None:
-    assert run('mt.phase = "bewegung"').issues == []
-    assert run('"bewegung" = mt.phase').issues == []
-    assert run('mt.trendrichtung = "aufwaerts"').issues == []
+    assert run('mt.wendepunkt_1_art = "hoch"').issues == []
+    assert run('"hoch" = mt.wendepunkt_1_art').issues == []
+    assert run('mt.wendepunkt_3_art = "tief"').issues == []
     assert run('Order.Richtung = "buy"').issues == []
     assert run('Order.Status = "ausgefuehrt"').issues == []
     assert run('mode <> "slow"').issues == []
 
 
 def test_a_text_that_is_not_a_value_of_the_choice_is_an_error() -> None:
-    issue = only_issue(run('mt.phase = "Bewegung"'))
+    issue = only_issue(run('mt.wendepunkt_1_art = "Hoch"'))
     assert issue.kind is IssueKind.UNKNOWN_CHOICE_VALUE
-    assert (issue.start, issue.end) == (11, 21)
-    assert issue.details["values"] == ["Bewegung"]
-    assert issue.details["allowed"] == ["bewegung", "korrektur"]
+    assert (issue.start, issue.end) == (22, 28)
+    assert issue.details["values"] == ["Hoch"]
+    assert issue.details["allowed"] == ["hoch", "tief"]
 
 
 def test_the_check_of_the_value_works_from_the_right_side_too() -> None:
-    assert only_issue(run('"flat" = mt.trendrichtung')).kind is IssueKind.UNKNOWN_CHOICE_VALUE
+    assert only_issue(run('"flat" = mt.wendepunkt_1_art')).kind is IssueKind.UNKNOWN_CHOICE_VALUE
 
 
 def test_time_unit_texts_are_checked() -> None:
@@ -374,8 +379,8 @@ def test_all_fixed_texts_of_a_branching_are_checked() -> None:
 
 
 def test_a_text_that_arises_at_the_execution_is_not_checked() -> None:
-    assert run("mt.phase = label").issues == []
-    assert run('mt.phase = (label & "x")').issues == []
+    assert run("mt.wendepunkt_1_art = label").issues == []
+    assert run('mt.wendepunkt_1_art = (label & "x")').issues == []
 
 
 def test_expected_type_with_a_choice() -> None:
@@ -474,7 +479,7 @@ def test_normalization_writes_names_in_the_spelling_of_the_identifier() -> None:
     assert norm("order.VOLUMEN") == "Order.volumen"
     assert norm("KONTO.Kapital") == "Konto.kapital"
     assert norm("ema21.WERT + EMA21.wert") == "EMA21.wert + EMA21.wert"
-    assert norm("MT.Trend_Intakt") == "mt.trend_intakt"
+    assert norm("MT.Wendepunkt_1_Endgueltig") == "mt.wendepunkt_1_endgueltig"
     assert norm("Instrument.Tickgroesse") == "Instrument.tickgroesse"
 
 

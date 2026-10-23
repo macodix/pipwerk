@@ -33,10 +33,15 @@ from pipwerk_domain.typedesc import (
 # Identifiers of the delivered types
 TRIGGER_CANDLE_CLOSE = "trigger.candle_close"
 TRIGGER_TICK = "trigger.tick"
-TRIGGER_MANUAL_START = "trigger.manual_start"
+TRIGGER_MANUAL = "trigger.manual"
+LEGACY_TRIGGER_MANUAL_START = "trigger.manual_start"
+"""The identifier of "Start von Hand", the former name of the trigger ``Manuell``. A document
+with this identifier is read as ``trigger.manual`` (specification 3.7); it is no registered
+type."""
+FORMER_TYPE_IDS = {LEGACY_TRIGGER_MANUAL_START: TRIGGER_MANUAL}
+"""Identifiers that a document may still carry, and the identifiers it is read with."""
 FLOW_CONDITION = "flow.condition"
 FLOW_CALCULATION = "flow.calculation"
-FLOW_SET_PARAMETER = "flow.set_parameter"
 FLOW_PLACE_ORDER = "flow.place_order"
 FLOW_MODIFY_ORDER = "flow.modify_order"
 FLOW_DELETE_ORDER = "flow.delete_order"
@@ -70,6 +75,13 @@ _FIXED_ONLY = (BindingKind.FIXED,)
 
 RESULT_PROPERTY = "ergebnis"
 """Identifier of the result of a rule, condition or calculation (``key.ergebnis``)."""
+
+
+def current_type_id(type_id: str) -> str:
+    """The identifier a document is read with: the former identifier of a type that was
+    renamed is replaced by the current one (specification 3.7, "Start von Hand" is
+    ``Manuell``), any other identifier stays."""
+    return FORMER_TYPE_IDS.get(type_id, type_id)
 
 
 def _label(de: str, en: str | None = None) -> Label:
@@ -132,12 +144,6 @@ _TIPS: dict[str, tuple[str, str]] = {
         "den Listen.",
         "Here you define what is checked or calculated. Choose the blocks from the lists.",
     ),
-    "strategieparameter": (
-        "Der Strategieparameter, dessen Wert geändert wird. Wählen Sie einen angelegten oder "
-        "legen Sie einen neuen an.",
-        "The strategy parameter whose value is changed. Choose an existing one or create a "
-        "new one.",
-    ),
     "ordertyp": (
         "Marktorder: sofort zum aktuellen Kurs. Stop-Order: wird ausgelöst, wenn der Kurs den "
         "Preis erreicht. Limit-Order: wartet auf einen besseren Preis.",
@@ -190,31 +196,29 @@ _TIPS: dict[str, tuple[str, str]] = {
         "Maximum loss per trade as a share of the equity, for example 1 %.",
     ),
     "wert": ("Der aktuelle Wert des Indikators.", "The current value of the indicator."),
-    "trendrichtung": (
-        "aufwärts, abwärts oder kein Trend.",
-        "upwards, downwards or no trend.",
+    "letztes_hoch": (
+        "Der Kurs des letzten endgültigen Hochs des ZigZag. Leer, solange der ZigZag noch "
+        "kein Hoch gefunden hat.",
+        "The price of the last final high of the ZigZag. Empty as long as the ZigZag has "
+        "not found a high yet.",
     ),
-    "trend_intakt": (
-        "Ja, solange der Kurs nicht unter den letzten Punkt 1/3 gefallen ist (beim "
-        "Abwärtstrend darüber).",
-        "Yes as long as the price has not fallen below the last point 1/3 (above it for a "
-        "downtrend).",
+    "vorletztes_hoch": (
+        "Der Kurs des endgültigen Hochs vor dem letzten Hoch des ZigZag. Leer, solange es "
+        "noch kein zweites Hoch gibt.",
+        "The price of the final high before the last high of the ZigZag. Empty as long as "
+        "there is no second high yet.",
     ),
-    "phase": (
-        "Bewegung: der Kurs läuft in Trendrichtung. Korrektur: der Kurs läuft zurück.",
-        "Movement: the price runs in trend direction. Correction: the price retraces.",
+    "letztes_tief": (
+        "Der Kurs des letzten endgültigen Tiefs des ZigZag. Leer, solange der ZigZag noch "
+        "kein Tief gefunden hat.",
+        "The price of the last final low of the ZigZag. Empty as long as the ZigZag has "
+        "not found a low yet.",
     ),
-    "punkt_2": (
-        "Das jüngste Hoch des Trends (beim Abwärtstrend das jüngste Tief).",
-        "The most recent high of the trend (the most recent low for a downtrend).",
-    ),
-    "punkt_13": (
-        "Das jüngste Korrekturtief des Trends (beim Abwärtstrend das jüngste Korrekturhoch).",
-        "The most recent correction low of the trend (correction high for a downtrend).",
-    ),
-    "punkt_13_endgueltig": (
-        "Ja, wenn dieser Wendepunkt sich nicht mehr verschiebt.",
-        "Yes if this turning point does not move any more.",
+    "vorletztes_tief": (
+        "Der Kurs des endgültigen Tiefs vor dem letzten Tief des ZigZag. Leer, solange es "
+        "noch kein zweites Tief gibt.",
+        "The price of the final low before the last low of the ZigZag. Empty as long as "
+        "there is no second low yet.",
     ),
     "ergebnis": (
         "Das Ergebnis dieses Schritts. Spätere Schritte können es verwenden.",
@@ -450,12 +454,6 @@ VALIDITIES = (
     _choice("bis Zeitpunkt", "until time"),
     _choice("bis Ende eines Tages", "until end of a given day"),
 )
-TREND_DIRECTIONS = (
-    _choice("aufwärts", "up"),
-    _choice("abwärts", "down"),
-    _choice("kein Trend", "no trend"),
-)
-PHASES = (_choice("Bewegung", "movement"), _choice("Korrektur", "correction"))
 TURNING_POINT_KINDS = (_choice("hoch", "high"), _choice("tief", "low"))
 PRICE_SOURCES = (
     _choice("Schlusskurs", "close price"),
@@ -501,7 +499,7 @@ def _triggers() -> list[TypeDescription]:
             parameters=(_instrument_parameter(), _time_unit_parameter()),
             outputs=next_output,
             on_canvas=True,
-            group=Group.WHEN,
+            group=Group.FLOW,
         ),
         _type(
             TRIGGER_TICK,
@@ -520,25 +518,29 @@ def _triggers() -> list[TypeDescription]:
             parameters=(_instrument_parameter(),),
             outputs=next_output,
             on_canvas=True,
-            group=Group.WHEN,
+            group=Group.FLOW,
         ),
         _type(
-            TRIGGER_MANUAL_START,
+            TRIGGER_MANUAL,
             ElementKind.TRIGGER,
-            ("Start von Hand", "Manual start"),
+            ("Manuell", "Manual"),
             (
-                "Wertet die Strategie aus, wenn der Anwender sie von Hand startet.",
-                "Evaluates the strategy when the user starts it by hand.",
+                "Wertet die Strategie aus, wenn der Anwender sie von Hand startet. Steht nur "
+                "im Hauptablauf.",
+                "Evaluates the strategy when the user starts it by hand. Stands only in the "
+                "main flow.",
             ),
             (
                 "Die Strategie rechnet, wenn Sie sie selbst starten. Das hilft beim "
-                "Ausprobieren, ohne auf eine Kerze oder einen Kurs zu warten.",
+                "Ausprobieren, ohne auf eine Kerze oder einen Kurs zu warten. Den Start von "
+                "Hand gibt es nur im Hauptablauf, nicht in der Verwaltung einer Order.",
                 "The strategy calculates when you start it yourself. That helps to try it out "
-                "without waiting for a candle or a quote.",
+                "without waiting for a candle or a quote. Starting by hand exists only in the "
+                "main flow, not in the management of an order.",
             ),
             outputs=next_output,
             on_canvas=True,
-            group=Group.WHEN,
+            group=Group.FLOW,
         ),
     ]
 
@@ -608,7 +610,7 @@ def _flow() -> list[TypeDescription]:
             ),
             on_canvas=True,
             named=True,
-            group=Group.ACTIONS,
+            group=Group.FLOW,
         ),
         _type(
             FLOW_CALCULATION,
@@ -630,47 +632,7 @@ def _flow() -> list[TypeDescription]:
             outputs=next_output,
             on_canvas=True,
             named=True,
-            group=Group.ACTIONS,
-        ),
-        _type(
-            FLOW_SET_PARAMETER,
-            ElementKind.FLOW,
-            ("Strategieparameter ändern", "Change strategy parameter"),
-            (
-                "Weist einem Strategieparameter einen Wert zu.",
-                "Assigns a value to a strategy parameter.",
-            ),
-            (
-                "Ändert den Wert eines Strategieparameters, zum Beispiel um mit einer anderen "
-                "Zeiteinheit erneut zu prüfen.",
-                "Changes the value of a strategy parameter, for example to check again with "
-                "another time unit.",
-            ),
-            parameters=(
-                _par(
-                    "Strategieparameter",
-                    "Strategy parameter",
-                    DataType.TEXT,
-                    required=True,
-                    bindings=_FIXED_ONLY,
-                ),
-                _par(
-                    "Ausdruck",
-                    "New value",
-                    DataType.EXPRESSION,
-                    required=True,
-                    bindings=_EXPRESSION_ONLY,
-                    tip=(
-                        "Der neue Wert des Strategieparameters. Wählen Sie die Bausteine aus "
-                        "den Listen.",
-                        "The new value of the strategy parameter. Choose the blocks from the "
-                        "lists.",
-                    ),
-                ),
-            ),
-            outputs=next_output,
-            on_canvas=True,
-            group=Group.ACTIONS,
+            group=Group.CALCULATION,
         ),
         _type(
             FLOW_PLACE_ORDER,
@@ -965,7 +927,8 @@ def _application_objects() -> list[TypeDescription]:
                 _prop("Währung", "Currency", DataType.TEXT, must=True),
             ),
             on_canvas=True,
-            group=Group.MARKET,
+            can_refresh=True,
+            group=Group.ACCOUNT,
         ),
         _type(
             OBJECT_INSTRUMENT,
@@ -990,6 +953,7 @@ def _application_objects() -> list[TypeDescription]:
                 number("Volumenschritt", "Volume step"),
             ),
             on_canvas=True,
+            can_refresh=True,
             group=Group.MARKET,
         ),
         _type(
@@ -1015,6 +979,7 @@ def _application_objects() -> list[TypeDescription]:
                 _prop("Zeitpunkt", "Time", DataType.TIMESTAMP, must=True),
             ),
             on_canvas=True,
+            can_refresh=True,
             group=Group.MARKET,
         ),
         _type(
@@ -1033,6 +998,7 @@ def _application_objects() -> list[TypeDescription]:
                 _prop("Zeitpunkt", "Time", DataType.TIMESTAMP, must=True),
             ),
             on_canvas=True,
+            can_refresh=True,
             group=Group.MARKET,
         ),
         _type(
@@ -1122,9 +1088,15 @@ def _application_objects() -> list[TypeDescription]:
 
 
 def _turning_point_properties() -> tuple[PropertyDescription, ...]:
-    """Kurs, Art and ``endgültig`` of the three most recent turning points (specification 3.2),
-    ``wendepunkt_1_kurs`` is the price of the most recent one."""
-    result: list[PropertyDescription] = []
+    """The properties of the ``ZigZag`` (specification 3.2): the price of the last and the
+    one before the last final high and low, then Kurs, Art and ``endgültig`` of the three most
+    recent turning points; ``wendepunkt_1_kurs`` is the price of the most recent one."""
+    result: list[PropertyDescription] = [
+        _prop("Letztes Hoch", "Last high", DataType.NUMBER),
+        _prop("Vorletztes Hoch", "Second to last high", DataType.NUMBER),
+        _prop("Letztes Tief", "Last low", DataType.NUMBER),
+        _prop("Vorletztes Tief", "Second to last low", DataType.NUMBER),
+    ]
     for number in range(1, _TURNING_POINTS + 1):
         result.extend(
             (
@@ -1164,7 +1136,6 @@ def _zigzag_parameters() -> tuple[ParameterDescription, ...]:
 
 def _indicators() -> list[TypeDescription]:
     value = (_prop("Wert", "Value", DataType.NUMBER, must=True),)
-    flag = DataType.BOOLEAN
     return [
         _type(
             TYPE_INDICATOR,
@@ -1184,6 +1155,7 @@ def _indicators() -> list[TypeDescription]:
             category=ObjectCategory.INDICATOR,
             parameters=(_instrument_parameter(), _time_unit_parameter()),
             on_canvas=True,
+            can_refresh=True,
             group=Group.INDICATORS,
         ),
         _type(
@@ -1213,6 +1185,7 @@ def _indicators() -> list[TypeDescription]:
             ),
             properties=value,
             on_canvas=True,
+            can_refresh=True,
             group=Group.INDICATORS,
         ),
         _type(
@@ -1237,6 +1210,7 @@ def _indicators() -> list[TypeDescription]:
             ),
             properties=value,
             on_canvas=True,
+            can_refresh=True,
             group=Group.INDICATORS,
         ),
         _type(
@@ -1259,41 +1233,8 @@ def _indicators() -> list[TypeDescription]:
             parameters=_zigzag_parameters(),
             properties=_turning_point_properties(),
             on_canvas=True,
+            can_refresh=True,
             group=Group.INDICATORS,
-        ),
-        _type(
-            "Markttechnik",
-            ElementKind.OBJECT_TYPE,
-            ("1-2-3-Trend (Markttechnik)", "1-2-3 trend (market technique)"),
-            (
-                "Bestimmt Trend, Phase und Punkte nach der Markttechnik aus ZigZag-Wendepunkten.",
-                "Determines trend, phase and points by the market technique from ZigZag "
-                "turning points.",
-            ),
-            (
-                "Erkennt Trend, Phase und die Punkte 1, 2 und 3 nach der Markttechnik aus den "
-                "Wendepunkten des ZigZag.",
-                "Detects trend, phase and points 1, 2 and 3 by the market technique from the "
-                "turning points of the ZigZag.",
-            ),
-            category=ObjectCategory.INDICATOR,
-            parameters=_zigzag_parameters(),
-            properties=(
-                _prop(
-                    "Trendrichtung",
-                    "Trend direction",
-                    DataType.CHOICE,
-                    must=True,
-                    choices=TREND_DIRECTIONS,
-                ),
-                _prop("Trend intakt", "Trend intact", flag, must=True),
-                _prop("Phase", "Phase", DataType.CHOICE, choices=PHASES),
-                _prop("Punkt 2", "Point 2", DataType.NUMBER),
-                _prop("Punkt 1/3", "Point 1/3", DataType.NUMBER),
-                _prop("Punkt 1/3 endgültig", "Point 1/3 final", flag),
-            ),
-            on_canvas=True,
-            group=Group.TRENDS,
         ),
     ]
 
@@ -1341,6 +1282,7 @@ def _general_object_types() -> list[TypeDescription]:
                 ),
             ),
             on_canvas=True,
+            can_refresh=True,
             group=Group.TRENDS,
         ),
         _type(

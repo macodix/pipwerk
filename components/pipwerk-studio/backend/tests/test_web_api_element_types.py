@@ -19,16 +19,18 @@ from pipwerk_domain.risk_rule import (
     RISK_PER_TRADE_RULE_ID,
 )
 from pipwerk_domain.typedesc import (
+    ArgumentDescription,
     Choice,
     Condition,
     Label,
+    MethodDescription,
     OutputDescription,
     ParameterDescription,
     PropertyDescription,
     TypeDescription,
 )
 from pydantic import BaseModel
-from web_api_support import RISK_TEMPLATE_ID
+from web_api_support import RISK_TEMPLATE_ID, SERIES, registry_with_methods
 
 from pipwerk_studio import web_api
 from pipwerk_studio.app import create_app
@@ -72,7 +74,16 @@ def test_every_type_of_the_library_has_a_group_and_an_explanation_in_both_langua
     types = fetch(client)["types"]
     assert isinstance(types, list)
     groups = {item["group"] for item in types}
-    assert groups - {None} == {"when", "actions", "market", "indicators", "trends", "rules"}
+    assert groups - {None} == {
+        "flow",
+        "calculation",
+        "indicators",
+        "trends",
+        "market",
+        "account",
+        "actions",
+        "rules",
+    }
     for item in types:
         if item["group"] is not None:
             assert item["explanation"]["de"].strip(), item["id"]
@@ -147,6 +158,7 @@ def test_the_groups_of_the_delivered_types_are_there(client: TestClient) -> None
     for identifier in (
         "trigger.candle_close",
         "trigger.tick",
+        "trigger.manual",
         "flow.condition",
         "flow.place_order",
         "MarketOrder",
@@ -156,7 +168,7 @@ def test_the_groups_of_the_delivered_types_are_there(client: TestClient) -> None
         "Kerze",
         "EMA",
         "ATR",
-        "Markttechnik",
+        "ZigZag",
         "Indikator",
         "Trend",
         "Regel",
@@ -164,6 +176,117 @@ def test_the_groups_of_the_delivered_types_are_there(client: TestClient) -> None
     ):
         assert identifier in types, identifier
     assert types["trigger.candle_close"]["name"] == {"de": "Kerzenschluss", "en": "Candle close"}
+    assert types["trigger.manual"]["name"] == {"de": "Manuell", "en": "Manual"}
+    # withdrawn or renamed: not delivered any more (specification 3.2)
+    for identifier in ("Markttechnik", "flow.set_parameter", "trigger.manual_start"):
+        assert identifier not in types, identifier
+
+
+def test_the_groups_methods_and_refresh_indication_of_every_type(client: TestClient) -> None:
+    """Order 09 point 6: the answer carries the groups, ``methods`` and ``can_refresh``."""
+    types = {item["id"]: item for item in fetch(client)["types"]}  # type: ignore[attr-defined]
+    assert {
+        identifier: item["group"] for identifier, item in types.items() if item["group"] is not None
+    } == {
+        "trigger.candle_close": "flow",
+        "trigger.tick": "flow",
+        "trigger.manual": "flow",
+        "flow.condition": "flow",
+        "flow.calculation": "calculation",
+        "flow.place_order": "actions",
+        "flow.modify_order": "actions",
+        "flow.delete_order": "actions",
+        "flow.modify_position": "actions",
+        "flow.close_position": "actions",
+        "Konto": "account",
+        "Instrument": "market",
+        "Kerze": "market",
+        "Tick": "market",
+        "EMA": "indicators",
+        "ATR": "indicators",
+        "ZigZag": "indicators",
+        "Indikator": "indicators",
+        "Trend": "trends",
+        "Regel": "rules",
+        "Regelwerk": "rules",
+    }
+    # "Tick" stands twice: the trigger and the object are two types
+    assert (types["trigger.tick"]["kind"], types["Tick"]["kind"]) == (
+        "trigger",
+        "application_object",
+    )
+    assert all(item["methods"] == [] for item in types.values())
+    refresh = {identifier for identifier, item in types.items() if item["can_refresh"]}
+    assert refresh == {
+        "EMA",
+        "ATR",
+        "ZigZag",
+        "Indikator",
+        "Trend",
+        "Konto",
+        "Instrument",
+        "Kerze",
+        "Tick",
+    }
+    zigzag = [item["id"] for item in types["ZigZag"]["properties"]]
+    assert zigzag[:4] == ["letztes_hoch", "vorletztes_hoch", "letztes_tief", "vorletztes_tief"]
+
+
+def test_a_type_with_methods_is_answered_with_all_fields_of_its_methods(tmp_path: Path) -> None:
+    client = TestClient(
+        create_app(f"sqlite:///{tmp_path / 'studio.db'}", registry=registry_with_methods())
+    )
+    types = {item["id"]: item for item in fetch(client)["types"]}  # type: ignore[attr-defined]
+    series = types[SERIES]
+    assert series["can_refresh"] is True
+    assert [item["id"] for item in series["methods"]] == ["wert_vor", "tendenz"]
+    method = series["methods"][0]
+    assert set(method) == {
+        "id",
+        "datatype",
+        "label",
+        "arguments",
+        "choices",
+        "object_type",
+        "explanation",
+    }
+    assert (method["datatype"], method["label"]) == (
+        "number",
+        {"de": "Wert vor", "en": "Value before"},
+    )
+    assert method["explanation"] == {
+        "de": "Der Wert vor einer Anzahl Werten.",
+        "en": "The value before a number of values.",
+    }
+    first, second = method["arguments"]
+    assert set(first) == {
+        "id",
+        "datatype",
+        "label",
+        "required",
+        "default",
+        "choices",
+        "object_type",
+        "explanation",
+    }
+    assert (first["id"], first["datatype"], first["required"], first["default"]) == (
+        "anzahl",
+        "integer",
+        True,
+        None,
+    )
+    assert (second["required"], second["default"], second["datatype"]) == (
+        False,
+        "schluss",
+        "choice",
+    )
+    assert [item["id"] for item in second["choices"]] == ["schluss", "eroeffnung"]
+    assert second["choices"][1]["label"] == {"de": "Eröffnungskurs", "en": "open price"}
+    tendency = series["methods"][1]
+    assert tendency["datatype"] == "choice" and tendency["arguments"] == []
+    assert [item["id"] for item in tendency["choices"]] == ["aufwaerts", "abwaerts"]
+    # the delivered types are answered unchanged
+    assert types["EMA"]["methods"] == [] and types["EMA"]["can_refresh"] is True
 
 
 def test_the_delivered_template_risk_per_trade_has_the_expression_of_the_specification(
@@ -252,6 +375,8 @@ def test_the_models_follow_the_classes_of_the_library_field_by_field() -> None:
         (web_api.ParameterModel, ParameterDescription),
         (web_api.PropertyModel, PropertyDescription),
         (web_api.OutputModel, OutputDescription),
+        (web_api.ArgumentModel, ArgumentDescription),
+        (web_api.MethodModel, MethodDescription),
         (web_api.TypeDescriptionModel, TypeDescription),
     ]
     for model, source in pairs:

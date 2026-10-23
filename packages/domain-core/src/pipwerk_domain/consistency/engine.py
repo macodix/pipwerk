@@ -45,6 +45,7 @@ from pipwerk_domain.model import (
     Connection,
     DataLink,
     Element,
+    InputKind,
     Instance,
     ObjectContent,
     ParameterDefinition,
@@ -66,6 +67,7 @@ from pipwerk_domain.registry import ORDER_TYPE_PARAMETER, TREND_TYPE_ID, Element
 from pipwerk_domain.typedesc import (
     ALL_BINDINGS,
     INSTRUMENT_TYPE,
+    ArgumentDescription,
     BindingKind,
     Choice,
     Condition,
@@ -1146,16 +1148,33 @@ class Checker:
                 )
                 continue
             member = symbol.member(entry.property)
-            if member is None or member.kind is not SymbolKind.PROPERTY:
+            wanted = SymbolKind.METHOD if entry.kind is InputKind.METHOD else SymbolKind.PROPERTY
+            if member is None or member.kind is not wanted:
                 self._add(
                     Level.ERROR,
                     fc.DATA_UNKNOWN,
                     element.id,
                     None,
                     where="input",
-                    reason="unknown_property",
+                    reason="unknown_method"
+                    if entry.kind is InputKind.METHOD
+                    else "unknown_property",
                     instance=entry.instance,
                     property=entry.property,
+                )
+            elif entry.kind is InputKind.METHOD and not _arguments_fit(member, entry.arguments):
+                self._add(
+                    Level.ERROR,
+                    fc.DATA_UNKNOWN,
+                    element.id,
+                    None,
+                    where="input",
+                    reason="arguments",
+                    instance=entry.instance,
+                    property=entry.property,
+                    minimum=sum(1 for item in member.arguments if item.required),
+                    maximum=len(member.arguments),
+                    found=len(entry.arguments),
                 )
 
     def _check_inputs_used(self, strategy: Strategy) -> None:
@@ -1167,11 +1186,16 @@ class Checker:
                 if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
                     continue  # reported as an input that does not exist
                 member = symbol.member(entry.property)
-                if member is None or member.kind is not SymbolKind.PROPERTY:
+                wanted = (
+                    SymbolKind.METHOD if entry.kind is InputKind.METHOD else SymbolKind.PROPERTY
+                )
+                if member is None or member.kind is not wanted:
                     continue  # reported as an input that does not exist
                 if (symbol.name.lower(), entry.property.lower()) in used:
                     continue
-                if self._connection_binding_uses(element, symbol.name, entry.property):
+                if entry.kind is InputKind.PROPERTY and self._connection_binding_uses(
+                    element, symbol.name, entry.property
+                ):
                     continue
                 self._add(
                     Level.HINT,
@@ -1223,20 +1247,6 @@ class Checker:
         expected_for: dict[str, ExprType] = {}
         if element.type == catalog.FLOW_CONDITION:
             expected_for["ausdruck"] = et.BOOLEAN
-        elif element.type == catalog.FLOW_SET_PARAMETER:
-            target = element.parameters.get("strategieparameter")
-            if target is not None and isinstance(target.value, str):
-                found = self._strategy_params.get(target.value.lower())
-                if found is None:
-                    self._invalid(
-                        ctx,
-                        "parameter",
-                        "strategieparameter",
-                        "unknown_parameter",
-                        name=target.value,
-                    )
-                else:
-                    expected_for["ausdruck"] = found.expected
         self._check_parameters(params, element.parameters, ctx, expected_for, "parameters")
         if element.type == catalog.FLOW_PLACE_ORDER:
             self._check_order_properties(element, ctx)
@@ -2086,6 +2096,31 @@ def _is_instance(element: Element, kinds: dict[str, ElementKind | None]) -> bool
         ElementKind.ORDER_TYPE,
         ElementKind.TREND_METHOD,
     )
+
+
+def _value_fits(spec: ArgumentDescription, value: Scalar) -> bool:
+    """Whether a fixed value is a value of the data type of an argument."""
+    match spec.datatype:
+        case DataType.BOOLEAN:
+            return isinstance(value, bool)
+        case DataType.INTEGER:
+            return isinstance(value, int) and not isinstance(value, bool)
+        case DataType.NUMBER | DataType.PERCENT:
+            return isinstance(value, int | float) and not isinstance(value, bool)
+        case DataType.CHOICE | DataType.TIME_UNIT:
+            return isinstance(value, str) and value in _choices_of(spec.datatype, spec.choices)
+        case _:
+            return isinstance(value, str)
+
+
+def _arguments_fit(method: Symbol, arguments: Sequence[Scalar]) -> bool:
+    """Whether the values of the arguments of an input fit the method: the number is between
+    the number of mandatory arguments and the number of all arguments, every value has the
+    data type of its argument (specification 3.1, 3.3)."""
+    specs = method.arguments
+    if not sum(1 for item in specs if item.required) <= len(arguments) <= len(specs):
+        return False
+    return all(_value_fits(spec, value) for spec, value in zip(specs, arguments, strict=False))
 
 
 def _is_order_object(symbol: Symbol) -> bool:
