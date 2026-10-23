@@ -181,6 +181,34 @@ search_old_names() {
     printf '%s: no old identifiers found\n' "$PROG"
 }
 
+# search_removed_source: the backend has no dependency on pipwerk-fetch-mt5 and no
+# code, configuration or test of an acquisition (order 12: pipwerk replay
+# acquires nothing). The migrations name the former default source on purpose
+# and are excluded.
+search_removed_source() {
+    removed_output=$(git -C "$repo_root" grep -n -I -i -E \
+        'fetch[-_]mt5|acquisition|AcquisitionManager|HttpSourceClient|source_client|fetch_url|fetch_key|\[source\]' -- \
+        components/pipwerk-replay/backend/pyproject.toml \
+        components/pipwerk-replay/backend/uv.lock \
+        components/pipwerk-replay/backend/pipwerk-replay.example.ini \
+        components/pipwerk-replay/backend/src \
+        ':!components/pipwerk-replay/backend/src/pipwerk_replay/config.py')
+    removed_status=$?
+    if [ "$removed_status" -gt 1 ]; then
+        printf '%s: git grep failed with exit code %s\n' "$PROG" "$removed_status" >&2
+        return 1
+    fi
+    if [ -n "$removed_output" ]; then
+        printf '%s: the removed acquisition occurs in the backend:\n%s\n' "$PROG" "$removed_output" >&2
+        return 1
+    fi
+    if [ -e "$backend_dir/src/pipwerk_replay/acquisition.py" ]; then
+        printf '%s: acquisition.py still exists\n' "$PROG" >&2
+        return 1
+    fi
+    printf '%s: no acquisition in the backend\n' "$PROG"
+}
+
 # pip_audit: checks the packages locked in backend/uv.lock for known
 # vulnerabilities.
 pip_audit() {
@@ -214,6 +242,7 @@ step "backend: openapi.json equals the application" in_backend run --frozen \
     python -m pipwerk_replay.contract \
     "$repo_root/contracts/api/pipwerk-replay/v1/openapi.json" --check
 step "search in the repository for the old identifiers" search_old_names
+step "backend: no acquisition and no source" search_removed_source
 if [ "$with_audit" = 1 ]; then
     step "backend: pip-audit" pip_audit
 fi

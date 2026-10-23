@@ -1,88 +1,88 @@
-"""Web API of the data stock and the acquisition under ``/api/v1/market-data/``.
+"""Web API of the data stock under ``/api/v1/market-data/``.
 
-Specification 7, 5.1 to 5.4 and 11. The module only connects HTTP with the services
-(``marketdata_service.py``, ``acquisition.py``); it has no other logic.
+Specification 5.1, 5.3, 7, 8.3 and 11. The module only connects HTTP with the service
+(``marketdata_service.py``); it has no other logic. pipwerk replay does not acquire data
+(specification 5.4): data come into the data stock only through the import.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| ``GET`` | ``/market-data/overview`` | series with periods and gaps, instruments |
+| ``GET`` | ``/market-data/series`` | the list of series, filtered, page by page, with the total |
+| ``GET`` | ``/market-data/series/details`` | the gaps and the instrument data of one row |
+| ``GET`` | ``/market-data/brokers`` | the brokers that occur in the data stock |
 | ``GET`` | ``/market-data/instrument`` | the newest data of an instrument |
-| ``POST`` | ``/market-data/imports/json`` | import of a JSON file (the body is the file) |
-| ``POST`` | ``/market-data/imports/csv`` | import of a CSV file (the body is the file) |
+| ``POST`` | ``/market-data/imports`` | import of several files in one process (multipart) |
+| ``POST`` | ``/market-data/imports/preview`` | what the files say about themselves (multipart) |
 | ``POST`` | ``/market-data/completeness`` | needed, present, missing for a list of parts |
-| ``POST`` | ``/market-data/acquisitions`` | start an acquisition from the source (HTTP 202) |
-| ``GET`` | ``/market-data/acquisitions/{id}`` | state of an acquisition, part by part |
 
-An uploaded file is the body of the request, not a form: ``Content-Type: application/json`` for
-JSON and ``text/csv`` for CSV (HTTP 415 otherwise), at most ``max_upload_bytes`` (HTTP 413).
+The broker for test runs is a setting and therefore an internal endpoint
+(``/api/replay/settings/test-run-broker``, ``internal_api.py``).
+
+The files of an import are the parts ``file`` of a ``multipart/form-data`` body
+(``import_form.py``). The body is at most ``max_import_bytes`` plus the envelope of the form
+large (HTTP 413, checked before it is read), a file at most ``max_upload_bytes``, an import at
+most ``max_files_per_import`` files.
 """
 
 from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Annotated
-from uuid import UUID
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse, Response
-from pipwerk_marketdata import FileErrorCode, ImportFileError, MarketDataStoreError
+from pipwerk_marketdata import ImportBatchError, MarketDataStoreError
+from starlette.concurrency import run_in_threadpool
 
+from pipwerk_replay import marketdata_examples as ex
 from pipwerk_replay import marketdata_models as models
-from pipwerk_replay.acquisition import (
-    NO_SOURCE,
-    REASONS,
-    AcquisitionManager,
-    AcquisitionNotFoundError,
-    NoSourceError,
-)
 from pipwerk_replay.api_support import (
     PUBLIC_PREFIX,
+    ApiError,
     Handler,
+    InvalidRequest,
     JsonBody,
     api_error,
     body_description,
     error_responses,
-    file_description,
     guarded,
     invalid_place,
     parse_body,
-    uploaded_file,
 )
+from pipwerk_replay.import_form import (
+    FIELD_BROKER,
+    FIELD_DATA,
+    FIELD_FILE,
+    FIELD_INSTRUMENT,
+    FIELD_TIMEZONE,
+    ImportForm,
+    body_limit,
+    import_refused,
+    read_form,
+)
+from pipwerk_replay.marketdata_examples import json_examples
 from pipwerk_replay.marketdata_service import MarketDataService, NoBrokerError, TooManyRunningError
-from pipwerk_replay.settings_service import StoredDefaultSourceInvalidError
+from pipwerk_replay.settings_service import StoredTestRunBrokerInvalidError
 
 logger = logging.getLogger(__name__)
 
-IMPORT_JSON_PATH = f"{PUBLIC_PREFIX}/market-data/imports/json"
-IMPORT_CSV_PATH = f"{PUBLIC_PREFIX}/market-data/imports/csv"
+IMPORT_PATH = f"{PUBLIC_PREFIX}/market-data/imports"
+PREVIEW_PATH = f"{PUBLIC_PREFIX}/market-data/imports/preview"
 
 TAGS: list[str | Enum] = ["market-data"]
 
-FILE_REFUSED_TEXT = "The file is refused."
+SERIES_NOT_FOUND_TEXT = "There is no such row in the list of series."
 INSTRUMENT_NOT_FOUND_TEXT = "There are no data of this instrument."
-ACQUISITION_NOT_FOUND_TEXT = "The acquisition does not exist."
 DATA_STORE_TEXT = "The data stock could not be read or changed."
 TOO_MANY_IMPORTS_TEXT = "Too many imports are running. Try again later."
-TOO_MANY_ACQUISITIONS_TEXT = "Too many acquisitions are running. Try again later."
-NO_BROKER_TEXT = "No broker is given and no default source is set."
-NO_SOURCE_TEXT = "No source is set up."
-STORED_DEFAULT_SOURCE_INVALID_TEXT = "The stored pipwerk replay default source is invalid."
-
-JsonFile = Annotated[bytes, Depends(uploaded_file("application/json"))]
-CsvFile = Annotated[bytes, Depends(uploaded_file("text/csv"))]
-AcquisitionId = Annotated[
-    UUID,
-    Path(alias="id", description="Identifier of the acquisition (a UUID)."),
-]
+NO_BROKER_TEXT = "The data stock has no broker yet. Import data first."
+STORED_TEST_RUN_BROKER_INVALID_TEXT = "The stored pipwerk replay broker for test runs is invalid."
 
 
-def _file_refused(error: ImportFileError) -> Response:
-    status = 413 if error.code is FileErrorCode.TOO_LARGE else 422
-    return JSONResponse(
-        status_code=status,
-        content={"detail": FILE_REFUSED_TEXT, "code": error.code.value, "message": error.message},
-    )
+def import_body_limit(service: MarketDataService) -> int:
+    """The largest request body of an import and of its preview, from the settings."""
+    settings = service.settings
+    return body_limit(settings.max_files_per_import, settings.max_import_bytes)
 
 
 def _data_store_failed(error: MarketDataStoreError) -> Response:
@@ -91,56 +91,185 @@ def _data_store_failed(error: MarketDataStoreError) -> Response:
     return api_error(503, DATA_STORE_TEXT)
 
 
-def _stored_default_source_invalid(error: StoredDefaultSourceInvalidError) -> Response:
+def _stored_test_run_broker_invalid(error: StoredTestRunBrokerInvalidError) -> Response:
     logger.error("%s", error)
-    return api_error(503, STORED_DEFAULT_SOURCE_INVALID_TEXT)
-
-
-def _no_source(_error: NoSourceError) -> Response:
-    return JSONResponse(
-        status_code=409,
-        content={"detail": NO_SOURCE_TEXT, "code": NO_SOURCE, "reason": REASONS[NO_SOURCE]},
-    )
+    return api_error(503, STORED_TEST_RUN_BROKER_INVALID_TEXT)
 
 
 _HANDLERS: dict[type[Exception], Handler] = {
-    ImportFileError: _file_refused,
+    ImportBatchError: lambda error: import_refused(error.code, error.message),
     MarketDataStoreError: _data_store_failed,
-    StoredDefaultSourceInvalidError: _stored_default_source_invalid,
+    StoredTestRunBrokerInvalidError: _stored_test_run_broker_invalid,
     TooManyRunningError: lambda _error: api_error(429, TOO_MANY_IMPORTS_TEXT),
     NoBrokerError: lambda _error: api_error(409, NO_BROKER_TEXT),
-    NoSourceError: _no_source,
-    AcquisitionNotFoundError: lambda _error: api_error(404, ACQUISITION_NOT_FOUND_TEXT),
 }
 
 
-def build_router(service: MarketDataService, acquisitions: AcquisitionManager) -> APIRouter:
+def _form_description(
+    description: str, *, with_settings: bool, example: dict[str, Any]
+) -> dict[str, Any]:
+    """The description of the multipart body of an import or its preview, with an example (the
+    files are shown by their names)."""
+    text: dict[str, Any] = {"type": "string"}
+    properties: dict[str, Any] = {
+        FIELD_FILE: {
+            "type": "array",
+            "items": {"type": "string", "format": "binary"},
+            "description": "The files, one part each; the file name of the part names the file.",
+        },
+        FIELD_INSTRUMENT: {
+            "type": "array",
+            "items": text,
+            "description": (
+                "Optional: one value per file in the order of the files, an empty value for "
+                "none. The instrument of the file at the same position."
+            ),
+        },
+        FIELD_DATA: {
+            "type": "array",
+            "items": text,
+            "description": (
+                "Optional: one value per file in the order of the files, an empty value for "
+                "none. The data of the file at the same position: a time unit (m1 to mn1), "
+                "ticks or contract (a JSON file only)."
+            ),
+        },
+    }
+    required = [FIELD_FILE]
+    if with_settings:
+        properties[FIELD_BROKER] = {
+            **text,
+            "description": "The broker of all files of the import, also of JSON files.",
+        }
+        properties[FIELD_TIMEZONE] = {
+            **text,
+            "description": (
+                "IANA name of the time zone of the times in all CSV files, for example "
+                "Europe/Athens; needed if there is a CSV file."
+            ),
+        }
+        required = [FIELD_BROKER, FIELD_FILE]
+    return {
+        "requestBody": {
+            "required": True,
+            "description": description,
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required,
+                        "additionalProperties": False,
+                    },
+                    **ex.form_examples(form=("The form, files shown by their names", example)),
+                }
+            },
+        }
+    }
+
+
+def build_router(service: MarketDataService) -> APIRouter:
     """The router of the data stock with the prefix ``/api/v1``."""
     router = APIRouter(prefix=PUBLIC_PREFIX, tags=TAGS)
     limits = service.settings
 
     @router.get(
-        "/market-data/overview",
-        operation_id="read_market_data_overview",
-        summary="Read the overview of the data stock",
+        "/market-data/series",
+        operation_id="list_market_data_series",
+        summary="List the series of the data stock",
         description=(
-            "Lists the series (candles of a time unit, or ticks) of every broker and instrument "
-            "with count, first and last time, covered periods and gaps, and the instruments "
-            "with data about them. Both lists are cut to the section of the request "
-            "(``offset``, ``limit``; at most ``max_listed_items``, default 1000, each); the "
-            "lists of periods in a series are cut to ``max_listed_items`` as well and counted "
-            "completely. The gaps are computed over the whole covered range of each series."
+            "Lists the rows of the data stock page by page: one row per broker, instrument and "
+            "data (candles of a time unit, ticks, or - for an instrument that has instrument "
+            "data and no series - the instrument data, ``contract``), with the first and the "
+            "last moment and the number of gaps. The filters ``broker``, ``instrument`` and "
+            "``data`` each match a part of the text without regard to case; a filter that "
+            "no row matches (for example an unknown identifier of data) gives an empty list. "
+            "``total`` counts all rows that match. The rows are sorted by broker, instrument "
+            "and data (time units from short to long, then ticks, then contract). ``limit`` "
+            "is at most ``max_listed_items`` (default 1000)."
         ),
         responses={
-            200: {"description": "The overview.", "model": models.Overview},
+            200: {
+                "description": "The page of rows.",
+                "model": models.SeriesPage,
+                "content": json_examples(
+                    page=(
+                        "Three rows: candles M1 with gaps, ticks, instrument data only",
+                        ex.SERIES_PAGE,
+                    ),
+                    empty=(
+                        "An empty data stock",
+                        {"items": [], "total": 0, "offset": 0, "limit": 1000},
+                    ),
+                ),
+            },
             **error_responses(422, 503),
         },
     )
-    def read_overview(query: Annotated[models.OverviewQuery, Query()]) -> Response:
+    def list_series(query: Annotated[models.SeriesQuery, Query()]) -> Response:
         def run() -> Response:
             if query.limit is not None and query.limit > limits.max_listed_items:
                 return invalid_place(["query", "limit"], "less_than_equal")
-            return JSONResponse(content=service.overview(query).model_dump(mode="json"))
+            return JSONResponse(content=service.series(query).model_dump(mode="json"))
+
+        return guarded(run, _HANDLERS)
+
+    @router.get(
+        "/market-data/series/details",
+        operation_id="read_market_data_series_details",
+        summary="Read the details of a row of the list of series",
+        description=(
+            "Returns the gaps of the row (at most ``max_listed_items``, in time order; "
+            "``row.gap_count`` counts all) and the newest instrument data of the instrument at "
+            "this broker (``contract``; ``null`` if there are none). The row is named by "
+            "``broker``, ``instrument`` and ``data`` exactly as the list shows them. HTTP 404 if "
+            "the list has no such row, also for an identifier of data that does not exist."
+        ),
+        responses={
+            200: {
+                "description": "The details.",
+                "model": models.SeriesDetails,
+                "content": json_examples(
+                    with_contract=("Gaps and instrument data", ex.SERIES_DETAILS),
+                    without_contract=(
+                        "No gaps, and the instrument data are missing",
+                        ex.SERIES_DETAILS_WITHOUT_CONTRACT,
+                    ),
+                ),
+            },
+            **error_responses(404, 422, 503, not_found=SERIES_NOT_FOUND_TEXT),
+        },
+    )
+    def read_series_details(query: Annotated[models.SeriesDetailsQuery, Query()]) -> Response:
+        def run() -> Response:
+            found = service.series_details(query)
+            if found is None:
+                return api_error(404, SERIES_NOT_FOUND_TEXT)
+            return JSONResponse(content=found.model_dump(mode="json"))
+
+        return guarded(run, _HANDLERS)
+
+    @router.get(
+        "/market-data/brokers",
+        operation_id="list_market_data_brokers",
+        summary="List the brokers of the data stock",
+        description=(
+            "Lists the brokers that occur in the data stock (in a series or in instrument "
+            "data), sorted without regard to case. The import dialog proposes them; the "
+            "broker for test runs is chosen among them."
+        ),
+        responses={
+            200: {
+                "description": "The brokers.",
+                "model": models.Brokers,
+                "content": json_examples(brokers=("Two brokers", ex.BROKERS)),
+            },
+            **error_responses(503),
+        },
+    )
+    def list_brokers() -> Response:
+        def run() -> Response:
+            return JSONResponse(content=service.brokers().model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)
 
@@ -150,7 +279,7 @@ def build_router(service: MarketDataService, acquisitions: AcquisitionManager) -
         summary="Read the data of an instrument",
         description=(
             "Returns the newest data of an instrument at a broker (contract size, tick value, "
-            "swap, margin and the moment of the acquisition); with ``as_of`` the newest data "
+            "swap, margin and the moment they were obtained); with ``as_of`` the newest data "
             "obtained not after that moment."
         ),
         responses={
@@ -168,60 +297,135 @@ def build_router(service: MarketDataService, acquisitions: AcquisitionManager) -
         return guarded(run, _HANDLERS)
 
     @router.post(
-        "/market-data/imports/json",
-        operation_id="import_market_data_json",
-        summary="Import a JSON file",
+        "/market-data/imports",
+        operation_id="import_market_data_files",
+        summary="Import several files in one process",
         description=(
-            "Imports a file in the JSON format of ``contracts/market-data/v1/`` (candles, ticks "
-            "or the data of an instrument). The body is the file, with the media type "
-            "``application/json``; it is at most ``max_upload_bytes`` large (default 32 MiB) and "
-            "has at most ``max_rows`` rows (default 500 000). Rows of the same time replace "
-            "those that exist. Rows that fail the checks are rejected and named in the result "
-            "with a reason; a file that is refused as a whole (HTTP 422) changes nothing."
+            "Imports any number of files (at most ``max_files_per_import``, default 100; "
+            "together at most ``max_import_bytes``, default 256 MiB; each at most "
+            "``max_upload_bytes``, default 32 MiB and ``max_rows`` rows, default 500 000). "
+            "The body is a ``multipart/form-data`` form: ``broker`` once for all files (it "
+            "also replaces the broker named in a JSON file), ``timezone`` once for all CSV "
+            "files, and the parts ``file``; optionally ``instrument`` and ``data`` once per "
+            "file in the order of the files (an empty value for none). JSON files (JSON format "
+            "of ``contracts/market-data/v1/``, candles, ticks or instrument data) name "
+            "instrument and data in their content; a given ``instrument`` replaces the one "
+            "of the content, a given ``data`` must equal the one of the content. CSV files "
+            "(export format of MetaTrader 5, candles or ticks) need ``instrument`` and ``data`` "
+            "(a time unit or ``ticks``). Every file is taken over in a transaction of its own; "
+            "rows of the same time replace those that exist; rows that fail the checks are "
+            "rejected and named with a reason. A file that is refused as a whole (wrong "
+            "format, nothing readable, unknown time zone, missing or unknown data) changes "
+            "nothing and does not stop the others: the answer (HTTP 200) has a result per "
+            "file, in the order of the files. HTTP 422 if the form is wrong or has no file, "
+            "HTTP 413 if there are too many files or they are too large together, HTTP 403 "
+            "if a web page of another origin sends the form (the header ``Origin`` is not "
+            "the address of the backend)."
         ),
         responses={
-            200: {"description": "The result of the import.", "model": models.ImportResult},
-            422: {"description": "The file is refused as a whole.", "model": models.FileRefused},
-            **error_responses(413, 415, 429, 503),
+            200: {
+                "description": "The result for every file.",
+                "model": models.ImportOutcome,
+                "content": json_examples(
+                    one_refused=("Three files, one of them refused", ex.IMPORT_OUTCOME)
+                ),
+            },
+            413: {
+                "description": "Too many files or too large together (``ImportRefused``), or "
+                "the request body is larger than the limit (``ApiError``).",
+                "model": models.ImportRefused | ApiError,
+                "content": json_examples(
+                    too_many_files=("More files than allowed", ex.IMPORT_REFUSED_TOO_MANY)
+                ),
+            },
+            422: {
+                "description": "No file (``ImportRefused``) or the form is wrong "
+                "(``InvalidRequest``).",
+                "model": models.ImportRefused | InvalidRequest,
+                "content": json_examples(
+                    no_files=("The form has no file", ex.IMPORT_REFUSED_NO_FILES),
+                    missing_broker=(
+                        "The broker is missing",
+                        {
+                            "detail": "The request body does not fit the schema.",
+                            "errors": [{"location": ["broker"], "type": "missing"}],
+                        },
+                    ),
+                ),
+            },
+            **error_responses(403, 415, 429, 503),
         },
-        openapi_extra=file_description("application/json", "The JSON file."),
+        openapi_extra=_form_description(
+            "The files and what is known about them.", with_settings=True, example=ex.IMPORT_FORM
+        ),
     )
-    def import_json(file: JsonFile) -> Response:
+    async def import_files(request: Request) -> Response:
+        form = await read_form(
+            request,
+            max_files=limits.max_files_per_import,
+            fields=frozenset({FIELD_BROKER, FIELD_TIMEZONE}),
+        )
+        if isinstance(form, Response):
+            return form
+        return await run_in_threadpool(_run_import, form)
+
+    def _run_import(form: ImportForm) -> Response:
         def run() -> Response:
-            return JSONResponse(content=service.import_json(file).model_dump(mode="json"))
+            return JSONResponse(content=service.import_files(form).model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)
 
     @router.post(
-        "/market-data/imports/csv",
-        operation_id="import_market_data_csv",
-        summary="Import a CSV file",
+        "/market-data/imports/preview",
+        operation_id="preview_market_data_import",
+        summary="Read what files say about themselves",
         description=(
-            "Imports a CSV file in the export format of MetaTrader 5 (candles or ticks). The "
-            "body is the file, with the media type ``text/csv``; it is limited like a JSON file. "
-            "The file does not name its series, so the request does: ``kind``, ``broker``, "
-            "``instrument``, for candles ``time_unit``, and ``timezone`` (IANA name of the time "
-            "zone of the times in the file; a local time that occurs twice at a change of the "
-            "clock counts as the earlier one, one that does not exist is a rejected row). A "
-            "file that is refused as a whole (HTTP 422, ``FileRefused``, for example an unknown "
-            "time zone or a header without the needed columns) changes nothing; query parameters "
-            "that do not fit the schema are answered with HTTP 422, too, in the form of "
-            "``InvalidRequest``."
+            "For the dialog of the import: tells for each file, without importing anything, "
+            "its format (``json`` or ``csv``), and the broker, instrument and data it names. "
+            "A JSON file names them in its content; a CSV file in its name, as far as the name "
+            "follows ``<Instrument>_<Data>_<from>_<to>`` (the export of MetaTrader 5 and the "
+            "files meant for the import, for example ``EURUSD_H1_202301020000_202312292300.csv``) "
+            "or ``<Instrument>,<Data>`` (also with ``_`` or a space, for example "
+            "``EURUSD,H1.csv``), with ``<Data>`` a time unit, ``TICKS`` or ``CONTRACT``, "
+            "without regard to case. The content of a CSV file is not read, so the client may "
+            "send it empty. ``broker`` of the answer is the broker that all JSON files name "
+            "(``null`` if there is none, or they name none or different ones). The form is "
+            "that of the import, with the parts ``file`` only; the limits are those of the "
+            "import."
         ),
         responses={
-            200: {"description": "The result of the import.", "model": models.ImportResult},
-            422: {
-                "description": "The file is refused as a whole (``FileRefused``) or the "
-                "parameters do not fit the schema (``InvalidRequest``).",
-                "model": models.FileRefused,
+            200: {
+                "description": "The hints, per file.",
+                "model": models.ImportPreview,
+                "content": json_examples(
+                    hints=(
+                        "A JSON file, a CSV file with a known name, one with an unknown",
+                        ex.IMPORT_PREVIEW,
+                    )
+                ),
             },
-            **error_responses(413, 415, 429, 503),
+            413: {
+                "description": "Too many files (``ImportRefused``) or the request body is "
+                "larger than the limit (``ApiError``).",
+                "model": models.ImportRefused | ApiError,
+            },
+            422: {
+                "description": "The form is wrong (``InvalidRequest``).",
+                "model": InvalidRequest,
+            },
+            **error_responses(403, 415, 429, 503),
         },
-        openapi_extra=file_description("text/csv", "The CSV file."),
+        openapi_extra=_form_description("The files.", with_settings=False, example=ex.PREVIEW_FORM),
     )
-    def import_csv(file: CsvFile, query: Annotated[models.CsvImportQuery, Query()]) -> Response:
+    async def preview_import(request: Request) -> Response:
+        form = await read_form(request, max_files=limits.max_files_per_import, fields=frozenset())
+        if isinstance(form, Response):
+            return form
+        return await run_in_threadpool(_run_preview, form)
+
+    def _run_preview(form: ImportForm) -> Response:
         def run() -> Response:
-            return JSONResponse(content=service.import_csv(file, query).model_dump(mode="json"))
+            return JSONResponse(content=service.preview(form.files).model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)
 
@@ -232,9 +436,9 @@ def build_router(service: MarketDataService, acquisitions: AcquisitionManager) -
         description=(
             "For every needed part (candles of a time unit or ticks of an instrument in a "
             "period, or the data of an instrument) tells what is needed, what is present and "
-            "what is missing, in the order of the request. The broker is the default source "
-            "unless the request names one (HTTP 409 if there is neither). At most "
-            "``max_parts_per_request`` parts (default 100)."
+            "what is missing, in the order of the request. The broker is the broker for test "
+            "runs unless the request names one (HTTP 409 if the data stock has no broker at "
+            "all). At most ``max_parts_per_request`` parts (default 100)."
         ),
         responses={
             200: {"description": "Needed, present and missing.", "model": models.Completeness},
@@ -248,62 +452,6 @@ def build_router(service: MarketDataService, acquisitions: AcquisitionManager) -
             if len(request.parts) > limits.max_parts_per_request:
                 return invalid_place(["parts"], "too_long")
             return JSONResponse(content=service.completeness(request).model_dump(mode="json"))
-
-        return guarded(run, _HANDLERS)
-
-    @router.post(
-        "/market-data/acquisitions",
-        operation_id="start_market_data_acquisition",
-        status_code=202,
-        summary="Start an acquisition from the source",
-        description=(
-            "Asks the source for the given parts and imports what it delivers. One part is an "
-            "acquisition by hand, several are the missing parts of a test run. The acquisition "
-            "runs in the background (it can take minutes), part by part; a failed part does "
-            "not stop the others. The answer holds the identifier; ``GET`` on the acquisition "
-            "shows the state of each part. HTTP 409 with the code ``no_source`` if no source is "
-            "set up, HTTP 429 if too many acquisitions run. A period that is too large for the "
-            "source fails with the code ``range_too_large``; pipwerk replay does not split it."
-        ),
-        responses={
-            202: {"description": "The acquisition was started.", "model": models.Acquisition},
-            409: {"description": "No source is set up.", "model": models.AcquisitionRefused},
-            **error_responses(413, 415, 422, 429),
-        },
-        openapi_extra=body_description(models.AcquisitionRequest, "The parts to acquire."),
-    )
-    def start_acquisition(body: JsonBody) -> Response:
-        def run() -> Response:
-            request = parse_body(body, models.AcquisitionRequest)
-            if len(request.parts) > limits.max_parts_per_request:
-                return invalid_place(["parts"], "too_long")
-            started = acquisitions.start(request.parts)
-            return JSONResponse(status_code=202, content=started.model_dump(mode="json"))
-
-        def too_many(_error: TooManyRunningError) -> Response:
-            return api_error(429, TOO_MANY_ACQUISITIONS_TEXT)
-
-        return guarded(run, {**_HANDLERS, TooManyRunningError: too_many})
-
-    @router.get(
-        "/market-data/acquisitions/{id}",
-        operation_id="read_market_data_acquisition",
-        summary="Read the state of an acquisition",
-        description=(
-            "Returns the state of the acquisition: for every part ``queued``, ``running``, "
-            "``succeeded`` (with the result of the import) or ``failed`` (with the code and the "
-            "reason). The state of the last acquisitions is kept in memory (at most "
-            "``max_kept_acquisitions``, default 100); it is gone after a restart."
-        ),
-        responses={
-            200: {"description": "The acquisition.", "model": models.Acquisition},
-            **error_responses(404, 422, not_found=ACQUISITION_NOT_FOUND_TEXT),
-        },
-    )
-    def read_acquisition(acquisition_id: AcquisitionId) -> Response:
-        def run() -> Response:
-            found = acquisitions.get(acquisition_id)
-            return JSONResponse(content=found.model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)
 

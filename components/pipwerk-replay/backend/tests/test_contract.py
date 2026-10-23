@@ -73,15 +73,19 @@ def test_the_description_names_the_endpoints_of_this_order() -> None:
     assert {path: set(operations) for path, operations in paths.items()} == {
         "/api/v1/accounts": {"get", "post"},
         "/api/v1/accounts/{id}": {"get", "put", "delete"},
-        "/api/v1/market-data/overview": {"get"},
+        "/api/v1/market-data/series": {"get"},
+        "/api/v1/market-data/series/details": {"get"},
+        "/api/v1/market-data/brokers": {"get"},
         "/api/v1/market-data/instrument": {"get"},
-        "/api/v1/market-data/imports/json": {"post"},
-        "/api/v1/market-data/imports/csv": {"post"},
+        "/api/v1/market-data/imports": {"post"},
+        "/api/v1/market-data/imports/preview": {"post"},
         "/api/v1/market-data/completeness": {"post"},
-        "/api/v1/market-data/acquisitions": {"post"},
-        "/api/v1/market-data/acquisitions/{id}": {"get"},
     }
     assert "/api/v1/settings" not in paths
+    # no acquisition, no overview and no import of a single file any more
+    assert not [path for path in paths if "acquisition" in path or "overview" in path]
+    assert "/api/v1/market-data/imports/json" not in paths
+    assert "/api/v1/market-data/imports/csv" not in paths
 
 
 def test_the_technical_endpoint_is_not_in_the_file_but_stays_in_docs(database_url: str) -> None:
@@ -106,15 +110,24 @@ def test_only_the_schemas_that_the_public_paths_use_are_in_the_file() -> None:
         "AccountList",
         "ApiError",
         "InvalidRequest",
-        "Overview",
+        "SeriesPage",
+        "SeriesDetails",
+        "Brokers",
+        "ImportOutcome",
+        "ImportPreview",
+        "ImportRefused",
         "ImportResult",
-        "FileRefused",
         "Completeness",
-        "Acquisition",
-        "AcquisitionRefused",
     } <= set(schemas)
+    assert not {"Overview", "FileRefused", "Acquisition", "AcquisitionRefused"} & set(schemas)
     # the internal endpoints have no place in the description
-    assert not {"Settings", "ReplayLanguage", "DefaultSource", "ReplayRevision"} & set(schemas)
+    assert not {
+        "Settings",
+        "ReplayLanguage",
+        "DefaultSource",
+        "ReplayBrokerForTestRuns",
+        "ReplayRevision",
+    } & set(schemas)
 
 
 def test_every_reference_is_resolved() -> None:
@@ -139,7 +152,7 @@ def test_the_operation_identifiers_are_unique() -> None:
         for operations in paths.values()  # type: ignore[attr-defined]
         for operation in operations.values()
     ]
-    assert len(identifiers) == len(set(identifiers)) == 12
+    assert len(identifiers) == len(set(identifiers)) == 12  # 5 of the test accounts, 7 of the data
 
 
 def test_the_request_bodies_are_described_with_the_strict_schemas() -> None:

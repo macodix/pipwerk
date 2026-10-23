@@ -95,7 +95,6 @@ def main(argv: list[str] | None = None) -> int:
             allowed_hosts=allowed_hosts,
             max_body_bytes=startup_config.max_body_bytes,
             marketdata=startup_config.marketdata,
-            source=startup_config.source,
         )
     except SQLAlchemyError as error:
         print(

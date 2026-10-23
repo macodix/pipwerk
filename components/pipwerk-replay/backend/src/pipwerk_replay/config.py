@@ -21,19 +21,18 @@ req-system-018). It is an INI file:
     (the data stock may share it, specification E4),
   - ``max_upload_bytes``, ``max_rows``, ``max_reported_rejections``: limits of an uploaded
     file (defaults of ``pipwerk_marketdata``),
+  - ``max_files_per_import``, ``max_import_bytes``: limits of one import (number of files,
+    total size of the files),
   - ``max_concurrent_imports``, ``max_listed_items``, ``max_parts_per_request``: limits
     against overload (see ``MarketDataSettings``).
-
-- ``[source]`` (optional section, every entry optional): the source of the acquisition:
-
-  - ``fetch_url`` and ``fetch_key``: address of the source and the shared key. Both or none.
-    The key is only here, never in the database, in an answer or in a log,
-  - ``timeout_seconds``, ``max_concurrent_acquisitions``, ``max_kept_acquisitions``: see
-    ``SourceSettings``.
 
 The command line (``cli.py``) overrides ``host`` and ``port``. All other,
 non-startup settings - such as the language - are stored in the configured
 database itself (req-system-016) and are not part of this file.
+
+Sections and entries that this module does not know are ignored, as they always were (so a
+startup configuration from before the acquisition was removed, with a ``[source]`` section,
+still starts; the section has no effect). Only the known entries are checked.
 
 The file is read without interpolation: a ``%`` in a value is a character like any other.
 An error never repeats a value of the file, and for a syntax error it names only the line
@@ -47,7 +46,6 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from pipwerk_marketdata import limits as marketdata_limits
 
@@ -72,15 +70,15 @@ MAX_MAX_UPLOAD_BYTES = 1024 * 1024 * 1024
 DEFAULT_MAX_ROWS_PER_FILE = marketdata_limits.DEFAULT_MAX_ROWS
 #: Number of rejected rows an answer lists: default of ``pipwerk_marketdata``.
 DEFAULT_MAX_REPORTED_REJECTIONS = marketdata_limits.DEFAULT_MAX_REPORTED_REJECTIONS
+#: Largest number of files of one import.
+DEFAULT_MAX_FILES_PER_IMPORT = 100
+MAX_MAX_FILES_PER_IMPORT = 1000
+#: Largest total size of the files of one import in bytes (256 MiB; at least the size of one file).
+DEFAULT_MAX_IMPORT_BYTES = 256 * 1024 * 1024
+MAX_MAX_IMPORT_BYTES = 4 * 1024 * 1024 * 1024
 DEFAULT_MAX_CONCURRENT_IMPORTS = 2
 DEFAULT_MAX_LISTED_ITEMS = 1000
 DEFAULT_MAX_PARTS_PER_REQUEST = 100
-DEFAULT_FETCH_TIMEOUT_SECONDS = 300
-DEFAULT_MAX_CONCURRENT_ACQUISITIONS = 2
-DEFAULT_MAX_KEPT_ACQUISITIONS = 100
-
-MAX_FETCH_URL_LENGTH = 2048
-_KEY_RE = re.compile(r"[\x21-\x7e]{16,256}")
 
 
 @dataclass(frozen=True)
@@ -89,38 +87,27 @@ class MarketDataSettings:
 
     #: Database of the data stock; ``None``: the database of pipwerk replay.
     database_url: str | None = None
-    #: Largest size of an uploaded file in bytes (also the limit of the body of an import).
+    #: Largest size of one uploaded file in bytes.
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
+    #: Largest number of files of one import (specification 5.3).
+    max_files_per_import: int = DEFAULT_MAX_FILES_PER_IMPORT
+    #: Largest total size of the files of one import in bytes; the limit of the request body
+    #: of an import is this size plus the envelope of the form (``marketdata_api.py``).
+    max_import_bytes: int = DEFAULT_MAX_IMPORT_BYTES
     #: Largest number of data rows or entries of an uploaded file, rejected ones included.
     max_rows: int = DEFAULT_MAX_ROWS_PER_FILE
     #: Number of rejected rows an answer lists (all are counted).
     max_reported_rejections: int = DEFAULT_MAX_REPORTED_REJECTIONS
     #: Number of imports that run at the same time; the next one is answered with HTTP 429.
     max_concurrent_imports: int = DEFAULT_MAX_CONCURRENT_IMPORTS
-    #: Largest number of items of a list in an answer (series, instruments, periods).
+    #: Largest number of items of a list in an answer (series, gaps, periods).
     max_listed_items: int = DEFAULT_MAX_LISTED_ITEMS
-    #: Largest number of parts in a request for completeness or acquisition.
+    #: Largest number of parts in a request for completeness.
     max_parts_per_request: int = DEFAULT_MAX_PARTS_PER_REQUEST
 
-
-@dataclass(frozen=True)
-class SourceSettings:
-    """The source of the acquisition (section ``[source]``). The key is never shown."""
-
-    #: Address of the source (``fetch_url``); ``None``: no source is set up.
-    url: str | None = None
-    #: Shared key of the source (``fetch_key``). Excluded from ``repr``.
-    key: str | None = field(default=None, repr=False)
-    #: Longest wait for an answer of the source in seconds.
-    timeout_seconds: int = DEFAULT_FETCH_TIMEOUT_SECONDS
-    #: Number of acquisitions that run at the same time; the next one is answered with 429.
-    max_concurrent_acquisitions: int = DEFAULT_MAX_CONCURRENT_ACQUISITIONS
-    #: Number of acquisitions whose state is kept (the oldest finished one goes first).
-    max_kept_acquisitions: int = DEFAULT_MAX_KEPT_ACQUISITIONS
-
-    @property
-    def configured(self) -> bool:
-        return self.url is not None and self.key is not None
+    def __post_init__(self) -> None:
+        if self.max_import_bytes < self.max_upload_bytes:
+            raise ValueError("max_import_bytes must not be smaller than max_upload_bytes")
 
 
 @dataclass(frozen=True)
@@ -139,8 +126,6 @@ class StartupConfig:
     max_body_bytes: int = DEFAULT_MAX_BODY_BYTES
     #: Data stock.
     marketdata: MarketDataSettings = field(default_factory=MarketDataSettings)
-    #: Source of the acquisition.
-    source: SourceSettings = field(default_factory=SourceSettings)
 
 
 class StartupConfigError(Exception):
@@ -262,28 +247,6 @@ def _optional_text(parser: configparser.ConfigParser, section: str, option: str)
     return parser.get(section, option).strip() or None
 
 
-def _is_fetch_url(text: str) -> bool:
-    """An address of a source: ``http`` or ``https``, a host, no user and password, no query
-    and no fragment."""
-    if len(text) > MAX_FETCH_URL_LENGTH or not text.isprintable() or " " in text:
-        return False
-    try:
-        parts = urlsplit(text)
-        parts.port  # noqa: B018 - raises ValueError for an invalid port
-    except ValueError:
-        return False
-    return (
-        parts.scheme in ("http", "https")
-        and bool(parts.hostname)
-        and parts.username is None
-        and parts.password is None
-        and not parts.query
-        and not parts.fragment
-        and "?" not in text
-        and "#" not in text
-    )
-
-
 def _marketdata_settings(parser: configparser.ConfigParser, path: Path) -> MarketDataSettings:
     url = _optional_text(parser, "marketdata", "url")
     if parser.has_option("marketdata", "url") and url is None:
@@ -292,13 +255,31 @@ def _marketdata_settings(parser: configparser.ConfigParser, path: Path) -> Marke
     def number(option: str, default: int, bounds: tuple[int, int]) -> int:
         return _limited_integer(parser, "marketdata", option, default, bounds, path)
 
+    max_upload_bytes = number(
+        "max_upload_bytes",
+        DEFAULT_MAX_UPLOAD_BYTES,
+        (MIN_MAX_UPLOAD_BYTES, MAX_MAX_UPLOAD_BYTES),
+    )
+    # Without an entry the whole import may hold at least the largest single file.
+    max_import_bytes = number(
+        "max_import_bytes",
+        max(DEFAULT_MAX_IMPORT_BYTES, max_upload_bytes),
+        (MIN_MAX_UPLOAD_BYTES, MAX_MAX_IMPORT_BYTES),
+    )
+    if max_import_bytes < max_upload_bytes:
+        raise StartupConfigError(
+            f"Startup configuration {path} has an invalid [marketdata] max_import_bytes entry "
+            "(smaller than max_upload_bytes)"
+        )
     return MarketDataSettings(
         database_url=url,
-        max_upload_bytes=number(
-            "max_upload_bytes",
-            DEFAULT_MAX_UPLOAD_BYTES,
-            (MIN_MAX_UPLOAD_BYTES, MAX_MAX_UPLOAD_BYTES),
+        max_upload_bytes=max_upload_bytes,
+        max_files_per_import=number(
+            "max_files_per_import",
+            DEFAULT_MAX_FILES_PER_IMPORT,
+            (1, MAX_MAX_FILES_PER_IMPORT),
         ),
+        max_import_bytes=max_import_bytes,
         max_rows=number("max_rows", DEFAULT_MAX_ROWS_PER_FILE, (1, 100_000_000)),
         max_reported_rejections=number(
             "max_reported_rejections", DEFAULT_MAX_REPORTED_REJECTIONS, (0, 1_000_000)
@@ -309,38 +290,6 @@ def _marketdata_settings(parser: configparser.ConfigParser, path: Path) -> Marke
         max_listed_items=number("max_listed_items", DEFAULT_MAX_LISTED_ITEMS, (1, 1_000_000)),
         max_parts_per_request=number(
             "max_parts_per_request", DEFAULT_MAX_PARTS_PER_REQUEST, (1, 10_000)
-        ),
-    )
-
-
-def _source_settings(parser: configparser.ConfigParser, path: Path) -> SourceSettings:
-    url = _optional_text(parser, "source", "fetch_url")
-    key = _optional_text(parser, "source", "fetch_key")
-    if url is not None and not _is_fetch_url(url):
-        raise StartupConfigError(f"Startup configuration {path} has an invalid [source] fetch_url")
-    if key is not None and _KEY_RE.fullmatch(key) is None:
-        raise StartupConfigError(
-            f"Startup configuration {path} has an invalid [source] fetch_key "
-            "(16 to 256 printable ASCII characters without a space)"
-        )
-    if (url is None) != (key is None):
-        raise StartupConfigError(
-            f"Startup configuration {path}: [source] fetch_url and fetch_key belong together; "
-            "give both or none"
-        )
-
-    def number(option: str, default: int, bounds: tuple[int, int]) -> int:
-        return _limited_integer(parser, "source", option, default, bounds, path)
-
-    return SourceSettings(
-        url=url.rstrip("/") if url is not None else None,
-        key=key,
-        timeout_seconds=number("timeout_seconds", DEFAULT_FETCH_TIMEOUT_SECONDS, (1, 3600)),
-        max_concurrent_acquisitions=number(
-            "max_concurrent_acquisitions", DEFAULT_MAX_CONCURRENT_ACQUISITIONS, (1, 64)
-        ),
-        max_kept_acquisitions=number(
-            "max_kept_acquisitions", DEFAULT_MAX_KEPT_ACQUISITIONS, (1, 100_000)
         ),
     )
 
@@ -422,5 +371,4 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
         allowed_hosts=tuple(hosts),
         max_body_bytes=max_body_bytes,
         marketdata=_marketdata_settings(parser, path),
-        source=_source_settings(parser, path),
     )

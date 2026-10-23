@@ -6,7 +6,7 @@ interface uses them). They are no part of the public web API and no versioned de
 
 - ``GET``, ``PUT`` ``/api/replay/settings/language``: language of the user interface (``de``,
   ``en``)
-- ``GET``, ``PUT`` ``/api/replay/settings/default-source``: broker whose data a test run uses
+- ``GET``, ``PUT`` ``/api/replay/settings/test-run-broker``: broker whose data a test run uses
 - ``GET`` ``/api/replay/revision``: the commit pipwerk replay runs from
 
 The rules for bodies, errors and texts are those of the public web API (``api_support.py``).
@@ -19,6 +19,7 @@ from enum import Enum
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, Response
+from pipwerk_marketdata import MarketDataStoreError
 from pydantic import ConfigDict, model_validator
 
 from pipwerk_replay.api_support import (
@@ -34,13 +35,18 @@ from pipwerk_replay.api_support import (
     parse_body,
 )
 from pipwerk_replay.marketdata_models import Name
+from pipwerk_replay.marketdata_service import (
+    BrokerForTestRuns,
+    BrokerNotInDataStockError,
+    MarketDataService,
+)
 from pipwerk_replay.revision import REVISION_LENGTH, Revision
 from pipwerk_replay.settings_service import (
     InvalidBrokerNameError,
     Language,
     SettingsService,
-    StoredDefaultSourceInvalidError,
     StoredLanguageInvalidError,
+    StoredTestRunBrokerInvalidError,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,7 +54,9 @@ logger = logging.getLogger(__name__)
 TAGS: list[str | Enum] = ["internal"]
 
 STORED_LANGUAGE_INVALID_TEXT = "The stored pipwerk replay language is invalid."
-STORED_DEFAULT_SOURCE_INVALID_TEXT = "The stored pipwerk replay default source is invalid."
+STORED_TEST_RUN_BROKER_INVALID_TEXT = "The stored pipwerk replay broker for test runs is invalid."
+BROKER_NOT_IN_DATA_STOCK_TEXT = "The broker has no data in the data stock."
+DATA_STORE_TEXT = "The data stock could not be read or changed."
 
 
 class ReplayLanguage(ApiModel):
@@ -66,20 +74,27 @@ class ReplayLanguageUpdate(ApiModel):
     language: Language
 
 
-class DefaultSource(ApiModel):
-    """The default source: the name of the broker whose data a test run uses, ``null`` if none
-    is set."""
+class ReplayBrokerForTestRuns(ApiModel):
+    """The broker for test runs: ``broker`` is the broker whose data a test run uses. It is the
+    chosen broker if that still occurs in the data stock (``chosen`` is ``true``), otherwise the
+    first broker of the data stock in alphabetical order (``chosen`` is ``false``); ``null`` only
+    if the data stock has no broker at all."""
 
     broker: Name | None
+    chosen: bool
 
 
-class DefaultSourceUpdate(ApiModel):
-    """Write model of the default source. ``null`` removes it. The broker need not exist in the
-    data stock yet."""
+class ReplayBrokerForTestRunsUpdate(ApiModel):
+    """Write model of the broker for test runs: a broker that occurs in the data stock, or
+    ``null`` to remove the choice (then the first broker of the data stock applies)."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     broker: Name | None
+
+
+def _applying(state: BrokerForTestRuns) -> ReplayBrokerForTestRuns:
+    return ReplayBrokerForTestRuns(broker=state.broker, chosen=state.chosen)
 
 
 class ReplayRevision(ApiModel):
@@ -112,23 +127,40 @@ def _stored_language_invalid(error: StoredLanguageInvalidError) -> Response:
     return api_error(503, STORED_LANGUAGE_INVALID_TEXT)
 
 
-def _stored_default_source_invalid(error: StoredDefaultSourceInvalidError) -> Response:
+def _stored_test_run_broker_invalid(error: StoredTestRunBrokerInvalidError) -> Response:
     logger.error("%s", error)
-    return api_error(503, STORED_DEFAULT_SOURCE_INVALID_TEXT)
+    return api_error(503, STORED_TEST_RUN_BROKER_INVALID_TEXT)
 
 
 def _invalid_broker_name(_error: InvalidBrokerNameError) -> Response:
     return invalid_place(["broker"], "value_error")
 
 
+def _broker_not_in_data_stock(_error: BrokerNotInDataStockError) -> Response:
+    place = {"location": ["broker"], "type": "broker_not_in_data_stock"}
+    return JSONResponse(
+        status_code=422, content={"detail": BROKER_NOT_IN_DATA_STOCK_TEXT, "errors": [place]}
+    )
+
+
+def _data_store_failed(error: MarketDataStoreError) -> Response:
+    cause = error.__cause__
+    logger.error("The data stock failed (%s).", type(cause).__name__ if cause else "unknown")
+    return api_error(503, DATA_STORE_TEXT)
+
+
 _HANDLERS: dict[type[Exception], Handler] = {
+    BrokerNotInDataStockError: _broker_not_in_data_stock,
     InvalidBrokerNameError: _invalid_broker_name,
+    MarketDataStoreError: _data_store_failed,
     StoredLanguageInvalidError: _stored_language_invalid,
-    StoredDefaultSourceInvalidError: _stored_default_source_invalid,
+    StoredTestRunBrokerInvalidError: _stored_test_run_broker_invalid,
 }
 
 
-def build_router(settings: SettingsService, revision: Revision | None) -> APIRouter:
+def build_router(
+    settings: SettingsService, marketdata: MarketDataService, revision: Revision | None
+) -> APIRouter:
     """The router of the internal endpoints with the prefix ``/api/replay``."""
     router = APIRouter(prefix=INTERNAL_PREFIX, tags=TAGS)
 
@@ -176,44 +208,52 @@ def build_router(settings: SettingsService, revision: Revision | None) -> APIRou
         return guarded(run, _HANDLERS)
 
     @router.get(
-        "/settings/default-source",
-        operation_id="read_default_source",
-        summary="Read the default source",
+        "/settings/test-run-broker",
+        operation_id="read_test_run_broker",
+        summary="Read the broker for test runs",
         description=(
-            "Returns the name of the broker whose data a test run uses, ``null`` as long as "
-            "none is set. Responds with HTTP 503 if the stored value is no valid name; a valid "
+            "Returns the broker whose data a test run uses: the chosen broker if it still "
+            "occurs in the data stock, otherwise the first broker of the data stock in "
+            "alphabetical order (``chosen`` tells which); ``null`` only if the data stock has "
+            "no broker. Responds with HTTP 503 if the stored choice is no valid name; a valid "
             "write repairs it."
         ),
         responses={
-            200: {"description": "The default source.", "model": DefaultSource},
+            200: {"description": "The broker for test runs.", "model": ReplayBrokerForTestRuns},
             **error_responses(503),
         },
     )
-    def read_default_source() -> Response:
+    def read_test_run_broker() -> Response:
         def run() -> Response:
-            body = DefaultSource(broker=settings.get_default_source())
+            body = _applying(marketdata.test_run_broker())
             return JSONResponse(content=body.model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)
 
     @router.put(
-        "/settings/default-source",
-        operation_id="write_default_source",
-        summary="Change the default source",
+        "/settings/test-run-broker",
+        operation_id="write_test_run_broker",
+        summary="Choose the broker for test runs",
         description=(
-            "Stores the name of the broker whose data a test run uses; ``null`` removes it. The "
-            "broker need not have data in the data stock yet."
+            "Stores the broker whose data a test run uses. Only a broker that occurs in the "
+            "data stock is accepted (HTTP 422 otherwise); ``null`` removes the choice. The "
+            "answer is the broker that applies afterwards."
         ),
         responses={
-            200: {"description": "The default source as stored.", "model": DefaultSource},
-            **error_responses(413, 415, 422),
+            200: {
+                "description": "The broker for test runs that applies.",
+                "model": ReplayBrokerForTestRuns,
+            },
+            **error_responses(413, 415, 422, 503),
         },
-        openapi_extra=body_description(DefaultSourceUpdate, "The new default source."),
+        openapi_extra=body_description(
+            ReplayBrokerForTestRunsUpdate, "The broker chosen for test runs."
+        ),
     )
-    def write_default_source(body: JsonBody) -> Response:
+    def write_test_run_broker(body: JsonBody) -> Response:
         def run() -> Response:
-            update = parse_body(body, DefaultSourceUpdate)
-            stored = DefaultSource(broker=settings.set_default_source(update.broker))
+            update = parse_body(body, ReplayBrokerForTestRunsUpdate)
+            stored = _applying(marketdata.set_test_run_broker(update.broker))
             return JSONResponse(content=stored.model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)

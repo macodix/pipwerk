@@ -182,7 +182,7 @@ def test_the_database_is_created_by_alembic_at_start(
         data_stock = connection.execute(
             "SELECT version_num FROM marketdata_alembic_version"
         ).fetchall()
-    assert version == [("0002",)]
+    assert version == [("0003",)]
     assert len(data_stock) == 1  # the data stock has its own version table
 
 

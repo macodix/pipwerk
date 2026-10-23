@@ -5,7 +5,6 @@
 # script belongs to, reports its state and stops it again:
 #
 #   testenv start --frontend-port <port> --backend-port <port> [--host <address>]
-#                 [--source-url <address> --source-key-file <file>]
 #   testenv stop
 #   testenv status
 #
@@ -19,14 +18,10 @@
 # the component has a directory frontend/; without it only the backend runs, and
 # status says so.
 #
-# A source of historical price data (pipwerk-fetch-mt5 or a program with the
-# same interface) is set up with --source-url (its address) and
-# --source-key-file (a file whose first line is the shared key). Both belong
-# together. The script writes address and key into the startup configuration
-# of the test environment (.testenv/pipwerk-replay.ini, readable only for the
-# user). The key is never a parameter, never printed and never given to another
-# program on its command line: it is read and written with built-in commands of
-# the shell only. Without both parameters no source is set up.
+# The test environment starts with an empty data stock. Price data come into it
+# only through the import (user interface or web API); the script sets up
+# nothing else. The startup configuration of the test environment
+# (.testenv/pipwerk-replay.ini) names only the database.
 #
 # Documentation: docs/technical/pipwerk-replay.md, section "Start als
 # Testumgebung".
@@ -49,7 +44,6 @@ usage() {
     cat >&2 <<EOF
 Usage:
   $PROG start --frontend-port <port> --backend-port <port> [--host <address>]
-              [--source-url <address> --source-key-file <file>]
   $PROG stop
   $PROG status
 EOF
@@ -132,31 +126,6 @@ require_command() {
     command -v "$1" >/dev/null 2>&1 || die "required program not found: $1"
 }
 
-# check_source <address> <key file>: checks the parameters of the source and sets
-# SOURCE_KEY to the first line of the key file. No message repeats the key. The key is
-# read and tested with built-in commands of the shell only; no other program sees it.
-# The backend checks both again when it starts (address and key are one pair there).
-check_source() {
-    case $1 in
-    http://?* | https://?*) ;;
-    *) die "--source-url must be an http or https address" ;;
-    esac
-    case $1 in
-    *[![:graph:]]*) die "--source-url must not contain blanks or control characters" ;;
-    *@*) die "--source-url must not contain a user name or password" ;;
-    esac
-    [ "${#1}" -le 2048 ] || die "--source-url is longer than 2048 characters"
-    [ -f "$2" ] && [ -r "$2" ] || die "the file given with --source-key-file cannot be read"
-    SOURCE_KEY=''
-    IFS= read -r SOURCE_KEY <"$2" || [ -n "$SOURCE_KEY" ] ||
-        die "the file given with --source-key-file is empty"
-    case $SOURCE_KEY in
-    *[![:graph:]]*) die "the key in the file given with --source-key-file must consist of visible characters without blanks" ;;
-    esac
-    [ "${#SOURCE_KEY}" -ge 16 ] && [ "${#SOURCE_KEY}" -le 256 ] ||
-        die "the key in the file given with --source-key-file must have 16 to 256 characters"
-}
-
 # port_free <address> <port>
 port_free() {
     python3 -c '
@@ -230,11 +199,9 @@ cmd_start() {
     backend_port=''
     host=127.0.0.1
     host_given=0
-    source_url=''
-    source_key_file=''
     while [ $# -gt 0 ]; do
         case $1 in
-        --frontend-port | --backend-port | --host | --source-url | --source-key-file)
+        --frontend-port | --backend-port | --host)
             [ $# -ge 2 ] || die "missing value for $1"
             case $1 in
             --frontend-port) frontend_port=$2 ;;
@@ -243,8 +210,6 @@ cmd_start() {
                 host=$2
                 host_given=1
                 ;;
-            --source-url) source_url=$2 ;;
-            --source-key-file) source_key_file=$2 ;;
             esac
             shift 2
             ;;
@@ -253,10 +218,6 @@ cmd_start() {
     done
     [ -n "$frontend_port" ] || die "missing parameter --frontend-port"
     [ -n "$backend_port" ] || die "missing parameter --backend-port"
-    if [ -n "$source_url" ] || [ -n "$source_key_file" ]; then
-        [ -n "$source_url" ] || die "--source-key-file needs --source-url"
-        [ -n "$source_key_file" ] || die "--source-url needs --source-key-file"
-    fi
     require_port --frontend-port "$frontend_port"
     frontend_port=$PORT_VALUE
     require_port --backend-port "$backend_port"
@@ -266,10 +227,6 @@ cmd_start() {
     case $host in
     '' | *[!A-Za-z0-9.:_-]*) die "--host must be an address or a host name" ;;
     esac
-    SOURCE_KEY=''
-    if [ -n "$source_url" ]; then
-        check_source "$source_url" "$source_key_file"
-    fi
 
     # The working directory must be a Git working directory and the whole
     # repository must be free of uncommitted changes and of new files that
@@ -326,19 +283,9 @@ cmd_start() {
         (cd "$frontend_dir" && npm run build)
     fi
 
-    # The startup configuration is readable only for the user (it holds the key of the
-    # source). It is written with the built-in command printf: the key is no argument
-    # of a program.
-    (
-        umask 077
-        {
-            printf '[database]\nurl = sqlite:///%s/pipwerk-replay.db\n' "$env_dir"
-            if [ -n "$source_url" ]; then
-                printf '\n[source]\nfetch_url = %s\nfetch_key = %s\n' "$source_url" "$SOURCE_KEY"
-            fi
-        } >"$env_dir/pipwerk-replay.ini"
-    )
-    SOURCE_KEY=''
+    # The startup configuration names the database of the test environment only.
+    printf '[database]\nurl = sqlite:///%s/pipwerk-replay.db\n' "$env_dir" \
+        >"$env_dir/pipwerk-replay.ini"
 
     # The user interface passes the header Host of its own address on to the backend
     # (proxy without changeOrigin), and the backend accepts only names on its list of
@@ -358,7 +305,6 @@ cmd_start() {
     state_set backend_pid $!
     state_set backend_port "$backend_port"
     state_set with_frontend "$with_frontend"
-    state_set source_url "$source_url"
 
     if [ "$with_frontend" = 1 ]; then
         (
@@ -415,16 +361,6 @@ cmd_stop() {
     printf '%s: test environment stopped\n' "$PROG"
 }
 
-# print_source: the source that is set up (its address; the key is not stored here).
-print_source() {
-    status_source=$(state_get source_url)
-    if [ -n "$status_source" ]; then
-        printf '  source: %s\n' "$status_source"
-    else
-        printf '  source: not set up\n'
-    fi
-}
-
 cmd_status() {
     [ $# -eq 0 ] || usage
     backend_running=0
@@ -435,7 +371,6 @@ cmd_status() {
         if [ "$backend_running" = 1 ]; then
             printf '%s: running (backend only, this commit has no user interface)\n' "$PROG"
             printf '  backend: http://127.0.0.1:%s/\n' "$(state_get backend_port)"
-            print_source
             return 0
         fi
         printf '%s: not running\n' "$PROG"
@@ -446,7 +381,6 @@ cmd_status() {
         printf '  user interface: http://%s:%s/\n' \
             "$(url_host "$(state_get host)")" "$(state_get frontend_port)"
         printf '  backend: http://127.0.0.1:%s/\n' "$(state_get backend_port)"
-        print_source
         return 0
     fi
     if [ "$backend_running" = 1 ] || [ "$frontend_running" = 1 ]; then

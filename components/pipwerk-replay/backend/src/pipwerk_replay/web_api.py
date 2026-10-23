@@ -3,7 +3,7 @@
 The public web API is described in ``contracts/api/pipwerk-replay/v1/openapi.json``:
 
 - the test accounts (``/api/v1/accounts``, specification 6.2), in this module,
-- the data stock and the acquisition (``/api/v1/market-data/``), in ``marketdata_api.py``.
+- the data stock (``/api/v1/market-data/``), in ``marketdata_api.py``.
 
 The settings and the revision are internal endpoints below ``/api/replay/``
 (``internal_api.py``); they are no part of the public web API. This module only connects HTTP
@@ -27,7 +27,6 @@ from pipwerk_replay.accounts import (
     AccountNotFoundError,
     AccountService,
 )
-from pipwerk_replay.acquisition import AcquisitionManager
 from pipwerk_replay.api_support import (
     INTERNAL_PREFIX,
     PUBLIC_PREFIX,
@@ -186,18 +185,18 @@ def install_api(
     accounts: AccountService,
     settings: SettingsService,
     marketdata: MarketDataService,
-    acquisitions: AcquisitionManager,
     revision: Revision | None,
     max_body_bytes: int,
 ) -> None:
     """Add the public web API, the internal endpoints and the limits of the body size.
 
-    A body is at most ``max_body_bytes`` large; the uploaded files of the import are at most
-    ``max_upload_bytes`` of the data stock."""
+    A body is at most ``max_body_bytes`` large; the request of an import (and of its preview)
+    is at most as large as the files of an import together (``max_import_bytes`` of the data
+    stock) plus the envelope of the form."""
     app.include_router(build_router(accounts))
-    app.include_router(marketdata_api.build_router(marketdata, acquisitions))
-    app.include_router(internal_api.build_router(settings, revision))
-    upload_limit = marketdata.settings.max_upload_bytes
+    app.include_router(marketdata_api.build_router(marketdata))
+    app.include_router(internal_api.build_router(settings, marketdata, revision))
+    upload_limit = marketdata_api.import_body_limit(marketdata)
     app.add_middleware(
         BodyLimitMiddleware,
         limit=max_body_bytes,
@@ -208,7 +207,7 @@ def install_api(
         limit=max_body_bytes,
         prefix=API_PREFIX,
         overrides={
-            marketdata_api.IMPORT_JSON_PATH: upload_limit,
-            marketdata_api.IMPORT_CSV_PATH: upload_limit,
+            marketdata_api.IMPORT_PATH: upload_limit,
+            marketdata_api.PREVIEW_PATH: upload_limit,
         },
     )

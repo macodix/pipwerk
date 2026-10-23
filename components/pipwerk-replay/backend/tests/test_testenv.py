@@ -13,9 +13,8 @@ relative path from the root of the repository. As long as the component has no d
 ``frontend/``, only the backend is started and ``status`` says so; with it, the installation
 and the build of the user interface are called. The allowed names of the backend follow
 ``--host``. A complete cycle of ``start``, ``status`` and ``stop`` runs with a small program in
-place of the backend and one in place of ``vite preview``. A source is set up with
-``--source-url`` and ``--source-key-file``: the key reaches the startup configuration of the test
-environment (readable only for the user) and no other place, in particular no command line.
+place of the backend and one in place of ``vite preview``. The startup configuration of the test
+environment names the database only; the parameters of a source no longer exist.
 
 The tests are skipped without an installed Git and in a working directory that
 is not a Git working directory (for example an unpacked archive).
@@ -711,7 +710,7 @@ def test_status_and_stop_without_a_test_environment(
     _assert_nothing_happened(replica)
 
 
-# --- the user interface of the component and the source ----------------------------------------
+# --- the user interface of the component and the startup configuration -------------------------
 
 
 def test_start_status_and_stop_of_backend_and_user_interface(
@@ -738,7 +737,7 @@ def test_start_status_and_stop_of_backend_and_user_interface(
         assert status.returncode == 0
         assert f"user interface: http://127.0.0.1:{frontend_port}/" in status.stdout
         assert f"backend: http://127.0.0.1:{backend_port}/" in status.stdout
-        assert "source: not set up" in status.stdout
+        assert "source" not in status.stdout
         assert len(replica.started_processes()) >= 2
     finally:
         stopped = replica.run("stop")
@@ -793,52 +792,6 @@ def _wait_until_gone(pid: int) -> None:
         time.sleep(0.05)
 
 
-SOURCE_URL = "http://192.0.2.10:8765"
-SOURCE_KEY = "test-key-0123456789-abcdef"
-COMMAND_NAMES = (
-    "python3",
-    "sed",
-    "head",
-    "tail",
-    "cat",
-    "ps",
-    "git",
-    "kill",
-    "sleep",
-    "chmod",
-    "mkdir",
-    "rm",
-    "dirname",
-)
-
-
-def _key_file(replica: Replica, text: str = f"{SOURCE_KEY}\n") -> str:
-    path = replica.base / "source.key"
-    path.write_text(text, encoding="utf-8")
-    path.chmod(0o600)
-    return str(path)
-
-
-def _log_commands(replica: Replica) -> Path:
-    """Put programs that note their arguments in front of the real ones (for the commands
-    the script runs), so a test can show what no command line contains."""
-    log = replica.base / "commands.log"
-    log.write_text("", encoding="utf-8")
-    directory = replica.base / "sniffers"
-    directory.mkdir()
-    for name in COMMAND_NAMES:
-        real = shutil.which(name)
-        if real is None:
-            continue
-        wrapper = directory / name
-        wrapper.write_text(
-            f'#!/bin/sh\necho "{name} $*" >> "{log}"\nexec "{real}" "$@"\n', encoding="utf-8"
-        )
-        wrapper.chmod(0o755)
-    replica.environment["PATH"] = f"{directory}{os.pathsep}{replica.environment['PATH']}"
-    return log
-
-
 def _configuration(path: Path) -> dict[str, dict[str, str]]:
     import configparser
 
@@ -847,230 +800,58 @@ def _configuration(path: Path) -> dict[str, dict[str, str]]:
     return {section: dict(parser[section]) for section in parser.sections()}
 
 
-def test_a_source_is_written_to_the_startup_configuration_and_the_key_stays_secret(
+def test_the_startup_configuration_of_the_test_environment_names_only_the_database(
     make_replica: Callable[..., Replica],
 ) -> None:
     replica = make_replica()
     record = replica.base / "record"
     record.mkdir()
     replica.install_recorder(record)
-    commands = _log_commands(replica)
-    key_file = _key_file(replica)
 
-    result = replica.start("--source-url", SOURCE_URL, "--source-key-file", key_file)
+    result = replica.start()
 
     # The recorder stands in for the backend and ends at once; it kept the startup configuration.
     assert result.returncode != 0
     assert "the backend exited during start" in result.stderr
     configuration = _configuration(record / "pipwerk-replay.ini")
-    assert configuration["source"] == {"fetch_url": SOURCE_URL, "fetch_key": SOURCE_KEY}
+    assert configuration.keys() == {"database"}
+    assert configuration["database"].keys() == {"url"}
     assert configuration["database"]["url"].endswith("/.testenv/pipwerk-replay.db")
-    # The startup configuration is readable only for the user.
-    assert (record / "pipwerk-replay.ini").stat().st_mode & 0o077 == 0
-    # The key is nowhere else: not in an output, not in the arguments of the backend, not in any
-    # command line of a program of the system or of the installation.
     arguments = (record / "arguments.txt").read_text(encoding="utf-8")
-    for text in (
-        result.stdout,
-        result.stderr,
-        arguments,
-        "\n".join(replica.calls()),
-        commands.read_text(encoding="utf-8"),
-    ):
-        assert SOURCE_KEY not in text
-    assert "--source" not in arguments
-    assert not (replica.component / ".testenv").exists()
-
-
-def test_without_the_parameters_no_source_is_set_up(make_replica: Callable[..., Replica]) -> None:
-    replica = make_replica()
-    record = replica.base / "record"
-    record.mkdir()
-    replica.install_recorder(record)
-
-    replica.start()
-
-    assert _configuration(record / "pipwerk-replay.ini").keys() == {"database"}
-
-
-def test_a_key_file_without_a_final_new_line_and_with_more_lines_gives_its_first_line(
-    make_replica: Callable[..., Replica],
-) -> None:
-    for text, expected in ((SOURCE_KEY, SOURCE_KEY), (f"{SOURCE_KEY}\nsecond line\n", SOURCE_KEY)):
-        replica = make_replica()
-        record = replica.base / "record"
-        record.mkdir()
-        replica.install_recorder(record)
-
-        replica.start("--source-url", SOURCE_URL, "--source-key-file", _key_file(replica, text))
-
-        assert _configuration(record / "pipwerk-replay.ini")["source"]["fetch_key"] == expected
-
-
-def test_a_key_with_characters_of_the_ini_syntax_is_written_unchanged(
-    make_replica: Callable[..., Replica],
-) -> None:
-    key = "a=b%c;d#e:f[g]h{{i}}j$k`l'm\"n\\o"
-    replica = make_replica()
-    record = replica.base / "record"
-    record.mkdir()
-    replica.install_recorder(record)
-
-    replica.start("--source-url", SOURCE_URL, "--source-key-file", _key_file(replica, f"{key}\n"))
-
-    assert _configuration(record / "pipwerk-replay.ini")["source"]["fetch_key"] == key
+    assert "source" not in arguments
 
 
 @pytest.mark.parametrize(
-    ("arguments", "message"),
+    "arguments",
     [
-        (["--source-url", SOURCE_URL], "--source-url needs --source-key-file"),
-        (["--source-key-file", "KEYFILE"], "--source-key-file needs --source-url"),
-        (["--source-url"], "missing value for --source-url"),
-        (["--source-url", SOURCE_URL, "--source-key-file"], "missing value for --source-key-file"),
-        (["--source-key", SOURCE_KEY], "unknown parameter: --source-key"),
-        (
-            ["--source-url", "192.0.2.10:8765", "--source-key-file", "KEYFILE"],
-            "--source-url must be an http or https address",
-        ),
-        (
-            ["--source-url", "ftp://192.0.2.10", "--source-key-file", "KEYFILE"],
-            "--source-url must be an http or https address",
-        ),
-        (
-            ["--source-url", "http://", "--source-key-file", "KEYFILE"],
-            "--source-url must be an http or https address",
-        ),
-        (["--source-url", "http://a b", "--source-key-file", "KEYFILE"], "must not contain blanks"),
-        (
-            ["--source-url", "http://user:secret@192.0.2.10", "--source-key-file", "KEYFILE"],
-            "must not contain a user name",
-        ),
-        (
-            ["--source-url", "http://" + "a" * 2050, "--source-key-file", "KEYFILE"],
-            "longer than 2048",
-        ),
-        (["--source-url", SOURCE_URL, "--source-key-file", "MISSING"], "cannot be read"),
+        ["--source-url", "http://192.0.2.10:8765", "--source-key-file", "key.file"],
+        ["--source-url", "http://192.0.2.10:8765"],
+        ["--source-key-file", "key.file"],
+        ["--source-url"],
+        ["--source-key", "a-key-that-is-sixteen-characters"],
     ],
 )
-def test_wrong_source_parameters_are_rejected_before_anything_happens(
-    make_replica: Callable[..., Replica], arguments: list[str], message: str
+def test_the_parameters_of_a_source_no_longer_exist(
+    make_replica: Callable[..., Replica], arguments: list[str]
 ) -> None:
     replica = make_replica()
-    key_file = _key_file(replica)
-    arguments = [
-        key_file
-        if argument == "KEYFILE"
-        else str(replica.base / "missing.key")
-        if argument == "MISSING"
-        else argument
-        for argument in arguments
-    ]
 
     result = replica.start(*arguments)
 
     assert result.returncode != 0
-    assert message in result.stderr
-    assert SOURCE_KEY not in result.stdout + result.stderr
-    assert "secret" not in result.stdout + result.stderr
+    assert f"unknown parameter: {arguments[0]}" in result.stderr
+    assert "a-key-that-is-sixteen-characters" not in result.stdout + result.stderr
     _assert_nothing_happened(replica)
 
 
-@pytest.mark.parametrize(
-    ("content", "message"),
-    [
-        ("", "is empty"),
-        ("\n", "16 to 256 characters"),
-        ("short\n", "16 to 256 characters"),
-        ("x" * 15 + "\n", "16 to 256 characters"),
-        ("x" * 257 + "\n", "16 to 256 characters"),
-        ("a key with blanks 0123456789\n", "visible characters without blanks"),
-        (f"{SOURCE_KEY}\r\n", "visible characters without blanks"),
-        (f"{SOURCE_KEY}\t\n", "visible characters without blanks"),
-        ("schlüssel-0123456789-abc\n", "visible characters without blanks"),
-    ],
-    ids=[
-        "empty",
-        "blank line",
-        "short",
-        "15 characters",
-        "257 characters",
-        "blanks",
-        "CR LF",
-        "tab",
-        "umlaut",
-    ],
-)
-def test_a_wrong_key_is_rejected_without_repeating_it(
-    make_replica: Callable[..., Replica], content: str, message: str
-) -> None:
-    replica = make_replica()
-    key_file = _key_file(replica, content)
-
-    result = replica.start("--source-url", SOURCE_URL, "--source-key-file", key_file)
-
-    assert result.returncode != 0
-    assert message in result.stderr
-    stripped = content.strip()
-    if stripped:
-        assert stripped not in result.stdout + result.stderr
-    _assert_nothing_happened(replica)
-
-
-def test_a_key_file_that_is_a_directory_is_rejected(make_replica: Callable[..., Replica]) -> None:
-    replica = make_replica()
-
-    result = replica.start("--source-url", SOURCE_URL, "--source-key-file", str(replica.base))
-
-    assert result.returncode != 0
-    assert "cannot be read" in result.stderr
-    _assert_nothing_happened(replica)
-
-
-def test_status_names_the_source_and_never_the_key(make_replica: Callable[..., Replica]) -> None:
-    replica = make_replica()
-    replica.install_small_backend()
-    replica.install_small_frontend()
-    key_file = _key_file(replica)
-
-    started = replica.start("--source-url", SOURCE_URL, "--source-key-file", key_file)
-    try:
-        assert started.returncode == 0, started.stderr
-        status = replica.run("status")
-        assert status.returncode == 0
-        assert f"source: {SOURCE_URL}" in status.stdout
-        assert SOURCE_KEY not in started.stdout + started.stderr + status.stdout + status.stderr
-        # The key is in the startup configuration of the test environment and nowhere else in
-        # .testenv/ (state and logs), and the file is readable only for the user.
-        testenv = replica.component / ".testenv"
-        configuration = testenv / "pipwerk-replay.ini"
-        assert (configuration.stat().st_mode & 0o077) == 0
-        assert _configuration(configuration)["source"]["fetch_key"] == SOURCE_KEY
-        for name in ("state", "backend.log", "frontend.log"):
-            assert SOURCE_KEY not in (testenv / name).read_text(encoding="utf-8")
-        listing = subprocess.run(
-            ["ps", "-e", "-ww", "-o", "args="],  # noqa: S607
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        assert SOURCE_KEY not in listing.stdout
-    finally:
-        stopped = replica.run("stop")
-    assert stopped.returncode == 0
-    assert not (replica.component / ".testenv").exists()
-    assert replica.started_processes() == []
-
-
-def test_the_script_has_no_trace_output_and_no_parameter_for_the_key() -> None:
+def test_the_script_has_no_trace_output_and_knows_no_source() -> None:
     assert SOURCE_ROOT is not None
     script = (SOURCE_ROOT / SCRIPT).read_text(encoding="utf-8")
 
     assert "set -x" not in script
     assert "set -o xtrace" not in script
-    assert "--source-key-file" in script
-    assert "--source-url" in script
-    assert "--source-key)" not in script
+    for word in ("--source", "source_url", "SOURCE_KEY", "fetch_url", "fetch_key", "[source]"):
+        assert word not in script, word
 
 
 def test_the_real_user_interface_is_installed_and_built(
