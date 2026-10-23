@@ -121,7 +121,7 @@ Die Beschaffung holt Kursdaten und Angaben zum Instrument aus einer Quelle und l
 
 Die erste Quelle ist MetaTrader 5. Die Beschaffung für MetaTrader 5 läuft auf dem Rechner, auf dem MetaTrader 5 läuft. Die Dateien nennen den Broker mit dem Namen des Handelsservers, an dem MetaTrader 5 angemeldet ist.
 
-Der Austausch zwischen pipwerk und der Beschaffung läuft über pipwerk relay. Fehlen für einen Testlauf Daten im Datenbestand, werden sie dann automatisch beschafft und importiert (Anforderungen an den Strategietester req-test-003). Der Anwender kann die Beschaffung auch von Hand anstoßen.
+Der Austausch zwischen pipwerk und der Beschaffung läuft über pipwerk relay. Fehlen für einen Testlauf Daten im Datenbestand, werden sie dann automatisch beschafft und importiert (Anforderungen an den Strategietester req-test-003). Der Anwender kann die Beschaffung dann auch von Hand aus pipwerk anstoßen.
 
 Übergangslösung, bis pipwerk relay zur Verfügung steht: Die Beschaffung für MetaTrader 5 ist ein Programm, das der Anwender auf dem Rechner von MetaTrader 5 aufruft. Es schreibt die Dateien in ein Verzeichnis, der Anwender importiert sie (req-system-026). Die Übergangslösung hat keinen eigenen Server und öffnet keinen Port. pipwerk stößt die Beschaffung in dieser Zeit nicht an.
 
@@ -247,3 +247,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-19 | Abschnitt 3 neu: Datenbestand historischer Kursdaten, Import und Beschaffung (req-system-025 bis req-system-027). Folgende Abschnitte neu nummeriert, Kennungen unverändert. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | req-system-025: Angaben zum Instrument an die Eigenschaften von `Instrument` im Fachmodell angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 1, B1). |
 | 2026-10-23 | req-system-026: Import mehrerer Dateien in einem Vorgang. req-system-027: Austausch mit der Beschaffung über pipwerk relay, Broker als Name des Handelsservers, Übergangslösung ohne eigenen Server und Port bis pipwerk relay. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |
+| 2026-10-23 | req-system-027: Anstoßen von Hand aus pipwerk gilt mit pipwerk relay. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H3). |
