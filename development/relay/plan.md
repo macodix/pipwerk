@@ -6,7 +6,7 @@
 - stand: 2026-10-23
 - komponenten: `packages/relay-core` (neu), `components/pipwerk-relay` (neu), `components/pipwerk-fetch-mt5`, `contracts/messages/`, `contracts/api/pipwerk-relay/`
 - grundlage: [specification.md](specification.md), [Präsentation](presentations/specification-2.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026
-- prüfung: Durchlauf 1 `reviews/plan-1.md`
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet
 
 ## Übersicht
 
@@ -17,7 +17,7 @@
 | `wp03` | Dateien über einen Weg für Dateien | `wp02` | `open` |
 | `wp04` | Web-API des Relays | `wp01` | `open` |
 
-Die Pakete folgen den Durchgängen des Nachweises (Spezifikation Abschnitt 8), die der Auftraggeber selbst führt. `wp01` bringt Bibliothek, Relay und den Abruf über pipwerk relay mit dem Verzeichnis-Weg und endet mit Durchgang 2. Die Empfangsbestätigung gehört zu `wp01`, weil sie festlegt, wann der Anschluss einer Komponente quittiert und eine Nachricht als gesehen vermerkt (3.5, 3.7, E4). `wp02` fügt Matrix hinzu und endet mit Durchgang 1. `wp03` bringt die Wege für Dateien und endet mit Durchgang 3, der Matrix braucht. `wp04` bringt die Web-API mit dem Weg `http`; es braucht nur `wp01` und läuft neben `wp02` und `wp03`.
+Die Pakete folgen den Durchgängen des Nachweises (Spezifikation Abschnitt 8), die der Auftraggeber selbst führt. `wp01` bringt Bibliothek, Relay und den Abruf über pipwerk relay mit dem Verzeichnis-Weg und endet mit Durchgang 2. Die Empfangsbestätigung gehört zu `wp01`, weil sie festlegt, wann der Anschluss einer Komponente quittiert und eine Nachricht als gesehen vermerkt (3.5, 3.7, E4). `wp02` fügt Matrix hinzu und endet mit Durchgang 1. `wp03` bringt die Wege für Dateien und endet mit Durchgang 3, der Matrix braucht. `wp04` bringt die Web-API mit dem Weg `http`; es braucht nur `wp01` und läuft neben `wp02` und `wp03`. Diese Pakete ändern zum Teil dieselben Dateien. Wer zuerst in `main` übernommen wird, entscheidet die Abnahme; vor der Übernahme des jeweils anderen führt der Entwicklungsleiter `origin/main` in dessen Arbeitszweig zusammen. Ändert das Code, prüfen Tester und QA erneut.
 
 Abschnittsangaben beziehen sich auf die [Spezifikation](specification.md). Grenzwerte gegen Überlast, Ports der Testumgebung und die Einzelheiten der Tests legen die Aufträge fest.
 
@@ -33,7 +33,7 @@ Auf zwei Rechnern läuft je ein Relay. Das Anfrage-Programm schickt über die Re
 - Relay `components/pipwerk-relay`: Weg einer Nachricht (4.1), angeschlossene Komponenten (4.2), Adressbuch und Standard-Relay (4.3), unzustellbare Nachricht (4.4), Konfiguration, Befehle und Begrenzungen (4.5), Speicher mit Datenbank und Alembic (E6), Installation mit uv unter Windows und Linux (E3 letzter Satz, E7); Prüfskript und Testumgebungsskript.
 - Schemas unter `contracts/messages/v1/` (Abschnitt 5) ohne die Angaben zu Wegen für Dateien (`wp03`).
 - Abruf über pipwerk relay in `components/pipwerk-fetch-mt5`: `serve`, Nachrichtenarten, `request`, Abschnitt `[relay]` mit `[relay.way]` (6.1 bis 6.3).
-- Sicherheit nach Abschnitt 7 für diese Teile.
+- Sicherheit nach Abschnitt 7 für diese Teile, ohne Matrix und Web-API; Prüfung von `asyncssh` nach Regel 12.
 - Tests nach Abschnitt 8: Bibliothek ohne Matrix-Weg, Empfangsbestätigung, Wege als Erweiterung mit einem Test-Weg, Relay, Abruf. Testumgebung mit zwei Relays, SFTP-Server aus `asyncssh` und `serve` mit der Nachbildung von `MetaTrader5`.
 - Dokumentation (Abschnitt 9) für diese Teile: `docs/technical/pipwerk-relay.md`, `docs/technical/pipwerk-fetch-mt5.md`, `contracts/messages/README.md`, README der Komponenten; `docs/user/pipwerk-relay.md` zu Einrichtung unter Windows und Linux, Schlüsseln, Adressbuch, Verzeichnissen und SFTP, Abruf mit `serve` und `request`, Meldungen und ihren Gründen, Empfangsbestätigung; Glossar: Anlage, Umschlag, Eingang, Warteschlange, Schlüssel der Verbindung, angeschlossene Komponente, Empfangsbestätigung.
 
@@ -66,7 +66,7 @@ Voraussetzung: MetaTrader 5 auf einem Rechner des Auftraggebers, ein zweiter Rec
 5. Der bisherige Aufruf von `pipwerk-fetch-mt5` an der Befehlszeile arbeitet wie vorher.
 6. Die Anwenderdokumentation beschreibt Einrichtung, Schlüssel, Adressbuch, Verzeichnisse und SFTP, Abruf, Meldungen und Empfangsbestätigung verständlich und vollständig.
 
-Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, `pipwerk-relay` und `pipwerk-fetch-mt5` enden mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 8 für dieses Paket und der Durchgang über Verzeichnisse in der Testumgebung. Positive Testberichte beider Tester liegen vor.
+Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, `pipwerk-relay` und `pipwerk-fetch-mt5` enden mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 8 für dieses Paket, auch die Empfangsbestätigung, und der Durchgang über Verzeichnisse in der Testumgebung. Die Empfangsbestätigung zeigt keiner der Durchgänge, weil der Abruf sie nicht verlangt (6.2); sie ist deshalb nur über diese Tests nachgewiesen. Positive Testberichte beider Tester liegen vor.
 
 ## wp02 – Übertragungsweg Matrix
 
@@ -152,7 +152,7 @@ Das Relay stellt Senden, Empfangen und den Stand der Warteschlange über eine We
 
 - Web-API des Relays mit FastAPI unter `/api/v1/`, Prüfung jeder Anfrage mit dem Schlüssel der Verbindung, Prüfung des Kopfs `Host`, Bindung nur nach Startkonfiguration (E2, E3); Beschreibung `contracts/api/pipwerk-relay/v1/openapi.json`.
 - Weg `http` in `packages/relay-core` für Komponenten (E3).
-- Sicherheit nach Abschnitt 7 für die Web-API.
+- Sicherheit nach Abschnitt 7 für die Web-API; Prüfung der neuen Abhängigkeiten der Web-API und des Wegs `http` nach Regel 12.
 - Tests nach Abschnitt 8: Web-API.
 - Dokumentation: `docs/technical/pipwerk-relay.md` zur Web-API, `docs/user/pipwerk-relay.md` zum Einschalten der Web-API und zum Weg `http`.
 
@@ -188,7 +188,7 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core` u
 | 2 E2 | `wp01` (Wege ohne Port), `wp04` (Web-API) |
 | 2 E3 | `wp04`; Installation `wp01` |
 | 3.1 bis 3.3 | `wp01`; `stored` `wp03` |
-| 3.4 | `wp01` (Schnittstelle, Erweiterungen, Verzeichnis-Weg), `wp02` (Matrix) |
+| 3.4 | `wp01` (Schnittstelle, Erweiterungen, Verzeichnis-Weg), `wp02` (Matrix), `wp04` (Weg `http` nach E3) |
 | 3.5, 3.7 | `wp01` |
 | 3.6 | `wp03` |
 | 4.1 bis 4.5 | `wp01`; Wege für Dateien `wp03` |
@@ -203,4 +203,5 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core` u
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-23 | Plan angelegt: vier Pakete. `wp01` auf dem von der QA geprüften Stand von `backtest/wp02`, `wp02` und `wp04` nach `wp01`, `wp03` nach `wp02`. |
+| 2026-10-23 | Plan angelegt: vier Pakete. `wp01` auf dem von der QA geprüften Stand von `backtest/wp02`, `wp02` und `wp04` nach `wp01`, `wp03` nach `wp02`. Prüfung bestanden in [plan-1.md](reviews/plan-1.md). |
+| 2026-10-23 | Hinweise aus [plan-1.md](reviews/plan-1.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Empfangsbestätigung im technischen Nachweis von `wp01`; H2 Weg `http` in der Abdeckung von 3.4; H3 Sicherheit in `wp01` ohne Matrix und Web-API; H4 Prüfung nach Regel 12 in `wp01` und `wp04`; H5 Übernahme von `wp02`, `wp03` und `wp04` (Übersicht). |
