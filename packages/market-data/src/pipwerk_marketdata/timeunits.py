@@ -7,6 +7,9 @@ from datetime import UTC, datetime, timedelta
 TICKS = "ticks"
 """Name of the series of ticks where a time unit would stand."""
 
+CONTRACT = "contract"
+"""Name of the instrument data where a time unit would stand (list of series, file names)."""
+
 
 @dataclass(frozen=True, slots=True)
 class TimeUnit:

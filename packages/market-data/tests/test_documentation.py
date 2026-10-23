@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from pipwerk_marketdata import FileErrorCode, ImportLimits, RejectReason
+from pipwerk_marketdata import BatchErrorCode, FileErrorCode, ImportLimits, RejectReason
 from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, MAX_INTEGER_VALUE
 from pipwerk_marketdata.records import CompletenessRules
 from pipwerk_marketdata.tables import metadata
@@ -23,6 +23,39 @@ def test_every_reason_for_a_rejected_file_is_described(code: FileErrorCode) -> N
     assert f"`{code.value}`" in DOCUMENT
 
 
+@pytest.mark.parametrize("code", list(BatchErrorCode))
+def test_every_reason_for_a_refused_process_is_described(code: BatchErrorCode) -> None:
+    assert f"`{code.value}`" in DOCUMENT
+
+
+def test_the_interface_of_the_process_and_the_list_is_described() -> None:
+    for name in (
+        "import_files",
+        "list_series",
+        "series_details",
+        "brokers",
+        "recognize_filename",
+        "inspect_json",
+        "ImportBatchError",
+        "NameHints",
+        "FileHints",
+    ):
+        assert f"`{name}" in DOCUMENT
+
+
+def test_the_patterns_of_file_names_are_documented() -> None:
+    assert "`EURUSD_H1_202301020000_202312292300.csv`" in DOCUMENT
+    assert "`EURUSD,H1.csv`" in DOCUMENT
+    assert "`<Instrument>_<Daten>_<von>_<bis>`" in DOCUMENT
+    assert "`<Instrument>,<Daten>`" in DOCUMENT
+
+
+def test_the_readme_names_the_new_interface() -> None:
+    readme = (LIBRARY_SOURCE.parents[1] / "README.md").read_text(encoding="utf-8")
+    for name in ("import_files", "list_series", "series_details", "brokers", "recognize_filename"):
+        assert f"`{name}" in readme
+
+
 @pytest.mark.parametrize("table", sorted(metadata.tables))
 def test_every_table_is_described(table: str) -> None:
     assert f"`{table}`" in DOCUMENT
@@ -33,6 +66,8 @@ def test_default_limits_are_documented() -> None:
     assert f"{limits.max_bytes:,}".replace(",", " ") in DOCUMENT
     assert f"{limits.max_rows:,}".replace(",", " ") in DOCUMENT
     assert str(limits.max_reported_rejections) in DOCUMENT
+    assert str(limits.max_files) in DOCUMENT
+    assert f"{limits.max_batch_bytes:,}".replace(",", " ") in DOCUMENT
     assert f"{DEFAULT_MAX_PAGE_SIZE:,}".replace(",", " ") in DOCUMENT
     assert f"{MAX_INTEGER_VALUE:,}".replace(",", " ") in DOCUMENT
 

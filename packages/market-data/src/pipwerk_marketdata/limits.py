@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 
 DEFAULT_MAX_BYTES = 32 * 1024 * 1024
 DEFAULT_MAX_ROWS = 500_000
+DEFAULT_MAX_FILES = 500
+DEFAULT_MAX_BATCH_BYTES = 512 * 1024 * 1024
 DEFAULT_MAX_REPORTED_REJECTIONS = 1000
 DEFAULT_MAX_PAGE_SIZE = 10_000
 
@@ -33,7 +35,8 @@ def in_supported_range(moment: datetime) -> bool:
 
 @dataclass(frozen=True, slots=True)
 class ImportLimits:
-    """Limits of one import file. The defaults hold for every caller that passes none."""
+    """Limits of one import file and of one import process. The defaults hold for every caller
+    that passes none."""
 
     max_bytes: int = DEFAULT_MAX_BYTES
     """Largest size of a file in bytes (default 32 MiB)."""
@@ -41,7 +44,17 @@ class ImportLimits:
     """Largest number of data rows or entries, rejected ones included (default 500 000)."""
     max_reported_rejections: int = DEFAULT_MAX_REPORTED_REJECTIONS
     """Number of rejected rows listed in the result (default 1000); all are counted."""
+    max_files: int = DEFAULT_MAX_FILES
+    """Largest number of files of one import process (default 500)."""
+    max_batch_bytes: int = DEFAULT_MAX_BATCH_BYTES
+    """Largest total size of the files of one import process in bytes (default 512 MiB)."""
 
     def __post_init__(self) -> None:
-        if self.max_bytes <= 0 or self.max_rows <= 0 or self.max_reported_rejections < 0:
+        if (
+            self.max_bytes <= 0
+            or self.max_rows <= 0
+            or self.max_reported_rejections < 0
+            or self.max_files <= 0
+            or self.max_batch_bytes <= 0
+        ):
             raise ValueError("limits must be positive")

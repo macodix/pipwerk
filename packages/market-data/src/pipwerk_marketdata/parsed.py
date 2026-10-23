@@ -1,7 +1,7 @@
 """Result of reading a file, before anything is written, and checks shared by the formats."""
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 
 from pipwerk_marketdata.errors import ImportFileError
@@ -89,6 +89,14 @@ def candle_violation(open_: float, high: float, low: float, close: float) -> Rej
     if low > close:
         return RejectReason.LOW_ABOVE_CLOSE
     return None
+
+
+def with_broker(parsed: ParsedImport, broker: str) -> ParsedImport:
+    """The same content for another broker (the broker of an import process replaces the one
+    named in a JSON file); ``ImportFileError`` if the name is not usable."""
+    check_series_names(broker, parsed.instrument, parsed.unit, candles=parsed.kind == KIND_CANDLES)
+    info = replace(parsed.info, broker=broker) if parsed.info is not None else None
+    return replace(parsed, broker=broker, info=info)
 
 
 def is_finite(value: float) -> bool:
