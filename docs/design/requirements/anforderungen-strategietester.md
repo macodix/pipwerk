@@ -1,0 +1,153 @@
+# Anforderungen an den Strategietester
+
+## Dokumentstatus
+
+- status: `draft`
+- zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
+- zuletzt aktualisiert: `2026-10-23`
+- abgestimmt: Festlegungen des Auftraggebers im Chat am 19. bis 21. Oktober 2026. Prüfung durch die QA bestanden ([requirements-4.md](../../../development/backtest/reviews/requirements-4.md)), [Präsentation](../../../development/backtest/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.
+
+## 1. Zweck und Abgrenzung
+
+Dieses Dokument enthält die Anforderungen an den Strategietester, Produktname pipwerk replay (Projektziel, Abschnitt Module). Er hat zwei Betriebsarten:
+
+- **Einzelschritt-Test:** Eine Strategie läuft an historischen Kursdaten Schritt für Schritt ab. Der Anwender sieht dabei Ablauf, Werte der Objekte und Chart und prüft so, ob die Strategie arbeitet wie gedacht.
+- **Backtest:** Eine Strategie läuft an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen.
+
+Die historischen Kursdaten, ihr Abruf und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Der Strategietester ist eine Hauptkomponente nach Gesamtsystem req-system-001.
+
+## 2. Gemeinsame Anforderungen
+
+### req-test-001 -- Testlauf
+
+Ein Testlauf wendet eine Strategie in einem Testzeitraum an und verwendet dafür ein Testkonto (req-test-005). Der Anwender wählt das Instrument der Anwendung (Fachmodell req-fach-053) und den Testzeitraum. Fehlende Kursdaten werden nach req-test-003 abgerufen, in der Übergangslösung nach req-system-027 nicht. Instrumente des Testlaufs sind das Instrument der Anwendung und jedes weitere Instrument, das die Strategie verwendet, fest oder über einen Strategieparameter vom Objekttyp `Instrument`.
+
+### req-test-002 -- Testzeitraum
+
+Jeder Testlauf hat einen Testzeitraum. Er ist vorbelegt und endet mit dem letzten vollständigen Handelstag:
+
+- Einzelschritt-Test: die letzten 30 Tage
+- Backtest: die letzten 2 Jahre
+
+### req-test-003 -- Kursdaten eines Testlaufs
+
+Der Strategietester liest Kursdaten in beiden Betriebsarten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
+
+Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch abgerufen und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt. Bis pipwerk relay zur Verfügung steht, entfällt der automatische Abruf (Übergangslösung nach req-system-027).
+
+Fehlen Daten oder sind sie lückenhaft, startet der Testlauf nicht. Eine Meldung nennt die fehlenden Daten. Nach einem automatischen Abruf nennt sie auch den Grund, warum sie nicht abgerufen werden konnten.
+
+Zeiten, in denen beim Broker nicht gehandelt wird, zum Beispiel Wochenenden, Feiertage und Handelspausen, sind keine Lücken.
+
+### req-test-004 -- Interne Abwicklung von Orders
+
+Der Strategietester hat keine Verbindung zu einem Broker. Jede Order, die die Strategie aufgibt, ist eine interne Order. pipwerk wickelt sie gegen die historischen Kurse und mit den Werten des Testkontos ab: Ausführung, Positionen, Stop-Loss, Kursziel, Kosten und Kontostand entstehen rechnerisch. Beide Betriebsarten wickeln Orders auf dieselbe Weise ab.
+
+Die interne Abwicklung verhält sich wie ein Broker. Eine Order, die ein Broker ablehnen würde, zum Beispiel eine Kauf-Stop-Order unter dem aktuellen Kurs, wird abgelehnt: „Order aufgeben“ nimmt den Ausgang „nicht gestellt“. Der Grund der Ablehnung ist sichtbar, im Einzelschritt-Test am Element, im Backtest im Ergebnis.
+
+### req-test-008 -- Indikatoren ohne Werte
+
+Solange ein Indikator zu Beginn eines Testlaufs noch keine Werte liefert, zum Beispiel weil der `ZigZag` noch keine Wendepunkte gesetzt hat, läuft der Testlauf weiter. Bedingungen, die solche Werte verwenden, gelten als nicht erfüllt; die Auswertung bricht nicht ab.
+
+### req-test-005 -- Testkonto
+
+Ein Testkonto ist ein benannter, gespeicherter Satz von Werten für die Abwicklung eines Testlaufs. Der Anwender kann Testkonten anlegen, bearbeiten, speichern und löschen. Ein Standard-Testkonto ist mitgeliefert, damit ein Testlauf ohne Vorarbeit starten kann.
+
+Ein Testkonto enthält:
+
+- Anfangskapital und Kontowährung
+- Hebel
+- Spread: aus den Kerzen des Brokers oder ein fester Wert
+- Kommission
+
+Die Angaben zu jedem Instrument des Testlaufs (Gesamtsystem req-system-025) werden aus dem Datenbestand vorbelegt und können im Testlauf geändert werden.
+
+Ein Testlauf verwendet genau ein Testkonto. Ändert der Anwender im Testlauf einen Wert, bleibt das gespeicherte Testkonto unverändert, außer er speichert die Änderung ausdrücklich.
+
+Ein Testkonto ist an kein Instrument gebunden und speichert keine Angaben zum Instrument. Geänderte Angaben zum Instrument gelten nur für den laufenden Testlauf. Jeder neue Testlauf beginnt mit den Angaben aus dem Datenbestand.
+
+### req-test-006 -- Testbarkeit
+
+Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategietester in beiden Betriebsarten testbar.
+
+### req-test-007 -- Strategieparameter je Testlauf
+
+Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Das gilt auch für Strategieparameter vom Objekttyp `Instrument`.
+
+## 3. Einzelschritt-Test
+
+### req-test-010 -- Darstellung
+
+Der Einzelschritt-Test zeigt die Strategie so wie der Strategiedesigner und dazu den Chart des Instruments in jeder Zeiteinheit, die die Strategie verwendet. Orders, Positionen und Kontostand sind im Chart und als Werte sichtbar. Die Werte der Objekte sind mit dem Stand des aktuellen Schritts sichtbar.
+
+Die Darstellung der Kerzen KANN so sein: steigende Kerzen grün, fallende Kerzen rot, jeweils mit schwarzem Rahmen und schwarzem Docht.
+
+### req-test-011 -- Handelnde Stellen
+
+Eine handelnde Stelle ist eine Auswertung, in der der Ablauf ein handelndes Element erreicht: „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“. Handelnde Stellen sind im Chart markiert.
+
+### req-test-012 -- Schrittweiser Ablauf
+
+Beim Start läuft der Einzelschritt-Test bis zur ersten handelnden Stelle im Testzeitraum. Er hält am ersten Element des Ablaufs dieser Auswertung an, mit dem Zustand, den die Objekte zu diesem Zeitpunkt haben.
+
+Von dort kann der Anwender:
+
+- mit einem Einzelschritt zum nächsten Element des Ablaufs gehen. Das gerade ausgeführte Element ist hervorgehoben.
+- zur nächsten handelnden Stelle springen. Der Einzelschritt-Test hält dort wie beim Start am ersten Element des Ablaufs an. Liegt vorher ein Haltepunkt (req-test-013), hält er dort.
+
+### req-test-013 -- Haltepunkte
+
+Der Anwender kann an jedem Element einen Haltepunkt setzen und entfernen. Beim Sprung nach req-test-012 hält der Einzelschritt-Test an der nächsten handelnden Stelle oder am nächsten Haltepunkt, je nachdem, was zuerst erreicht wird. Haltepunkte gelten nur für den laufenden Testlauf und werden nicht in der Strategie gespeichert.
+
+### req-test-014 -- Anzeige der Werte
+
+Wählt der Anwender ein Element an, zeigt die Eigenschaftenansicht wie im Strategiedesigner dessen Parameter, Eigenschaften und Ergebnisse mit den Werten des aktuellen Schritts. Beim Überfahren eines Elements mit der Maus erscheinen seine wichtigsten Werte als kurze Einblendung. Werte, die sich seit dem letzten Schritt geändert haben, sind hervorgehoben.
+
+## 4. Backtest
+
+### req-test-015 -- Auslöser Manuell im Testlauf
+
+Der Auslöser „Manuell“ (Fachmodell req-fach-053) tritt in einem Testlauf einmal ein, standardmäßig zu Beginn des Testzeitraums vor der ersten Kerze. Wahlweise gibt der Anwender für den Testlauf einen Zeitpunkt im Testzeitraum ein, zu dem er stattdessen eintritt, zum Beispiel um eine bestimmte Marktphase zu testen. Im Einzelschritt-Test kann der Anwender ihn zusätzlich an der aktuellen Stelle auslösen. Nicht zu verwechseln mit dem Start des Testlaufs (req-test-012).
+
+### req-test-020 -- Ablauf
+
+Der Backtest lässt die Strategie ohne Unterbrechung über den Testzeitraum laufen.
+
+### req-test-021 -- Ergebnis
+
+Das Ergebnis eines Backtests zeigt:
+
+- die Kontoentwicklung als Kurve über den Testzeitraum, darunter den Rückgang vom jeweiligen Höchststand
+- die Liste der Trades mit Eröffnung, Schließung, Richtung, Volumen, Preisen, Gewinn oder Verlust und Kosten
+- die Kennzahlen Nettogewinn, Anzahl der Trades, Trefferquote, Verhältnis von Gesamtgewinn zu Gesamtverlust, größter Rückgang vom Höchststand, durchschnittlicher Gewinn und durchschnittlicher Verlust je Trade
+- den Chart mit den Trades als Markierungen. Ein Klick auf einen Trade in der Liste zeigt seine Stelle im Chart.
+
+### req-test-022 -- Backtest speichern und vergleichen
+
+Ein Backtest wird nur gespeichert, wenn der Anwender es ausdrücklich verlangt. Gespeichert werden eine Kopie der getesteten Strategie, die verwendeten Werte der Strategieparameter, das Testkonto mit den verwendeten Werten, Instrument mit den verwendeten Angaben zum Instrument, Testzeitraum und Ergebnis. Die getestete Fassung der Strategie lässt sich im Strategiedesigner ansehen.
+
+Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder mehr davon nebeneinander vergleichen, mit den Kennzahlen und mit übereinandergelegten Kontokurven.
+
+## 5. Noch offene Punkte
+
+1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
+
+## 6. Änderungsnachweis
+
+| Datum | Änderung |
+| --- | --- |
+| 2026-10-19 | Erstanlage: Testlauf, Testzeitraum, Kursdaten eines Testlaufs, interne Abwicklung, Testkonto, schrittweiser Ablauf im Strategietester, Ergebnis, Speichern und Vergleich im Backtester. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | req-test-006 Testbarkeit. Strategie ohne Auslöser an das Handelssystem verwiesen. Festlegung des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-19 | Offene Punkte entschieden: eine Hauptkomponente mit zwei Betriebsarten, req-test-007 Strategieparameter je Testlauf, req-test-013 Haltepunkte, req-test-014 Anzeige der Werte, Angaben zum Instrument nicht im Testkonto (req-test-005), Umfang eines gespeicherten Backtests (req-test-022). Bestimmung im Indikator 1-2-3-Trend nach `indikator-markttechnik.md` verschoben. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
+| 2026-10-20 | Offener Punkt „Auswertung ohne Auslöser“ erledigt: Auslöser „Start von Hand“ (Anforderungen an den Strategiedesigner req-fach-015, Fachmodell req-fach-053). Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
+| 2026-10-20 | Nach Prüfbericht der QA (`backtest`, Durchlauf 1), vom Projektleiter: Instrumente des Testlaufs einschließlich weiterer Instrumente der Strategie (req-test-001, -003, -005, -007; B4), Angaben zum Instrument nach req-system-025 (B1), Auswahl von Instrument und Testzeitraum (H8). |
+| 2026-10-20 | Offener Punkt 2: Eintreten von „Start von Hand“ im Testlauf. Vom Projektleiter nach den Hinweisen T1-H1 bis T1-H6 aus `development/strategiedesign/reviews/specification-9.md`, Folge der Entscheidungen vom selben Tag. |
+| 2026-10-21 | req-test-003: Ticks gehören zu den benötigten Kursdaten, wenn ein Auslöser `Tick` verwendet wird, keine Nachbildung aus Kerzen. Entscheidung des Auftraggebers im Chat am 2026-10-20 (B2). |
+| 2026-10-21 | Benennung: Hauptkomponente Strategietester (pipwerk replay) mit den Betriebsarten Einzelschritt-Test und Backtest. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, H7). |
+| 2026-10-21 | Produktname pipwerk replay. Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | Vermerk „abgestimmt“: Prüfung `requirements-4.md` bestanden, Präsentation `requirements-1.html` bestätigt vom Auftraggeber im Chat am 2026-10-21. Datum „zuletzt aktualisiert“ nachgeführt (Hinweis H11 aus `requirements-5.md`), vom Projektleiter. |
+| 2026-10-21 | req-test-004: Abwicklung wie ein Broker, Ablehnung mit sichtbarem Grund; req-test-008 Indikatoren ohne Werte zu Beginn. Nach Prüfbericht der QA (`backtest`, Durchlauf 3, M1, M2), Festlegung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | req-test-015: Eintreten des Auslösers „Manuell“ (bisher „Start von Hand“) im Testlauf, offener Punkt 2 erledigt. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
+| 2026-10-23 | req-test-003: keine automatische Beschaffung bis pipwerk relay (Übergangslösung nach req-system-027). Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |
+| 2026-10-23 | req-test-001 und req-test-003 an die Übergangslösung angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H1, H2). |
+| 2026-10-23 | Abschnitt 1, req-test-003: „Abruf“ statt „Beschaffung“, nur Bezeichnung. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |

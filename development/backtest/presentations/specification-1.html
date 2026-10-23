@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>backtest Spezifikation Strategietester</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.q{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+.q .card{gap:14px}
+.q .card p, .q .card li{font-size:25px;line-height:1.38}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:27px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben backtest · Phase 2</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>pipwerk replay: technische Spezifikation</h1>
+<p style="font-size:38px;width:1500px">Der Softwarearchitekt hat beschrieben, wie der Strategietester gebaut wird. Die QA hat die Spezifikation im zweiten Durchlauf ohne Befund bestanden. Diese Präsentation zeigt die Festlegungen, die du beim Testen bemerken wirst, und was vom bestätigten Prototyp abweicht. Mit deiner Bestätigung beginnt die Planung der Arbeitspakete.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">21. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/backtest/specification.md</code>, Prüfbericht <code>development/backtest/reviews/specification-2.md</code>, Prototyp <code>development/backtest/prototype/</code></p>
+<p class="num">1 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Aufbau</h2>
+<div class="chain">
+<div class="node">pipwerk replay<small>Strategietester mit eigener Oberfläche und Datenbank</small></div><div class="arrow">→</div>
+<div class="node">Ausführung<small>in der gemeinsamen Python-Bibliothek, später auch für das Handelssystem</small></div><div class="arrow">←</div>
+<div class="node">Datenbestand<small>historische Kursdaten als eigene Bibliothek</small></div><div class="arrow">←</div>
+<div class="node">pipwerk-fetch-mt5<small>Beschaffung, läuft auf dem Rechner mit MetaTrader 5</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Ein Ablauf für Test und Handel</h3><p>Auswertung der Strategie, Indikatoren und Regeln liegen in der gemeinsamen Bibliothek. Der Strategietester liefert ihr Kurse und eine nachgebildete Abwicklung, das Handelssystem später echte Kurse und einen echten Broker. So rechnet beides gleich.</p></div>
+<div class="card col"><h3>Gleiche Eingaben, gleiches Ergebnis</h3><p>Ein Testlauf hängt nur von Strategie, Parameterwerten, Testkonto, Angaben zum Instrument, Testzeitraum und Kursdaten ab. Einzelschritt-Test und Backtest desselben Zeitraums ergeben dieselben Trades.</p></div>
+<div class="card col"><h3>Strategien bleiben unverändert</h3><p>pipwerk replay liest Strategien aus dem Objektverzeichnis von pipwerk Studio oder als hochgeladene Datei und ändert sie nie. Jeder Testlauf hält eine Kopie der Strategie fest.</p></div>
+</div>
+<p class="num">2 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Abwicklung der Orders</h2>
+<table>
+<tr><th style="width:440px">Festlegung</th><th>Inhalt</th></tr>
+<tr><td>Kursverlauf in der Kerze</td><td>Mit Ticks, wenn die Strategie Ticks braucht. Sonst mit Kerzen M1 auf dem Weg Eröffnung, Tief, Hoch, Schluss (steigend) beziehungsweise Eröffnung, Hoch, Tief, Schluss (fallend), wie „1 Minute OHLC“ in MetaTrader 5. Nur so lässt sich entscheiden, ob Stop-Loss oder Take-Profit zuerst erreicht wurde.</td></tr>
+<tr><td>Marktorder, Position schließen</td><td>Sofort zum letzten Kurs des Ereignisses, Kauf am Brief, Verkauf am Geld. Folgende Auswertungen sehen den neuen Stand. Bei <code>str-03</code> schließt die Verwaltung die alte Position, bevor der Hauptablauf die neue eröffnet.</td></tr>
+<tr><td>Stop- und Limit-Order</td><td>Zum Preis der Order, bei einem Kurssprung zum ersten Kurs danach. Gleiches gilt für Stop-Loss und Take-Profit.</td></tr>
+<tr><td>Positionen</td><td>Jede ausgeführte Order ergibt eine eigene Position, wie ein Konto mit gegenläufigen Positionen bei MetaTrader 5. Teilausführungen gibt es im Test nicht.</td></tr>
+<tr><td>Kosten</td><td>Spread aus den Kerzen oder fest, Kommission je Lot und Seite, Swap je Lot und Tag beim Tageswechsel, dreifach am Wochentag aus den Angaben zum Instrument.</td></tr>
+<tr><td>Konto aufgebraucht</td><td>Fällt das Kapital auf null, werden alle Positionen geschlossen, alle Orders gelöscht und der Testlauf endet mit Vermerk.</td></tr>
+</table>
+<p class="num">3 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Wann eine Order abgelehnt wird</h2>
+<table>
+<tr><th style="width:560px">Grund</th><th>Fall</th></tr>
+<tr><td>Preis auf der falschen Seite</td><td>Kauf-Stop nicht über dem Brief, Verkauf-Stop nicht unter dem Geld, Limit-Orders umgekehrt</td></tr>
+<tr><td>Stop-Loss oder Take-Profit ungültig</td><td>auf der falschen Seite des Preises</td></tr>
+<tr><td>Volumen ungültig</td><td>unter dem Mindestvolumen oder kein Vielfaches des Volumenschritts</td></tr>
+<tr><td>Nicht genug freie Margin</td><td>freie Margin reicht für die Order nicht</td></tr>
+<tr><td>Markt geschlossen</td><td>zu diesem Zeitpunkt kein Kurs (Handelspause)</td></tr>
+<tr><td>Keine Kursdaten</td><td>Instrument entsteht erst bei der Ausführung, Kursdaten fehlen</td></tr>
+<tr><td>Order oder Position besteht nicht</td><td>Ändern oder Löschen einer Order, die nicht mehr wartet, Ändern oder Schließen ohne Position</td></tr>
+<tr><td>Schließvolumen ungültig</td><td>größer als die Position oder Rest unter dem Mindestvolumen</td></tr>
+</table>
+<p class="note">„Order aufgeben“ nimmt dann „nicht gestellt“, „Order ändern“ und „Position ändern“ nehmen „nicht geändert“. Der Grund ist am Element, im Protokoll, im Chart und im Ergebnis sichtbar.</p>
+<p class="num">4 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Kursdaten</h2>
+<div class="row">
+<div class="card col"><h3>Datenbestand</h3><p>Je Broker und Instrument: Kerzen je Zeiteinheit, Ticks, Angaben zum Instrument, Handelszeiten. pipwerk rechnet keine Kerzen aus Ticks und keine Ticks aus Kerzen.</p><p>Alle Zeiten in UTC. Beim Import einer CSV-Datei aus MetaTrader 5 gibst du die Zeitzone des Brokers an, weil die Datei sie nicht enthält.</p></div>
+<div class="card col"><h3>Import und Beschaffung</h3><p>Import als JSON oder als CSV im Exportformat von MetaTrader 5. Das Ergebnis nennt übernommene und abgelehnte Zeilen mit Grund.</p><p>Fehlende Daten holt pipwerk replay vor dem Start über <code>pipwerk-fetch-mt5</code>. Eine Tabelle dort ordnet die Instrumente den Symbolen des Brokers zu. Fehlt danach noch etwas, startet der Testlauf nicht.</p></div>
+<div class="card col"><h3>Vollständigkeit</h3><p>Eine Lücke ist ein Zeitraum ohne Kerze innerhalb der Handelszeiten. Wochenenden und einzelne fehlende Minuten zählen nicht als Lücke.</p><p>Indikatoren werden nur aus Kerzen im Testzeitraum berechnet. Bis sie Werte haben, gelten Bedingungen damit als nicht erfüllt.</p></div>
+</div>
+<p class="num">5 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Indikatoren und Strategie</h2>
+<div class="row">
+<div class="card col"><h3>EMA, ATR, ZigZag</h3><p>Berechnet nach denselben Verfahren wie in MetaTrader 5. Geprüft wird gegen Werte aus MetaTrader 5 für eine mitgelieferte Kursreihe.</p><p>Der ZigZag erhält die Eigenschaften letztes Hoch, vorletztes Hoch, letztes Tief und vorletztes Tief. Sie nennen nur endgültige Wendepunkte, die sich nicht mehr verschieben. <code>str-01</code> braucht sie für den Trend.</p></div>
+<div class="card col"><h3>Auslöser Manuell, „Parameter setzen“</h3><p>Der Auslöser heißt in pipwerk Studio „Manuell“ und ist nur im Hauptablauf erlaubt. In der Verwaltung einer Order meldet die Konsistenzprüfung einen Fehler.</p><p>„Parameter setzen“ entfällt. Eine gespeicherte Strategie, die es noch enthält, meldet einen unbekannten Elementtyp. Umgewandelt wird nichts.</p></div>
+<div class="card col"><h3>Schutz vor Endlosschleifen</h3><p>Rückführungen im Ablauf sind erlaubt. Eine Auswertung bricht nach 10 000 Elementen ab, vermerkt einen Fehler und der Testlauf läuft weiter.</p><p>Strategieparameter behalten während eines Testlaufs ihren Startwert.</p></div>
+</div>
+<p class="num">6 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Einzelschritt-Test</h2>
+<div class="row">
+<div class="card col"><h3>Bedienung</h3><p>Start bis zur ersten handelnden Stelle, Einzelschritt, Sprung zur nächsten handelnden Stelle oder zum nächsten Haltepunkt, Zum Testbeginn, Manuell auslösen, Ende.</p><p>Jede Verwaltung und der Hauptablauf eines Ereignisses sind eigene Auswertungen, die Verwaltungen zuerst.</p></div>
+<div class="card col"><h3>Kein Zurückgehen</h3><p>Einzelne Schritte zurück gibt es nicht. „Zum Testbeginn“ beginnt den Testlauf neu und hält am ersten Element, auch bei Auswertungen, in denen Indikatoren noch keine Werte haben. Haltepunkte bleiben erhalten.</p></div>
+<div class="card col"><h3>Sitzung</h3><p>Der Test läuft auf dem Server. Er endet mit „Ende“, am Ende des Testzeitraums oder nach 60 Minuten ohne Bedienung, damit verlassene Tests keinen Speicher belegen.</p></div>
+</div>
+<p class="num">7 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Ergebnis des Backtests</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><p>Kennzahlen: Nettogewinn, Anzahl der Trades, Trefferquote, Gesamtgewinn zu Gesamtverlust, größter Rückgang (Betrag und Prozent), durchschnittlicher Gewinn und Verlust, Anzahl abgelehnter Orders.</p><p>Trades mit Eröffnung, Schließung, Gewinn nach allen Kosten und Grund der Schließung. Offene Positionen werden am Ende des Testzeitraums geschlossen.</p></div>
+<div class="card col"><h3>Begrenzungen</h3><p>Die Kontokurve hat höchstens 5 000 Punkte. Bei mehr bleiben je Abschnitt Höchst- und Tiefstwert erhalten. Kennzahlen werden aus allen Werten berechnet.</p><p>Abgelehnte Orders stehen einzeln bis 10 000. Darüber werden sie gezählt und je Element und Grund zusammengefasst.</p></div>
+<div class="card col"><h3>Speichern und Vergleichen</h3><p>Gespeichert wird nur auf Befehl, mit Kopie der Strategie, Parameterwerten, Testkonto und Angaben zum Instrument. Mehrere gespeicherte Backtests lassen sich mit Kennzahlen und Kontokurven vergleichen.</p><p>Die getestete Fassung ist lesend zu sehen und als Datei für pipwerk Studio herunterladbar.</p></div>
+</div>
+<p class="num">8 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Abweichungen vom bestätigten Prototyp</h2>
+<table>
+<tr><th style="width:480px">Stelle</th><th>Im Produkt</th></tr>
+<tr><td>Gewinn und Kosten eines Trades</td><td>enthalten auch den Swap. Der Prototyp rechnet keinen Swap.</td></tr>
+<tr><td>„Manuell auslösen“</td><td>ist jederzeit bedienbar. Mitten in einer Auswertung meldet pipwerk replay, dass die Auswertung „Manuell“ direkt nach deren Ende folgt. Der Prototyp gibt den Befehl erst am Ende einer Auswertung frei.</td></tr>
+<tr><td>Import einer CSV-Datei</td><td>hat zusätzlich das Feld Zeitzone.</td></tr>
+<tr><td>Abgelehnte Orders im Ergebnis</td><td>einzeln bis 10 000 statt der ersten 400.</td></tr>
+<tr><td>Daten</td><td>Testkonten, gespeicherte Backtests und Datenbestand liegen auf dem Server statt im Browser. Die Kennzeichnung „Prototyp“ entfällt.</td></tr>
+</table>
+<p class="note">Alles Übrige an Aufbau, Bedienung, Texten und Erscheinungsbild folgt dem Prototyp.</p>
+<p class="num">9 / 10</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Nächster Schritt</h2>
+<div class="rule">Mit deiner Bestätigung dieser Präsentation ist Phase 2 abgeschlossen. Danach erstellt der Softwarearchitekt den Arbeitspaketplan (Phase 3). Die Programmierung beginnt erst, wenn die benötigten Teile aus <code>strategiedesign</code> abgenommen sind.</div>
+<p class="note">Bestätigungsvermerk: bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.</p>
+<p class="num">10 / 10</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>

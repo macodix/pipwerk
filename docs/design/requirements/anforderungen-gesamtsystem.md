@@ -5,7 +5,7 @@
 - status: `draft`
 - abgestimmt: [Präsentation Anforderungen Gesamtsystem](praesentation-anforderungen-gesamtsystem.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026
 - zweck: Übergreifende Anforderungen an Aufbau, Abgrenzung und Zusammenarbeit der Hauptkomponenten
-- zuletzt aktualisiert: `2026-10-19`
+- zuletzt aktualisiert: `2026-10-23`
 
 ## 1. Systemaufteilung
 
@@ -109,19 +109,23 @@ pipwerk führt einen eigenen Datenbestand historischer Kursdaten. Er enthält:
 - Ticks je Instrument, soweit verfügbar
 - Angaben zum Instrument je Broker: die Eigenschaften des Objekts `Instrument` (Fachmodell req-fach-051: Bezeichnung, Tickgröße, Tickwert, Punkt, Pip, Spread, Mindestvolumen, Volumenschritt), dazu Kontraktgröße, Swap und Margin-Anforderung
 
-pipwerk berechnet keine Kerzen aus Ticks. Strategietester und Backtester lesen Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
+pipwerk berechnet keine Kerzen aus Ticks. Der Strategietester liest Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
+
+Der Anwender kann eine Reihe von Kerzen oder Ticks ganz oder für einen Zeitraum löschen, ebenso die Angaben zu einem Instrument je Broker. Er kann auch alle Daten eines Brokers in einem Vorgang löschen. Ein Broker ergibt sich aus seinen Daten im Datenbestand und ist nach dem Löschen aller seiner Daten nicht mehr vorhanden. Gelöscht wird erst nach einer Rückfrage.
 
 ### req-system-026 -- Import
 
-Der Import liest Dateien in einem festgelegten Dateiformat (JSON oder CSV), prüft sie und übernimmt die Daten in den Datenbestand historischer Kursdaten. Der Anwender kann Dateien von Hand importieren lassen, zum Beispiel einen Export aus MetaTrader oder eine Datei von seiner Festplatte.
+Der Import liest Dateien in einem festgelegten Dateiformat (JSON oder CSV), prüft sie und übernimmt die Daten in den Datenbestand historischer Kursdaten. Der Anwender kann Dateien von Hand importieren lassen, zum Beispiel einen Export aus MetaTrader oder eine Datei von seiner Festplatte. Er kann beliebig viele Dateien in einem Vorgang importieren. Die Größe einer Datei ist nur durch den Speicherplatz begrenzt, auch Tick-Dateien von mehreren GB lassen sich importieren. Der Import zeigt seinen Fortschritt und lässt sich abbrechen.
 
-### req-system-027 -- Beschaffung
+### req-system-027 -- Abruf von Kursdaten
 
-Die Beschaffung holt Kursdaten und Angaben zum Instrument aus einer Quelle und liefert sie als Dateien im Dateiformat des Imports. Weitere Quellen lassen sich ergänzen, ohne den Import zu ändern.
+Der Abruf holt Kursdaten und Angaben zum Instrument aus einer Quelle und liefert sie als Dateien im Dateiformat des Imports. Weitere Quellen lassen sich ergänzen, ohne den Import zu ändern.
 
-Die erste Quelle ist MetaTrader 5. Die Beschaffung für MetaTrader 5 läuft auf dem Rechner, auf dem MetaTrader 5 läuft, und lässt sich von pipwerk anstoßen.
+Die erste Quelle ist MetaTrader 5. Der Abruf für MetaTrader 5 läuft auf dem Rechner, auf dem MetaTrader 5 läuft. Die Dateien nennen den Broker mit dem Namen des Handelsservers, an dem MetaTrader 5 angemeldet ist.
 
-Fehlen für einen Testlauf Daten im Datenbestand, werden sie automatisch beschafft und importiert (Anforderungen Strategietester und Backtester req-test-003). Der Anwender kann die Beschaffung auch von Hand anstoßen.
+Der Austausch zwischen pipwerk und dem Abruf läuft über pipwerk relay. Fehlen für einen Testlauf Daten im Datenbestand, werden sie dann automatisch abgerufen und importiert (Anforderungen an den Strategietester req-test-003). Der Anwender kann den Abruf dann auch von Hand aus pipwerk anstoßen.
+
+Übergangslösung, bis pipwerk relay zur Verfügung steht: Der Abruf für MetaTrader 5 ist ein Programm, das der Anwender auf dem Rechner von MetaTrader 5 aufruft. Es schreibt die Dateien in ein Verzeichnis, der Anwender importiert sie (req-system-026). Die Übergangslösung hat keinen eigenen Server und öffnet keinen Port. pipwerk stößt den Abruf in dieser Zeit nicht an.
 
 ## 4. Dokumentation
 
@@ -244,3 +248,7 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-19 | req-system-024 neu: Anpassung jeder Benutzeroberfläche an die Fenstergröße. Festlegung des Auftraggebers im Chat am 2026-10-19. Anlass: Abnahme `strategiedesign/wp02`, Mangel M2. |
 | 2026-10-19 | Abschnitt 3 neu: Datenbestand historischer Kursdaten, Import und Beschaffung (req-system-025 bis req-system-027). Folgende Abschnitte neu nummeriert, Kennungen unverändert. Festlegungen des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | req-system-025: Angaben zum Instrument an die Eigenschaften von `Instrument` im Fachmodell angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 1, B1). |
+| 2026-10-23 | req-system-026: Import mehrerer Dateien in einem Vorgang. req-system-027: Austausch mit der Beschaffung über pipwerk relay, Broker als Name des Handelsservers, Übergangslösung ohne eigenen Server und Port bis pipwerk relay. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |
+| 2026-10-23 | req-system-027: Anstoßen von Hand aus pipwerk gilt mit pipwerk relay. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H3). |
+| 2026-10-23 | req-system-025: Löschen von Reihen, Zeiträumen, Angaben zum Instrument und allen Daten eines Brokers. req-system-026: beliebig viele Dateien, Größe nur durch den Speicherplatz begrenzt, Fortschritt und Abbrechen. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`, Versuch 2). |
+| 2026-10-23 | req-system-027: „Abruf“ statt „Beschaffung“, nur Bezeichnung. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |

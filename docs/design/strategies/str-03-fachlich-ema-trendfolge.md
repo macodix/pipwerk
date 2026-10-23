@@ -61,7 +61,7 @@ Der im Entwurf genannte optionale Trendfilter entfällt. Die Strategie bleibt da
 
 ## Offene fachliche Fragen
 
-- Die Prüfung der Risikoregel nach der Ausführung mit dem Ausführungspreis macht die Ausführung, nicht der Ablauf der Strategie (Fachmodell req-fach-021). Welche Maßnahme bei Überschreitung folgt, ist dort offen. Für die Gestaltung im Strategiedesigner ohne Bedeutung.
+- Die Prüfung der Risikoregel nach der Ausführung mit dem Ausführungspreis macht die Ausführung, nicht der Ablauf der Strategie (Fachmodell req-fach-021). Die Maßnahme bei Überschreitung legt req-fach-021 fest. Für die Gestaltung im Strategiedesigner ohne Bedeutung.
 
 ## Bestätigungsvermerk
 

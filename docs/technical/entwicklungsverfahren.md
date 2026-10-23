@@ -3,9 +3,24 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-19
+- stand: 2026-10-21
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
+
+## Kurzfassung
+
+Für die meisten Aufgaben genügt dieser Abschnitt. Die übrigen Abschnitte werden nur gelesen, wenn die Aufgabe sie betrifft.
+
+- Kette: Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt (Phasen 1 bis 3) beziehungsweise Entwicklungsleiter (Phasen 4 bis 6) ⇄ Team (Entwickler, Tester, QA). Jede Rolle spricht nur mit ihren Nachbarn. Softwarearchitekt und Entwicklungsleiter sprechen über `amend` und `amended` miteinander.
+- Der Auftraggeber entscheidet Anforderungsdokumente, Fachmodell und Strategiebeschreibungen. Alles andere entscheiden Softwarearchitekt, Entwicklungsleiter und Team.
+- Phasen: 1 Anforderung (QA prüft die Dokumente des Auftraggebers, Abstimmung), 2 Konzeption (Spezifikation, klickbarer Prototyp nur für Oberflächen ohne umgesetzte Fassung, Abstimmung), 3 Planung (Arbeitspakete, Abstimmung), 4 Umsetzung (Aufträge, Tester, QA), 5 Abnahme durch den Auftraggeber, 6 Integration in `main`.
+- Rückwege: fehlende Anforderung → Phase 1, Lücke der Spezifikation → Phase 2, Mangel in der Abnahme → Phase 4, Planänderung → Phase 3.
+- Übergabe nur über Übergabedokumente und Meldungen unter `development/` auf `origin/main`.
+- Prüfungen: erster Durchlauf vollständig, danach nur Nachprüfung; nur blockierende Befunde verhindern das Bestehen; bestanden ist bestanden.
+- Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann. Korrekturen aus bestehenden Festlegungen, Fragen der Spezifikation und offene Punkte erledigen die Rollen selbst.
+- Prüfschleifen laufen, solange die blockierenden Befunde weniger werden, sonst eine Ebene höher.
+- Rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend, in Phase 4 der Entwicklungsleiter, solange Spezifikation und Plan unverändert bleiben.
+- Ausführung auf dem Entwicklungsrechner: Runner, `agentrun`, Herzschlag, Rollen in `devteam/`, Modelle nach [Verbrauch des Nutzungskontingents](#verbrauch-des-nutzungskontingents).
 
 ## Geltungsbereich und Dokumentationsorte
 
@@ -20,7 +35,9 @@ Eine Aussage wird nicht allein dadurch zu einer Festlegung des Auftraggebers, da
 ## Rollen und Kommunikationsweg
 
 ```text
-Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt ⇄ Team (Entwickler, Tester, QA)
+Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt   (Phasen 1 bis 3) ⇄ Team (Entwickler, Tester, QA)
+                            ⇄ Entwicklungsleiter (Phasen 4 bis 6) ⇄ Team
+Softwarearchitekt ⇄ Entwicklungsleiter (Lücken in Spezifikation oder Plan während Phase 4)
 ```
 
 Jede Rolle spricht nur mit ihren Nachbarn in dieser Kette. Das Team hat keinen direkten Kontakt zum Auftraggeber. Aufgaben und Briefings der Rollen stehen in [Agentenrollen und Briefings](agentenrollen-und-briefings.md).
@@ -33,7 +50,7 @@ Der Auftraggeber entscheidet den Inhalt von:
 - Fachmodell: Objekte, ihre Eigenschaften und Regeln
 - Strategiebeschreibungen
 
-Alles andere entscheiden Softwarearchitekt und Team in ihrer Zuständigkeit. Braucht die Umsetzung eine Aussage, die in eines dieser Dokumente gehört und dort fehlt, wird sie nicht selbst getroffen. Sie geht als Frage an den Auftraggeber.
+Alles andere entscheiden Softwarearchitekt, Entwicklungsleiter und Team in ihrer Zuständigkeit. Braucht die Umsetzung eine Aussage, die in eines dieser Dokumente gehört und dort fehlt, wird sie nicht selbst getroffen. Sie geht als Frage an den Auftraggeber.
 
 Bestätigungen des Auftraggebers erfolgen formlos im Chat. Der Projektleiter vermerkt sie mit Datum in der jeweiligen Präsentation. Der Begriff „Fachlichkeit“ wird nicht verwendet.
 
@@ -57,7 +74,7 @@ Bestätigungen des Auftraggebers erfolgen formlos im Chat. Der Projektleiter ver
 | 3 Planung | Arbeitspaketplan |
 | 4 Umsetzung | je Arbeitspaket: Aufträge, Code, Tests, QA |
 | 5 Abnahme | Erprobung durch den Auftraggeber |
-| 6 Integration | Übernahme in den Hauptstand |
+| 6 Integration | Übernahme in `main` |
 
 Rückwege:
 
@@ -87,7 +104,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Eingabe: abgestimmte Dokumente des Auftraggebers laut `scope.md`, Prüfbericht der QA aus Phase 1
 - Tätigkeit:
   1. Die QA prüft nach, ob die Befunde aus Phase 1 erledigt sind und ob die dafür geänderten Stellen neue Fehler enthalten. Ist die Nachprüfung nicht bestanden, geht der Prüfbericht über den Softwarearchitekten an den Projektleiter zurück in Phase 1.
-  2. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Für jede neue oder wesentlich geänderte Benutzeroberfläche lässt er vor der Spezifikation der Oberfläche einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens ohne Anleitung durchspielen kann, in den Fenstergrößen nach req-system-024. Die Oberfläche wird erst spezifiziert und umgesetzt, wenn der Auftraggeber den Prototyp bestätigt hat.
+  2. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Für jede neue Benutzeroberfläche, von der es noch keine umgesetzte Fassung gibt, lässt er vor der Spezifikation der Oberfläche einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens ohne Anleitung durchspielen kann, in den Fenstergrößen nach req-system-024. Die Oberfläche wird erst spezifiziert und umgesetzt, wenn der Auftraggeber den Prototyp bestätigt hat. Änderungen an einer umgesetzten Oberfläche, auch neue oder geänderte Anforderungen und Mängel aus ihrer Abnahme, werden ohne Prototyp spezifiziert, direkt in der Software umgesetzt und in der Testumgebung abgenommen.
   3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers.
   4. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
 - Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
@@ -101,13 +118,13 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Ergebnis: Arbeitspaketplan, positiver Prüfbericht, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
 - Schleifen: Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, nach [Grenze der Durchläufe](#grenze-der-durchläufe). Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
-Ein Arbeitspaket enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der Spezifikation, Abhängigkeiten und Abnahmekriterien. Ein Paket mit Benutzeroberfläche hat mindestens ein Abnahmekriterium zur Bedienbarkeit: Der Auftraggeber führt einen Testfall ohne Anleitung aus und hält sich dabei an den bestätigten Prototyp. Der Plan führt je Paket den Stand `open` oder `done`.
+Ein Arbeitspaket enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der Spezifikation, Abhängigkeiten und Abnahmekriterien. Ein Paket mit Benutzeroberfläche hat mindestens ein Abnahmekriterium zur Bedienbarkeit: Der Auftraggeber führt einen Testfall ohne Anleitung aus und hält sich dabei an den bestätigten Prototyp beziehungsweise bei einer geänderten Oberfläche an die Spezifikation. Der Plan führt je Paket den Stand `open` oder `done`.
 
 ### Phase 4 – Umsetzung eines Arbeitspakets
 
 | Rolle | Eingabe | Ergebnis |
 |---|---|---|
-| Softwarearchitekt | Arbeitspaket, Spezifikation | Aufträge mit Ziel, Umfang, technischen Abnahmekriterien und zuständigem Entwickler. Nach bestandenen Tests: Aufträge im Arbeitszweig des Pakets zusammengeführt, Testumgebung bereitgestellt. |
+| Entwicklungsleiter | Arbeitspaket, Spezifikation | Aufträge mit Ziel, Umfang, technischen Abnahmekriterien und zuständigem Entwickler. Nach bestandenen Tests: Aufträge im Arbeitszweig des Pakets zusammengeführt, Testumgebung bereitgestellt. |
 | Entwickler | ein Auftrag | Code, Unit-Tests (Tests einzelner Funktionen), technische Dokumentation und vorerst die Anwenderdokumentation, im eigenen Zweig mit benanntem Commit |
 | Tester | Auftrag, Commit des Entwicklers, Regeln seines Prüfgebiets | Testbericht zu genau diesem Commit |
 | QA | Arbeitspaket, Anforderungsdokumente, laufende Testumgebung, Anwenderdokumentation | Prüfbericht aus Kundensicht: Anforderungen erfüllt, Software aus Kundensicht funktionsfähig, Anwenderdokumentation verständlich und vollständig |
@@ -118,6 +135,8 @@ Prüfgebiete der Tester:
 - Code- und Dokumentationsprüfung: Programmierregeln, bewährte Verfahren, technische Dokumentation
 - Sicherheitsprüfung: Sicherheitsregeln nach BSI-Grundschutz und OWASP
 
+Der Tester Funktion prüft jeden Commit eines Entwicklers. Der Tester Sicherheit prüft einmal je Arbeitspaket den Arbeitszweig, nachdem alle Aufträge zusammengeführt sind und bevor die QA prüft. Seine Befunde gehen als Aufträge an die Entwickler; die Korrektur-Commits prüfen Tester Funktion und, beschränkt auf die Befunde, Tester Sicherheit.
+
 Die QA prüft erst, wenn alle Aufträge des Pakets zusammengeführt sind und die Testumgebung läuft. Ändert sich danach der Code, ist eine erneute Prüfung durch Tester und QA erforderlich.
 
 Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit des Arbeitszweigs, positive Testberichte, positiver Prüfbericht der QA, laufende Testumgebung.
@@ -126,16 +145,16 @@ Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit des Arbe
 
 1. Der Projektleiter übergibt dem Auftraggeber die Testumgebung mit einer kurzen Anleitung: was neu ist und wie es ausprobiert wird.
 2. Der Auftraggeber erprobt und nimmt formlos ab oder nennt Mängel.
-3. Der Projektleiter schreibt den Abnahmebericht mit der Abnahme oder den Mängeln. Projektleiter und Softwarearchitekt klären jeden Mangel. Der Softwarearchitekt lässt ihn über sein Team in Phase 4 beheben.
+3. Der Projektleiter schreibt den Abnahmebericht mit der Abnahme oder den Mängeln. Projektleiter und Entwicklungsleiter klären jeden Mangel. Der Entwicklungsleiter lässt ihn über sein Team in Phase 4 beheben.
 4. Kommt ein Mangel nach einer Behebung unverändert zurück oder wird die Zahl der Mängel nicht kleiner, gilt er als nicht lösbar ([Grenze der Durchläufe](#grenze-der-durchläufe)). Der Projektleiter legt vor, was geht und was nicht. Der Auftraggeber entscheidet.
 
 Ergebnis: abgenommenes Arbeitspaket, Abnahme im Abnahmebericht vermerkt.
 
 ### Phase 6 – Integration
 
-Der Softwarearchitekt übernimmt genau den abgenommenen Commit mit einem Merge-Commit in `main`. Er beendet die Testumgebung, entfernt Arbeitsverzeichnisse und Zweige des Pakets und trägt das Paket im Arbeitspaketplan mit `done` ein.
+Der Entwicklungsleiter übernimmt genau den abgenommenen Commit mit einem Merge-Commit in `main`. Er beendet die Testumgebung, entfernt Arbeitsverzeichnisse und Zweige des Pakets und trägt das Paket im Arbeitspaketplan mit `done` ein.
 
-Ergebnis: Arbeitspaket im Hauptstand, keine Reste aus der Umsetzung. Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.
+Ergebnis: Arbeitspaket in `main`, keine Reste aus der Umsetzung. Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.
 
 ## Übergabedokumente
 
@@ -144,10 +163,12 @@ Ergebnis: Arbeitspaket im Hauptstand, keine Reste aus der Umsetzung. Danach begi
 | Auftraggeber, Projektleiter | Softwarearchitekt | Dokumente des Auftraggebers laut `scope.md` |
 | Softwarearchitekt | QA, Projektleiter | Spezifikation, Arbeitspaketplan |
 | QA | Softwarearchitekt | Prüfbericht |
-| Softwarearchitekt | Entwickler | Auftrag |
+| Entwicklungsleiter, Softwarearchitekt für Prototypen | Entwickler | Auftrag |
 | Entwickler | Tester | Code mit Commit, technische Dokumentation |
-| Tester | Entwickler, Softwarearchitekt | Testbericht |
-| Projektleiter | Softwarearchitekt | Abnahmebericht mit den Mängeln |
+| Tester | Entwickler, Entwicklungsleiter | Testbericht |
+| QA | Entwicklungsleiter | Prüfbericht in Phase 4 |
+| Entwicklungsleiter | Softwarearchitekt | Lücke in Spezifikation oder Plan |
+| Projektleiter | Entwicklungsleiter | Abnahmebericht mit den Mängeln |
 
 Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.
 
@@ -159,6 +180,7 @@ Anforderungsdokumente, eines für das Gesamtsystem und je eines je Komponente, b
 development/
   messages/
     architect/            Meldungen an den Softwarearchitekten
+    devlead/              Meldungen an den Entwicklungsleiter
     projectlead/          Meldungen an den Projektleiter
   <vorhaben>/
     scope.md              geltende Dokumente des Auftraggebers (Projektleiter)
@@ -168,7 +190,7 @@ development/
     presentations/        Präsentationen mit Vermerk der Bestätigung (Projektleiter)
     questions/            Fragen an den Auftraggeber mit Antwort
     <arbeitspaket>/
-      orders/             Aufträge an die Entwickler (Softwarearchitekt)
+      orders/             Aufträge an die Entwickler (Entwicklungsleiter)
       tests/              Testberichte (Tester)
       reviews/            Prüfberichte der QA
       acceptance/         Abnahmeberichte (Projektleiter)
@@ -179,14 +201,15 @@ Namen von Vorhaben bestehen aus Kleinbuchstaben und Ziffern. Arbeitspakete heiß
 | Bericht | Datei |
 |---|---|
 | Prüfbericht der QA in den Phasen 1 bis 3 | `reviews/requirements-<n>.md`, `reviews/specification-<n>.md`, `reviews/plan-<n>.md` |
-| Testbericht | `<arbeitspaket>/tests/<auftrag>-<prüfgebiet>-<n>.md` mit Prüfgebiet `functiontest` oder `securitytest` |
+| Testbericht | `<arbeitspaket>/tests/<auftrag>-functiontest-<n>.md`, Sicherheitsprüfung `<arbeitspaket>/tests/securitytest-<n>.md` |
 | Prüfbericht der QA in Phase 4 | `<arbeitspaket>/reviews/<n>.md` |
 | Abnahmebericht | `<arbeitspaket>/acceptance/<n>.md` |
 | Frage | `questions/<name>-<nn>.md` mit dem Namen des Vorhabens beziehungsweise Arbeitspakets aus `ref` |
+| Lücke in Spezifikation oder Plan | `<arbeitspaket>/amend-<nn>.md` |
 
-Test- und Prüfberichte nennen den geprüften Commit vollständig. Abnahmeberichte schreibt der Projektleiter direkt auf `main`, alle anderen Dokumente eines Arbeitspakets liegen bis zur Integration auf seinem Arbeitszweig. Eine Frage nennt die unterbrochene Aufgabe und ihren Stand. Sie enthält alle offenen Fragen dieser Aufgabe, nummeriert und jede mit einem Vorschlag. Der Softwarearchitekt stellt sie erst, wenn die Aufgabe ohne Antwort nicht weiterkommt, und bearbeitet vorher alle Teile, die nicht von den Antworten abhängen. Der Projektleiter trägt die Antworten des Auftraggebers in dasselbe Dokument ein und meldet `answer` erst, wenn alle Fragen beantwortet sind.
+Test- und Prüfberichte nennen den geprüften Commit vollständig. Abnahmeberichte schreibt der Projektleiter direkt auf `main`, alle anderen Dokumente eines Arbeitspakets liegen bis zur Integration auf seinem Arbeitszweig. Eine Frage nennt die unterbrochene Aufgabe und ihren Stand. Sie enthält alle offenen Fragen dieser Aufgabe, nummeriert und jede mit einem Vorschlag. Softwarearchitekt und Entwicklungsleiter stellen sie erst, wenn die Aufgabe ohne Antwort nicht weiterkommt, und bearbeiten vorher alle Teile, die nicht von den Antworten abhängen. Der Projektleiter trägt die Antworten des Auftraggebers in dasselbe Dokument ein und meldet `answer` an die fragende Rolle erst, wenn alle Fragen beantwortet sind.
 
-Tester und QA schreiben ihren Bericht unter dem Dateinamen, den der Softwarearchitekt in ihrem Übergabedokument nennt, in das Berichtsverzeichnis `work/<ref>/reports/`, also außerhalb jedes Git-Arbeitsverzeichnisses. Ihr eigenes Arbeitsverzeichnis bleibt dadurch frei von nicht committeten Dateien, sodass dort zum Beispiel eine Testumgebung startet. Der Softwarearchitekt kopiert den Bericht in sein Arbeitsverzeichnis und bringt Aufträge und Berichte eines Arbeitspakets auf dessen Arbeitszweig, die Dokumente der Phasen 2 und 3 auf `main`.
+Tester und QA schreiben ihren Bericht unter dem Dateinamen, den Softwarearchitekt oder Entwicklungsleiter in ihrem Übergabedokument nennt, in das Berichtsverzeichnis `work/<ref>/reports/`, also außerhalb jedes Git-Arbeitsverzeichnisses. Ihr eigenes Arbeitsverzeichnis bleibt dadurch frei von nicht committeten Dateien, sodass dort zum Beispiel eine Testumgebung startet. Die beauftragende Rolle kopiert den Bericht in ihr Arbeitsverzeichnis. Der Entwicklungsleiter bringt Aufträge und Berichte eines Arbeitspakets auf dessen Arbeitszweig, der Softwarearchitekt die Dokumente der Phasen 2 und 3 auf `main`.
 
 ### Meldungen
 
@@ -207,7 +230,7 @@ Die Felder sind maschinenlesbare Bezeichner und deshalb englisch:
 
 | Feld | Inhalt |
 |---|---|
-| `from` | `projectlead`, `architect` oder `agentrun` |
+| `from` | `projectlead`, `architect`, `devlead` oder `agentrun` |
 | `ref` | `<vorhaben>` oder `<vorhaben>/<arbeitspaket>` |
 | `task` | Aufgabe, siehe unten |
 | `document` | Pfad des Übergabedokuments im Repository. Liegt es auf einem Arbeitszweig, in der Form `<zweig>:<pfad>`. |
@@ -220,20 +243,22 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Softwarearchitekt | `specify` | Phase 2 beginnen: Nachprüfung der Dokumente des Auftraggebers, dann Spezifikation erstellen oder nach einer Lücke ergänzen | `scope.md` |
 | Softwarearchitekt | `revise` | Einwände des Auftraggebers zu Spezifikation oder Plan einarbeiten | Präsentation mit den Einwänden |
 | Softwarearchitekt | `plan` | Phase 3 beginnen oder Plan ändern | `specification.md` |
-| Softwarearchitekt | `implement` | Phase 4 eines Arbeitspakets beginnen oder fortsetzen | `plan.md` |
-| Softwarearchitekt | `fix` | Mängel aus der Abnahme beheben | Abnahmebericht |
-| Softwarearchitekt | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
-| Softwarearchitekt | `answer` | Antwort auf eine Frage, unterbrochene Aufgabe fortsetzen | Frage mit Antwort |
+| Entwicklungsleiter | `implement` | Phase 4 eines Arbeitspakets beginnen oder fortsetzen | `plan.md` |
+| Entwicklungsleiter | `fix` | Mängel aus der Abnahme beheben | Abnahmebericht |
+| Entwicklungsleiter | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
+| Softwarearchitekt | `amend` | Phase 4: Lücke in Spezifikation oder Plan schließen | Dokument der Lücke |
+| Entwicklungsleiter | `amended` | Lücke geschlossen, Paket fortsetzen | Dokument der Lücke mit Ergebnis |
+| fragende Rolle | `answer` | Antwort auf eine Frage, unterbrochene Aufgabe fortsetzen | Frage mit Antwort |
 | Projektleiter | `review` | Prüfbericht der QA zu den Dokumenten des Auftraggebers, auch eine nicht bestandene Nachprüfung | Prüfbericht |
-| Projektleiter | `present` | Spezifikation oder Plan zur Präsentation und Abstimmung | `specification.md` oder `plan.md` |
+| Projektleiter | `present` | Spezifikation oder Plan zur Präsentation und Abstimmung, auch nach `amend` | `specification.md` oder `plan.md` |
 | Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
 | Projektleiter | `question` | Frage an den Auftraggeber oder Eskalation | Frage |
-| Projektleiter | `integrated` | Paket in den Hauptstand übernommen | `plan.md` |
+| Projektleiter | `integrated` | Paket in `main` übernommen | `plan.md` |
 | Projektleiter | `failed` | Absturz oder Stillstand einer Sitzung, von `agentrun` | die Meldung, mit der die Sitzung gestartet wurde |
 
-Findet der Softwarearchitekt in Phase 4 eine Lücke in der Spezifikation oder braucht der Plan eine Änderung, ergänzt er Spezifikation beziehungsweise Plan und lässt sie von der QA prüfen. Ist die Ergänzung rein technisch, entscheidet er sie selbst, vermerkt sie im Änderungsnachweis von Spezifikation beziehungsweise Plan und setzt das Paket nach bestandener Prüfung ohne Pause fort. Rein technisch ist eine Ergänzung, wenn sie keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert; ist die Zuordnung nicht eindeutig, gilt sie als nicht rein technisch. Nur dann meldet er `present`, das Paket ruht bis zur Bestätigung, und der Projektleiter setzt es danach mit `implement` fort.
+Findet der Entwicklungsleiter in Phase 4 eine Lücke in der Spezifikation oder braucht der Plan eine Änderung, beschreibt er sie in `<arbeitspaket>/amend-<nn>.md` auf `main`, meldet `amend` an den Softwarearchitekten und beendet die Sitzung, nachdem er alle davon unabhängigen Teile erledigt hat. Der Softwarearchitekt ergänzt Spezifikation beziehungsweise Plan und lässt sie von der QA prüfen. Ist die Ergänzung rein technisch, entscheidet er sie selbst, vermerkt sie im Änderungsnachweis von Spezifikation beziehungsweise Plan und meldet nach bestandener Prüfung `amended` an den Entwicklungsleiter, der das Paket ohne Pause fortsetzt. Rein technisch ist eine Ergänzung, wenn sie keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert; ist die Zuordnung nicht eindeutig, gilt sie als nicht rein technisch. Nur dann meldet er `present`, das Paket ruht bis zur Bestätigung, und der Projektleiter setzt es danach mit `implement` an den Entwicklungsleiter fort.
 
-Nach der Bestätigung des Plans schreibt der Projektleiter je Paket ohne Abhängigkeit eine Meldung `implement`. Bei der Integration schreibt der Softwarearchitekt im selben Commit wie seine Meldung `integrated` eine Meldung `implement` an sich selbst für jedes Paket, dessen Abhängigkeiten jetzt erfüllt sind.
+Eine Abhängigkeit von einem Paket gilt als erfüllt, sobald dessen Prüfung durch die QA bestanden ist. Das abhängige Paket beginnt auf diesem Stand und übernimmt spätere Korrekturen aus der Abnahme. In `main` übernommen wird es erst nach dem Paket, von dem es abhängt. Nach der Bestätigung des Plans schreibt der Projektleiter je Paket ohne offene Abhängigkeit eine Meldung `implement`. Bei der Integration schreibt der Entwicklungsleiter im selben Commit wie seine Meldung `integrated` eine Meldung `implement` an sich selbst für jedes Paket, dessen Abhängigkeiten jetzt erfüllt sind.
 
 Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antwort. Nach `failed` entfernt der Projektleiter die ursprüngliche Meldung und stößt die Arbeit mit einer neuen Meldung erneut an.
 
@@ -250,13 +275,14 @@ Diese Regeln gelten für jede Prüfung durch QA und Tester, in allen Phasen:
 - **Detailtiefe nach Umfang.** Spezifikation und Plan legen nur Bausteine, Entscheidungen und Abnahmekriterien fest, so knapp, wie der Umfang des Vorhabens es erlaubt. Testdetails, Formulierungen und Schreibweisen von Pfaden gehören in die Aufträge, nicht in Spezifikation oder Plan.
 - **Erster Durchlauf vollständig.** Der erste Durchlauf meldet alle Befunde auf einmal. Jeder weitere Durchlauf ist eine Nachprüfung: Er prüft nur, ob die Befunde behoben sind und ob die dafür geänderten Stellen neue Fehler enthalten.
 - **Nur blockierende Befunde.** Ein Befund verhindert das Bestehen nur, wenn er einer Anforderung oder einem Abnahmekriterium widerspricht, die Funktion beeinträchtigt oder eine Sicherheitslücke ist. Alles andere steht im Bericht als Hinweis. Hinweise verhindern das Bestehen nicht und werden bei der nächsten passenden Gelegenheit erledigt oder verworfen.
+- **Kurze Berichte.** Ein Prüf- oder Testbericht umfasst höchstens etwa 60 Zeilen. Jeder Hinweis steht in einer Zeile. Eine Nachprüfung nennt nur die noch offenen und die neuen Befunde.
 - **Bestanden ist bestanden.** Nach einer bestandenen Prüfung folgt keine weitere Prüfung, nur weil Hinweise eingearbeitet wurden. Das Dokument geht mit dem bestandenen Prüfbericht in den nächsten Schritt; die eingearbeiteten Hinweise nennt der Änderungsnachweis.
 
 ### Fragen an den Auftraggeber
 
 Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann: Arbeitsabläufe, Bedienablauf, Objekte, Regeln und Abnahme, die in keinem geltenden Dokument festgelegt sind. Alles andere erledigen die Rollen selbst, ohne Frage, ohne Präsentation und ohne Pause eines Arbeitspakets:
 
-- **Folgt aus einer Festlegung.** Ergibt sich die Korrektur eindeutig aus einer bestehenden Festlegung oder Entscheidung des Auftraggebers, zum Beispiel das Angleichen von Glossar, Folgesätzen oder Verweisen, korrigiert der Projektleiter die Dokumente des Auftraggebers und der Softwarearchitekt die technischen Dokumente einschließlich Glossar. Vermerk im Änderungsnachweis mit Verweis auf die Festlegung.
+- **Folgt aus einer Festlegung.** Ergibt sich die Korrektur eindeutig aus einer bestehenden Festlegung oder Entscheidung des Auftraggebers, zum Beispiel das Angleichen von Glossar, Folgesätzen oder Verweisen, korrigiert der Projektleiter die Dokumente des Auftraggebers und der Softwarearchitekt die technischen Dokumente einschließlich Glossar, in Phase 4 der Entwicklungsleiter, soweit Spezifikation und Plan nicht betroffen sind. Vermerk im Änderungsnachweis mit Verweis auf die Festlegung.
 - **Sache der Spezifikation.** Betrifft ein Befund, wie eine Anforderung umgesetzt, dargestellt oder geprüft wird, entscheidet der Softwarearchitekt in der Spezifikation.
 - **Offener Punkt.** Ist eine Frage in den Dokumenten des Auftraggebers als offen gekennzeichnet und für die laufende Arbeit nicht nötig, bleibt sie offen. Sie wird nicht vorgelegt.
 
@@ -271,19 +297,20 @@ Die QA ordnet jeden Befund zu Dokumenten des Auftraggebers einer dieser Gruppen 
 Die Grenze einer Prüfschleife richtet sich nach ihrem Fortschritt, nicht nach einer festen Zahl von Durchläufen:
 
 - Eine Schleife läuft weiter, solange jeder Durchlauf weniger blockierende Befunde hat als der vorige. Neue Befunde an korrigierten Stellen zählen mit.
-- Sie geht eine Ebene höher (Entwickler → Softwarearchitekt → Projektleiter → Auftraggeber), wenn ein blockierender Befund nach einer Korrektur unverändert wiederkommt oder wenn die Zahl der blockierenden Befunde nicht sinkt.
+- Sie geht eine Ebene höher (Entwickler → Entwicklungsleiter beziehungsweise Softwarearchitekt → Projektleiter → Auftraggeber), wenn ein blockierender Befund nach einer Korrektur unverändert wiederkommt oder wenn die Zahl der blockierenden Befunde nicht sinkt.
+- Ab dem dritten Durchlauf einer Prüfung von Spezifikation oder Plan entscheidet der Softwarearchitekt verbleibende rein technische Befunde selbst nach [Rein technische Streitpunkte](#rein-technische-streitpunkte) und vermerkt sie im Änderungsnachweis; die QA prüft danach nur noch Befunde, die Dokumente des Auftraggebers, bestätigte Festlegungen, Abnahmekriterien oder den Umfang berühren.
 - Ein Befund, den nur eine höhere Ebene entscheiden kann, geht sofort dorthin, ohne das Ende der Schleife abzuwarten. Die übrigen Befunde werden währenddessen weiter bearbeitet.
 
 | Schleife ohne Fortschritt | Weiter an |
 |---|---|
-| Tester und Entwickler | Softwarearchitekt, der die Aufträge anpasst. Bleibt der Fortschritt weiter aus, entscheidet er nach [Rein technische Streitpunkte](#rein-technische-streitpunkte) oder gibt den Fall an den Projektleiter. |
-| QA und Softwarearchitekt | Projektleiter. Er übersetzt den Streitpunkt verständlich und legt ihn dem Auftraggeber zur Entscheidung vor. Fehlt eine Anforderung, geht sie in Phase 1. |
+| Tester und Entwickler | Entwicklungsleiter, der die Aufträge anpasst. Bleibt der Fortschritt weiter aus, entscheidet er nach [Rein technische Streitpunkte](#rein-technische-streitpunkte) oder gibt den Fall an den Projektleiter. |
+| QA und Softwarearchitekt, QA und Entwicklungsleiter | Projektleiter. Er übersetzt den Streitpunkt verständlich und legt ihn dem Auftraggeber zur Entscheidung vor. Fehlt eine Anforderung, geht sie in Phase 1. |
 | QA und Projektleiter | Auftraggeber. Der Projektleiter legt ihm die verbleibenden Befunde gesammelt vor. |
-| Mangel in der Abnahme | Projektleiter und Softwarearchitekt erklären ihn als nicht lösbar. Der Auftraggeber entscheidet. |
+| Mangel in der Abnahme | Projektleiter und Entwicklungsleiter erklären ihn als nicht lösbar. Der Auftraggeber entscheidet. |
 
 ### Rein technische Streitpunkte
 
-Betrifft eine Schleife ohne Fortschritt nur die technische Umsetzung, entscheidet der Softwarearchitekt abschließend. Er schreibt die Entscheidung mit Begründung in den Auftrag oder die Spezifikation und setzt die Arbeit fort. Bei einer Schleife zwischen QA und Softwarearchitekt gilt seine Entscheidung ebenso, die QA vermerkt den Streitpunkt im Prüfbericht als entschieden.
+Betrifft eine Schleife ohne Fortschritt nur die technische Umsetzung, entscheidet in den Phasen 2 und 3 der Softwarearchitekt abschließend und schreibt die Entscheidung mit Begründung in die Spezifikation. In Phase 4 entscheidet der Entwicklungsleiter abschließend und schreibt sie in den Auftrag; ändert die Entscheidung Spezifikation oder Plan, meldet er `amend`. Bei einer Schleife zwischen QA und einer der beiden Rollen gilt deren Entscheidung ebenso, die QA vermerkt den Streitpunkt im Prüfbericht als entschieden.
 
 Nur technisch ist ein Streitpunkt, wenn seine Entscheidung keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert. Berührt sie einen dieser Punkte oder ist die Zuordnung nicht eindeutig, geht der Fall nach der Tabelle oben an den Projektleiter und von ihm an den Auftraggeber.
 
@@ -301,36 +328,36 @@ Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pip
 | `work/<vorhaben>/<rolle>/` | Arbeitsverzeichnisse der Phasen 2 und 3 | die jeweilige Rolle |
 | `work/<vorhaben>/<arbeitspaket>/<rolle>/` | Arbeitsverzeichnisse der Phase 4 | die jeweilige Rolle |
 | `work/<ref>/reports/` | Berichte von Tester und QA, kein Git-Arbeitsverzeichnis | Tester und QA |
-| `test/<vorhaben>-<arbeitspaket>/` | Testumgebung eines Arbeitspakets | Softwarearchitekt |
+| `test/<vorhaben>-<arbeitspaket>/` | Testumgebung eines Arbeitspakets | Entwicklungsleiter |
 | `scripts/` | `agentrun`, `heartbeat` und `pidcheck` mit Tests und Beschreibung, nicht Teil des Repositorys | nicht durch das Team |
 | `run/` | PID-Datei, Sperren und Protokoll von `agentrun`, Liste der gestarteten Meldungen, je laufender Sitzung Zustands- und Herzschlagdatei, noch nicht übertragene Meldungen `failed` | `agentrun`, `heartbeat`, `pidcheck` |
 | `devteam/` | Konfiguration der Rollen für Claude Code und die Startskripte | nicht durch das Team |
 | `transfer/` | Ablage des Auftraggebers für Dateiübergaben außerhalb des Ablaufs | Auftraggeber und auf seine Anweisung |
 
-Die Rollennamen der Arbeitsverzeichnisse sind `architect`, `backend`, `frontend`, `functiontest`, `securitytest` und `qa`. In Phase 4 hat der Softwarearchitekt zusätzlich `architectmain` für seine Arbeit auf `main`. Ein weiterer Entwickler desselben Gebiets erhält eine Nummer, zum Beispiel `backend2`.
+Die Rollennamen der Arbeitsverzeichnisse sind `architect`, `devlead`, `backend`, `frontend`, `functiontest`, `securitytest` und `qa`. In Phase 4 hat der Entwicklungsleiter zusätzlich `devleadmain` für seine Arbeit auf `main`, der Softwarearchitekt bei `amend` `architectmain`. Ein weiterer Entwickler desselben Gebiets erhält eine Nummer, zum Beispiel `backend2`.
 
-Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis des Softwarearchitekten an, falls es fehlt, und startet die Sitzung darin. Die Rollen richten ihr Arbeitsverzeichnis selbst mit `git worktree add` aus `repo/` ein. Folgesitzungen desselben Arbeitspakets verwenden die bestehenden Arbeitsverzeichnisse weiter. Der Softwarearchitekt entfernt die Arbeitsverzeichnisse der Phasen 2 und 3 am Ende jeder Sitzung, die der Phase 4 bei der Integration, jeweils für alle Rollen und mit `git worktree remove`, dazu das Berichtsverzeichnis `work/<ref>/reports/`, sein eigenes Arbeitsverzeichnis als letzten Befehl. Leere Verzeichnisse unter `work/<ref>/` entfernt danach `agentrun`.
+Kein Agent arbeitet in `repo/`. `agentrun` legt das leere Arbeitsverzeichnis der gestarteten Rolle an, falls es fehlt, und startet die Sitzung darin. Die Rollen richten ihr Arbeitsverzeichnis selbst mit `git worktree add` aus `repo/` ein. Folgesitzungen desselben Arbeitspakets verwenden die bestehenden Arbeitsverzeichnisse weiter. Der Softwarearchitekt entfernt die Arbeitsverzeichnisse der Phasen 2 und 3 und nach `amend` sein eigenes am Ende jeder Sitzung, der Entwicklungsleiter die der Phase 4 bei der Integration, jeweils für alle Rollen und mit `git worktree remove`, dazu das Berichtsverzeichnis `work/<ref>/reports/`, sein eigenes Arbeitsverzeichnis als letzten Befehl. Leere Verzeichnisse unter `work/<ref>/` entfernt danach `agentrun`.
 
 ### Zweige
 
 | Zweig | Inhalt | angelegt von |
 |---|---|---|
-| `main` | Hauptstand. Dokumente der Phasen 1 bis 3, Meldungen, Fragen, Abnahmeberichte und übernommene Arbeitspakete | – |
-| `<vorhaben>/<arbeitspaket>` | Arbeitszweig des Pakets mit Aufträgen, Berichten und zusammengeführten Aufträgen | Softwarearchitekt |
+| `main` | Dokumente der Phasen 1 bis 3, Meldungen, Fragen, Abnahmeberichte und übernommene Arbeitspakete | – |
+| `<vorhaben>/<arbeitspaket>` | Arbeitszweig des Pakets mit Aufträgen, Berichten und zusammengeführten Aufträgen | Entwicklungsleiter |
 | `<vorhaben>/<arbeitspaket>-<auftrag>` | Zweig eines Entwicklers für einen Auftrag | Entwickler |
 | `<vorhaben>/<arbeitspaket>-functiontest` | Änderungen am Prüfskript, aufgesetzt auf dem zu prüfenden Commit | Tester Funktion |
 | `<vorhaben>/proto-<name>` | Prototyp der Phase 2, wird nicht übernommen | Entwickler |
 
-Alle Zweige werden nach GitHub übertragen. Der Softwarearchitekt führt einen Auftragszweig nach positiven Testberichten mit einem Merge-Commit in den Arbeitszweig zusammen und entfernt ihn danach. Den Zweig des Testers Funktion führt er vor der Prüfung durch die QA zusammen. Ein Testbericht nennt neben dem geprüften Commit den Commit des verwendeten Prüfskripts. Eine Änderung nur am Prüfskript macht vorhandene Testberichte nicht ungültig. Prototypzweige entfernt er nach der Abstimmung der Spezifikation.
+Alle Zweige werden nach GitHub übertragen. Der Entwicklungsleiter führt einen Auftragszweig nach positiven Testberichten mit einem Merge-Commit in den Arbeitszweig zusammen und entfernt ihn danach. Den Zweig des Testers Funktion führt er vor der Prüfung durch die QA zusammen. Ein Testbericht nennt neben dem geprüften Commit den Commit des verwendeten Prüfskripts. Eine Änderung nur am Prüfskript macht vorhandene Testberichte nicht ungültig. Prototypzweige entfernt der Softwarearchitekt nach der Abstimmung der Spezifikation.
 
 ### agentrun
 
-`agentrun` ist ein Shell-Skript in `scripts/`. Es läuft dauerhaft und überwacht mit `inotifywait` das Verzeichnis `repo/development/messages/architect/`.
+`agentrun` ist ein Shell-Skript in `scripts/`. Es läuft dauerhaft und überwacht mit `inotifywait` die Verzeichnisse `repo/development/messages/architect/` und `repo/development/messages/devlead/`.
 
-- Für jede neue Meldung startet es eine Sitzung des Softwarearchitekten in einer tmux-Sitzung. Name der tmux-Sitzung und der Dateien in `run/` ist `ref` mit `-` statt `/`, zum Beispiel `studio1-wp01`. Der Startauftrag nennt den Pfad der Meldung und das Entwicklungsverzeichnis. Arbeitsverzeichnis ist `work/<ref>/architect/`.
-- Je `ref` läuft höchstens eine Sitzung. Eine weitere Meldung mit demselben `ref` startet erst nach dem Ende der laufenden Sitzung.
+- Für jede neue Meldung startet es eine Sitzung der Empfängerrolle in einer tmux-Sitzung: Agentendefinition `software-architect` für `architect/`, `devlead` für `devlead/`. Name der tmux-Sitzung und der Dateien in `run/` ist `ref` mit `-` statt `/`, zum Beispiel `studio1-wp01`. Der Startauftrag nennt den Pfad der Meldung und das Entwicklungsverzeichnis. Arbeitsverzeichnis ist `work/<ref>/architect/` beziehungsweise `work/<ref>/devlead/`.
+- Je `ref` läuft höchstens eine Sitzung, über beide Rollen hinweg. Eine weitere Meldung mit demselben `ref` startet erst nach dem Ende der laufenden Sitzung.
 - Jede Meldung startet es genau einmal und vermerkt sie in `run/`.
-- Es beendet die Sitzung, sobald in `repo/development/messages/projectlead/` nach dem Start eine Meldung des Softwarearchitekten mit demselben `ref` liegt. Mit dieser Antwortmeldung endet jede Sitzung, auch bei einer Frage.
+- Es beendet die Sitzung, sobald in `repo/development/messages/projectlead/` oder im Verzeichnis der jeweils anderen Rolle nach dem Start eine Meldung der gestarteten Rolle mit demselben `ref` liegt. Mit dieser Antwortmeldung endet jede Sitzung, auch bei einer Frage oder bei `amend`.
 - Besteht die Sitzung nicht mehr ohne Antwortmeldung oder fehlt der Herzschlag 15 Minuten lang, beendet es die Sitzung und schreibt eine Meldung `failed` an den Projektleiter. Diese Meldung legt es über die Schnittstelle für Dateiinhalte der GitHub-API direkt auf `main` an, ohne Arbeitsverzeichnis. Gelingt das nicht, wiederholt es den Versuch bei jeder Prüfung. Eine Meldung mit ungültigem `ref` und ein fehlgeschlagener Start führen ebenfalls zu `failed`.
 
 Die Sitzung startet mit festen Einstellungsquellen, sodass Agentendefinitionen, Skills, Hooks und Freigaben ausschließlich aus `devteam/` kommen:
@@ -338,8 +365,10 @@ Die Sitzung startet mit festen Einstellungsquellen, sodass Agentendefinitionen, 
 ```sh
 claude --setting-sources project --permission-mode dontAsk \
   --plugin-dir ROOT/devteam --settings ROOT/devteam/settings.json \
-  --agent devteam:software-architect "<Startauftrag>"
+  --agent devteam:<rolle> "<Startauftrag>"
 ```
+
+`<rolle>` ist `software-architect` oder `devlead`. Das Modell steht in der Agentendefinition der Rolle ([Verbrauch des Nutzungskontingents](#verbrauch-des-nutzungskontingents)).
 
 Eine interaktive Sitzung beendet sich nicht von selbst. `agentrun` beendet sie mit `tmux kill-session`. Ein Cron-Job prüft, ob der Prozess aus `run/agentrun.pid` läuft, und startet `agentrun` sonst neu. Beim Start bewertet `agentrun` alle Meldungen und laufenden Sitzungen neu.
 
@@ -347,13 +376,13 @@ Eine interaktive Sitzung beendet sich nicht von selbst. `agentrun` beendet sie m
 
 Ein Hook von Claude Code für die Ereignisse `PreToolUse`, `PostToolUse` und `PostToolUseFailure` ruft bei jedem Werkzeugaufruf das Skript `scripts/heartbeat` auf. Es liest das Arbeitsverzeichnis aus den Hook-Daten. Liegt es unter `work/<vorhaben>/<rolle>/` oder `work/<vorhaben>/<arbeitspaket>/<rolle>/`, aktualisiert es den Zeitstempel der Herzschlagdatei dieses `ref` in `run/`. Sonst tut es nichts. Es gibt nichts aus und endet immer mit Exitcode 0.
 
-Der Hook löst auch bei Werkzeugaufrufen der Unteragenten aus und meldet dabei immer das Startverzeichnis der Sitzung, also `work/<ref>/architect/`. Tester und QA laufen mit demselben Hook. Ihre Tätigkeit zählt über ihre Arbeitsverzeichnisse unter `work/` zum `ref` des Arbeitspakets.
+Der Hook löst auch bei Werkzeugaufrufen der Unteragenten aus und meldet dabei immer das Startverzeichnis der Sitzung, also `work/<ref>/architect/` beziehungsweise `work/<ref>/devlead/`. Tester und QA laufen mit demselben Hook. Ihre Tätigkeit zählt über ihre Arbeitsverzeichnisse unter `work/` zum `ref` des Arbeitspakets.
 
 Gemessen wird ab dem späteren Zeitpunkt von Start der Sitzung und letztem Herzschlag. 15 Minuten ohne Herzschlag gelten als Stillstand, auch wenn die Sitzung auf eine Freigabe oder das Ende einer Pause wegen der Nutzungsgrenze wartet.
 
 ### Start von Entwickler, Tester und QA
 
-Der Softwarearchitekt startet sie mit dem Pfad ihres Übergabedokuments.
+Entwicklungsleiter und, für Prüfungen und Prototypen der Phasen 1 bis 3, Softwarearchitekt starten sie mit dem Pfad ihres Übergabedokuments.
 
 - Entwickler laufen als Unteragenten seiner Sitzung, je Entwicklergebiet mit eigener Agentendefinition. Mehrere Entwickler gleichzeitig nur für voneinander unabhängige Teile, jeder mit eigenem Arbeitsverzeichnis. Ein Unteragent arbeitet im Startverzeichnis der Sitzung, ein `cd` gilt nur für den einzelnen Befehl. Entwickler nennen ihr Arbeitsverzeichnis deshalb in jedem Befehl mit absolutem Pfad, zum Beispiel mit `git -C`.
 - Tester und QA startet er über ein Startskript je Rolle in `devteam/bin/`. Das ausgeführte Programm ist einstellbar, derzeit Claude Code mit Hooks, Skills und Freigaben aus `devteam/`. Er startet das Skript im Hintergrund und wartet auf den Bericht.
@@ -372,11 +401,11 @@ Ports und Datenbank sind Parameter oder Konfiguration, keine festen Werte. Die T
 |---|---|---|
 | pipwerk Studio | 5174 | 8001 |
 
-Laufen ausnahmsweise mehrere Testumgebungen derselben Komponente gleichzeitig, nennt die Meldung `acceptance` die abweichenden Ports. Die Ports des Entwicklungsbetriebs (pipwerk Studio: 5173 und 8000) und der Browsertests bleiben davon unberührt. Name und Aufruf der Skripte stehen in der technischen Dokumentation der Komponente. Ein übergreifendes Skript für mehrere Komponenten gibt es nicht. Bei `fix` startet der Softwarearchitekt die Testumgebung mit dem neuen Commit neu.
+Laufen ausnahmsweise mehrere Testumgebungen derselben Komponente gleichzeitig, nennt die Meldung `acceptance` die abweichenden Ports. Die Ports des Entwicklungsbetriebs (pipwerk Studio: 5173 und 8000) und der Browsertests bleiben davon unberührt. Name und Aufruf der Skripte stehen in der technischen Dokumentation der Komponente. Ein übergreifendes Skript für mehrere Komponenten gibt es nicht. Bei `fix` startet der Entwicklungsleiter die Testumgebung mit dem neuen Commit neu.
 
 ### Runner
 
-Ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner hält `repo/` per Fast-Forward auf dem Stand von `origin/main`. Steht `repo/` nicht auf `main` oder hat es lokale Änderungen, bricht er ohne Änderung ab. Er startet bei jedem Push auf `main` und kann auf GitHub zusätzlich von Hand gestartet werden. Weitere Aufgaben hat er nicht.
+Ein GitHub-Actions-Workflow auf einem selbst betriebenen Runner auf dem Entwicklungsrechner hält `repo/` per Fast-Forward auf dem Stand von `origin/main`. Steht `repo/` nicht auf `main` oder hat es lokale Änderungen, bricht er ohne Änderung ab. Er startet bei jedem Push auf `main` und kann auf GitHub zusätzlich von Hand gestartet werden. Ein neuer Lauf bricht einen noch laufenden oder wartenden Lauf ab, weil jeder Lauf auf den neuesten Stand von `main` bringt. Weitere Aufgaben hat er nicht.
 
 Der Runner läuft als systemd-Dienst unter dem Benutzer, dem die Arbeitsverzeichnisse gehören. Der Workflow hat keine Auslöser für Pull Requests. Das Repository verlangt für Workflows aus Pull Requests aller externen Beitragenden eine Freigabe durch den Auftraggeber. Ein solcher Workflow wird nicht freigegeben.
 
@@ -387,7 +416,7 @@ Die Claude-Code-Konfiguration ist Implementierungsdetail des Entwicklungsrechner
 ```text
 devteam/
   .claude-plugin/plugin.json   Name devteam
-  agents/                      software-architect, backend, frontend, functiontest, securitytest, qa
+  agents/                      software-architect, devlead, backend, frontend, functiontest, securitytest, qa
   bin/                         Startskripte functiontest, securitytest, qa
   lib/startrole                gemeinsamer Teil der Startskripte
   start.conf                   Programmaufruf der Startskripte
@@ -395,7 +424,7 @@ devteam/
   settings.json                Freigaben
 ```
 
-Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:<port>/<pfad>` und `http://localhost:<port>/<pfad>` freigegeben (Regeln `Bash(curl http://127.0.0.1:*/*)` und `Bash(curl http://localhost:*/*)`; die Endung `:*` bedeutet in Claude Code „Leerzeichen und Platzhalter“ und ist dafür ungeeignet), die URL als erstes Argument, für die Prüfung in einer Testumgebung durch Tester und QA.
+Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:<port>/<pfad>` und `http://localhost:<port>/<pfad>` freigegeben, mit Optionen vor oder nach der URL, für die Prüfung in einer Testumgebung durch Tester und QA. Die Regeln stehen je erster Ziffer des Ports einzeln (zum Beispiel `Bash(curl http://127.0.0.1:8*/*)` und `Bash(curl -* http://127.0.0.1:8*/*)`), weil Claude Code `:*` nur am Ende einer Regel als Platzhalter liest. Prüfskripte unter `work/` sind mit absolutem Pfad freigegeben, dazu `npx playwright`, `node` mit Skript unter `work/` und die lesenden Befehle `ls`, `grep`, `test` und `sed -n` (Stand 2026-10-21, Frage `strategiedesign/wp02-01`).
 
 Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Rollendateien in `devteam/agents/` kopieren sie nicht, sondern weisen jede Rolle an, bei jedem Start ihre Abschnitte aus `repo/` (Stand `main`) zu lesen. Sie enthalten nur Angaben, die allein den Entwicklungsrechner betreffen. Eine Änderung der Briefings braucht deshalb keine Änderung in `devteam/`. Andere Änderungen an `devteam/` veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
@@ -417,6 +446,14 @@ Weitere Werkzeuge, insbesondere Schnittstellen-, Architektur-, Property-based- o
 
 Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird über ein Claude-Abo mit festem Monatspreis betrieben. Das Erreichen der Nutzungsgrenze unterbricht die Arbeit nur. Die Modellzuordnung der Rollen ist änderbare Laufzeitkonfiguration.
 
+### Verbrauch des Nutzungskontingents
+
+Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
+
+- **Modell.** Der Softwarearchitekt arbeitet mit Opus, weil Fehler in Spezifikation und Plan viele Prüfdurchläufe auslösen. Entwicklungsleiter, Entwickler, Tester und QA arbeiten mit Sonnet. Das Modell steht in der Agentendefinition beziehungsweise im Startskript der Rolle. Der Projektleiter wählt das Modell in seiner Sitzung selbst: Opus für Phase 1 und Abstimmungen, Sonnet für Routine.
+- **Gezielt lesen.** Jede Rolle liest von diesem Dokument und von [Agentenrollen und Briefings](agentenrollen-und-briefings.md) die Kurzfassung und die Abschnitte ihrer Aufgabe, große Dateien abschnittsweise. Vollständig gelesen wird nur das eigene Übergabedokument.
+- **Parallele Arbeit** bleibt zulässig.
+
 ## Offene Punkte
 
 - Vergleich von Claude und Codex als Tester mit gezielt eingebauten Fehlern, sobald der erste Durchlauf steht.
@@ -426,6 +463,15 @@ Zugangsdaten und API-Schlüssel gehören nicht ins Repository. Claude Code wird 
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-23 | Prototyp nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | Phase 2: Mängel aus der Abnahme einer umgesetzten Oberfläche ohne neuen Prototyp direkt in der Software beheben. Anlass: Abnahme `backtest/wp02`, Prototyp der Ansicht „Datenbestand“. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | Runner: Ein neuer Lauf bricht einen laufenden oder wartenden ab (`cancel-in-progress: true` in `.github/workflows/sync-repo.yml`), damit ein Lauf, den der Runner nicht annimmt, die folgenden nicht blockiert. |
+| 2026-10-22 | Erfundenen Begriff „Hauptstand“ durch den Zweignamen `main` ersetzt. Forderung des Auftraggebers im Chat am 2026-10-22. |
+| 2026-10-21 | Abhängigkeit zwischen Paketen gilt mit bestandener Prüfung der QA als erfüllt, nicht erst mit der Übernahme. Festlegung des Auftraggebers im Chat am 2026-10-21 (`backtest`). |
+| 2026-10-21 | Konfiguration der Rollen: Freigaben für Tester und QA erweitert (Prüfskript mit absolutem Pfad, `npx playwright`, `node`, `curl` mit Optionen vor der URL, `ls`, `grep`, `sed -n`), Schreibweise der `curl`-Regeln berichtigt. Anlass: Frage `strategiedesign/wp02-01`. |
+| 2026-10-21 | Umfang der Prüfungen: Berichte höchstens etwa 60 Zeilen. Grenze der Durchläufe: ab dem dritten Durchlauf entscheidet der Softwarearchitekt rein technische Befunde zu Spezifikation und Plan selbst. Phase 4: Sicherheitsprüfung einmal je Arbeitspaket statt je Commit. Festlegung des Auftraggebers im Chat am 2026-10-21. Anlass: Verbrauch des Nutzungskontingents. |
+| 2026-10-21 | Rolle Entwicklungsleiter (`devlead`) für die Phasen 4 bis 6 vom Softwarearchitekten abgetrennt: Meldungen `implement`, `fix`, `integrate` an den Entwicklungsleiter, neue Meldungen `amend` und `amended` für Lücken in Spezifikation oder Plan, `agentrun` überwacht beide Empfängerverzeichnisse. Modelle: Softwarearchitekt Opus, übrige Rollen Sonnet. Festlegung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | Kurzfassung am Anfang. Abschnitt „Verbrauch des Nutzungskontingents“: Sonnet für alle Rollen, gezieltes Lesen. Anlass: Sitzungslimit nach kurzer Zeit erreicht. Festlegung des Auftraggebers im Chat am 2026-10-20. |
 | 2026-10-20 | Umfang der Prüfungen: nach bestandener Prüfung keine weitere Prüfung nur für eingearbeitete Hinweise. Anlass: Spezifikation `strategiedesign` nach bestandenen Durchläufen 7 und 8 erneut zur Prüfung (Durchlauf 9), Sitzung danach wegen fehlenden Herzschlags beendet. |
 | 2026-10-19 | Konfiguration der Rollen: Rollendateien verweisen auf die Briefings im Repository statt sie zu kopieren. Umgesetzt auf dem Entwicklungsrechner am 2026-10-19, Probelauf aller sechs Rollen bestanden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-19 | Fragen an den Auftraggeber: Regel „Lücken“, nur Lücken mit gutem technischem Grund (Betrieb, Umsetzbarkeit, Sicherheit) blockieren und führen zu Rückfragen, alle anderen werden dokumentiert, ohne den Entwicklungsprozess zu unterbrechen. Festlegung des Auftraggebers im Chat am 2026-10-19. |

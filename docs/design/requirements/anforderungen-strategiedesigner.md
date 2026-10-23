@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an das Werkzeug zur Gestaltung und Bearbeitung von Handelsstrategien
-- zuletzt aktualisiert: `2026-10-19`
+- zuletzt aktualisiert: `2026-10-22`
 - abgestimmt: [Präsentation Anforderungen Strategiedesigner](praesentation-anforderungen-strategiedesigner.html), bestätigt vom Auftraggeber im Chat am 13. Oktober 2026 nach erster Durchsicht. Entscheidungen zu den Befunden der QA im Vorhaben `strategiedesign`: [Präsentation Prüfung der Dokumente](../../../development/strategiedesign/presentations/requirements-1.html), bestätigt vom Auftraggeber im Chat am 15. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -41,7 +41,7 @@ Beispiele sind:
 -   Indikator,
 -   Konto, Instrument, Kerze, Tick, Order, Position, Strategie (Objekte der Anwendung, Fachmodell req-fach-051).
 
-Marktphase, Bewegung und Korrektur sind keine eigenen Objekte, sondern Werte der Eigenschaft `Phase` eines Indikators, zum Beispiel des Indikators Markttechnik.
+Marktphase, Bewegung und Korrektur sind keine eigenen Objekte. Sie ergeben sich aus Eigenschaften eines Indikators und dem Kurs, zum Beispiel aus den Wendepunkten des `ZigZag`.
 
 Weitere Objekte können abhängig von der konkreten Strategie,
 dem verwendeten Berechnungsverfahren oder anderen fachlichen
@@ -132,7 +132,7 @@ Die konkrete technische Repräsentation eines Objekttyps – beispielsweise als 
 
 ### req-fach-015 -- Auslöser für Strategieauswertung
 
-Hat eine Strategie Auslöser, starten diese ihren Ablauf beziehungsweise werten ihn erneut aus. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Jede Auswertung beginnt an einem Auslöser. Für den Start von Hand gibt es den Auslöser „Start von Hand“. Eine Strategie ohne Auslöser lässt sich speichern, wird aber nicht ausgewertet. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen und ihre Parameter legt das Fachmodell fest (req-fach-053): Kerzenschluss, Tick, Start von Hand und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
+Hat eine Strategie Auslöser, starten diese ihren Ablauf beziehungsweise werten ihn erneut aus. Eine Strategie kann Auslöser haben, muss aber nicht; ebenso die Verwaltung einer Order. Jede Auswertung beginnt an einem Auslöser. Für den Start von Hand gibt es den Auslöser „Manuell“. Er steht nur im Hauptablauf, nicht in der Verwaltung einer Order (Fachmodell req-fach-053). Eine Strategie ohne Auslöser lässt sich speichern, wird aber nicht ausgewertet. Jeder Auslöser ist ein Element auf der Zeichenfläche und steht am Anfang des Ablaufs oder am Anfang der Verwaltung einer Order (Fachmodell, req-fach-049a). Die Auslösertypen und ihre Parameter legt das Fachmodell fest (req-fach-053): Kerzenschluss, Tick, Manuell und externes Ereignis. Die Verwaltung einer Order kann eigene Auslöser-Elemente haben, innerhalb des Bereichs der Zeichenfläche, der am Ausgang „gestellt“ beginnt.
 
 Bei einer Strategie mit Auslösern ergibt sich die Wiederholung einer Strategieauswertung aus erneut eintretenden Auslösern und erfordert nicht zwingend eine sichtbare grafische Rückschleife.
 
@@ -234,7 +234,7 @@ bestehen können. Der Nutzer muss diese Details bei Bedarf öffnen können.
 
 ### req-ui-003 -- Tätigkeiten und Prüfungen im Ablauf
 
-Elemente des Ablaufs (Bedingung, Berechnung, Parameter setzen, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen) müssen eine Tätigkeit oder eine konkrete Prüfung
+Elemente des Ablaufs (Bedingung, Berechnung, Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen) müssen eine Tätigkeit oder eine konkrete Prüfung
 ausdrücken. Reine Substantive wie „Marktstruktur", „Handelsplanung" oder
 „Pending Order" genügen nicht als Ablaufschritt. Jedes Element des Ablaufs trägt als Namen zunächst die Tätigkeit seines Elementtyps, der Anwender kann ihn ändern. Elemente, die ein Objekt zeigen, tragen den Namen des Objekts.
 
@@ -303,7 +303,19 @@ Offen: Anzeige von Befunden, die keinem einzelnen Element zugeordnet sind, und D
 
 ### req-ui-012 -- Regeln und Regelwerke zuordnen (vorläufig)
 
-Regeln und Regelwerke stehen nicht als Elemente auf der Zeichenfläche. Der Anwender ordnet sie in der Eigenschaftenansicht der Strategie oder eines Elements („Order aufgeben“, „Order ändern“, „Position ändern“, „Position schließen“) aus der Elementbibliothek zu, einzeln oder als Regelwerk. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend. Ob Regeln als eigene Elemente auf der Zeichenfläche gebraucht werden, wird mit den Testfällen erprobt.
+Regeln und Regelwerke stehen nicht als Elemente auf der Zeichenfläche. Der Anwender ordnet sie in der Eigenschaftenansicht der Strategie oder eines Elements („Order aufgeben“, „Order ändern“, „Position ändern“, „Position schließen“) aus der Elementbibliothek zu, einzeln oder als Regelwerk. Vorläufig: Der Auftraggeber hält diese Lösung noch nicht für abschließend, sie bleibt aber vorerst bestehen. Offen: die Darstellung von Regeln auf der Zeichenfläche. Vorschlag des Projektleiters: Eine Regel hat einen Geltungsbereich, entweder ein Element (die Regel hängt am Element), einen Bereich (beschrifteter Rahmen um mehrere Elemente; die Regel wird an jedem Element im Rahmen ausgewertet, für das sie gilt) oder die ganze Strategie (angezeigt oben in der Zeichnung).
+
+### req-ui-018 -- Gruppen der Elementbibliothek
+
+Die Elementbibliothek gliedert die Elemente nach ihrer Aufgabe, ähnlich der Gliederung von Programmiersprachen:
+
+- Ablaufsteuerung: Auslöser, Bedingung, Verbindung
+- Berechnung
+- Objekte, die Werte liefern, in fachlichen Gruppen, zum Beispiel Indikatoren, Trends, Marktdaten (`Instrument`, `Kerze`, `Tick`) und Konto
+- Aktionen: Order aufgeben, Order ändern, Order löschen, Position ändern, Position schließen
+- Regeln und Regelwerke (req-ui-012)
+
+Mitgelieferte Objekttypen und eigene Vorlagen stehen in der Gruppe ihres Objekttyps. Offen: die sichtbaren Namen der Gruppen. Vorschlag des Projektleiters: für die Objekte die fachlichen Gruppennamen ohne gemeinsamen Oberbegriff.
 
 ### req-ui-013 -- Eingabehilfe für Ausdrücke
 
@@ -315,7 +327,9 @@ Bei der Eingabe eines Ausdrucks zeigt der Designer nach einem Objektnamen und ei
 
 Objekte liefern Werte. Jede Eigenschaft eines Objekts auf der Zeichenfläche, zum Beispiel `Wert` eines EMA oder `Trendrichtung` des 1-2-3-Trends, ist ein Ausgang, den der Anwender per Linie mit einem Eingang eines anderen Elements verbindet, zum Beispiel mit einer Bedingung, einer Berechnung, „Order aufgeben“ oder dem Parameter eines anderen Objekts. Ein verbundener Eingang erscheint im Ausdruck des Elements unter seinem Namen. Datenverbindungen sind von Ablaufverbindungen sichtbar unterschieden: Ablaufverbindungen legen die Reihenfolge fest, Datenverbindungen den Weg eines Werts.
 
-Ausdrücke dürfen Eigenschaften weiterhin auch direkt über den Namen ansprechen (`ema20.Wert`); beide Wege führen zum selben Ergebnis. Wird ein Name nur im Ausdruck verwendet, zeigt die Zeichenfläche die Verwendung trotzdem als Datenverbindung an.
+Ausdrücke dürfen Eigenschaften weiterhin auch direkt über den Namen ansprechen (`ema20.Wert`); beide Wege führen zum selben Ergebnis. Bausteine und Verbinden bieten an einer Stelle nur Instanzen an, die dort verwendbar sind (Fachmodell req-fach-055): Im Zweig „falsch“ einer Bedingung steht ein Indikator, der erst im Zweig „wahr“ ermittelt wird, nicht zur Wahl. Steht eine solche Instanz trotzdem in einem Ausdruck, meldet die Konsistenzprüfung einen Fehler. Wird ein Name nur im Ausdruck verwendet, zeigt die Zeichenfläche die Verwendung trotzdem als Datenverbindung an. Sie gilt als Verbindung nach req-ablauf-003. Der vorgesehene Weg ist, das Objekt zuerst auf die Zeichenfläche zu ziehen und dann zu verbinden.
+
+Die Beschriftung einer Datenverbindung nennt die übergebene Eigenschaft oder Methode. Bei jeder Verwendung wählt der Anwender in der Eigenschaftenansicht die Eigenschaft oder Methode und, wo der Objekttyp es vorsieht, den Schalter „Aktualisieren“: Die Instanz ermittelt ihre Werte neu, bevor sie sie übergibt (Fachmodell req-fach-055).
 
 Offen für die Spezifikation: Darstellung der Ein- und Ausgänge, Bündelung vieler Ausgänge eines Objekts, Verhalten beim Umbenennen und Löschen eines verbundenen Objekts.
 
@@ -325,7 +339,7 @@ Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne F
 
 ### req-ui-016 -- Bedienerführung
 
-Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
+Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. Die Eigenschaftenansicht eines Objekts beschreibt jede Eigenschaft und Methode, die es liefert: was der Wert aussagt und wozu er dient, zum Beispiel beim EMA, was der gelieferte Wert ist und wofür man ihn in einer Strategie verwendet. Ein Ausgang zeigt den Namen der Eigenschaft, nicht nur ihren Datentyp wie „Zahl“. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. In der Oberfläche heißt er „Assistent“. Hinweise und Dialoge des Strategiedesigners, zum Beispiel „Keine Strategie geöffnet“ oder der Assistent, erscheinen in der Eigenschaftenansicht und nur dort, nicht zusätzlich auf der Zeichenfläche. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
 
 Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „Stop-Abstand“, „EMA 20“). Ein Objekt, ein Element und ein Strategieparameter haben genau einen Namen; eine getrennte Bezeichnung entfällt. Interne Kennungen bildet die Anwendung selbst und zeigt sie nicht.
 
@@ -333,9 +347,11 @@ Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „S
 
 Der Ablauf verläuft senkrecht von oben nach unten. Jedes Element hat seinen Eingang oben und seine Ausgänge unten; bei einer Bedingung liegen `wahr` und `falsch` unten nebeneinander. Die Anwendung ordnet die Elemente selbst an, sodass Linien sich möglichst nicht kreuzen; der Anwender kann sie verschieben.
 
-Objekte ohne Ablaufverbindung (Indikatoren, Trends und die Objekte der Anwendung, die auf der Zeichenfläche liegen können, nach Fachmodell req-fach-051) liegen nicht frei auf der Zeichenfläche, sondern geordnet in einem eigenen Bereich der Zeichenfläche neben dem Ablauf; ihre Datenverbindungen (req-ui-014) führen von dort zu den Elementen, die sie verwenden.
+Objekte ohne Ablaufverbindung (Indikatoren, Trends und die Objekte der Anwendung, die auf der Zeichenfläche liegen können, nach Fachmodell req-fach-051) liegen bei dem Element, das sie zuerst verwendet, und sind mit ihm verbunden (Fachmodell req-fach-055): bei senkrechtem Ablauf daneben, bei waagerechtem darüber oder darunter. Weitere Verwendungen zeigen ihre Datenverbindungen (req-ui-014), die sich ein- und ausblenden lassen. Einen eigenen Bereich der Zeichenfläche für Objekte gibt es nicht.
 
-Auch eine einfache Strategie bleibt auf einen Blick überschaubar: Zusammengehörige Schritte lassen sich zu einem benannten Abschnitt zusammenfassen und einklappen (req-ui-006), zum Beispiel „Einstieg“, „Order“, „Verwaltung“. Offen für den Prototyp: ob die Ausrichtung umschaltbar ist (waagerecht für breite Bildschirme).
+Auch eine einfache Strategie bleibt auf einen Blick überschaubar: Zusammengehörige Schritte lassen sich zu einem benannten Abschnitt zusammenfassen und einklappen (req-ui-006), zum Beispiel „Einstieg“, „Order“, „Verwaltung“. Die Ausrichtung lässt sich zwischen senkrecht und waagerecht umschalten.
+
+Offen, Diskussionspunkt des Auftraggebers: Löschen einer Verbindung direkt auf der Zeichenfläche, zum Beispiel Linie anklicken und mit der Entf-Taste löschen. Bisher geht das über die Eigenschaftenansicht.
 
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
 
@@ -352,7 +368,7 @@ Der Anwender wählt „Neue Strategie“. Es öffnet sich eine leere Zeichenflä
 
 ### req-ablauf-003 -- Objekte in einer Strategie verwenden
 
-Der Anwender zieht einen Objekttyp oder eine gespeicherte Vorlage aus der Elementbibliothek auf die Zeichenfläche. Es entsteht eine Instanz mit den Standardwerten des Objekttyps beziehungsweise der Vorlage. In der Eigenschaftenansicht gibt der Anwender der Instanz einen Namen (zum Beispiel `EMA21`), unter dem sie in Ausdrücken dieser Strategie angesprochen wird, und setzt ihre Parameter. Zwei Instanzen aus derselben Vorlage sind zwei Objekte der Strategie. Die Instanz wird mit der Strategie gespeichert. Auf Wunsch speichert der Anwender sie als neue Vorlage, die danach in der Elementbibliothek für andere Strategien zur Verfügung steht.
+Der Anwender zieht einen Objekttyp oder eine gespeicherte Vorlage aus der Elementbibliothek auf die Zeichenfläche und verbindet sie mit dem Element, das sie zuerst verwendet (Fachmodell req-fach-055). Erst dann ist sie verwendbar. Es entsteht eine Instanz mit den Standardwerten des Objekttyps beziehungsweise der Vorlage. In der Eigenschaftenansicht gibt der Anwender der Instanz einen Namen (zum Beispiel `EMA21`), unter dem sie in Ausdrücken dieser Strategie angesprochen wird, und setzt ihre Parameter. Enthält die Vorlage selbst Instanzen, zum Beispiel ein Trend Indikatoren oder ein Regelwerk Regeln, schlägt pipwerk Studio für jede davon einen Namen vor, der aus dem Namen der neuen Instanz und ihrem bisherigen Namen gebildet ist. Der Anwender kann ihn ändern. Die genaue Form des Vorschlags legt die Spezifikation fest. Zwei Instanzen aus derselben Vorlage sind zwei Objekte der Strategie. Die Instanz wird mit der Strategie gespeichert. Auf Wunsch speichert der Anwender sie als neue Vorlage, die danach in der Elementbibliothek für andere Strategien zur Verfügung steht.
 
 Die Objekte der Anwendung (Fachmodell req-fach-051) sind in Ausdrücken verfügbar; Order und Position bezeichnen in einer Regel die Order beziehungsweise Position, auf die die Regel angewendet wird, und im Ablauf die Order und Position der Verwaltung. Konto, Instrument, Kerze und Tick stehen zusätzlich in der Elementbibliothek und können wie andere Objekte als Instanz auf die Zeichenfläche gelegt werden, um ihre Eigenschaften zu zeigen und ihre Parameter zu setzen, zum Beispiel die Zeiteinheit einer Kerze. Eine Strategie kann mehrere Instanzen davon verwenden. Sie brauchen keine Ablaufverbindung, ebenso wenig wie Indikatoren und Trends; ihre Werte geben sie über Datenverbindungen weiter (req-ui-014).
 
@@ -373,7 +389,10 @@ Eine Strategie wird nach Rückfrage gelöscht. Eine Vorlage wird nach Rückfrage
 Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage (Regel, Regelwerk, Indikator, Trend) und auf Anforderung. Sie findet mindestens:
 
 - Auslöser ohne Verbindung in den Ablauf (Fehler)
-- Element des Ablaufs ohne Verbindung (Fehler). Für Objekte auf der Zeichenfläche (Indikatoren, Trends, Objekte der Anwendung) gilt das nicht, sie geben ihre Werte über Datenverbindungen oder Ausdrücke weiter.
+- Element des Ablaufs ohne Verbindung (Fehler)
+- Instanz eines Indikators, eines Trends oder eines Objekts der Anwendung ohne Verbindung zu dem Element, das sie zuerst verwendet (Fehler, req-ablauf-003, Fachmodell req-fach-055)
+- Name einer Instanz, der in der Strategie mehr als einmal vergeben ist (Fehler, Fachmodell req-fach-055)
+- Instanz in einem Ausdruck an einer Stelle, an der sie nicht verwendbar ist (Fehler, Fachmodell req-fach-055, req-ui-014)
 - Datenverbindung zwischen unverträglichen Datentypen (Fehler)
 - Eingang ohne Wert (Fehler), ausgenommen optionale Parameter (req-param-006) und Parameter, deren Wert erst bei der Anwendung übergeben wird
 - Fehlerhafter Ausdruck, zum Beispiel Schreibfehler, unbekannte Funktion oder unbekannte Eigenschaft (Fehler)
@@ -448,7 +467,7 @@ Die folgenden Punkte sind noch nicht entschieden:
 8.  Ob Pipwerk künftig Benutzerkonten benötigt. Falls Benutzerkonten
     eingeführt werden, ist gesondert zu entscheiden, ob die
     Oberflächensprache pro Benutzer gespeichert wird.
-9.  Welche Objekte über EMA, ATR, ZigZag und Markttechnik hinaus (Fachmodell req-fach-054) als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
+9.  Welche Objekte über EMA, ATR und ZigZag hinaus (Fachmodell req-fach-054) als Grundausstattung mitgeliefert werden. Entscheidung, wenn Erfahrung vorliegt, was gebraucht wird.
 10. Anmeldung und Berechtigung für die Web-API (Gesamtsystem req-system-011). Im Vorhaben `strategiedesign` ohne Anmeldung, pipwerk Studio ist dort nur in einem vom Betreiber kontrollierten Netz erreichbar; Betreiber und Anwender sind dort dieselbe Person.
 
 ## 10. Änderungsnachweis
@@ -500,3 +519,16 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-19 | Auswertung ohne Auslöser wird mit den Anforderungen an das Handelssystem geklärt und darf durch den Aufbau nicht ausgeschlossen werden. Festlegung des Auftraggebers im Chat am 2026-10-19. |
 | 2026-10-20 | req-fach-015: Auslöser „Start von Hand“, jede Auswertung beginnt an einem Auslöser; req-ablauf-007: Hinweis bei einer Strategie ohne Auslöser. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkt 17). |
 | 2026-10-20 | req-ablauf-007: Prüfung der Bezeichnung fester Instrumente. Entscheidung des Auftraggebers im Chat am 2026-10-20 (Abstimmung der Spezifikation `strategiedesign`, Punkte 16 und 19). |
+| 2026-10-21 | Bewegung und Korrektur ohne Eigenschaft `Phase` (Indikator Markttechnik). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | Indikator Markttechnik zurückgestellt (Fachmodell req-fach-054). Entscheidung des Auftraggebers im Chat am 2026-10-21. |
+| 2026-10-21 | req-fach-015: Auslöser „Start von Hand“ heißt „Manuell“ und steht nur im Hauptablauf, nicht in der Verwaltung einer Order. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
+| 2026-10-21 | req-ui-003: Element „Parameter setzen“ entfällt (Fachmodell req-fach-047). Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
+| 2026-10-21 | req-fach-015: Liste der Auslösertypen an die Benennung „Manuell“ angeglichen. Vom Projektleiter nach dem Hinweis des Softwarearchitekten (`backtest`, Spezifikation). |
+| 2026-10-22 | req-ui-017: Objekte liegen beim Element ihrer ersten Verwendung statt in einem eigenen Bereich, Ausrichtung umschaltbar. req-ui-014: Beschriftung der Datenverbindung, Wahl von Eigenschaft oder Methode, Schalter „Aktualisieren“. req-ablauf-003: Instanz erst mit Verbindung zum ersten verwendenden Element verwendbar. req-ui-018 neu: Gruppen der Elementbibliothek, Namen offen. req-ui-012: bleibt vorerst, Darstellung von Regeln offen mit Vorschlag. Festlegung des Auftraggebers im Chat am 2026-10-22 (Abnahme `strategiedesign/wp02`, Versuch 2). |
+| 2026-10-22 | req-ablauf-007: Instanz ohne Verbindung zum Element ihrer ersten Verwendung und doppelter Name einer Instanz sind Fehler, Ausnahme für Objekte auf der Zeichenfläche entfällt. Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 13, B1 und H6), Folge der Festlegungen vom selben Tag. |
+| 2026-10-23 | req-ui-014: Verwendung nur im Ausdruck gilt als Verbindung, vorgesehener Weg ist das Ziehen auf die Zeichenfläche. req-ablauf-003: Namensvorschlag für Instanzen, die in einer eingefügten Vorlage enthalten sind. Festlegung des Auftraggebers im Chat am 2026-10-23 (Hinweise N1 und N3 aus `development/strategiedesign/reviews/requirements-14.md`). |
+| 2026-10-23 | req-ui-016: Der geführte Aufbau heißt in der Oberfläche „Assistent“. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-02). |
+| 2026-10-23 | req-ui-016: Hinweise und Dialoge des Strategiedesigners nur in der Eigenschaftenansicht. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
+| 2026-10-23 | req-ui-016: Beschreibung der gelieferten Eigenschaften und Methoden in der Eigenschaftenansicht eines Objekts, Ausgang mit Namen der Eigenschaft. req-ui-017: Löschen einer Verbindung auf der Zeichenfläche als offener Diskussionspunkt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
+| 2026-10-23 | req-ui-014: Nur an der Stelle verwendbare Instanzen zur Wahl, sonst Fehler der Konsistenzprüfung. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 24). |
+| 2026-10-23 | req-ablauf-007: Instanz an einer Stelle, an der sie nicht verwendbar ist. Folge der Festlegung zu Punkt 24 der Abstimmung `specification-3.html`, Hinweis H1 in `development/strategiedesign/reviews/requirements-19.md`. |

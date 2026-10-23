@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>backtest Arbeitspaketplan Strategietester</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.q{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+.q .card{gap:14px}
+.q .card p, .q .card li{font-size:25px;line-height:1.38}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:27px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben backtest · Phase 3</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>pipwerk replay: Arbeitspaketplan</h1>
+<p style="font-size:38px;width:1500px">Der Softwarearchitekt hat die bestätigte Spezifikation in vier Arbeitspakete aufgeteilt. Die QA hat den Plan im zweiten Durchlauf ohne Befund bestanden. Jedes Paket endet mit einer Abnahme, in der du selbst prüfst, was es liefert. Mit deiner Bestätigung beginnt die Programmierung.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">21. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/backtest/plan.md</code>, Prüfbericht <code>development/backtest/reviews/plan-2.md</code></p>
+<p class="num">1 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Vier Pakete und ihre Reihenfolge</h2>
+<table>
+<tr><th style="width:120px">Paket</th><th style="width:560px">Inhalt</th><th>beginnt</th></tr>
+<tr><td><code>wp01</code></td><td>Auslöser „Manuell“ in Bibliothek und pipwerk Studio</td><td>wenn <code>strategiedesign/wp02</code> übernommen ist, weil es auf dessen Strategieformat und Oberfläche aufsetzt</td></tr>
+<tr><td><code>wp02</code></td><td>Datenbestand und Testkonten</td><td>sofort nach deiner Bestätigung, es braucht nichts aus <code>strategiedesign</code></td></tr>
+<tr><td><code>wp03</code></td><td>Backtest</td><td>nach <code>wp01</code> und <code>wp02</code></td></tr>
+<tr><td><code>wp04</code></td><td>Einzelschritt-Test</td><td>nach <code>wp03</code> und <code>strategiedesign/wp03</code>, weil beide dieselben Teile der Zeichenfläche umbauen</td></tr>
+</table>
+<p class="note">Die Pakete folgen dem, was du selbst prüfen kannst: zuerst Kursdaten und Testkonten, dann der Backtest, zuletzt der Einzelschritt-Test.</p>
+<p class="num">2 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2><code>wp01</code> · Auslöser „Manuell“</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><p>pipwerk Studio und die Bibliothek setzen deine Entscheidungen vom 21. Oktober um: Der Auslöser heißt „Manuell“ und ist in der Verwaltung einer Order ein Fehler. „Parameter setzen“ entfällt.</p><p>Der ZigZag erhält die Eigenschaften letztes und vorletztes Hoch und Tief. Berechnet werden sie erst in <code>wp03</code>.</p></div>
+<div class="card col"><h3>Du prüfst in pipwerk Studio</h3><ul><li>Strategie mit „Manuell“ anlegen und „letztes Hoch“ eines ZigZag in einer Bedingung verwenden, ohne Fehler</li><li>„Manuell“ in der Verwaltung einer Order ist ein Fehler</li><li>kein Element „Parameter setzen“ mehr</li><li>ältere Strategien zeigen den Auslöser als „Manuell“</li><li><code>str-01</code> und <code>str-03</code> öffnen sich ohne Fehler</li></ul></div>
+</div>
+<p class="num">3 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2><code>wp02</code> · Datenbestand und Testkonten</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><p>pipwerk replay läuft als eigene Komponente mit eigener Datenbank. Kopfzeile, Sprachwahl und Erscheinungsbild wie im Prototyp.</p><p>Ansicht „Datenbestand“ mit Import und Beschaffung von Hand, Ansicht „Testkonten“. Dazu das Programm <code>pipwerk-fetch-mt5</code> für den Rechner mit MetaTrader 5.</p></div>
+<div class="card col"><h3>Du prüfst</h3><ul><li>CSV-Export aus MetaTrader 5 importieren, mit Zeitzone, Zeitraum und Lücken sehen</li><li>fehlerhafte Datei nennt abgelehnte Zeilen mit Grund</li><li><code>pipwerk-fetch-mt5</code> nach Anleitung einrichten und Kerzen, Ticks und Angaben zum Instrument holen</li><li>Testkonten anlegen, ändern, löschen; Standard-Testkonto kommt nach Neustart wieder</li><li>alle Fenstergrößen, Deutsch und Englisch</li></ul></div>
+</div>
+<p class="num">4 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2><code>wp03</code> · Backtest</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><p>Ausführung der Strategie in der Bibliothek mit EMA, ATR und ZigZag, Abwicklung wie ein Broker, Testlauf vorbereiten, Kursdaten beim Start, Backtest mit Ergebnis, gespeicherte Backtests mit Vergleich.</p><p>Am Ende laufen <code>str-01</code> und <code>str-03</code> im Backtest über den vorbelegten Zeitraum, ohne die Strategie zu bearbeiten.</p></div>
+<div class="card col"><h3>Du prüfst</h3><ul><li><code>str-03</code> und <code>str-01</code> im Backtest, fehlende Kursdaten werden beim Start geholt</li><li>Ergebnis mit Kennzahlen, Kontokurve, Trades, abgelehnten Orders, Trade im Chart</li><li>„Manuell“ zum Beginn und zu einem eingegebenen Zeitpunkt</li><li>Start wird verhindert bei fehlenden Daten, Fehlern oder Parameter ohne Wert</li><li>zwei Backtests desselben Testlaufs ergeben dieselben Trades</li><li>Speichern, Löschen, Vergleichen, Strategie herunterladen</li></ul></div>
+</div>
+<p class="num">5 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2><code>wp04</code> · Einzelschritt-Test</h2>
+<div class="row">
+<div class="card col"><h3>Inhalt</h3><p>Die Zeichenfläche von pipwerk Studio wird zum gemeinsamen Baustein und erscheint in pipwerk replay nur lesend. Dazu der Einzelschritt-Test mit allen Befehlen und die getestete Fassung gespeicherter Backtests.</p></div>
+<div class="card col"><h3>Du prüfst</h3><ul><li><code>str-03</code> bis zur ersten Position, mit Werten und Unterschied zum vorigen Schritt</li><li><code>str-01</code> bis zu einer abgelehnten Stop-Order, Testlauf nennt der Entwicklungsleiter</li><li>Start, Einzelschritt, nächste handelnde Stelle, Haltepunkte, Zum Testbeginn</li><li>„Manuell auslösen“ jederzeit</li><li>Einzelschritt-Test und Backtest ergeben dieselben Trades</li><li>pipwerk Studio arbeitet wie vorher</li></ul></div>
+</div>
+<p class="num">6 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Was du beisteuerst</h2>
+<div class="row">
+<div class="card col"><h3>Für <code>wp02</code></h3><p>MetaTrader 5 auf einem Rechner, den die Testumgebung über das Netz erreicht, zum Beispiel deine Windows-VM. Darauf richtest du in der Abnahme <code>pipwerk-fetch-mt5</code> nach der Anwenderdokumentation ein.</p></div>
+<div class="card col"><h3>Für <code>wp03</code></h3><p>Referenzwerte aus MetaTrader 5: eine Kursreihe mit den Werten von EMA, ATR und ZigZag je Kerze, exportiert aus deiner Installation. Damit wird geprüft, dass pipwerk genauso rechnet. Kein Entwickler und kein Tester hat MetaTrader 5.</p><p>Welche Reihe und welche Einstellungen, legt der Entwicklungsleiter fest. Die Anfrage kommt über mich, die übrige Arbeit läuft bis dahin weiter.</p></div>
+</div>
+<p class="num">7 / 8</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Nächster Schritt</h2>
+<div class="rule">Mit deiner Bestätigung ist Phase 3 abgeschlossen. Ich beauftrage den Entwicklungsleiter sofort mit <code>wp02</code>. <code>wp01</code> folgt, sobald <code>strategiedesign/wp02</code> übernommen ist, die übrigen Pakete jeweils nach ihren Abhängigkeiten.</div>
+<p class="note">Bestätigungsvermerk: bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.</p>
+<p class="num">8 / 8</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>

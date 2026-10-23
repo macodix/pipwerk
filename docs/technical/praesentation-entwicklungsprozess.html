@@ -60,7 +60,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p class="label" style="color:var(--coveraccent)!important">Pipwerk · Entwicklungsverfahren</p>
 <div class="col" style="flex:0;gap:32px">
 <h1>Entwicklungsprozess</h1>
-<p style="font-size:38px;width:1450px">Sechs Phasen von der Anforderung bis zur Übernahme in den Hauptstand. Rollen, Eingaben, Ergebnisse, Übergaben und Abbruchbedingungen wie im Chat abgestimmt.</p>
+<p style="font-size:38px;width:1450px">Sechs Phasen von der Anforderung bis zur Übernahme in <code>main</code>. Rollen, Eingaben, Ergebnisse, Übergaben und Abbruchbedingungen wie im Chat abgestimmt.</p>
 </div>
 <p style="font-size:26px;color:var(--coveraccent)">12. Oktober 2026 · Projektleiter an Martin · mit technischer Ausführung</p>
 <p class="num">1 / 14</p></section></div>
@@ -76,7 +76,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="row">
 <div class="card col"><h3>Auftraggeber</h3><p>Beschreibt Arbeitsabläufe, Objekte und Regeln. Bestätigt Präsentationen formlos, erprobt und nimmt ab.</p></div>
 <div class="card col"><h3>Projektleiter</h3><p>Übersetzt in beide Richtungen und erstellt Präsentationen. Prüft nichts und entscheidet nichts Technisches.</p></div>
-<div class="card col"><h3>Softwarearchitekt</h3><p>Erstellt Spezifikation und Arbeitspaketplan, vergibt Aufträge an Entwickler, führt in den Hauptstand über.</p></div>
+<div class="card col"><h3>Softwarearchitekt</h3><p>Erstellt Spezifikation und Arbeitspaketplan, vergibt Aufträge an Entwickler, übernimmt abgenommene Pakete in <code>main</code>.</p></div>
 <div class="card col"><h3>Team</h3><p>Entwickler setzen um. Tester prüfen technisch. QA prüft aus Kundensicht gegen die Anforderungen.</p></div>
 </div>
 <p class="note">Jede Rolle spricht nur mit ihren Nachbarn in dieser Kette. Das Team hat keinen direkten Kontakt zum Auftraggeber.</p>
@@ -101,7 +101,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="step"><b>Phase 3</b><span>Planung</span><i>Arbeitspaketplan</i></div>
 <div class="step"><b>Phase 4</b><span>Umsetzung</span><i>je Arbeitspaket: Aufträge, Code, Tests, QA</i></div>
 <div class="step"><b>Phase 5</b><span>Abnahme</span><i>Erprobung durch den Auftraggeber</i></div>
-<div class="step"><b>Phase 6</b><span>Integration</span><i>Übernahme in den Hauptstand</i></div>
+<div class="step"><b>Phase 6</b><span>Integration</span><i>Übernahme in <code>main</code></i></div>
 </div>
 <div class="row">
 <div class="card col"><h3>Rückwege</h3><ul><li>Fehlende oder geänderte Anforderung aus jeder Phase: zurück in Phase 1</li><li>Lücke in der Spezifikation: zurück in Phase 2</li><li>Mangel in der Abnahme: zurück in Phase 4</li><li>Änderung am Plan: wieder durch Phase 3</li></ul></div>
@@ -177,9 +177,9 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <li>Abbruch: Nach drei erfolglosen Versuchen gilt der Mangel als nicht lösbar. Der Projektleiter legt vor, was geht und was nicht. Der Auftraggeber entscheidet.</li>
 <li>Ergebnis: abgenommenes Arbeitspaket, Abnahme im Abnahmebericht vermerkt</li></ul></div>
 <div class="card col"><h3>Phase 6 · Integration</h3><ul>
-<li>Softwarearchitekt: übernimmt genau den abgenommenen Commit mit einem Merge-Commit in den Hauptstand.</li>
+<li>Softwarearchitekt: übernimmt genau den abgenommenen Commit mit einem Merge-Commit in <code>main</code>.</li>
 <li>Er beendet die Testumgebung, entfernt Arbeitsbereiche und Branches des Pakets und trägt das Paket im Arbeitspaketplan als abgeschlossen ein.</li>
-<li>Ergebnis: Arbeitspaket im Hauptstand, keine Reste aus der Umsetzung</li>
+<li>Ergebnis: Arbeitspaket in <code>main</code>, keine Reste aus der Umsetzung</li>
 <li>Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.</li></ul></div>
 </div>
 <p class="num">10 / 14</p></section></div>
@@ -217,7 +217,7 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <tr><th style="width:360px">Thema</th><th>Festlegung</th></tr>
 <tr><td>Start des Softwarearchitekten</td><td>Das Startprogramm <code>agentrun</code> erkennt eine neue Meldung an den Softwarearchitekten und startet je Arbeitspaket höchstens eine Sitzung mit dieser Meldung. Es überwacht sie mit dem Herzschlag, beendet sie nach seiner Antwortmeldung und meldet Absturz oder Stillstand dem Projektleiter.</td></tr>
 <tr><td>Start von Entwickler, Tester, QA</td><td>Der Softwarearchitekt startet sie mit dem Pfad ihres Übergabedokuments. Entwickler als Unteragenten seiner Sitzung. Tester und QA über ein Startskript je Rolle, dessen Programm einstellbar ist (Claude Code oder ein anderes Sprachmodell wie Codex). Keine Teamfunktion mit direkten Nachrichten.</td></tr>
-<tr><td>Weg der Dokumente</td><td>Alles im Repository, Dokumente in der festen Ablage unter <code>development/</code> (Folie 11). Zwischen Projektleiter und Softwarearchitekt auf <code>main</code>, angestoßen durch kurze Meldungen mit Aufgabe und Pfad in <code>development/messages/architect/</code> und <code>development/messages/projectlead/</code>. Innerhalb des Teams auf dem Arbeitszweig des Pakets, mit der Übernahme in den Hauptstand auf <code>main</code>.</td></tr>
+<tr><td>Weg der Dokumente</td><td>Alles im Repository, Dokumente in der festen Ablage unter <code>development/</code> (Folie 11). Zwischen Projektleiter und Softwarearchitekt auf <code>main</code>, angestoßen durch kurze Meldungen mit Aufgabe und Pfad in <code>development/messages/architect/</code> und <code>development/messages/projectlead/</code>. Innerhalb des Teams auf dem Arbeitszweig des Pakets, mit der Übernahme in <code>main</code>.</td></tr>
 <tr><td>Wegfall</td><td>Auftragsverwaltung <code>ordermgr</code> mit Statusmodell, Hilfswerkzeug <code>pipwerk-dev</code> und <code>work-orders/</code> entfallen. Arbeitsverzeichnisse legen die Rollen mit Git selbst an.</td></tr>
 <tr><td>Skripte je Komponente</td><td>Im Verzeichnis der Komponente: Prüfskript vom Tester, Testumgebungsskript vom Entwickler. Ports und Datenbank als Parameter oder Konfiguration. Kein übergreifendes Skript.</td></tr>
 </table>

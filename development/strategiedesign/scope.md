@@ -14,7 +14,6 @@ Anforderungsdokumente:
 Fachmodell und Strategiebeschreibungen des Auftraggebers, die für dieses Vorhaben gelten und von der QA ebenfalls auf Widersprüche, Lücken und mehrdeutige Begriffe geprüft werden:
 
 - [Fachmodell des Trading-Systems](../../docs/design/domain/fachmodell.md)
-- [Indikator Markttechnik](../../docs/design/domain/indikator-markttechnik.md)
 - Testfall [Scalping Punkt 2 Ausbruch – einfache Strategie](../../docs/design/strategies/str-01-fachlich-scalping-punkt-2-ausbruch-einfach.md) (`str-01`)
 - Testfall [EMA-Trendfolge](../../docs/design/strategies/str-03-fachlich-ema-trendfolge.md) (`str-03`)
 
@@ -32,10 +31,10 @@ Aus der Zeit vor dem Entwicklungsverfahren liegen ein Pflichtenheft und Arbeitsp
 Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Phase 2:
 
 - Fachmodell: OrderBuilder, weitere Funktionen der ersten Auswahl und deutsche Funktionsnamen (req-fach-036), Objekt Kurs für Strategien ohne Kerzen (req-fach-051), externes Ereignis als Auslöser (req-fach-053), weitere mitgelieferte Indikatoren und Expert Advisors (req-fach-054).
-- Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR, ZigZag und Markttechnik hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
+- Strategiedesigner: Grundausstattung an mitgelieferten Objekten über EMA, ATR und ZigZag hinaus, Anmeldung für die Web-API, Regeln als eigene Elemente (req-ui-012 vorläufig).
 - Fachmodell: weitere Bezeichnungen fester Instrumente außer nach ISO (req-fach-053).
 - Fachmodell, die Ausführung betreffend: wann `Start von Hand` in einer Verwaltung und in einem Testlauf eintritt (req-fach-053).
-- Aus den Nachprüfungen, alle die Ausführung betreffend: Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Maßnahme nach der Prüfung mit dem Ausführungspreis (req-fach-021), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
+- Aus den Nachprüfungen, alle die Ausführung betreffend: Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
 
 ## Stand
 
@@ -47,4 +46,12 @@ Phase 4, `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1, [specificati
 
 2026-10-19: Prüfung der geänderten Stellen [requirements-9.md](reviews/requirements-9.md) nicht bestanden (5 blockierende Befunde, alle Folge einer Festlegung). Vom Projektleiter bearbeitet ([requirements-9-response.md](reviews/requirements-9-response.md)), Nachprüfung mit `check`. Durchläufe 10 und 11 bestanden, Hinweise bearbeitet ([requirements-11-response.md](reviews/requirements-11-response.md)). Phase 2 mit `specify`: Prototyp, danach Spezifikation und neuer Plan.
 
-2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, Durchbruch nur auf Schlusskurs. Parameter und Eigenschaften unverändert, keine Auswirkung auf dieses Vorhaben.
+2026-10-19: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Bestimmung von Trend und Phase bestätigt, Durchbruch nur auf Schlusskurs.
+
+2026-10-21: `indikator-markttechnik.md` geändert (Vorhaben `backtest`): Eigenschaften `Trend intakt` und `Phase` gestrichen. Betrifft die Typbeschreibung des Indikators (Spezifikation 3.x, `wp01`) und `str-01` (Prüfung der Bewegung gestrichen). Vom Softwarearchitekten in der laufenden Spezifikation nachzuziehen.
+
+2026-10-21: Indikator `Markttechnik` zurückgestellt und nicht mehr mitgeliefert (Fachmodell req-fach-054). `str-01` verwendet stattdessen den `ZigZag` mit letztem und vorletztem endgültigem Hoch und Tief. Betrifft Typbeschreibungen der Bibliothek (`wp01`), Spezifikation und den Nachweis mit `str-01`. Vom Softwarearchitekten nachzuziehen.
+
+2026-10-22: `wp02` nicht abgenommen ([Abnahmebericht](wp02/acceptance/2.md), Mängel M1 und M2). Neue und geänderte Anforderungen: req-fach-055 (`fachmodell.md`); req-ui-012, req-ui-014, req-ui-017, req-ui-018, req-ablauf-003 (`anforderungen-strategiedesigner.md`). Entscheidung des Auftraggebers: zuerst diese Änderungen, danach Fortsetzung der Abnahme. Rückweg in Phase 1 mit `check`, danach Phase 2 mit Prototyp der geänderten Darstellung, Spezifikation und Plan.
+
+2026-10-23: Spezifikation (Prüfung [specification-14.md](reviews/specification-14.md)) und Plan (Prüfung [plan-4.md](reviews/plan-4.md)) an req-fach-055 und req-ablauf-007 angepasst. Geänderte Abnahmekriterien vom Auftraggeber im Chat bestätigt. `wp02` mit `fix` auf dem Arbeitszweig `strategiedesign/wp02` weiter, Grundlage Abnahmebericht [2.md](wp02/acceptance/2.md).
