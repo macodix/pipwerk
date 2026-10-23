@@ -269,7 +269,7 @@ test.describe('canvas', () => {
 });
 
 test.describe('assistant, findings, rules', () => {
-  test('the guided setup creates trigger, indicators, condition and order and can be left at any time', async ({ page }) => {
+  test('the assistant creates trigger, indicators, condition and order and can be left at any time', async ({ page }) => {
     await openApp(page);
     await page.getByTestId('menu-new').click();
     await expect(page.getByTestId('wz-step-1')).toBeVisible();

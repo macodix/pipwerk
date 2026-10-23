@@ -103,7 +103,13 @@ test.describe('notebook 1366 x 768', () => {
     await shot(page, 'formeleditor-fehler-1366x768.png', true);
   });
 
-  test('guided setup', async ({ page }) => {
+  test('after "New strategy"', async ({ page }) => {
+    await openApp(page, { width: 1366, height: 768 });
+    await page.getByTestId('menu-new').click();
+    await shot(page, 'neue-strategie-1366x768.png');
+  });
+
+  test('assistant', async ({ page }) => {
     await openApp(page, { width: 1366, height: 768 });
     await page.getByTestId('menu-new').click();
     await page.getByTestId('wz-name').fill('Meine erste Strategie');
@@ -114,7 +120,15 @@ test.describe('notebook 1366 x 768', () => {
     await page.getByTestId('wz-next').click();
     await page.getByTestId('wz-a').selectOption({ index: 1 });
     await page.getByTestId('wz-b').selectOption({ index: 2 });
-    await shot(page, 'gefuehrter-aufbau-1366x768.png');
+    await shot(page, 'assistent-1366x768.png');
+  });
+
+  test('element library open while the assistant runs, 390 x 844', async ({ page }) => {
+    await openApp(page, { width: 390, height: 844 });
+    await page.getByTestId('menu-toggle').click();
+    await page.getByTestId('cmenu-new').click();
+    await page.getByTestId('wz-library').click();
+    await shot(page, 'bibliothek-assistent-390x844.png');
   });
 
   test('finding with hint how to fix it', async ({ page }) => {

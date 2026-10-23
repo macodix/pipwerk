@@ -26,7 +26,7 @@ function Header() {
     { id: 'settings', label: L('Einstellungen', 'Settings'), icon: 'gear', run: () => setState({ dialog: { k: 'settings' }, menuOpen: false }) },
   ];
   const tips: Record<string, string> = {
-    new: L('Legt eine neue, leere Strategie an. Ein Assistent führt Sie durch den Aufbau.', 'Creates a new empty strategy. An assistant guides you through the setup.'),
+    new: L('Legt eine neue, leere Strategie an. Der Assistent hilft beim Anlegen von Auslöser, Indikatoren, Bedingung und Order.', 'Creates a new empty strategy. The assistant helps you add trigger, indicators, condition and order.'),
     open: L('Zeigt die gespeicherten Strategien zum Öffnen.', 'Shows the saved strategies to open.'),
     save: L('Speichert die Strategie und prüft sie. Speichern geht immer, auch bei Befunden.', 'Saves the strategy and checks it. Saving always works, even with findings.'),
     check: L('Sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.', 'Looks for problems such as missing connections or empty required entries.'),

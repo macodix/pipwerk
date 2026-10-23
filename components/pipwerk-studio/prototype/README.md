@@ -1,6 +1,6 @@
 # Prototyp pipwerk Studio
 
-Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
+Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). `order-04.md` (Elementbibliothek nach „Neue Strategie“ und Name „Assistent“, Einwände des Auftraggebers vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
 
 ## Bau und Start
 
@@ -34,6 +34,7 @@ Die Tests öffnen die gebaute Datei über `file://`, also erst `npm run build`. 
 | `names.spec.ts` | Auftrag 03: Trend-Vorlage mit zwei Indikatoren mehrfach einfügen (vorgeschlagene Namen, angehängte Zahl, einen Namen ändern, die umgebende Instanz umbenennen), Regelwerk mit zwei Regeln, Englisch, enthaltene Instanzen und Regeln in Bausteinen und Formeleditor, „Name doppelt vergeben“ in enthaltenen Instanzen und Regelwerken und für einen Parameter einer Regel, Instanz nur im Ausdruck |
 | `layout.spec.ts` | sechs Fenstergrößen mit geöffneter „EMA-Trendfolge“ |
 | `features.spec.ts` | Bibliothek mit den Gruppen, Erklärungen, Namen, Parameter, Zeichenfläche mit Ein- und Ausblenden weiterer Verwendungen, Assistent, Befunde, Regeln, Vorlagen, Öffnen und Speichern, Sprache, Einstellungen |
+| `assistant.spec.ts` | Auftrag 04: in allen sechs Fenstergrößen nach „Neue Strategie“ die Elementbibliothek über jeden Weg öffnen, bei laufendem Assistenten und nach seinem Verlassen, ein Klick fügt ein Element ein. Der gesamte sichtbare Text, die Beschriftungen für Bildschirmleser und die Erklärungen in Deutsch und Englisch nach „Neue Strategie“ und in jedem Schritt: „geführt“, „Aufbau“ und „guided“ kommen nicht vor, „Assistent“ beziehungsweise „Assistant“ kommt vor. Der Quelltext unter `src/` hat außerhalb von Kommentaren keinen solchen Text |
 | `screenshots.spec.ts` | Bildschirmbilder |
 
 Die Aufbautests geben keinen Ausdruck als Text ein. Der Vergleich mit dem Testfall nimmt die Strategie, die im Browser gespeichert wurde, und den mitgelieferten Testfall, ersetzt die internen Kennungen durch Namen und vergleicht Parameter, Elemente, Belegungen, Ausdrücke, Regeln und Verbindungen. Die Lage der Instanzen und das Element der ersten Verwendung gehören nicht zum Vergleich.
@@ -67,7 +68,7 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 | `uses.ts` | Verwendungen von Objekten: wer verwendet welchen Wert, Element der ersten Verwendung, Reihenfolge im Ablauf, „jeder Weg läuft über die Stelle der ersten Verwendung“ |
 | `scene.ts`, `layout.ts` | Anordnung: Rangfolge, Reihenfolge nach Schwerpunkt, Rahmen, Abschnitte, Instanzen am Element ihrer ersten Verwendung, Datenverbindungen |
 | `Canvas.tsx` | Zeichenfläche mit Ziehen, Verbinden, Zoom, Einpassen |
-| `Library.tsx`, `Properties.tsx`, `fields.tsx`, `OwnEditor.tsx`, `TemplateView.tsx`, `Wizard.tsx` | Elementbibliothek, Eigenschaftenansicht, Belegung, eigene Objekte, Vorlagenansicht, geführter Aufbau |
+| `Library.tsx`, `Properties.tsx`, `fields.tsx`, `OwnEditor.tsx`, `TemplateView.tsx`, `Wizard.tsx` | Elementbibliothek, Eigenschaftenansicht, Belegung, eigene Objekte, Vorlagenansicht, Assistent |
 | `ExprEditor.tsx` | Bausteine und Formeleditor |
 | `store.ts`, `findings.ts`, `samples.ts`, `factory.ts` | Zustand und Aktionen, Prüfung, Strategien zum Start, Anlegen von Elementen |
 | `names.ts` | Namensraum der Strategie: alle Namen sammeln, doppelte finden, enthaltene Instanzen und Regeln für Ausdrücke bereitstellen, Namen beim Einfügen einer Vorlage vorschlagen |
@@ -140,6 +141,22 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 ### Verwendung nur im Ausdruck (Punkt 3)
 
 Der Prototyp setzte das schon um, es war nichts anzupassen. Eine Instanz, die nur im Ausdruck verwendet wird (zum Beispiel im Formeleditor eingetippt), hat kein Element, das der Anwender verbunden hat. Sie liegt dann beim ersten Element in der Reihenfolge des Ablaufs, das sie verwendet (`placements` in `src/uses.ts`), auch wenn nur ein späteres Element sie verwendet. „Instanz ohne Verbindung“ meldet die Prüfung nur, wenn gar kein Element sie verwendet. Der Test in `names.spec.ts` belegt es mit einer freien Instanz, die erst der zweiten Bedingung, dann auch der ersten im Ausdruck genannt wird.
+
+## Entscheidungen zu Auftrag 04
+
+### Elementbibliothek nach „Neue Strategie“ (Punkt 1)
+
+- Die Beschriftung „Elementbibliothek zeigen“ gab es im Quelltext nicht. Im Ausgangscommit erreichte der Anwender die Bibliothek nach „Neue Strategie“ nur über den Reiter „Bibliothek“ (Leiste unten bis 699 Pixel Breite, Reiter über der Seitenleiste von 700 bis 1099 Pixel); ab 1100 Pixel steht sie dauerhaft neben der Fläche. Diese Reiter und der Klick auf ein Element funktionierten in allen sechs Größen (Test `assistant.spec.ts`). Eine Schaltfläche ohne Funktion ließ sich nicht nachstellen.
+- Gefunden wurde der Mangel dahinter: Der Assistent und der Hinweis der leeren Zeichenfläche (nach Verlassen des Assistenten) nannten die Elementbibliothek, boten aber keine Schaltfläche dorthin. Bis 1099 Pixel, wo die Bibliothek verdeckt ist, muss der Anwender den Reiter selbst finden.
+- Behebung: In diesen Größen zeigen der Assistent (oben neben „Ohne Assistent weiterarbeiten“, `wz-library`) und die leere Zeichenfläche (`empty-library`) die Schaltfläche „Elementbibliothek zeigen“. Sie öffnet die Bibliothek; der Assistent bleibt erhalten und ist über den Reiter „Eigenschaften“ wieder erreichbar. Ab 1100 Pixel ist die Bibliothek immer sichtbar, die Schaltfläche entfällt.
+
+### Name „Assistent“ (Punkt 2, req-ui-016)
+
+„Geführter Aufbau“ und gleichbedeutende Wendungen sind aus allen Texten entfernt: Erklärung des Menüpunkts „Neue Strategie“, Hinweis der leeren Eigenschaftenansicht, Hinweis der Zeichenfläche ohne Strategie, Hinweis der leeren Zeichenfläche, Meldung am Ende („Der Assistent ist fertig …“). Das Bildschirmbild heißt `assistent-1366x768.png`.
+
+### Übrige Schaltflächen (Punkt 3)
+
+Alle Schaltflächen nach „Neue Strategie“, nach Verlassen des Assistenten und in seinen Schritten 1 bis 4 wurden in 390 × 844 durchgeklickt (Schritt 5 und die übrigen Größen nicht Schaltfläche für Schaltfläche): Keine war ohne Funktion (die Statusanzeige der Strategie und der gerade gewählte Reiter ändern nichts, weil sie schon im gezeigten Zustand sind). Die übrigen Größen deckt `assistant.spec.ts` für Bibliothek und Assistent ab.
 
 ## Zuordnung zu den Mängeln der Abnahme
 

@@ -120,8 +120,9 @@ export function TipLayer() {
 }
 
 export function Btn({
-  children, onClick, kind = 'default', icon, disabled, title, testid, small, type = 'button', tip,
+  children, onClick, kind = 'default', icon, disabled, title, testid, small, type = 'button', tip, className,
 }: {
+  className?: string;
   children?: ReactNode;
   onClick?: () => void;
   kind?: 'default' | 'primary' | 'ghost' | 'danger' | 'quiet';
@@ -136,7 +137,7 @@ export function Btn({
   return (
     <button
       type={type}
-      className={`btn btn-${kind}${small ? ' btn-sm' : ''}${!children ? ' btn-icon' : ''}`}
+      className={`btn btn-${kind}${small ? ' btn-sm' : ''}${!children ? ' btn-icon' : ''}${className ? ` ${className}` : ''}`}
       onClick={onClick}
       disabled={disabled}
       aria-label={title}

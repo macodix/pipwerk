@@ -359,7 +359,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
           <div className="empty-card">
             <Icon name="chart" size={30} />
             <h2>{L('Keine Strategie geöffnet', 'No strategy open')}</h2>
-            <p>{L('Nächster Schritt: Legen Sie eine neue Strategie an – ein Assistent führt Sie durch den Aufbau – oder öffnen Sie eine vorhandene.', 'Next step: create a new strategy – an assistant guides you through the setup – or open an existing one.')}</p>
+            <p>{L('Nächster Schritt: Legen Sie eine neue Strategie an – der Assistent startet dann von selbst – oder öffnen Sie eine vorhandene.', 'Next step: create a new strategy – the assistant then starts on its own – or open an existing one.')}</p>
             <div className="btn-row">
               <Btn kind="primary" icon="plus" testid="empty-new" onClick={newStrategyAction}>{L('Neue Strategie', 'New strategy')}</Btn>
               <Btn icon="folder" testid="empty-open" onClick={() => setState({ dialog: { k: 'open' } })}>{L('Öffnen', 'Open')}</Btn>
@@ -558,9 +558,10 @@ export function Canvas({ findings }: { findings: Finding[] }) {
           <div className="empty-card">
             <Icon name="wand" size={28} />
             <h2>{L('Die Zeichenfläche ist leer', 'The canvas is empty')}</h2>
-            <p>{L('Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Klicken Sie in der Elementbibliothek in der Gruppe „Ablaufsteuerung“ auf „Kerzenschluss“ – oder lassen Sie sich vom Assistenten führen.', 'Next step: start with a trigger. It defines when the strategy calculates. In the element library, group "Flow control", click "Candle close" – or let the assistant guide you.')}</p>
+            <p>{L('Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Klicken Sie in der Elementbibliothek in der Gruppe „Ablaufsteuerung“ auf „Kerzenschluss“ – oder starten Sie den Assistenten.', 'Next step: start with a trigger. It defines when the strategy calculates. In the element library, group "Flow control", click "Candle close" – or start the assistant.')}</p>
             <div className="btn-row">
               <Btn kind="primary" icon="wand" testid="empty-wizard" onClick={() => setState({ wizard: { step: 1 }, panel: 'props' })}>{L('Assistent starten', 'Start assistant')}</Btn>
+              <Btn icon="list" className="show-lib" testid="empty-library" onClick={() => setState({ panel: 'library' })}>{L('Elementbibliothek zeigen', 'Show element library')}</Btn>
               <Btn icon="clock" testid="empty-trigger" onClick={() => addEntry({ k: 'type', id: 'trigger.candle_close' })}>{L('Kerzenschluss einfügen', 'Insert candle close')}</Btn>
             </div>
           </div>

@@ -1,4 +1,4 @@
-// Guided setup of a new strategy: trigger, indicators, condition, order. Can be left at any time.
+// The assistant for a new strategy: trigger, indicators, condition, order. Can be left at any time.
 import { useState } from 'react';
 import { ORDER_TYPES, TYPES, isObjectEl, tx, typeLabel } from './catalog';
 import { propList } from './expr';
@@ -129,7 +129,7 @@ export function Wizard() {
     patch({ order: id });
     setState({ sel: { k: 'el', id }, wizard: null });
     runCheck();
-    toast('Der Aufbau steht. Die Prüfung zeigt, was noch fehlt.', 'The setup is in place. The check shows what is still missing.');
+    toast('Der Assistent ist fertig. Die Prüfung zeigt, was noch fehlt.', 'The assistant is done. The check shows what is still missing.');
   };
 
   const next = () => {
@@ -149,6 +149,9 @@ export function Wizard() {
         </div>
       </header>
       <div className="wz-leave">
+        <Btn kind="ghost" small icon="list" className="show-lib" onClick={() => setState({ panel: 'library' })} testid="wz-library" tip={L('Zeigt die Elementbibliothek. Der Assistent bleibt erhalten.', 'Shows the element library. The assistant stays open.')}>
+          {L('Elementbibliothek zeigen', 'Show element library')}
+        </Btn>
         <Btn kind="ghost" small icon="x" onClick={leave} testid="wz-leave" tip={L('Der Assistent hat bis hierher alles eingefügt. Sie arbeiten von Hand weiter.', 'The assistant has inserted everything up to here. You continue by hand.')}>
           {L('Ohne Assistent weiterarbeiten', 'Continue without assistant')}
         </Btn>

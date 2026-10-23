@@ -19,7 +19,7 @@ export function PropertiesPanel({ findings }: { findings: Finding[] }) {
         <div className="empty-card flat">
           <Icon name="info" size={26} />
           <h2>{L('Keine Strategie geöffnet', 'No strategy open')}</h2>
-          <p>{L('Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an und führt Sie mit einem Assistenten durch den Aufbau. „Öffnen“ zeigt gespeicherte Strategien.', '"New strategy" creates an empty strategy and guides you through the setup with an assistant. "Open" shows saved strategies.')}</p>
+          <p>{L('Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an und startet den Assistenten. „Öffnen“ zeigt gespeicherte Strategien.', '"New strategy" creates an empty strategy and starts the assistant. "Open" shows saved strategies.')}</p>
           <div className="btn-row">
             <Btn kind="primary" icon="plus" onClick={newStrategyAction}>{L('Neue Strategie', 'New strategy')}</Btn>
             <Btn icon="folder" onClick={() => setState({ dialog: { k: 'open' } })}>{L('Öffnen', 'Open')}</Btn>
