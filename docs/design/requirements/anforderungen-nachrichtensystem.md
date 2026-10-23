@@ -5,7 +5,7 @@
 - status: `draft`
 - zweck: Anforderungen an das Nachrichtensystem (pipwerk relay): Weg einer Nachricht vom Absender zum Empfänger, Übertragungswege, Adressierung
 - zuletzt aktualisiert: `2026-10-23`
-- abgestimmt: Festlegungen des Auftraggebers im Chat am 23. Oktober 2026. Prüfung durch die QA bestanden ([requirements-2.md](../../../development/relay/reviews/requirements-2.md)), [Präsentation](../../../development/relay/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. req-relay-012, req-relay-013 und „Abruf“ statt „Beschaffung“: Festlegung des Auftraggebers im Chat am 23. Oktober 2026, Prüfung durch die QA ausstehend.
+- abgestimmt: Festlegungen des Auftraggebers im Chat am 23. Oktober 2026. Prüfung durch die QA bestanden ([requirements-2.md](../../../development/relay/reviews/requirements-2.md)), [Präsentation](../../../development/relay/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. req-relay-012, req-relay-013 und „Abruf“ statt „Beschaffung“: Festlegung des Auftraggebers im Chat am 23. Oktober 2026, Prüfung durch die QA bestanden ([requirements-4.md](../../../development/relay/reviews/requirements-4.md), [requirements-5.md](../../../development/relay/reviews/requirements-5.md)).
 
 ## 1. Zweck und Abgrenzung
 

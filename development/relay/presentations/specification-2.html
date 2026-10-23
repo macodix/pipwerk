@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>relay Spezifikation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;min-width:0;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:24px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.q{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+.q .card{gap:14px}
+.q .card p, .q .card li{font-size:25px;line-height:1.38}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:27px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben relay · Phase 2</p>
+<div class="col" style="flex:0">
+<h1>Spezifikation<br>pipwerk relay</h1>
+<p style="font-size:34px">Wie das Nachrichtensystem gebaut wird und wie du es abnimmst</p>
+</div>
+<p style="font-size:26px">Stand 23. Oktober 2026 · erstellt vom Softwarearchitekten · von der QA geprüft und bestanden · keine Frage an dich offen</p>
+<p class="num">1 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Aufbau</h2>
+<div class="chain">
+<div class="node">Anfrage-Programm<small>zweiter Rechner</small></div><div class="arrow">⇄</div>
+<div class="node">Relay<small>zweiter Rechner</small></div><div class="arrow">⇄</div>
+<div class="node">Relay<small>Rechner von MetaTrader 5</small></div><div class="arrow">⇄</div>
+<div class="node">Abruf<small>Rechner von MetaTrader 5</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Programmbibliothek relay-core</h3><p>Gemeinsamer Programmteil für Adresse, Nachricht, Schutz gegen Fälschung, Empfangsbestätigung und die Übertragungswege. Relay und jede Komponente, die Nachrichten sendet oder empfängt, binden ihn ein. So sprechen Komponente und Relay dieselben Wege.</p></div>
+<div class="card col"><h3>Programm pipwerk-relay</h3><p>Das Relay als eigenständig installierbares Programm, unter Windows und Linux. Es nimmt Nachrichten an, speichert sie und gibt sie weiter. Keine Oberfläche, Bedienung an der Befehlszeile.</p></div>
+<div class="card col"><h3>Abruf pipwerk-fetch-mt5</h3><p>Erhält zwei Aufrufe: <b>serve</b> läuft dauernd und beantwortet Anfragen, <b>request</b> schickt eine Anfrage und empfängt die Dateien. Der bisherige Aufruf an der Befehlszeile bleibt unverändert.</p></div>
+</div>
+<p class="num">2 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Weg einer Nachricht durch ein Relay</h2>
+<div class="flow">
+<div class="step"><b>1</b><span>Prüfen</span><i>Prüfwert, Verbindung und Dateien. Eine Fälschung wird ohne Meldung verworfen.</i></div>
+<div class="step"><b>2</b><span>Doppelte</span><i>Schon gesehene Übergaben werden verworfen, ohne zweite Verarbeitung.</i></div>
+<div class="step"><b>3</b><span>Absender</span><i>Eine Komponente kann nur unter ihrer eigenen Adresse senden.</i></div>
+<div class="step"><b>4</b><span>Speichern</span><i>Erst nach dem Speichern gilt die Nachricht als angenommen. Ein Absturz verliert nichts.</i></div>
+<div class="step"><b>5</b><span>Weitergeben</span><i>An die eigene Komponente, an ein Relay aus dem Adressbuch oder an das Standard-Relay.</i></div>
+<div class="step"><b>6</b><span>Wiederholen</span><i>Bei Störung in wachsenden Abständen, bis zu 24 Stunden (einstellbar).</i></div>
+</div>
+<div class="card"><h3>Unzustellbar</h3><p>Der Absender erhält eine Meldung mit Grund: falscher Absender, Nachricht läuft im Kreis, Empfänger unbekannt, Relay unbekannt, Relay oder Empfänger nicht erreichbar, Nachricht zu groß. Eine unzustellbare Meldung erzeugt keine weitere Meldung.</p></div>
+<p class="num">3 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Übertragungswege</h2>
+<div class="row">
+<div class="card col"><h3>Matrix</h3><ul>
+<li>Jedes Relay und jede Komponente ist ein eigener Benutzer auf deinem Matrix-Server, Eingänge sind Räume.</li>
+<li>Jede Nachricht erscheint im Raum als lesbare Zeile: Art, Absender, Empfänger, Dateien. Du verfolgst den Austausch im Chat.</li>
+<li>Der Verlauf bleibt im Raum stehen.</li></ul></div>
+<div class="card col"><h3>Verzeichnisse</h3><ul>
+<li>Eingang ist ein Verzeichnis: auf dem Rechner, auf einem eingebundenen Netzlaufwerk oder auf einem SFTP-Server (Dateiübertragung über SSH).</li>
+<li>Je Nachricht eine Datei. Ein Leser sieht nie eine halb geschriebene Nachricht.</li>
+<li>Zwischen zwei Rechnern braucht es ein gemeinsames Verzeichnis.</li></ul></div>
+</div>
+<div class="card"><h3>Weitere Wege</h3><p>Ein neuer Weg, zum Beispiel E-Mail, ist ein zusätzliches Paket, das bei der Installation hinzugenommen wird. Relay, Komponenten und vorhandene Wege bleiben dabei unverändert. Welcher Weg genutzt wird, steht in der Konfiguration.</p></div>
+<p class="num">4 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Dateien einer Nachricht</h2>
+<div class="row">
+<div class="card col"><h3>Als Anlage</h3><p>Die Datei geht mit der Nachricht über deren Übertragungsweg. Bei Matrix liegt sie im Medienspeicher des Matrix-Servers, beim Verzeichnis-Weg als eigene Datei neben der Nachricht.</p></div>
+<div class="card col"><h3>Über einen Weg für Dateien</h3><p>Die Datei wird an einem eigenen Ablageort gespeichert, die Nachricht nennt, wo sie liegt. Erster Weg für Dateien: ein Verzeichnis auf dem Rechner oder auf einem SFTP-Server. Weitere Wege für Dateien kommen als Paket hinzu wie weitere Übertragungswege.</p></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Wann welche Art</h3><p>Jede Verbindung entscheidet selbst nach einer Größenschwelle aus ihrer Konfiguration. Dateien darüber gehen über den Weg für Dateien, die übrigen als Anlage. So gehen zum Beispiel Nachrichten über Matrix und große Tick-Dateien über einen SFTP-Server.</p></div>
+<div class="card col"><h3>Prüfung</h3><p>Jedes Relay unterwegs und zuletzt der Empfänger prüfen Größe und Prüfsumme jeder Datei. Eine fehlende oder veränderte Datei verwirft die Nachricht. Abgeholte Dateien werden vom Ablageort entfernt, liegengebliebene nach 7 Tagen (einstellbar).</p></div>
+</div>
+<p class="num">5 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Empfangsbestätigung</h2>
+<div class="flow">
+<div class="step"><b>1</b><span>Wunsch</span><i>Der Absender wählt je Nachricht, ob er eine Bestätigung will, und wahlweise eine Frist. Ohne Angabe gilt 1 Stunde (einstellbar).</i></div>
+<div class="step"><b>2</b><span>Speichern</span><i>Die empfangende Komponente speichert die Nachricht.</i></div>
+<div class="step"><b>3</b><span>Bestätigen</span><i>Danach schickt ihr Anschluss automatisch die Bestätigung mit der Nachrichten-ID an den Absender.</i></div>
+<div class="step"><b>4</b><span>Frist</span><i>Kommt bis zum Ende der Frist keine Bestätigung, zeigt der Absender dir das an, wie eine unzustellbare Nachricht.</i></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Sicherheit gegen Verlust</h3><p>Ohne gespeicherte Nachricht keine Bestätigung. Eine offene Bestätigung übersteht einen Neustart. Nur der Empfänger selbst kann eine Nachricht bestätigen.</p></div>
+<div class="card col"><h3>Anfragen</h3><p>Bei einer Anfrage ist die Antwort die Bestätigung. Der Abruf verlangt deshalb keine. Das Relay prüft nicht, ob eine Komponente eine Nachricht abholt.</p></div>
+</div>
+<p class="num">6 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Schutz und Betrieb</h2>
+<table>
+<tr><th style="width:420px">Thema</th><th>Umsetzung</th></tr>
+<tr><td>Fälschung</td><td>Jede Verbindung hat einen eigenen geheimen Schlüssel. Jede Nachricht trägt einen Prüfwert, den nur berechnen kann, wer diesen Schlüssel kennt. Der Empfänger verwirft Nachrichten mit falschem Prüfwert.</td></tr>
+<tr><td>Verschlüsselung</td><td>Keine. Der Prüfwert steht außerhalb der Nachricht, eine spätere Verschlüsselung bleibt möglich.</td></tr>
+<tr><td>Netz</td><td>Matrix, Verzeichnisse und Wege für Dateien bauen nur ausgehende Verbindungen auf. Einen Port öffnet nur die Web-API des Relays, und nur wenn sie eingeschaltet ist. Ohne weitere Angabe ist sie nur vom eigenen Rechner aus erreichbar. Der Abruf öffnet keinen Port.</td></tr>
+<tr><td>Geheimnisse</td><td>Schlüssel und Zugänge zu Matrix und SFTP liegen als Dateien in einem eigenen Verzeichnis, nie in Datenbank oder Protokoll. Ist es für andere Benutzer lesbar, startet das Relay nicht.</td></tr>
+<tr><td>Bedienung</td><td>Befehlszeile: Relay starten, Konfiguration laden und anzeigen, Schlüssel erzeugen, Warteschlange anzeigen. Eine neue Konfiguration gilt ohne Neustart.</td></tr>
+</table>
+<p class="num">7 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Abruf über pipwerk relay</h2>
+<div class="row">
+<div class="card col"><h3>Anfrage</h3><p>Broker, Symbol, wahlweise eine Bezeichnung für die Dateien, Zeiteinheiten, Ticks ja oder nein, Zeitraum und Zielverzeichnis. Die Adresse des zuständigen Abrufs nennt der Anfragende.</p></div>
+<div class="card col"><h3>Antwort</h3><p>Jede Datei kommt als eigene Nachricht, zum Schluss ein Abschluss mit allen Dateien und den Teilen, die sich nicht holen ließen, mit Grund. Fremder Broker, ungültige Anfrage und zu großer Zeitraum werden mit Grund abgelehnt. Einen zu großen Zeitraum teilt der Anfragende auf.</p></div>
+<div class="card col"><h3>Ablauf</h3><p>Der Abruf bearbeitet Anfragen nacheinander. Das Anfrage-Programm wartet bis zu 30 Minuten (einstellbar), schreibt jede Datei ins Zielverzeichnis und zeigt jede Datei und das Ergebnis an.</p></div>
+</div>
+<div class="card"><h3>Nicht in diesem Vorhaben</h3><p>Oberfläche des Relays · Prioritäten mit Wirkung · Verschlüsselung · weitere Wege wie E-Mail.</p></div>
+<p class="num">8 / 9</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Nachweis und nächster Schritt</h2>
+<div class="row">
+<div class="card col"><h3>Testumgebung für Tester und QA</h3><p>Zwei Relays, ein Matrix-Server nur für Tests, ein SFTP-Server und der Abruf mit nachgebildetem MetaTrader 5.</p></div>
+<div class="card col"><h3>Abnahme durch dich</h3><p>Auf dem Rechner von MetaTrader 5 laufen Relay und Abruf, auf einem zweiten Rechner Relay und Anfrage-Programm.<br><b>Durchgang 1:</b> alle Strecken über Matrix auf deinem Server, im Chat mitverfolgt.<br><b>Durchgang 2:</b> alle Strecken über Verzeichnisse, zwischen den Relays über einen SFTP-Server.<br><b>Durchgang 3:</b> Nachrichten über Matrix, eine Anfrage mit Ticks. Große Dateien gehen über einen Weg für Dateien auf dem SFTP-Server, die übrigen als Anlage über Matrix.<br>In jedem Durchgang kommen alle Dateien vollständig beim Anfrage-Programm an.</p></div>
+</div>
+<div class="rule">Mit deiner Bestätigung teilt der Softwarearchitekt die Spezifikation in Arbeitspakete (Phase 3, Planung).</div>
+<p class="note">Bestätigungsvermerk: ausstehend.</p>
+<p class="num">9 / 9</p></section></div>
+
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
