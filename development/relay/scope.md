@@ -29,3 +29,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Zuständige Instanz bestimmt der Absender (req-relay-005), Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Prüfung der Dokumente des Auftraggebers durch die QA mit `check` angestoßen.
 
 2026-10-23: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (B1 bis B3). Entscheidungen des Auftraggebers im Chat: B2 Absender ist eine Adresse; B3 Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; B1 Nachweis ohne Strategietester, Broker und Symbol im Testlauf als offener Punkt in `backtest`. H5 Glossar „Instanz“: im Nachrichtensystem „laufende Komponente“. Nachprüfung mit `check`.
+
+2026-10-23: Nachprüfung [requirements-2.md](reviews/requirements-2.md) bestanden. Präsentation [requirements-1.html](presentations/requirements-1.html) zur Bestätigung durch den Auftraggeber.
