@@ -5,12 +5,12 @@
 - status: `draft`
 - stand: 2026-10-23
 - komponenten: `packages/relay-core` (neu, gemeinsame Bibliothek für Nachricht und Übertragungswege), `components/pipwerk-relay` (neu, das Relay), `components/pipwerk-fetch-mt5` (Abruf über pipwerk relay, Anfrage-Programm), `contracts/messages/`
-- grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers. Nachprüfung der Dokumente nach der Abstimmung der Spezifikation bestanden in [requirements-4.md](reviews/requirements-4.md).
-- stand der arbeit: Fassung nach den Einwänden des Auftraggebers zur [Präsentation](presentations/specification-1.html) (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-4.md](reviews/specification-4.md), Hinweise eingearbeitet, zur Präsentation.
+- grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers. Nachprüfung der Dokumente nach der Abstimmung der Spezifikation bestanden in [requirements-4.md](reviews/requirements-4.md), Nachprüfung von req-relay-013 bestanden in [requirements-5.md](reviews/requirements-5.md).
+- stand der arbeit: Fassung nach den Einwänden des Auftraggebers zur [Präsentation](presentations/specification-1.html) (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-4.md](reviews/specification-4.md), Hinweise eingearbeitet. Ergänzung um req-relay-013 (3.7) in Prüfung durch die QA.
 
 ## 1. Gegenstand
 
-Das Nachrichtensystem pipwerk relay nach den Anforderungen an das Nachrichtensystem (req-relay-001 bis req-relay-012) mit den ersten Übertragungswegen Matrix und Verzeichnisse („Dateien“ in req-relay-004), Dateien einer Nachricht als Anlage oder über einen Weg für Dateien (req-relay-012), und als erster Anwendungsfall der Austausch mit dem Abruf für MetaTrader 5 (req-relay-007).
+Das Nachrichtensystem pipwerk relay nach den Anforderungen an das Nachrichtensystem (req-relay-001 bis req-relay-013) mit den ersten Übertragungswegen Matrix und Verzeichnisse („Dateien“ in req-relay-004), Dateien einer Nachricht als Anlage oder über einen Weg für Dateien (req-relay-012), Empfangsbestätigung auf Wunsch des Absenders (req-relay-013), und als erster Anwendungsfall der Austausch mit dem Abruf für MetaTrader 5 (req-relay-007).
 
 Nachweis (`scope.md`): Eine Anfrage mit Broker, Symbol, Zeiteinheit und Zeitraum geht vom Anfrage-Programm (Abschnitt 6.3) über pipwerk relay an den Abruf auf dem Rechner von MetaTrader 5. Die Dateien kommen an die Adresse des Anfrage-Programms zurück. Das gelingt in einem Durchgang über Matrix und in einem Durchgang über Verzeichnisse (Abschnitt 8).
 
@@ -52,6 +52,7 @@ Felder nach req-grund-004, Schema `contracts/messages/v1/message.schema.json`:
 | `reference_id` | Bezug-Nachrichten-ID, wahlweise |
 | `created_at` | Zeitpunkt der Erstellung, UTC |
 | `attachments` | Anlagen, wahlweise: je Anlage Name, Größe in Byte und SHA-256 |
+| `receipt` | Empfangsbestätigung gewünscht, ja oder nein, ohne Angabe nein (req-relay-013, 3.7) |
 
 Anlagen sind die Dateien, die zur Nachricht gehören (req-relay-012), zum Beispiel die Dateien einer Lieferung (Hinweis H2 aus `requirements-1.md`). Der Inhalt nennt sie über ihren Namen. Übertragen werden sie als Anlage über den Übertragungsweg oder über einen Weg für Dateien (3.6); jede empfangende Seite prüft Größe und SHA-256. Weil beide im geschützten Teil stehen (3.3), ist auch eine veränderte Anlage erkannt. Name einer Anlage: 1 bis 128 Zeichen aus Buchstaben, Ziffern und `. _ # + -`, nicht mit einem Punkt am Anfang. Er wird nie als Pfad verwendet.
 
@@ -111,6 +112,16 @@ Ein Weg für Dateien ist eine Umsetzung der Schnittstelle „Weg für Dateien“
 
 Erster Weg für Dateien: `filestore`, ein Verzeichnis im Dateisystem oder auf einem SFTP-Server, umgesetzt wie der Verzeichnis-Weg (3.4). Der Ort ist ein Dateiname, den der Weg aus der Nachrichten-ID, der Nummer der Anlage und einem Zufallsteil bildet; geschrieben wird unter einem vorläufigen Namen und dann umbenannt. Der Weg nimmt beim Lesen und Entfernen nur Orte an, die diesem Aufbau entsprechen (Abschnitt 7). Damit lassen sich zum Beispiel Nachrichten über Matrix und große Dateien über einen SFTP-Server übertragen.
 
+### 3.7 Empfangsbestätigung (req-relay-013)
+
+Die Empfangsbestätigung ist eine Aufgabe des Anschlusses (3.5) auf beiden Seiten. Das Relay behandelt sie wie jede Nachricht und prüft nicht, ob eine Komponente eine Nachricht abholt (req-relay-013 Absatz 2).
+
+- Absender: Die Komponente setzt beim Senden je Nachricht `receipt` (3.2) und wahlweise eine Frist. Ohne Frist gilt die Voreinstellung des Anschlusses (einstellbar, Voreinstellung 1 Stunde). Die Frist steht nicht in der Nachricht; nur der Absender braucht sie.
+- Empfänger: Der Anschluss übergibt die Nachricht der Komponente. Meldet die Komponente, dass sie die Nachricht gespeichert hat, schickt der Anschluss ohne weiteres Zutun der Komponente eine Nachricht `relay.receipt` an die Adresse des Absenders: Absender ist die Adresse der empfangenden Komponente, Bezug-Nachrichten-ID die ID der bestätigten Nachricht (req-grund-006), Inhalt leer, Priorität wie die bestätigte Nachricht, `receipt` nein. Erst danach quittiert er den Eingang. Kommt eine Nachricht mit `receipt` als Wiederholung (E4) noch einmal, schickt der Anschluss die Bestätigung erneut, ohne die Nachricht der Komponente noch einmal zu übergeben. Grund: Eine Bestätigung kann verloren gegangen sein; eine zweite schadet nicht, der Absender verwirft sie.
+- Warten: Der Anschluss des Absenders merkt sich jede gesendete Nachricht mit `receipt` mit ihrer Frist, so dauerhaft wie die gesehenen Nachrichten-IDs (E4), damit ein Neustart keine offene Bestätigung verliert. Trifft `relay.receipt` mit ihrer ID als Bezug ein, ist sie erledigt. Trifft `relay.undeliverable` zu ihr ein, ist sie ebenfalls erledigt; die Komponente erhält die Meldung nach req-relay-008. Läuft die Frist ab, meldet der Anschluss der Komponente die Nachrichten-ID, Nachrichtenart und Adressat der Nachricht ohne Bestätigung. Die Komponente zeigt das dem Anwender an, so wie eine Meldung nach req-relay-008. Eine spätere Bestätigung wird dann nur im Protokoll vermerkt.
+- Ausnahmen: `relay.receipt` und `relay.undeliverable` verlangen nie eine Bestätigung; eine Nachricht `relay.receipt` mit `receipt` ja wird verworfen wie eine ungültige Nachricht. Grund: Sonst entstünden Bestätigungen über Bestätigungen.
+- Anfrage: Bei einer Anfrage ist die Antwort die Bestätigung (req-relay-013 Absatz 2). Der Abruf (Abschnitt 6) setzt `receipt` deshalb in keiner seiner Nachrichtenarten; das Anfrage-Programm wartet auf `fetch.result` (6.3).
+
 ## 4. Relay
 
 ### 4.1 Weg einer Nachricht
@@ -149,7 +160,7 @@ Das Relay, bei dem die Zustellung scheitert, schickt dem Absender eine Nachricht
 
 ## 5. Nachrichtenformate unter contracts
 
-`contracts/messages/v1/`: `envelope.schema.json`, `message.schema.json`, `relay-config.schema.json`, je Nachrichtenart ein Schema des Inhalts (`relay.undeliverable`, `fetch.request`, `fetch.file`, `fetch.result`), Beispiele. Dazu die Web-API nach E3 unter `contracts/api/pipwerk-relay/v1/openapi.json`. Beschrieben in `contracts/messages/README.md` und in der technischen Dokumentation (req-system-022). Pydantic prüft an jeder Grenze und lehnt zusätzliche Felder ab.
+`contracts/messages/v1/`: `envelope.schema.json`, `message.schema.json`, `relay-config.schema.json`, je Nachrichtenart ein Schema des Inhalts (`relay.undeliverable`, `relay.receipt`, `fetch.request`, `fetch.file`, `fetch.result`), Beispiele. Dazu die Web-API nach E3 unter `contracts/api/pipwerk-relay/v1/openapi.json`. Beschrieben in `contracts/messages/README.md` und in der technischen Dokumentation (req-system-022). Pydantic prüft an jeder Grenze und lehnt zusätzliche Felder ab.
 
 ## 6. Abruf über pipwerk relay
 
@@ -197,6 +208,7 @@ Die Dateien lassen sich ohne Änderung in den Datenbestand importieren (req-syst
 
 - Bibliothek (pytest): Adresse, Nachricht, Umschlag und Prüfwert mit veränderten und gefälschten Umschlägen und Anlagen, Verzeichnis-Weg über ein lokales Verzeichnis und über einen SFTP-Server aus `asyncssh` im Test, Matrix-Weg gegen eine Nachbildung der Client-Server-API, Anschluss mit Wiederholung.
 - Dateien einer Nachricht (3.6): Anlagen unter und über der Schwelle über Matrix und Weg für Dateien `filestore`; ohne Weg für Dateien `too_large`; fehlende, veränderte und mit fremdem Weg oder ungültigem Ort genannte Datei wird verworfen; Datei wird erst nach dem Quittieren entfernt.
+- Empfangsbestätigung (3.7): Nachricht mit `receipt` über zwei Relays wird nach dem Speichern bestätigt, mit der ID als Bezug; ohne `receipt` keine Bestätigung; Frist abgelaufen wird der Komponente gemeldet, auch nach einem Neustart des Absenders; unzustellbare Nachricht beendet das Warten ohne zweite Meldung; Wiederholung erzeugt eine zweite Bestätigung ohne zweite Übergabe an die Komponente; `relay.receipt` mit `receipt` ja wird verworfen.
 - Wege als Erweiterung: ein Test-Weg und ein Test-Weg für Dateien aus einem eigenen Paket mit eigenen Angaben werden über ihren Einstiegspunkt geladen, ohne Änderung an Bibliothek, Relay, Komponente oder Schema der Betriebskonfiguration (3.4, 3.6).
 - Web-API (pytest): Übergeben, Abholen und Stand gegen `openapi.json`, über den Weg `http`; Anfragen ohne, mit falschem und mit wiederholtem Prüfwert werden abgelehnt; ohne Angabe in der Startkonfiguration öffnet das Relay keinen Port (E2, E3).
 - Relay (pytest): Weitergabe im eigenen Relay, über das Adressbuch und über eine Kette von Standard-Relays, jeder Grund nach 4.1 mit Meldung, Schleife neben Wiederholung derselben Übergabe, Wiederholung einer Nachricht mit Meldung ohne zweite Meldung, unzustellbare Meldung ohne neue Meldung, verworfene Fälschung ohne Meldung, Wiederanlauf nach Abbruch ohne Verlust (E4), Laden der Betriebskonfiguration, Migration.
@@ -207,8 +219,8 @@ Die Dateien lassen sich ohne Änderung in den Datenbestand importieren (req-syst
 ## 9. Dokumentation
 
 - technische Dokumentation: `docs/technical/pipwerk-relay.md` (neu, Bibliothek und Relay: Aufbau, Formate, Übertragungswege, Wege für Dateien, Weitergabe, Konfiguration, Sicherheit, Betrieb), `docs/technical/pipwerk-fetch-mt5.md` (`serve`, `request`, Abschnitt `[relay]`), `contracts/messages/README.md`, README der Komponenten
-- Anwenderdokumentation `docs/user/pipwerk-relay.md` (neu): Relay einrichten unter Windows und Linux, Schlüssel austauschen, Adressbuch, Matrix-Benutzer und Räume, Verzeichnisse und SFTP, Weg für Dateien und Schwelle, Abruf über pipwerk relay mit `serve` und `request`, Meldungen und ihre Gründe
-- Glossar: Anlage, Umschlag, Eingang, Warteschlange, Schlüssel der Verbindung, angeschlossene Komponente, Weg für Dateien
+- Anwenderdokumentation `docs/user/pipwerk-relay.md` (neu): Relay einrichten unter Windows und Linux, Schlüssel austauschen, Adressbuch, Matrix-Benutzer und Räume, Verzeichnisse und SFTP, Weg für Dateien und Schwelle, Abruf über pipwerk relay mit `serve` und `request`, Meldungen und ihre Gründe, Empfangsbestätigung und ihre Frist
+- Glossar: Anlage, Umschlag, Eingang, Warteschlange, Schlüssel der Verbindung, angeschlossene Komponente, Weg für Dateien, Empfangsbestätigung
 
 ## 10. Entscheidungen zu Hinweisen der QA
 
@@ -239,6 +251,9 @@ Die Dateien lassen sich ohne Änderung in den Datenbestand importieren (req-syst
 | H3 | Entfernen bei Verwerfen und nach Frist, Platz begrenzt (3.6, 4.5) |
 | H4 | ohne Änderung: `stored` steht im Umschlag, der die Nachricht trägt |
 | H5 | Weg für Dateien heißt `filestore` (3.6, 8) |
+| `requirements-5.md` H1 | eine Bestätigung wird nie bestätigt (3.7) |
+| H2 | Frist je Nachricht vom Absender, sonst Voreinstellung des Anschlusses; Antwort auf eine Anfrage mit eigener Wartezeit (3.7, 6.3) |
+| H3 | Kennzeichen `receipt` in der Nachricht (3.2) |
 
 ## Änderungsnachweis
 
@@ -250,3 +265,4 @@ Die Dateien lassen sich ohne Änderung in den Datenbestand importieren (req-syst
 | 2026-10-23 | Hinweise aus [specification-3.md](reviews/specification-3.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Web-API ohne Angabe nur an `127.0.0.1` (E3). H2 ohne Änderung: Die Web-API steht angeschlossenen Komponenten mit Schlüssel offen; weitere Nutzer folgen mit der Anmeldung nach req-system-011. |
 | 2026-10-23 | Nach den Einwänden des Auftraggebers zur Präsentation [specification-1.html](presentations/specification-1.html) und der Nachprüfung [requirements-4.md](reviews/requirements-4.md): req-relay-012 Dateien als Anlage oder über einen Weg für Dateien, Wahl je Verbindung nach Schwelle (1, E2, 3.2, 3.3, 3.4, 3.5, 3.6 neu, 4.1, 4.2, 4.3, 4.5, 6.2, 7, 8 mit Durchgang 3, 9, 10); „Abruf“ statt „Beschaffung“ (überall); pipwerk replay nicht mehr im Abschnitt zum Abruf, bisheriger Abschnitt 6.4 in Abschnitt 1 „Nicht Gegenstand“; Übertragungsweg „Verzeichnis-Weg“ (H1 aus `requirements-4.md`); Hinweise H2, H3 aus `requirements-4.md` (3.6). Prüfung bestanden in [specification-4.md](reviews/specification-4.md). |
 | 2026-10-23 | Hinweise aus [specification-4.md](reviews/specification-4.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Schwelle Pflicht, `too_large` auch für den Weg für Dateien; H2 Wiederholung vor dem Holen der Dateien; H3 Entfernen und Platz auf dem Weg für Dateien (3.6, 4.5); H5 Name `filestore` (3.6, 8). H4 ohne Änderung. |
+| 2026-10-23 | Nach der Nachprüfung [requirements-5.md](reviews/requirements-5.md): req-relay-013 Empfangsbestätigung auf Wunsch des Absenders (1, 3.2 Feld `receipt`, 3.7 neu, 5 Nachrichtenart `relay.receipt`, 8, 9, 10 mit Hinweisen H1 bis H3 aus `requirements-5.md`). |
