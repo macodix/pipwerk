@@ -7,7 +7,7 @@ transaction: after an error nothing is visible. Errors of the database become
 """
 
 import contextlib
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from datetime import datetime, timedelta
 
 import sqlalchemy as sa
@@ -17,28 +17,51 @@ from sqlalchemy.exc import SQLAlchemyError
 from pipwerk_marketdata import tables
 from pipwerk_marketdata.completeness import candle_gaps, combine, merge, tick_gaps
 from pipwerk_marketdata.csvimport import CsvSeries, parse_csv
-from pipwerk_marketdata.errors import MarketDataStoreError
+from pipwerk_marketdata.errors import ImportBatchError, ImportFileError, MarketDataStoreError
 from pipwerk_marketdata.jsonimport import parse_json
 from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, MAX_MOMENT, MIN_MOMENT, ImportLimits
-from pipwerk_marketdata.parsed import KIND_CANDLES, KIND_INSTRUMENT, ParsedImport
+from pipwerk_marketdata.parsed import (
+    KIND_CANDLES,
+    KIND_INSTRUMENT,
+    KIND_TICKS,
+    ParsedImport,
+    content_data,
+    with_names,
+)
 from pipwerk_marketdata.records import (
+    BatchErrorCode,
     Candle,
     CandlePage,
     Completeness,
     CompletenessRules,
+    FileErrorCode,
+    FileFormat,
+    FileOutcome,
+    ImportBatchResult,
+    ImportFile,
     ImportResult,
     InstrumentInfo,
     InstrumentOverview,
     Interval,
     MissingPart,
     Overview,
+    SeriesDetails,
     SeriesOverview,
+    SeriesRow,
+    SeriesRowPage,
     Tick,
     TickPage,
     TradingSession,
     Weekday,
 )
-from pipwerk_marketdata.timeunits import TICKS, TimeUnit, require_utc, time_unit
+from pipwerk_marketdata.timeunits import (
+    CONTRACT,
+    TICKS,
+    TIME_UNITS,
+    TimeUnit,
+    require_utc,
+    time_unit,
+)
 
 _CHUNK = 500
 _STREAM = 10_000
@@ -61,6 +84,24 @@ def _check_moments(*moments: datetime | None) -> None:
     for moment in moments:
         if moment is not None:
             require_utc(moment)
+
+
+_DATA_ORDER = {name: index for index, name in enumerate([*TIME_UNITS, TICKS, CONTRACT])}
+
+
+def _name_key(name: str) -> tuple[str, str]:
+    """Alphabetical order without regard to case; equal names in the order of their text."""
+    return name.casefold(), name
+
+
+def _row_key(key: tuple[str, str, str]) -> tuple[tuple[str, str], tuple[str, str], int]:
+    broker, instrument, data = key
+    return _name_key(broker), _name_key(instrument), _DATA_ORDER.get(data, len(_DATA_ORDER))
+
+
+def _contains(text: str, part: str | None) -> bool:
+    """``True`` if ``part`` is empty or missing or a part of ``text`` (case ignored)."""
+    return not part or part.casefold() in text.casefold()
 
 
 def _lookback(unit: TimeUnit) -> timedelta:
@@ -116,6 +157,82 @@ class MarketDataStore:
         """
         series = CsvSeries(kind, broker, instrument, time_unit, timezone)
         return self._write(parse_csv(data, series, limits))
+
+    def import_files(
+        self,
+        files: Sequence[ImportFile],
+        *,
+        broker: str | None = None,
+        timezone: str | None = None,
+        limits: ImportLimits | None = None,
+    ) -> ImportBatchResult:
+        """Import the files of one process, each in a transaction of its own.
+
+        ``broker`` is the broker of the whole process: it is the broker of the CSV files and
+        replaces the broker named in a JSON file; without it a JSON file keeps its own broker
+        and a CSV file is refused. ``timezone`` (IANA name) is the time zone of the times in
+        all CSV files. A CSV file needs ``instrument`` and ``data`` (time unit or ``ticks``).
+
+        The result has one outcome per file in the order given. A refused file (reason in the
+        outcome) does not stop the others. ``ImportBatchError`` if the process as a whole
+        breaks ``limits.max_files`` or ``limits.max_batch_bytes`` or has no file; then nothing
+        is read.
+        """
+        limits = limits or ImportLimits()
+        if not files:
+            raise ImportBatchError(BatchErrorCode.NO_FILES, "The process has no file.")
+        if len(files) > limits.max_files:
+            raise ImportBatchError(
+                BatchErrorCode.TOO_MANY_FILES,
+                f"The process has more than {limits.max_files} files.",
+            )
+        if sum(len(file.content) for file in files) > limits.max_batch_bytes:
+            raise ImportBatchError(
+                BatchErrorCode.BATCH_TOO_LARGE,
+                f"The files together are larger than {limits.max_batch_bytes} bytes.",
+            )
+        return ImportBatchResult(
+            tuple(self._import_file(file, broker, timezone, limits) for file in files)
+        )
+
+    def _import_file(
+        self, file: ImportFile, broker: str | None, timezone: str | None, limits: ImportLimits
+    ) -> FileOutcome:
+        try:
+            parsed = self._parse_file(file, broker, timezone, limits)
+            return FileOutcome(file.name, self._write(parsed), None, None)
+        except ImportFileError as error:
+            return FileOutcome(file.name, None, error.code, error.message)
+        except MarketDataStoreError as error:
+            return FileOutcome(file.name, None, FileErrorCode.STORE_FAILED, str(error))
+
+    @staticmethod
+    def _parse_file(
+        file: ImportFile, broker: str | None, timezone: str | None, limits: ImportLimits
+    ) -> ParsedImport:
+        if file.format == FileFormat.JSON:
+            parsed = parse_json(file.content, limits)
+            if file.data is not None and file.data != content_data(parsed):
+                raise ImportFileError(
+                    FileErrorCode.SERIES_INVALID,
+                    "The data of a JSON file (time unit, ticks or instrument data) "
+                    "come from its content and cannot be changed.",
+                )
+            return with_names(parsed, broker, file.instrument)
+        if broker is None or file.instrument is None or file.data is None:
+            raise ImportFileError(
+                FileErrorCode.SERIES_INVALID,
+                "A CSV file needs broker, instrument and data (time unit or ticks).",
+            )
+        if timezone is None:
+            raise ImportFileError(
+                FileErrorCode.TIMEZONE_UNKNOWN, "A CSV file needs the time zone of its times."
+            )
+        if file.data == TICKS:
+            series = CsvSeries(KIND_TICKS, broker, file.instrument, None, timezone)
+        else:
+            series = CsvSeries(KIND_CANDLES, broker, file.instrument, file.data, timezone)
+        return parse_csv(file.content, series, limits)
 
     def _write(self, parsed: ParsedImport) -> ImportResult:
         with _database_errors(), self._engine.begin() as connection:
@@ -592,6 +709,140 @@ class MarketDataStore:
         instruments = tuple(InstrumentOverview(row[0], row[1], row[2]) for row in info_rows)
         return Overview(tuple(result), instruments)
 
+    def _missing_parts(
+        self,
+        connection: Connection,
+        series_id: int,
+        unit: str,
+        covered: list[Interval],
+        sessions: list[TradingSession] | None,
+    ) -> list[MissingPart]:
+        """The missing parts over the whole covered range of a series (rules of section 7)."""
+        if not covered:
+            return []
+        request = Interval(covered[0].start, max(part.end for part in covered))
+        gaps = self._gaps(connection, series_id, unit, request, covered, sessions)
+        return combine(request, covered, gaps, sessions, self._rules)[1]
+
+    # ----- list of series, details, brokers -------------------------------------------------
+
+    def brokers(self) -> tuple[str, ...]:
+        """The brokers that occur in the data store (series or instrument data), sorted."""
+        with _database_errors(), self._engine.connect() as connection:
+            names = {
+                row[0] for row in connection.execute(sa.select(tables.series.c.broker).distinct())
+            }
+            names |= {
+                row[0]
+                for row in connection.execute(sa.select(tables.instrument.c.broker).distinct())
+            }
+        return tuple(sorted(names, key=_name_key))
+
+    def _row_keys(self, connection: Connection) -> list[tuple[str, str, str]]:
+        """All (broker, instrument, data) of the data store, including instruments that have
+        instrument data only, in the fixed order of the list."""
+        series = {
+            (row[0], row[1], row[2])
+            for row in connection.execute(
+                sa.select(tables.series.c.broker, tables.series.c.instrument, tables.series.c.unit)
+            )
+        }
+        with_series = {(broker, instrument) for broker, instrument, _ in series}
+        pairs = {
+            (row[0], row[1])
+            for row in connection.execute(
+                sa.select(tables.instrument.c.broker, tables.instrument.c.instrument).distinct()
+            )
+        }
+        keys = series | {
+            (broker, instrument, CONTRACT) for broker, instrument in pairs - with_series
+        }
+        return sorted(keys, key=_row_key)
+
+    def list_series(
+        self,
+        *,
+        broker: str | None = None,
+        instrument: str | None = None,
+        data: str | None = None,
+        offset: int = 0,
+        limit: int | None = None,
+    ) -> SeriesRowPage:
+        """The series page by page, filtered by broker, instrument and data.
+
+        Each filter is a part of the text, matched without regard to case; an empty or missing
+        filter matches everything. ``data`` is matched against the identifier (``m1``, ``h1``,
+        ``ticks``, ``contract``). The rows are sorted by broker, instrument and data (time units
+        from short to long, then ticks, then contract); the order is the same for equal data.
+        A row with data ``contract`` stands for an instrument at a broker that has instrument
+        data but no series. ``total`` counts all rows that match, ``limit`` is at most
+        ``max_page_size``. Missing parts are computed for the rows of the page only.
+        """
+        if offset < 0:
+            raise ValueError("offset must not be negative")
+        count = self._page_limit(limit)
+        with _database_errors(), self._engine.connect() as connection:
+            keys = [
+                key
+                for key in self._row_keys(connection)
+                if _contains(key[0], broker)
+                and _contains(key[1], instrument)
+                and _contains(key[2], data)
+            ]
+            items = tuple(self._row(connection, *key)[0] for key in keys[offset : offset + count])
+        return SeriesRowPage(items, len(keys))
+
+    def _row(
+        self, connection: Connection, broker: str, instrument: str, data: str
+    ) -> tuple[SeriesRow, list[MissingPart]]:
+        """The row of the list and its missing parts."""
+        if data == CONTRACT:
+            return SeriesRow(broker, instrument, data, None, None, 0), []
+        series_id = self._series_id(connection, broker, instrument, data, False)
+        assert series_id is not None  # noqa: S101 - the row was read from the table
+        if data == TICKS:
+            column = tables.tick.c.moment
+            table = tables.tick
+        else:
+            column = tables.candle.c.opened_at
+            table = tables.candle
+        first, last = connection.execute(
+            sa.select(sa.func.min(column), sa.func.max(column)).where(
+                table.c.series_id == series_id
+            )
+        ).one()
+        covered = self._coverage(connection, series_id)
+        sessions = self._sessions(connection, series_id) or None
+        missing = self._missing_parts(connection, series_id, data, covered, sessions)
+        return SeriesRow(broker, instrument, data, first, last, len(missing)), missing
+
+    def series_details(self, broker: str, instrument: str, data: str) -> SeriesDetails | None:
+        """The details of one row of the list: all missing parts (start, end, reason) and the
+        instrument data of the instrument at this broker (``contract`` is ``None`` if there are
+        none).
+
+        ``None`` if the list has no such row. The row with ``data`` equal to ``contract`` exists
+        only for an instrument that has instrument data and no series; it has no missing parts.
+        """
+        if data not in (TICKS, CONTRACT):
+            time_unit(data)
+        info = self.instrument_info(broker, instrument)
+        with _database_errors(), self._engine.connect() as connection:
+            if data == CONTRACT:
+                table = tables.series
+                has_series = connection.execute(
+                    sa.select(table.c.id).where(
+                        table.c.broker == broker, table.c.instrument == instrument
+                    )
+                ).first()
+                if has_series is not None or info is None:
+                    return None
+                return SeriesDetails(SeriesRow(broker, instrument, data, None, None, 0), (), info)
+            if self._series_id(connection, broker, instrument, data, False) is None:
+                return None
+            row, missing = self._row(connection, broker, instrument, data)
+        return SeriesDetails(row, tuple(missing), info)
+
     def _series_overview(
         self, connection: Connection, series_id: int, broker: str, instrument: str, unit: str
     ) -> SeriesOverview:
@@ -606,11 +857,7 @@ class MarketDataStore:
         ).one()
         covered = self._coverage(connection, series_id)
         sessions = self._sessions(connection, series_id) or None
-        missing: list[MissingPart] = []
-        if covered:
-            request = Interval(covered[0].start, max(part.end for part in covered))
-            gaps = self._gaps(connection, series_id, unit, request, covered, sessions)
-            missing = combine(request, covered, gaps, sessions, self._rules)[1]
+        missing = self._missing_parts(connection, series_id, unit, covered, sessions)
         return SeriesOverview(
             broker=broker,
             instrument=instrument,

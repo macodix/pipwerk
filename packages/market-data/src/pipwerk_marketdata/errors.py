@@ -3,7 +3,16 @@
 Messages are fixed or built from names of fields, never from file content.
 """
 
-from pipwerk_marketdata.records import FileErrorCode
+from pipwerk_marketdata.records import BatchErrorCode, FileErrorCode
+
+
+class ImportBatchError(Exception):
+    """The whole import process is refused before any file is read. Nothing was changed."""
+
+    def __init__(self, code: BatchErrorCode, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
 
 
 class ImportFileError(Exception):

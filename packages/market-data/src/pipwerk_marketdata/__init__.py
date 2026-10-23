@@ -1,45 +1,70 @@
 """pipwerk data store of historical price data.
 
-Public interface: ``MarketDataStore`` (import, reading, overview, completeness),
+Public interface: ``MarketDataStore`` (import of files and processes, reading, list of series,
+completeness), ``recognize_filename`` and ``inspect_json`` (hints for the import dialog),
 ``migrate_database`` (schema) and the value objects of ``pipwerk_marketdata.records``.
 """
 
-from pipwerk_marketdata.errors import DatabaseMigrationError, ImportFileError, MarketDataStoreError
+from pipwerk_marketdata.errors import (
+    DatabaseMigrationError,
+    ImportBatchError,
+    ImportFileError,
+    MarketDataStoreError,
+)
+from pipwerk_marketdata.filehints import inspect_json, recognize_filename
 from pipwerk_marketdata.limits import ImportLimits
 from pipwerk_marketdata.migrate import migrate_database
 from pipwerk_marketdata.records import (
+    BatchErrorCode,
     Candle,
     CandlePage,
     Completeness,
     CompletenessRules,
     FileErrorCode,
+    FileFormat,
+    FileHints,
+    FileOutcome,
+    ImportBatchResult,
+    ImportFile,
     ImportResult,
     InstrumentInfo,
     InstrumentOverview,
     Interval,
     MissingPart,
     MissingReason,
+    NameHints,
     Overview,
     RejectedRow,
     RejectReason,
+    SeriesDetails,
     SeriesOverview,
+    SeriesRow,
+    SeriesRowPage,
     Tick,
     TickPage,
     TradingSession,
     Weekday,
 )
 from pipwerk_marketdata.store import MarketDataStore
-from pipwerk_marketdata.timeunits import TICKS, TIME_UNITS, TimeUnit
+from pipwerk_marketdata.timeunits import CONTRACT, TICKS, TIME_UNITS, TimeUnit
 
 __all__ = [
+    "CONTRACT",
     "TICKS",
     "TIME_UNITS",
+    "BatchErrorCode",
     "Candle",
     "CandlePage",
     "Completeness",
     "CompletenessRules",
     "DatabaseMigrationError",
     "FileErrorCode",
+    "FileFormat",
+    "FileHints",
+    "FileOutcome",
+    "ImportBatchError",
+    "ImportBatchResult",
+    "ImportFile",
     "ImportFileError",
     "ImportLimits",
     "ImportResult",
@@ -50,14 +75,20 @@ __all__ = [
     "MarketDataStoreError",
     "MissingPart",
     "MissingReason",
+    "NameHints",
     "Overview",
     "RejectReason",
     "RejectedRow",
+    "SeriesDetails",
     "SeriesOverview",
+    "SeriesRow",
+    "SeriesRowPage",
     "Tick",
     "TickPage",
     "TimeUnit",
     "TradingSession",
     "Weekday",
+    "inspect_json",
     "migrate_database",
+    "recognize_filename",
 ]

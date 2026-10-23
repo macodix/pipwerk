@@ -238,6 +238,7 @@ class FileErrorCode(StrEnum):
     TIMEZONE_UNKNOWN = "timezone_unknown"
     PERIOD_INVALID = "period_invalid"
     NO_ROWS = "no_rows"
+    STORE_FAILED = "store_failed"
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,3 +261,128 @@ class ImportResult:
     period_end: datetime | None
     rejected: tuple[RejectedRow, ...]
     rejected_count: int
+
+
+class FileFormat(StrEnum):
+    """The format of a file of an import process."""
+
+    JSON = "json"
+    CSV = "csv"
+
+
+@dataclass(frozen=True, slots=True)
+class ImportFile:
+    """One file of an import process.
+
+    ``name`` is only reported back in the result; it is never used as a path. ``instrument`` and
+    ``data`` are needed for CSV files (the file does not contain them). For a JSON file the
+    content names them: ``instrument`` replaces the instrument of the content if given;
+    ``data`` must be missing or equal to the data of the content, otherwise the file is refused
+    (``series_invalid``). ``data`` is a time unit identifier (``m1`` to ``mn1``), ``ticks`` or,
+    for a JSON file only, ``contract``.
+    """
+
+    name: str
+    content: bytes
+    format: FileFormat
+    instrument: str | None = None
+    data: str | None = None
+
+
+class BatchErrorCode(StrEnum):
+    """Why a whole import process was refused. Nothing was read or changed."""
+
+    NO_FILES = "no_files"
+    TOO_MANY_FILES = "too_many_files"
+    BATCH_TOO_LARGE = "batch_too_large"
+
+
+@dataclass(frozen=True, slots=True)
+class FileOutcome:
+    """The result for one file of an import process.
+
+    Either ``result`` is set (the file was taken over; rows may have been rejected) or ``error``
+    and ``message`` (the whole file was refused; nothing of it was changed).
+    """
+
+    name: str
+    result: ImportResult | None
+    error: FileErrorCode | None
+    message: str | None
+
+    @property
+    def refused(self) -> bool:
+        return self.result is None
+
+    @property
+    def accepted(self) -> int:
+        """Rows taken over; 0 for a refused file."""
+        return self.result.accepted if self.result is not None else 0
+
+
+@dataclass(frozen=True, slots=True)
+class ImportBatchResult:
+    """Result of an import process: one outcome per file, in the order of the files given."""
+
+    files: tuple[FileOutcome, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class NameHints:
+    """What a file name says. ``data`` is a time unit identifier, ``ticks`` or ``contract``."""
+
+    instrument: str | None
+    data: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class FileHints:
+    """What the content of a JSON file says, read without importing it.
+
+    A value is ``None`` if the file does not name it or names it in a form the import would not
+    accept. ``error`` is set if the file as a whole cannot be read (size, coding, JSON).
+    ``data`` is a time unit identifier, ``ticks`` or ``contract``.
+    """
+
+    broker: str | None
+    instrument: str | None
+    data: str | None
+    error: FileErrorCode | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SeriesRow:
+    """One row of the list of series.
+
+    ``data`` is a time unit identifier, ``ticks`` or ``contract`` (only the instrument data of
+    an instrument without any series). ``first`` and ``last`` are the moments of the first and
+    the last candle or tick (UTC, ``None`` without any). ``gap_count`` counts the missing parts
+    over the covered range (completeness rules, see technical documentation); 0 for ``contract``.
+    """
+
+    broker: str
+    instrument: str
+    data: str
+    first: datetime | None
+    last: datetime | None
+    gap_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class SeriesRowPage:
+    """A page of the list of series. ``total`` counts all rows that match the filter."""
+
+    items: tuple[SeriesRow, ...]
+    total: int
+
+
+@dataclass(frozen=True, slots=True)
+class SeriesDetails:
+    """The details of one row: all missing parts and the instrument data at this broker.
+
+    ``contract`` is ``None`` if no instrument data exist for the instrument at the broker.
+    """
+
+    row: SeriesRow
+    gaps: tuple[MissingPart, ...]
+    contract: InstrumentInfo | None
