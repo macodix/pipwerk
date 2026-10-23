@@ -4,9 +4,10 @@
 # Runs the automatic checks of the component on the working directory this
 # script belongs to and ends with exit code 0 only if all of them pass:
 #
-#   check
+#   check [--with-audit]
 #
 # Checks: uv sync --frozen, pytest, ruff check, ruff format --check, mypy.
+# --with-audit adds pip-audit for the locked packages.
 # The package MetaTrader5 is not needed; the tests replace it.
 #
 # The working directory is derived from the path of this script. The script
@@ -24,7 +25,14 @@ die() {
     exit 2
 }
 
-[ $# -eq 0 ] || die "this script takes no parameters"
+with_audit=0
+while [ $# -gt 0 ]; do
+    case $1 in
+    --with-audit) with_audit=1 ;;
+    *) die "unknown parameter: $1 (usage: $PROG [--with-audit])" ;;
+    esac
+    shift
+done
 
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
     die "cannot determine the directory of the script"
@@ -56,11 +64,24 @@ in_component() {
     uv --directory "$component_dir" "$@"
 }
 
+# pip_audit: checks the packages locked in uv.lock for known vulnerabilities.
+pip_audit() {
+    audit_requirements=$(mktemp) || return 1
+    audit_status=0
+    in_component export --frozen --no-hashes --no-emit-project -o "$audit_requirements" &&
+        uvx pip-audit -r "$audit_requirements" --no-deps --disable-pip || audit_status=1
+    rm -f "$audit_requirements"
+    return "$audit_status"
+}
+
 step "uv sync --frozen" in_component sync --frozen
 step "pytest" in_component run --frozen pytest
 step "ruff check" in_component run --frozen ruff check
 step "ruff format --check" in_component run --frozen ruff format --check
 step "mypy" in_component run --frozen mypy
+if [ "$with_audit" = 1 ]; then
+    step "pip-audit" pip_audit
+fi
 
 printf '\n%s: passed:%s\n' "$PROG" "${passed:-
   none}"
