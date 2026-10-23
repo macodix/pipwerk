@@ -80,13 +80,12 @@ Nachrichten werden im ersten Entwicklungsstand nicht verschlüsselt. Der Aufbau 
 
 ### req-relay-007 -- Beschaffung von Kursdaten
 
-Der erste Anwendungsfall ist der Austausch zwischen pipwerk und der Beschaffung nach Gesamtsystem req-system-027:
+Der erste Anwendungsfall ist der Austausch mit der Beschaffung für MetaTrader 5 nach Gesamtsystem req-system-027, die auf dem Rechner von MetaTrader 5 läuft:
 
-1. Der Strategietester stellt vor dem Start eines Testlaufs fest, dass Kursdaten oder Angaben zum Instrument fehlen (Strategietester req-test-003), oder der Anwender stößt die Beschaffung von Hand an.
-2. Er fordert die fehlenden Daten über pipwerk relay bei der Beschaffung für MetaTrader 5 an, die auf dem Rechner von MetaTrader 5 läuft.
-3. Die Beschaffung liefert die Dateien im Dateiformat des Imports zurück. Der Strategietester importiert sie (req-system-026).
+1. Eine laufende Komponente schickt der Beschaffung über pipwerk relay eine Anfrage. Sie nennt Broker, Symbol des Instruments beim Broker, Zeiteinheit und Zeitraum.
+2. Die Beschaffung liefert die Dateien im Dateiformat des Imports (req-system-026) an die Adresse des Absenders zurück.
 
-Damit endet die Übergangslösung nach req-system-027.
+Wann und mit welchen Angaben der Strategietester die Beschaffung anfragt (Strategietester req-test-003), legt das Vorhaben `backtest` fest. Bis dahin gilt die Übergangslösung nach req-system-027.
 
 Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit dem Handelssystem.
 
@@ -104,3 +103,4 @@ Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit
 | 2026-10-23 | Adresse je laufender Komponente mit Name und Relay, Adressbuch nur mit Relays (req-relay-005, req-relay-006), unzustellbare Nachricht (req-relay-008), Priorität (req-relay-009), Schutz gegen Fälschung (req-relay-010), keine Verschlüsselung im ersten Entwicklungsstand (req-relay-011). Festlegungen des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | req-relay-005: Die zuständige laufende Komponente bestimmt der Absender aus seiner Konfiguration. Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | req-relay-005: Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; Absender ist ebenfalls eine Adresse; „laufende Komponente“ statt „Instanz“ (Glossar). Entscheidung des Auftraggebers im Chat am 2026-10-23 nach Prüfbericht `relay/reviews/requirements-1.md` (B2, B3). |
+| 2026-10-23 | req-relay-007: Anwendungsfall Beschaffung ohne Anschluss des Strategietesters; dieser gehört zum Vorhaben `backtest`. Entscheidung des Auftraggebers im Chat am 2026-10-23 (`relay`, B1). |

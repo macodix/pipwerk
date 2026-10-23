@@ -34,6 +34,7 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 
 - Strategietester: Anzeige der Unterschiede zwischen Fassungen einer Strategie (darf durch den Aufbau nicht ausgeschlossen werden).
 - Fachmodell: Die als offen gekennzeichneten Stellen zur Ausführung von Strategien (unter anderem freie Margin, req-fach-049) betreffen dieses Vorhaben unmittelbar. Die QA meldet sie als Lücke, soweit ein Testfall sie zum Testen braucht.
+- Beschaffung über pipwerk relay (req-test-003, req-system-027): Welchen Broker ein Testlauf verwendet und woher die Beschaffung das Symbol des Brokers zum Instrument erhält (Fachmodell req-fach-053). Befund B1 aus [relay/reviews/requirements-1.md](../relay/reviews/requirements-1.md), am 2026-10-23 vom Auftraggeber in dieses Vorhaben verwiesen. Offen.
 
 ## Stand
 

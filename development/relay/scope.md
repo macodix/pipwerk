@@ -1,8 +1,8 @@
 # Vorhaben relay
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Beschaffung von Kursdaten. Der Strategietester fordert fehlende Kursdaten über pipwerk relay bei der Beschaffung für MetaTrader 5 an und importiert die gelieferten Dateien.
+Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Beschaffung von Kursdaten. Eine Anfrage an die Beschaffung für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
 
-Nachweis des Vorhabens: Ein Testlauf, für den Kursdaten fehlen, beschafft sie über pipwerk relay von der Beschaffung auf dem Rechner von MetaTrader 5, importiert sie und startet. Die Nachrichten laufen über beide ersten Übertragungswege, Matrix und Dateien.
+Nachweis des Vorhabens: Eine Anfrage mit Broker, Symbol des Instruments, Zeiteinheit und Zeitraum erreicht über pipwerk relay die Beschaffung auf dem Rechner von MetaTrader 5, und die Dateien kommen an die Adresse des Absenders zurück. Das gelingt einmal über Matrix und einmal über Dateien.
 
 ## Geltende Dokumente
 
@@ -11,11 +11,10 @@ Anforderungsdokumente:
 - [Anforderungen an das Nachrichtensystem](../../docs/design/requirements/anforderungen-nachrichtensystem.md)
 - [Anforderungen an das Gesamtsystem](../../docs/design/requirements/anforderungen-gesamtsystem.md), insbesondere req-system-005, req-system-026 und req-system-027
 - [Anforderungen an das Handelssystem](../../docs/design/requirements/anforderungen-handelssystem.md), nur req-grund-003 bis req-grund-006 (Aufbau einer Nachricht)
-- [Anforderungen an den Strategietester](../../docs/design/requirements/anforderungen-strategietester.md), nur req-test-001 und req-test-003 (Beschaffung fehlender Kursdaten)
 
 ## Abhängigkeit
 
-Der Anwendungsfall Beschaffung baut auf dem Datenbestand, dem Import und `pipwerk-fetch-mt5` aus dem Vorhaben [backtest](../backtest/scope.md) auf.
+Der Anwendungsfall Beschaffung baut auf dem Dateiformat des Imports und `pipwerk-fetch-mt5` aus dem Vorhaben [backtest](../backtest/scope.md) auf.
 
 ## Offene Punkte des Auftraggebers
 
@@ -28,3 +27,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Offene Punkte Adresse, Adressbuch, unzustellbare Nachricht, Schutz gegen Fälschung und Verschlüsselung vom Auftraggeber im Chat entschieden.
 
 2026-10-23: Zuständige Instanz bestimmt der Absender (req-relay-005), Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Prüfung der Dokumente des Auftraggebers durch die QA mit `check` angestoßen.
+
+2026-10-23: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (B1 bis B3). Entscheidungen des Auftraggebers im Chat: B2 Absender ist eine Adresse; B3 Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; B1 Nachweis ohne Strategietester, Broker und Symbol im Testlauf als offener Punkt in `backtest`. H5 Glossar „Instanz“: im Nachrichtensystem „laufende Komponente“. Nachprüfung mit `check`.
