@@ -2,7 +2,7 @@
 // element of their first use and are connected with it; further uses are data connections with labels.
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as RPointerEvent } from 'react';
-import { TYPES, fieldTip, isFlowEl, isObjectEl, isTrigger, memberLabel, methodOf, tx, typeLabel, DTYPE_LABEL, membersOf } from './catalog';
+import { TYPES, fieldTip, isFlowEl, isObjectEl, isTrigger, memberDesc, memberLabel, methodOf, tx, typeLabel, DTYPE_LABEL, membersOf } from './catalog';
 import { scopeFor } from './findings';
 import type { Finding } from './findings';
 import { levelOf } from './findings';
@@ -452,7 +452,11 @@ export function Canvas({ findings }: { findings: Finding[] }) {
               const parts = w.uses.map((u) => `${u.refresh ? '↻ ' : ''}${memberLabel(srcEl, u.prop, u.args, lang)}`);
               const text = parts.join(', ');
               const tip = `${srcEl?.name ?? ''} → ${dstEl?.name ?? ''}: ${parts.join(', ')}${w.first ? ` (${L('erste Verwendung', 'first use')})` : ''}${w.refresh ? ` – ${L('Aktualisieren: Das Objekt ermittelt seine Werte neu, bevor es sie übergibt', 'Update: the object determines its values anew before it passes them')}` : ''}`;
-              const lw = Math.max(28, text.length * 6.4 + 18);
+              // the line to the first use is short in the vertical flow (order 06): a longer label is shortened, the hint names it in full
+              const room = dir === 'v' && w.first ? Math.abs(w.pts[1].x - w.pts[0].x) : 220;
+              const fit = Math.max(4, Math.floor((room - 14) / 6.4));
+              const shown = text.length > fit ? `${text.slice(0, fit - 1)}…` : text;
+              const lw = Math.max(28, shown.length * 6.4 + 14);
               return (
                 <g key={w.key} className={`wire${w.first ? ' first' : ' further'}${w.refresh ? ' refresh' : ''}${rel ? ' on' : ''}${selId !== null && !rel && !w.first ? ' dim' : ''}`} style={{ color }}
                   data-testid="wire" data-src={srcEl?.name} data-dst={dstEl?.name} data-first={w.first ? '1' : '0'} data-refresh={w.refresh ? '1' : '0'} data-label={text}>
@@ -464,7 +468,7 @@ export function Canvas({ findings }: { findings: Finding[] }) {
                   {text && (
                     <g transform={`translate(${w.mid.x} ${w.mid.y})`} className="wire-label" data-testid="wire-label" data-tip={tip}>
                       <rect x={-lw / 2} y="-9" width={lw} height="18" rx="9" />
-                      <text textAnchor="middle" dy="4">{text}</text>
+                      <text textAnchor="middle" dy="4">{shown}</text>
                     </g>
                   )}
                 </g>
@@ -675,9 +679,9 @@ function CardView({
           const p = props.find((q) => q.id === row.prop);
           if (!p) return null;
           return (
-            <li key={row.key} className={`card-row${row.used ? ' used' : ''}${row.method ? ' method' : ''}`} data-tip={fieldTip(row.prop, lang, 'p')} data-testid="card-row" data-prop={row.key}>
-              <span className="row-name">{memberLabel(el, row.prop, row.args, lang)}</span>
-              <span className="row-type">{p.method ? L('Methode', 'Method') : tx(DTYPE_LABEL[p.dtype], lang)}</span>
+            <li key={row.key} className={`card-row${row.used ? ' used' : ''}${row.method ? ' method' : ''}`} data-tip={memberDesc(el, row.prop, lang)} data-testid="card-row" data-prop={row.key}>
+              <span className="row-name" data-testid="row-name">{memberLabel(el, row.prop, row.args, lang)}</span>
+              <span className="row-type" data-testid="row-type">{p.method ? L('Methode', 'Method') : tx(DTYPE_LABEL[p.dtype], lang)}</span>
               <span className="port prop" data-port-prop={row.key} data-testid={`port-prop-${row.key}`} style={{ top: ROW_H / 2 }} data-tip={L('Ziehen Sie von hier auf ein Element, um diesen Wert zu verbinden', 'Drag from here to an element to connect this value')} />
             </li>
           );

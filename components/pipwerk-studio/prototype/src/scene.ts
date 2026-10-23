@@ -20,9 +20,15 @@ export const ROW_H = 27;
 export const CARD_HEAD = 50;
 export const FRAME_HEAD = 36;
 export const FRAME_PAD = 18;
-/** Space for the label of the line between an instance and its element. */
-const BAND_GAP_V = 150;
-const BAND_GAP_H = 64;
+/**
+ * Distance between an instance and the element of its first use. It is smaller than the distance of two
+ * consecutive elements of the flow (66 and 76, see buildScene), so that the instance lies close to its element
+ * (order 06). A label that is longer than the space is shortened on the picture; the full text stays in the hint.
+ */
+export const BAND_GAP_V = 60;
+export const BAND_GAP_H = 64;
+/** Distance of consecutive elements of the flow: across the rank (vertical flow) and along it. */
+export const FLOW_GAP = { v: 66, h: 76 };
 const CARD_GAP = 16;
 /** Height of the hint on an instance that is not connected yet. */
 export const FREE_HINT = 44;
@@ -332,7 +338,7 @@ export function buildScene(s: Strategy, dir: Dir): Scene {
       if (sw) return fp ? { id, w: sz.w, h: sz.h, ax: fp.ex + EL_W / 2 } : { id, w: sz.w, h: sz.h };
       return fp ? { id, w: sz.h, h: sz.w, ax: fp.ey + EL_H / 2 } : { id, w: sz.h, h: sz.w };
     });
-    const res = layered(lnodes, edges, sw ? 48 : 26, sw ? 66 : 76);
+    const res = layered(lnodes, edges, sw ? 48 : 26, sw ? FLOW_GAP.v : FLOW_GAP.h);
     const pos = new Map<string, Pt>();
     const via = new Map<string, Pt[]>();
     for (const [id, p] of res.pos) pos.set(id, sw ? p : transpose(p));

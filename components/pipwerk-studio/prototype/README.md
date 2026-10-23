@@ -1,6 +1,6 @@
 # Prototyp pipwerk Studio
 
-Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). `order-04.md` (Elementbibliothek nach „Neue Strategie“ und Name „Assistent“, Einwände des Auftraggebers vom 23. Oktober 2026) und `order-05.md` (Hinweise und Assistent nur in der Eigenschaftenansicht, Einwand des Auftraggebers vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
+Klickbarer Prototyp der gesamten Oberfläche von pipwerk Studio mit simulierten Daten. Er zeigt Bedienung und Erscheinungsbild, rechnet nichts und braucht kein Backend. Aufträge: `development/strategiedesign/prototype/order-01.md` (gesamte Oberfläche) `order-02.md` (geänderte Darstellung der Objekte vom 22. Oktober 2026) und `order-03.md` (Namensvorschlag beim Einfügen einer Vorlage und gemeinsamer Namensraum, Festlegungen vom 23. Oktober 2026). `order-04.md` (Elementbibliothek nach „Neue Strategie“ und Name „Assistent“, Einwände des Auftraggebers vom 23. Oktober 2026) und `order-05.md` (Hinweise und Assistent nur in der Eigenschaftenansicht, Einwand des Auftraggebers vom 23. Oktober 2026) und `order-06.md` (Objekte beim Element ihrer ersten Verwendung, Beschreibung der Eigenschaften und Methoden, Ausgang mit Namen, weitere Einwände vom 23. Oktober 2026). Zweig `strategiedesign/proto-studio` (Prototypzweig, wird nicht übernommen). Der Auftraggeber bestätigt den Prototyp, bevor die Oberfläche spezifiziert und umgesetzt wird.
 
 ## Bau und Start
 
@@ -37,7 +37,9 @@ Die Tests öffnen die gebaute Datei über `file://`, also erst `npm run build`. 
 | `assistant.spec.ts` | Auftrag 04: in allen sechs Fenstergrößen nach „Neue Strategie“ die Elementbibliothek über jeden Weg öffnen, bei laufendem Assistenten und nach seinem Verlassen, ein Klick fügt ein Element ein. Der gesamte sichtbare Text, die Beschriftungen für Bildschirmleser und die Erklärungen in Deutsch und Englisch nach „Neue Strategie“ und in jedem Schritt: „geführt“, „Aufbau“ und „guided“ kommen nicht vor, „Assistent“ beziehungsweise „Assistant“ kommt vor. Der Quelltext unter `src/` hat außerhalb von Kommentaren keinen solchen Text |
 | `buttons.spec.ts` | Auftrag 04, Punkt 3, mit Auftrag 05, Punkt 7 (auch ohne geöffnete Strategie und bei zur Seite getretenem Assistenten mit der Zeile „Assistent fortsetzen“): in jeder der sechs Fenstergrößen nach „Neue Strategie“, in den fünf Schritten des Assistenten (Schritt 3 auch mit zwei Indikatoren) und nach „Ohne Assistent weiterarbeiten“ wird jede sichtbare, aktivierte Schaltfläche und jeder Reiter einzeln auf frischem Stand angeklickt, bis 1279 Pixel auch die Einträge des Menüs „Menü“. Danach muss sich der Inhalt der Seite geändert haben. Ausnahmen, im Test benannt: die Statusanzeige der Strategie, ein schon gewählter Reiter und ein schon gewählter Eintrag einer Auswahl (Ausrichtung, Auslöser). „Zum Anfang“ und „Neu anordnen“ ändern bei leerer Fläche nichts; ihre Funktion belegt ein eigener Test je Größe mit verschobener Ansicht und verschobenem Element |
 | `properties-only.spec.ts` | Auftrag 05: in jeder der sechs Fenstergrößen, Deutsch und Englisch, ohne geöffnete Strategie, nach „Neue Strategie“, in jedem Schritt des Assistenten und nach „Ohne Assistent weiterarbeiten“ enthält die Zeichenfläche (auch verdeckt) keinen Hinweistext und keine Schaltfläche eines Hinweises; „Keine Strategie geöffnet“ steht im sichtbaren Text außerhalb der Fußzeile genau einmal; der Hinweis der leeren Strategie steht über den Feldern der Strategie, der Assistent ist ohne weiteren Klick sichtbar. Element oder Strategie wählen bei laufendem Assistenten: Zeile „Assistent, Schritt n von 5“ über den Feldern, „Assistent fortsetzen“ führt in denselben Schritt zurück, „Ohne Assistent weiterarbeiten“ beendet ihn. Kurze Meldung oben in der Eigenschaftenansicht; bei verdeckter Eigenschaftenansicht (bis 1099 Pixel) Markierung am Reiter, bis die Meldung verschwunden ist |
-| `screenshots.spec.ts` | Bildschirmbilder |
+| `placement.spec.ts` | Auftrag 06, Punkt 1: auf jedem Weg, auf dem Instanzen auf die Fläche kommen (`paths.ts`: „EMA-Trendfolge“, `str-01`, `str-03`, „Neue Strategie“ mit Assistent bis zum Ende, EMA aus der Bibliothek bei gewähltem Element, EMA aus der Bibliothek und danach mit der Bedingung verbunden), senkrecht und waagerecht, in 1366 × 768 und 390 × 844: jede Instanz liegt neben beziehungsweise über oder unter dem Element ihrer ersten Verwendung, ihr Abstand zu ihm (Lücke zwischen den Kästen) ist höchstens so groß wie die kleinste Lücke zwischen zwei aufeinanderfolgenden Elementen des Ablaufs, kein Rahmen und kein Abschnitt umschließt nur Instanzen, die Linie zur ersten Verwendung schneidet keine andere Linie und kein Element (`geometry.ts` misst Kästen und Linien in der Seite), die Linie samt Beschriftung ist sichtbar; eine Instanz lässt sich verschieben |
+| `members.spec.ts` | Auftrag 06, Punkte 2 und 3: für EMA, ATR, ZigZag, 1-2-3-Trend, Trend, Konto, Instrument, Kerze und Tick sowie Order, Position und Strategie, Deutsch und Englisch: jede Zeile der Eigenschaftenansicht hat Name, Datentyp und eine sichtbare Beschreibung eigener Art (nicht den Ersatzsatz); jede Zeile des Objekts auf der Zeichenfläche (aufgeklappt) zeigt ihren Namen, nie nur einen Datentyp |
+| `screenshots.spec.ts`, `order06-screenshots.spec.ts` | Bildschirmbilder; die zweite Datei erzeugt die Bilder zu Auftrag 06 für alle Wege (Vorsatz `vorher` oder `nachher` im Quelltext der Datei) und schreibt die Messwerte in die Ausgabe |
 
 Die Aufbautests geben keinen Ausdruck als Text ein. Der Vergleich mit dem Testfall nimmt die Strategie, die im Browser gespeichert wurde, und den mitgelieferten Testfall, ersetzt die internen Kennungen durch Namen und vergleicht Parameter, Elemente, Belegungen, Ausdrücke, Regeln und Verbindungen. Die Lage der Instanzen und das Element der ersten Verwendung gehören nicht zum Vergleich.
 
@@ -72,6 +74,7 @@ React 19 mit TypeScript (`strict`, ohne Emit) und Vite, Versionen wie in der bes
 | `Canvas.tsx` | Zeichenfläche mit Ziehen, Verbinden, Zoom, Einpassen |
 | `Library.tsx`, `Properties.tsx`, `fields.tsx`, `OwnEditor.tsx`, `TemplateView.tsx`, `Wizard.tsx` | Elementbibliothek, Eigenschaftenansicht, Belegung, eigene Objekte, Vorlagenansicht, Assistent |
 | `ExprEditor.tsx` | Bausteine und Formeleditor |
+| `descriptions.ts`, `Members.tsx` | Auftrag 06: Beschreibung jeder Eigenschaft und Methode je Objekttyp (Deutsch, Englisch); Liste „Liefert“ mit Name, Datentyp und Beschreibung |
 | `store.ts`, `findings.ts`, `samples.ts`, `factory.ts` | Zustand und Aktionen, Prüfung, Strategien zum Start, Anlegen von Elementen |
 | `names.ts` | Namensraum der Strategie: alle Namen sammeln, doppelte finden, enthaltene Instanzen und Regeln für Ausdrücke bereitstellen, Namen beim Einfügen einer Vorlage vorschlagen |
 
@@ -188,6 +191,47 @@ Nach „Neue Strategie“ und „Assistent starten“ war die Eigenschaftenansic
 
 - Ein Mangel, den der neue Test in 390 × 844 fand: Legt der Assistent das erste Element an, während die Zeichenfläche verdeckt ist, wurde die Ansicht für eine Fläche der Breite null berechnet und das Element lag außerhalb des Bildes. Die Fläche passt ihre Ansicht jetzt an, sobald sie zum ersten Mal mit Breite sichtbar wird, aber nur, wenn sie zuvor verdeckt eingepasst wurde (die Ansicht springt sonst nicht).
 - Nicht verändert, weil der Auftrag sie nicht nennt: der Hinweis „Noch leer …“ im Rahmen einer Verwaltung, der Hinweis „Noch nicht verbunden“ an einer Karte und die Einblendung „Klicken Sie jetzt das Element an …“ beim Verbinden. Sie stehen auf der Zeichenfläche (Rahmen und Karten gehören zu ihr). Ob sie als Hinweise im Sinne von req-ui-016 gelten, entscheidet der Auftraggeber.
+
+## Entscheidungen zu Auftrag 06
+
+Grundlage: req-ui-014, req-ui-016 und req-ui-017 in der Fassung vom 2026-10-23, Fachmodell req-fach-051, req-fach-054, req-fach-055.
+
+### Objekte beim Element ihrer ersten Verwendung (Punkt 1): gefundene Ursache
+
+Vor der Änderung wurde jeder Weg, auf dem Instanzen auf die Fläche kommen, gebaut und gemessen (`order06-screenshots.spec.ts`, Bilder `screenshots/vorher-*.png`, Messwerte unten). Die Ursache, die der Einwand beschreibt, ließ sich in dieser Form nicht nachstellen: Auf allen sechs Wegen liegt jede Instanz beim Element ihrer ersten Verwendung, es gibt keinen Kasten und keinen Bereich, der Instanzen sammelt, und keine Linie zur ersten Verwendung schneidet eine andere Linie oder ein Element (Messung `crossLines`, `crossBoxes`). Gefunden wurde stattdessen:
+
+1. **Abstand.** Bei senkrechtem Ablauf lag die Instanz 150 Pixel neben ihrem Element, der Abstand zweier aufeinanderfolgender Elemente des Ablaufs beträgt 66 Pixel. Das ist weit weg und wirkt wie ein eigener Block links vom Ablauf. Bei waagerechtem Ablauf waren es 64 Pixel bei 76 Pixel Abstand der Elemente, also nah genug. Der Abstand ist jetzt 60 Pixel (`BAND_GAP_V` in `scene.ts`).
+2. **Instanzen ohne erste Verwendung** liegen in einer Spalte links vom Ablauf (unter dem Hinweis „Noch nicht verbunden“), solange sie mit keinem Element verbunden sind. Das ist der Zustand einer Instanz, die aus der Bibliothek bei gewählter Strategie eingefügt wurde, und im Assistenten in Schritt 3, in dem es noch keine Bedingung gibt. Auftrag Punkt 1 verlangt für diesen Fall, dass sie dort bleibt, wo sie abgelegt wurde, mit der bisherigen Markierung; das ist unverändert.
+3. **Weitere Verwendungen** zeigen bei „Alle“ und bei gewähltem Element ihre Linien von der Karte zum verwendenden Element, auch quer über die Fläche (zum Beispiel EMA20 zur Bedingung in der Verwaltung). Das ist im Auftrag als „wie bisher“ festgelegt und unverändert.
+
+Messwerte (1366 × 768, Lücke zwischen Karte und Element in Pixel, kleinste Lücke zwischen zwei aufeinanderfolgenden Elementen des Ablaufs in Klammern; Kreuzungen jeweils keine):
+
+| Weg | senkrecht vorher | senkrecht nachher | waagerecht vorher und nachher |
+|---|---|---|---|
+| „EMA-Trendfolge“, `str-01`, `str-03` | 150 (66) | 60 (66) | 64 (76) |
+| „Neue Strategie“ mit Assistent bis zum Ende | 150 (133) | 60 (133) | 64 (176) |
+| EMA aus der Bibliothek bei gewähltem Element, oder danach verbunden | 150 (71,5) | 60 (71,5) | 64 (76) |
+
+Bilder: `screenshots/vorher-<Weg>-senkrecht|waagerecht-1366x768.png` und `nachher-…`, Wege `ema-trendfolge`, `str-01`, `str-03`, `assistent`, `bibliothek-gewaehlte-bedingung`, `bibliothek-danach-verbunden`, dazu die unverbundenen Zustände `assistent-schritt-3` und `bibliothek-frei-mit-ablauf`. Die Bilder zeigen die ganze Strategie eingepasst; in „Einpassen“ sind große Strategien klein.
+
+Ist der Stand, den der Auftraggeber geprüft hat, ein anderer (zum Beispiel gespeicherte Strategien aus einem früheren Test im Browser), ist das aus dem Repository nicht festzustellen. Die Beschriftung einer so kurzen Linie hat bei senkrechtem Ablauf nur 60 Pixel Platz. Ist sie länger als der Platz, kürzt die Zeichnung sie mit „…“; vollständig steht sie im Hinweis beim Zeigen und im Attribut `data-label`. Die Karte hebt die verwendeten Zeilen ohnehin hervor.
+
+### Beschreibung der Eigenschaften und Methoden (Punkt 2)
+
+`descriptions.ts` enthält zu jeder Eigenschaft und Methode jedes Objekttyps zwei Sätze in Deutsch und Englisch: was der Wert aussagt, wozu man ihn verwendet. `Members.tsx` zeigt sie in „Liefert“ unter Name und Datentyp (Eigenschaftenansicht eines Objekts, Ansicht einer Vorlage). Für Order, Position und Strategie, die nicht auf die Fläche gelegt werden, steht der Abschnitt „Order, Position und Strategie“ in der Eigenschaftenansicht der Strategie. Als Hinweis beim Zeigen dient dieselbe Beschreibung (Zeile einer Karte, Vorschläge im Formeleditor). Für selbst angelegte Indikatoren und Trends gilt der Satz des enthaltenen Objekttyps oder ein allgemeiner Satz.
+
+Selbst formulierte Stellen: Das Fachmodell nennt einen Zweck nur für `Kapital` (req-fach-051), die Punkte des 1-2-3-Trends (`indikator-markttechnik.md`, Abschnitte 4 und 5, die Beschreibung des Werts) und die Wendepunkte des ZigZag (Verfahren). Alle anderen Sätze, vor allem der Teil „wozu man ihn verwendet“, sind vom Entwickler geschrieben und fachlich nicht vom Auftraggeber bestätigt: Konto (freie Margin, Währung), Instrument (alle Eigenschaften), Kerze (alle Eigenschaften), Tick (alle), Order (alle), Position (alle), Strategie (alle), EMA und ATR (Wert, Wert vor), ZigZag (Kurs, Hoch oder Tief, endgültig), Trend (Richtung), Ergebnis von Bedingung, Berechnung, Regel und Regelwerk, die allgemeinen Sätze für eigene Werte.
+
+### Ausgang mit Namen (Punkt 3)
+
+Jede Zeile einer Karte zeigt den Namen der Eigenschaft beziehungsweise Methode (`row-name`), dahinter in kleiner Schrift den Datentyp (`row-type`); der Name wird nicht mehr vom Datentyp verdrängt (Mindestbreite). Beschriftung der Linien, „Verbundene Werte“ in den Bausteinen und die Eingänge in der Eigenschaftenansicht („Verwendete Werte“, Auswahl der Eigenschaft oder Methode) nannten den Namen schon im Ausgangscommit (zum Beispiel „EMA 20 › Wert“); eine Stelle, an der nur „Zahl“ steht, fand der Test nicht. Neu ist der Test, der das für alle Objekttypen prüft.
+
+### Weiteres
+
+- Das Löschen einer Verbindung bleibt wie im Ausgangscommit (Punkt 4 des Auftrags).
+- Der Datentyp „Zeitpunkt“ heißt jetzt „Datum und Uhrzeit“ („Date and time“). Sonst standen bei der Eigenschaft „Zeitpunkt“ von Kerze und Tick Name und Datentyp mit demselben Wort nebeneinander.
+- Tests: `buttons.spec.ts` und alle übrigen bestehenden Tests blieben unverändert, außer dem folgenden.
+- Test geändert: `features.spec.ts` prüft die Beschriftung der Linie zur ersten Verwendung von `str-01` am Attribut `data-label` statt am sichtbaren Text, weil die Zeichnung sie kürzt.
 
 ## Zuordnung zu den Mängeln der Abnahme
 

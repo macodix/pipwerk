@@ -1,7 +1,7 @@
 // Expressions: formula text (view for advanced users) <-> expression tree <-> readable sentence.
 // Names in the tree are references (ids); the text shows the current names, so renaming
 // a connected object does not break any expression.
-import { APP_OBJECTS, TYPES, choiceLabel, isObjectEl, memberLabel, membersOf, methodOf, methodText, propDef, propsOf, tx, typeLabel, fieldTip } from './catalog';
+import { APP_OBJECTS, TYPES, choiceLabel, isObjectEl, memberDesc, memberLabel, membersOf, methodOf, methodText, propDef, propsOf, tx, typeLabel, typeMemberDesc } from './catalog';
 import type { Member } from './catalog';
 import type { El, Expr, Lang, MethodDef, SParam } from './model';
 
@@ -813,7 +813,7 @@ export function completionsAt(text: string, caret: number, sc: Scope): { from: n
         .filter((p) => normName(p.name).startsWith(prefix))
         .map((p) => ({ label: p.name, insert: nm(p.name), detail: de ? 'Strategieparameter' : 'strategy parameter' }));
       for (const p of TYPES.Strategie.props) {
-        if (normName(tx(p, sc.lang)).startsWith(prefix)) items.push({ label: tx(p, sc.lang), insert: nm(tx(p, sc.lang)), detail: dtypeShort(p.dtype, sc.lang), tip: fieldTip(p.id, sc.lang, 'p') });
+        if (normName(tx(p, sc.lang)).startsWith(prefix)) items.push({ label: tx(p, sc.lang), insert: nm(tx(p, sc.lang)), detail: dtypeShort(p.dtype, sc.lang), tip: typeMemberDesc('Strategie', p.id, sc.lang) });
       }
       return { from, items };
     }
@@ -826,13 +826,13 @@ export function completionsAt(text: string, caret: number, sc: Scope): { from: n
           label: methodText(p.method, undefined, sc.lang),
           insert: `${nm(tx(p, sc.lang))}(${p.method.defaults.join('; ')})`,
           detail: `${de ? 'Methode' : 'method'}: ${p.method.args.map((q) => tx(q, sc.lang)).join('; ')}`,
-          tip: fieldTip(p.id, sc.lang, 'p'),
+          tip: o.el ? memberDesc(o.el, p.id, sc.lang) : typeMemberDesc(o.type, p.id, sc.lang),
         }
         : {
           label: tx(p, sc.lang),
           insert: nm(tx(p, sc.lang)),
           detail: dtypeShort(p.dtype, sc.lang),
-          tip: fieldTip(p.id, sc.lang, 'p'),
+          tip: o.el ? memberDesc(o.el, p.id, sc.lang) : typeMemberDesc(o.type, p.id, sc.lang),
         });
     return { from, items };
   }

@@ -2,6 +2,8 @@
 // in German and English and short explanations in trader language.
 import type { BindingKind, Choice, DType, El, GroupId, Lang, MethodDef, ParamDef, PropDef, TypeDef, Txt } from './model';
 
+import { memberText } from './descriptions';
+
 const t = (de: string, en: string): Txt => ({ de, en });
 const ch = (id: string, de: string, en = de): Choice => ({ id, de, en });
 
@@ -524,6 +526,26 @@ export function memberLabel(el: Pick<El, 'type' | 'own' | 'name'> | undefined, p
   return p ? tx(p, lang) : prop;
 }
 
+/**
+ * What a property or method of an object says and what one uses it for (req-ui-016), in trader language.
+ * Own indicators and trends: the sentence of the contained object type or a general sentence.
+ */
+export function memberDesc(el: Pick<El, 'type' | 'own'>, id: string, lang: Lang): string {
+  const inc = /^inc:([^:]+):(.+)$/.exec(id);
+  if (inc) {
+    const sub = el.own?.includes.find((i) => i.id === inc[1]);
+    const txt = sub ? memberText(sub.tpl, inc[2], lang) : undefined;
+    if (txt) return txt;
+  }
+  return memberText(el.type, id, lang)
+    ?? (lang === 'en' ? 'A value of this object that other elements can use.' : 'Ein Wert dieses Objekts, den andere Elemente verwenden können.');
+}
+
+/** The same for an object type without an instance (formula editor, template view). */
+export function typeMemberDesc(type: string, id: string, lang: Lang): string | undefined {
+  return memberText(type, id, lang);
+}
+
 export function supportsRefresh(el: Pick<El, 'type'>): boolean {
   return !!TYPES[el.type]?.refresh;
 }
@@ -541,7 +563,7 @@ export const DTYPE_LABEL: Record<DType, Txt> = {
   text: t('Text', 'Text'),
   choice: t('Auswahl', 'Choice'),
   time_unit: t('Zeiteinheit', 'Time unit'),
-  timestamp: t('Zeitpunkt', 'Time'),
+  timestamp: t('Datum und Uhrzeit', 'Date and time'),
   date: t('Datum', 'Date'),
   expression: t('Ausdruck', 'Expression'),
   instrument: t('Instrument', 'Instrument'),

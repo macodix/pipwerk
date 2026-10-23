@@ -1,6 +1,7 @@
 // Own view of a template (indicator, trend, rule, rule set) with Save, Check, Close, Delete.
 // The open strategy stays open behind it.
-import { DTYPE_LABEL, TYPES, fieldTip, fieldsOf, membersOf, methodText, tx, typeLabel } from './catalog';
+import { TYPES, fieldTip, fieldsOf, membersOf, typeLabel } from './catalog';
+import { MemberList } from './Members';
 import { problems } from './expr';
 import type { Scope } from './expr';
 import { FieldRow } from './fields';
@@ -106,17 +107,7 @@ export function TemplateView() {
         )}
         {isType && baseType && membersOf({ type: t.type, own: null, name: t.name }).length > 0 && (
           <Section title={L('Liefert', 'Delivers')} testid="tpl-delivers">
-            <ul className="prop-list">
-              {membersOf({ type: t.type, own: null, name: t.name }).map((p) => (
-                <li key={p.id} className="prop-row" data-tip={fieldTip(p.id, lang, 'p')} data-method={p.method ? '1' : '0'}>
-                  <span className="prop-name">{p.method ? methodText(p.method, undefined, lang) : tx(p, lang)}</span>
-                  {p.method
-                    ? <span className="dtype-chip method-chip">{L('Methode', 'Method')} · {p.method.args.map((a) => tx(a, lang)).join('; ')}</span>
-                    : <span className="dtype-chip">{tx(DTYPE_LABEL[p.dtype], lang)}</span>}
-                  {p.choices && <span className="prop-values">{p.choices.map((c) => tx(c, lang)).join(' · ')}</span>}
-                </li>
-              ))}
-            </ul>
+            <MemberList el={{ type: t.type, own: null, name: t.name }} />
             {baseType.refresh && (
               <p className="muted" data-testid="tpl-refresh">{L('Dieser Objekttyp sieht „Aktualisieren“ vor: Bei jeder Verwendung lässt sich einstellen, dass das Objekt seine Werte vorher neu ermittelt.', 'This object type provides "Update": at each use you can set that the object determines its values anew first.')}</p>
             )}

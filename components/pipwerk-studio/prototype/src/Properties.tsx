@@ -15,6 +15,7 @@ import type { El, RuleInst, SParam, SPType, Use } from './model';
 import {
   addEntry, addParam, allTemplates, changeUse, connectObject, getState, noteValues, paramUsers, removeUse, requestRemove, runCheck, select, setHost, setRefresh, setSection, setState, toast, update, useApp,
 } from './store';
+import { MemberList } from './Members';
 import { Btn, Icon, Info, NumberInput, Section, Select, TextInput, Toggle, fmtDate, useL } from './ui';
 
 export const kindClass = (type: string): string => {
@@ -173,6 +174,15 @@ export function StrategyProps({ findings }: { findings: Finding[] }) {
       <Section title={L('Regeln und Regelwerke der Strategie', 'Rules and rule sets of the strategy')} testid="sec-rules">
         <p className="muted">{L('Diese Regeln gelten für jede Order der Strategie, zum Beispiel „Risiko je Trade“.', 'These rules apply to every order of the strategy, for example "Risk per trade".')}</p>
         <RulesEditor rules={s.rules} onChange={(r) => update((x) => { x.rules = r; })} base={sc} onOpen={(id) => select({ k: 'rule', owner: null, id })} />
+      </Section>
+      <Section title={L('Order, Position und Strategie', 'Order, position and strategy')} testid="sec-app-objects">
+        <p className="muted">{L('Diese Objekte der Anwendung liegen nicht auf der Fläche. Ihre Werte stehen in Bedingungen, Berechnungen und Regeln zur Auswahl, wo eine Order beziehungsweise Position gemeint ist.', 'These objects of the application do not lie on the canvas. Their values are available in conditions, calculations and rules wherever an order or position is meant.')}</p>
+        {['Order', 'Position', 'Strategie'].map((type) => (
+          <details key={type} className="app-object" data-testid={`app-object-${type}`}>
+            <summary>{typeLabel(type, app.settings.lang)}</summary>
+            <MemberList el={{ type, own: null, name: '' }} />
+          </details>
+        ))}
       </Section>
       <Section title={L('Befunde der Prüfung', 'Check results')} testid="sec-findings" aside={<Btn small kind="ghost" icon="check" onClick={runCheck} testid="props-check">{L('Prüfen', 'Check')}</Btn>}>
         {!app.checked && <p className="empty-note">{L('Noch nicht geprüft. „Prüfen“ sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.', 'Not checked yet. "Check" looks for problems such as missing connections or empty required entries.')}</p>}
@@ -337,22 +347,7 @@ export function ElementProps({ el, findings }: { el: El; findings: Finding[] }) 
 
       {(obj || d.named) && props.length > 0 && (
         <Section title={L('Liefert', 'Delivers')} testid="sec-delivers" aside={<span className="muted">{L('Jeder Wert und jede Methode ist ein Ausgang für eine Linie', 'Each value and each method is an output for a line')}</span>}>
-          <ul className="prop-list">
-            {props.map((p) => {
-              const tip = fieldTip(p.id, lang, 'p');
-              const used = usage.get(p.id);
-              return (
-                <li key={p.id} className="prop-row" data-tip={tip} data-testid="prop-row" data-method={p.method ? '1' : '0'}>
-                  <span className="prop-name">{p.method ? methodText(p.method, undefined, lang) : tx(p, lang)}</span>
-                  {p.method
-                    ? <span className="dtype-chip method-chip">{L('Methode', 'Method')} · {p.method.args.map((a) => tx(a, lang)).join('; ')}</span>
-                    : <span className="dtype-chip">{tx(DTYPE_LABEL[p.dtype], lang)}</span>}
-                  {p.choices && <span className="prop-values">{p.choices.map((c) => tx(c, lang)).join(' · ')}</span>}
-                  {used && <span className="prop-used"><Icon name="link" size={12} />{used.join(', ')}</span>}
-                </li>
-              );
-            })}
-          </ul>
+          <MemberList el={el} usage={usage} />
         </Section>
       )}
 

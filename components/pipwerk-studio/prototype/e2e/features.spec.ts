@@ -262,7 +262,8 @@ test.describe('canvas', () => {
     await expect(w).toHaveCount(1);
     // one line, its label names both values the element uses
     await expect(w).toHaveAttribute('data-label', 'Trend intakt, Phase');
-    await expect(w.locator('.wire-label text')).toHaveText('Trend intakt, Phase');
+    // the line to the first use is short (order 06): the picture shortens a long label, the full text is in data-label
+    await expect(w).toHaveAttribute('data-label', 'Trend intakt, Phase');
     await card(page, 'Markttechnik Handel').getByTestId('card-more').click();
     await expect(card(page, 'Markttechnik Handel').locator('.card-row')).toHaveCount(6);
   });
