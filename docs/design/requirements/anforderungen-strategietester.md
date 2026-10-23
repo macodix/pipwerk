@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
-- zuletzt aktualisiert: `2026-10-21`
+- zuletzt aktualisiert: `2026-10-23`
 - abgestimmt: Festlegungen des Auftraggebers im Chat am 19. bis 21. Oktober 2026. Prüfung durch die QA bestanden ([requirements-4.md](../../../development/backtest/reviews/requirements-4.md)), [Präsentation](../../../development/backtest/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -33,7 +33,7 @@ Jeder Testlauf hat einen Testzeitraum. Er ist vorbelegt und endet mit dem letzte
 
 Der Strategietester liest Kursdaten in beiden Betriebsarten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
 
-Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt.
+Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt. Bis pipwerk relay zur Verfügung steht, entfällt die automatische Beschaffung (Übergangslösung nach req-system-027).
 
 Fehlen danach Daten oder sind sie lückenhaft, startet der Testlauf nicht. Eine Meldung nennt die fehlenden Daten und den Grund, warum sie nicht beschafft werden konnten.
 
@@ -148,3 +148,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-21 | Vermerk „abgestimmt“: Prüfung `requirements-4.md` bestanden, Präsentation `requirements-1.html` bestätigt vom Auftraggeber im Chat am 2026-10-21. Datum „zuletzt aktualisiert“ nachgeführt (Hinweis H11 aus `requirements-5.md`), vom Projektleiter. |
 | 2026-10-21 | req-test-004: Abwicklung wie ein Broker, Ablehnung mit sichtbarem Grund; req-test-008 Indikatoren ohne Werte zu Beginn. Nach Prüfbericht der QA (`backtest`, Durchlauf 3, M1, M2), Festlegung des Auftraggebers im Chat am 2026-10-21. |
 | 2026-10-21 | req-test-015: Eintreten des Auslösers „Manuell“ (bisher „Start von Hand“) im Testlauf, offener Punkt 2 erledigt. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
+| 2026-10-23 | req-test-003: keine automatische Beschaffung bis pipwerk relay (Übergangslösung nach req-system-027). Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |

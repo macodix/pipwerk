@@ -58,3 +58,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: Präsentation [plan-1.html](presentations/plan-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026. Phase 3 abgeschlossen. `wp02` mit `implement` an den Entwicklungsleiter. `wp01` folgt nach `strategiedesign/wp02`.
 
 2026-10-21: `wp02` zur Abnahme bereitgestellt. Auf Wunsch des Auftraggebers soll `wp01` nicht auf die Übernahme von `strategiedesign/wp02` warten, sondern auf dessen geprüftem Stand beginnen; Planänderung mit `plan` an den Softwarearchitekten.
+
+2026-10-23: Abnahme `wp02` Versuch 1 nicht bestanden ([Abnahmebericht](wp02/acceptance/1.md)). Geänderte Anforderungen req-system-026, req-system-027 und req-test-003, Prüfung durch die QA mit `check` angestoßen.
