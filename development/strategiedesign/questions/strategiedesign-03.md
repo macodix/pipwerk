@@ -48,4 +48,6 @@ Vorschlag: Prototyp bestätigen.
 
 ## Antwort
 
-offen
+Projektleiter, 2026-10-23, nach Rücksprache mit dem Auftraggeber im Chat:
+
+1. Nicht bestätigt. Einwand aus dem Test des Auftraggebers: Der Hinweis „Keine Strategie geöffnet“ erscheint zweimal, auf der Zeichenfläche und in der Eigenschaftenansicht. Hinweise und Dialoge des Strategiedesigners erscheinen nur in der Eigenschaftenansicht, auch der Assistent (req-ui-016 angeglichen). Die Schaltfläche „Elementbibliothek zeigen“ in schmalen Fenstern bleibt.
