@@ -84,36 +84,48 @@ test('1366 x 768: preparation with the setting "Trigger Manual"', async ({ page 
   await shot(page, 'vorbereitung-ausloeser-manuell-1366x768');
 });
 
-test('1366 x 768: price data check with fetching', async ({ page }) => {
+test('1366 x 768: price data missing, the test run does not start', async ({ page }) => {
   await openApp(page, { width: 1366, height: 768 });
   await page.getByTestId('mode-backtest').click();
   await chooseStrategy(page, STR01);
   await page.getByTestId('start-test').click();
-  await page.getByTestId('fetch-progress').first().waitFor();
-  await page.waitForTimeout(260);
-  await shot(page, 'kursdaten-pruefung-beschaffung-1366x768');
-});
-
-test('1366 x 768: message for data that cannot be fetched', async ({ page }) => {
-  await openApp(page, { width: 1366, height: 768 });
-  await chooseStrategy(page, STR01);
-  await page.getByTestId('select-instrument').selectOption('USDJPY');
-  await page.getByTestId('start-test').click();
   await page.getByTestId('blocked-message').waitFor();
   await page.waitForTimeout(700);
-  await shot(page, 'kursdaten-nicht-beschaffbar-1366x768');
+  await shot(page, 'kursdaten-fehlen-1366x768');
 });
 
-test('1366 x 768: data stock with import', async ({ page }) => {
-  await openApp(page, { width: 1366, height: 768 });
-  await page.getByTestId('menu-data').click();
-  await page.getByTestId('import-sample').click();
-  await page.getByTestId('import-run').click();
-  await page.getByTestId('import-result').scrollIntoViewIfNeeded();
-  await page.getByTestId('import-card').scrollIntoViewIfNeeded();
-  await page.waitForTimeout(500);
-  await shot(page, 'datenbestand-import-1366x768');
-});
+for (const size of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
+  const tag = `${size.width}x${size.height}`;
+
+  test(`${tag}: data stock with the details of a series`, async ({ page }) => {
+    await openApp(page, size);
+    await page.getByTestId(size.width >= 1280 ? 'menu-data' : 'menu-toggle').click();
+    if (size.width < 1280) await page.getByTestId('cmenu-data').click();
+    await page.getByTestId('filter-instrument').selectOption('XAUUSD');
+    await page.getByTestId('stock-row').nth(1).click();
+    if (size.width < 1280) await page.getByTestId('stock-detail').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(500);
+    await shot(page, `datenbestand-einzelheiten-${tag}`);
+  });
+
+  test(`${tag}: dialog import file with two files`, async ({ page }) => {
+    await openApp(page, size);
+    await page.getByTestId(size.width >= 1280 ? 'menu-data' : 'menu-toggle').click();
+    if (size.width < 1280) await page.getByTestId('cmenu-data').click();
+    await page.getByTestId('import-open').click();
+    await page.getByTestId('import-sample-1').click();
+    await page.getByTestId('import-sample-2').click();
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(500);
+    await shot(page, `datei-importieren-${tag}`);
+    await page.getByTestId('import-run').click();
+    await page.getByTestId('import-result').first().waitFor();
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(500);
+    await shot(page, `datei-importieren-ergebnis-${tag}`);
+  });
+}
 
 test('1366 x 768: rejected order at the element', async ({ page }) => {
   await openApp(page, { width: 1366, height: 768 });

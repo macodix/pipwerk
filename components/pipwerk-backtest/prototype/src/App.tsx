@@ -18,7 +18,7 @@ function Header() {
   const lang = app.settings.lang;
   const items: { id: View; label: string; icon: string; tip: string }[] = [
     { id: 'test', label: L('Testlauf', 'Test run'), icon: 'play', tip: L('Einen Testlauf vorbereiten und ausführen.', 'Prepare and run a test run.') },
-    { id: 'data', label: L('Datenbestand', 'Data stock'), icon: 'database', tip: L('Welche historischen Kursdaten vorliegen; Import und Beschaffung von Hand.', 'Which historical price data is available; import and procurement by hand.') },
+    { id: 'data', label: L('Datenbestand', 'Data stock'), icon: 'database', tip: L('Welche historischen Kursdaten vorliegen; Dateien importieren.', 'Which historical price data is available; import files.') },
     { id: 'accounts', label: L('Testkonten', 'Test accounts'), icon: 'wallet', tip: L('Testkonten anlegen, bearbeiten, speichern und löschen.', 'Create, edit, save and delete test accounts.') },
     { id: 'saved', label: `${L('Gespeicherte Backtests', 'Saved backtests')} (${app.saved.length})`, icon: 'save', tip: L('Gespeicherte Backtests ansehen und vergleichen.', 'View and compare saved backtests.') },
   ];

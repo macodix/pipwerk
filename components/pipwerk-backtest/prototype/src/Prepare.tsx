@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ENTRIES, accountChanged, currentCheck, defaultPeriods, entryOf, instrChanged, manualError, periodError, saveAccountFromRun, selectAccount, selectInstrument, selectStrategy, setView, startTest, updatePrep, useApp } from './store';
 import { Field, ParamInput, paramTip } from './fields';
-import { CURRENCIES, accountName, brokerName, fmtRange, hasManualTrigger, usedTimeframes, usesTicks } from './data';
+import { CURRENCIES, accountName, brokerName, dataLabel, fmtRange, hasManualTrigger, stockBrokers, usedTimeframes, usesTicks } from './data';
 import type { NeedResult } from './data';
 import { fmtN } from './fmt';
-import { BROKERS, INSTRUMENTS, instrumentInfo, parseIsoDate } from './sim/market';
+import { INSTRUMENTS, instrumentInfo, parseIsoDate } from './sim/market';
 import { Btn, Icon, NumberInput, Select, TextInput, useL } from './ui';
 import type { Lang } from './model';
 import { tx } from './catalog';
@@ -67,9 +67,9 @@ export function Prepare() {
                 {INSTRUMENTS.map((i) => <option key={i.id} value={i.id}>{i.id} – {i.bezeichnung}</option>)}
               </Select>
             </Field>
-            <Field label={L('Broker der Kursdaten', 'Broker of the price data')} tip={L('Von welchem Broker die Kerzen und die Angaben zum Instrument stammen. Jeder Broker hat eigene Kurse und eigene Angaben.', 'Which broker the candles and the instrument details come from. Every broker has its own prices and details.')} testid="field-broker">
+            <Field label={L('Broker der Kursdaten', 'Broker of the price data')} tip={L('Von welchem Broker die Kerzen und die Angaben zum Instrument stammen. Jeder Broker hat eigene Kurse und eigene Angaben. Vorbelegt mit „Broker für Testläufe“ aus dem Datenbestand; hier gilt die Wahl nur für diesen Testlauf.', 'Which broker the candles and the instrument details come from. Every broker has its own prices and details. Preset with "Broker for test runs" from the data stock; here the choice applies to this test run only.')} testid="field-broker">
               <Select value={p.broker} onChange={(v) => selectInstrument(p.instrument, v)} ariaLabel={L('Broker', 'Broker')} testid="select-broker">
-                {BROKERS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                {stockBrokers(app.rows).map((b) => <option key={b} value={b}>{brokerName(b)}</option>)}
               </Select>
             </Field>
             <details className="more" data-testid="instr-details" open={insChanged}>
@@ -238,8 +238,7 @@ function ManualSetting() {
 // ---- check of the price data ----------------------------------------------------------------------------------------
 
 function needLabel(r: NeedResult, lang: Lang): string {
-  const n = r.need;
-  return n.kind === 'ticks' ? (lang === 'en' ? 'Ticks' : 'Ticks') : `${lang === 'en' ? 'Candles' : 'Kerzen'} ${(n.tf ?? '').toUpperCase()}`;
+  return dataLabel(r.need.kind, r.need.tf, lang);
 }
 
 export function DataCheck() {
@@ -249,64 +248,52 @@ export function DataCheck() {
   const mode = app.mode;
   const live = useMemo(() => currentCheck(), [app.prep, app.rows, mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const results = app.check?.results ?? live;
-  const progress = app.check?.progress ?? {};
-  const blocked = results.filter((r) => r.status === 'blocked');
-  const fetchN = results.filter((r) => r.status === 'fetchable').length;
+  const missing = results.filter((r) => r.status === 'missing');
   const err = periodError(app.prep, mode);
   const merr = manualError(app.prep, mode);
   const busy = app.phase === 'checking';
   const box = useRef<HTMLElement>(null);
   useEffect(() => {
-    // the message about missing data and the progress of the procurement must not stay out of sight
-    if (app.phase === 'blocked' || app.phase === 'checking') box.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    // the message about missing data must not stay out of sight
+    if (app.phase === 'blocked') box.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
   }, [app.phase]);
-  const stateText = (r: NeedResult): string => {
-    if (r.status === 'present') return L('liegt vor', 'available');
-    if (r.status === 'fetchable') return busy ? L('wird beschafft und importiert …', 'being fetched and imported …') : L('fehlt teilweise, wird beim Start beschafft', 'partly missing, will be fetched at the start');
-    return L('fehlt, nicht beschaffbar', 'missing, cannot be fetched');
-  };
+  const stateText = (r: NeedResult): string => (r.status === 'present' ? L('vorhanden', 'available') : L('fehlt', 'missing'));
+  const missingText = (r: NeedResult): string => (r.missing.length ? r.missing.map((m) => fmtRange(m, lang)).join('; ') : '–');
   return (
     <section className="data-check" data-testid="data-check" ref={box} aria-label={L('Kursdaten prüfen', 'Check the price data')}>
       <h2><Icon name="database" size={18} />{L('Kursdaten für diesen Testlauf', 'Price data for this test run')}</h2>
-      <p className="muted">{L('Der Strategietester liest Kursdaten nur aus dem Datenbestand. Vor dem Start wird geprüft, ob alles vorliegt; Fehlendes wird automatisch beschafft und importiert.', 'The strategy tester reads price data only from the data stock. Before the start it is checked whether everything is available; missing data is fetched and imported automatically.')}</p>
+      <p className="muted">{L('Der Strategietester liest Kursdaten nur aus dem Datenbestand. Fehlt etwas, startet der Testlauf nicht.', 'The strategy tester reads price data only from the data stock. If anything is missing, the test run does not start.')}</p>
       {err ? <p className="empty-note">{L('Nächster Schritt: Korrigieren Sie den Testzeitraum, dann erscheint hier die Prüfung.', 'Next step: correct the test period, then the check appears here.')}</p> : (
         <div className="tbl-wrap">
           <table className="tbl need-table" data-testid="need-table">
-            <thead><tr><th>{L('Instrument', 'Instrument')}</th><th>{L('Daten', 'Data')}</th><th>{L('Gebraucht', 'Needed')}</th><th>{L('Zustand', 'State')}</th><th>{L('Fehlt', 'Missing')}</th></tr></thead>
+            <thead><tr><th>{L('Instrument', 'Instrument')}</th><th>{L('Daten', 'Data')}</th><th>{L('Gebraucht', 'Needed')}</th><th>{L('Stand', 'State')}</th><th>{L('Fehlender Zeitraum', 'Missing period')}</th></tr></thead>
             <tbody>
               {results.map((r) => (
                 <tr key={r.need.key} data-testid="need-row" data-status={r.status} data-kind={r.need.kind} data-instrument={r.need.instrument} className={r.status}>
                   <td><b>{r.need.instrument}</b></td>
                   <td>{needLabel(r, lang)}<div className="why">{tx(r.need.why, lang)}</div></td>
-                  <td>{fmtRange({ from: r.need.from, to: r.need.to }, lang)}</td>
-                  <td>
-                    <span className={`state-chip ${r.status}`}><Icon name={r.status === 'present' ? 'check' : r.status === 'fetchable' ? 'download' : 'warn'} size={13} />{stateText(r)}</span>
-                    {busy && r.status === 'fetchable' && (
-                      <div className="progress" role="progressbar" aria-valuenow={Math.round((progress[r.need.key] ?? 0) * 100)} aria-valuemin={0} aria-valuemax={100} data-testid="fetch-progress">
-                        <span style={{ width: `${Math.round((progress[r.need.key] ?? 0) * 100)}%` }} />
-                      </div>
-                    )}
-                  </td>
-                  <td>{r.missing.length ? r.missing.map((m) => fmtRange(m, lang)).join('; ') : '–'}</td>
+                  <td>{r.need.kind === 'contract' ? '–' : fmtRange({ from: r.need.from, to: r.need.to }, lang)}</td>
+                  <td><span className={`state-chip ${r.status}`}><Icon name={r.status === 'present' ? 'check' : 'warn'} size={13} />{stateText(r)}</span></td>
+                  <td>{missingText(r)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      {app.phase === 'blocked' && blocked.length > 0 && (
+      {app.phase === 'blocked' && missing.length > 0 && (
         <div className="finding error big" role="alert" data-testid="blocked-message">
           <Icon name="warn" size={20} />
           <div className="finding-body">
-            <strong>{L('Der Testlauf startet nicht: Kursdaten fehlen und lassen sich nicht beschaffen.', 'The test run does not start: price data is missing and cannot be fetched.')}</strong>
+            <strong>{L('Der Testlauf startet nicht: Es fehlen Kursdaten.', 'The test run does not start: price data is missing.')}</strong>
             <ul>
-              {blocked.map((r) => (
+              {missing.map((r) => (
                 <li key={r.need.key} data-testid="blocked-item">
-                  <b>{r.need.instrument} · {needLabel(r, lang)}</b>: {L('es fehlen', 'missing')} {r.blocked.map((m) => fmtRange(m, lang)).join('; ')}. {L('Grund', 'Reason')}: {r.reason ? tx(r.reason, lang) : ''}
+                  <b>{r.need.instrument} · {needLabel(r, lang)}</b>: {r.need.kind === 'contract' ? L('fehlen.', 'missing.') : `${L('es fehlt', 'missing')} ${missingText(r)}.`}
                 </li>
               ))}
             </ul>
-            <p className="fix"><b>{L('So kommen Sie weiter: ', 'How to go on: ')}</b>{L('Verkürzen Sie den Testzeitraum auf Zeiten, für die Daten vorliegen, wählen Sie ein anderes Instrument oder importieren Sie eine Datei im Datenbestand.', 'Shorten the test period to times for which data is available, choose another instrument or import a file in the data stock.')}</p>
+            <p className="fix"><b>{L('So kommen Sie weiter: ', 'How to go on: ')}</b>{L('Holen Sie die Daten mit pipwerk-fetch-mt5 auf dem Rechner von MetaTrader 5 und importieren Sie die Dateien im Datenbestand.', 'Get the data with pipwerk-fetch-mt5 on the computer of MetaTrader 5 and import the files in the data stock.')}</p>
             <div className="btn-row">
               <Btn small icon="database" testid="goto-data" onClick={() => setView('data')}>{L('Zum Datenbestand', 'To the data stock')}</Btn>
               <Btn small kind="ghost" testid="blocked-close" onClick={() => updatePrep(() => undefined)}>{L('Meldung schließen', 'Close message')}</Btn>
@@ -316,13 +303,12 @@ export function DataCheck() {
       )}
       <div className="start-row">
         <Btn kind="primary" icon="play" testid="start-test" disabled={!!err || !!merr || busy || app.accounts.length === 0} onClick={() => { void startTest(); }}
-          tip={mode === 'single' ? L('Prüft die Kursdaten, beschafft Fehlendes und läuft bis zur ersten handelnden Stelle.', 'Checks the price data, fetches what is missing and runs to the first acting place.') : L('Prüft die Kursdaten, beschafft Fehlendes und lässt die Strategie über den ganzen Testzeitraum laufen.', 'Checks the price data, fetches what is missing and lets the strategy run over the whole test period.')}>
+          tip={mode === 'single' ? L('Prüft die Kursdaten und läuft bis zur ersten handelnden Stelle. Fehlt etwas, startet der Testlauf nicht.', 'Checks the price data and runs to the first acting place. If anything is missing, the test run does not start.') : L('Prüft die Kursdaten und lässt die Strategie über den ganzen Testzeitraum laufen. Fehlt etwas, startet der Testlauf nicht.', 'Checks the price data and lets the strategy run over the whole test period. If anything is missing, the test run does not start.')}>
           {mode === 'single' ? L('Einzelschritt-Test starten', 'Start single-step test') : L('Backtest starten', 'Start backtest')}
         </Btn>
         <span className="muted" data-testid="start-hint">
           {merr ? L('Der Start ist gesperrt: Der Zeitpunkt für „Manuell“ liegt nicht im Testzeitraum oder ist unvollständig (siehe Karte „Auslöser Manuell“).', 'The start is blocked: the time for "Manual" is not within the test period or incomplete (see the card "Trigger Manual").') : ''}
-          {fetchN > 0 && !busy ? L(`${fetchN} Datensatz/Datensätze werden beim Start beschafft.`, `${fetchN} data set(s) will be fetched at the start.`) : ''}
-          {blocked.length > 0 && app.phase !== 'blocked' ? L('Mindestens ein Datensatz lässt sich nicht beschaffen; der Start meldet das.', 'At least one data set cannot be fetched; the start reports this.') : ''}
+          {missing.length > 0 && app.phase !== 'blocked' ? L('Mindestens ein Datensatz fehlt; der Start meldet das.', 'At least one data set is missing; the start reports this.') : ''}
         </span>
       </div>
       <span hidden>{brokerName(app.prep.broker)}{fmtN(0, 0, lang)}</span>

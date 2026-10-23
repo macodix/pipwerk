@@ -1,254 +1,192 @@
-// Data stock of historical price data: overview, instrument details per broker, import of a file by hand
-// with check and result, and procurement by hand. All of it is simulated.
-import { useState } from 'react';
-import { tx } from './catalog';
-import { BROKERS, DAY, INSTRUMENTS, LAST_DAY, instrumentInfo, isoDate, parseIsoDate } from './sim/market';
-import { addDataRows, toast, useApp } from './store';
-import { addRows, brokerName, classifyNeed, countOf, fmtRange, stockLines, tradingDays } from './data';
-import type { DataRow, Kind, Need, NeedResult } from './data';
-import { fmtN } from './fmt';
+// Data stock of historical price data: a bar with the import and the broker for test runs, a compact table with
+// one line per series (filterable, paged), and the details of a series after a click. All of it is simulated.
+import { Fragment, useMemo, useState } from 'react';
 import { TIME_UNITS } from './catalog';
+import { brokerName, dataLabel, fmtRange, hasContract, stockBrokers, stockLines } from './data';
+import type { Kind, StockLine } from './data';
+import { fmtN } from './fmt';
 import { Field } from './fields';
+import { INSTRUMENTS, instrumentInfo } from './sim/market';
+import { setState, setTestBroker, useApp } from './store';
 import { Btn, Icon, Select, useL } from './ui';
-import type { Lang } from './model';
 
-const SAMPLE_NAME = 'EURUSD_M15_2024-10-21_2025-03-02.csv';
+const PAGE = 10;
 
-interface ImportCheck {
-  name: string;
-  size: number;
-  format: 'csv' | 'json' | null;
-  instrument: string;
-  kind: Kind;
-  tf: string;
-  from: string;
-  to: string;
-  rows: number;
-  bad: number;
-  dup: number;
-  ok: boolean;
-  done: { added: number; skipped: number } | null;
-}
-
-function guess(name: string): { instrument: string; kind: Kind; tf: string; from: string; to: string } {
-  const up = name.toUpperCase();
-  const instrument = INSTRUMENTS.find((i) => up.includes(i.id))?.id ?? 'EURUSD';
-  const kind: Kind = up.includes('TICK') ? 'ticks' : 'candles';
-  const tf = TIME_UNITS.find((u) => up.split(/[^A-Z0-9]+/).includes(u.id.toUpperCase()))?.id ?? 'h1';
-  const dates = name.match(/\d{4}-\d{2}-\d{2}/g) ?? [];
-  return { instrument, kind, tf, from: dates[0] ?? '2024-10-01', to: dates[1] ?? isoDate(LAST_DAY) };
-}
+const dataKey = (kind: Kind, tf: string | null) => (kind === 'candles' ? `candles:${tf}` : kind);
 
 export function DataView() {
   const app = useApp();
   const L = useL();
   const lang = app.settings.lang;
-  const lines = stockLines(app.rows);
-  const [imp, setImp] = useState<ImportCheck | null>(null);
-  const [broker, setBroker] = useState('b1');
+  const lines = useMemo(() => stockLines(app.rows), [app.rows]);
+  const brokers = stockBrokers(app.rows);
+  const [fb, setFb] = useState('');
+  const [fi, setFi] = useState('');
+  const [fd, setFd] = useState('');
+  const [page, setPage] = useState(0);
+  const [sel, setSel] = useState<string | null>(null);
 
-  const check = (name: string, size: number) => {
-    const ext = name.toLowerCase().endsWith('.json') ? 'json' : name.toLowerCase().endsWith('.csv') ? 'csv' : null;
-    const g = guess(name);
-    const days = tradingDays({ from: parseIsoDate(g.from), to: parseIsoDate(g.to) });
-    const rows = g.kind === 'ticks' ? Math.round(size / 36) : Math.max(1, Math.round(size / 52));
-    const have = app.rows.filter((r) => r.broker === 'b1' && r.instrument === g.instrument && r.kind === g.kind && (g.kind === 'ticks' || r.tf === g.tf));
-    const overlap = have.some((r) => parseIsoDate(r.from) <= parseIsoDate(g.to) && parseIsoDate(r.to) >= parseIsoDate(g.from));
-    setImp({
-      name, size, format: ext, ...g, rows, bad: ext ? size % 3 : 0, dup: overlap ? Math.round(rows * 0.04) : 0, ok: ext !== null && days > 0, done: null,
-    });
-  };
+  const instruments = INSTRUMENTS.map((i) => i.id).filter((id) => lines.some((l) => l.instrument === id));
+  const datas = [
+    ...TIME_UNITS.map((u) => ({ key: `candles:${u.id}`, kind: 'candles' as Kind, tf: u.id })),
+    { key: 'ticks', kind: 'ticks' as Kind, tf: null },
+    { key: 'contract', kind: 'contract' as Kind, tf: null },
+  ].filter((d) => lines.some((l) => dataKey(l.kind, l.tf) === d.key));
+  const shown = lines.filter((l) => (!fb || l.broker === fb) && (!fi || l.instrument === fi) && (!fd || dataKey(l.kind, l.tf) === fd));
+  const pages = Math.max(1, Math.ceil(shown.length / PAGE));
+  const cur = Math.min(page, pages - 1);
+  const part = shown.slice(cur * PAGE, cur * PAGE + PAGE);
+  const filtered = !!(fb || fi || fd);
+  const onFilter = (set: (v: string) => void) => (v: string) => { set(v); setPage(0); setSel(null); };
+  const toggle = (key: string) => setSel(sel === key ? null : key);
 
   return (
-    <section className="region page" data-region="data" data-testid="data" aria-label={L('Datenbestand historischer Kursdaten', 'Data stock of historical price data')}>
+    <section className="region page" data-region="data" data-testid="data" aria-label={L('Datenbestand', 'Data stock')}>
       <div className="page-scroll">
         <header className="page-head">
-          <h1>{L('Datenbestand historischer Kursdaten', 'Data stock of historical price data')}</h1>
-          <p className="muted">{L('Der Strategietester liest Kursdaten nur aus diesem Datenbestand. Hier sehen Sie, was vorliegt, und können Dateien von Hand importieren oder Daten von Hand beschaffen.', 'The strategy tester reads price data only from this data stock. Here you see what is available, and you can import files by hand or fetch data by hand.')}</p>
+          <h1>{L('Datenbestand', 'Data stock')}</h1>
+          <p className="muted">{L('Die historischen Kursdaten, aus denen die Testläufe lesen.', 'The historical price data the test runs read from.')}</p>
         </header>
 
+        <section className="card-box wide" data-testid="data-bar">
+          <div className="data-bar">
+            <Btn kind="primary" icon="upload" testid="import-open" onClick={() => setState({ dialog: { k: 'import' } })}
+              tip={L('Öffnet den Dialog, in dem Sie Dateien im Format JSON oder CSV wählen und importieren.', 'Opens the dialog in which you choose files in JSON or CSV format and import them.')}>
+              {L('Datei importieren …', 'Import file …')}
+            </Btn>
+            <Field label={L('Broker für Testläufe', 'Broker for test runs')} tip={L('Der Broker, dessen Kursdaten ein Testlauf standardmäßig liest. In der Vorbereitung eines Testlaufs ist er vorbelegt und lässt sich dort für einen Testlauf ändern. Zur Wahl stehen die Broker, die im Datenbestand vorkommen.', 'The broker whose price data a test run reads by default. It is preset in the preparation of a test run and can be changed there for one test run. You can choose among the brokers that occur in the data stock.')} testid="field-test-broker">
+              <Select value={app.testBroker} onChange={setTestBroker} ariaLabel={L('Broker für Testläufe', 'Broker for test runs')} testid="select-test-broker">
+                {brokers.map((b) => <option key={b} value={b}>{brokerName(b)}</option>)}
+              </Select>
+            </Field>
+          </div>
+        </section>
+
         <section className="card-box wide" data-testid="stock">
-          <h2><Icon name="database" size={16} />{L('Was vorliegt', 'What is available')}</h2>
+          <h2><Icon name="database" size={16} />{L('Datenreihen', 'Data series')}</h2>
           {lines.length === 0 ? (
-            <p className="empty-note" data-testid="stock-empty">{L('Der Datenbestand ist leer. Nächster Schritt: Importieren Sie unten eine Datei oder stoßen Sie die Beschaffung an.', 'The data stock is empty. Next step: import a file below or start the procurement.')}</p>
+            <p className="empty-note" data-testid="stock-empty">{L('Noch keine Kursdaten. Importieren Sie Dateien mit „Datei importieren …“.', 'No price data yet. Import files with "Import file …".')}</p>
           ) : (
-            <div className="tbl-wrap">
-              <table className="tbl" data-testid="stock-table">
-                <thead><tr><th>{L('Broker', 'Broker')}</th><th>{L('Instrument', 'Instrument')}</th><th>{L('Daten', 'Data')}</th><th>{L('Zeiträume', 'Periods')}</th><th>{L('Menge', 'Amount')}</th></tr></thead>
-                <tbody>
-                  {lines.map((l, i) => (
-                    <tr key={i} data-testid="stock-row" data-instrument={l.instrument} data-kind={l.kind} data-tf={l.tf ?? ''} data-broker={l.broker}>
-                      <td>{brokerName(l.broker)}</td>
-                      <td><b>{l.instrument}</b></td>
-                      <td>{l.kind === 'ticks' ? 'Ticks' : `${L('Kerzen', 'Candles')} ${(l.tf ?? '').toUpperCase()}`}</td>
-                      <td>{l.ranges.map((r) => fmtRange(r, lang)).join('; ')}</td>
-                      <td>{fmtN(l.count, 0, lang)}</td>
+            <>
+              <div className="data-filters" data-testid="stock-filters">
+                <Field label={L('Broker', 'Broker')} tip={L('Zeigt nur die Reihen dieses Brokers.', 'Shows only the series of this broker.')} testid="field-filter-broker">
+                  <Select value={fb} onChange={onFilter(setFb)} ariaLabel={L('Filter Broker', 'Filter broker')} testid="filter-broker">
+                    <option value="">{L('alle', 'all')}</option>
+                    {brokers.map((b) => <option key={b} value={b}>{brokerName(b)}</option>)}
+                  </Select>
+                </Field>
+                <Field label={L('Instrument', 'Instrument')} tip={L('Zeigt nur die Reihen dieses Instruments.', 'Shows only the series of this instrument.')} testid="field-filter-instrument">
+                  <Select value={fi} onChange={onFilter(setFi)} ariaLabel={L('Filter Instrument', 'Filter instrument')} testid="filter-instrument">
+                    <option value="">{L('alle', 'all')}</option>
+                    {instruments.map((id) => <option key={id} value={id}>{id}</option>)}
+                  </Select>
+                </Field>
+                <Field label={L('Daten', 'Data')} tip={L('Zeigt nur Reihen dieser Art: Kerzen einer Zeiteinheit, Ticks oder Kontraktdaten.', 'Shows only series of this kind: candles of a time unit, ticks or contract data.')} testid="field-filter-data">
+                  <Select value={fd} onChange={onFilter(setFd)} ariaLabel={L('Filter Daten', 'Filter data')} testid="filter-data">
+                    <option value="">{L('alle', 'all')}</option>
+                    {datas.map((d) => <option key={d.key} value={d.key}>{dataLabel(d.kind, d.tf, lang)}</option>)}
+                  </Select>
+                </Field>
+              </div>
+              <div className="tbl-wrap stock-table-wrap">
+                <table className="tbl stock-table" data-testid="stock-table">
+                  <thead>
+                    <tr>
+                      <th>{L('Broker', 'Broker')}</th><th>{L('Instrument', 'Instrument')}</th><th>{L('Daten', 'Data')}</th><th>{L('Zeitraum', 'Period')}</th><th className="num">{L('Lücken', 'Gaps')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {part.map((l) => (
+                      <Fragment key={l.key}>
+                        <tr
+                          data-testid="stock-row" data-broker={l.broker} data-instrument={l.instrument} data-kind={l.kind} data-tf={l.tf ?? ''} data-gaps={l.span ? l.gaps.length : ''}
+                          tabIndex={0} aria-expanded={sel === l.key} onClick={() => toggle(l.key)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(l.key); } }}
+                          data-tip={L('Klicken zeigt die Einzelheiten dieser Reihe.', 'Click to show the details of this series.')}
+                        >
+                          <td>{brokerName(l.broker)}</td>
+                          <td><b>{l.instrument}</b></td>
+                          <td className="nowrap">{dataLabel(l.kind, l.tf, lang)}</td>
+                          <td>{l.span ? fmtRange(l.span, lang) : '–'}</td>
+                          <td className="num">{l.span ? fmtN(l.gaps.length, 0, lang) : '–'}</td>
+                        </tr>
+                        {sel === l.key && (
+                          <tr className="detail-row" data-testid="stock-detail-row"><td colSpan={5}><Detail line={l} /></td></tr>
+                        )}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {shown.length === 0 && <p className="empty-note" data-testid="stock-nomatch">{L('Keine Reihe passt zum Filter. Wählen Sie bei einem Filter „alle“.', 'No series matches the filter. Choose "all" in a filter.')}</p>}
+              <div className="pager" data-testid="stock-pager">
+                <span className="muted" data-testid="stock-count">
+                  {shown.length === 0 ? '0' : `${cur * PAGE + 1}–${cur * PAGE + part.length}`} {L('von', 'of')} {shown.length}{filtered ? ` ${L('Reihen (gefiltert)', 'series (filtered)')}` : ` ${L('Reihen', 'series')}`}
+                </span>
+                <div className="btn-row">
+                  <Btn small icon="left" testid="page-prev" disabled={cur === 0} onClick={() => { setPage(cur - 1); setSel(null); }}>{L('Zurück', 'Previous')}</Btn>
+                  <span className="muted" data-testid="page-no">{L('Seite', 'Page')} {cur + 1} {L('von', 'of')} {pages}</span>
+                  <Btn small icon="right" testid="page-next" disabled={cur >= pages - 1} onClick={() => { setPage(cur + 1); setSel(null); }}>{L('Weiter', 'Next')}</Btn>
+                </div>
+              </div>
+            </>
           )}
         </section>
-
-        <section className="card-box wide" data-testid="instr-table-card">
-          <h2><Icon name="list" size={16} />{L('Angaben zum Instrument je Broker', 'Instrument details per broker')}</h2>
-          <p className="muted">{L('Diese Angaben belegen die Angaben zum Instrument im Testlauf vor. Dort lassen sie sich für einen Testlauf ändern.', 'These details preset the instrument details in a test run. There they can be changed for one test run.')}</p>
-          <div className="tbl-wrap">
-            <table className="tbl" data-testid="instr-table">
-              <thead>
-                <tr>
-                  <th>{L('Broker', 'Broker')}</th><th>{L('Instrument', 'Instrument')}</th><th>{L('Tickgröße', 'Tick size')}</th><th>{L('Tickwert', 'Tick value')}</th><th>Pip</th><th>{L('Punkt', 'Point')}</th>
-                  <th>Spread</th><th>{L('Min.-Vol.', 'Min. vol.')}</th><th>{L('Schritt', 'Step')}</th><th>{L('Kontrakt', 'Contract')}</th><th>Swap L/S</th><th>Margin %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BROKERS.flatMap((b) => INSTRUMENTS.map((i) => {
-                  const x = instrumentInfo(i.id, b.id);
-                  return (
-                    <tr key={`${b.id}-${i.id}`} data-testid="instr-row" data-instrument={i.id}>
-                      <td>{b.name}</td><td><b>{i.id}</b><div className="why">{i.bezeichnung}</div></td>
-                      <td>{fmtN(x.tickgroesse, x.digits, lang)}</td><td>{fmtN(x.tickwert, 2, lang)}</td><td>{fmtN(x.pip, x.digits - 1, lang)}</td><td>{fmtN(x.punkt, x.digits, lang)}</td>
-                      <td>{fmtN(x.spread, x.digits, lang)}</td><td>{fmtN(x.mindestvolumen, 2, lang)}</td><td>{fmtN(x.volumenschritt, 2, lang)}</td><td>{fmtN(x.kontraktgroesse, 0, lang)}</td>
-                      <td>{fmtN(x.swapLong, 1, lang)} / {fmtN(x.swapShort, 1, lang)}</td><td>{fmtN(x.margin, 2, lang)}</td>
-                    </tr>
-                  );
-                }))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="card-box wide" data-testid="import-card">
-          <h2><Icon name="upload" size={16} />{L('Datei von Hand importieren', 'Import a file by hand')}</h2>
-          <p className="muted">{L('Der Import liest eine Datei im Format JSON oder CSV, prüft sie und übernimmt die Daten. Zum Beispiel ein Export aus MetaTrader oder eine Datei von Ihrer Festplatte.', 'The import reads a file in JSON or CSV format, checks it and takes over the data. For example an export from MetaTrader or a file from your hard disk.')}</p>
-          <div className="btn-row">
-            <label className="btn btn-default" data-tip={L('Wählt eine Datei von Ihrer Festplatte. Der Prototyp liest nur Name und Größe.', 'Chooses a file from your hard disk. The prototype only reads name and size.')}>
-              <Icon name="folder" size={17} /><span>{L('Datei wählen …', 'Choose file …')}</span>
-              <input type="file" accept=".csv,.json" className="visually-hidden" data-testid="import-file" onChange={(e) => { const f = e.target.files?.[0]; if (f) check(f.name, f.size); e.target.value = ''; }} />
-            </label>
-            <Btn kind="ghost" icon="file" testid="import-sample" onClick={() => check(SAMPLE_NAME, 3_100_000)} tip={L('Nimmt eine Beispieldatei mit M15-Kerzen von EURUSD, die eine Lücke im Datenbestand schließt.', 'Takes a sample file with M15 candles of EURUSD that closes a gap in the data stock.')}>{L('Beispieldatei verwenden', 'Use sample file')}</Btn>
-          </div>
-          {!imp && <p className="empty-note" data-testid="import-empty">{L('Noch keine Datei gewählt. Nächster Schritt: Wählen Sie eine Datei oder nehmen Sie die Beispieldatei.', 'No file chosen yet. Next step: choose a file or take the sample file.')}</p>}
-          {imp && <ImportBox imp={imp} lang={lang} onDone={(d) => setImp({ ...imp, done: d })} />}
-        </section>
-
-        <ProcureBox broker={broker} setBroker={setBroker} lang={lang} />
       </div>
     </section>
   );
 }
 
-function ImportBox({ imp, lang, onDone }: { imp: ImportCheck; lang: Lang; onDone: (d: { added: number; skipped: number }) => void }) {
-  const L = useL();
-  const run = () => {
-    const row: DataRow = {
-      id: `i${Date.now().toString(36)}`, broker: 'b1', instrument: imp.instrument, kind: imp.kind, tf: imp.kind === 'ticks' ? null : imp.tf, from: imp.from, to: imp.to, origin: 'import',
-    };
-    addDataRows([row]);
-    onDone({ added: imp.rows - imp.bad - imp.dup, skipped: imp.bad + imp.dup });
-    toast('Die Daten sind importiert und stehen im Datenbestand.', 'The data is imported and is in the data stock.');
-  };
-  return (
-    <div className="import-box" data-testid="import-box">
-      <h3>{L('Prüfung', 'Check')}: {imp.name}</h3>
-      <ul className="checks" data-testid="import-checks">
-        <li className={imp.format ? 'ok' : 'bad'}><Icon name={imp.format ? 'check' : 'warn'} size={14} />{imp.format ? L(`Format erkannt: ${imp.format.toUpperCase()}`, `Format recognised: ${imp.format.toUpperCase()}`) : L('Format nicht erkannt. Erlaubt sind JSON und CSV.', 'Format not recognised. JSON and CSV are allowed.')}</li>
-        {imp.format && (
-          <>
-            <li className="ok"><Icon name="check" size={14} />{L(`Erkannt: ${imp.instrument}, ${imp.kind === 'ticks' ? 'Ticks' : `Kerzen ${imp.tf.toUpperCase()}`}, ${fmtRange({ from: parseIsoDate(imp.from), to: parseIsoDate(imp.to) }, lang)}`, `Recognised: ${imp.instrument}, ${imp.kind === 'ticks' ? 'ticks' : `candles ${imp.tf.toUpperCase()}`}, ${fmtRange({ from: parseIsoDate(imp.from), to: parseIsoDate(imp.to) }, lang)}`)}</li>
-            <li className="ok"><Icon name="check" size={14} />{L(`${fmtN(imp.rows, 0, lang)} Zeilen gelesen`, `${fmtN(imp.rows, 0, lang)} rows read`)}</li>
-            <li className={imp.bad ? 'warn' : 'ok'}><Icon name={imp.bad ? 'info' : 'check'} size={14} />{imp.bad ? L(`${imp.bad} fehlerhafte Zeilen werden übersprungen (Hoch unter Tief oder fehlender Wert).`, `${imp.bad} faulty rows will be skipped (high below low or missing value).`) : L('Keine fehlerhaften Zeilen', 'No faulty rows')}</li>
-            <li className={imp.dup ? 'warn' : 'ok'}><Icon name={imp.dup ? 'info' : 'check'} size={14} />{imp.dup ? L(`${fmtN(imp.dup, 0, lang)} Zeilen liegen schon im Datenbestand und werden nicht doppelt übernommen.`, `${fmtN(imp.dup, 0, lang)} rows are already in the data stock and are not taken over twice.`) : L('Keine Überschneidung mit vorhandenen Daten', 'No overlap with existing data')}</li>
-          </>
-        )}
-      </ul>
-      {!imp.done && (
-        <div className="btn-row">
-          <Btn kind="primary" icon="download" disabled={!imp.ok} testid="import-run" onClick={run}>{L('Importieren', 'Import')}</Btn>
-          {!imp.ok && <span className="muted">{L('Nächster Schritt: Wählen Sie eine Datei im Format JSON oder CSV.', 'Next step: choose a file in JSON or CSV format.')}</span>}
-        </div>
-      )}
-      {imp.done && (
-        <p className="ok-note" data-testid="import-result"><Icon name="check" size={16} />{L(`Ergebnis: ${fmtN(imp.done.added, 0, lang)} Zeilen übernommen, ${fmtN(imp.done.skipped, 0, lang)} übersprungen. Der Datenbestand ist aktualisiert.`, `Result: ${fmtN(imp.done.added, 0, lang)} rows taken over, ${fmtN(imp.done.skipped, 0, lang)} skipped. The data stock is updated.`)}</p>
-      )}
-    </div>
-  );
-}
-
-function ProcureBox({ broker, setBroker, lang }: { broker: string; setBroker: (b: string) => void; lang: Lang }) {
+/** The details of a series: all gaps with start and end, and the contract data of the instrument at this broker. */
+function Detail({ line }: { line: StockLine }) {
   const app = useApp();
   const L = useL();
-  const [instrument, setInstrument] = useState('EURUSD');
-  const [kind, setKind] = useState<Kind>('candles');
-  const [tf, setTf] = useState('h1');
-  const [from, setFrom] = useState('2024-10-21');
-  const [to, setTo] = useState(isoDate(LAST_DAY));
-  const [state, setState] = useState<{ k: 'idle' } | { k: 'run'; p: number; res: NeedResult } | { k: 'done'; res: NeedResult }>({ k: 'idle' });
-  const need: Need = { key: 'manual', instrument, kind, tf: kind === 'ticks' ? null : tf, from: parseIsoDate(from), to: parseIsoDate(to), why: { de: '', en: '' } };
-  const bad = parseIsoDate(from) > parseIsoDate(to) || parseIsoDate(to) > LAST_DAY;
-  const start = async () => {
-    const res = classifyNeed(need, app.rows, broker);
-    if (res.status === 'present') { setState({ k: 'done', res }); return; }
-    if (res.fetchable.length === 0) { setState({ k: 'done', res }); return; }
-    for (let i = 1; i <= 8; i++) {
-      setState({ k: 'run', p: i / 8, res });
-      await new Promise((r) => setTimeout(r, 70));
-    }
-    addDataRows(addRows([], broker, [res]));
-    setState({ k: 'done', res });
-  };
+  const lang = app.settings.lang;
+  const has = hasContract(app.rows, line.broker, line.instrument);
+  const x = instrumentInfo(line.instrument, line.broker);
+  const d = x.digits;
+  const items: [string, string, string, string][] = [
+    [L('Tickgröße', 'Tick size'), fmtN(x.tickgroesse, d, lang), L('Kleinste Kursänderung des Instruments.', 'Smallest price change of the instrument.'), 'tickgroesse'],
+    [L('Tickwert', 'Tick value'), fmtN(x.tickwert, 2, lang), L('Wert einer Kursänderung um einen Tick bei einem Lot, in Kontowährung.', 'Value of a price change by one tick for one lot, in account currency.'), 'tickwert'],
+    [L('Pip', 'Pip'), fmtN(x.pip, d - 1, lang), L('Ein Pip als Kursdifferenz. Puffer und Abstände der Strategien sind oft in Pips angegeben.', 'One pip as price difference. Buffers and distances of strategies are often given in pips.'), 'pip'],
+    [L('Punkt', 'Point'), fmtN(x.punkt, d, lang), L('Ein Punkt als Kursdifferenz.', 'One point as price difference.'), 'punkt'],
+    [L('Spread', 'Spread'), fmtN(x.spread, d, lang), L('Üblicher Abstand zwischen Brief- und Geldkurs.', 'Usual distance between ask and bid.'), 'spread'],
+    [L('Mindestvolumen', 'Minimum volume'), fmtN(x.mindestvolumen, 2, lang), L('Kleinstes handelbares Volumen in Lot.', 'Smallest tradable volume in lots.'), 'mindestvolumen'],
+    [L('Volumenschritt', 'Volume step'), fmtN(x.volumenschritt, 2, lang), L('Kleinste Stufe, in der sich das Volumen ändern lässt.', 'Smallest step in which the volume can change.'), 'volumenschritt'],
+    [L('Kontraktgröße', 'Contract size'), fmtN(x.kontraktgroesse, 0, lang), L('Wie viele Einheiten ein Lot umfasst, zum Beispiel 100.000 Euro bei EURUSD.', 'How many units one lot contains, for example 100,000 euros for EURUSD.'), 'kontraktgroesse'],
+    [L('Swap Kauf / Verkauf', 'Swap long / short'), `${fmtN(x.swapLong, 1, lang)} / ${fmtN(x.swapShort, 1, lang)}`, L('Gebühr oder Ertrag für eine über Nacht gehaltene Position.', 'Fee or income for a position held overnight.'), 'swap'],
+    [L('Margin-Anforderung (%)', 'Margin requirement (%)'), fmtN(x.margin, 2, lang), L('Anteil des Positionswerts, der als Sicherheit gebunden wird.', 'Share of the position value tied up as collateral.'), 'margin'],
+  ];
   return (
-    <section className="card-box wide" data-testid="procure-card">
-      <h2><Icon name="download" size={16} />{L('Beschaffung von Hand anstoßen', 'Start procurement by hand')}</h2>
-      <p className="muted">{L('Die Beschaffung holt Kursdaten aus einer Quelle und liefert sie dem Import. Fehlende Daten eines Testlaufs werden automatisch beschafft; hier stoßen Sie es selbst an. Die erste Quelle ist MetaTrader 5, es läuft auf dem Rechner, auf dem MetaTrader 5 läuft.', 'The procurement gets price data from a source and hands it to the import. Missing data of a test run is fetched automatically; here you start it yourself. The first source is MetaTrader 5, it runs on the computer where MetaTrader 5 runs.')}</p>
-      <div className="grid3">
-        <Field label={L('Quelle', 'Source')} tip={L('Woher die Daten kommen. Weitere Quellen lassen sich später ergänzen.', 'Where the data comes from. More sources can be added later.')} testid="field-source">
-          <Select value="mt5" onChange={() => undefined} ariaLabel={L('Quelle', 'Source')} testid="proc-source"><option value="mt5">MetaTrader 5</option></Select>
-        </Field>
-        <Field label={L('Broker', 'Broker')} tip={L('Zu welchem Broker die Daten im Datenbestand gehören.', 'Which broker the data belongs to in the data stock.')} testid="field-proc-broker">
-          <Select value={broker} onChange={setBroker} ariaLabel={L('Broker', 'Broker')} testid="proc-broker">{BROKERS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</Select>
-        </Field>
-        <Field label={L('Instrument', 'Instrument')} tip={L('Das Instrument, dessen Daten Sie holen wollen.', 'The instrument whose data you want to get.')} testid="field-proc-instrument">
-          <Select value={instrument} onChange={setInstrument} ariaLabel={L('Instrument', 'Instrument')} testid="proc-instrument">{INSTRUMENTS.map((i) => <option key={i.id} value={i.id}>{i.id}</option>)}</Select>
-        </Field>
-        <Field label={L('Art der Daten', 'Kind of data')} tip={L('Kerzen einer Zeiteinheit oder Ticks. Ticks werden nicht aus Kerzen gebildet; sie müssen vorliegen, wenn eine Strategie den Auslöser „Tick“ hat.', 'Candles of a time unit or ticks. Ticks are not built from candles; they must be there if a strategy has the trigger "Tick".')} testid="field-proc-kind">
-          <Select value={kind} onChange={(v) => setKind(v as Kind)} ariaLabel={L('Art der Daten', 'Kind of data')} testid="proc-kind"><option value="candles">{L('Kerzen', 'Candles')}</option><option value="ticks">Ticks</option></Select>
-        </Field>
-        {kind === 'candles' && (
-          <Field label={L('Zeiteinheit', 'Time unit')} tip={L('Die Kerzenlänge, zum Beispiel H1 für Stundenkerzen.', 'The candle length, for example H1 for hourly candles.')} testid="field-proc-tf">
-            <Select value={tf} onChange={setTf} ariaLabel={L('Zeiteinheit', 'Time unit')} testid="proc-tf">{TIME_UNITS.map((u) => <option key={u.id} value={u.id}>{u.de}</option>)}</Select>
-          </Field>
+    <div className="detail" data-testid="stock-detail">
+      <h3>{brokerName(line.broker)} · {line.instrument} · {dataLabel(line.kind, line.tf, lang)}</h3>
+      <div className="detail-cols">
+        {line.span && (
+          <div data-testid="detail-gaps">
+            <h3>{L('Lücken', 'Gaps')}</h3>
+            {line.gaps.length === 0 ? (
+              <p className="muted" data-testid="gaps-none">{L('Keine Lücken.', 'No gaps.')}</p>
+            ) : (
+              <ul className="gap-list">
+                {line.gaps.map((g) => <li key={g.from} data-testid="gap-item">{fmtRange(g, lang)}</li>)}
+              </ul>
+            )}
+          </div>
         )}
-        <Field label={L('Von', 'From')} tip={L('Erster Tag der gewünschten Daten.', 'First day of the wanted data.')} testid="field-proc-from">
-          <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label={L('Von', 'From')} data-testid="proc-from" />
-        </Field>
-        <Field label={L('Bis', 'To')} tip={L('Letzter Tag der gewünschten Daten, höchstens der letzte vollständige Handelstag.', 'Last day of the wanted data, at most the last complete trading day.')} testid="field-proc-to">
-          <input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label={L('Bis', 'To')} data-testid="proc-to" />
-        </Field>
-      </div>
-      <div className="btn-row">
-        <Btn kind="primary" icon="download" testid="proc-start" disabled={bad || state.k === 'run'} onClick={() => { void start(); }}>{L('Beschaffung anstoßen', 'Start procurement')}</Btn>
-        {bad && <span className="error-note"><Icon name="warn" size={14} />{L('Der Zeitraum ist ungültig.', 'The period is invalid.')}</span>}
-      </div>
-      {state.k === 'run' && <div className="progress" role="progressbar" aria-valuenow={Math.round(state.p * 100)} aria-valuemin={0} aria-valuemax={100} data-testid="proc-progress"><span style={{ width: `${Math.round(state.p * 100)}%` }} /></div>}
-      {state.k === 'done' && <ProcResult res={state.res} lang={lang} />}
-      <span hidden>{DAY}{countOf('ticks', null, { from: 0, to: 0 })}</span>
-    </section>
-  );
-}
-
-function ProcResult({ res, lang }: { res: NeedResult; lang: Lang }) {
-  const L = useL();
-  if (res.status === 'present') return <p className="ok-note" data-testid="proc-result"><Icon name="check" size={16} />{L('Diese Daten liegen schon vollständig vor. Es gibt nichts zu beschaffen.', 'This data is already complete. There is nothing to fetch.')}</p>;
-  if (res.status === 'fetchable') return <p className="ok-note" data-testid="proc-result"><Icon name="check" size={16} />{L(`Beschafft und importiert: ${res.fetchable.map((r) => fmtRange(r, lang)).join('; ')}.`, `Fetched and imported: ${res.fetchable.map((r) => fmtRange(r, lang)).join('; ')}.`)}</p>;
-  return (
-    <div className="finding error" role="alert" data-testid="proc-result">
-      <Icon name="warn" size={18} />
-      <div className="finding-body">
-        <strong>{L('Nicht beschaffbar', 'Cannot be fetched')}</strong>
-        <p>{res.blocked.map((r) => fmtRange(r, lang)).join('; ')}: {res.reason ? tx(res.reason, lang) : ''}</p>
-        {res.fetchable.length > 0 && <p>{L('Der beschaffbare Teil wurde importiert: ', 'The part that can be fetched was imported: ')}{res.fetchable.map((r) => fmtRange(r, lang)).join('; ')}</p>}
+        <div data-testid="detail-contract">
+          <h3>{L('Kontraktdaten', 'Contract data')}</h3>
+          {has ? (
+            <dl className="contract-list">
+              {items.map(([label, value, tip, id]) => (
+                <Fragment key={id}><dt data-tip={tip}>{label}</dt><dd data-testid={`contract-${id}`}>{value}</dd></Fragment>
+              ))}
+            </dl>
+          ) : (
+            <p className="muted" data-testid="contract-missing">
+              {L('Für dieses Instrument liegen bei diesem Broker keine Kontraktdaten vor. Ein Testlauf mit diesem Instrument startet dann nicht. Importieren Sie sie mit „Datei importieren …“.', 'There is no contract data for this instrument at this broker. A test run with this instrument does not start then. Import it with "Import file …".')}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

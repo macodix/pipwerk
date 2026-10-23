@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { BUILT, CLIENT, EXAMPLE, STR01, STR03, chooseStrategy, jumpUntil, node, nowNode, openApp, runBacktest, startSingle } from './support';
 
 // Functions of the prototype beyond the walk-through: preparation, test accounts, price data, data stock,
@@ -76,31 +77,41 @@ test('test account: changes in the run stay in the run until they are saved expl
   expect(errors).toEqual([]);
 });
 
-test('price data: missing data is fetched with progress, unobtainable data stops the run with the reason', async ({ page }) => {
+test('price data: a test run with missing data does not start, the message names the missing parts and leads to the data stock', async ({ page }) => {
   const errors = await openApp(page);
-  // single-step test of str-01 on EURUSD: everything is there, ticks included
+  // single-step test of str-01 on EURUSD: everything is there (two time units, ticks, contract data)
   await chooseStrategy(page, STR01);
   await expect(page.locator('[data-testid="need-row"][data-kind="ticks"]')).toHaveCount(1);
-  await expect(page.locator('[data-testid="need-row"][data-status="present"]')).toHaveCount(3);
-  // USDJPY has no ticks: the run does not start and the message names the data and the reason
+  await expect(page.locator('[data-testid="need-row"][data-status="present"]')).toHaveCount(4);
+  await expect(page.locator('[data-testid="need-row"][data-status="present"]').first()).toContainText('vorhanden');
+  // USDJPY has no ticks: the run does not start and the message names instrument, data and the way to go on
   await page.getByTestId('select-instrument').selectOption('USDJPY');
-  await expect(page.locator('[data-testid="need-row"][data-status="blocked"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="need-row"][data-status="missing"]')).toHaveCount(1);
   await page.getByTestId('start-test').click();
   await expect(page.getByTestId('blocked-message')).toBeVisible();
   await expect(page.getByTestId('blocked-message')).toContainText('USDJPY');
   await expect(page.getByTestId('blocked-message')).toContainText('Ticks');
-  await expect(page.getByTestId('blocked-message')).toContainText('Grund');
+  await expect(page.getByTestId('blocked-message')).toContainText('pipwerk-fetch-mt5');
   await expect(page.getByTestId('run')).toHaveCount(0);
-  // backtest of two years on EURUSD: candles and ticks are partly missing and are fetched
+  // the button leads to the data stock
+  await page.getByTestId('goto-data').click();
+  await expect(page.getByTestId('data')).toBeVisible();
+  await page.getByTestId('menu-test').click();
+  // backtest of two years on EURUSD: candles M15 and ticks are partly missing, with the missing period
   await page.getByTestId('select-instrument').selectOption('EURUSD');
   await page.getByTestId('mode-backtest').click();
-  await expect(page.locator('[data-testid="need-row"][data-status="fetchable"]')).toHaveCount(2);
+  await expect(page.locator('[data-testid="need-row"][data-status="missing"]')).toHaveCount(2);
   await page.getByTestId('start-test').click();
-  await expect(page.getByTestId('fetch-progress').first()).toBeVisible();
-  await expect(page.getByTestId('result')).toBeVisible({ timeout: 120_000 });
-  // the fetched data is now in the data stock
-  await page.getByTestId('menu-data').click();
-  await expect(page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-kind="ticks"]')).toContainText('21.10.2024');
+  await expect(page.getByTestId('blocked-message')).toContainText('Kerzen M15');
+  await expect(page.getByTestId('blocked-message')).toContainText('21.10.2024 – 02.03.2025');
+  await expect(page.getByTestId('blocked-item')).toHaveCount(2);
+  await expect(page.getByTestId('bt-progress')).toHaveCount(0);
+  // missing contract data of an instrument stop the run as well
+  await page.getByTestId('mode-single').click();
+  await chooseStrategy(page, STR03);
+  await page.getByTestId('select-broker').selectOption('b2');
+  await page.getByTestId('start-test').click();
+  await expect(page.getByTestId('blocked-message')).toContainText('Kontraktdaten');
   expect(errors).toEqual([]);
 });
 
@@ -108,43 +119,164 @@ test('a strategy parameter of the type instrument brings the data of that instru
   const errors = await openApp(page);
   await chooseStrategy(page, EXAMPLE);
   await expect(page.getByTestId('param-p-vergl')).toHaveValue('GBPUSD');
-  await expect(page.locator('[data-testid="need-row"][data-instrument="GBPUSD"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="need-row"][data-instrument="GBPUSD"][data-kind="candles"]')).toHaveCount(1);
   await page.getByTestId('param-p-vergl').selectOption('XAUUSD');
   // XAUUSD has no H1 candles before 2024-10-01 problem-free: the row of the second instrument is there
-  await expect(page.locator('[data-testid="need-row"][data-instrument="XAUUSD"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="need-row"][data-instrument="XAUUSD"][data-kind="candles"]')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 
-test('data stock: overview, import with check and result, fetch by hand', async ({ page }) => {
+const row = (page: Page, broker: string, instrument: string, kind: string, tf = '') =>
+  page.locator(`[data-testid="stock-row"][data-broker="${broker}"][data-instrument="${instrument}"][data-kind="${kind}"][data-tf="${tf}"]`);
+
+test('data stock: bar, filter and pages of the table, details of a series', async ({ page }) => {
   const errors = await openApp(page);
   await page.getByTestId('menu-data').click();
-  await expect(page.getByTestId('stock-table')).toBeVisible();
-  await expect(page.getByTestId('instr-table')).toContainText('EURUSD');
-  const m15Before = await page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-tf="m15"][data-broker="b1"]').textContent();
-  expect(m15Before).toContain('03.2025');
-  // import of the sample file: check, then result; the gap in the M15 candles is closed
-  await expect(page.getByTestId('import-empty')).toBeVisible();
-  await page.getByTestId('import-sample').click();
-  await expect(page.getByTestId('import-checks')).toContainText('Format erkannt: CSV');
+  // the bar: the button and the broker for test runs, which offers only the brokers of the data stock
+  await expect(page.getByTestId('import-open')).toContainText('Datei importieren …');
+  await expect(page.getByTestId('field-test-broker')).toContainText('Broker für Testläufe');
+  expect(await page.getByTestId('select-test-broker').locator('option').allTextContents()).toEqual(['Demo-Broker (MetaTrader 5)', 'Zweiter Demo-Broker (MetaTrader 5)']);
+  // the table: compact, paged
+  expect(await page.locator('[data-testid="stock-table"] thead th').allTextContents()).toEqual(['Broker', 'Instrument', 'Daten', 'Zeitraum', 'Lücken']);
+  await expect(page.getByTestId('stock-row')).toHaveCount(10);
+  await expect(page.getByTestId('page-no')).toContainText('Seite 1 von 3');
+  await expect(page.getByTestId('page-prev')).toBeDisabled();
+  await page.getByTestId('page-next').click();
+  await expect(page.getByTestId('page-no')).toContainText('Seite 2 von 3');
+  await page.getByTestId('page-next').click();
+  await expect(page.getByTestId('page-next')).toBeDisabled();
+  await page.getByTestId('page-prev').click();
+  await page.getByTestId('page-prev').click();
+  // filter by broker, instrument and data
+  await page.getByTestId('filter-broker').selectOption('b2');
+  await expect(page.getByTestId('stock-row')).toHaveCount(4);
+  await expect(page.getByTestId('page-no')).toContainText('Seite 1 von 1');
+  await page.getByTestId('filter-data').selectOption('contract');
+  await expect(page.getByTestId('stock-row')).toHaveCount(1);
+  await expect(page.getByTestId('stock-row')).toContainText('Kontraktdaten');
+  await page.getByTestId('filter-data').selectOption('');
+  await page.getByTestId('filter-broker').selectOption('');
+  await page.getByTestId('filter-instrument').selectOption('XAUUSD');
+  await page.getByTestId('filter-data').selectOption('candles:h1');
+  await expect(page.getByTestId('stock-row')).toHaveCount(1);
+  // a click shows all gaps with start and end and the contract data of the instrument at this broker
+  await row(page, 'b1', 'XAUUSD', 'candles', 'h1').click();
+  await expect(page.getByTestId('stock-detail')).toBeVisible();
+  await expect(page.getByTestId('gap-item')).toHaveCount(2);
+  await expect(page.getByTestId('gap-item').first()).toContainText('12.04.2025 – 20.04.2025');
+  await expect(page.getByTestId('contract-kontraktgroesse')).toHaveText('100');
+  await row(page, 'b1', 'XAUUSD', 'candles', 'h1').click();
+  await expect(page.getByTestId('stock-detail')).toHaveCount(0);
+  // contract data missing: one sentence with the consequence
+  await page.getByTestId('filter-instrument').selectOption('EURUSD');
+  await page.getByTestId('filter-broker').selectOption('b2');
+  await page.getByTestId('filter-data').selectOption('candles:h1');
+  await row(page, 'b2', 'EURUSD', 'candles', 'h1').click();
+  await expect(page.getByTestId('contract-missing')).toContainText('keine Kontraktdaten');
+  await expect(page.getByTestId('contract-missing')).toContainText('startet dann nicht');
+  // only contract data, no price data: a line "Kontraktdaten" without period and gaps
+  await page.getByTestId('filter-instrument').selectOption('GBPUSD');
+  await page.getByTestId('filter-data').selectOption('contract');
+  await row(page, 'b2', 'GBPUSD', 'contract').click();
+  await expect(page.getByTestId('detail-gaps')).toHaveCount(0);
+  await expect(page.getByTestId('contract-tickgroesse')).toBeVisible();
+  await expect(row(page, 'b2', 'GBPUSD', 'contract')).toContainText('–');
+  // the broker for test runs presets the broker of the preparation
+  await page.getByTestId('select-test-broker').selectOption('b2');
+  await page.getByTestId('menu-test').click();
+  await expect(page.getByTestId('select-broker')).toHaveValue('b2');
+  expect(errors).toEqual([]);
+});
+
+test('data stock: import of two files in one go, new broker, changed time unit, result per file', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.getByTestId('menu-data').click();
+  await page.getByTestId('import-open').click();
+  await expect(page.getByTestId('dialog-import')).toBeVisible();
+  await expect(page.getByTestId('import-empty')).toContainText('Noch keine Datei gewählt');
+  await expect(page.getByTestId('import-run')).toBeDisabled();
+  await page.getByTestId('import-sample-1').click();
+  await page.getByTestId('import-sample-2').click();
+  await expect(page.getByTestId('import-item')).toHaveCount(2);
+  // instrument and data are recognised from the names; the time zone is asked once for the CSV file; the JSON file names the broker
+  const csv = page.locator('[data-testid="import-item"][data-name$=".csv"]');
+  const json = page.locator('[data-testid="import-item"][data-name$=".json"]');
+  await expect(csv.getByTestId('import-instrument')).toHaveValue('EURUSD');
+  await expect(csv.getByTestId('import-data')).toHaveValue('m15');
+  await expect(json.getByTestId('import-instrument')).toHaveValue('XAUUSD');
+  await expect(json.getByTestId('import-data')).toHaveValue('h1');
+  await expect(page.getByTestId('import-tz')).toBeVisible();
+  await expect(page.getByTestId('import-broker')).toHaveValue('Demo-Broker (MetaTrader 5)');
+  // a new broker name, a changed time unit of one file
+  await page.getByTestId('import-broker').fill('Neuer Broker');
+  await csv.getByTestId('import-data').selectOption('m30');
+  await page.getByTestId('import-run').click();
+  await expect(page.getByTestId('import-result')).toHaveCount(2);
+  await expect(csv.getByTestId('import-result')).toContainText('Zeilen übernommen, Zeitraum 21.10.2024 – 28.02.2025');
+  await expect(csv.getByTestId('import-rejected')).toContainText('3 Zeilen abgelehnt');
+  await expect(csv.getByTestId('import-result')).toContainText('Hoch liegt unter der Eröffnung');
+  await expect(json.getByTestId('import-result')).toContainText('Zeitraum 14.04.2025 – 18.04.2025');
+  await expect(json.getByTestId('import-rejected')).toContainText('1 Zeilen abgelehnt');
+  await expect(json.getByTestId('import-result')).toContainText('Schluss liegt unter dem Tief');
+  await expect(page.getByTestId('import-run')).toBeDisabled();
+  await page.getByTestId('import-close').click();
+  // the series are in the table and the new broker is offered for test runs
+  expect(await page.getByTestId('select-test-broker').locator('option').allTextContents()).toContain('Neuer Broker');
+  await page.getByTestId('filter-broker').selectOption('Neuer Broker');
+  await expect(page.getByTestId('stock-row')).toHaveCount(2);
+  await expect(row(page, 'Neuer Broker', 'EURUSD', 'candles', 'm30')).toContainText('21.10.2024');
+  await expect(row(page, 'Neuer Broker', 'XAUUSD', 'candles', 'h1')).toContainText('14.04.2025');
+  // the samples with the broker of the data stock close the gap of the XAUUSD H1 candles
+  await page.getByTestId('filter-broker').selectOption('b1');
+  await page.getByTestId('filter-instrument').selectOption('XAUUSD');
+  await page.getByTestId('filter-data').selectOption('candles:h1');
+  await expect(row(page, 'b1', 'XAUUSD', 'candles', 'h1')).toHaveAttribute('data-gaps', '2');
+  await page.getByTestId('import-open').click();
+  await page.getByTestId('import-sample-2').click();
   await page.getByTestId('import-run').click();
   await expect(page.getByTestId('import-result')).toContainText('übernommen');
-  const m15After = await page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-tf="m15"][data-broker="b1"]').textContent();
-  expect(m15After).toContain('21.10.2024');
-  // a file of the wrong format is refused
-  await page.getByTestId('import-file').setInputFiles({ name: 'daten.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('x') });
-  await expect(page.getByTestId('import-checks')).toContainText('Format nicht erkannt');
+  await page.getByTestId('import-close').click();
+  await expect(row(page, 'b1', 'XAUUSD', 'candles', 'h1')).toHaveAttribute('data-gaps', '1');
+  expect(errors).toEqual([]);
+});
+
+test('data stock: a faulty file does not stop the others, a file without recognised data waits for the entry', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.getByTestId('menu-data').click();
+  await page.getByTestId('import-open').click();
+  const csv = '<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\n2025.01.06\t10:00:00\t1.1\t1.2\t1.0\t1.15\n2025.01.07\t10:00:00\t1.1\t1.2\t1.0\t1.15\n';
+  await page.getByTestId('import-files').setInputFiles([
+    { name: 'daten.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) },
+    { name: 'kaputt.json', mimeType: 'application/json', buffer: Buffer.from('{ not json') },
+    { name: 'tabelle.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('x') },
+    { name: 'GBPUSD_CONTRACT.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ broker: 'Vertrag AG', contract: { tickSize: 0.00001, tickValue: 1, contractSize: 100000 } })) },
+  ]);
+  await expect(page.getByTestId('import-item')).toHaveCount(4);
+  // the file without instrument and data is marked and blocks the import until it is completed
+  const open = page.locator('[data-testid="import-item"][data-name="daten.csv"]');
+  await expect(open).toHaveAttribute('data-state', 'needs');
+  await expect(open.getByTestId('import-missing')).toBeVisible();
   await expect(page.getByTestId('import-run')).toBeDisabled();
-  // fetch by hand: ticks of USDJPY cannot be fetched
-  await page.getByTestId('proc-instrument').selectOption('USDJPY');
-  await page.getByTestId('proc-kind').selectOption('ticks');
-  await page.getByTestId('proc-start').click();
-  await expect(page.getByTestId('proc-result')).toContainText('Nicht beschaffbar');
-  // candles of GBPUSD H1 are there already, ticks of EURUSD fetchable
-  await page.getByTestId('proc-instrument').selectOption('EURUSD');
-  await page.getByTestId('proc-from').fill('2024-12-01');
-  await page.getByTestId('proc-to').fill('2024-12-31');
-  await page.getByTestId('proc-start').click();
-  await expect(page.getByTestId('proc-result')).toContainText('Beschafft und importiert', { timeout: 10_000 });
+  await open.getByTestId('import-instrument').selectOption('USDJPY');
+  await open.getByTestId('import-data').selectOption('d1');
+  await expect(page.getByTestId('import-run')).toBeEnabled();
+  // a time zone that does not exist blocks as well
+  await page.getByTestId('import-tz').fill('Nirgendwo/Stadt');
+  await expect(page.getByTestId('import-run')).toBeDisabled();
+  await page.getByTestId('import-tz').fill('UTC');
+  // a file can be removed from the list
+  await page.locator('[data-testid="import-item"][data-name="tabelle.xlsx"]').getByTestId('import-remove').click();
+  await expect(page.getByTestId('import-item')).toHaveCount(3);
+  await page.getByTestId('import-run').click();
+  await expect(page.locator('[data-testid="import-item"][data-name="kaputt.json"]')).toContainText('Abgelehnt');
+  await expect(open.getByTestId('import-result')).toContainText('2 Zeilen übernommen, Zeitraum 06.01.2025 – 07.01.2025');
+  await expect(page.locator('[data-testid="import-item"][data-name="GBPUSD_CONTRACT.json"]')).toContainText('Kontraktdaten übernommen');
+  await page.getByTestId('import-close').click();
+  // the JSON file names the broker for all files
+  await page.getByTestId('filter-broker').selectOption('Vertrag AG');
+  await expect(page.getByTestId('stock-row')).toHaveCount(2);
+  await expect(row(page, 'Vertrag AG', 'USDJPY', 'candles', 'd1')).toHaveCount(1);
+  await expect(row(page, 'Vertrag AG', 'GBPUSD', 'contract')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 
@@ -284,6 +416,16 @@ test('language: all texts in English, the names of strategies stay as the user w
   await expect(page.getByTestId('fig-net')).toContainText('Net profit');
   await page.getByTestId('menu-data').click();
   expect((await grab()).replace(names, '')).not.toMatch(german);
+  await page.getByTestId('import-open').click();
+  await page.getByTestId('import-sample-1').click();
+  await page.getByTestId('import-sample-2').click();
+  await expect(page.getByTestId('dialog-import')).toContainText('Import file');
+  expect((await grab()).replace(names, '')).not.toMatch(german);
+  await page.getByTestId('import-run').click();
+  await expect(page.getByTestId('import-result')).toHaveCount(2);
+  await expect(page.getByTestId('dialog-import')).toContainText('rows taken over');
+  expect((await page.getByTestId('dialog-import').textContent()) ?? '').not.toMatch(/(übernommen|Zeilen|abgelehnt|Zeitraum)/);
+  await page.getByTestId('import-close').click();
   await page.getByTestId('menu-accounts').click();
   expect((await grab()).replace(names, '')).not.toMatch(german);
   await page.getByTestId('menu-about').click();
@@ -320,7 +462,7 @@ test('backtest: progress, cancel, empty states', async ({ page }) => {
   await page.getByTestId('menu-saved').click();
   await expect(page.getByTestId('saved-empty')).toContainText('Nächster Schritt');
   await page.getByTestId('saved-goto-backtest').click();
-  await chooseStrategy(page, STR01);
+  await chooseStrategy(page, STR03);
   await page.getByTestId('start-test').click();
   await expect(page.getByTestId('bt-progress')).toBeVisible({ timeout: 60_000 });
   await expect(page.getByTestId('bt-bar')).toBeVisible();
@@ -329,6 +471,8 @@ test('backtest: progress, cancel, empty states', async ({ page }) => {
   await expect(page.getByTestId('toast')).toContainText('abgebrochen');
   // the strategy of the client has no trade at all: the result says what to do next
   await chooseStrategy(page, CLIENT);
+  // the M15 candles of EURUSD exist from 2025-03-03 on
+  await page.getByTestId('input-from').fill('2025-04-01');
   await page.getByTestId('start-test').click();
   await expect(page.getByTestId('result')).toBeVisible({ timeout: 120_000 });
   await expect(page.getByTestId('no-trades')).toContainText('Nächster Schritt');

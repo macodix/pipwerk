@@ -1,11 +1,12 @@
 // Strategies, test accounts and the simulated data stock of historical price data, with the check
-// that runs before a test run (req-test-003) and the simulated procurement and import.
+// that runs before a test run (req-test-003). The data stock is filled by the import of files only
+// (req-system-026); the files come from `pipwerk-fetch-mt5` or from an export.
 import { isTrigger } from './catalog';
 import { sampleStrategies } from './samples';
 import { newEl } from './factory';
 import type { Strategy, Txt } from './model';
 import { clone } from './model';
-import { BROKERS, DAY, LAST_DAY, TF_MINUTES, isoDate, parseIsoDate, tfSupported } from './sim/market';
+import { BROKERS, DAY, INSTRUMENTS, LAST_DAY, isoDate, parseIsoDate } from './sim/market';
 import type { AccountVals } from './sim/engine';
 
 const T = (de: string, en: string): Txt => ({ de, en });
@@ -60,7 +61,8 @@ export const CURRENCIES = ['USD', 'EUR', 'GBP', 'CHF', 'JPY'];
 
 // ---- data stock -----------------------------------------------------------------------------------------
 
-export type Kind = 'candles' | 'ticks';
+/** Candles of a time unit, ticks, or the contract data of an instrument (no period). */
+export type Kind = 'candles' | 'ticks' | 'contract';
 
 export interface DataRow {
   id: string;
@@ -68,9 +70,10 @@ export interface DataRow {
   instrument: string;
   kind: Kind;
   tf: string | null;
+  /** First and last day (ISO); empty for contract data. */
   from: string;
   to: string;
-  origin: 'bestand' | 'beschaffung' | 'import';
+  origin: 'bestand' | 'import';
 }
 
 const D0 = '2024-10-01';
@@ -85,30 +88,32 @@ export function initialRows(): DataRow[] {
   rowNo = 0;
   const rows: DataRow[] = [];
   for (const tf of ['m5', 'm15', 'm30', 'h1', 'h4', 'd1']) {
-    // M15 of EURUSD starts later: the fetch of the missing part is shown for a backtest of str-01
+    // M15 of EURUSD starts later: a backtest of str-01 over two years finds that part missing
     rows.push(row('b1', 'EURUSD', 'candles', tf, tf === 'm15' ? '2025-03-03' : D0, D1));
     rows.push(row('b1', 'GBPUSD', 'candles', tf, D0, D1));
-    rows.push(row('b1', 'USDJPY', 'candles', tf, D0, D1));
+    // USDJPY D1 has one gap
+    if (tf === 'd1') {
+      rows.push(row('b1', 'USDJPY', 'candles', tf, D0, '2026-03-13'));
+      rows.push(row('b1', 'USDJPY', 'candles', tf, '2026-03-23', D1));
+    } else rows.push(row('b1', 'USDJPY', 'candles', tf, D0, D1));
   }
   rows.push(row('b1', 'EURUSD', 'ticks', null, '2025-06-02', D1));
   rows.push(row('b1', 'GBPUSD', 'ticks', null, '2026-07-01', D1));
-  for (const tf of ['m15', 'h1', 'd1']) rows.push(row('b1', 'XAUUSD', 'candles', tf, tf === 'm15' ? '2025-06-02' : D0, D1));
+  for (const tf of ['m15', 'h1', 'd1']) {
+    // XAUUSD H1 has two gaps; the second sample file closes the first one
+    if (tf === 'h1') {
+      rows.push(row('b1', 'XAUUSD', 'candles', tf, D0, '2025-04-11'));
+      rows.push(row('b1', 'XAUUSD', 'candles', tf, '2025-04-21', '2026-01-02'));
+      rows.push(row('b1', 'XAUUSD', 'candles', tf, '2026-01-12', D1));
+    } else rows.push(row('b1', 'XAUUSD', 'candles', tf, tf === 'm15' ? '2025-06-02' : D0, D1));
+  }
   for (const tf of ['m15', 'h1', 'd1']) rows.push(row('b2', 'EURUSD', 'candles', tf, '2025-01-02', D1));
+  // contract data: complete at the first broker; the second broker has none for EURUSD (the missing case)
+  // and has contract data for GBPUSD only (the case without price data)
+  for (const i of INSTRUMENTS) rows.push(row('b1', i.id, 'contract', null, '', ''));
+  rows.push(row('b2', 'GBPUSD', 'contract', null, '', ''));
   return rows;
 }
-
-// What the source (MetaTrader 5) can deliver. Invented limits for the prototype.
-interface SourceLimit {
-  candlesFrom: string;
-  /** null: no ticks at all, 'days90': only the last 90 days, otherwise the first day. */
-  ticksFrom: string | null | 'days90';
-}
-const SOURCE: Record<string, SourceLimit> = {
-  EURUSD: { candlesFrom: '2023-01-02', ticksFrom: '2024-01-02' },
-  GBPUSD: { candlesFrom: '2023-01-02', ticksFrom: 'days90' },
-  USDJPY: { candlesFrom: '2023-01-02', ticksFrom: null },
-  XAUUSD: { candlesFrom: '2024-01-02', ticksFrom: 'days90' },
-};
 
 export interface Range {
   from: number;
@@ -151,13 +156,6 @@ export function tradingDays(r: Range): number {
   return n;
 }
 
-export function countOf(kind: Kind, tf: string | null, r: Range): number {
-  const days = tradingDays(r);
-  if (kind === 'ticks') return days * 41000;
-  const mins = TF_MINUTES[(tf ?? 'h1').toLowerCase()] ?? 60;
-  return Math.round((days * 1440) / mins);
-}
-
 export interface Need {
   key: string;
   instrument: string;
@@ -168,13 +166,11 @@ export interface Need {
   why: Txt;
 }
 
+/** The state of one data set: available, or missing (with the missing periods; contract data has none). */
 export interface NeedResult {
   need: Need;
-  status: 'present' | 'fetchable' | 'blocked';
+  status: 'present' | 'missing';
   missing: Range[];
-  fetchable: Range[];
-  blocked: Range[];
-  reason: Txt | null;
 }
 
 export interface RunSettings {
@@ -237,6 +233,12 @@ export function needsFor(run: RunSettings): Need[] {
       why: T('Die Verwaltung der Order hat den Auslöser „Tick“. Ticks werden nicht aus Kerzen nachgebildet.', 'The management of the order has the trigger "Tick". Ticks are not rebuilt from candles.'),
     });
   }
+  for (const ins of instruments) {
+    needs.push({
+      key: `k|${ins}`, instrument: ins, kind: 'contract', tf: null, from: run.from, to: run.to,
+      why: T('Kontraktgröße, Tickwert, Swap und weitere Angaben des Instruments bei diesem Broker.', 'Contract size, tick value, swap and further details of the instrument at this broker.'),
+    });
+  }
   return needs;
 }
 
@@ -245,69 +247,42 @@ export function checkNeeds(run: RunSettings, rows: DataRow[]): NeedResult[] {
 }
 
 export function classifyNeed(need: Need, rows: DataRow[], broker: string): NeedResult {
-  {
-    const have = rows.filter((r) => r.broker === broker && r.instrument === need.instrument && r.kind === need.kind && (need.kind === 'ticks' || r.tf === need.tf)).map(rowRange);
-    const missing = subtract({ from: need.from, to: need.to }, have);
-    // days without trading at the edges are no gaps
-    const real = missing.filter((m) => tradingDays(m) > 0);
-    if (real.length === 0) return { need, status: 'present' as const, missing: [], fetchable: [], blocked: [], reason: null };
-    const src = SOURCE[need.instrument];
-    let limit: number | null = null;
-    let reason: Txt | null = null;
-    if (!src) {
-      reason = T(`Die Quelle MetaTrader 5 kennt das Instrument ${need.instrument} nicht.`, `The source MetaTrader 5 does not know the instrument ${need.instrument}.`);
-    } else if (need.kind === 'candles') {
-      if (need.tf && !tfSupported(need.tf)) reason = T(`Die Quelle liefert keine Kerzen der Zeiteinheit ${need.tf.toUpperCase()}.`, `The source does not deliver candles of the time unit ${need.tf.toUpperCase()}.`);
-      else {
-        limit = parseIsoDate(src.candlesFrom);
-        reason = T(`MetaTrader 5 hat Kerzen von ${need.instrument} erst ab ${src.candlesFrom}.`, `MetaTrader 5 has candles of ${need.instrument} only from ${src.candlesFrom}.`);
-      }
-    } else if (src.ticksFrom === null) {
-      reason = T(`Der Broker stellt für ${need.instrument} keine historischen Ticks bereit.`, `The broker provides no historical ticks for ${need.instrument}.`);
-    } else if (src.ticksFrom === 'days90') {
-      limit = LAST_DAY - 89 * DAY;
-      reason = T(`MetaTrader 5 liefert Ticks von ${need.instrument} nur für die letzten 90 Tage, also ab ${isoDate(limit)}.`, `MetaTrader 5 delivers ticks of ${need.instrument} only for the last 90 days, that is from ${isoDate(limit)}.`);
-    } else {
-      limit = parseIsoDate(src.ticksFrom);
-      reason = T(`MetaTrader 5 hat Ticks von ${need.instrument} erst ab ${src.ticksFrom}.`, `MetaTrader 5 has ticks of ${need.instrument} only from ${src.ticksFrom}.`);
-    }
-    const fetchable: Range[] = [];
-    const blocked: Range[] = [];
-    for (const m of real) {
-      if (limit === null) { blocked.push(m); continue; }
-      if (m.to < limit) blocked.push(m);
-      else if (m.from < limit) { blocked.push({ from: m.from, to: limit - DAY }); fetchable.push({ from: limit, to: m.to }); } else fetchable.push(m);
-    }
-    const blockedReal = blocked.filter((b) => tradingDays(b) > 0);
-    return {
-      need, status: blockedReal.length ? 'blocked' as const : 'fetchable' as const, missing: real, fetchable, blocked: blockedReal, reason: blockedReal.length ? reason : null,
-    };
+  if (need.kind === 'contract') {
+    return hasContract(rows, broker, need.instrument)
+      ? { need, status: 'present', missing: [] }
+      : { need, status: 'missing', missing: [] };
   }
+  const have = rows.filter((r) => r.broker === broker && r.instrument === need.instrument && r.kind === need.kind && (need.kind === 'ticks' || r.tf === need.tf)).map(rowRange);
+  // days without trading at the edges are no gaps
+  const real = subtract({ from: need.from, to: need.to }, have).filter((m) => tradingDays(m) > 0);
+  return real.length === 0 ? { need, status: 'present', missing: [] } : { need, status: 'missing', missing: real };
 }
 
-export function addRows(rows: DataRow[], broker: string, results: NeedResult[]): DataRow[] {
-  const out = [...rows];
-  for (const r of results) {
-    for (const f of r.fetchable) {
-      out.push({
-        id: `f${out.length + 1}-${Math.floor(f.from / DAY)}`, broker, instrument: r.need.instrument, kind: r.need.kind, tf: r.need.tf,
-        from: isoDate(f.from), to: isoDate(f.to), origin: 'beschaffung',
-      });
-    }
-  }
-  return out;
+export function hasContract(rows: DataRow[], broker: string, instrument: string): boolean {
+  return rows.some((r) => r.kind === 'contract' && r.broker === broker && r.instrument === instrument);
 }
 
-/** The stock as it is shown: merged ranges per instrument and kind. */
+/** One line of the table: a series of one broker, one instrument and one kind of data. */
 export interface StockLine {
+  key: string;
   broker: string;
   instrument: string;
   kind: Kind;
   tf: string | null;
-  ranges: Range[];
-  count: number;
+  /** First and last day of the series, null for contract data. */
+  span: Range | null;
+  /** Periods with trading days between two covered periods. */
+  gaps: Range[];
 }
 
+/** The label of the data of a line, for example "Kerzen H1", "Ticks", "Kontraktdaten". */
+export function dataLabel(kind: Kind, tf: string | null, lang: 'de' | 'en'): string {
+  if (kind === 'ticks') return 'Ticks';
+  if (kind === 'contract') return lang === 'en' ? 'Contract data' : 'Kontraktdaten';
+  return `${lang === 'en' ? 'Candles' : 'Kerzen'} ${(tf ?? '').toUpperCase()}`;
+}
+
+/** The stock as it is shown: one line per series; contract data gets a line only when there is no price data. */
 export function stockLines(rows: DataRow[]): StockLine[] {
   const groups = new Map<string, DataRow[]>();
   for (const r of rows) {
@@ -315,21 +290,43 @@ export function stockLines(rows: DataRow[]): StockLine[] {
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k)?.push(r);
   }
+  const priced = new Set(rows.filter((r) => r.kind !== 'contract').map((r) => `${r.broker}|${r.instrument}`));
   const order = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD'];
-  const tfOrder = ['m5', 'm15', 'm30', 'h1', 'h4', 'd1'];
+  const tfOrder = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm10', 'm12', 'm15', 'm20', 'm30', 'h1', 'h2', 'h3', 'h4', 'h6', 'h8', 'h12', 'd1', 'w1', 'mn1'];
+  const rank = (k: Kind) => (k === 'candles' ? 0 : k === 'ticks' ? 1 : 2);
   const lines: StockLine[] = [];
-  for (const rs of groups.values()) {
+  for (const [key, rs] of groups) {
+    const first = rs[0];
+    if (first.kind === 'contract') {
+      if (!priced.has(`${first.broker}|${first.instrument}`)) lines.push({ key, broker: first.broker, instrument: first.instrument, kind: 'contract', tf: null, span: null, gaps: [] });
+      continue;
+    }
     const ranges = mergeRanges(rs.map(rowRange));
-    lines.push({
-      broker: rs[0].broker, instrument: rs[0].instrument, kind: rs[0].kind, tf: rs[0].tf, ranges,
-      count: ranges.reduce((a, r) => a + countOf(rs[0].kind, rs[0].tf, r), 0),
-    });
+    const gaps: Range[] = [];
+    for (let i = 1; i < ranges.length; i++) {
+      const g = { from: ranges[i - 1].to + DAY, to: ranges[i].from - DAY };
+      if (tradingDays(g) > 0) gaps.push(g);
+    }
+    lines.push({ key, broker: first.broker, instrument: first.instrument, kind: first.kind, tf: first.tf, span: { from: ranges[0].from, to: ranges[ranges.length - 1].to }, gaps });
   }
-  lines.sort((a, b) => a.broker.localeCompare(b.broker) || order.indexOf(a.instrument) - order.indexOf(b.instrument) || (a.kind === b.kind ? 0 : a.kind === 'candles' ? -1 : 1) || tfOrder.indexOf(a.tf ?? '') - tfOrder.indexOf(b.tf ?? ''));
+  const idx = (i: string) => (order.indexOf(i) < 0 ? 99 : order.indexOf(i));
+  lines.sort((a, b) => brokerName(a.broker).localeCompare(brokerName(b.broker)) || idx(a.instrument) - idx(b.instrument) || a.instrument.localeCompare(b.instrument) || rank(a.kind) - rank(b.kind) || tfOrder.indexOf(a.tf ?? '') - tfOrder.indexOf(b.tf ?? ''));
   return lines;
 }
 
 export const brokerName = (id: string): string => BROKERS.find((b) => b.id === id)?.name ?? id;
+
+/** The brokers that occur in the data stock, in order of their names. */
+export function stockBrokers(rows: DataRow[]): string[] {
+  return [...new Set(rows.map((r) => r.broker))].sort((a, b) => brokerName(a).localeCompare(brokerName(b)));
+}
+
+/** The id of a broker by the name the user typed: a known name keeps its id, a new name is its own id. */
+export function brokerIdOf(name: string, rows: DataRow[]): string {
+  const n = name.trim();
+  const known = [...new Set([...BROKERS.map((b) => b.id), ...rows.map((r) => r.broker)])].find((id) => brokerName(id) === n);
+  return known ?? n;
+}
 
 export function fmtRange(r: Range, lang: 'de' | 'en'): string {
   const f = (t: number) => (lang === 'en' ? isoDate(t) : `${isoDate(t).slice(8, 10)}.${isoDate(t).slice(5, 7)}.${isoDate(t).slice(0, 4)}`);

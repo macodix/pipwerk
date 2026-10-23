@@ -2,7 +2,7 @@
 // live in the browser's local storage; on every start the strategies and the default test account are present.
 import { useSyncExternalStore } from 'react';
 import {
-  STANDARD_ACCOUNT, addRows, checkNeeds, hasManualTrigger, initialRows, strategyEntries, usedTimeframes,
+  STANDARD_ACCOUNT, checkNeeds, hasManualTrigger, initialRows, strategyEntries, usedTimeframes,
 } from './data';
 import type { Account, DataRow, NeedResult, RunSettings, StrategyEntry } from './data';
 import type { Lang, Strategy, Txt } from './model';
@@ -34,9 +34,6 @@ export interface Prep {
 
 export interface CheckView {
   results: NeedResult[];
-  fetching: boolean;
-  /** Progress per need, 0 to 1. */
-  progress: Record<string, number>;
 }
 
 export interface BtResult {
@@ -79,6 +76,7 @@ export interface Single {
 
 export type Dialog =
   | { k: 'about' }
+  | { k: 'import' }
   | { k: 'saveBt' }
   | { k: 'strategy'; savedId?: string }
   | { k: 'deleteAccount'; id: string }
@@ -99,6 +97,8 @@ export interface State {
   accounts: Account[];
   saved: SavedBacktest[];
   rows: DataRow[];
+  /** Broker for test runs (setting of the data stock): the preset of the broker in the preparation. */
+  testBroker: string;
   prep: Prep;
   check: CheckView | null;
   single: Single | null;
@@ -124,6 +124,7 @@ interface Persisted {
   accounts: Account[];
   saved: SavedBacktest[];
   rows: DataRow[];
+  testBroker: string;
 }
 
 function readStorage(): Partial<Persisted> | null {
@@ -137,7 +138,7 @@ function readStorage(): Partial<Persisted> | null {
 
 function writeStorage(s: State) {
   try {
-    const p: Persisted = { lang: s.settings.lang, accounts: s.accounts, saved: s.saved, rows: s.rows };
+    const p: Persisted = { lang: s.settings.lang, accounts: s.accounts, saved: s.saved, rows: s.rows, testBroker: s.testBroker };
     window.localStorage.setItem(KEY, JSON.stringify(p));
   } catch {
     /* storage may be blocked or full; the prototype works without it */
@@ -161,10 +162,10 @@ export function paramsOf(s: Strategy): Record<string, string | number | boolean>
   return out;
 }
 
-export function newPrep(strategyId: string, accounts: Account[], prev?: Prep): Prep {
+export function newPrep(strategyId: string, accounts: Account[], prev?: Prep, presetBroker = 'b1'): Prep {
   const e = entryOf(strategyId);
   const instrument = prev?.instrument ?? 'EURUSD';
-  const broker = prev?.broker ?? 'b1';
+  const broker = prev?.broker ?? presetBroker;
   const acc = accounts[0] ?? STANDARD_ACCOUNT;
   return {
     strategyId: e.id,
@@ -183,12 +184,14 @@ function initialState(): State {
   const accounts: Account[] = stored?.accounts && stored.accounts.length ? [...stored.accounts] : [clone(STANDARD_ACCOUNT)];
   if (!accounts.some((a) => a.id === STANDARD_ACCOUNT.id)) accounts.unshift(clone(STANDARD_ACCOUNT));
   const base = initialRows();
-  const extra = (stored?.rows ?? []).filter((r) => r.origin !== 'bestand');
+  const extra = (stored?.rows ?? []).filter((r) => r.origin === 'import');
+  const rows = [...base, ...extra];
+  const testBroker = stored?.testBroker && rows.some((r) => r.broker === stored.testBroker) ? stored.testBroker : 'b1';
   const std = ENTRIES[1];
   return {
     settings: { lang: stored?.lang === 'en' ? 'en' : 'de' },
-    view: 'test', mode: 'single', phase: 'prepare', accounts, saved: stored?.saved ?? [], rows: [...base, ...extra],
-    prep: newPrep(std.id, accounts), check: null, single: null, bt: null, result: null, savedView: { k: 'list' }, compare: [], dialog: null, toast: null,
+    view: 'test', mode: 'single', phase: 'prepare', accounts, saved: stored?.saved ?? [], rows, testBroker,
+    prep: newPrep(std.id, accounts, undefined, testBroker), check: null, single: null, bt: null, result: null, savedView: { k: 'list' }, compare: [], dialog: null, toast: null,
     menuOpen: false, runPanel: 'flow', resPanel: 'summary', selTrade: null, rejectedShown: 100, tradesTab: 'trades',
   };
 }
@@ -276,6 +279,12 @@ export function selectInstrument(instrument: string, broker = state.prep.broker)
     p.broker = broker;
     p.instr = instrumentInfo(instrument, broker);
   });
+}
+
+/** The broker for test runs: stored, and the preset of the broker in the preparation. */
+export function setTestBroker(id: string) {
+  setState({ testBroker: id }, true);
+  selectInstrument(state.prep.instrument, id);
 }
 
 export function selectAccount(id: string) {
@@ -386,33 +395,17 @@ export async function startTest() {
   const token = runToken;
   const mode = s.mode;
   const results = checkNeeds(runSettings(s.prep, mode), s.rows);
-  const progress: Record<string, number> = {};
-  for (const r of results) progress[r.need.key] = r.status === 'present' ? 1 : 0;
-  if (results.some((r) => r.status === 'blocked')) {
-    setState({ phase: 'blocked', check: { results, fetching: false, progress } });
+  // missing data stops the test run (the data stock is filled by import only)
+  if (results.some((r) => r.status === 'missing')) {
+    setState({ phase: 'blocked', check: { results } });
     return;
   }
-  const fetch = results.filter((r) => r.status === 'fetchable');
-  if (fetch.length) {
-    setState({ phase: 'checking', check: { results, fetching: true, progress } });
-    for (const r of fetch) {
-      for (let i = 1; i <= 8; i++) {
-        await sleep(70);
-        if (token !== runToken) return;
-        progress[r.need.key] = i / 8;
-        setState({ check: { results, fetching: true, progress: { ...progress } } });
-      }
-    }
-    const rows = addRows(state.rows, state.prep.broker, results);
-    setState({ rows }, true);
-  }
-  if (token !== runToken) return;
+  setState({ phase: 'checking', check: { results } });
   if (mode === 'single') await startSingle(token);
   else await startBacktest(token);
 }
 
 async function startSingle(token: number) {
-  setState({ phase: 'checking', check: state.check ? { ...state.check, fetching: false } : null });
   await sleep(30);
   if (token !== runToken) return;
   const input = inputOf(state.prep, 'single', true);
