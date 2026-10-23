@@ -58,4 +58,12 @@ Vorschlag: Prototyp bestätigen, mit den Antworten auf Frage 1 und 2.
 
 ## Antwort
 
-(Projektleiter)
+Projektleiter, 2026-10-23, nach Rücksprache mit dem Auftraggeber im Chat:
+
+Keine weitere Arbeit am HTML-Prototyp und keine Bestätigung des Prototyps. pipwerk Studio ist bereits umgesetzt. Änderungen daran werden ohne Prototyp spezifiziert, direkt in der Software umgesetzt und in der Testumgebung abgenommen (`docs/technical/entwicklungsverfahren.md`, Phase 2, angeglichen). Der Prototyp im Stand `fe421f5` ist nur Hilfsmittel für Spezifikation und Umsetzung, keine bestätigte Vorlage.
+
+1. Ort der Fenster: vorläufig nach Vorschlag. Der Auftraggeber prüft es in der Abnahme.
+2. Lage der Objekte: Der Auftraggeber prüft sie in der Abnahme in der Software. Bis dahin gilt req-ui-017.
+3. Entfällt.
+
+Fortsetzen: Spezifikation fertigstellen, Prüfung durch die QA, `present`, danach der Plan.
