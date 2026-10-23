@@ -1,41 +1,55 @@
-// Data stock of historical price data (specification 5.1 to 5.4, 8.3): overview with periods and
-// gaps, details of the instruments, default source, import of a file and acquisition by hand.
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+// Data stock of historical price data (specification 5.1, 5.3, 8.3): a bar with the import and the
+// broker for test runs, a compact table with one row per series (filtered and paged by the
+// backend), and the details of a row after a click: all gaps and the contract data.
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AcquireCard } from './AcquireCard';
+import { ALL_DATA_IDS, dataLabel } from './dataLabels';
 import {
-  DEFAULT_SOURCE_QUERY_KEY,
-  INSTRUMENT_QUERY_KEY,
-  knownNames,
-  useOverview,
+  PAGE_SIZE,
+  TEST_RUN_BROKER_QUERY_KEY,
+  dataFilterParam,
+  useBrokers,
+  useSeries,
+  useSeriesDetails,
+  useTestRunBroker,
 } from './dataQueries';
 import { describeError } from './errors';
-import { formatMoment, formatNumber, formatPeriod } from './format';
+import { formatDays, formatNumber, formatPeriod, formatMoment } from './format';
 import type { SupportedLanguage } from './i18n';
-import { ImportCard } from './ImportCard';
-import {
-  fetchDefaultSource,
-  fetchInstrument,
-  isValidName,
-  updateDefaultSource,
-  type InstrumentInfo,
-  type Overview,
-  type Series,
-} from './marketDataApi';
-import { Btn, Field, Icon, TextInput } from './ui';
+import { ImportDialog } from './ImportDialog';
+import { updateTestRunBroker, type SeriesRow } from './marketDataApi';
+import { Btn, Field, Icon, Select, TextInput } from './ui';
+import { useDebounced } from './useDebounced';
 
-/** How many periods or gaps of a series are listed in a table cell. */
-const SHOWN_PERIODS = 3;
+/** How long the filter waits after the last key before it asks the backend. */
+const FILTER_DELAY_MS = 300;
 
 function languageOf(language: string): SupportedLanguage {
   return language === 'en' ? 'en' : 'de';
 }
 
+type RowKey = Pick<SeriesRow, 'broker' | 'instrument' | 'data'>;
+
+function sameRow(a: RowKey | null, b: RowKey): boolean {
+  return a !== null && a.broker === b.broker && a.instrument === b.instrument && a.data === b.data;
+}
+
 export function DataView() {
   const { t } = useTranslation();
-  const overview = useOverview();
+  const [importOpen, setImportOpen] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
+
+  // After the dialog is closed (and gone, so the page is not locked any more) the focus returns
+  // to the button that opened it. It is set explicitly and does not depend on the browser.
+  useEffect(() => {
+    if (wasOpen.current && !importOpen) {
+      barRef.current?.querySelector('button')?.focus();
+    }
+    wasOpen.current = importOpen;
+  }, [importOpen]);
 
   return (
     <section className="region page" data-testid="data" aria-labelledby="data-title">
@@ -44,130 +58,287 @@ export function DataView() {
           <h1 id="data-title">{t('data.title')}</h1>
           <p className="muted">{t('data.intro')}</p>
         </header>
-        <StockCard overview={overview} />
-        <InstrumentsCard overview={overview.data} />
-        <DefaultSourceCard overview={overview.data} />
-        <ImportCard overview={overview.data} />
-        <AcquireCard overview={overview.data} />
+        <section className="card-box wide" data-testid="data-bar" aria-label={t('data.barLabel')}>
+          <div className="data-bar" ref={barRef}>
+            <Btn
+              kind="primary"
+              icon="upload"
+              testid="import-open"
+              tip={t('data.tip.import')}
+              onClick={() => {
+                setImportOpen(true);
+              }}
+            >
+              {t('data.importOpen')}
+            </Btn>
+            <TestRunBrokerField />
+          </div>
+        </section>
+        <StockCard />
       </div>
+      {importOpen && (
+        <ImportDialog
+          onClose={() => {
+            setImportOpen(false);
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function dataLabel(t: (key: string) => string, unit: string): string {
-  return unit === 'ticks' ? t('data.ticks') : `${t('data.candles')} ${unit.toUpperCase()}`;
+/** The choice of the broker for test runs among the brokers of the data stock. */
+function TestRunBrokerField() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const brokers = useBrokers();
+  const current = useTestRunBroker();
+  const mutation = useMutation({
+    mutationFn: (broker: string) => updateTestRunBroker(broker),
+    onSuccess: (stored) => {
+      queryClient.setQueryData(TEST_RUN_BROKER_QUERY_KEY, stored);
+    },
+  });
+  const value = current.data?.broker ?? '';
+  const names = brokers.data ?? [];
+  // A broker that applies but is not in the list (the list is older) is still shown.
+  const options = value !== '' && !names.includes(value) ? [...names, value] : names;
+  const failure = brokers.error ?? current.error ?? mutation.error;
+
+  return (
+    <div className="test-broker">
+      <Field label={t('data.testBroker')} tip={t('data.tip.testBroker')} testid="field-test-broker">
+        {(id) => (
+          <Select
+            id={id}
+            value={value}
+            testid="select-test-broker"
+            disabled={options.length === 0 || mutation.isPending}
+            onChange={(next) => {
+              mutation.mutate(next);
+            }}
+          >
+            {options.length === 0 && <option value="">{t('data.testBrokerNone')}</option>}
+            {options.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      {failure !== null && (
+        <p className="error-note" role="alert" data-testid="test-broker-error">
+          <Icon name="warn" size={14} />
+          {t('data.testBrokerError', { reason: describeError(t, failure) })}
+        </p>
+      )}
+    </div>
+  );
 }
 
-function StockCard({ overview }: { overview: ReturnType<typeof useOverview> }) {
+function StockCard() {
   const { t, i18n } = useTranslation();
   const language = languageOf(i18n.language);
-  const data = overview.data;
+  const brokers = useBrokers();
+  const [broker, setBroker] = useState('');
+  const [instrument, setInstrument] = useState('');
+  const [data, setData] = useState('');
+  const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<RowKey | null>(null);
+
+  const typed = useMemo(() => ({ broker: broker.trim(), instrument: instrument.trim(), data }), [broker, instrument, data]);
+  const delayed = useDebounced(typed, FILTER_DELAY_MS);
+  const filter = useMemo(
+    () => ({ broker: delayed.broker, instrument: delayed.instrument, data: dataFilterParam(delayed.data) }),
+    [delayed],
+  );
+  const filtered = filter.broker !== '' || filter.instrument !== '' || filter.data !== '';
+  const series = useSeries(filter, page);
+  const result = series.data;
+  const total = result?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // After an import the stock can have fewer rows than before: show the last page then.
+  useEffect(() => {
+    if (result !== undefined && result.items.length === 0 && result.total > 0 && page > 0) {
+      setPage(Math.max(0, Math.ceil(result.total / PAGE_SIZE) - 1));
+    }
+  }, [result, page]);
+
+  function changeFilter(set: (value: string) => void): (value: string) => void {
+    return (value) => {
+      set(value);
+      setPage(0);
+      setSelected(null);
+    };
+  }
+
+  function toggle(row: SeriesRow): void {
+    setSelected(sameRow(selected, row) ? null : { broker: row.broker, instrument: row.instrument, data: row.data });
+  }
+
+  const empty = result !== undefined && total === 0 && !filtered;
+  const showFilters = result !== undefined && !empty;
+  const first = page * PAGE_SIZE + 1;
+  const last = page * PAGE_SIZE + (result?.items.length ?? 0);
 
   return (
     <section className="card-box wide" data-testid="stock" aria-labelledby="stock-title">
-      <div className="card-head">
-        <h2 id="stock-title">
-          <Icon name="database" size={16} />
-          {t('data.stockTitle')}
-        </h2>
-        <Btn
-          icon="refresh"
-          testid="stock-refresh"
-          disabled={overview.isFetching}
-          onClick={() => {
-            void overview.refetch();
-          }}
-        >
-          {t('common.refresh')}
-        </Btn>
-      </div>
-      {overview.isPending && <p className="muted">{t('common.loading')}</p>}
-      {overview.isError && (
+      <h2 id="stock-title">
+        <Icon name="database" size={16} />
+        {t('data.seriesTitle')}
+      </h2>
+      {series.isPending && <p className="muted">{t('common.loading')}</p>}
+      {series.isError && (
         <p className="error-note" role="alert" data-testid="stock-error">
           <Icon name="warn" size={14} />
-          {t('data.loadError', { reason: describeError(t, overview.error) })}
+          {t('data.loadError', { reason: describeError(t, series.error) })}
         </p>
       )}
-      {data !== undefined && data.series.length === 0 && (
+      {empty && (
         <p className="empty-note" data-testid="stock-empty">
-          {t('data.stockEmpty')}
+          {t('data.empty')}
         </p>
       )}
-      {data !== undefined && data.series.length > 0 && (
+      {showFilters && (
         <>
-          <div className="tbl-wrap">
-            <table className="tbl" data-testid="stock-table">
+          <div className="data-filters" data-testid="stock-filters">
+            <Field label={t('data.broker')} tip={t('data.tip.filterBroker')} testid="field-filter-broker">
+              {(id) => (
+                <>
+                  <TextInput id={id} value={broker} list="filter-brokers" testid="filter-broker" onChange={changeFilter(setBroker)} />
+                  <datalist id="filter-brokers">
+                    {(brokers.data ?? []).map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                </>
+              )}
+            </Field>
+            <Field label={t('data.instrument')} tip={t('data.tip.filterInstrument')} testid="field-filter-instrument">
+              {(id) => <TextInput id={id} value={instrument} testid="filter-instrument" onChange={changeFilter(setInstrument)} />}
+            </Field>
+            <Field label={t('data.dataKind')} tip={t('data.tip.filterData')} testid="field-filter-data">
+              {(id) => (
+                <>
+                  <TextInput id={id} value={data} list="filter-data-ids" testid="filter-data" onChange={changeFilter(setData)} />
+                  <datalist id="filter-data-ids">
+                    {ALL_DATA_IDS.map((dataId) => (
+                      <option key={dataId} value={dataLabel(t, dataId)} />
+                    ))}
+                  </datalist>
+                </>
+              )}
+            </Field>
+          </div>
+          <div className="tbl-wrap stock-table-wrap">
+            <table className="tbl stock-table" data-testid="stock-table">
               <thead>
                 <tr>
-                  <th>{t('data.broker')}</th>
-                  <th>{t('data.instrument')}</th>
-                  <th>{t('data.dataKind')}</th>
-                  <th>{t('data.periods')}</th>
-                  <th>{t('data.gaps')}</th>
-                  <th>{t('data.amount')}</th>
+                  <th data-tip={t('data.tip.columnBroker')}>{t('data.broker')}</th>
+                  <th data-tip={t('data.tip.columnInstrument')}>{t('data.instrument')}</th>
+                  <th data-tip={t('data.tip.columnData')}>{t('data.dataKind')}</th>
+                  <th data-tip={t('data.tip.columnPeriod')}>{t('data.period')}</th>
+                  <th className="num" data-tip={t('data.tip.columnGaps')}>
+                    {t('data.gaps')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {data.series.map((series) => (
-                  <StockRow key={`${series.broker}|${series.instrument}|${series.unit}`} series={series} language={language} />
-                ))}
+                {(result?.items ?? []).map((row) => {
+                  const open = sameRow(selected, row);
+                  return (
+                    <Fragment key={`${row.broker}|${row.instrument}|${row.data}`}>
+                      <tr
+                        data-testid="stock-row"
+                        data-broker={row.broker}
+                        data-instrument={row.instrument}
+                        data-data={row.data}
+                        data-gaps={row.first === null ? '' : row.gapCount}
+                        tabIndex={0}
+                        aria-expanded={open}
+                        data-tip={t('data.rowTip')}
+                        onClick={() => {
+                          toggle(row);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            toggle(row);
+                          }
+                        }}
+                      >
+                        <td>{row.broker}</td>
+                        <td>
+                          <b>{row.instrument}</b>
+                        </td>
+                        <td className="nowrap">{dataLabel(t, row.data)}</td>
+                        <td>{row.first !== null && row.last !== null ? formatDays(row.first, row.last, language) : t('data.none')}</td>
+                        <td className="num">{row.first === null ? t('data.none') : formatNumber(row.gapCount, language, 0)}</td>
+                      </tr>
+                      {open && (
+                        <tr className="detail-row" data-testid="stock-detail-row">
+                          <td colSpan={5}>
+                            <RowDetails row={row} language={language} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <p className="muted">{t('data.timesUtc')}</p>
-          {data.seriesTotal > data.series.length && (
-            <p className="muted" data-testid="stock-cut">
-              {t('data.cut', { shown: data.series.length, total: data.seriesTotal })}
+          {total === 0 && (
+            <p className="empty-note" data-testid="stock-nomatch">
+              {t('data.noMatch')}
             </p>
           )}
+          <div className="pager" data-testid="stock-pager">
+            <span className="muted" data-testid="stock-count">
+              {total === 0
+                ? t('data.countNone')
+                : t(filtered ? 'data.countFiltered' : 'data.count', {
+                    from: formatNumber(first, language, 0),
+                    to: formatNumber(last, language, 0),
+                    total: formatNumber(total, language, 0),
+                  })}
+            </span>
+            <div className="btn-row">
+              <Btn
+                small
+                icon="left"
+                testid="page-prev"
+                disabled={page === 0}
+                onClick={() => {
+                  setPage(page - 1);
+                  setSelected(null);
+                }}
+              >
+                {t('data.previous')}
+              </Btn>
+              <span className="muted" data-testid="page-no">
+                {t('data.page', { page: page + 1, pages })}
+              </span>
+              <Btn
+                small
+                icon="right"
+                testid="page-next"
+                disabled={page >= pages - 1}
+                onClick={() => {
+                  setPage(page + 1);
+                  setSelected(null);
+                }}
+              >
+                {t('data.next')}
+              </Btn>
+            </div>
+          </div>
+          <p className="muted">{t('data.timesUtc')}</p>
         </>
       )}
     </section>
-  );
-}
-
-function StockRow({ series, language }: { series: Series; language: SupportedLanguage }) {
-  const { t } = useTranslation();
-  const hiddenPeriods = series.coveredCount - Math.min(series.covered.length, SHOWN_PERIODS);
-  const gaps = series.missing;
-  const hiddenGaps = series.missingCount - Math.min(gaps.length, SHOWN_PERIODS);
-  return (
-    <tr
-      data-testid="stock-row"
-      data-broker={series.broker}
-      data-instrument={series.instrument}
-      data-unit={series.unit}
-    >
-      <td>{series.broker}</td>
-      <td>
-        <b>{series.instrument}</b>
-      </td>
-      <td>{dataLabel(t, series.unit)}</td>
-      <td data-testid="stock-periods">
-        <ul className="plain">
-          {series.covered.slice(0, SHOWN_PERIODS).map((period) => (
-            <li key={period.start}>{formatPeriod(period.start, period.end, language)}</li>
-          ))}
-          {hiddenPeriods > 0 && <li className="muted">{t('data.more', { count: hiddenPeriods })}</li>}
-        </ul>
-      </td>
-      <td data-testid="stock-gaps" data-gap-count={series.missingCount}>
-        {series.missingCount === 0 ? (
-          <span className="state-chip present">{t('data.noGaps')}</span>
-        ) : (
-          <ul className="plain">
-            {gaps.slice(0, SHOWN_PERIODS).map((gap) => (
-              <li key={gap.start} className="gap">
-                <Icon name="warn" size={13} />
-                {formatPeriod(gap.start, gap.end, language)}
-              </li>
-            ))}
-            {hiddenGaps > 0 && <li className="muted">{t('data.more', { count: hiddenGaps })}</li>}
-          </ul>
-        )}
-      </td>
-      <td>{formatNumber(series.count, language, 0)}</td>
-    </tr>
   );
 }
 
@@ -176,209 +347,92 @@ function weekdayText(t: (key: string) => string, weekday: string): string {
   return days.includes(weekday) ? t(`data.weekday.${weekday}`) : weekday;
 }
 
-function InstrumentsCard({ overview }: { overview: Overview | undefined }) {
-  const { t, i18n } = useTranslation();
-  const language = languageOf(i18n.language);
-  const entries = overview?.instruments ?? [];
-  const details = useQueries({
-    queries: entries.map((entry) => ({
-      // The time of the acquisition is part of the key: newer details replace the shown ones.
-      queryKey: [...INSTRUMENT_QUERY_KEY, entry.broker, entry.instrument, entry.acquiredAt],
-      queryFn: ({ signal }: { signal: AbortSignal }) => fetchInstrument(entry.broker, entry.instrument, signal),
-    })),
-  });
-  const infos: (InstrumentInfo | undefined)[] = details.map((query) => query.data);
-  const failed = details.some((query) => query.isError);
+/** The details of a row: all gaps with start and end, and the contract data of the instrument at this broker. */
+function RowDetails({ row, language }: { row: SeriesRow; language: SupportedLanguage }) {
+  const { t } = useTranslation();
+  const details = useSeriesDetails(row);
+  const info = details.data?.contract ?? null;
   const n = (value: number) => formatNumber(value, language, 8);
+  const items: [string, string, string][] =
+    info === null
+      ? []
+      : [
+          ['tickSize', t('data.tickSize'), n(info.tickSize)],
+          ['tickValue', t('data.tickValue'), `${n(info.tickValue)} ${info.tickValueCurrency}`],
+          ['pip', t('data.pip'), n(info.pip)],
+          ['point', t('data.point'), n(info.point)],
+          ['spread', t('data.spread'), n(info.spread)],
+          ['minVolume', t('data.minVolume'), n(info.minVolume)],
+          ['volumeStep', t('data.volumeStep'), n(info.volumeStep)],
+          ['contractSize', t('data.contractSize'), n(info.contractSize)],
+          ['swap', t('data.swap'), `${n(info.swapLong)} / ${n(info.swapShort)}`],
+          ['tripleSwap', t('data.tripleSwap'), weekdayText(t, info.swapTripleWeekday)],
+          ['margin', t('data.margin'), info.marginPerLot === null ? t('data.none') : n(info.marginPerLot)],
+          ['contractFrom', t('data.contractFrom'), formatMoment(info.acquiredAt, language)],
+        ];
 
   return (
-    <section className="card-box wide" data-testid="instr-table-card" aria-labelledby="instr-title">
-      <h2 id="instr-title">
-        <Icon name="list" size={16} />
-        {t('data.instrumentsTitle')}
-      </h2>
-      <p className="muted">{t('data.instrumentsIntro')}</p>
-      {entries.length === 0 ? (
-        <p className="empty-note" data-testid="instr-empty">
-          {t('data.instrumentsEmpty')}
+    <div className="detail" data-testid="stock-detail">
+      <h3>
+        {row.broker} · {row.instrument} · {dataLabel(t, row.data)}
+      </h3>
+      {details.isPending && <p className="muted">{t('data.detailsLoading')}</p>}
+      {details.isError && (
+        <p className="error-note" role="alert" data-testid="detail-error">
+          <Icon name="warn" size={14} />
+          {t('data.detailsError', { reason: describeError(t, details.error) })}
         </p>
-      ) : (
-        <div className="tbl-wrap">
-          <table className="tbl" data-testid="instr-table">
-            <thead>
-              <tr>
-                <th>{t('data.broker')}</th>
-                <th>{t('data.instrument')}</th>
-                <th>{t('data.acquiredAt')}</th>
-                <th>{t('data.tickSize')}</th>
-                <th>{t('data.tickValue')}</th>
-                <th>{t('data.pip')}</th>
-                <th>{t('data.point')}</th>
-                <th>{t('data.spread')}</th>
-                <th>{t('data.minVolume')}</th>
-                <th>{t('data.volumeStep')}</th>
-                <th>{t('data.contractSize')}</th>
-                <th>{t('data.swap')}</th>
-                <th>{t('data.tripleSwap')}</th>
-                <th>{t('data.margin')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => {
-                const info = infos[index];
-                return (
-                  <tr
-                    key={`${entry.broker}|${entry.instrument}`}
-                    data-testid="instr-row"
-                    data-instrument={entry.instrument}
-                  >
-                    <td>{entry.broker}</td>
-                    <td>
-                      <b>{entry.instrument}</b>
-                    </td>
-                    <td>{formatMoment(entry.acquiredAt, language)}</td>
-                    {info === undefined ? (
-                      <td colSpan={11} className="muted">
-                        {details[index]?.isError === true ? t('data.detailsError') : t('common.loading')}
-                      </td>
-                    ) : (
-                      <>
-                        <td>{n(info.tickSize)}</td>
-                        <td>
-                          {n(info.tickValue)} {info.tickValueCurrency}
-                        </td>
-                        <td>{n(info.pip)}</td>
-                        <td>{n(info.point)}</td>
-                        <td>{n(info.spread)}</td>
-                        <td>{n(info.minVolume)}</td>
-                        <td>{n(info.volumeStep)}</td>
-                        <td>{n(info.contractSize)}</td>
-                        <td>
-                          {n(info.swapLong)} / {n(info.swapShort)}
-                        </td>
-                        <td>{weekdayText(t, info.swapTripleWeekday)}</td>
-                        <td>{info.marginPerLot === null ? '–' : n(info.marginPerLot)}</td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      )}
+      {details.data !== undefined && (
+        <div className="detail-cols">
+          {row.data !== 'contract' && (
+            <div data-testid="detail-gaps">
+              <h3>{t('data.gapsTitle')}</h3>
+              {details.data.gaps.length === 0 ? (
+                <p className="muted" data-testid="gaps-none">
+                  {t('data.noGaps')}
+                </p>
+              ) : (
+                <>
+                  <ul className="gap-list">
+                    {details.data.gaps.map((gap) => (
+                      <li key={gap.start} data-testid="gap-item">
+                        {formatPeriod(gap.start, gap.end, language)}
+                      </li>
+                    ))}
+                  </ul>
+                  {details.data.row.gapCount > details.data.gaps.length && (
+                    <p className="muted" data-testid="gaps-cut">
+                      {t('data.gapsCut', {
+                        shown: formatNumber(details.data.gaps.length, language, 0),
+                        total: formatNumber(details.data.row.gapCount, language, 0),
+                      })}
+                    </p>
+                  )}
+                  <p className="muted">{t('data.timesUtc')}</p>
+                </>
+              )}
+            </div>
+          )}
+          <div data-testid="detail-contract">
+            <h3>{t('data.contractTitle')}</h3>
+            {info === null ? (
+              <p className="muted" data-testid="contract-missing">
+                {t('data.contractMissing')}
+              </p>
+            ) : (
+              <dl className="contract-list">
+                {items.map(([id, label, value]) => (
+                  <Fragment key={id}>
+                    <dt data-tip={t(`data.tip.${id}`)}>{label}</dt>
+                    <dd data-testid={`contract-${id}`}>{value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            )}
+          </div>
         </div>
       )}
-      {failed && (
-        <p className="error-note" role="alert">
-          <Icon name="warn" size={14} />
-          {t('data.detailsError')}
-        </p>
-      )}
-      {overview !== undefined && overview.instrumentsTotal > entries.length && (
-        <p className="muted">{t('data.cut', { shown: entries.length, total: overview.instrumentsTotal })}</p>
-      )}
-    </section>
-  );
-}
-
-function DefaultSourceCard({ overview }: { overview: Overview | undefined }) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: DEFAULT_SOURCE_QUERY_KEY,
-    queryFn: ({ signal }) => fetchDefaultSource(signal),
-  });
-  const [typed, setTyped] = useState<string | null>(null);
-  const current = query.data ?? null;
-  const value = typed ?? current ?? '';
-  const mutation = useMutation({
-    mutationFn: (broker: string | null) => updateDefaultSource(broker),
-    onSuccess: async (broker) => {
-      queryClient.setQueryData(DEFAULT_SOURCE_QUERY_KEY, broker);
-      setTyped(null);
-    },
-  });
-  const names = knownNames(overview).brokers;
-  const valid = isValidName(value);
-  const changed = value !== (current ?? '');
-
-  return (
-    <section className="card-box wide" data-testid="default-source-card" aria-labelledby="source-title">
-      <h2 id="source-title">
-        <Icon name="database" size={16} />
-        {t('data.sourceTitle')}
-      </h2>
-      <p className="muted">{t('data.sourceIntro')}</p>
-      {query.isError ? (
-        <p className="error-note" role="alert">
-          <Icon name="warn" size={14} />
-          {t('data.sourceLoadError')}
-        </p>
-      ) : (
-        <p data-testid="default-source-current">
-          {current === null ? t('data.sourceNone') : t('data.sourceCurrent', { broker: current })}
-        </p>
-      )}
-      {names.length === 0 && current === null && (
-        <p className="empty-note" data-testid="source-empty">
-          {t('data.sourceEmpty')}
-        </p>
-      )}
-      <div className="grid3">
-        <Field label={t('data.broker')} tip={t('data.tip.sourceBroker')} testid="field-source-broker">
-          {(id) => (
-            <>
-              <TextInput
-                id={id}
-                value={value}
-                list="source-brokers"
-                testid="source-broker"
-                onChange={(next) => {
-                  setTyped(next);
-                }}
-              />
-              <datalist id="source-brokers">
-                {names.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-            </>
-          )}
-        </Field>
-      </div>
-      <div className="btn-row">
-        <Btn
-          kind="primary"
-          icon="check"
-          testid="source-set"
-          disabled={!valid || !changed || mutation.isPending}
-          onClick={() => {
-            mutation.mutate(value);
-          }}
-        >
-          {t('data.sourceSet')}
-        </Btn>
-        <Btn
-          testid="source-clear"
-          disabled={current === null || mutation.isPending}
-          onClick={() => {
-            mutation.mutate(null);
-          }}
-        >
-          {t('data.sourceClear')}
-        </Btn>
-        {value !== '' && !valid && (
-          <span className="error-note" role="alert">
-            <Icon name="warn" size={14} />
-            {t('data.sourceInvalid')}
-          </span>
-        )}
-      </div>
-      {mutation.isError && (
-        <p className="error-note" role="alert" data-testid="source-error">
-          <Icon name="warn" size={14} />
-          {t('data.sourceSaveError', { reason: describeError(t, mutation.error) })}
-        </p>
-      )}
-    </section>
+    </div>
   );
 }

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
-import { FakeBackend, overviewJson, renderWithProviders, seriesJson } from './test-utils';
+import { FakeBackend, renderWithProviders, rowJson } from './test-utils';
 
 let backend: FakeBackend;
 
@@ -92,7 +92,7 @@ describe('App, language', () => {
     });
     expect(backend.callsTo('PUT', '/api/replay/settings/language')[0]?.body).toEqual({ language: 'en' });
     expect(backend.language).toBe('en');
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Data stock of historical price data');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Data stock');
     expect(screen.getByTestId('footer')).toHaveTextContent('Backend: connected');
     expect(screen.getByTestId('footer')).toHaveTextContent('Revision: unknown');
   });
@@ -208,14 +208,17 @@ describe('App, About dialog', () => {
 describe('App, text of the user', () => {
   it('sets names from the data stock as text and never as HTML', async () => {
     const name = '<img src=x onerror=alert(1)>';
-    backend.overview = overviewJson([seriesJson({ broker: name, instrument: '<b>EURUSD</b>' })]);
+    backend.rows = [rowJson({ broker: name, instrument: '<b>EURUSD</b>' })];
+    backend.brokers = [name];
     renderWithProviders(<App />);
 
     await screen.findByTestId('stock-row');
 
     expect(document.querySelector('img')).toBeNull();
     expect(document.querySelector('b > b')).toBeNull();
-    expect(screen.getByText(name)).toBeInTheDocument();
+    expect(within(screen.getByTestId('stock-row')).getByText(name)).toBeInTheDocument();
     expect(screen.getByText('<b>EURUSD</b>')).toBeInTheDocument();
+    // The broker for test runs lists the name as text, too.
+    expect(within(screen.getByTestId('select-test-broker')).getByRole('option', { name })).toBeInTheDocument();
   });
 });

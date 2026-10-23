@@ -1,43 +1,27 @@
 import type { Page } from '@playwright/test';
 
-import { GAPPY_CSV, WINDOW_SIZES, chooseView, expect, openApp, test } from './fixtures';
+import {
+  FAULTY_CSV,
+  GAPPY_CSV,
+  WINDOW_SIZES,
+  chooseImportFiles,
+  chooseView,
+  csvFile,
+  expect,
+  fillImportBasics,
+  importItem,
+  jsonFile,
+  candlesDocument,
+  openApp,
+  openImportDialog,
+  seedStock,
+  test,
+} from './fixtures';
 
 // Specification 8.4, point 1: in the six window sizes nothing lies on top of something else,
 // and every area, the menu and the dialogs can be reached.
 
 type Box = { left: number; top: number; right: number; bottom: number; width: number; height: number };
-
-async function seed(backendUrl: string): Promise<void> {
-  const csv = await fetch(
-    `${backendUrl}/api/v1/market-data/imports/csv?kind=candles&broker=Test-Broker&instrument=EURUSD&time_unit=h1&timezone=UTC`,
-    { method: 'POST', headers: { 'Content-Type': 'text/csv' }, body: GAPPY_CSV },
-  );
-  expect(csv.status).toBe(200);
-  const instrument = await fetch(`${backendUrl}/api/v1/market-data/imports/json`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      version: 1,
-      kind: 'instrument',
-      broker: 'Test-Broker',
-      instrument: 'EURUSD',
-      acquired_at: '2026-01-05T08:00:00Z',
-      tick_size: 0.00001,
-      tick_value: 1,
-      tick_value_currency: 'USD',
-      point: 0.00001,
-      pip: 0.0001,
-      spread: 0.00012,
-      min_volume: 0.01,
-      volume_step: 0.01,
-      contract_size: 100000,
-      swap_long: -6.5,
-      swap_short: 2.1,
-      swap_triple_weekday: 'wednesday',
-    }),
-  });
-  expect(instrument.status).toBe(200);
-}
 
 async function box(page: Page, selector: string): Promise<Box> {
   return page.locator(selector).first().evaluate((element) => {
@@ -132,8 +116,10 @@ async function expectCards(page: Page, view: string): Promise<void> {
   for (let index = 0; index < count; index += 1) {
     const card = cards.nth(index);
     // The heading of the card is in the main area after scrolling to it (a card can be taller
-    // than the window; the rest of it is reached by scrolling on).
-    const heading = card.locator('h2').first();
+    // than the window; the rest of it is reached by scrolling on). The bar of the data stock
+    // has no heading; the card itself stands for it.
+    const headings = card.locator('h2');
+    const heading = (await headings.count()) > 0 ? headings.first() : card;
     await heading.scrollIntoViewIfNeeded();
     const mainBox = await box(page, '[data-testid="main"]');
     const headingBox = await heading.evaluate((element) => {
@@ -227,42 +213,181 @@ async function expectDialog(page: Page, testid: string, width: number, height: n
   expect(overlap(body, foot)).toBe(false);
 }
 
+/** Nothing in the elements scrolls sideways: the content fits their width. */
+async function expectNoInnerScroll(page: Page, selector: string): Promise<void> {
+  const widths = await page.locator(selector).evaluateAll((elements) =>
+    elements.map((element) => ({ scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })),
+  );
+  expect(widths.length).toBeGreaterThan(0);
+  for (const { scrollWidth, clientWidth } of widths) {
+    expect(scrollWidth, `${selector} scrolls sideways`).toBeLessThanOrEqual(clientWidth + 1);
+  }
+}
+
+/**
+ * The dialog "Datei importieren": the body scrolls only downwards, every control lies inside the
+ * dialog, the entries of the list lie below each other without overlap, and the end of the body
+ * (the last entry) can be reached by scrolling.
+ */
+async function expectImportDialog(page: Page, width: number, height: number): Promise<void> {
+  await expectNoInnerScroll(page, '[data-testid="dialog-import"] .modal-body');
+  const dialog = await box(page, '[data-testid="dialog-import"]');
+  expect(inside(dialog, { width, height })).toBe(true);
+  const outside = await page.locator('[data-testid="dialog-import"]').evaluate((element) => {
+    const frame = element.getBoundingClientRect();
+    const bad: string[] = [];
+    for (const control of element.querySelectorAll('.modal-body input, .modal-body select, .modal-body button, .modal-foot button')) {
+      if (control.closest('.visually-hidden') !== null || control.classList.contains('visually-hidden')) {
+        continue;
+      }
+      const r = control.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) {
+        continue;
+      }
+      if (r.left < frame.left - 1 || r.right > frame.right + 1) {
+        bad.push(control.getAttribute('data-testid') ?? control.tagName);
+      }
+    }
+    return bad;
+  });
+  expect(outside, 'controls outside of the dialog').toEqual([]);
+
+  const items = page.locator('[data-testid="dialog-import"] .imp-item');
+  const count = await items.count();
+  if (count > 0) {
+    const positions = await items.evaluateAll((elements) =>
+      elements.map((element) => {
+        const body = element.closest('.modal-body') as HTMLElement;
+        const r = element.getBoundingClientRect();
+        const b = body.getBoundingClientRect();
+        return {
+          left: r.left - b.left,
+          top: r.top - b.top + body.scrollTop,
+          right: r.right - b.left,
+          bottom: r.bottom - b.top + body.scrollTop,
+          width: r.width,
+          height: r.height,
+        };
+      }),
+    );
+    for (let i = 0; i < positions.length; i += 1) {
+      expect(positions[i]?.width).toBeGreaterThan(0);
+      for (let j = i + 1; j < positions.length; j += 1) {
+        expect(overlap(positions[i] as Box, positions[j] as Box), `entries ${String(i)} and ${String(j)}`).toBe(false);
+      }
+    }
+    // Scrolled to its end, the body shows the last entry down to its lower edge.
+    await page.locator('[data-testid="dialog-import"] .modal-body').evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    const lastGap = await items.last().evaluate((element) => {
+      const r = element.getBoundingClientRect();
+      const b = (element.closest('.modal-body') as HTMLElement).getBoundingClientRect();
+      return b.bottom - r.bottom;
+    });
+    expect(lastGap).toBeGreaterThanOrEqual(-1);
+  }
+  // The end of the body can be reached.
+  const end = await page.locator('[data-testid="dialog-import"] .modal-body').evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return element.scrollHeight - element.clientHeight - element.scrollTop;
+  });
+  expect(end).toBeLessThanOrEqual(1);
+}
+
 for (const { width, height } of WINDOW_SIZES) {
   test.describe(`window ${String(width)} x ${String(height)}`, () => {
     test.use({ viewport: { width, height } });
 
     test.beforeEach(async ({ page, stack }) => {
-      await seed(stack.backendUrl);
+      await seedStock(stack.backendUrl);
       await openApp(page);
     });
 
     test('data stock: nothing lies on top of something else and everything can be reached', async ({ page }) => {
       await chooseView(page, 'data');
-      await expect(page.getByTestId('stock-row')).toHaveCount(1);
-      await expect(page.getByTestId('instr-row')).toHaveCount(1);
+      await expect(page.getByTestId('stock-row')).toHaveCount(5);
 
       await expectShell(page, width, height);
       await expectCards(page, 'data');
+      await expectNoInnerScroll(page, '[data-testid="data"] .tbl-wrap');
+      // The bar lies above the table, the controls of the bar side by side or below each other.
+      const bar = await box(page, '[data-testid="data-bar"]');
+      const stock = await box(page, '[data-testid="stock"]');
+      expect(bar.bottom).toBeLessThanOrEqual(stock.top + 1);
+      const importButton = await box(page, '[data-testid="import-open"]');
+      const testBroker = await box(page, '[data-testid="field-test-broker"]');
+      expect(overlap(importButton, testBroker)).toBe(false);
+      for (const id of ['stock-pager', 'page-prev', 'page-next']) {
+        await page.getByTestId(id).scrollIntoViewIfNeeded();
+        await expect(page.getByTestId(id)).toBeInViewport();
+      }
     });
 
-    test('data stock with the open fields of a CSV import and the result of an acquisition', async ({ page }) => {
+    test('data stock with the details of rows and the filter', async ({ page }) => {
       await chooseView(page, 'data');
-      await page.getByTestId('import-file').setInputFiles({ name: 'x.csv', mimeType: 'text/csv', buffer: Buffer.from(GAPPY_CSV) });
-      await page.getByTestId('import-broker').fill('Test-Broker');
-      await page.getByTestId('import-instrument').fill('EURUSD');
-      await page.getByTestId('import-timezone').fill('Europe/Nowhere');
-      await page.getByTestId('import-run').click();
-      await expect(page.getByTestId('import-error')).toBeVisible();
-      await page.getByTestId('proc-instrument').fill('NOSUCHSYMBOL');
-      await page.getByTestId('proc-start').click();
-      await expect(page.getByTestId('proc-result')).toHaveAttribute('data-state', 'failed', { timeout: 30_000 });
+      await page.getByTestId('filter-broker').fill('Test');
+      await expect(page.getByTestId('stock-row')).toHaveCount(3);
+      await page.locator('[data-testid="stock-row"][data-data="h1"]').click();
+      await expect(page.getByTestId('contract-contractSize')).toBeVisible();
+      await expect(page.getByTestId('gap-item')).toHaveCount(1);
 
       await expectShell(page, width, height);
       await expectCards(page, 'data');
-      await page.getByTestId('proc-result').scrollIntoViewIfNeeded();
-      const result = await box(page, '[data-testid="proc-result"]');
-      const main = await box(page, '[data-testid="main"]');
-      expect(result.bottom).toBeLessThanOrEqual(main.bottom + 1);
+      await expectNoInnerScroll(page, '[data-testid="data"] .tbl-wrap');
+      // The details lie inside the table card and below their row, not over other rows.
+      const row = await box(page, '[data-testid="stock-row"][aria-expanded="true"]');
+      const detail = await box(page, '[data-testid="stock-detail-row"]');
+      expect(row.bottom).toBeLessThanOrEqual(detail.top + 1);
+      const rows = page.getByTestId('stock-row');
+      for (let index = 0; index < (await rows.count()); index += 1) {
+        const other = await rows.nth(index).evaluate((element) => {
+          const r = element.getBoundingClientRect();
+          return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+        });
+        expect(overlap(other, detail), `row ${String(index)} and the details`).toBe(false);
+      }
+      // The contract data and the gaps do not overlap.
+      const gaps = await box(page, '[data-testid="detail-gaps"]');
+      const contract = await box(page, '[data-testid="detail-contract"]');
+      expect(overlap(gaps, contract)).toBe(false);
+    });
+
+    test('dialog "Datei importieren": empty, with files that need an entry, and with the result per file', async ({ page }) => {
+      await chooseView(page, 'data');
+      await openImportDialog(page);
+
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+
+      const known = csvFile('EURUSD_H1_202601050000_202601050300.csv', FAULTY_CSV);
+      const unknown = csvFile('export.csv', GAPPY_CSV);
+      const broken = { name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{ not json', 'utf-8') };
+      const valid = jsonFile('gbpusd.json', candlesDocument({ broker: 'Egal', instrument: 'GBPUSD', unit: 'h1', hours: [8, 9] }));
+      await chooseImportFiles(page, [known, unknown, broken, valid]);
+      await expect(importItem(page, unknown.name)).toHaveAttribute('data-state', 'needs');
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+
+      await importItem(page, unknown.name).getByTestId('import-instrument').fill('EURUSD');
+      await importItem(page, unknown.name).getByTestId('import-data').selectOption('h1');
+      await fillImportBasics(page, { broker: 'Test-Broker', timezone: 'UTC' });
+      await page.getByTestId('import-run').click();
+      await expect(page.getByTestId('import-summary')).toBeVisible();
+      await expect(page.getByTestId('import-result')).toHaveCount(4);
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+
+      // The explanation of a field is above the dialog and in the window.
+      await page.getByTestId('field-import-broker').locator('.info').focus();
+      await expect(page.getByTestId('tooltip')).toBeVisible();
+      const tip = await box(page, '[data-testid="tooltip"]');
+      expect(inside(tip, { width, height })).toBe(true);
+      await page.getByTestId('field-import-broker').locator('.info').blur();
+
+      await page.getByTestId('import-close').click();
+      await expect(page.getByTestId('dialog-import')).toHaveCount(0);
+      await expectShell(page, width, height);
     });
 
     test('test accounts: list, form and dialog', async ({ page }) => {

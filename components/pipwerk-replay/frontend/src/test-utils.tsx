@@ -45,31 +45,16 @@ export const DEFAULT_ACCOUNT_JSON: Json = {
   is_default: true,
 };
 
-export function seriesJson(overrides: Json = {}): Json {
+/** A row of the list of series (`SeriesRow` of the web API). */
+export function rowJson(overrides: Json = {}): Json {
   return {
     broker: 'Demo-Server',
     instrument: 'EURUSD',
-    unit: 'h1',
-    count: 120,
+    data: 'h1',
     first: '2026-01-05T00:00:00Z',
     last: '2026-01-09T23:00:00Z',
-    covered: [{ start: '2026-01-05T00:00:00Z', end: '2026-01-10T00:00:00Z' }],
-    covered_count: 1,
-    missing: [],
-    missing_count: 0,
-    has_trading_hours: false,
+    gap_count: 0,
     ...overrides,
-  };
-}
-
-export function overviewJson(series: Json[] = [], instruments: Json[] = []): Json {
-  return {
-    series,
-    series_total: series.length,
-    instruments,
-    instruments_total: instruments.length,
-    offset: 0,
-    limit: 1000,
   };
 }
 
@@ -108,26 +93,50 @@ export function importResultJson(overrides: Json = {}): Json {
   };
 }
 
-export function acquisitionJson(
-  state: 'running' | 'finished',
-  part: Json,
-  id = '0a1b2c3d-0000-4000-8000-000000000001',
-): Json {
+/** The result for a file that is taken over (`FileOutcome` of the web API). */
+export function takenJson(name: string, result: Json = {}): Json {
+  return { name, refused: false, result: importResultJson(result), error: null, message: null };
+}
+
+/** The result for a file that is refused as a whole. */
+export function refusedJson(name: string, error: string): Json {
+  return { name, refused: true, result: null, error, message: 'x' };
+}
+
+/** What the preview says about a file (`FileHint` of the web API). */
+export function hintJson(name: string, overrides: Json = {}): Json {
   return {
-    id,
-    state,
-    created_at: '2026-01-05T08:00:00Z',
-    finished_at: state === 'finished' ? '2026-01-05T08:00:05Z' : null,
-    parts: [
-      {
-        request: { kind: 'candles', instrument: 'EURUSD', time_unit: 'h1', start: '2026-01-05T00:00:00Z', end: '2026-01-06T00:00:00Z' },
-        state: 'queued',
-        result: null,
-        omitted_count: null,
-        error: null,
-        ...part,
-      },
-    ],
+    name,
+    format: name.toLowerCase().endsWith('.json') ? 'json' : 'csv',
+    broker: null,
+    instrument: null,
+    data: null,
+    error: null,
+    ...overrides,
+  };
+}
+
+/** What the form of an import or a preview contained, read from the recorded body. */
+export type SentForm = {
+  broker: string | null;
+  timezone: string | null;
+  files: string[];
+  instrument: string[];
+  data: string[];
+};
+
+export function readForm(body: unknown): SentForm {
+  const form = body as FormData;
+  const text = (key: string) => {
+    const value = form.get(key);
+    return typeof value === 'string' ? value : null;
+  };
+  return {
+    broker: text('broker'),
+    timezone: text('timezone'),
+    files: form.getAll('file').map((file) => (file as File).name),
+    instrument: form.getAll('instrument').map(String),
+    data: form.getAll('data').map(String),
   };
 }
 
@@ -139,18 +148,26 @@ export class FakeBackend {
   language: SupportedLanguage = 'de';
   healthy = true;
   accounts: Json[] = [{ ...DEFAULT_ACCOUNT_JSON }];
-  overview: Json = overviewJson();
-  /** A special answer to the overview (an error), instead of `overview`. */
-  overviewAnswer: (() => Response) | null = null;
-  instruments: Json[] = [];
-  defaultSource: string | null = null;
+  /** The rows of the data stock, in the order of the list. */
+  rows: Json[] = [];
+  /** A special answer to the list of series (an error), instead of the rows. */
+  seriesAnswer: (() => Response) | null = null;
+  /** The gaps of a row by `broker|instrument|data`. */
+  gaps: Record<string, Json[]> = {};
+  /** The contract data by `broker|instrument`. */
+  contracts: Record<string, Json> = {};
+  /** The brokers of the data stock. */
+  brokers: string[] = [];
+  /** The choice for the broker for test runs; the answer applies the rule of the backend. */
+  testRunBroker: string | null = null;
   revision: Json = { revision: null, commit: null, committed_at: null };
-  /** The answer to an import; replaced per test. */
-  importAnswer: () => Response = () => json(200, importResultJson());
-  /** The answer to the start of an acquisition. */
-  acquisitionStart: () => Response = () => json(202, acquisitionJson('finished', { state: 'succeeded' }));
-  /** The answers to the questions for the state of an acquisition; the last one stays. */
-  acquisitionStates: Json[] = [];
+  /** What the preview says about a file by its name; a file without an entry is unknown. */
+  hints: Record<string, Json> = {};
+  /** A special answer to the preview, instead of the hints. */
+  previewAnswer: (() => Response) | null = null;
+  /** The answer to an import, from the names of the files; replaced per test. */
+  importAnswer: (names: string[]) => Response = (names) =>
+    json(200, { files: names.map((name) => takenJson(name)), imported_count: names.length, refused_count: 0 });
   calls: Call[] = [];
   private counter = 0;
 
@@ -171,7 +188,7 @@ export class FakeBackend {
     let body: unknown = null;
     if (typeof rawBody === 'string') {
       body = contentType === 'application/json' ? JSON.parse(rawBody) : rawBody;
-    } else if (rawBody instanceof Blob) {
+    } else if (rawBody instanceof Blob || rawBody instanceof FormData) {
       body = rawBody;
     }
     this.calls.push({ method, path: url.pathname, query: url.searchParams, contentType, body });
@@ -192,11 +209,15 @@ export class FakeBackend {
       }
       return json(200, { language: this.language });
     }
-    if (path === '/api/replay/settings/default-source') {
+    if (path === '/api/replay/settings/test-run-broker') {
       if (method === 'PUT') {
-        this.defaultSource = (body as { broker: string | null }).broker;
+        const wanted = (body as { broker: string | null }).broker;
+        if (wanted !== null && !this.brokers.includes(wanted)) {
+          return json(422, { detail: 'The broker has no data in the data stock.' });
+        }
+        this.testRunBroker = wanted;
       }
-      return json(200, { broker: this.defaultSource });
+      return json(200, this.appliedTestRunBroker());
     }
     if (path === '/api/v1/accounts') {
       if (method === 'POST') {
@@ -225,25 +246,66 @@ export class FakeBackend {
       }
       return json(200, this.accounts[index]);
     }
-    if (path === '/api/v1/market-data/overview') {
-      return this.overviewAnswer === null ? json(200, this.overview) : this.overviewAnswer();
+    if (path === '/api/v1/market-data/series') {
+      return this.seriesAnswer === null ? this.series(url.searchParams) : this.seriesAnswer();
     }
-    if (path === '/api/v1/market-data/instrument') {
-      const found = this.instruments.find(
-        (item) => item.broker === url.searchParams.get('broker') && item.instrument === url.searchParams.get('instrument'),
-      );
-      return found === undefined ? json(404, { detail: 'There are no data of this instrument.' }) : json(200, found);
+    if (path === '/api/v1/market-data/series/details') {
+      return this.seriesDetails(url.searchParams);
     }
-    if (path === '/api/v1/market-data/imports/json' || path === '/api/v1/market-data/imports/csv') {
-      return this.importAnswer();
+    if (path === '/api/v1/market-data/brokers') {
+      return json(200, { items: this.brokers });
     }
-    if (path === '/api/v1/market-data/acquisitions' && method === 'POST') {
-      return this.acquisitionStart();
+    if (path === '/api/v1/market-data/imports/preview' && method === 'POST') {
+      return this.previewAnswer === null ? this.preview(body as FormData) : this.previewAnswer();
     }
-    if (/^\/api\/v1\/market-data\/acquisitions\/[^/]+$/.test(path)) {
-      const next = this.acquisitionStates.length > 1 ? this.acquisitionStates.shift() : this.acquisitionStates[0];
-      return next === undefined ? json(404, { detail: 'The acquisition does not exist.' }) : json(200, next);
+    if (path === '/api/v1/market-data/imports' && method === 'POST') {
+      return this.importAnswer(readForm(body).files);
     }
     return json(404, { detail: 'Not Found' });
+  }
+
+  /** The broker that applies: the choice if it occurs in the data stock, else the first one. */
+  appliedTestRunBroker(): Json {
+    const first = [...this.brokers].sort((a, b) => a.localeCompare(b))[0] ?? null;
+    if (this.testRunBroker !== null && this.brokers.includes(this.testRunBroker)) {
+      return { broker: this.testRunBroker, chosen: true };
+    }
+    return { broker: first, chosen: false };
+  }
+
+  private series(query: URLSearchParams): Response {
+    const part = (key: string) => (query.get(key) ?? '').toLowerCase();
+    const matching = this.rows.filter(
+      (row) =>
+        String(row.broker).toLowerCase().includes(part('broker')) &&
+        String(row.instrument).toLowerCase().includes(part('instrument')) &&
+        String(row.data).toLowerCase().includes(part('data')),
+    );
+    const offset = Number(query.get('offset') ?? 0);
+    const limit = Number(query.get('limit') ?? 1000);
+    return json(200, { items: matching.slice(offset, offset + limit), total: matching.length, offset, limit });
+  }
+
+  private seriesDetails(query: URLSearchParams): Response {
+    const broker = query.get('broker');
+    const instrument = query.get('instrument');
+    const data = query.get('data');
+    const row = this.rows.find((item) => item.broker === broker && item.instrument === instrument && item.data === data);
+    if (row === undefined) {
+      return json(404, { detail: 'There is no such row in the list of series.' });
+    }
+    return json(200, {
+      row,
+      gaps: this.gaps[`${String(broker)}|${String(instrument)}|${String(data)}`] ?? [],
+      contract: this.contracts[`${String(broker)}|${String(instrument)}`] ?? null,
+    });
+  }
+
+  private preview(form: FormData): Response {
+    const files = readForm(form).files.map((name) => this.hints[name] ?? hintJson(name));
+    const jsonBrokers = files.filter((hint) => hint.format === 'json').map((hint) => hint.broker);
+    const first = jsonBrokers[0];
+    const common = jsonBrokers.length > 0 && typeof first === 'string' && jsonBrokers.every((name) => name === first) ? first : null;
+    return json(200, { files, broker: common });
   }
 }

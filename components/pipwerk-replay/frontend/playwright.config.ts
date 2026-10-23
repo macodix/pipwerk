@@ -2,14 +2,14 @@ import { createServer } from 'node:net';
 
 import { defineConfig, devices } from '@playwright/test';
 
-// The browser tests start their own backend, their own replica of the source and their own
-// user interface; they do not interfere with a development instance or the test environment.
-// Ports and the directory of the databases are parameters (environment variables):
+// The browser tests start their own backend and their own user interface (two ports, the
+// interface forwards `/api` to the backend); they do not interfere with a development instance
+// or the test environment. Ports and the directory of the database are parameters (environment
+// variables):
 //
 //   PIPWERK_REPLAY_E2E_FRONTEND_PORT   port of the user interface
 //   PIPWERK_REPLAY_E2E_BACKEND_PORT    port of the backend
-//   PIPWERK_REPLAY_E2E_SOURCE_PORT     port of the replica of the source
-//   PIPWERK_REPLAY_E2E_DATA_DIR        directory for the databases (default: a new temporary one)
+//   PIPWERK_REPLAY_E2E_DATA_DIR        directory for the database (default: a new temporary one)
 //
 // A port that is not given is a free port that is determined once, here, and passed on to the
 // runner and the workers by the environment (the configuration is loaded in each of them).
@@ -37,7 +37,6 @@ async function port(name: string): Promise<number> {
 
 const frontendPort = await port('PIPWERK_REPLAY_E2E_FRONTEND_PORT');
 const backendPort = await port('PIPWERK_REPLAY_E2E_BACKEND_PORT');
-await port('PIPWERK_REPLAY_E2E_SOURCE_PORT');
 const backendUrl = `http://127.0.0.1:${backendPort}`;
 const frontendUrl = `http://127.0.0.1:${frontendPort}`;
 

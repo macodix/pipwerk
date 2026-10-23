@@ -5,7 +5,7 @@
 - status: `draft`
 - stand: 2026-10-23
 - komponente: `pipwerk-fetch-mt5`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027)
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt
 
 ## 1. Gegenstand
 
@@ -224,7 +224,7 @@ Entfallen sind `fastapi`, `uvicorn` und alles, was sie mitbrachten (`starlette`,
 
 Installation und Tests auf Linux brauchen `MetaTrader5` nicht: Es ist nur über das Extra erreichbar, und die Tests ersetzen das Paket durch eine Nachbildung des Moduls (`tests/support.py`, `FakeMt5Module` und `ArchiveMt5Module`). Ein Test sichert zu, dass kein Modul des Programms das Paket beim Import lädt.
 
-Geprüft ist nur, dass sich die Auflösung durchführen lässt und `MetaTrader5` 5.0.6231 ein Rad für Python 3.14 unter Windows hat (`cp314-win_amd64`). Lizenz, Wartungszustand und Sicherheitsmeldungen von `MetaTrader5`, `tzdata`, `jsonschema` und der neuen Pakete sind nicht geprüft (kein Zugriff auf das Paketverzeichnis im Netz; offener Punkt 7). `pip-audit` lief nicht.
+Geprüft ist, dass sich die Auflösung durchführen lässt und `MetaTrader5` 5.0.6231 ein Rad für Python 3.14 unter Windows hat (`cp314-win_amd64`). `pip-audit` (Prüfskript mit `--with-audit`, Abschnitt 13) lief im Durchlauf 1 des Testberichts zu Auftrag 13 ohne Fund für die gesperrten Pakete; ausgenommen ist die Pfadabhängigkeit `pipwerk-marketdata`, aus der sich keine Version ableiten lässt. Lizenz und Wartungszustand von `MetaTrader5`, `tzdata`, `jsonschema` und der neuen Pakete sind nicht geprüft (offener Punkt 6).
 
 ## 13. Prüfungen
 
@@ -257,7 +257,7 @@ Die Tests (pytest, 1582 Fälle, davon 1542 bestanden; 40 überspringen sich selb
 
 ### Prüfskript
 
-`components/pipwerk-fetch-mt5/scripts/check` führt die automatischen Prüfungen der Komponente aus: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`. Es nimmt keine Parameter, braucht `uv` und das Paket `MetaTrader5` nicht. Aufruf mit dem Pfad des Skripts aus beliebigem Verzeichnis, zum Beispiel `<Arbeitsverzeichnis>/components/pipwerk-fetch-mt5/scripts/check`; das Arbeitsverzeichnis ergibt sich aus dem Pfad des Skripts. Jede Prüfung läuft, auch wenn eine vorige scheitert; der Exit-Code ist nur 0, wenn alle bestehen (1 bei einer gescheiterten Prüfung, 2 bei falschem Aufruf).
+`components/pipwerk-fetch-mt5/scripts/check [--with-audit]` führt die automatischen Prüfungen der Komponente aus: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check` und `mypy`; mit `--with-audit` zusätzlich als sechste Prüfung `pip-audit` für die gesperrten Pakete (Zugriff auf das Internet nötig). Es hat sonst keine Parameter, braucht `uv` und das Paket `MetaTrader5` nicht. Aufruf mit dem Pfad des Skripts aus beliebigem Verzeichnis, zum Beispiel `<Arbeitsverzeichnis>/components/pipwerk-fetch-mt5/scripts/check`; das Arbeitsverzeichnis ergibt sich aus dem Pfad des Skripts. Jede Prüfung läuft, auch wenn eine vorige scheitert; der Exit-Code ist nur 0, wenn alle bestehen (1 bei einer gescheiterten Prüfung, 2 bei falschem Aufruf).
 
 ## 14. Entscheidungen
 
@@ -284,7 +284,7 @@ Fest gelegt vom Entwickler, soweit die Spezifikation es offenlässt (Auftrag 13)
 3. **Fehlende Angaben im Schema.** Das Schema der Angaben zum Instrument hat keine Felder für die Art des Swaps (`swap_mode`: Punkte, Währung, Prozent, …) und für die Währung der Margin. Die Werte `swap_long` und `swap_short` sind deshalb in der Einheit des Brokers und ohne ihre Art nicht sicher zu deuten. Das Programm kennt beide Angaben (`SymbolInfo`) und schreibt sie nicht.
 4. **Leere Reihe.** Ein Zeitraum ohne Zeile ist `no_data`. Das Schema erlaubt eine leere Reihe mit `period`; dann würde zum Beispiel ein Feiertag nicht als fehlend gelten. Wegen Spezifikation 5.4 (Fehler „Daten beim Broker nicht vorhanden“) ist es ein Fehler.
 5. **Serverzeit des Pakets.** Dass das Paket die Serverzeit als Sekunden „wie UTC“ liefert und annimmt (Abschnitt 7), ist aus der Dokumentation und dem bekannten Verhalten abgeleitet, nicht an einem echten MetaTrader 5 geprüft. Ebenso die Fehlercodes (Abschnitt 9) und `swap_rollover3days` (0 ist Sonntag). Prüfung in der Abnahme: eine Kerze M1 mit bekannter Serverzeit holen.
-6. **Abhängigkeiten** (Abschnitt 12): Lizenz und Wartungszustand von `MetaTrader5` sind ungeprüft; ein Aufruf von `pip-audit` steht aus.
+6. **Abhängigkeiten** (Abschnitt 12): `pip-audit` lief ohne Fund (`check --with-audit`). Lizenz und Wartungszustand von `MetaTrader5` sind ungeprüft.
 7. **Echtes MetaTrader 5.** Aufruf, Name des Handelsservers (`account_info().server`), Fehlercodes und Zeitzone sind nur gegen die Nachbildung geprüft; der Auftraggeber prüft sie in der Abnahme.
 8. **Windows.** Das Skript `fetch.cmd` und das atomare Umbenennen unter Windows sind auf dem Entwicklungsrechner (Linux) nicht ausgeführt; `Path.replace` ersetzt unter Windows eine bestehende Datei, scheitert aber, wenn eine andere Anwendung sie geöffnet hält (dann `write_failed`).
-9. **Pipwerk replay und das Glossar** verweisen noch auf die frühere Schnittstelle (Auftrag 12 und 14).
+9. Erledigt: pipwerk replay (Backend in Auftrag 12, Oberfläche und Anwenderdokumentation in Auftrag 14) und das Glossar verweisen nicht mehr auf die frühere Schnittstelle.

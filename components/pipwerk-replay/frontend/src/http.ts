@@ -86,9 +86,10 @@ export function list<T>(record: JsonRecord, key: string, parse: (item: unknown) 
 
 export type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  /** A JSON value, or a file (sent unchanged, with `contentType`). */
+  /** A JSON value or a form (`multipart/form-data`). */
   json?: unknown;
-  file?: { body: Blob; contentType: string };
+  /** The browser sets the media type of a form with its boundary; none is set here. */
+  form?: FormData;
   signal?: AbortSignal;
 };
 
@@ -99,9 +100,8 @@ export type RequestOptions = {
 export async function request(path: string, options: RequestOptions = {}): Promise<unknown> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   let body: BodyInit | undefined;
-  if (options.file !== undefined) {
-    headers['Content-Type'] = options.file.contentType;
-    body = options.file.body;
+  if (options.form !== undefined) {
+    body = options.form;
   } else if (options.json !== undefined) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(options.json);

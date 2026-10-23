@@ -1,5 +1,5 @@
-// Data stock of historical price data and acquisition: `/api/v1/market-data/`
-// (specification 5.1 to 5.4) and the default source `/api/replay/settings/default-source`.
+// Data stock of historical price data: `/api/v1/market-data/` (specification 5.1, 5.3, 8.3) and the
+// broker for test runs `/api/replay/settings/test-run-broker`.
 import {
   asRecord,
   bool,
@@ -10,7 +10,6 @@ import {
   str,
   strOrNull,
   UnexpectedAnswerError,
-  type JsonRecord,
 } from './http';
 
 const BASE = '/api/v1/market-data';
@@ -26,87 +25,62 @@ export function isTimeUnit(value: string): value is TimeUnit {
   return (TIME_UNITS as readonly string[]).includes(value);
 }
 
-// --- overview -------------------------------------------------------------------------
+// --- list of series -------------------------------------------------------------------
 
-export type Period = { start: string; end: string };
-export type MissingPeriod = Period & { reason: 'not_covered' | 'gap' };
-
-export type Series = {
+/** One row of the table: a broker, an instrument and one kind of data. */
+export type SeriesRow = {
   broker: string;
   instrument: string;
-  /** A time unit (`h1`) or `ticks`. */
-  unit: string;
-  count: number;
+  /** The identifier of the data: a time unit (`h1`), `ticks` or `contract`. */
+  data: string;
+  /** The first and last moment (UTC); `null` for contract data. */
   first: string | null;
   last: string | null;
-  covered: Period[];
-  coveredCount: number;
-  missing: MissingPeriod[];
-  missingCount: number;
-  hasTradingHours: boolean;
+  gapCount: number;
 };
 
-export type InstrumentEntry = { broker: string; instrument: string; acquiredAt: string };
+export type SeriesPage = { items: SeriesRow[]; total: number; offset: number; limit: number };
 
-export type Overview = {
-  series: Series[];
-  seriesTotal: number;
-  instruments: InstrumentEntry[];
-  instrumentsTotal: number;
-};
+export type SeriesFilter = { broker: string; instrument: string; data: string };
 
-function parsePeriod(value: unknown): Period {
-  const record = asRecord(value, 'period');
-  return { start: str(record, 'start'), end: str(record, 'end') };
-}
-
-function parseMissing(value: unknown): MissingPeriod {
-  const record = asRecord(value, 'missing period');
-  const reason = str(record, 'reason');
-  if (reason !== 'not_covered' && reason !== 'gap') {
-    throw new UnexpectedAnswerError('reason of a missing period');
-  }
-  return { start: str(record, 'start'), end: str(record, 'end'), reason };
-}
-
-function parseSeries(value: unknown): Series {
-  const record = asRecord(value, 'series');
+function parseRow(value: unknown): SeriesRow {
+  const record = asRecord(value, 'row of the series');
   return {
     broker: str(record, 'broker'),
     instrument: str(record, 'instrument'),
-    unit: str(record, 'unit'),
-    count: num(record, 'count'),
+    data: str(record, 'data'),
     first: strOrNull(record, 'first'),
     last: strOrNull(record, 'last'),
-    covered: list(record, 'covered', parsePeriod),
-    coveredCount: num(record, 'covered_count'),
-    missing: list(record, 'missing', parseMissing),
-    missingCount: num(record, 'missing_count'),
-    hasTradingHours: bool(record, 'has_trading_hours'),
+    gapCount: num(record, 'gap_count'),
   };
 }
 
-function parseEntry(value: unknown): InstrumentEntry {
-  const record = asRecord(value, 'instrument entry');
+export async function fetchSeries(
+  filter: SeriesFilter,
+  offset: number,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<SeriesPage> {
+  const query = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  for (const key of ['broker', 'instrument', 'data'] as const) {
+    if (filter[key] !== '') {
+      query.set(key, filter[key]);
+    }
+  }
+  const record = asRecord(await request(`${BASE}/series?${query.toString()}`, { signal }), 'list of series');
   return {
-    broker: str(record, 'broker'),
-    instrument: str(record, 'instrument'),
-    acquiredAt: str(record, 'acquired_at'),
+    items: list(record, 'items', parseRow),
+    total: num(record, 'total'),
+    offset: num(record, 'offset'),
+    limit: num(record, 'limit'),
   };
 }
 
-export async function fetchOverview(signal?: AbortSignal): Promise<Overview> {
-  const record = asRecord(await request(`${BASE}/overview`, { signal }), 'overview');
-  return {
-    series: list(record, 'series', parseSeries),
-    seriesTotal: num(record, 'series_total'),
-    instruments: list(record, 'instruments', parseEntry),
-    instrumentsTotal: num(record, 'instruments_total'),
-  };
-}
+// --- details of a row -----------------------------------------------------------------
 
-// --- instrument details ----------------------------------------------------------------
+export type Gap = { start: string; end: string; reason: 'not_covered' | 'gap' };
 
+/** The contract data of an instrument at a broker. */
 export type InstrumentInfo = {
   broker: string;
   instrument: string;
@@ -126,16 +100,19 @@ export type InstrumentInfo = {
   marginPerLot: number | null;
 };
 
-export async function fetchInstrument(
-  broker: string,
-  instrument: string,
-  signal?: AbortSignal,
-): Promise<InstrumentInfo> {
-  const query = new URLSearchParams({ broker, instrument });
-  const record = asRecord(
-    await request(`${BASE}/instrument?${query.toString()}`, { signal }),
-    'instrument details',
-  );
+export type SeriesDetails = { row: SeriesRow; gaps: Gap[]; contract: InstrumentInfo | null };
+
+function parseGap(value: unknown): Gap {
+  const record = asRecord(value, 'gap');
+  const reason = str(record, 'reason');
+  if (reason !== 'not_covered' && reason !== 'gap') {
+    throw new UnexpectedAnswerError('reason of a gap');
+  }
+  return { start: str(record, 'start'), end: str(record, 'end'), reason };
+}
+
+function parseInstrument(value: unknown): InstrumentInfo {
+  const record = asRecord(value, 'contract data');
   return {
     broker: str(record, 'broker'),
     instrument: str(record, 'instrument'),
@@ -156,7 +133,107 @@ export async function fetchInstrument(
   };
 }
 
-// --- import ----------------------------------------------------------------------------
+export async function fetchSeriesDetails(
+  row: { broker: string; instrument: string; data: string },
+  signal?: AbortSignal,
+): Promise<SeriesDetails> {
+  const query = new URLSearchParams({ broker: row.broker, instrument: row.instrument, data: row.data });
+  const record = asRecord(
+    await request(`${BASE}/series/details?${query.toString()}`, { signal }),
+    'details of a row',
+  );
+  return {
+    row: parseRow(record.row),
+    gaps: list(record, 'gaps', parseGap),
+    contract: record.contract === null ? null : parseInstrument(record.contract),
+  };
+}
+
+// --- brokers and the broker for test runs ---------------------------------------------
+
+export async function fetchBrokers(signal?: AbortSignal): Promise<string[]> {
+  const record = asRecord(await request(`${BASE}/brokers`, { signal }), 'brokers');
+  return list(record, 'items', (item) => {
+    if (typeof item !== 'string') {
+      throw new UnexpectedAnswerError('broker');
+    }
+    return item;
+  });
+}
+
+/** The broker whose data a test run uses; `chosen` tells whether it is the user's choice. */
+export type TestRunBroker = { broker: string | null; chosen: boolean };
+
+function parseTestRunBroker(value: unknown): TestRunBroker {
+  const record = asRecord(value, 'broker for test runs');
+  return { broker: strOrNull(record, 'broker'), chosen: bool(record, 'chosen') };
+}
+
+export async function fetchTestRunBroker(signal?: AbortSignal): Promise<TestRunBroker> {
+  return parseTestRunBroker(await request('/api/replay/settings/test-run-broker', { signal }));
+}
+
+export async function updateTestRunBroker(broker: string | null): Promise<TestRunBroker> {
+  return parseTestRunBroker(
+    await request('/api/replay/settings/test-run-broker', { method: 'PUT', json: { broker } }),
+  );
+}
+
+// --- import ---------------------------------------------------------------------------
+
+/** What the backend recognises about a file without importing it (`FileHint`). */
+export type FileHint = {
+  name: string;
+  format: 'json' | 'csv';
+  broker: string | null;
+  instrument: string | null;
+  /** The identifier of the data, or `null` if the file does not say. */
+  data: string | null;
+  /** The code of the problem if a JSON file cannot be read. */
+  error: string | null;
+};
+
+function parseHint(value: unknown): FileHint {
+  const record = asRecord(value, 'hint on a file');
+  const format = str(record, 'format');
+  if (format !== 'json' && format !== 'csv') {
+    throw new UnexpectedAnswerError('format of a file');
+  }
+  return {
+    name: str(record, 'name'),
+    format,
+    broker: strOrNull(record, 'broker'),
+    instrument: strOrNull(record, 'instrument'),
+    data: strOrNull(record, 'data'),
+    error: strOrNull(record, 'error'),
+  };
+}
+
+/** The file part of a form. */
+function appendFile(form: FormData, file: Blob, name: string): void {
+  form.append('file', file, name);
+}
+
+/**
+ * Asks the backend what the files say about themselves. The content of a CSV file is not read, so
+ * it is not sent (an empty part with the name of the file); a JSON file is sent as it is.
+ */
+export async function previewImport(files: File[], signal?: AbortSignal): Promise<FileHint[]> {
+  const form = new FormData();
+  for (const file of files) {
+    const isJson = file.name.toLowerCase().endsWith('.json');
+    appendFile(form, isJson ? file : new Blob([]), file.name);
+  }
+  const record = asRecord(
+    await request(`${BASE}/imports/preview`, { method: 'POST', form, signal }),
+    'preview of an import',
+  );
+  const hints = list(record, 'files', parseHint);
+  if (hints.length !== files.length) {
+    throw new UnexpectedAnswerError('number of hints');
+  }
+  return hints;
+}
 
 export type RejectedRow = { row: number; reason: string };
 
@@ -173,7 +250,7 @@ export type ImportResult = {
   rejectedCount: number;
 };
 
-export function parseImportResult(value: unknown): ImportResult {
+function parseImportResult(value: unknown): ImportResult {
   const record = asRecord(value, 'import result');
   const kind = str(record, 'kind');
   if (kind !== 'candles' && kind !== 'ticks' && kind !== 'instrument') {
@@ -196,146 +273,70 @@ export function parseImportResult(value: unknown): ImportResult {
   };
 }
 
-export async function importJson(file: Blob): Promise<ImportResult> {
-  return parseImportResult(
-    await request(`${BASE}/imports/json`, {
-      method: 'POST',
-      file: { body: file, contentType: 'application/json' },
-    }),
-  );
-}
-
-/** What the user says about a CSV file, because the file does not contain it. */
-export type CsvSeries = {
-  kind: 'candles' | 'ticks';
-  broker: string;
-  instrument: string;
-  timeUnit: TimeUnit | null;
-  timezone: string;
-};
-
-export async function importCsv(file: Blob, series: CsvSeries): Promise<ImportResult> {
-  const query = new URLSearchParams({
-    kind: series.kind,
-    broker: series.broker,
-    instrument: series.instrument,
-    timezone: series.timezone,
-  });
-  if (series.kind === 'candles' && series.timeUnit !== null) {
-    query.set('time_unit', series.timeUnit);
-  }
-  return parseImportResult(
-    await request(`${BASE}/imports/csv?${query.toString()}`, {
-      method: 'POST',
-      file: { body: file, contentType: 'text/csv' },
-    }),
-  );
-}
-
-// --- acquisition ----------------------------------------------------------------------
-
-export type AcquirePart =
-  | { kind: 'candles'; instrument: string; time_unit: TimeUnit; start: string; end: string }
-  | { kind: 'ticks'; instrument: string; start: string; end: string }
-  | { kind: 'instrument'; instrument: string };
-
-export type PartFailure = { code: string; reason: string; fileError: string | null };
-
-export type AcquisitionPart = {
-  request: AcquirePart;
-  state: 'queued' | 'running' | 'succeeded' | 'failed';
+/** The result for one file: either the file is taken over (`result`) or refused (`error`). */
+export type FileOutcome = {
+  name: string;
+  refused: boolean;
   result: ImportResult | null;
-  omittedCount: number | null;
-  error: PartFailure | null;
+  /** The code of the reason a whole file is refused (`FileErrorCode`). */
+  error: string | null;
 };
 
-export type Acquisition = {
-  id: string;
-  state: 'running' | 'finished';
-  parts: AcquisitionPart[];
-};
+export type ImportOutcome = { files: FileOutcome[]; importedCount: number; refusedCount: number };
 
-function parseAcquirePart(value: unknown): AcquirePart {
-  const record = asRecord(value, 'part of an acquisition');
-  const kind = str(record, 'kind');
-  const instrument = str(record, 'instrument');
-  if (kind === 'candles') {
-    const timeUnit = str(record, 'time_unit');
-    if (!isTimeUnit(timeUnit)) {
-      throw new UnexpectedAnswerError('time unit');
-    }
-    return { kind, instrument, time_unit: timeUnit, start: str(record, 'start'), end: str(record, 'end') };
-  }
-  if (kind === 'ticks') {
-    return { kind, instrument, start: str(record, 'start'), end: str(record, 'end') };
-  }
-  if (kind === 'instrument') {
-    return { kind, instrument };
-  }
-  throw new UnexpectedAnswerError('kind of a part');
-}
-
-function parseAcquisitionPart(value: unknown): AcquisitionPart {
-  const record = asRecord(value, 'part of an acquisition');
-  const state = str(record, 'state');
-  if (state !== 'queued' && state !== 'running' && state !== 'succeeded' && state !== 'failed') {
-    throw new UnexpectedAnswerError('state of a part');
-  }
+function parseOutcome(value: unknown): FileOutcome {
+  const record = asRecord(value, 'result for a file');
+  const refused = bool(record, 'refused');
   const result = record.result;
-  const error = record.error;
-  let failure: PartFailure | null = null;
-  if (error !== null && error !== undefined) {
-    const failureRecord: JsonRecord = asRecord(error, 'error of a part');
-    failure = {
-      code: str(failureRecord, 'code'),
-      reason: str(failureRecord, 'reason'),
-      fileError: strOrNull(failureRecord, 'file_error'),
-    };
-  }
   return {
-    request: parseAcquirePart(record.request),
-    state,
+    name: str(record, 'name'),
+    refused,
     result: result === null || result === undefined ? null : parseImportResult(result),
-    omittedCount: numOrNull(record, 'omitted_count'),
-    error: failure,
+    error: strOrNull(record, 'error'),
   };
 }
 
-function parseAcquisition(value: unknown): Acquisition {
-  const record = asRecord(value, 'acquisition');
-  const state = str(record, 'state');
-  if (state !== 'running' && state !== 'finished') {
-    throw new UnexpectedAnswerError('state of an acquisition');
+/** A file of an import with what the user says about it (empty: nothing). */
+export type ImportFile = { file: File; instrument: string; data: string };
+
+/**
+ * Imports all files in one process. `broker` counts for all files; `timezone` for all CSV files
+ * and is sent only if it is given. `instrument` and `data` are sent for every file, in the order
+ * of the files, an empty value for none.
+ */
+export async function importFiles(
+  broker: string,
+  timezone: string,
+  files: ImportFile[],
+  signal?: AbortSignal,
+): Promise<ImportOutcome> {
+  const form = new FormData();
+  form.append('broker', broker);
+  if (timezone !== '') {
+    form.append('timezone', timezone);
   }
-  return { id: str(record, 'id'), state, parts: list(record, 'parts', parseAcquisitionPart) };
-}
-
-export async function startAcquisition(parts: AcquirePart[]): Promise<Acquisition> {
-  return parseAcquisition(await request(`${BASE}/acquisitions`, { method: 'POST', json: { parts } }));
-}
-
-export async function fetchAcquisition(id: string, signal?: AbortSignal): Promise<Acquisition> {
-  return parseAcquisition(
-    await request(`${BASE}/acquisitions/${encodeURIComponent(id)}`, { signal }),
-  );
-}
-
-// --- default source -------------------------------------------------------------------
-
-export async function fetchDefaultSource(signal?: AbortSignal): Promise<string | null> {
+  for (const item of files) {
+    appendFile(form, item.file, item.file.name);
+  }
+  for (const item of files) {
+    form.append('instrument', item.instrument);
+  }
+  for (const item of files) {
+    form.append('data', item.data);
+  }
   const record = asRecord(
-    await request('/api/replay/settings/default-source', { signal }),
-    'default source',
+    await request(`${BASE}/imports`, { method: 'POST', form, signal }),
+    'result of an import',
   );
-  return strOrNull(record, 'broker');
-}
-
-export async function updateDefaultSource(broker: string | null): Promise<string | null> {
-  const record = asRecord(
-    await request('/api/replay/settings/default-source', { method: 'PUT', json: { broker } }),
-    'default source',
-  );
-  return strOrNull(record, 'broker');
+  const outcome: ImportOutcome = {
+    files: list(record, 'files', parseOutcome),
+    importedCount: num(record, 'imported_count'),
+    refusedCount: num(record, 'refused_count'),
+  };
+  if (outcome.files.length !== files.length) {
+    throw new UnexpectedAnswerError('number of results');
+  }
+  return outcome;
 }
 
 /** The rule for the name of a broker or an instrument (`names.py` of the backend). */

@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ACQUISITION_ERROR_CODES,
+  BATCH_ERROR_CODES,
   FILE_ERROR_CODES,
   REJECT_REASONS,
-  acquisitionErrorText,
   describeError,
   fileErrorText,
   rejectReasonText,
@@ -24,59 +23,52 @@ describe('texts of codes', () => {
       for (const code of FILE_ERROR_CODES) {
         expect(fileErrorText(t, code), code).not.toBe(`import.fileError.${code}`);
       }
-      for (const code of ACQUISITION_ERROR_CODES) {
-        expect(acquisitionErrorText(t, code, 'reason', null), code).not.toContain('acquire.errors');
+      for (const code of BATCH_ERROR_CODES) {
+        expect(t(`import.batchError.${code}`), code).not.toBe(`import.batchError.${code}`);
       }
     }
   });
 
   it('says "unknown" for a code it does not know', () => {
     expect(rejectReasonText(de, 'new_reason')).toBe('Grund unbekannt.');
-    expect(fileErrorText(en, 'new_code')).toBe('The file was rejected.');
-    expect(fileErrorText(en, 42)).toBe('The file was rejected.');
-  });
-
-  it('shows the reason of the source for a code it does not know', () => {
-    expect(acquisitionErrorText(de, 'new_code', 'Neuer Grund', null)).toBe('Neuer Grund');
-  });
-
-  it('names the file error of a refused import', () => {
-    expect(acquisitionErrorText(en, 'import_refused', 'x', 'no_rows')).toBe(
-      'The import rejected the data of the source: The file contains no rows.',
-    );
-  });
-
-  it('names "Keine Quelle eingerichtet" and "Quelle nicht erreichbar" in German', () => {
-    expect(acquisitionErrorText(de, 'no_source', '', null)).toContain('Keine Quelle eingerichtet');
-    expect(acquisitionErrorText(de, 'source_unreachable', '', null)).toContain('Quelle nicht erreichbar');
+    expect(fileErrorText(en, 'new_code')).toContain('The file was refused.');
+    expect(fileErrorText(en, 42)).toContain('The file was refused.');
   });
 });
 
 describe('describeError', () => {
   it.each([
     [400, {}, 'errors.host'],
+    [403, { detail: 'The request comes from a web page of another origin.' }, 'errors.origin'],
     [404, {}, 'errors.notFound'],
-    [413, {}, 'errors.tooLarge'],
+    [413, { detail: 'The request body is larger than the limit.' }, 'errors.tooLarge'],
     [415, {}, 'errors.mediaType'],
     [422, {}, 'errors.invalid'],
     [429, {}, 'errors.busy'],
     [503, {}, 'errors.dataStock'],
     [500, {}, 'errors.server'],
-    [409, { detail: 'No broker is given and no default source is set.' }, 'errors.server'],
+    [409, { detail: 'x' }, 'errors.server'],
   ])('maps the status %s', (status, body, key) => {
     expect(describeError(de, new ApiError(status, body))).toBe(de(key));
+    expect(describeError(en, new ApiError(status, body))).toBe(en(key));
   });
 
-  it('takes the code of a refused file', () => {
-    const error = new ApiError(422, { detail: 'The file is refused.', code: 'timezone_unknown', message: 'x' });
+  it.each([
+    [413, 'too_many_files'],
+    [413, 'batch_too_large'],
+    [422, 'no_files'],
+  ])('takes the code of an import that is refused as a whole (%s %s)', (status, code) => {
+    const error = new ApiError(status, { detail: 'The import is refused as a whole.', code, message: 'x' });
 
-    expect(describeError(de, error)).toBe(de('import.fileError.timezone_unknown'));
+    expect(describeError(de, error)).toBe(de(`import.batchError.${code}`));
+    expect(describeError(en, error)).toBe(en(`import.batchError.${code}`));
   });
 
-  it('takes the code of a missing source', () => {
-    const error = new ApiError(409, { detail: 'No source is set up.', code: 'no_source', reason: 'x' });
-
-    expect(describeError(en, error)).toBe(en('acquire.errors.no_source'));
+  it('names the next step in every text of an error', () => {
+    for (const key of ['host', 'origin', 'tooLarge', 'mediaType', 'invalid', 'busy', 'dataStock', 'server', 'network', 'unexpected']) {
+      expect(de(`errors.${key}`), key).toContain('Nächster Schritt');
+      expect(en(`errors.${key}`), key).toContain('Next step');
+    }
   });
 
   it('reports a network error and anything else', () => {

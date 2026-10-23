@@ -42,21 +42,21 @@ export function formatPeriod(start: string, end: string, language: SupportedLang
   return `${formatMoment(start, language)} – ${formatMoment(end, language)}`;
 }
 
-/**
- * Whether `value` is a real date with a time to the minute, `yyyy-mm-ddThh:mm` (the value of
- * the input field `datetime-local`). The interface reads it as UTC.
- */
-export function isMinute(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
-    return false;
+/** A day (UTC) of a moment: `05.01.2026` in German, `2026-01-05` in English. */
+export function formatDay(iso: string, language: SupportedLanguage): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
   }
-  const date = new Date(`${value}:00Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  const year = String(date.getUTCFullYear()).padStart(4, '0');
+  const day = pad(date.getUTCDate());
+  const month = pad(date.getUTCMonth() + 1);
+  return language === 'en' ? `${year}-${month}-${day}` : `${day}.${month}.${year}`;
 }
 
-/** The moment (ISO 8601 with time zone Z) for a value `yyyy-mm-ddThh:mm`, read as UTC. */
-export function minuteToMoment(value: string): string {
-  return `${value}:00Z`;
+/** The first to the last day (UTC) of a series. */
+export function formatDays(first: string, last: string, language: SupportedLanguage): string {
+  return `${formatDay(first, language)} – ${formatDay(last, language)}`;
 }
 
 /** The text of a size in bytes, for example `12.4 KB`. */
