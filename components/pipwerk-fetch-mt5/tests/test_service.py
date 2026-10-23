@@ -626,13 +626,12 @@ def test_a_terminal_that_is_not_reachable_is_the_error_terminal_unavailable() ->
         assert error.value.code == "terminal_unavailable"
 
 
-def test_the_name_of_the_broker_comes_from_the_configuration_or_the_trade_server() -> None:
+def test_the_name_of_the_broker_is_the_name_of_the_trade_server() -> None:
     row = candle(naive(2026, 1, 5, 10, 0))
-    named = service(ScriptedGateway(candle_rows=[row]), broker_name="Configured-Name")
     period = (utc(2026, 1, 5, 10, 0), utc(2026, 1, 5, 11, 0))
-    assert named.candles("EURUSD", "m1", *period).file.broker == "Configured-Name"
     from_server = service(ScriptedGateway(candle_rows=[row], server="Server-A"))
     assert from_server.candles("EURUSD", "m1", *period).file.broker == "Server-A"
+    assert from_server.instrument_details("EURUSD").file.broker == "Server-A"
 
 
 def test_without_any_name_of_the_broker_the_error_is_broker_unknown() -> None:

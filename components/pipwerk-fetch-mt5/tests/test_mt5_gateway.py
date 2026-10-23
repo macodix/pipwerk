@@ -75,6 +75,17 @@ def test_a_failed_connection_is_terminal_unavailable_and_is_tried_again(
     assert "account-password-1" not in caplog.text
 
 
+def test_close_disconnects_once_and_does_nothing_without_a_connection() -> None:
+    module = FakeMt5Module()
+    mt5 = gateway(module)
+    mt5.close()
+    assert module.shutdowns == 0  # never connected: nothing to drop
+    mt5.ping()
+    mt5.close()
+    mt5.close()
+    assert module.shutdowns == 1
+
+
 def test_a_terminal_that_is_not_connected_to_its_trade_server_is_unavailable() -> None:
     module = FakeMt5Module()
     module.terminal = type("Info", (), {"connected": False})()
@@ -123,9 +134,8 @@ def test_the_missing_package_is_terminal_unavailable_and_the_program_imports_wit
 def test_the_package_is_not_imported_by_the_program() -> None:
     program = (
         "import sys\n"
-        "import pipwerk_fetch_mt5.app, pipwerk_fetch_mt5.cli, pipwerk_fetch_mt5.service\n"
-        "import pipwerk_fetch_mt5.mt5_gateway, pipwerk_fetch_mt5.fake_source\n"
-        "import pipwerk_fetch_mt5.contract\n"
+        "import pipwerk_fetch_mt5.cli, pipwerk_fetch_mt5.fetch, pipwerk_fetch_mt5.service\n"
+        "import pipwerk_fetch_mt5.mt5_gateway, pipwerk_fetch_mt5.files\n"
         "sys.exit(1 if 'MetaTrader5' in sys.modules else 0)\n"
     )
     result = subprocess.run(  # noqa: S603

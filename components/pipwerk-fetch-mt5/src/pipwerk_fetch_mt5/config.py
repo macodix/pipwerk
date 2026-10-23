@@ -5,22 +5,14 @@ The startup configuration is an INI file named ``pipwerk-fetch-mt5.ini``. It is 
 contents of several files are never merged. The program does not start without a valid one.
 
 Sections and entries (all other sections and entries are rejected, so that a misspelled
-entry never goes unnoticed):
+entry never goes unnoticed; the program has no address, port, key or list of hosts, because it
+has no server):
 
-``[server]``
-    ``host`` (bind address, default ``127.0.0.1``), ``port`` (default ``8765``),
-    ``allowed_hosts`` (comma separated names and IP addresses allowed in the ``Host`` header in
-    addition to the defaults, see ``host_check.py``).
-``[security]``
-    ``shared_key`` (required): the shared key. It stands only here, never in the repository,
-    and never in a message or a log.
 ``[broker]``
     ``server_time_zone`` (required): IANA name of the time zone of the server time of the
-    broker. ``name`` (optional): the name of the broker as delivered in the files; without it
-    the name of the trade server MetaTrader 5 is connected to is used.
-    ``max_rows_per_request`` (default 50000): the largest number of rows of one answer.
-    ``max_reads_per_request`` (default 500): the largest number of reads of MetaTrader 5 for
-    one request (a long period is read in several steps).
+    trade server. ``max_rows_per_file`` (default 200000): the largest number of rows of one
+    file. ``max_reads_per_file`` (default 500): the largest number of reads of MetaTrader 5
+    for one file (a long period is read in several steps).
 ``[metatrader5]``
     Optional details of the connection with MetaTrader 5: ``path`` (terminal program),
     ``login``, ``password``, ``server``, ``timeout_ms``. Without any, the program attaches to
@@ -29,13 +21,13 @@ entry never goes unnoticed):
     Table designation -> symbol of the broker. Without an entry the designation itself is the
     symbol.
 
-Error messages name the entry that is wrong, never a value of the file: the file holds the key.
+Error messages name the entry that is wrong, never a value of the file: the file may hold a
+password.
 """
 
 from __future__ import annotations
 
 import configparser
-import ipaddress
 import os
 import re
 from collections.abc import Mapping
@@ -44,21 +36,16 @@ from pathlib import Path
 from types import MappingProxyType
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pipwerk_fetch_mt5.host_check import InvalidAllowedHostError, normalize_entry
-
 #: File name of the startup configuration at every searched location.
 CONFIG_FILE_NAME = "pipwerk-fetch-mt5.ini"
 
-DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 8765
-DEFAULT_MAX_ROWS = 50_000
-MAX_ROWS_LIMIT = 1_000_000
+#: A file of the import may have 500000 rows and 32 MiB (``pipwerk_marketdata.limits``). A
+#: candle takes about 130 bytes in the file, so 200000 rows stay below the size limit.
+DEFAULT_MAX_ROWS = 200_000
+MAX_ROWS_LIMIT = 5_000_000
 DEFAULT_MAX_READS = 500
 MAX_READS_LIMIT = 100_000
 DEFAULT_TIMEOUT_MS = 60_000
-
-#: The shared key: printable ASCII without blanks (it travels in a header), 16 to 256 characters.
-KEY_PATTERN = re.compile(r"[\x21-\x7e]{16,256}")
 
 #: A designation or a symbol: 1 to 64 characters without control characters.
 NAME_PATTERN = re.compile(r"[^\x00-\x1f\x7f]{1,64}")
@@ -68,11 +55,7 @@ NAME_PATTERN = re.compile(r"[^\x00-\x1f\x7f]{1,64}")
 BROKER_NAME_PATTERN = re.compile(r"\S(?:[^\x00-\x1f\x7f]*\S)?")
 
 _ALLOWED_OPTIONS: dict[str, frozenset[str]] = {
-    "server": frozenset({"host", "port", "allowed_hosts"}),
-    "security": frozenset({"shared_key"}),
-    "broker": frozenset(
-        {"server_time_zone", "name", "max_rows_per_request", "max_reads_per_request"}
-    ),
+    "broker": frozenset({"server_time_zone", "max_rows_per_file", "max_reads_per_file"}),
     "metatrader5": frozenset({"path", "login", "password", "server", "timeout_ms"}),
 }
 _FREE_SECTIONS = frozenset({"symbols"})
@@ -98,11 +81,6 @@ class StartupConfig:
     """The content of the startup configuration."""
 
     server_time_zone: str
-    shared_key: str = field(repr=False)
-    host: str = DEFAULT_HOST
-    port: int = DEFAULT_PORT
-    allowed_hosts: tuple[str, ...] = ()
-    broker_name: str | None = None
     max_rows: int = DEFAULT_MAX_ROWS
     max_reads: int = DEFAULT_MAX_READS
     symbols: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
@@ -255,33 +233,6 @@ def _optional_integer(
     return number
 
 
-def _bind_address(parser: configparser.ConfigParser, path: Path) -> str:
-    value = _text(parser, "server", "host") or DEFAULT_HOST
-    try:
-        ipaddress.ip_address(value)
-    except ValueError:
-        # A name (for example localhost) is allowed as a bind address.
-        if re.fullmatch(r"[A-Za-z0-9._-]{1,253}", value) is None:
-            raise StartupConfigError(
-                f"Startup configuration {path}: [server] host is no name and no IP address."
-            ) from None
-    return value
-
-
-def _allowed_hosts(parser: configparser.ConfigParser, path: Path) -> tuple[str, ...]:
-    hosts: list[str] = []
-    for item in (_text(parser, "server", "allowed_hosts") or "").split(","):
-        if not item.strip():
-            continue
-        try:
-            hosts.append(normalize_entry(item))
-        except InvalidAllowedHostError:
-            raise StartupConfigError(
-                f"Startup configuration {path} has an invalid [server] allowed_hosts entry."
-            ) from None
-    return tuple(hosts)
-
-
 def _time_zone(parser: configparser.ConfigParser, path: Path) -> str:
     name = _text(parser, "broker", "server_time_zone")
     if name is None:
@@ -298,20 +249,6 @@ def _time_zone(parser: configparser.ConfigParser, path: Path) -> str:
             "zone name."
         ) from None
     return name
-
-
-def _shared_key(parser: configparser.ConfigParser, path: Path) -> str:
-    key = _text(parser, "security", "shared_key")
-    if key is None:
-        raise StartupConfigError(
-            f"Startup configuration {path} is missing the entry shared_key in section [security]."
-        )
-    if KEY_PATTERN.fullmatch(key) is None:
-        raise StartupConfigError(
-            f"Startup configuration {path}: [security] shared_key must have 16 to 256 "
-            "characters, without blanks and only printable ASCII characters."
-        )
-    return key
 
 
 def _symbols(parser: configparser.ConfigParser, path: Path) -> Mapping[str, str]:
@@ -345,24 +282,13 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
     parser = _parse(path)
     _check_names(parser, path)
     max_rows = _integer(
-        parser, path, "broker", "max_rows_per_request", DEFAULT_MAX_ROWS, 1, MAX_ROWS_LIMIT
+        parser, path, "broker", "max_rows_per_file", DEFAULT_MAX_ROWS, 1, MAX_ROWS_LIMIT
     )
     max_reads = _integer(
-        parser, path, "broker", "max_reads_per_request", DEFAULT_MAX_READS, 1, MAX_READS_LIMIT
+        parser, path, "broker", "max_reads_per_file", DEFAULT_MAX_READS, 1, MAX_READS_LIMIT
     )
-    port = _integer(parser, path, "server", "port", DEFAULT_PORT, 1, 65535)
-    broker_name = _text(parser, "broker", "name")
-    if broker_name is not None and (
-        len(broker_name) > 128 or BROKER_NAME_PATTERN.fullmatch(broker_name) is None
-    ):
-        raise StartupConfigError(f"Startup configuration {path}: [broker] name is invalid.")
     return StartupConfig(
         server_time_zone=_time_zone(parser, path),
-        shared_key=_shared_key(parser, path),
-        host=_bind_address(parser, path),
-        port=port,
-        allowed_hosts=_allowed_hosts(parser, path),
-        broker_name=broker_name,
         max_rows=max_rows,
         max_reads=max_reads,
         symbols=_symbols(parser, path),

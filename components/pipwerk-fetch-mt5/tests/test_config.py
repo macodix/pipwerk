@@ -1,7 +1,8 @@
-"""Tests of the startup configuration (req-system-017, req-system-018, order 03 point 1).
+"""Tests of the startup configuration (req-system-017, req-system-018, order 13 point 4).
 
-The file holds the shared key. Every error message names the entry that is wrong and never a
-value of the file.
+The file may hold the password for MetaTrader 5. Every error message names the entry that is
+wrong and never a value of the file. The program has no server, so the file has no address,
+port, key or list of hosts.
 """
 
 import os
@@ -15,19 +16,16 @@ from pipwerk_fetch_mt5.config import (
     CONFIG_FILE_NAME,
     DEFAULT_MAX_READS,
     DEFAULT_MAX_ROWS,
-    DEFAULT_PORT,
+    StartupConfig,
     StartupConfigError,
     default_search_locations,
     load_startup_config,
     resolve_config_path,
 )
 
-SECRET = "never-print-this-key-0123456789"
+SECRET = "never-print-this-password-0123456789"
 
-MINIMAL = f"""
-[security]
-shared_key = {SECRET}
-
+MINIMAL = """
 [broker]
 server_time_zone = Europe/Athens
 """
@@ -55,14 +53,9 @@ def ini(tmp_path: Path) -> Path:
 
 def test_the_minimal_file_gives_the_defaults(ini: Path) -> None:
     config = load_startup_config(ini)
-    assert config.shared_key == SECRET
     assert config.server_time_zone == "Europe/Athens"
-    assert config.host == "127.0.0.1"
-    assert config.port == DEFAULT_PORT
-    assert config.max_rows == DEFAULT_MAX_ROWS
+    assert config.max_rows == DEFAULT_MAX_ROWS == 200_000
     assert config.max_reads == DEFAULT_MAX_READS == 500
-    assert config.allowed_hosts == ()
-    assert config.broker_name is None
     assert dict(config.symbols) == {}
     assert config.metatrader.path is None
     assert config.metatrader.login is None
@@ -72,24 +65,15 @@ def test_every_entry_is_read(tmp_path: Path) -> None:
     path = write(
         tmp_path / CONFIG_FILE_NAME,
         f"""
-[server]
-host = 192.0.2.10
-port = 9000
-allowed_hosts = MT5-PC.example, 192.0.2.10
-
-[security]
-shared_key = {SECRET}
-
 [broker]
 server_time_zone = Europe/Athens
-name = Demo-Broker
-max_rows_per_request = 1234
-max_reads_per_request = 77
+max_rows_per_file = 1234
+max_reads_per_file = 77
 
 [metatrader5]
 path = C:\\Program Files\\MetaTrader 5\\terminal64.exe
 login = 12345
-password = account-password-1
+password = {SECRET}
 server = Demo-Server
 timeout_ms = 5000
 
@@ -99,14 +83,11 @@ DE40 = GER40.cash
 """,
     )
     config = load_startup_config(path)
-    assert (config.host, config.port) == ("192.0.2.10", 9000)
-    assert config.allowed_hosts == ("mt5-pc.example", "192.0.2.10")
-    assert config.broker_name == "Demo-Broker"
     assert config.max_rows == 1234
     assert config.max_reads == 77
     assert config.metatrader.path == "C:\\Program Files\\MetaTrader 5\\terminal64.exe"
     assert config.metatrader.login == 12345
-    assert config.metatrader.password == "account-password-1"
+    assert config.metatrader.password == SECRET
     assert config.metatrader.server == "Demo-Server"
     assert config.metatrader.timeout_ms == 5000
     assert dict(config.symbols) == {"EURUSD": "EURUSD.r", "DE40": "GER40.cash"}
@@ -128,17 +109,22 @@ def test_the_case_of_a_designation_is_kept(tmp_path: Path) -> None:
     assert config.symbol_for("EURUSD") == "EURUSD"
 
 
-def test_a_percent_sign_in_the_key_is_no_interpolation(tmp_path: Path) -> None:
-    key = "abc%def%(x)s-0123456789"
-    path = write(tmp_path / CONFIG_FILE_NAME, MINIMAL.replace(SECRET, key))
-    assert load_startup_config(path).shared_key == key
+def test_a_percent_sign_in_the_password_is_no_interpolation(tmp_path: Path) -> None:
+    password = "abc%def%(x)s-0123456789"
+    path = write(tmp_path / CONFIG_FILE_NAME, MINIMAL + f"\n[metatrader5]\npassword = {password}\n")
+    assert load_startup_config(path).metatrader.password == password
+
+
+def test_the_configuration_has_no_address_port_key_or_host_list() -> None:
+    names = set(StartupConfig.__dataclass_fields__)
+    assert names == {"server_time_zone", "max_rows", "max_reads", "symbols", "metatrader"}
 
 
 # --- what is required and what is rejected ------------------------------------------------------
 
 
 def test_the_time_zone_is_required(tmp_path: Path) -> None:
-    path = write(tmp_path / CONFIG_FILE_NAME, f"[security]\nshared_key = {SECRET}\n")
+    path = write(tmp_path / CONFIG_FILE_NAME, "[broker]\nmax_rows_per_file = 10\n")
     with pytest.raises(StartupConfigError, match="server_time_zone"):
         load_startup_config(path)
 
@@ -149,44 +135,14 @@ def test_the_time_zone_must_be_an_iana_name(tmp_path: Path) -> None:
         load_startup_config(write(tmp_path / CONFIG_FILE_NAME, text))
 
 
-def test_the_key_is_required(tmp_path: Path) -> None:
-    path = write(tmp_path / CONFIG_FILE_NAME, "[broker]\nserver_time_zone = UTC\n")
-    with pytest.raises(StartupConfigError, match="shared_key"):
-        load_startup_config(path)
-
-
-def test_an_empty_key_is_rejected(tmp_path: Path) -> None:
-    path = write(tmp_path / CONFIG_FILE_NAME, MINIMAL.replace(SECRET, ""))
-    with pytest.raises(StartupConfigError, match="shared_key"):
-        load_startup_config(path)
-
-
-@pytest.mark.parametrize(
-    "key", ["tiny", "x" * 15, "has a blank in the key 0123", "ünicode-key-0123456789"]
-)
-def test_a_key_that_is_too_short_or_not_printable_ascii_is_rejected(
-    tmp_path: Path, key: str
-) -> None:
-    path = write(tmp_path / CONFIG_FILE_NAME, MINIMAL.replace(SECRET, key))
-    with pytest.raises(StartupConfigError) as error:
-        load_startup_config(path)
-    assert key not in str(error.value)
-
-
 @pytest.mark.parametrize(
     ("section", "entry"),
     [
-        ("server", "port = 0"),
-        ("server", "port = 65536"),
-        ("server", "port = abc"),
-        ("server", "port = -1"),
-        ("server", "host = not a host"),
-        ("server", "allowed_hosts = bad host!"),
-        ("broker", "max_rows_per_request = 0"),
-        ("broker", "max_rows_per_request = 1000001"),
-        ("broker", "max_reads_per_request = 0"),
-        ("broker", "max_reads_per_request = 100001"),
-        ("broker", "max_reads_per_request = many"),
+        ("broker", "max_rows_per_file = 0"),
+        ("broker", "max_rows_per_file = 5000001"),
+        ("broker", "max_reads_per_file = 0"),
+        ("broker", "max_reads_per_file = 100001"),
+        ("broker", "max_reads_per_file = many"),
         ("metatrader5", "login = abc"),
         ("metatrader5", "timeout_ms = 10"),
         ("symbols", "EURUSD ="),
@@ -200,15 +156,35 @@ def test_invalid_values_are_rejected(tmp_path: Path, section: str, entry: str) -
 
 
 def test_an_unknown_entry_and_an_unknown_section_are_rejected(tmp_path: Path) -> None:
-    entry = MINIMAL.replace("[security]\n", "[security]\nshared_ky = x\n")
-    with pytest.raises(StartupConfigError, match="shared_ky"):
+    entry = MINIMAL + "server_time_zon = x\n"
+    with pytest.raises(StartupConfigError, match="server_time_zon"):
         load_startup_config(write(tmp_path / CONFIG_FILE_NAME, entry))
     section = MINIMAL + "\n[database]\nurl = x\n"
     with pytest.raises(StartupConfigError, match="unknown section"):
         load_startup_config(write(tmp_path / CONFIG_FILE_NAME, section))
 
 
-# --- no error message and no representation shows the key -------------------------------------
+@pytest.mark.parametrize(
+    "text",
+    [
+        "[server]\nhost = 127.0.0.1\n",
+        "[server]\nport = 8765\n",
+        "[server]\nallowed_hosts = mt5-pc.example\n",
+        "[security]\nshared_key = some-key-0123456789\n",
+    ],
+)
+def test_the_entries_of_the_former_server_are_rejected(tmp_path: Path, text: str) -> None:
+    with pytest.raises(StartupConfigError):
+        load_startup_config(write(tmp_path / CONFIG_FILE_NAME, MINIMAL + "\n" + text))
+
+
+def test_the_broker_name_cannot_be_set(tmp_path: Path) -> None:
+    # The broker is always the name of the trade server MetaTrader 5 is logged in to.
+    with pytest.raises(StartupConfigError, match="name"):
+        load_startup_config(write(tmp_path / CONFIG_FILE_NAME, MINIMAL + "name = Other\n"))
+
+
+# --- no error message and no representation shows the password ---------------------------------
 
 
 def test_a_syntax_error_does_not_show_the_offending_line(tmp_path: Path) -> None:
@@ -219,31 +195,25 @@ def test_a_syntax_error_does_not_show_the_offending_line(tmp_path: Path) -> None
     assert "line" in str(error.value)
 
 
-def test_a_line_before_the_first_section_does_not_show_the_key(tmp_path: Path) -> None:
-    path = write(tmp_path / CONFIG_FILE_NAME, f"shared_key = {SECRET}\n" + MINIMAL)
+def test_a_line_before_the_first_section_does_not_show_the_password(tmp_path: Path) -> None:
+    path = write(tmp_path / CONFIG_FILE_NAME, f"password = {SECRET}\n" + MINIMAL)
     with pytest.raises(StartupConfigError) as error:
         load_startup_config(path)
     assert SECRET not in str(error.value)
 
 
-def test_a_duplicate_entry_does_not_show_the_key(tmp_path: Path) -> None:
-    path = write(
-        tmp_path / CONFIG_FILE_NAME,
-        MINIMAL.replace("[security]\n", f"[security]\nshared_key = {SECRET}-second\n"),
-    )
+def test_a_duplicate_entry_does_not_show_the_password(tmp_path: Path) -> None:
+    text = MINIMAL + f"\n[metatrader5]\npassword = {SECRET}\npassword = {SECRET}-second\n"
     with pytest.raises(StartupConfigError) as error:
-        load_startup_config(path)
+        load_startup_config(write(tmp_path / CONFIG_FILE_NAME, text))
     assert SECRET not in str(error.value)
 
 
-def test_the_representation_of_the_configuration_hides_key_and_password(tmp_path: Path) -> None:
-    path = write(
-        tmp_path / CONFIG_FILE_NAME, MINIMAL + "\n[metatrader5]\npassword = account-password-1\n"
-    )
+def test_the_representation_of_the_configuration_hides_the_password(tmp_path: Path) -> None:
+    path = write(tmp_path / CONFIG_FILE_NAME, MINIMAL + f"\n[metatrader5]\npassword = {SECRET}\n")
     config = load_startup_config(path)
     text = repr(config) + str(config) + repr(config.metatrader)
     assert SECRET not in text
-    assert "account-password-1" not in text
 
 
 def test_an_unreadable_file_is_reported_without_content(tmp_path: Path) -> None:
@@ -305,11 +275,11 @@ def test_the_first_file_found_is_used_and_files_are_not_merged(
         load_startup_config()
     write(
         home / "pipwerk" / "etc" / CONFIG_FILE_NAME,
-        MINIMAL.replace("Europe/Athens", "Asia/Tokyo").replace(SECRET, SECRET + "-first"),
+        MINIMAL.replace("Europe/Athens", "Asia/Tokyo") + "max_rows_per_file = 5\n",
     )
     config = load_startup_config()
     assert config.server_time_zone == "Asia/Tokyo"
-    assert config.shared_key == SECRET + "-first"
+    assert config.max_rows == 5
 
 
 def test_a_relative_home_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:

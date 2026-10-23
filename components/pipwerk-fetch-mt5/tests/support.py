@@ -2,7 +2,7 @@
 
 ``ScriptedGateway`` is a ``TerminalGateway`` whose rows the test writes down; it records the
 reads. ``FakeMt5Module`` is a replica of the package ``MetaTrader5`` (the functions and
-constants the program uses) for the tests of ``Mt5Gateway``. ``KEY`` is a made-up shared key.
+constants the program uses) for the tests of ``Mt5Gateway`` and of the whole program.
 """
 
 from __future__ import annotations
@@ -22,9 +22,6 @@ from pipwerk_fetch_mt5.gateway import (
     SymbolInfo,
     TimeUnit,
 )
-
-KEY = "test-key-0123456789abcdef"
-LOCAL = "http://127.0.0.1"
 
 EURUSD = SymbolInfo(
     tick_size=0.00001,
@@ -46,11 +43,7 @@ EURUSD = SymbolInfo(
 
 
 def make_config(**changes: Any) -> StartupConfig:
-    values: dict[str, Any] = {
-        "server_time_zone": "UTC",
-        "shared_key": KEY,
-        "symbols": MappingProxyType({}),
-    }
+    values: dict[str, Any] = {"server_time_zone": "UTC", "symbols": MappingProxyType({})}
     values.update(changes)
     return StartupConfig(**values)
 
@@ -160,9 +153,25 @@ class FakeMt5Module:
     """
 
     TIMEFRAME_M1 = 1
-    TIMEFRAME_H1 = 16385
-    TIMEFRAME_D1 = 16408
+    TIMEFRAME_M2 = 2
+    TIMEFRAME_M3 = 3
+    TIMEFRAME_M4 = 4
     TIMEFRAME_M5 = 5
+    TIMEFRAME_M6 = 6
+    TIMEFRAME_M10 = 10
+    TIMEFRAME_M12 = 12
+    TIMEFRAME_M15 = 15
+    TIMEFRAME_M20 = 20
+    TIMEFRAME_M30 = 30
+    TIMEFRAME_H1 = 16385
+    TIMEFRAME_H2 = 16386
+    TIMEFRAME_H3 = 16387
+    TIMEFRAME_H4 = 16388
+    TIMEFRAME_H6 = 16390
+    TIMEFRAME_H8 = 16392
+    TIMEFRAME_H12 = 16396
+    TIMEFRAME_D1 = 16408
+    TIMEFRAME_W1 = 32769
     TIMEFRAME_MN1 = 49153
     COPY_TICKS_INFO = 1
     ORDER_TYPE_BUY = 0
@@ -229,6 +238,52 @@ class FakeMt5Module:
     def order_calc_margin(self, action: int, symbol: str, volume: float, price: float) -> Any:
         self._record("order_calc_margin", action, symbol, volume, price)
         return self.margin
+
+
+class ArchiveMt5Module(FakeMt5Module):
+    """A replica of ``MetaTrader5`` that holds data for symbols and answers like the package
+    for a window: ``copy_rates_range`` and ``copy_ticks_range`` return the rows whose time lies
+    in ``[start, end]`` (the end is included, as the package does). Times are the seconds of
+    the server clock; the datetimes passed in carry them as if they were UTC.
+
+    ``candle_seconds[symbol]`` are the open times of the candles, ``tick_milliseconds[symbol]``
+    the times of the ticks. The same candle times serve every time unit. A symbol in
+    ``failing`` makes the calls for data return ``None`` with error -2 (not "not found").
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.symbols = {"EURUSD": symbol_record(), "GBPUSD": symbol_record()}
+        self.candle_seconds: dict[str, list[int]] = {}
+        self.tick_milliseconds: dict[str, list[int]] = {}
+        self.failing: set[str] = set()
+
+    def copy_rates_range(self, symbol: str, timeframe: int, start: datetime, end: datetime) -> Any:
+        self._record("copy_rates_range", symbol, timeframe, start, end)
+        if symbol in self.failing:
+            self.error = (-2, "Invalid arguments")
+            return None
+        first, last = int(start.timestamp()), int(end.timestamp())
+        return rates_rows(
+            [second for second in self.candle_seconds.get(symbol, []) if first <= second <= last]
+        )
+
+    def copy_ticks_range(self, symbol: str, start: datetime, end: datetime, flags: int) -> Any:
+        self._record("copy_ticks_range", symbol, start, end, flags)
+        if symbol in self.failing:
+            self.error = (-2, "Invalid arguments")
+            return None
+        first, last = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
+        return [
+            {"time_msc": millisecond, "bid": 1.1, "ask": 1.1002}
+            for millisecond in self.tick_milliseconds.get(symbol, [])
+            if first <= millisecond <= last
+        ]
+
+
+def server_seconds(moment: datetime) -> int:
+    """The seconds of the server clock for a naive server time."""
+    return int((moment - datetime(1970, 1, 1)).total_seconds())
 
 
 def symbol_record(**changes: Any) -> Any:
