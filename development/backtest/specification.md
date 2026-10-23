@@ -6,7 +6,7 @@
 - stand: 2026-10-23
 - komponenten: `packages/domain-core` (gemeinsame Python-Bibliothek, neues Teilpaket für die Ausführung), `packages/market-data` (neu, Datenbestand historischer Kursdaten), `components/pipwerk-replay` (neu, Strategietester, Backend und Oberfläche), `components/pipwerk-fetch-mt5` (neu, Abruf aus MetaTrader 5), `packages/ui-components` (Darstellung der Strategie), `components/pipwerk-studio` (Auslöser `Manuell`, Entfall von „Parameter setzen“), `contracts/`
 - grundlage: [scope.md](scope.md) mit den dort genannten Dokumenten des Auftraggebers. Nachprüfung der Dokumente nach der Abstimmung bestanden in [requirements-5.md](reviews/requirements-5.md).
-- stand der arbeit: Fassung vom 2026-10-21 bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html)). Änderung vom 2026-10-23 nach der Abnahme von `wp02` (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-3.md](reviews/specification-3.md), zur Präsentation mit dem geänderten Prototyp der Ansicht „Datenbestand“.
+- stand der arbeit: Fassung vom 2026-10-21 bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html)). Änderung vom 2026-10-23 nach der Abnahme von `wp02`, Versuch 1 (Änderungsnachweis), Prüfung durch die QA bestanden in [specification-3.md](reviews/specification-3.md). Änderung vom 2026-10-23 nach der Abnahme von `wp02`, Versuch 2 (Änderungsnachweis), in Prüfung.
 
 ## 1. Gegenstand
 
@@ -153,11 +153,20 @@ Zeitpunkte werden in UTC gespeichert. MetaTrader 5 und sein CSV-Export liefern d
 
 Welcher Broker im Testlauf gilt, ist eine Einstellung von pipwerk replay („Broker für Testläufe“, bisher Standardquelle), wählbar in der Ansicht „Datenbestand“ unter den Brokern, die im Datenbestand vorkommen, und änderbar in der Vorbereitung eines Testlaufs. Ist kein Broker gewählt oder kommt der gewählte nicht mehr vor, gilt der erste Broker des Datenbestands in alphabetischer Reihenfolge.
 
+Ein Broker ergibt sich aus seinen Daten im Datenbestand. Nach dem Löschen aller seiner Daten kommt er nicht mehr vor (req-system-025, 5.5). Kerzen und Ticks gehören ebenso wie die Angaben zum Instrument zu einem Broker: Eine Reihe sind die Kerzen einer Zeiteinheit oder die Ticks eines Instruments bei einem Broker, also eine Zeile der Tabelle im Datenbestand (8.3). Grund: Jeder Broker liefert eigene Kurse (req-system-027); Hinweis 1 aus `requirements-7.md`, H1 aus `requirements-8.md`.
+
 ### 5.2 Vollständigkeit
 
 Benötigt sind für einen Testlauf (req-test-003): für jedes Instrument des Testlaufs die Kerzen jeder Zeiteinheit, die die Strategie verwendet, die Kerzen M1 beziehungsweise die Ticks nach Abschnitt 4.1, die Ticks bei einem Auslöser `Tick`, und die Angaben zum Instrument. Die Zeiteinheiten ergeben sich aus der Strategie mit den Werten der Strategieparameter dieses Testlaufs.
 
-Eine Lücke ist ein Zeitraum ohne Kerze innerhalb der Handelszeiten der Quelle. Fehlen Handelszeiten, gilt eine Kerze als fehlend, wenn zwischen zwei Kerzen mehr als die doppelte Dauer der Zeiteinheit liegt und der Zeitraum nicht ganz in ein Wochenende (Freitag 22:00 bis Sonntag 22:00 UTC) fällt. Einzelne fehlende Kerzen M1 innerhalb einer Stunde mit Kerzen gelten nicht als Lücke, weil Broker in ruhigen Minuten keine Kerze liefern. Die genauen Schwellen legt der Auftrag fest und dokumentiert sie in der technischen Dokumentation.
+Zeiten, in denen beim Broker nicht gehandelt wird, auch Feiertage, sind keine Lücken (req-test-003, Abnahmebericht `wp02`, Versuch 2, M6). Darum gilt:
+
+- Innerhalb eines abgedeckten Zeitraums einer Reihe gibt es keine Lücke. Was eine Datei für ihren Zeitraum liefert, gilt als vollständig; eine Zeit ohne Kerzen oder Ticks darin ist eine Zeit, in der beim Broker nicht gehandelt wurde. Grund: Weder MetaTrader 5 noch sein Export liefern einen Kalender der Feiertage. Ob in einer Zeit ohne Kerzen gehandelt wurde, weiß nur der Broker, und er liefert für sie keine Kerzen.
+- Abgedeckter Zeitraum einer Datei: bei JSON der Zeitraum `period` der Datei (bei `pipwerk-fetch-mt5` der angeforderte Zeitraum, 5.4), bei CSV vom ersten Eintrag bis zum Ende des letzten Eintrags.
+- Eine Lücke ist ein Zeitraum zwischen zwei abgedeckten Zeiträumen derselben Reihe, außer er fällt ganz in eine Zeit ohne Handel: außerhalb der Handelszeiten der Quelle oder, wenn sie fehlen, in ein Wochenende (Freitag 22:00 bis Sonntag 22:00 UTC). Ein gelöschter Zeitraum (5.5) ist danach nicht mehr abgedeckt und innerhalb der Reihe eine Lücke.
+- Für einen Testlauf fehlt ein Teil, wenn der Testzeitraum nicht ganz in abgedeckten Zeiträumen und Zeiten ohne Handel liegt.
+
+Einschränkung: Fehlt in einer Datei selbst ein Zeitraum, zum Beispiel weil der Broker für ihn keine Historie hat, erkennt der Datenbestand ihn nicht als Lücke. Das ist hinzunehmen: Ein Testlauf mit diesen Daten verwendet, was der Broker hat, und ein erneuter Import desselben Zeitraums ergäbe dieselben Daten.
 
 ### 5.3 Import
 
@@ -170,7 +179,14 @@ Ein Vorgang importiert beliebig viele Dateien (req-system-026, Abnahmebericht `w
 - Instrument und Daten (Zeiteinheit, Ticks oder Angaben zum Instrument) je Datei: bei JSON aus dem Inhalt, bei CSV aus dem Dateinamen, soweit er sie enthält (Namen von `pipwerk-fetch-mt5` nach 5.4 und übliche Exportnamen von MetaTrader 5; die erkannten Muster legt der Auftrag fest); je Datei änderbar. Fehlt eine Angabe, wird der Vorgang erst nach ihrer Eingabe gestartet.
 - Das Ergebnis nennt je Datei übernommene Zeilen, Zeitraum und abgelehnte Zeilen mit Grund. Eine abgelehnte Datei hindert die übrigen nicht. Grund: Der Anwender sieht, welche Datei er korrigieren muss, und importiert nur diese erneut.
 
-Begrenzungen gegen Überlast: Größe einer Datei, Zahl der Zeilen, Zahl der Dateien und Gesamtgröße eines Vorgangs; Werte legen die Aufträge fest.
+Übertragung und Ablauf (Abnahmebericht `wp02`, Versuch 2, M3):
+
+- Die Oberfläche überträgt die Dateien eines Vorgangs nacheinander, jede in einer eigenen Anfrage mit Broker und Zeitzone des Vorgangs. Das Backend übernimmt jede Datei in einer eigenen Transaktion. Für Zahl der Dateien und Gesamtgröße eines Vorgangs gibt es keine Grenze. Grund: Eine Grenze je Anfrage ist eine technische Frage; der Anwender wählt beliebig viele Dateien und klickt einmal auf „Importieren“ (req-system-026).
+- Fortschritt: Der Dialog zeigt je Datei ihren Stand („wartet“, „wird importiert“, „übernommen“, „abgelehnt“, „nicht importiert“) und für den Vorgang die Zahl der erledigten Dateien.
+- „Abbrechen“ beendet den Vorgang nach der Datei, die gerade übernommen wird. Übernommene Dateien bleiben übernommen, noch nicht begonnene Dateien werden nicht importiert und im Ergebnis als „nicht importiert“ genannt (Hinweis 4 aus `requirements-7.md`). Grund: Jede Datei ist eine eigene Transaktion; innerhalb der Grenze je Datei unten dauert sie Sekunden.
+- Schließt der Anwender den Dialog während eines Vorgangs, fragt die Oberfläche, ob abgebrochen werden soll.
+
+Grenze je Datei: Größe und Zahl der Zeilen einer Datei bleiben vorerst begrenzt; Werte legen die Aufträge fest. Eine Datei über der Grenze wird mit diesem Grund abgelehnt, die übrigen Dateien des Vorgangs werden übernommen. Grund: Der Import großer Dateien (req-system-026, Tick-Dateien von mehreren GB, Abnahmebericht `wp02`, Versuch 2, M4) braucht ein geändertes Speichermodell, dessen Probeumsetzung der Auftraggeber am 2026-10-23 zurückgestellt hat (Vermerk im Abnahmebericht). Er folgt in einem späteren Arbeitspaket (Plan, „Offen“). Begrenzt ist außerdem die Zahl der im Ergebnis einzeln genannten abgelehnten Zeilen; gezählt werden alle.
 
 ### 5.4 Abruf
 
@@ -183,6 +199,17 @@ Ergebnis: je Reihe und je Instrument eine Datei im JSON-Format des Imports, Name
 `pipwerk-fetch-mt5` ordnet die Bezeichnung des Instruments einem Symbol des Brokers über eine Zuordnungstabelle in seiner Konfiguration zu. Grund: Die Zuordnung je Konto gehört zur noch nicht beschriebenen Kontoverwaltung (Fachmodell req-fach-053); bis dahin genügt eine Tabelle je Quelle. Ohne Eintrag gilt die Bezeichnung selbst als Symbol. Zuordnungstabelle und Zeitzone des Handelsservers (5.1) stehen in der Startkonfiguration von `pipwerk-fetch-mt5`; sie folgt req-system-017 und req-system-018 wie die übrigen Komponenten.
 
 Fehlen vor dem Start eines Testlaufs Daten, startet der Testlauf nicht. Die Meldung nennt je fehlendem Teil Instrument, Art und Zeitraum und als Grund, dass pipwerk replay bis pipwerk relay nicht selbst abruft, mit dem Weg: Daten mit `pipwerk-fetch-mt5` holen und im Datenbestand importieren (req-test-003, Hinweis H2 aus `requirements-6.md`).
+
+### 5.5 Löschen
+
+Löschen nach req-system-025 und Abnahmebericht `wp02`, Versuch 2, M5:
+
+- In den Einzelheiten einer Reihe (8.3): „Löschen …“ für die ganze Reihe oder einen Zeitraum (von, bis, UTC, auf die Minute). Ein Zeitraum löscht alle Kerzen beziehungsweise Ticks darin und nimmt ihn aus den abgedeckten Zeiträumen (5.2). Ohne verbleibende Daten entfällt die Reihe.
+- In den Einzelheiten einer Reihe ebenso „Kontraktdaten löschen …“ für die Angaben zu diesem Instrument bei diesem Broker. Sie werden nur ganz gelöscht, weil sie keinen Zeitbezug haben (Hinweis 2 aus `requirements-7.md`).
+- Ist die Tabelle nach einem Broker gefiltert, löscht „Alle Daten dieses Brokers löschen …“ alle seine Reihen und Kontraktdaten. Der Broker ist danach nicht mehr vorhanden (5.1). War er als „Broker für Testläufe“ gewählt, ist danach keiner gewählt.
+- Jede Rückfrage nennt, was gelöscht wird (Broker, Instrument, Daten, Zeitraum, Zahl der Kerzen oder Ticks beziehungsweise der Reihen) und dass sich das Löschen nicht rückgängig machen lässt. Gelöscht wird erst nach Bestätigung, in einer Transaktion.
+- Während eines Imports wird Löschen mit einer Meldung abgelehnt, die den Grund nennt. Ab `wp03` gilt dasselbe, solange ein Backtest läuft, ab `wp04`, solange eine Einzelschritt-Sitzung besteht (Hinweis 3 aus `requirements-7.md`). Grund: Ein Testlauf ist durch seine Kursdaten bestimmt (E7); ändern sie sich während des Laufs, hinge sein Ergebnis vom Zeitpunkt des Löschens ab.
+- Gespeicherte Backtests bleiben beim Löschen unverändert, sie enthalten ihr Ergebnis (6.5). Ihr Chart liest Kerzen aus dem Datenbestand (6.4); fehlen sie, zeigt er an ihrer Stelle den Satz, dass die Kursdaten gelöscht sind. Testkonten enthalten keine Kursdaten (6.2) und sind nicht betroffen. Welchen Broker ein Testlauf verwendet, nachdem sein Broker gelöscht wurde, regelt 5.1 (Hinweis H2 aus `requirements-8.md`).
 
 ## 6. Strategietester
 
@@ -230,7 +257,7 @@ Gespeichert wird nur auf ausdrücklichen Befehl (req-test-022): Kopie der Strate
 
 ## 7. Web-API
 
-Öffentliche Web-API von pipwerk replay unter `/api/v1/` (req-system-009), beschrieben unter `contracts/api/pipwerk-replay/v1/openapi.json`: Strategien des Objektverzeichnisses lesen, Testkonten, Vorbereitung eines Testlaufs (benötigte Kursdaten, Stand), Einzelschritt-Sitzungen mit den Befehlen aus 6.3, Backtests (starten, Fortschritt, abbrechen, Ergebnis), gespeicherte Backtests, Datenbestand (Reihen gefiltert und seitenweise, Einzelheiten einer Reihe mit Lücken und Angaben zum Instrument, Import mehrerer Dateien, Broker für Testläufe). Interne Endpunkte für Einstellungen wie in pipwerk Studio. Die Endpunkte im Einzelnen legen die Aufträge fest.
+Öffentliche Web-API von pipwerk replay unter `/api/v1/` (req-system-009), beschrieben unter `contracts/api/pipwerk-replay/v1/openapi.json`: Strategien des Objektverzeichnisses lesen, Testkonten, Vorbereitung eines Testlaufs (benötigte Kursdaten, Stand), Einzelschritt-Sitzungen mit den Befehlen aus 6.3, Backtests (starten, Fortschritt, abbrechen, Ergebnis), gespeicherte Backtests, Datenbestand (Reihen gefiltert und seitenweise, Einzelheiten einer Reihe mit Lücken und Angaben zum Instrument, Import je Datei, Löschen nach 5.5 mit vorheriger Angabe dessen, was gelöscht würde, Broker für Testläufe). Interne Endpunkte für Einstellungen wie in pipwerk Studio. Die Endpunkte im Einzelnen legen die Aufträge fest.
 
 ## 8. Oberfläche
 
@@ -263,7 +290,7 @@ Kopfzeile mit Menü (Testlauf, Datenbestand, Testkonten, Gespeicherte Backtests)
 | Einzelschritt-Test | Strategie, Chart je Zeiteinheit der Strategie, Konto und Orders, Eigenschaften; Steuerung mit Start, Einzelschritt, Nächste handelnde Stelle, Zum Testbeginn, Manuell auslösen, Ende; Haltepunkte; Protokoll | req-test-004, req-test-008, req-test-010 bis req-test-015 |
 | Backtest | Fortschritt mit Abbrechen; Ergebnis mit Kennzahlen, Kontoentwicklung und Rückgang, Chart, Reitern Trades und Abgelehnte Orders; Speichern | req-test-004, req-test-020 bis req-test-022 |
 | Gespeicherte Backtests | Liste, Löschen nach Rückfrage, Vergleich von zwei oder mehr, getestete Fassung nur lesend | req-test-022 |
-| Datenbestand | nach dem Abnahmebericht `wp02`, M1 bis M4: oben eine Leiste mit „Datei importieren …“ und dem Auswahlfeld „Broker für Testläufe“ (5.1); darunter eine kompakte Tabelle, eine Zeile je Reihe mit Broker, Instrument, Daten, Zeitraum und Anzahl der Lücken, filterbar und seitenweise; Klick auf eine Zeile zeigt alle Lücken und die Kontraktdaten (Angaben zum Instrument) bei diesem Broker. Liegen für ein Instrument eines Brokers nur Kontraktdaten vor, zeigt die Tabelle dafür eine Zeile mit Daten „Kontraktdaten“. Dialog „Datei importieren“ für mehrere Dateien nach 5.3. Kein Abruf (5.4) | req-system-025 bis req-system-027 |
+| Datenbestand | nach dem Abnahmebericht `wp02`, M1 bis M4: oben eine Leiste mit „Datei importieren …“ und dem Auswahlfeld „Broker für Testläufe“ (5.1); darunter eine kompakte Tabelle, eine Zeile je Reihe mit Broker, Instrument, Daten, Zeitraum und Anzahl der Lücken, filterbar und seitenweise; Klick auf eine Zeile zeigt alle Lücken und die Kontraktdaten (Angaben zum Instrument) bei diesem Broker. Liegen für ein Instrument eines Brokers nur Kontraktdaten vor, zeigt die Tabelle dafür eine Zeile mit Daten „Kontraktdaten“. Dialog „Datei importieren“ für beliebig viele Dateien nach 5.3, mit Stand je Datei und „Abbrechen“. Nach dem Abnahmebericht `wp02`, Versuch 2, M5: in den Einzelheiten einer Reihe „Löschen …“ und „Kontraktdaten löschen …“, bei einem Filter nach Broker „Alle Daten dieses Brokers löschen …“, jeweils mit Rückfrage (5.5). Kein Abruf (5.4) | req-system-025 bis req-system-027 |
 | Testkonten | anlegen, bearbeiten, speichern, löschen; Standard-Testkonto nach 6.2 | req-test-005 |
 
 ### 8.4 Festlegungen
@@ -297,6 +324,8 @@ Bedienerführung wie im Prototyp: Jeder leere Zustand nennt den nächsten Schrit
 - Abwicklung (pytest): jeder Ordertyp, Stop-Loss und Take-Profit mit und ohne Sprung, Weg innerhalb einer Kerze M1, jeder Ablehnungsgrund, Kosten, Margin, Konto aufgebraucht, Teilschließung nach req-fach-021.
 - Datenbestand (pytest): Import JSON und CSV mit gültigen und fehlerhaften Dateien, Ersetzen, Lücken und Handelspausen, Migration.
 - Datenbestand (pytest): Import mehrerer Dateien in einem Vorgang mit gemeinsamem Broker und gemeinsamer Zeitzone, eine abgelehnte Datei neben übernommenen.
+- Datenbestand (pytest): Lücken nach 5.2 mit Feiertagen innerhalb eines abgedeckten Zeitraums und Wochenenden zwischen abgedeckten Zeiträumen; Löschen einer Reihe, eines Zeitraums, der Kontraktdaten und aller Daten eines Brokers mit dem „Broker für Testläufe“; Ablehnung während eines Imports.
+- Oberfläche und Browsertests: Import vieler Dateien in einem Vorgang, deren Größe zusammen über der Grenze je Datei liegt, mit Stand je Datei und „Abbrechen“; Löschen mit Rückfrage.
 - Abruf: `pipwerk-fetch-mt5` mit einer nachgebildeten Schnittstelle von `MetaTrader5`, darunter Dateinamen, Broker als Name des Handelsservers, Teile mit Grund und Exitcode; die geschriebenen Dateien lassen sich ohne Änderung importieren. Gegen eine echte Installation von MetaTrader 5 prüft der Auftraggeber in der Abnahme.
 - Testfälle: `str-01` und `str-03` laufen im Backtest über mitgelieferte Kursdaten mit erwarteten Trades; Einzelschritt-Test ohne „Manuell auslösen“ und Backtest liefern für denselben Zeitraum dieselben Trades (E7). Eine Strategie mit Auslöser `Manuell` wird zum Beginn des Testzeitraums, zu einem eingegebenen Zeitpunkt und mit „Manuell auslösen“ geprüft; `Manuell` in einer Verwaltung ergibt den Befund `trigger.manual_in_management` (3.6).
 - Backend, Oberfläche, Browsertests wie in pipwerk Studio; Einzelheiten nach Abschnitt 8.
@@ -304,7 +333,8 @@ Bedienerführung wie im Prototyp: Jeder leere Zustand nennt den nächsten Schrit
 ## 11. Sicherheit
 
 - Ohne Anmeldung, nur im vom Betreiber kontrollierten Netz (req-system-011), wie pipwerk Studio. `pipwerk-fetch-mt5` hat keinen Server und öffnet keinen Port (req-system-027); es liest nur aus MetaTrader 5 und schreibt nur in das angegebene Zielverzeichnis.
-- Hochgeladene Dateien (Import, Strategie): Größe je Datei, Zahl der Dateien und Gesamtgröße eines Vorgangs begrenzt (5.3), streng geprüft, nie ausgeführt; Pydantic mit Ablehnung zusätzlicher Felder. Dateinamen werden nur gelesen, nie als Pfad verwendet.
+- Hochgeladene Dateien (Import, Strategie): Größe und Zeilen je Datei begrenzt, eine Importdatei je Anfrage (5.3), streng geprüft, nie ausgeführt; Pydantic mit Ablehnung zusätzlicher Felder. Dateinamen werden nur gelesen, nie als Pfad verwendet.
+- Löschen nur nach Bestätigung, abgelehnt während eines Imports und ab `wp03` während eines Testlaufs (5.5).
 - Ausdrücke nur über den Syntaxbaum ausgewertet; Grenzen für Schritte je Auswertung (3.4), Zahl gleichzeitiger Sitzungen und Backtests, Umfang von Antworten.
 - Texte und Namen des Anwenders setzt die Oberfläche als Text, nie als HTML.
 
@@ -312,7 +342,8 @@ Bedienerführung wie im Prototyp: Jeder leere Zustand nennt den nächsten Schrit
 
 - technische Dokumentation: `docs/technical/pipwerk-replay.md` (neu), `docs/technical/pipwerk-marketdata.md` (neu), `docs/technical/pipwerk-fetch-mt5.md` (neu), `docs/technical/pipwerk-domain.md` (Ausführung, Indikatoren, `ZigZag`, Auslöser `Manuell`, Entfall von `flow.set_parameter`), `docs/technical/pipwerk-studio.md` (gemeinsame Bausteine), Beschreibungen unter `contracts/`
 - Anwenderdokumentation von pipwerk Studio: Auslöser „Manuell“, kein Element „Parameter setzen“
-- Anwenderdokumentation `docs/user/pipwerk-replay.md`: Testlauf vorbereiten, Testkonten, Kursdaten und Datenbestand mit Import mehrerer Dateien, Einzelschritt-Test, Backtest, Ergebnis, Speichern und Vergleich, Ablehnungsgründe in Händlersprache; Einrichtung und Aufruf von `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 und Import seiner Dateien
+- Anwenderdokumentation `docs/user/pipwerk-replay.md`: Testlauf vorbereiten, Testkonten, Kursdaten und Datenbestand mit Import beliebig vieler Dateien mit Stand und Abbrechen, Lücken und Zeiten ohne Handel, Löschen (auch, dass ein Broker sich aus seinen Daten ergibt und mit ihnen verschwindet), Einzelschritt-Test, Backtest, Ergebnis, Speichern und Vergleich, Ablehnungsgründe in Händlersprache; Einrichtung und Aufruf von `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 und Import seiner Dateien. Nach dem Abnahmebericht `wp02`, Versuch 2, M1: Die Anwenderdokumentation beschreibt nur die Schritte des Anwenders. Zu `uv` steht ein Satz, was es ist und wozu es gebraucht wird, und die Installation unter Windows mit Befehl und Prüfung (`uv --version`).
+- Nach M2: `docs/technical/pipwerk-fetch-mt5.md` beschreibt vollständig, was auf dem Rechner von MetaTrader 5 installiert wird und läuft: `uv`, Python mit Version, jedes Paket mit Version und Zweck (darunter `MetaTrader5` von MetaQuotes und seine Abhängigkeiten), Ablageorte, Zwischenspeicher, Zeitpunkt und Dauer des Prozesses, Netzzugriffe, Entfernen. Versionen nach der festgeschriebenen Sperrdatei der Komponente. Das gehört nicht in die Anwenderdokumentation.
 - Glossar: Testlauf, Testkonto, interne Abwicklung, Ablehnung, handelnde Stelle, Haltepunkt, Datenbestand historischer Kursdaten, Abruf, Quelle
 
 ## 13. Entscheidungen zu Hinweisen der QA und Vorschläge
@@ -330,6 +361,8 @@ Hinweise aus `requirements-4.md` und `requirements-5.md`:
 
 Hinweise aus `requirements-6.md` (Nachprüfung nach der Abnahme von `wp02`): H4 Zielverzeichnis von `pipwerk-fetch-mt5` als Angabe beim Aufruf (5.4); H2 Inhalt der Meldung bei fehlenden Daten (5.4). H1, H3 und H5 betreffen die Dokumente des Auftraggebers und gehen an den Projektleiter.
 
+Hinweise aus `requirements-7.md` und `requirements-8.md` (nach der Abnahme von `wp02`, Versuch 2): Hinweis 1 und H1 Reihe je Broker (5.1); Hinweis 2 Kontraktdaten nur ganz (5.5); Hinweis 3 Sperre des Löschens (5.5); Hinweis 4 Abbrechen des Vorgangs (5.3); Hinweis 5 keine Grenze für Zahl und Gesamtgröße; die Grenze je Datei bleibt nur bis zum zurückgestellten Arbeitspaket für große Dateien (5.3); Hinweis 6 Glossar, erledigt vom Projektleiter (Commit `a81556c`); H2 offener Punkt, die Folgen für Testkonten und gespeicherte Backtests stehen in 5.5.
+
 Entscheidungen des Auftraggebers zu Frage [backtest-01](questions/backtest-01.md) vom 2026-10-21:
 
 1. Auslöser `Manuell` (bisher „Start von Hand“): nur im Hauptablauf, im Testlauf nach req-test-015. Umgesetzt in 3.4, 3.6, 6.1, 6.3 und 8.
@@ -346,4 +379,5 @@ Entscheidungen des Auftraggebers zu Frage [backtest-01](questions/backtest-01.md
 | 2026-10-21 | Hinweise aus [specification-2.md](reviews/specification-2.md) (bestanden) ohne weitere Prüfung eingearbeitet: 1 Stelle der eingefügten Auswertung `Manuell` (6.3); 2 Feld Zeitzone beim CSV-Import und Wechsel der Sommerzeit (5.1, 8.3); 4 Kurse beim Schließen nach Richtung der Position (4.2). Hinweis 3 geht mit der Präsentation an den Auftraggeber, Hinweis 5 verworfen (Vorbelegung ist änderbar). |
 | 2026-10-23 | Nach der Abnahme von `wp02` (Abnahmebericht `wp02/acceptance/1.md`, Mängel M1 bis M4) und den geänderten Anforderungen req-system-026, req-system-027 und req-test-003 (Prüfung bestanden in [requirements-6.md](reviews/requirements-6.md)): `pipwerk-fetch-mt5` als Programm ohne Server und Port (E5, 5.4, 11); keine Beschaffung aus pipwerk replay bis pipwerk relay (5.4, 6.1, 7, 8.3, 8.4 Punkt 6); Broker als Name des Handelsservers und „Broker für Testläufe“ (5.1); Import mehrerer Dateien (5.3, 10, 11); Ansicht „Datenbestand“ und Dialog „Datei importieren“ nach M1 bis M3 (8.3), Prototyp nach [prototype/order-03.md](prototype/order-03.md) (8.1); Hinweise H2 und H4 aus `requirements-6.md` (5.4). |
 | 2026-10-23 | Hinweise aus [specification-3.md](reviews/specification-3.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Ablehnung bei Fehler in Format oder Inhalt, H2 erkannte Dateinamen, H3 Vorbelegung bei verschiedenen Brokern (alle 5.3). H4 bleibt: Der Ersatz nach 5.1 ist eine Festlegung der Spezifikation; der Prototyp muss ihn nicht zeigen. |
+| 2026-10-23 | Nach der Abnahme von `wp02`, Versuch 2 (Abnahmebericht `wp02/acceptance/2.md`, Mängel M1, M2, M3, M5, M6) und den geänderten Anforderungen req-system-025 und req-system-026 (Prüfung bestanden in [requirements-7.md](reviews/requirements-7.md) und [requirements-8.md](reviews/requirements-8.md)): Broker und Reihe (5.1); Lücken ohne Zeiten ohne Handel, auch Feiertage (5.2, M6); Import beliebig vieler Dateien, je Datei eine Anfrage, mit Stand und Abbrechen, Grenze nur je Datei (5.3, 11, M3); Löschen (5.5, 7, 8.3, 11, M5); Tests (10); Anwenderdokumentation zu `uv` und technische Dokumentation von `pipwerk-fetch-mt5` (12, M1, M2); Hinweise aus `requirements-7.md` und `requirements-8.md` (13). M4 (große Dateien) vom Auftraggeber zurückgestellt; die Grenze je Datei bleibt bis dahin (5.3). |
 | 2026-10-23 | „Abruf“ statt „Beschaffung“, nur Bezeichnung (Status, 1, E5, 5.1, 5.4, 8.3, 8.4 Punkt 6, 10, 12). Folgt aus der Entscheidung des Auftraggebers vom 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`, Nachprüfung bestanden in `relay/reviews/requirements-4.md`). |
