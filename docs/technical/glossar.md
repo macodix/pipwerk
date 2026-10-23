@@ -79,7 +79,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Nachrichtensystem | Produktname pipwerk relay. Überträgt Nachrichten zwischen eigenständig laufenden Komponenten, auch zwischen verschiedenen Rechnern (req-system-005, Anforderungen an das Nachrichtensystem). |
 | Nachricht | Einheit, die über das Nachrichtensystem übertragen wird, mit Nachrichten-ID, Absender, Adressat, Priorität, Nachrichtenart, Inhalt und Bezug-Nachrichten-ID (Anforderungen an das Handelssystem req-grund-004). |
 | Relay | Teil des Nachrichtensystems, der auf jedem Rechner läuft, auf dem eine Komponente Nachrichten sendet oder empfängt. Eine Komponente tauscht Nachrichten nur mit dem Relay ihres Rechners aus (req-relay-001, req-relay-002). |
-| Übertragungsweg | Austauschbarer Weg, über den Relays einander Nachrichten übertragen, zum Beispiel Matrix oder Dateien (req-relay-003, req-relay-004). |
+| Übertragungsweg | Austauschbarer Weg, über den Nachrichten zwischen Komponente und Relay und zwischen Relays übertragen werden, zum Beispiel Matrix oder Dateien (req-relay-002, req-relay-003, req-relay-004). |
 | Adressbuch | Liste eines Relays mit den Relays, die es kennt, je Relay mit dem Übertragungsweg, über den es erreichbar ist (req-relay-006). |
 | Standard-Relay | Relay, an das ein Relay eine Nachricht weitergibt, wenn das zuständige Relay nicht in seinem Adressbuch steht (req-relay-006). |
 | Laufende Komponente | Eine Komponente, die auf einem Rechner läuft und Nachrichten über das Nachrichtensystem sendet oder empfängt. Eine Komponente kann mehrfach laufen; jede laufende Komponente hat eine eigene Adresse (req-relay-005). Nicht zu verwechseln mit einer Instanz im Strategiedesigner. |
@@ -127,6 +127,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-23 | Übertragungsweg: auch zwischen Komponente und Relay. Folgt aus der Festlegung des Auftraggebers vom 2026-10-23 zu req-relay-002 und req-relay-003 (Abstimmung der Präsentation `relay/presentations/requirements-1.html`). |
 | 2026-10-23 | Datenbestand historischer Kursdaten: Löschen nach Rückfrage; Import: beliebig viele Dateien, Fortschritt und Abbrechen. Folgt aus den Entscheidungen des Auftraggebers vom 2026-10-23 (req-system-025, req-system-026, Abnahme `backtest/wp02`, Versuch 2). Hinweis 6 aus `development/backtest/reviews/requirements-7.md`. |
 | 2026-10-23 | Einträge Laufende Komponente, Adresse, pipwerk-Netz und Betreiber neu; Beschaffung ohne Strategietester. Folgt aus den Entscheidungen des Auftraggebers vom 2026-10-23 zu B1 bis B3 und H5 aus `development/relay/reviews/requirements-1.md` (req-relay-005, req-relay-007, Anforderungen an das Handelssystem req-grund-004). |
 | 2026-10-23 | Einträge Nachrichtensystem, Nachricht, Relay, Übertragungsweg, Adressbuch und Standard-Relay neu, Beschaffung um pipwerk relay ergänzt. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-23 (Anforderungen an das Nachrichtensystem, Anforderungen an das Handelssystem req-grund-004; Hinweis H5 in `development/relay/reviews/requirements-1.md`). |
