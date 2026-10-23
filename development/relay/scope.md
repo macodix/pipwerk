@@ -39,3 +39,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Nachprüfung [requirements-3.md](reviews/requirements-3.md) bestanden. Spezifikation geprüft und bestanden in [specification-3.md](reviews/specification-3.md). Präsentation [specification-1.html](presentations/specification-1.html) zur Bestätigung durch den Auftraggeber.
 
 2026-10-23: Abstimmung der Präsentation [specification-1.html](presentations/specification-1.html): Dateien als Anlage oder über einen eigenen Weg für Dateien (req-relay-012 neu), „Abruf“ statt „Beschaffung“ in Anforderungen, Glossar und `scope.md`, Festlegungen des Auftraggebers. Nachprüfung der geänderten Stellen mit `check`, danach Spezifikation anpassen.
+
+2026-10-23: Empfangsbestätigung auf Wunsch des Absenders (req-relay-013 neu), Festlegung des Auftraggebers bei der Abstimmung von [specification-1.html](presentations/specification-1.html). Nachprüfung mit `check`, danach Spezifikation ergänzen.

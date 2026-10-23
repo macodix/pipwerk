@@ -5,7 +5,7 @@
 - status: `draft`
 - zweck: Anforderungen an das Nachrichtensystem (pipwerk relay): Weg einer Nachricht vom Absender zum Empfänger, Übertragungswege, Adressierung
 - zuletzt aktualisiert: `2026-10-23`
-- abgestimmt: Festlegungen des Auftraggebers im Chat am 23. Oktober 2026. Prüfung durch die QA bestanden ([requirements-2.md](../../../development/relay/reviews/requirements-2.md)), [Präsentation](../../../development/relay/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. req-relay-012 und „Abruf“ statt „Beschaffung“: Festlegung des Auftraggebers im Chat am 23. Oktober 2026, Prüfung durch die QA ausstehend.
+- abgestimmt: Festlegungen des Auftraggebers im Chat am 23. Oktober 2026. Prüfung durch die QA bestanden ([requirements-2.md](../../../development/relay/reviews/requirements-2.md)), [Präsentation](../../../development/relay/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. req-relay-012, req-relay-013 und „Abruf“ statt „Beschaffung“: Festlegung des Auftraggebers im Chat am 23. Oktober 2026, Prüfung durch die QA ausstehend.
 
 ## 1. Zweck und Abgrenzung
 
@@ -85,6 +85,12 @@ Zu einer Nachricht können Dateien gehören. pipwerk relay überträgt sie auf z
 
 Beide Arten stehen zur Verfügung. Wann welche Art verwendet wird und über welche Wege Dateien übertragen werden, legt die Spezifikation fest. In beiden Fällen erkennt der Empfänger, ob eine Datei vollständig und unverändert angekommen ist (req-relay-010).
 
+### req-relay-013 -- Empfangsbestätigung
+
+Der Absender legt je Nachricht fest, ob er eine Empfangsbestätigung will. Dann schickt die empfangende laufende Komponente sie automatisch über pipwerk relay an den Absender, sobald sie die Nachricht gespeichert hat. Die Empfangsbestätigung nennt die Nachrichten-ID der bestätigten Nachricht. Bleibt sie innerhalb einer Frist aus, meldet der Absender das dem Anwender.
+
+Bei einer Anfrage ist die Antwort die Bestätigung. Ob die Komponente eine Nachricht abholt, prüft das Relay nicht; es meldet nur, was es nicht zustellen kann (req-relay-008).
+
 ## 3. Erster Anwendungsfall
 
 ### req-relay-007 -- Abruf von Kursdaten
@@ -115,3 +121,4 @@ Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit
 | 2026-10-23 | req-relay-007: Anwendungsfall Beschaffung ohne Anschluss des Strategietesters; dieser gehört zum Vorhaben `backtest`. Entscheidung des Auftraggebers im Chat am 2026-10-23 (`relay`, B1). |
 | 2026-10-23 | req-relay-012 neu: Dateien als Anlage oder über einen eigenen Weg für Dateien. req-relay-005, req-relay-007: „Abruf“ statt „Beschaffung“. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
 | 2026-10-23 | req-relay-002, req-relay-003: Auch zwischen Komponente und Relay laufen Nachrichten über einen austauschbaren Übertragungsweg. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung der Präsentation `relay/presentations/requirements-1.html`). |
+| 2026-10-23 | req-relay-013 neu: Empfangsbestätigung auf Wunsch des Absenders. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
