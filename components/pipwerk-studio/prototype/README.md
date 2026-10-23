@@ -35,6 +35,7 @@ Die Tests öffnen die gebaute Datei über `file://`, also erst `npm run build`. 
 | `layout.spec.ts` | sechs Fenstergrößen mit geöffneter „EMA-Trendfolge“ |
 | `features.spec.ts` | Bibliothek mit den Gruppen, Erklärungen, Namen, Parameter, Zeichenfläche mit Ein- und Ausblenden weiterer Verwendungen, Assistent, Befunde, Regeln, Vorlagen, Öffnen und Speichern, Sprache, Einstellungen |
 | `assistant.spec.ts` | Auftrag 04: in allen sechs Fenstergrößen nach „Neue Strategie“ die Elementbibliothek über jeden Weg öffnen, bei laufendem Assistenten und nach seinem Verlassen, ein Klick fügt ein Element ein. Der gesamte sichtbare Text, die Beschriftungen für Bildschirmleser und die Erklärungen in Deutsch und Englisch nach „Neue Strategie“ und in jedem Schritt: „geführt“, „Aufbau“ und „guided“ kommen nicht vor, „Assistent“ beziehungsweise „Assistant“ kommt vor. Der Quelltext unter `src/` hat außerhalb von Kommentaren keinen solchen Text |
+| `buttons.spec.ts` | Auftrag 04, Punkt 3: in jeder der sechs Fenstergrößen nach „Neue Strategie“, in den fünf Schritten des Assistenten (Schritt 3 auch mit zwei Indikatoren) und nach „Ohne Assistent weiterarbeiten“ wird jede sichtbare, aktivierte Schaltfläche und jeder Reiter einzeln auf frischem Stand angeklickt, bis 1279 Pixel auch die Einträge des Menüs „Menü“. Danach muss sich der Inhalt der Seite geändert haben. Ausnahmen, im Test benannt: die Statusanzeige der Strategie, ein schon gewählter Reiter und ein schon gewählter Eintrag einer Auswahl (Ausrichtung, Auslöser). „Zum Anfang“ und „Neu anordnen“ ändern bei leerer Fläche nichts; ihre Funktion belegt ein eigener Test je Größe mit verschobener Ansicht und verschobenem Element |
 | `screenshots.spec.ts` | Bildschirmbilder |
 
 Die Aufbautests geben keinen Ausdruck als Text ein. Der Vergleich mit dem Testfall nimmt die Strategie, die im Browser gespeichert wurde, und den mitgelieferten Testfall, ersetzt die internen Kennungen durch Namen und vergleicht Parameter, Elemente, Belegungen, Ausdrücke, Regeln und Verbindungen. Die Lage der Instanzen und das Element der ersten Verwendung gehören nicht zum Vergleich.
@@ -156,7 +157,7 @@ Der Prototyp setzte das schon um, es war nichts anzupassen. Eine Instanz, die nu
 
 ### Übrige Schaltflächen (Punkt 3)
 
-Alle Schaltflächen nach „Neue Strategie“, nach Verlassen des Assistenten und in seinen Schritten 1 bis 4 wurden in 390 × 844 durchgeklickt (Schritt 5 und die übrigen Größen nicht Schaltfläche für Schaltfläche): Keine war ohne Funktion (die Statusanzeige der Strategie und der gerade gewählte Reiter ändern nichts, weil sie schon im gezeigten Zustand sind). Die übrigen Größen deckt `assistant.spec.ts` für Bibliothek und Assistent ab.
+`buttons.spec.ts` klickt in allen sechs Größen, in allen fünf Schritten und nach dem Verlassen des Assistenten jede Schaltfläche und jeden Reiter an. Keine Schaltfläche war ohne Funktion. Der Test fand aber einen Mangel der Ansicht: In 1180 × 820 lagen die Indikatorkarten, die der Assistent in Schritt 3 anlegt, links unter der Elementbibliothek, und ihre Schaltfläche „alle … anzeigen“ war nicht zu erreichen. Der Assistent macht jetzt jedes neu angelegte Element sichtbar (`lastAdded`, wie beim Einfügen aus der Bibliothek). Gewollte Ausnahmen (schon gezeigter Zustand) stehen im Test.
 
 ## Zuordnung zu den Mängeln der Abnahme
 

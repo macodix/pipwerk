@@ -58,7 +58,7 @@ export function Wizard() {
       id = el.id;
     });
     patch({ trigger: id });
-    setState({ sel: { k: 'el', id } });
+    setState({ sel: { k: 'el', id }, lastAdded: id });
   };
 
   const addIndicator = (type: string) => {
@@ -75,6 +75,7 @@ export function Wizard() {
       id = el.id;
     });
     patch({ inds: [...(getState().wizard?.inds ?? []), id] });
+    setState({ lastAdded: id });
   };
 
   const objects = s.els.filter((e) => isObjectEl(e.type));
@@ -105,7 +106,7 @@ export function Wizard() {
       if (t) st.conns.push({ from: t.id, out: 'weiter', to: el.id });
     });
     patch({ cond: id });
-    setState({ sel: { k: 'el', id } });
+    setState({ sel: { k: 'el', id }, lastAdded: id });
   };
 
   const applyOrder = () => {
@@ -127,7 +128,7 @@ export function Wizard() {
       }
     });
     patch({ order: id });
-    setState({ sel: { k: 'el', id }, wizard: null });
+    setState({ sel: { k: 'el', id }, wizard: null, lastAdded: id });
     runCheck();
     toast('Der Assistent ist fertig. Die Prüfung zeigt, was noch fehlt.', 'The assistant is done. The check shows what is still missing.');
   };
