@@ -19,8 +19,10 @@ Der Anwendungsfall Beschaffung baut auf dem Datenbestand, dem Import und `pipwer
 
 ## Offene Punkte des Auftraggebers
 
-Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../docs/design/requirements/anforderungen-nachrichtensystem.md#4-offene-punkte): unzustellbare Nachricht, Schutz gegen Mitlesen und Fälschung, Laufzeiten, Form der Adresse.
+Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../docs/design/requirements/anforderungen-nachrichtensystem.md#4-offene-punkte): Laufzeiten, Prioritäten und ihre Wirkung, Zeitpunkt und Verfahren der Verschlüsselung.
 
 ## Stand
 
 2026-10-23: Phase 1. Vorhaben angelegt, Anforderungen an das Nachrichtensystem aus den Festlegungen des Auftraggebers im Chat am 23. Oktober 2026 erstellt. Offene Punkte werden mit dem Auftraggeber geklärt, danach Prüfung mit `check`.
+
+2026-10-23: Offene Punkte Adresse, Adressbuch, unzustellbare Nachricht, Schutz gegen Fälschung und Verschlüsselung vom Auftraggeber im Chat entschieden.

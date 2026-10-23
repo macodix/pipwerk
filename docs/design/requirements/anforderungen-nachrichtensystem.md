@@ -38,15 +38,31 @@ Die ersten Übertragungswege sind:
 - Matrix über einen eigenen Matrix-Server des Betreibers. Der Anwender kann den Austausch der Nachrichten im Chat mitverfolgen.
 - Dateien
 
-### req-relay-005 -- Adressbuch und Standard-Relay
+### req-relay-005 -- Adresse
 
-Jedes Relay hat ein Adressbuch. Es nennt für einen Adressaten das zuständige Relay und den Übertragungsweg, über den dieses erreichbar ist. Zuständig ist das Relay auf dem Rechner des Empfängers.
+Eine Komponente kann mehrfach laufen, auch auf verschiedenen Rechnern. Der Name der Komponente genügt deshalb nicht als Adresse. Jede laufende Instanz einer Komponente hat eine eindeutige Adresse. Sie nennt den Namen der Instanz und das Relay, über das die Instanz erreichbar ist, zum Beispiel `pipwerk-trader.pipwerk-net-01.pipwerk-relay-name`.
 
-Steht ein Adressat nicht im Adressbuch, gibt das Relay die Nachricht an sein Standard-Relay weiter. Dieses verfährt nach seinem eigenen Adressbuch. Eine Nachricht kann so über mehrere Relays laufen.
+### req-relay-006 -- Adressbuch und Standard-Relay
 
-### req-relay-006 -- Eindeutige Adressierung
+Jedes Relay hat ein Adressbuch. Es enthält nur Relays: je Relay den Übertragungsweg, über den es erreichbar ist. Welches Relay für eine Nachricht zuständig ist, ergibt sich aus der Adresse (req-relay-005).
 
-Eine Komponente kann mehrfach laufen, auch auf verschiedenen Rechnern. Der Name der Komponente genügt deshalb nicht als Adresse. Der Adressat einer Nachricht bestimmt den Empfänger eindeutig, auch wenn dieselbe Komponente mehrfach läuft.
+Steht das zuständige Relay nicht im Adressbuch, gibt das Relay die Nachricht an sein Standard-Relay weiter. Dieses verfährt nach seinem eigenen Adressbuch. Eine Nachricht kann so über mehrere Relays laufen.
+
+### req-relay-008 -- Unzustellbare Nachricht
+
+Kann eine Nachricht nicht zugestellt werden, zum Beispiel weil der Adressat unbekannt oder das zuständige Relay nicht erreichbar ist, schickt das Relay, bei dem die Zustellung scheitert, dem Absender eine Meldung mit dem Grund. Der Absender zeigt sie dem Anwender an.
+
+### req-relay-009 -- Priorität
+
+Nachrichten haben unterschiedliche Prioritäten (Handelssystem req-grund-004). Die Priorität kann Auswirkungen auf den Versand haben. Welche Prioritäten es gibt und wie sie wirken, ist offen.
+
+### req-relay-010 -- Schutz gegen Fälschung und Veränderung
+
+Das empfangende Relay erkennt eine gefälschte oder unterwegs veränderte Nachricht und stellt sie nicht zu. Vorschlag des Auftraggebers: Prüfsummen.
+
+### req-relay-011 -- Verschlüsselung
+
+Nachrichten werden im ersten Entwicklungsstand nicht verschlüsselt. Der Aufbau darf eine spätere Verschlüsselung nicht verhindern.
 
 ## 3. Erster Anwendungsfall
 
@@ -64,13 +80,13 @@ Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit
 
 ## 4. Offene Punkte
 
-- Unzustellbare Nachricht: Verhalten, wenn der Adressat unbekannt oder das zuständige Relay nicht erreichbar ist. Vorschlag des Projektleiters: Das Relay, bei dem die Zustellung scheitert, schickt dem Absender eine Meldung mit dem Grund. Offen.
-- Schutz der Nachrichten gegen Mitlesen und Fälschung auf Übertragungswegen über fremde Dienste, zum Beispiel E-Mail. Offen.
-- Hinnehmbare Laufzeiten einer Nachricht je Zweck. Offen.
-- Form der Adresse nach req-relay-006, zum Beispiel ein in der Konfiguration festgelegter Name je laufender Instanz zusammen mit den Aufgaben, die sie bedient. Offen.
+- Hinnehmbare Laufzeiten einer Nachricht je Zweck. Offen, solange nicht feststeht, wo und wie das Handelssystem läuft.
+- Prioritäten und ihre Wirkung auf den Versand (req-relay-009). Offen.
+- Verschlüsselung (req-relay-011): Zeitpunkt und Verfahren. Offen.
 
 ## 5. Änderungsnachweis
 
 | Datum | Änderung |
 | --- | --- |
 | 2026-10-23 | Erstanlage: Relay je Rechner, Übergabe und Zustellung, austauschbare Übertragungswege, erste Übertragungswege Matrix und Dateien, Adressbuch und Standard-Relay, eindeutige Adressierung, Beschaffung als erster Anwendungsfall. Festlegungen des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | Adresse je Instanz mit Name der Instanz und Relay, Adressbuch nur mit Relays (req-relay-005, req-relay-006), unzustellbare Nachricht (req-relay-008), Priorität (req-relay-009), Schutz gegen Fälschung (req-relay-010), keine Verschlüsselung im ersten Entwicklungsstand (req-relay-011). Festlegungen des Auftraggebers im Chat am 2026-10-23. |
