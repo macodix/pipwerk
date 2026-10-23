@@ -1,9 +1,9 @@
 """The own interface to MetaTrader 5 (specification backtest 10, order 03 point 3).
 
 All access to the package ``MetaTrader5`` goes through ``TerminalGateway``. The program
-(``service.py``) knows only this interface, so the tests use a replica: ``mt5_gateway.py``
-translates the interface to the real package, ``fake_source.py`` implements it with
-deterministic data.
+(``service.py``) knows only this interface: ``mt5_gateway.py`` translates it to the real
+package; the tests of the service use a gateway with scripted rows and the tests of the whole
+program a replica of the package itself (``tests/support.py``).
 
 Times at this interface are **server times**: naive ``datetime`` values (no ``tzinfo``) in the
 wall clock of the broker, exactly as MetaTrader 5 delivers them. The conversion to UTC is the

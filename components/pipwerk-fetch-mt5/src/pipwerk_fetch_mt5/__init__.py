@@ -1,7 +1,8 @@
-"""pipwerk-fetch-mt5: acquisition of historical market data from MetaTrader 5.
+"""pipwerk-fetch-mt5: historical market data from MetaTrader 5 as files for the import.
 
-A small program that runs on the machine of MetaTrader 5, reads candles, ticks and the
-details of an instrument and delivers them over an HTTP interface protected by a shared key
+A program the user calls on the machine of MetaTrader 5. It reads candles, ticks and the
+details of instruments and writes them as files in the JSON format of the import
+(``contracts/market-data/v1/``) into a directory. It has no server and opens no port
 (specification backtest, section 5.4). Documentation: ``docs/technical/pipwerk-fetch-mt5.md``.
 """
 

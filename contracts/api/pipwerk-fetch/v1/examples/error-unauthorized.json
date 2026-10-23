@@ -1,6 +1,0 @@
-{
-  "error": {
-    "code": "unauthorized",
-    "reason": "Schlüssel fehlt oder ist falsch"
-  }
-}

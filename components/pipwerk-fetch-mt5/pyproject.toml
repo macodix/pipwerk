@@ -1,13 +1,12 @@
 [project]
 name = "pipwerk-fetch-mt5"
 version = "0.1.0.dev0"
-description = "pipwerk-fetch-mt5: acquisition of historical market data from MetaTrader 5 over HTTP"
+description = "pipwerk-fetch-mt5: command line program that writes historical market data from MetaTrader 5 as files for the import"
 license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [
-    "fastapi>=0.141.1",
+    "pydantic==2.13.5",
     "tzdata>=2025.2",
-    "uvicorn>=0.54.0",
 ]
 
 [project.optional-dependencies]
@@ -20,13 +19,18 @@ mt5 = [
 [project.scripts]
 pipwerk-fetch-mt5 = "pipwerk_fetch_mt5.cli:main"
 
+[tool.uv.sources]
+# Only for the tests: the files the program writes must be importable with the library.
+pipwerk-marketdata = { path = "../../packages/market-data", editable = true }
+
 [dependency-groups]
 dev = [
-    "httpx2>=2.13.1",
     "jsonschema>=4.26.0",
     "mypy>=2.3.1",
+    "pipwerk-marketdata==0.1.0",
     "pytest>=9.1.1",
     "ruff>=0.16.9",
+    "sqlalchemy>=2.1.3",
     "types-jsonschema>=4.26.0.20261006",
 ]
 
@@ -48,9 +52,8 @@ target-version = "py314"
 select = ["E", "W", "F", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
-# S101: assert in tests; S104: the tests name 0.0.0.0 as a value, they bind nothing;
-# S105 and S106: made-up keys and passwords of the tests, no real secrets
-"tests/**" = ["S101", "S104", "S105", "S106"]
+# S101: assert in tests; S105 and S106: made-up passwords of the tests, no real secrets
+"tests/**" = ["S101", "S105", "S106"]
 
 [tool.mypy]
 strict = true

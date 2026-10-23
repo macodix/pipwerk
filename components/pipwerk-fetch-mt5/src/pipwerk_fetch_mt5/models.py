@@ -1,22 +1,18 @@
-"""Request and response models of the HTTP interface (version 1).
+"""The files the program writes and what it reports about them.
 
-Pydantic rejects additional fields everywhere (``extra="forbid"``). A request names the kind
-(``candles`` of a time unit, ``ticks``, or the details of the ``instrument``), the instrument
-and, for candles and ticks, the period ``[start, end)``. The answer is an envelope: ``file`` is
-the file in the JSON format of the import (``contracts/market-data/v1/``, the models are the
-ones of ``pipwerk_marketdata.documents`` written out here, so the program needs no other
-component), ``omitted`` names the rows that were left out and why. Times in the answer are UTC,
-ISO 8601 with milliseconds and a trailing ``Z``.
+The documents are the files in the JSON format of the import (``contracts/market-data/v1/``;
+the models are the ones of ``pipwerk_marketdata.documents`` written out here, so the program
+needs no other component). Pydantic rejects additional fields (``extra="forbid"``). A result
+(``...Response``) holds the document and ``omitted``, the rows that were left out and why. Times
+in the documents are UTC, ISO 8601 with milliseconds and a trailing ``Z``.
 """
 
 from __future__ import annotations
 
-from datetime import UTC
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
-from pipwerk_fetch_mt5.errors import ErrorCode
 from pipwerk_fetch_mt5.gateway import TimeUnit, Weekday
 
 #: The designation of an instrument and the name of a broker, as the schemas of the import
@@ -35,69 +31,9 @@ UtcTimestamp = Annotated[
     ),
 ]
 
-_FIRST_YEAR = 1970
-_LAST_YEAR = 2100
-
 
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
-
-# --- requests --------------------------------------------------------------------------------
-
-
-def _require_text(value: object) -> object:
-    """A time is given as text; a number is not taken for a moment (no implicit conversion)."""
-    if not isinstance(value, str):
-        raise ValueError("a time must be given as text")
-    return value
-
-
-#: A moment with a time zone, given as ISO 8601 text.
-Moment = Annotated[AwareDatetime, BeforeValidator(_require_text)]
-
-
-class _Period(_Strict):
-    """The period ``[start, end)``; ``start`` must lie before ``end``. Both carry a time zone."""
-
-    start: Moment = Field(description="Start of the period, included.")
-    end: Moment = Field(description="End of the period, excluded.")
-
-    @model_validator(mode="after")
-    def _check_period(self) -> _Period:
-        for value in (self.start, self.end):
-            if not _FIRST_YEAR <= value.astimezone(UTC).year <= _LAST_YEAR:
-                raise ValueError("the period must lie between the years 1970 and 2100")
-        if not self.start < self.end:
-            raise ValueError("start must lie before end")
-        return self
-
-
-class CandlesRequest(_Period):
-    """Candles of one time unit."""
-
-    kind: Literal["candles"]
-    instrument: Name
-    time_unit: TimeUnit
-
-
-class TicksRequest(_Period):
-    """Ticks with milliseconds."""
-
-    kind: Literal["ticks"]
-    instrument: Name
-
-
-class InstrumentRequest(_Strict):
-    """The details of the instrument."""
-
-    kind: Literal["instrument"]
-    instrument: Name
-
-
-FetchRequest = Annotated[
-    CandlesRequest | TicksRequest | InstrumentRequest, Field(discriminator="kind")
-]
 
 
 # --- the files of the import (contracts/market-data/v1) ---------------------------------------
@@ -197,7 +133,7 @@ class InstrumentDocument(_Strict):
     margin_per_lot: float | None
 
 
-# --- answers ----------------------------------------------------------------------------------
+# --- results ----------------------------------------------------------------------------------
 
 OmittedReason = Literal[
     "time_does_not_exist", "double_local_time", "duplicate_time", "invalid_price"
@@ -227,23 +163,3 @@ class InstrumentResponse(_Strict):
     file: InstrumentDocument
     omitted_count: int = 0
     omitted: list[OmittedRow] = Field(default_factory=list)
-
-
-FetchResponse = CandleSeriesResponse | TickSeriesResponse | InstrumentResponse
-
-
-class HealthResponse(_Strict):
-    status: Literal["ok"]
-
-
-class ErrorDetail(_Strict):
-    """An error: a stable ``code`` and a fixed readable ``reason``. ``fields`` names the
-    invalid fields of a request that was rejected as ``invalid_request``."""
-
-    code: ErrorCode
-    reason: str
-    fields: list[str] | None = None
-
-
-class ErrorResponse(_Strict):
-    error: ErrorDetail

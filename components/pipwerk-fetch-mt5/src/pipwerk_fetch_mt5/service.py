@@ -1,23 +1,23 @@
-"""The acquisition: what the program does with a request (specification backtest 5.4).
+"""The acquisition: what the program does for one part (specification backtest 5.4).
 
 ``FetchService`` maps the designation of the instrument to the symbol of the broker (table of
 the startup configuration), reads from the gateway, converts server time to UTC
 (``timeconv.py``), checks the limits and builds the files in the format of the import
-(``models.py``). It knows no HTTP and no MetaTrader 5 package; it works on any
+(``models.py``). It writes nothing and knows no MetaTrader 5 package; it works on any
 ``TerminalGateway``.
 
 Limits:
 
-- At most ``max_rows`` rows in an answer. For candles the number is estimated before anything
+- At most ``max_rows`` rows in a file. For candles the number is estimated before anything
   is read (period divided by the nominal duration of the time unit); for ticks it is counted
-  while reading. A period with more rows is answered with ``range_too_large``.
+  while reading. A period with more rows is refused with ``range_too_large``.
 - A large period is read in several calls: candles in steps of at most ``CANDLE_CHUNK`` bars,
   ticks in steps of ``TICK_CHUNK_HOURS`` hours. The steps are cut in UTC. The window passed
   to the gateway (server times) is the step, widened where the offset of the zone changes
   (``timeconv.server_window``). A step keeps only the rows whose UTC time lies in it, so rows
   that the gateway returns in addition belong to the neighbouring step.
-- At most ``max_reads`` reads of the gateway per request. The number of steps of the period
-  is known before the first read; a period with more is answered with ``range_too_large``.
+- At most ``max_reads`` reads of the gateway per file. The number of steps of the period
+  is known before the first read; a period with more is refused with ``range_too_large``.
 
 Rows that cannot be delivered are left out and counted; the first ``MAX_REPORTED`` are named:
 
@@ -85,7 +85,7 @@ CANDLE_CHUNK = 10_000
 #: Length of one read of ticks, in hours.
 TICK_CHUNK_HOURS = 6
 
-#: Largest number of omitted rows that an answer names (the count is always complete).
+#: Largest number of omitted rows that a result names (the count is always complete).
 MAX_REPORTED = 100
 
 #: The currency of a tick value, as the schema of the import defines it.
@@ -193,8 +193,8 @@ class FetchService:
         self._gateway.ping()
 
     def _broker(self) -> str:
-        name = self._config.broker_name or self._gateway.server_name() or ""
-        name = name.strip()
+        # The broker is the name of the trade server MetaTrader 5 is logged in to (5.4).
+        name = (self._gateway.server_name() or "").strip()
         if len(name) > 128 or BROKER_NAME_PATTERN.fullmatch(name) is None:
             raise FetchError("broker_unknown")
         return name

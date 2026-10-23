@@ -138,6 +138,12 @@ class Mt5Gateway:
         logger.error("MetaTrader 5 ended a call with an error (code %s).", code)
         return FetchError("broker_error")
 
+    def close(self) -> None:
+        """Disconnect from MetaTrader 5 (the program ends after its work). The terminal keeps
+        running."""
+        with self._lock:
+            self._reset()
+
     # --- TerminalGateway -------------------------------------------------------------------
 
     def ping(self) -> None:
