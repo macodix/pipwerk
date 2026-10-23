@@ -447,11 +447,10 @@ Alle Instanzen einer Strategie liegen in einem gemeinsamen Namensraum: Über ihr
 
 Aktualisieren: Bei jeder Verwendung kann der Anwender festlegen, dass die Instanz ihre Werte neu ermittelt, bevor sie sie übergibt. Das ist nur bei Objekttypen möglich, die das Aktualisieren vorsehen; die Typbeschreibung nennt es.
 
-Methoden: Ein Objekt kann neben Eigenschaften Methoden haben, die einen Wert zurückliefern. Eine Verwendung übergibt entweder eine Eigenschaft oder das Ergebnis einer Methode.
+Methoden: Ein Objekt kann neben Eigenschaften Methoden haben, die einen Wert zurückliefern. Eine Verwendung übergibt entweder eine Eigenschaft oder das Ergebnis einer Methode. Die mitgelieferten Objekttypen (`EMA`, `ATR`, `ZigZag`, Trend) haben vorerst keine Methoden. Aktualisieren sehen alle mitgelieferten Objekttypen und `Konto`, `Instrument`, `Kerze`, `Tick` vor; eine eigene Vorlage übernimmt es von ihrem Objekttyp.
 
 Offen:
 
-- Welche Methoden die mitgelieferten Objekttypen haben und welche das Aktualisieren vorsehen. Beispiel für eine Methode: der Wert eines Indikators vor einer Anzahl Kerzen (heute über den Parameter `Verschiebung` des `EMA` und eine zweite Instanz).
 - Verwaltung einer Order mit eigenen Auslösern (req-fach-049a): Ihre Auswertungen durchlaufen den Hauptablauf nicht. Vorschlag des Projektleiters: Eine Instanz aus dem Hauptablauf behält dort den Stand, den sie beim Aufgeben der Order hatte; aktuelle Werte über Aktualisieren oder eine eigene Instanz in der Verwaltung.
 - Stand einer Instanz, wenn eine Rückführung (req-fach-047) die Stelle der ersten Verwendung in derselben Auswertung erneut erreicht.
 - Stand von `Tick` ohne Instanz (req-fach-051) innerhalb einer Auswertung.
@@ -517,3 +516,4 @@ Offen:
 | 2026-10-22 | req-fach-055 neu: Instanzen an der Stelle ihrer ersten Verwendung, Werte beim Erreichen dieser Stelle, gemeinsamer Namensraum, doppelter Name ist ein Fehler, Aktualisieren bei der Verwendung, Methoden mit Rückgabewert; offene Punkte mit Vorschlag. Festlegung des Auftraggebers im Chat am 2026-10-22 (Abnahme `strategiedesign/wp02`, Versuch 2). |
 | 2026-10-23 | req-fach-055: Der gemeinsame Namensraum umfasst auch Regeln, Regelwerke und in anderen Instanzen enthaltene Instanzen. Festlegung des Auftraggebers im Chat am 2026-10-23 (Hinweis N3 aus `development/strategiedesign/reviews/requirements-14.md`). |
 | 2026-10-23 | req-fach-055: Instanz nur auf Wegen über die Stelle ihrer ersten Verwendung verwendbar, offener Punkt dazu entfällt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 24). |
+| 2026-10-23 | req-fach-055: Mitgelieferte Objekttypen vorerst ohne Methoden, Aktualisieren bei allen mitgelieferten Objekttypen und den Objekten der Anwendung auf der Zeichenfläche; offener Punkt dazu entfällt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 23). |
