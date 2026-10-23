@@ -6,7 +6,7 @@
 - stand: 2026-10-23
 - komponenten: `packages/domain-core`, `packages/market-data` (neu), `packages/ui-components`, `components/pipwerk-replay` (neu, bisher `components/pipwerk-backtest`), `components/pipwerk-fetch-mt5` (neu), `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html))
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung Beginn von `wp01`: Durchlauf 3 [plan-3.md](reviews/plan-3.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung Beginn von `wp01`: Durchlauf 3 [plan-3.md](reviews/plan-3.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung nach der Abnahme von `wp02`: Durchlauf 4 [plan-4.md](reviews/plan-4.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet
 
 ## Übersicht
 
@@ -17,7 +17,7 @@
 | `wp03` | Backtest | `wp01`, `wp02`, Referenzwerte aus MetaTrader 5 | `open` |
 | `wp04` | Einzelschritt-Test | `wp03`, `strategiedesign/wp03` | `open` |
 
-Die Pakete folgen dem, was der Auftraggeber selbst prüfen kann. `wp02` braucht nichts aus `strategiedesign` und beginnt sofort: pipwerk replay mit Datenbestand, Import, Beschaffung und Testkonten. `wp01` stellt Bibliothek und pipwerk Studio auf die Entscheidungen vom 2026-10-21 um und braucht dafür das Format 2.0 aus `strategiedesign/wp02`. Es beginnt trotzdem sofort, auf dem von der QA geprüften Stand von `strategiedesign/wp02`, und wird erst nach diesem Paket übernommen (Abschnitt „Abhängigkeiten“ von `wp01`). `wp03` bringt die Ausführung der Strategie und den Backtest; es endet mit dem Nachweis, dass `str-01` und `str-03` im Backtest laufen. `wp04` bringt den Einzelschritt-Test und dafür die Darstellung der Strategie als gemeinsamen Baustein.
+Die Pakete folgen dem, was der Auftraggeber selbst prüfen kann. `wp02` braucht nichts aus `strategiedesign` und beginnt sofort: pipwerk replay mit Datenbestand, Import und Testkonten, dazu das Programm `pipwerk-fetch-mt5` für die Beschaffung außerhalb von pipwerk replay. `wp01` stellt Bibliothek und pipwerk Studio auf die Entscheidungen vom 2026-10-21 um und braucht dafür das Format 2.0 aus `strategiedesign/wp02`. Es beginnt trotzdem sofort, auf dem von der QA geprüften Stand von `strategiedesign/wp02`, und wird erst nach diesem Paket übernommen (Abschnitt „Abhängigkeiten“ von `wp01`). `wp03` bringt die Ausführung der Strategie und den Backtest; es endet mit dem Nachweis, dass `str-01` und `str-03` im Backtest laufen. `wp04` bringt den Einzelschritt-Test und dafür die Darstellung der Strategie als gemeinsamen Baustein.
 
 `wp04` hängt auch von `strategiedesign/wp03` ab. Grund: Es verlegt Zeichenfläche, Elemente, Verbindungen und Eigenschaftenansicht von pipwerk Studio nach `packages/ui-components` (Spezifikation 8.2). `strategiedesign/wp03` ändert dieselben Teile; beide gleichzeitig ergäben zwei Fassungen derselben Bausteine.
 
@@ -129,7 +129,7 @@ Der Anwender bereitet einen Testlauf vor und testet eine Strategie im Backtest �
 
 - Ausführung in der Bibliothek, `pipwerk_domain.execution` (E1, E7, 3.1 bis 3.5): Schnittstellen, Auswertung von Ausdrücken, `EMA`, `ATR`, `ZigZag` einschließlich Berechnung der in `wp01` beschriebenen Eigenschaften, eigene Indikatoren und Trends, Ablauf mit Auslösern und Verwaltungen, Auslöser `Manuell` zum Zeitpunkt nach 6.1, Orders und Regeln.
 - Interne Abwicklung `pipwerk_replay.broker` (E2, Abschnitt 4).
-- Testlauf (6.1) mit Strategien aus dem Objektverzeichnis oder als hochgeladene Datei (E6), Prüfung der Kursdaten beim Start mit Meldung nach 5.4, ohne Beschaffung, Backtest im eigenen Prozess mit Fortschritt und Abbrechen (6.4), gespeicherte Backtests mit Liste, Löschen, Vergleich und Herunterladen der Kopie der Strategie (6.5).
+- Testlauf (6.1) mit Strategien aus dem Objektverzeichnis oder als hochgeladene Datei (E6), Prüfung der Kursdaten beim Start mit Meldung nach 5.4, ohne Beschaffung, Broker für Testläufe in der Vorbereitung änderbar (5.1), Backtest im eigenen Prozess mit Fortschritt und Abbrechen (6.4), gespeicherte Backtests mit Liste, Löschen, Vergleich und Herunterladen der Kopie der Strategie (6.5).
 - Web-API (Abschnitt 7) für diese Teile.
 - Oberfläche: Menüeintrag Testlauf und Gespeicherte Backtests, Umschaltung der Betriebsart mit Backtest; Ansichten „Testlauf vorbereiten“ mit Zeitpunkt des Auslösers `Manuell`, „Kursdaten beim Start“, „Backtest“, „Gespeicherte Backtests“ ohne die Darstellung der getesteten Fassung (8.3, 8.4 Punkte 1, 4 bis 8); Kerzenchart, Kontokurve und Rückgang (8.2); Fußzeile mit dem vorbereiteten Testlauf.
 - Sicherheit nach Abschnitt 11 für Ausdrücke, hochgeladene Strategien, Zahl gleichzeitiger Backtests und Umfang von Antworten.
@@ -225,7 +225,7 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 3.1 bis 3.5 | `wp03`; Typbeschreibung des `ZigZag` (3.3) `wp01` |
 | 3.6 | `wp01` |
 | 4 | `wp03` |
-| 5.1 bis 5.4 | `wp02`; Prüfung und Meldung beim Start eines Testlaufs (5.4, letzter Absatz) `wp03` |
+| 5.1 bis 5.4 | `wp02`; Broker in der Vorbereitung eines Testlaufs (5.1) und Prüfung und Meldung beim Start eines Testlaufs (5.4, letzter Absatz) `wp03` |
 | 6.1, 6.4 | `wp03` |
 | 6.2 | `wp02` |
 | 6.3 | `wp04` |
@@ -260,4 +260,5 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 2026-10-21 | Hinweise aus [plan-2.md](reviews/plan-2.md) (bestanden), ohne weitere Prüfung: 1 Formulierung der Berechnung in `wp03`; 2 Eigenschaften des `ZigZag` im Ziel von `wp01`. Verworfen: 3 (pipwerk Studio führt Strategien nicht aus; Kriterium 1 betrifft nur die Konsistenzprüfung). |
 | 2026-10-21 | Auf Wunsch des Auftraggebers (Meldung `plan` des Projektleiters): `wp01` beginnt sofort auf Commit `2cac35b4a45e9d5499c92e3762670faf1021c821` von `strategiedesign/wp02`, übernimmt spätere Änderungen aus dessen Abnahme und wird erst nach `strategiedesign/wp02` übernommen (Übersicht, Erläuterung, Abhängigkeiten von `wp01`). Rein technisch: Umfang und Abnahmekriterien unverändert. |
 | 2026-10-21 | Hinweise aus [plan-3.md](reviews/plan-3.md) (bestanden), ohne weitere Prüfung: 1 Punkt 4 misst wie Punkt 3 an der Software; 2 `integrate` für `wp01` erst nach `integrated` zu `strategiedesign/wp02`; 3 Satz „in der Abnahme“ gestrichen; 4 Übersicht „Beginn ohne Wartezeit“; 5 Beginn mit `implement` statt „nach Bestätigung“, den Vermerk führt der Projektleiter. |
-| 2026-10-23 | Nach der Abnahme von `wp02`, Versuch 1 (Mängel M1 bis M4), und der geänderten Spezifikation (E5, 5.1, 5.3, 5.4, 8.3): `wp02` Ziel, Umfang, Nicht-Umfang, umgesetzte Teile und Abnahmekriterien 1, 2, 3, 5 und 6 (Import mehrerer Dateien, Ansicht „Datenbestand“, `pipwerk-fetch-mt5` ohne Server und Port, keine Beschaffung aus pipwerk replay); `wp03` Umfang und Abnahmekriterien 1 und 5 ohne Beschaffung beim Start; Abdeckung 5.1 bis 5.4. |
+| 2026-10-23 | Nach der Abnahme von `wp02`, Versuch 1 (Mängel M1 bis M4), und der geänderten Spezifikation (E5, 5.1, 5.3, 5.4, 8.3): `wp02` Ziel, Umfang, Nicht-Umfang, umgesetzte Teile und Abnahmekriterien 1, 2, 3, 5 und 6 (Import mehrerer Dateien, Ansicht „Datenbestand“, `pipwerk-fetch-mt5` ohne Server und Port, keine Beschaffung aus pipwerk replay); `wp03` Umfang und Abnahmekriterien 1 und 5 ohne Beschaffung beim Start; Abdeckung 5.1 bis 5.4. Prüfung bestanden in [plan-4.md](reviews/plan-4.md). |
+| 2026-10-23 | Hinweise aus [plan-4.md](reviews/plan-4.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 Broker in der Vorbereitung in `wp03` (Umfang, Abdeckung 5.1); H2 Erläuterung der Übersicht zu `wp02`. |
