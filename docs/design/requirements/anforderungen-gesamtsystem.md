@@ -111,9 +111,11 @@ pipwerk führt einen eigenen Datenbestand historischer Kursdaten. Er enthält:
 
 pipwerk berechnet keine Kerzen aus Ticks. Der Strategietester liest Kursdaten nur aus diesem Datenbestand. Woher die Daten stammen, ist für sie ohne Bedeutung.
 
+Der Anwender kann eine Reihe von Kerzen oder Ticks ganz oder für einen Zeitraum löschen, ebenso die Angaben zu einem Instrument je Broker. Gelöscht wird erst nach einer Rückfrage.
+
 ### req-system-026 -- Import
 
-Der Import liest Dateien in einem festgelegten Dateiformat (JSON oder CSV), prüft sie und übernimmt die Daten in den Datenbestand historischer Kursdaten. Der Anwender kann Dateien von Hand importieren lassen, zum Beispiel einen Export aus MetaTrader oder eine Datei von seiner Festplatte. Er kann mehrere Dateien in einem Vorgang importieren.
+Der Import liest Dateien in einem festgelegten Dateiformat (JSON oder CSV), prüft sie und übernimmt die Daten in den Datenbestand historischer Kursdaten. Der Anwender kann Dateien von Hand importieren lassen, zum Beispiel einen Export aus MetaTrader oder eine Datei von seiner Festplatte. Er kann beliebig viele Dateien in einem Vorgang importieren. Die Größe einer Datei ist nur durch den Speicherplatz begrenzt, auch Tick-Dateien von mehreren GB lassen sich importieren. Der Import zeigt seinen Fortschritt und lässt sich abbrechen.
 
 ### req-system-027 -- Beschaffung
 
@@ -248,3 +250,4 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-20 | req-system-025: Angaben zum Instrument an die Eigenschaften von `Instrument` im Fachmodell angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 1, B1). |
 | 2026-10-23 | req-system-026: Import mehrerer Dateien in einem Vorgang. req-system-027: Austausch mit der Beschaffung über pipwerk relay, Broker als Name des Handelsservers, Übergangslösung ohne eigenen Server und Port bis pipwerk relay. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |
 | 2026-10-23 | req-system-027: Anstoßen von Hand aus pipwerk gilt mit pipwerk relay. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H3). |
+| 2026-10-23 | req-system-025: Löschen von Reihen, Zeiträumen und Angaben zum Instrument. req-system-026: beliebig viele Dateien, Größe nur durch den Speicherplatz begrenzt, Fortschritt und Abbrechen. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`, Versuch 2). |
