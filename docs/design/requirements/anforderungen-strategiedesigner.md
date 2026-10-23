@@ -392,6 +392,7 @@ Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage 
 - Element des Ablaufs ohne Verbindung (Fehler)
 - Instanz eines Indikators, eines Trends oder eines Objekts der Anwendung ohne Verbindung zu dem Element, das sie zuerst verwendet (Fehler, req-ablauf-003, Fachmodell req-fach-055)
 - Name einer Instanz, der in der Strategie mehr als einmal vergeben ist (Fehler, Fachmodell req-fach-055)
+- Instanz in einem Ausdruck an einer Stelle, an der sie nicht verwendbar ist (Fehler, Fachmodell req-fach-055, req-ui-014)
 - Datenverbindung zwischen unverträglichen Datentypen (Fehler)
 - Eingang ohne Wert (Fehler), ausgenommen optionale Parameter (req-param-006) und Parameter, deren Wert erst bei der Anwendung übergeben wird
 - Fehlerhafter Ausdruck, zum Beispiel Schreibfehler, unbekannte Funktion oder unbekannte Eigenschaft (Fehler)
@@ -530,3 +531,4 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-23 | req-ui-016: Hinweise und Dialoge des Strategiedesigners nur in der Eigenschaftenansicht. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
 | 2026-10-23 | req-ui-016: Beschreibung der gelieferten Eigenschaften und Methoden in der Eigenschaftenansicht eines Objekts, Ausgang mit Namen der Eigenschaft. req-ui-017: Löschen einer Verbindung auf der Zeichenfläche als offener Diskussionspunkt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
 | 2026-10-23 | req-ui-014: Nur an der Stelle verwendbare Instanzen zur Wahl, sonst Fehler der Konsistenzprüfung. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 24). |
+| 2026-10-23 | req-ablauf-007: Instanz an einer Stelle, an der sie nicht verwendbar ist. Folge der Festlegung zu Punkt 24 der Abstimmung `specification-3.html`, Hinweis H1 in `development/strategiedesign/reviews/requirements-19.md`. |
