@@ -51,3 +51,11 @@ Im Prototyp so gelöst; mit der Bestätigung gelten die Punkte als bestätigt, j
 12. Eine Instanz, die nur im Ausdruck verwendet wird, gilt als verbunden, auch wenn erst ein späteres Element sie verwendet; sie liegt beim ersten Element im Ablauf, das sie verwendet (req-ui-014).
 
 Vorschlag: Prototyp mit den Punkten 1 bis 12 bestätigen.
+
+## Antwort
+
+Projektleiter, 2026-10-23, nach Rücksprache mit dem Auftraggeber im Chat:
+
+1. Nicht bestätigt. Einwände aus dem Test des Auftraggebers:
+   - Nach „Neue Strategie“ ist „Elementbibliothek zeigen“ ohne Funktion.
+   - „Geführten Aufbau zeigen“ heißt „Assistent“ (req-ui-016 angeglichen). Der Begriff „geführter Aufbau“ erscheint nirgends in der Oberfläche.
