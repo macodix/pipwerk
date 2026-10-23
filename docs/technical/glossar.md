@@ -73,8 +73,8 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Testkonto | Benannter, gespeicherter Satz von Kontowerten für die Abwicklung eines Testlaufs: Anfangskapital, Kontowährung, Hebel, Spread, Kommission (req-test-005). |
 | Interne Order | Order im Strategietester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
 | Handelnde Stelle | Auswertung im Einzelschritt-Test, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
-| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem der Strategietester liest (req-system-025). |
-| Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten (req-system-026). |
+| Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem der Strategietester liest. Der Anwender kann eine Reihe ganz oder für einen Zeitraum löschen, ebenso die Angaben zu einem Instrument je Broker, jeweils nach einer Rückfrage (req-system-025). |
+| Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten, beliebig viele in einem Vorgang, mit Fortschritt und Abbrechen (req-system-026). |
 | Beschaffung | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). Eine Anfrage an die Beschaffung und die Lieferung der Dateien laufen über pipwerk relay (Anforderungen an das Nachrichtensystem req-relay-007). |
 | Nachrichtensystem | Produktname pipwerk relay. Überträgt Nachrichten zwischen eigenständig laufenden Komponenten, auch zwischen verschiedenen Rechnern (req-system-005, Anforderungen an das Nachrichtensystem). |
 | Nachricht | Einheit, die über das Nachrichtensystem übertragen wird, mit Nachrichten-ID, Absender, Adressat, Priorität, Nachrichtenart, Inhalt und Bezug-Nachrichten-ID (Anforderungen an das Handelssystem req-grund-004). |
@@ -127,6 +127,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-23 | Datenbestand historischer Kursdaten: Löschen nach Rückfrage; Import: beliebig viele Dateien, Fortschritt und Abbrechen. Folgt aus den Entscheidungen des Auftraggebers vom 2026-10-23 (req-system-025, req-system-026, Abnahme `backtest/wp02`, Versuch 2). Hinweis 6 aus `development/backtest/reviews/requirements-7.md`. |
 | 2026-10-23 | Einträge Laufende Komponente, Adresse, pipwerk-Netz und Betreiber neu; Beschaffung ohne Strategietester. Folgt aus den Entscheidungen des Auftraggebers vom 2026-10-23 zu B1 bis B3 und H5 aus `development/relay/reviews/requirements-1.md` (req-relay-005, req-relay-007, Anforderungen an das Handelssystem req-grund-004). |
 | 2026-10-23 | Einträge Nachrichtensystem, Nachricht, Relay, Übertragungsweg, Adressbuch und Standard-Relay neu, Beschaffung um pipwerk relay ergänzt. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-23 (Anforderungen an das Nachrichtensystem, Anforderungen an das Handelssystem req-grund-004; Hinweis H5 in `development/relay/reviews/requirements-1.md`). |
 | 2026-10-23 | Eintrag „Assistent“. Folgt aus der Festlegung des Auftraggebers zu req-ui-016 vom 2026-10-23 (Hinweis H3 in `development/strategiedesign/reviews/requirements-16.md`). |
