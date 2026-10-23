@@ -25,7 +25,8 @@ from pipwerk_marketdata.parsed import (
     KIND_INSTRUMENT,
     KIND_TICKS,
     ParsedImport,
-    with_broker,
+    content_data,
+    with_names,
 )
 from pipwerk_marketdata.records import (
     BatchErrorCode,
@@ -211,7 +212,13 @@ class MarketDataStore:
     ) -> ParsedImport:
         if file.format == FileFormat.JSON:
             parsed = parse_json(file.content, limits)
-            return with_broker(parsed, broker) if broker is not None else parsed
+            if file.data is not None and file.data != content_data(parsed):
+                raise ImportFileError(
+                    FileErrorCode.SERIES_INVALID,
+                    "The data of a JSON file (time unit, ticks or instrument data) "
+                    "come from its content and cannot be changed.",
+                )
+            return with_names(parsed, broker, file.instrument)
         if broker is None or file.instrument is None or file.data is None:
             raise ImportFileError(
                 FileErrorCode.SERIES_INVALID,

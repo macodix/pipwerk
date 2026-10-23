@@ -16,7 +16,7 @@ from pipwerk_marketdata.records import (
     Tick,
     TradingSession,
 )
-from pipwerk_marketdata.timeunits import TICKS, time_unit
+from pipwerk_marketdata.timeunits import CONTRACT, TICKS, time_unit
 
 KIND_CANDLES = "candles"
 KIND_TICKS = "ticks"
@@ -91,12 +91,30 @@ def candle_violation(open_: float, high: float, low: float, close: float) -> Rej
     return None
 
 
-def with_broker(parsed: ParsedImport, broker: str) -> ParsedImport:
-    """The same content for another broker (the broker of an import process replaces the one
-    named in a JSON file); ``ImportFileError`` if the name is not usable."""
-    check_series_names(broker, parsed.instrument, parsed.unit, candles=parsed.kind == KIND_CANDLES)
-    info = replace(parsed.info, broker=broker) if parsed.info is not None else None
-    return replace(parsed, broker=broker, info=info)
+def content_data(parsed: ParsedImport) -> str:
+    """The data a parsed file holds: time unit identifier, ``ticks`` or ``contract``."""
+    if parsed.kind == KIND_INSTRUMENT:
+        return CONTRACT
+    if parsed.kind == KIND_TICKS:
+        return TICKS
+    return parsed.unit or ""
+
+
+def with_names(
+    parsed: ParsedImport, broker: str | None = None, instrument: str | None = None
+) -> ParsedImport:
+    """The same content for another broker and instrument (those of an import process or of
+    the caller replace the ones named in a JSON file); ``ImportFileError`` if a name is not
+    usable."""
+    broker = parsed.broker if broker is None else broker
+    instrument = parsed.instrument if instrument is None else instrument
+    check_series_names(broker, instrument, parsed.unit, candles=parsed.kind == KIND_CANDLES)
+    info = (
+        replace(parsed.info, broker=broker, instrument=instrument)
+        if parsed.info is not None
+        else None
+    )
+    return replace(parsed, broker=broker, instrument=instrument, info=info)
 
 
 def is_finite(value: float) -> bool:

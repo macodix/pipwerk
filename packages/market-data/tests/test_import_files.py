@@ -305,6 +305,70 @@ def test_a_database_error_refuses_the_file_and_not_the_process(tmp_path: Path) -
         store.list_series()
 
 
+def test_a_json_file_takes_the_instrument_of_the_caller(store: MarketDataStore) -> None:
+    candles = ImportFile(
+        "a.json",
+        to_bytes(candle_document([candle_entry(START)])),
+        FileFormat.JSON,
+        instrument="GBPUSD",
+        data="m1",
+    )
+    ticks = ImportFile(
+        "b.json",
+        to_bytes(tick_document([{"time": "2024-01-02T10:00:00Z", "bid": 1.1, "ask": 1.2}])),
+        FileFormat.JSON,
+        instrument="USDJPY",
+    )
+    document = json.loads((EXAMPLE_DIRECTORY / "instrument.json").read_text())
+    contract = ImportFile(
+        "c.json", to_bytes(document), FileFormat.JSON, instrument="XAUUSD", data="contract"
+    )
+    result = store.import_files([candles, ticks, contract], broker=SERVER)
+    assert [outcome.accepted for outcome in result.files] == [1, 1, 1]
+    assert [o.result.instrument for o in result.files if o.result] == ["GBPUSD", "USDJPY", "XAUUSD"]
+    assert read_times(store, SERVER, "GBPUSD", "m1") == [START]
+    assert read_times(store, SERVER, "EURUSD", "m1") == []
+    assert store.read_ticks(SERVER, "USDJPY", utc(2024, 1, 1), utc(2024, 1, 3)).items
+    info = store.instrument_info(SERVER, "XAUUSD")
+    assert info is not None
+    assert info.instrument == "XAUUSD"
+    assert store.instrument_info(SERVER, "EURUSD") is None
+
+
+def test_a_json_file_without_instrument_keeps_the_instrument_of_the_content(
+    store: MarketDataStore,
+) -> None:
+    file = ImportFile(
+        "a.json", to_bytes(candle_document([candle_entry(START)])), FileFormat.JSON, data="m1"
+    )
+    store.import_files([file], broker=SERVER)
+    assert read_times(store, SERVER, "EURUSD", "m1") == [START]
+
+
+def test_an_unusable_instrument_refuses_the_json_file(store: MarketDataStore) -> None:
+    content = to_bytes(candle_document([candle_entry(START)]))
+    file = ImportFile("a.json", content, FileFormat.JSON, instrument=" padded ")
+    result = store.import_files([file])
+    assert result.files[0].error == FileErrorCode.SERIES_INVALID
+    assert store.list_series().total == 0
+
+
+def test_the_data_of_a_json_file_cannot_be_changed(store: MarketDataStore) -> None:
+    content = to_bytes(candle_document([candle_entry(START)]))
+    document = json.loads((EXAMPLE_DIRECTORY / "instrument.json").read_text())
+    files = [
+        ImportFile("a.json", content, FileFormat.JSON, data="h1"),
+        ImportFile("b.json", content, FileFormat.JSON, data="ticks"),
+        ImportFile("c.json", content, FileFormat.JSON, data="contract"),
+        ImportFile("d.json", to_bytes(document), FileFormat.JSON, data="m1"),
+        ImportFile("e.json", content, FileFormat.JSON, instrument="GBPUSD", data="h1"),
+    ]
+    result = store.import_files(files, broker=SERVER)
+    assert [outcome.error for outcome in result.files] == [FileErrorCode.SERIES_INVALID] * 5
+    assert all("cannot be changed" in (o.message or "") for o in result.files)
+    assert store.list_series().total == 0
+
+
 def test_the_file_name_is_only_reported_never_used_as_a_path(
     store: MarketDataStore, tmp_path: Path
 ) -> None:

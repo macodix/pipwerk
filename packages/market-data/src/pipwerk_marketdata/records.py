@@ -275,9 +275,11 @@ class ImportFile:
     """One file of an import process.
 
     ``name`` is only reported back in the result; it is never used as a path. ``instrument`` and
-    ``data`` are needed for CSV files (the file does not contain them) and ignored for JSON
-    files (the content names them). ``data`` is a time unit identifier (``m1`` to ``mn1``) or
-    ``ticks``.
+    ``data`` are needed for CSV files (the file does not contain them). For a JSON file the
+    content names them: ``instrument`` replaces the instrument of the content if given;
+    ``data`` must be missing or equal to the data of the content, otherwise the file is refused
+    (``series_invalid``). ``data`` is a time unit identifier (``m1`` to ``mn1``), ``ticks`` or,
+    for a JSON file only, ``contract``.
     """
 
     name: str
