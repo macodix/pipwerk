@@ -26,3 +26,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Phase 1. Vorhaben angelegt, Anforderungen an das Nachrichtensystem aus den Festlegungen des Auftraggebers im Chat am 23. Oktober 2026 erstellt. Offene Punkte werden mit dem Auftraggeber geklärt, danach Prüfung mit `check`.
 
 2026-10-23: Offene Punkte Adresse, Adressbuch, unzustellbare Nachricht, Schutz gegen Fälschung und Verschlüsselung vom Auftraggeber im Chat entschieden.
+
+2026-10-23: Zuständige Instanz bestimmt der Absender (req-relay-005), Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Prüfung der Dokumente des Auftraggebers durch die QA mit `check` angestoßen.
