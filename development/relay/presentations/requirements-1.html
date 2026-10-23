@@ -30,7 +30,7 @@ h3{font-size:32px;font-weight:600;color:var(--green)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
 .label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
 .chain{display:flex;align-items:center;gap:18px}
-.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:30px;font-weight:600}
+.node{flex:1;min-width:0;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:24px;font-weight:600}
 .node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
 .arrow{font-size:40px;color:var(--blue)}
 .phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -85,14 +85,16 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <h2>Weg einer Nachricht</h2>
 <div class="chain">
 <div class="node">Komponente<small>Rechner A</small></div><span class="arrow">→</span>
+<div class="node">Übertragungsweg<small>z. B. Dateien</small></div><span class="arrow">→</span>
 <div class="node">Relay<small>Rechner A</small></div><span class="arrow">→</span>
-<div class="node">Übertragungsweg<small>Matrix, Dateien, …</small></div><span class="arrow">→</span>
+<div class="node">Übertragungsweg<small>z. B. Matrix</small></div><span class="arrow">→</span>
 <div class="node">Relay<small>Rechner B</small></div><span class="arrow">→</span>
+<div class="node">Übertragungsweg<small>z. B. Dateien</small></div><span class="arrow">→</span>
 <div class="node">Komponente<small>Rechner B</small></div>
 </div>
 <div class="row">
-<div class="card col"><h3>Relay je Rechner</h3><p>Eine Komponente spricht nur mit dem Relay ihres Rechners. Andere Rechner kennt sie nicht. Der Weg zwischen Komponente und Relay ist je Komponente konfigurierbar, zum Beispiel Dateien in einem Verzeichnis (req-relay-001, req-relay-002).</p></div>
-<div class="card col"><h3>Austauschbare Übertragungswege</h3><p>Zwischen Relays zum Beispiel Matrix, Dateien per SFTP oder E-Mail. Jedes Relay hat nur die konfigurierten Wege, verschiedene Relays verschiedene. Neue Wege ändern keine Komponente (req-relay-003).</p></div>
+<div class="card col"><h3>Relay je Rechner</h3><p>Eine Komponente spricht nur mit dem Relay ihres Rechners. Andere Rechner kennt sie nicht (req-relay-001, req-relay-002).</p></div>
+<div class="card col"><h3>Austauschbare Übertragungswege</h3><p>Zwischen Komponente und Relay und zwischen Relays, zum Beispiel Matrix, Dateien (auch per SFTP) oder E-Mail. Je Komponente und je Relay konfiguriert, verschiedene können verschiedene haben. Neue Wege ändern keine Komponente (req-relay-003).</p></div>
 <div class="card col"><h3>Erste Übertragungswege</h3><p>Matrix über deinen eigenen Server; du kannst den Austausch im Chat mitverfolgen. Dazu Dateien (req-relay-004).</p></div>
 </div>
 <p class="num">3 / 6</p></section></div>

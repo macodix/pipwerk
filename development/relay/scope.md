@@ -31,3 +31,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (B1 bis B3). Entscheidungen des Auftraggebers im Chat: B2 Absender ist eine Adresse; B3 Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; B1 Nachweis ohne Strategietester, Broker und Symbol im Testlauf als offener Punkt in `backtest`. H5 Glossar „Instanz“: im Nachrichtensystem „laufende Komponente“. Nachprüfung mit `check`.
 
 2026-10-23: Nachprüfung [requirements-2.md](reviews/requirements-2.md) bestanden. Präsentation [requirements-1.html](presentations/requirements-1.html) zur Bestätigung durch den Auftraggeber.
+
+2026-10-23: Abstimmung der Präsentation: Auch zwischen Komponente und Relay gilt ein austauschbarer Übertragungsweg (req-relay-002, req-relay-003), Festlegung des Auftraggebers. Nachprüfung der geänderten Stellen mit `check`.

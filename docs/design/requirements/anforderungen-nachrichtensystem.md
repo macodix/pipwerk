@@ -23,11 +23,11 @@ Auf jedem Rechner, auf dem eine Komponente Nachrichten sendet oder empfängt, l�
 
 ### req-relay-002 -- Übergabe und Zustellung auf dem Rechner
 
-Eine Komponente übergibt eine Nachricht an das Relay ihres Rechners. Das Relay des Empfängers stellt sie dem Empfänger auf seinem Rechner zu. Auf welchem Weg Komponente und Relay Nachrichten austauschen, ist je Komponente konfigurierbar, zum Beispiel über Dateien in einem Verzeichnis.
+Eine Komponente übergibt eine Nachricht an das Relay ihres Rechners. Das Relay des Empfängers stellt sie dem Empfänger auf seinem Rechner zu. Auch dabei laufen die Nachrichten über einen Übertragungsweg nach req-relay-003, zum Beispiel über Dateien in einem Verzeichnis. Welcher Übertragungsweg das ist, ist je Komponente konfigurierbar.
 
-### req-relay-003 -- Übertragungswege zwischen Relays
+### req-relay-003 -- Übertragungswege
 
-Zwischen Relays werden Nachrichten über austauschbare Übertragungswege übertragen, zum Beispiel über einen Matrix-Chat, über Dateien, die per SFTP ausgetauscht werden, oder über E-Mail.
+Zwischen Komponente und Relay und zwischen Relays werden Nachrichten über austauschbare Übertragungswege übertragen, zum Beispiel über einen Matrix-Chat, über Dateien, die per SFTP ausgetauscht werden, oder über E-Mail.
 
 Jedes Relay hat nur die Übertragungswege, die für es konfiguriert sind. Verschiedene Relays können verschiedene Übertragungswege haben. Weitere Übertragungswege lassen sich ergänzen, ohne Komponenten oder vorhandene Übertragungswege zu ändern.
 
@@ -104,3 +104,4 @@ Nachrichten des Handelssystems, zum Beispiel eine Order an ein Konto, folgen mit
 | 2026-10-23 | req-relay-005: Die zuständige laufende Komponente bestimmt der Absender aus seiner Konfiguration. Anforderungen an das Handelssystem req-grund-003 und req-grund-004 angeglichen. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | req-relay-005: Adresse aus laufender Komponente, pipwerk-Netz und zuständigem Relay; Absender ist ebenfalls eine Adresse; „laufende Komponente“ statt „Instanz“ (Glossar). Entscheidung des Auftraggebers im Chat am 2026-10-23 nach Prüfbericht `relay/reviews/requirements-1.md` (B2, B3). |
 | 2026-10-23 | req-relay-007: Anwendungsfall Beschaffung ohne Anschluss des Strategietesters; dieser gehört zum Vorhaben `backtest`. Entscheidung des Auftraggebers im Chat am 2026-10-23 (`relay`, B1). |
+| 2026-10-23 | req-relay-002, req-relay-003: Auch zwischen Komponente und Relay laufen Nachrichten über einen austauschbaren Übertragungsweg. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung der Präsentation `relay/presentations/requirements-1.html`). |
