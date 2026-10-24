@@ -26,12 +26,15 @@ pipwerk-fetch-mt5 = "pipwerk_fetch_mt5.cli:main"
 pipwerk-relaycore = { path = "../../packages/relay-core", editable = true }
 # Only for the tests: the files the program writes must be importable with the library.
 pipwerk-marketdata = { path = "../../packages/market-data", editable = true }
+# Only for the tests: the tests of serve and request run across two real relays.
+pipwerk-relay = { path = "../pipwerk-relay", editable = true }
 
 [dependency-groups]
 dev = [
     "jsonschema>=4.26.0",
     "mypy>=2.3.1",
     "pipwerk-marketdata==0.1.0",
+    "pipwerk-relay==0.1.0.dev0",
     "pytest>=9.1.1",
     "ruff>=0.16.9",
     "sqlalchemy>=2.1.3",
