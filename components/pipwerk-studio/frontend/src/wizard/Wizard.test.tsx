@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { App } from '../App';
 import { renderWithProviders } from '../test-utils';
-import { menu, waitForReady } from '../testing/actions';
+import { clickNode, menu, waitForReady } from '../testing/actions';
 import { mockApi } from '../testing/backend';
 import { parseStrategyDocument } from '../document/parse';
 
@@ -91,7 +91,7 @@ describe('the guided setup of a new strategy (specification 5.5)', () => {
     expect(document.querySelectorAll('[data-testid="node"]')).toHaveLength(1);
   });
 
-  it('ends when an entry of the library is used by hand', async () => {
+  it('waits when an entry of the library is used by hand: the view shows the choice, with the line of the assistant above it', async () => {
     const user = userEvent.setup();
     mockApi();
     renderWithProviders(<App />, 'de');
@@ -102,9 +102,40 @@ describe('the guided setup of a new strategy (specification 5.5)', () => {
     const entry = document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="Kerzenschluss"]');
     await user.click(entry as HTMLElement);
 
+    // the library and the drawing area stay usable while the assistant runs (specification 5.5)
     await waitFor(() => {
       expect(screen.queryByTestId('wizard')).toBeNull();
     });
     expect(document.querySelectorAll('[data-testid="node"]')).toHaveLength(1);
+    expect(screen.getByTestId('props-element')).toBeInTheDocument();
+    expect(screen.getByTestId('wizard-bar')).toHaveTextContent('Assistent, Schritt 1 von 5');
+
+    await user.click(screen.getByTestId('wz-resume'));
+
+    expect(await screen.findByTestId('wizard')).toBeInTheDocument();
+    expect(screen.queryByTestId('wizard-bar')).toBeNull();
+  });
+
+  it('waits when the user chooses the strategy or an element on the drawing area, and can be left from the line as well', async () => {
+    const user = userEvent.setup();
+    mockApi();
+    renderWithProviders(<App />, 'de');
+    await waitForReady();
+    await menu(user, 'new');
+    await screen.findByTestId('wizard');
+    await user.click(screen.getByTestId('wz-next'));
+    await user.click((await screen.findAllByTestId('wz-trigger'))[0] as HTMLElement);
+    await user.click(screen.getByTestId('wz-next'));
+    await screen.findByTestId('wz-step-3');
+    expect(document.querySelectorAll('[data-testid="node"]')).toHaveLength(1);
+
+    clickNode(document.querySelector<HTMLElement>('[data-testid="node"]') as HTMLElement);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('wizard-bar')).toHaveTextContent('Assistent, Schritt 3 von 5');
+    });
+    expect(screen.getByTestId('props-element')).toBeInTheDocument();
+    await user.click(screen.getByTestId('wz-resume'));
+    expect(await screen.findByTestId('wz-step-3')).toBeInTheDocument();
   });
 });

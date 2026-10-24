@@ -46,6 +46,7 @@ function indicator(id: string, name: string, key: string, type: string, values: 
       key,
       object_type: type,
       origin: { object_type: type, template_id: null },
+      first_use: null,
       parameter_values: values,
       parameters: [],
       properties: [],
@@ -117,13 +118,13 @@ export function emaTrendfolge(): Json {
     ],
     elements: [
       indicator(EL.ema20, 'EMA20', 'ema20', 'EMA', {
-        kursquelle: { kind: 'fixed', value: 'schlusskurs' },
+        anwenden_auf: { kind: 'fixed', value: 'schlusskurs' },
         zeiteinheit: { kind: 'parameter', value: 'zeiteinheit' },
         periode: { kind: 'fixed', value: 20 },
       }),
       indicator(EL.ema50, 'EMA50', 'ema50', 'EMA', {
         verschiebung: { kind: 'fixed', value: 0 },
-        kursquelle: { kind: 'fixed', value: 'schlusskurs' },
+        anwenden_auf: { kind: 'fixed', value: 'schlusskurs' },
         zeiteinheit: { kind: 'parameter', value: 'zeiteinheit' },
         periode: { kind: 'fixed', value: 50 },
       }),

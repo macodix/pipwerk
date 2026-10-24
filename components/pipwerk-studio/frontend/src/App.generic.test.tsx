@@ -55,12 +55,13 @@ describe('the library of invented types (specification 5.2)', () => {
     await setup();
 
     const groups = screen.getAllByTestId('lib-group');
-    expect(groups.map((group) => group.getAttribute('data-group'))).toEqual(['when', 'actions', 'market', 'indicators', 'trends', 'rules']);
+    // only the groups that have an entry stand there; the invented types name no calculation and no account
+    expect(groups.map((group) => group.getAttribute('data-group'))).toEqual(['flow', 'indicators', 'trends', 'market', 'actions', 'rules']);
     const entries = (group: string) =>
       within(groups.find((candidate) => candidate.getAttribute('data-group') === group) as HTMLElement)
         .getAllByTestId('lib-item')
         .map((item) => item.getAttribute('data-label'));
-    expect(entries('when')).toEqual(['Beginn']);
+    expect(entries('flow')).toEqual(['Beginn', 'Verbindung']);
     expect(entries('actions')).toEqual(['Weiche', 'Tun', 'Ausführen']);
     expect(entries('rules')).toEqual(['Vorgabe Regel', 'Regel', 'Regelsatz']);
   });

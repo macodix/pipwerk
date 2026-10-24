@@ -222,7 +222,8 @@ describe('the inputs that join an element when a value of an object is chosen', 
   it('adds one input per value of an object and none for anything else', () => {
     const tree = comparisonBlock('>', nameBlock(['ema20', 'wert']), numberBlock(1));
     const joined = withInputs(doc, 'cond', tree);
-    expect(joined.elements[0]?.inputs).toEqual([{ instance: 'ema20', property: 'wert' }]);
+    // an input is written with all five fields of the format (specification 3.3): a property, no arguments, no refresh
+    expect(joined.elements[0]?.inputs).toEqual([{ instance: 'ema20', property: 'wert', kind: 'property', arguments: [], refresh: false }]);
     expect(withInputs(joined, 'cond', tree).elements[0]?.inputs).toHaveLength(1);
     expect(withInputs(doc, 'cond', comparisonBlock('>', nameBlock(['Kerze', 'schluss']), numberBlock(1)))).toBe(doc);
     expect(withInputs(doc, null, tree)).toBe(doc);

@@ -9,6 +9,7 @@ import {
   type Bindings,
   type ConnectionDocument,
   type ElementDocument,
+  type InputDocument,
   type InstanceDocument,
   type Position,
   type StrategyDocument,
@@ -301,6 +302,11 @@ export function removeElement(document: StrategyDocument, types: TypeIndex, id: 
   next.elements = next.elements.filter((candidate) => !ids.has(candidate.id));
   for (const other of next.elements) {
     other.inputs = other.inputs.filter((input) => !keys.has(input.instance.toLowerCase()));
+    // an instance whose first use was a removed element has no element of its first use any more (specification 3.3)
+    const firstUse = other.instance?.first_use;
+    if (other.instance !== undefined && other.instance !== null && typeof firstUse === 'string' && ids.has(firstUse)) {
+      other.instance.first_use = null;
+    }
   }
   if (keys.size > 0) {
     dropBindings(next, (binding) => isConnectionValue(binding.value) && keys.has(binding.value.instance.toLowerCase()));
@@ -498,6 +504,16 @@ export function setBinding(
     : next;
 }
 
+/** Whether an input names a property of its instance (a document without `kind` means a property). */
+function isPropertyInput(input: InputDocument): boolean {
+  return input.kind === undefined || input.kind === 'property';
+}
+
+/**
+ * Adds the input of a property of an instance to an element (specification 3.3). The input is written with all five
+ * fields: `kind` "property", no arguments, no "Aktualisieren". An input of a method of the same name is another input
+ * and stays as it is.
+ */
 export function addInput(
   document: StrategyDocument,
   id: string,
@@ -507,8 +523,10 @@ export function addInput(
     ...document,
     elements: document.elements.map((candidate) =>
       candidate.id === id &&
-      !candidate.inputs.some((existing) => existing.instance === input.instance && existing.property === input.property)
-        ? { ...candidate, inputs: [...candidate.inputs, { ...input }] }
+      !candidate.inputs.some(
+        (existing) => isPropertyInput(existing) && existing.instance === input.instance && existing.property === input.property,
+      )
+        ? { ...candidate, inputs: [...candidate.inputs, { ...input, kind: 'property', arguments: [], refresh: false }] }
         : candidate,
     ),
   };
@@ -526,7 +544,8 @@ export function removeInput(
         ? {
             ...candidate,
             inputs: candidate.inputs.filter(
-              (existing) => !(existing.instance === input.instance && existing.property === input.property),
+              (existing) =>
+                !(isPropertyInput(existing) && existing.instance === input.instance && existing.property === input.property),
             ),
           }
         : candidate,

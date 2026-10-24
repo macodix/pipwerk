@@ -394,11 +394,11 @@ export function ElementView({ element }: { element: ElementDocument }) {
       >
         {element.inputs.length === 0 ? <p className="empty-note">{t('properties.noInputs')}</p> : null}
         <div className="chips">
-          {element.inputs.map((input) => {
+          {element.inputs.map((input, position) => {
             const source = objects.find((candidate) => candidate.instance?.key.toLowerCase() === input.instance.toLowerCase());
             const property = source === undefined ? undefined : propertyRows(types.byId.get(source.type), source.instance, language).find((row2) => row2.id === input.property);
             return (
-              <span key={`${input.instance}.${input.property}`} className="chip chip-input" data-testid="input-chip">
+              <span key={`${position}:${input.instance}.${input.property}`} className="chip chip-input" data-testid="input-chip">
                 <Icon name="link" size={12} />
                 {source === undefined ? input.instance : elementName(source, types, language)} › {property?.label ?? input.property}
                 <button

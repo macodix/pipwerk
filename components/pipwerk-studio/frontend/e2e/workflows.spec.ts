@@ -19,7 +19,10 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   await newStrategy(page);
 
   await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
-  await expect(page.getByTestId('canvas-empty')).toContainText('Nächster Schritt');
+  // the hint of the empty strategy stands in the properties view, above the fields of the strategy
+  await showArea(page, 'props');
+  await expect(page.getByTestId('empty-strategy-hint')).toContainText('Nächster Schritt');
+  await expect(page.getByTestId('canvas')).not.toContainText('Nächster Schritt');
   await expect(page.getByTestId('lane-empty')).toHaveCount(0);
   await expect(page.getByTestId('param-strip')).toContainText('Noch keine');
 
@@ -125,7 +128,8 @@ test('the open strategy is deleted after a question; it is gone from the list', 
   await clickMenu(page, 'delete');
   await (await dialogButton(page, 'Löschen')).click();
 
-  await expect(page.getByTestId('canvas-no-strategy')).toBeVisible();
+  await showArea(page, 'props');
+  await expect(page.getByTestId('props-none')).toBeVisible();
   await clickMenu(page, 'open');
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Zum Löschen' })).toHaveCount(0);
   await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge' })).toBeVisible();
@@ -140,7 +144,7 @@ test('the language of the interface is changed in the settings and stays after r
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
   await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');
   await expect(page.getByTestId('library')).toContainText('Element library');
-  await expect(page.getByTestId('library')).toContainText('When to calculate');
+  await expect(page.getByTestId('library')).toContainText('Flow control');
 
   await page.reload();
 

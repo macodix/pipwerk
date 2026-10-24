@@ -39,7 +39,9 @@ function TabBar() {
           type="button"
           role="tab"
           aria-selected={studio.state.panel === id}
-          className={studio.state.panel === id ? 'on' : ''}
+          // a short message waits in the properties view, which this button leads to (specification 5.1)
+          data-marked={id === 'props' && studio.state.panel !== 'props' && studio.messageShown ? 'true' : undefined}
+          className={`${studio.state.panel === id ? 'on' : ''}${id === 'props' && studio.state.panel !== 'props' && studio.messageShown ? ' marked' : ''}`}
           onClick={() => {
             studio.actions.setPanel(id);
           }}
@@ -73,34 +75,6 @@ function UsersList({ plan }: { plan: RemovalPlan }) {
       </ul>
       <p>{t('dialogs.afterRemoval')}</p>
     </>
-  );
-}
-
-function Notice() {
-  const { studio } = useStudio();
-  const { t } = useTranslation();
-  const notice = studio.state.notice;
-  const [visible, setVisible] = useState<number | null>(null);
-  useEffect(() => {
-    if (notice === null) {
-      return undefined;
-    }
-    setVisible(notice.serial);
-    const timer = window.setTimeout(() => {
-      setVisible(null);
-    }, 4200);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [notice]);
-  if (notice === null || visible !== notice.serial) {
-    return null;
-  }
-  return (
-    <div className="toast" role="status" data-testid="toast">
-      <Icon name="info" size={16} />
-      <span>{t(notice.key, notice.params)}</span>
-    </div>
   );
 }
 
@@ -308,7 +282,6 @@ export function App() {
             aboutButtonRef.current?.focus();
           }}
         />
-        <Notice />
         <TipLayer />
       </div>
     </StudioContext.Provider>

@@ -53,40 +53,10 @@ type Drag = { id: string; pos: Pt };
 /** The drawing area (specification 5.3) with React Flow: it shows the arrangement and takes dragging, connecting, zoom and fitting. */
 export function Canvas() {
   const { studio } = useStudio();
-  const { t } = useTranslation();
   if (studio.state.document === null) {
-    return (
-      <div className="canvas" data-region="canvas" data-testid="canvas">
-        <div className="canvas-empty" data-testid="canvas-no-strategy">
-          <div className="empty-card">
-            <Icon name="chart" size={30} />
-            <h2>{t('canvas.noStrategyTitle')}</h2>
-            <p>{t('canvas.noStrategyText')}</p>
-            <div className="btn-row">
-              <Btn
-                kind="primary"
-                icon="plus"
-                testid="empty-new"
-                onClick={() => {
-                  studio.actions.request({ kind: 'new' });
-                }}
-              >
-                {t('menu.new')}
-              </Btn>
-              <Btn
-                icon="folder"
-                testid="empty-open"
-                onClick={() => {
-                  studio.actions.setDialog({ kind: 'open' });
-                }}
-              >
-                {t('menu.open')}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    // Without a strategy the drawing area stays empty: the hint "Keine Strategie geöffnet" stands in the properties
+    // view and nowhere else (specification 5.3, 5.5; req-ui-016).
+    return <div className="canvas" data-region="canvas" data-testid="canvas" data-state="no-strategy" />;
   }
   return (
     <ReactFlowProvider>
@@ -479,7 +449,7 @@ function CanvasView() {
       const hit = stepAt(current, point);
       const hitElement = hit === undefined ? undefined : document.elements.find((candidate) => candidate.id === hit);
       const frame = frameAt(current, point);
-      actions.dispatch({ type: 'wizard', wizard: null });
+      actions.pauseWizard();
       if (hitElement !== undefined && !isCardElement(hitElement, types)) {
         void actions.insert(key, { after: hitElement.id, flow: hitElement.management_of ?? null });
       } else {
@@ -623,22 +593,6 @@ function CanvasView() {
         </div>
       </div>
 
-      {state.armed !== null ? (
-        <div className="armed-banner" data-testid="armed-banner">
-          <Icon name="link" size={16} />
-          <span>{t('canvas.armed')}</span>
-          <Btn
-            small
-            kind="quiet"
-            onClick={() => {
-              actions.arm(null);
-            }}
-          >
-            {t('common.cancel')}
-          </Btn>
-        </div>
-      ) : null}
-
       <CanvasActionsContext.Provider value={canvasActions}>
         <EdgeActionsContext.Provider value={edgeActions}>
           <div
@@ -695,38 +649,6 @@ function CanvasView() {
           </div>
         </EdgeActionsContext.Provider>
       </CanvasActionsContext.Provider>
-
-      {document.elements.length === 0 ? (
-        <div className="canvas-empty" data-testid="canvas-empty">
-          <div className="empty-card">
-            <Icon name="grid" size={28} />
-            <h2>{t('canvas.emptyTitle')}</h2>
-            <p>{t('canvas.emptyText')}</p>
-            <div className="btn-row">
-              <Btn
-                kind="primary"
-                icon="list"
-                testid="empty-library"
-                onClick={() => {
-                  actions.setPanel('library');
-                }}
-              >
-                {t('canvas.openLibrary')}
-              </Btn>
-              <Btn
-                icon="wand"
-                testid="empty-wizard"
-                onClick={() => {
-                  actions.dispatch({ type: 'wizard', wizard: studio.state.wizard === null ? { step: 1 } : {} });
-                  actions.setPanel('props');
-                }}
-              >
-                {t('wizard.offerButton')}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <details className="legend">
         <summary>{t('canvas.legend')}</summary>

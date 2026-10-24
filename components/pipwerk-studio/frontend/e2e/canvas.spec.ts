@@ -93,7 +93,7 @@ test('a step dragged into the frame becomes part of the management, and out of i
   // the middle of the step moves to a free place inside the frame: next to its title
   await dragBy(page, step, frame.x + frame.width - 120 - (from.x + from.width / 2), frame.y + 60 - (from.y + from.height / 2));
 
-  await expect(page.getByTestId('toast')).toContainText('Verwaltung');
+  await expect(page.getByTestId('message')).toContainText('Verwaltung');
   // the flow was arranged anew without the step: the frame lies elsewhere now
   const inside = await boxOf(step);
   const frameNow = await boxOf(page.getByTestId('frame'));
@@ -108,7 +108,7 @@ test('a step dragged into the frame becomes part of the management, and out of i
   const placed = await boxOf(step);
   const area = await boxOf(page.getByTestId('lane'));
   await dragBy(page, step, area.x + area.width + 40 - (placed.x + placed.width / 2), 0);
-  await expect(page.getByTestId('toast')).toContainText('Hauptablauf');
+  await expect(page.getByTestId('message')).toContainText('Hauptablauf');
   expect(overlap(await boxOf(step), await boxOf(page.getByTestId('frame')))).toBe(false);
 });
 
@@ -140,13 +140,13 @@ test('a step is connected by dragging and by clicking, and a selected line is de
   void api;
   await openApp(page);
   await newStrategy(page);
-  await expect(page.getByTestId('canvas-empty')).toBeVisible();
-  await library(page, 'Start von Hand').click();
+  await expect(page.getByTestId('empty-strategy-hint')).toBeVisible();
+  await library(page, 'Manuell').click();
   await page.getByTestId('canvas').locator('.react-flow__pane').click({ position: { x: 700, y: 400 }, force: true });
   await library(page, 'Order löschen').click();
   await expect(page.getByTestId('node')).toHaveCount(2);
   await expect(page.getByTestId('flow-edge')).toHaveCount(0);
-  const trigger = node(page, 'Start von Hand');
+  const trigger = node(page, 'Manuell');
   const target = node(page, 'Order löschen');
 
   // by dragging from the output to the other step

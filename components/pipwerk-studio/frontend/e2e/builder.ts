@@ -157,8 +157,10 @@ export async function newStrategyFromScratch(page: Page, name: string): Promise<
   await expect(page.getByTestId('wizard')).toBeVisible();
   await page.getByTestId('wz-leave').click();
   await page.getByTestId('strategy-name').fill(name);
+  // the hint of the empty strategy stands in the properties view, not on the drawing area
+  await expect(page.getByTestId('empty-strategy-hint')).toBeVisible();
   await showArea(page, 'canvas');
-  await expect(page.getByTestId('canvas-empty')).toBeVisible();
+  await expect(page.getByTestId('canvas')).toBeVisible();
 }
 
 export async function createParam(page: Page, name: string, type: 'time_unit' | 'number', value: string): Promise<void> {
