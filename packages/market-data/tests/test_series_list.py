@@ -104,8 +104,9 @@ def test_the_order_does_not_depend_on_the_order_of_import(store: MarketDataStore
 
 
 def test_a_row_holds_first_last_and_the_number_of_gaps(filled: MarketDataStore) -> None:
-    moments = [utc(2024, 1, 2, 10), utc(2024, 1, 2, 13), utc(2024, 1, 2, 17)]
-    add_candles(filled, "gamma", "EURUSD", "h1", moments)
+    # three files with one candle each: two holes between their covered periods
+    for hour in (10, 13, 17):
+        add_candles(filled, "gamma", "EURUSD", "h1", [utc(2024, 1, 2, hour)])
     row = filled.list_series(broker="gamma").items[0]
     assert (row.first, row.last) == (utc(2024, 1, 2, 10), utc(2024, 1, 2, 17))
     assert row.gap_count == 2
@@ -203,14 +204,12 @@ def test_the_brokers_of_the_data_store(filled: MarketDataStore) -> None:
 
 
 def test_details_of_a_series_with_all_gaps_and_the_contract_data(store: MarketDataStore) -> None:
-    moments = [
-        utc(2024, 1, 2, 10),
-        utc(2024, 1, 2, 11),
-        utc(2024, 1, 2, 14),
-        utc(2024, 1, 2, 15),
-        utc(2024, 1, 2, 20),
-    ]
-    add_candles(store, "Alpha", "EURUSD", "h1", moments)
+    for moments in (
+        [utc(2024, 1, 2, 10), utc(2024, 1, 2, 11)],
+        [utc(2024, 1, 2, 14), utc(2024, 1, 2, 15)],
+        [utc(2024, 1, 2, 20)],
+    ):
+        add_candles(store, "Alpha", "EURUSD", "h1", moments)
     add_contract(store, "Alpha", "EURUSD")
     details = store.series_details("Alpha", "EURUSD", "h1")
     assert details is not None

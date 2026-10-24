@@ -10,7 +10,7 @@ import csv
 import io
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pipwerk_marketdata.errors import ImportFileError
@@ -31,7 +31,8 @@ from pipwerk_marketdata.parsed import (
     check_series_names,
     is_finite,
 )
-from pipwerk_marketdata.records import Candle, FileErrorCode, RejectReason, Tick
+from pipwerk_marketdata.records import Candle, FileErrorCode, Interval, RejectReason, Tick
+from pipwerk_marketdata.timeunits import time_unit
 
 _DELIMITERS = ("\t", ";", ",")
 
@@ -246,7 +247,8 @@ def parse_csv(data: bytes, series: CsvSeries, limits: ImportLimits | None = None
             data_rows += 1
             if data_rows > limits.max_rows:
                 raise ImportFileError(
-                    FileErrorCode.TOO_MANY_ROWS, f"The file has more than {limits.max_rows} rows."
+                    FileErrorCode.TOO_MANY_ROWS,
+                    f"The file has more rows than the limit of {limits.max_rows} rows per file.",
                 )
             number = reader.line_num
             try:
@@ -266,9 +268,50 @@ def parse_csv(data: bytes, series: CsvSeries, limits: ImportLimits | None = None
         unit=series.time_unit,
         candles=candles,
         ticks=ticks,
+        declared_period=_covered_days(series, candles, ticks, zone),
         rejected=rejections.rows,
         rejected_count=rejections.count,
     )
+
+
+def _day_start(day: date, zone: ZoneInfo) -> datetime:
+    """The beginning of a day in the time zone, in UTC. If the clock skips midnight, the first
+    moment of the day that exists; if midnight occurs twice, the earlier one."""
+    local = datetime.combine(day, time())
+    for _ in range(24):
+        found = local_to_utc(local, zone)
+        if found is not None:
+            return found
+        local += timedelta(hours=1)
+    raise ImportFileError(
+        FileErrorCode.TIMEZONE_UNKNOWN, "The time zone has a day without a start."
+    )
+
+
+def _covered_days(
+    series: CsvSeries, candles: list[Candle], ticks: list[Tick], zone: ZoneInfo
+) -> Interval | None:
+    """The period a CSV file covers (specification 5.2): from the beginning of the day of the
+    first entry to the end of the day of the last entry, days in the time zone of the file.
+    ``None`` if no row was taken over.
+
+    The last entry ends with its candle (the time unit) or its millisecond; a candle of a day
+    or longer unit that reaches past the day of its opening moment extends the period.
+    """
+    if series.kind == KIND_CANDLES:
+        if not candles:
+            return None
+        first = candles[0].time
+        end = time_unit(series.time_unit or "").add(candles[-1].time)
+    else:
+        if not ticks:
+            return None
+        first = ticks[0].time
+        end = ticks[-1].time + timedelta(milliseconds=1)
+    last_day = (end - timedelta(microseconds=1)).astimezone(zone).date()
+    start = _day_start(first.astimezone(zone).date(), zone)
+    finish = _day_start(last_day + timedelta(days=1), zone)
+    return Interval(max(start, MIN_MOMENT), min(finish, MAX_MOMENT))
 
 
 def _read_row(

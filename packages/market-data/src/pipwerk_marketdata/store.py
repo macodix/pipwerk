@@ -15,8 +15,11 @@ from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import SQLAlchemyError
 
 from pipwerk_marketdata import tables
-from pipwerk_marketdata.completeness import candle_gaps, combine, merge, tick_gaps
+from pipwerk_marketdata.completeness import combine, merge
 from pipwerk_marketdata.csvimport import CsvSeries, parse_csv
+from pipwerk_marketdata.deletion import broker_names
+from pipwerk_marketdata.deletion import check_period as check_deletion_period
+from pipwerk_marketdata.deletion import run as run_deletion
 from pipwerk_marketdata.errors import ImportBatchError, ImportFileError, MarketDataStoreError
 from pipwerk_marketdata.jsonimport import parse_json
 from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, MAX_MOMENT, MIN_MOMENT, ImportLimits
@@ -34,6 +37,8 @@ from pipwerk_marketdata.records import (
     CandlePage,
     Completeness,
     CompletenessRules,
+    Deletion,
+    DeletionKind,
     FileErrorCode,
     FileFormat,
     FileOutcome,
@@ -58,14 +63,11 @@ from pipwerk_marketdata.timeunits import (
     CONTRACT,
     TICKS,
     TIME_UNITS,
-    TimeUnit,
     require_utc,
     time_unit,
 )
 
 _CHUNK = 500
-_STREAM = 10_000
-_MONTH_LOOKBACK = timedelta(days=31)
 _WEEKDAYS = list(Weekday)
 
 
@@ -102,10 +104,6 @@ def _row_key(key: tuple[str, str, str]) -> tuple[tuple[str, str], tuple[str, str
 def _contains(text: str, part: str | None) -> bool:
     """``True`` if ``part`` is empty or missing or a part of ``text`` (case ignored)."""
     return not part or part.casefold() in text.casefold()
-
-
-def _lookback(unit: TimeUnit) -> timedelta:
-    return unit.duration if unit.duration is not None else _MONTH_LOOKBACK
 
 
 class MarketDataStore:
@@ -166,7 +164,7 @@ class MarketDataStore:
         timezone: str | None = None,
         limits: ImportLimits | None = None,
     ) -> ImportBatchResult:
-        """Import the files of one process, each in a transaction of its own.
+        """Import files, each in a transaction of its own.
 
         ``broker`` is the broker of the whole process: it is the broker of the CSV files and
         replaces the broker named in a JSON file; without it a JSON file keeps its own broker
@@ -174,23 +172,12 @@ class MarketDataStore:
         all CSV files. A CSV file needs ``instrument`` and ``data`` (time unit or ``ticks``).
 
         The result has one outcome per file in the order given. A refused file (reason in the
-        outcome) does not stop the others. ``ImportBatchError`` if the process as a whole
-        breaks ``limits.max_files`` or ``limits.max_batch_bytes`` or has no file; then nothing
-        is read.
+        outcome) does not stop the others. There is no limit for the number of files or their
+        total size; ``limits`` apply to each file. ``ImportBatchError`` if there is no file.
         """
         limits = limits or ImportLimits()
         if not files:
             raise ImportBatchError(BatchErrorCode.NO_FILES, "The process has no file.")
-        if len(files) > limits.max_files:
-            raise ImportBatchError(
-                BatchErrorCode.TOO_MANY_FILES,
-                f"The process has more than {limits.max_files} files.",
-            )
-        if sum(len(file.content) for file in files) > limits.max_batch_bytes:
-            raise ImportBatchError(
-                BatchErrorCode.BATCH_TOO_LARGE,
-                f"The files together are larger than {limits.max_batch_bytes} bytes.",
-            )
         return ImportBatchResult(
             tuple(self._import_file(file, broker, timezone, limits) for file in files)
         )
@@ -615,76 +602,27 @@ class MarketDataStore:
         with _database_errors(), self._engine.connect() as connection:
             series_id = self._series_id(connection, broker, instrument, unit, False)
             if series_id is None:
-                return self._result(request, [], [], None)
+                return self._result(request, [], None)
             covered = self._coverage(connection, series_id)
             sessions = self._sessions(connection, series_id) or None
-            gaps = self._gaps(connection, series_id, unit, request, covered, sessions)
-        return self._result(request, covered, gaps, sessions)
+        return self._result(request, covered, sessions)
 
     def _result(
         self,
         request: Interval,
         covered: list[Interval],
-        gaps: list[Interval],
         sessions: list[TradingSession] | None,
     ) -> Completeness:
-        present, missing = combine(request, covered, gaps, sessions, self._rules)
+        present, missing = combine(request, covered, sessions, self._rules)
         return Completeness(
             request.start, request.end, tuple(present), tuple(missing), sessions is not None
         )
-
-    def _gaps(
-        self,
-        connection: Connection,
-        series_id: int,
-        unit: str,
-        request: Interval,
-        covered: list[Interval],
-        sessions: list[TradingSession] | None,
-    ) -> list[Interval]:
-        gaps: list[Interval] = []
-        for part in covered:
-            start, end = max(part.start, request.start), min(part.end, request.end)
-            if start >= end:
-                continue
-            window = Interval(start, end)
-            if unit == TICKS:
-                table = tables.tick
-                moments = connection.execute(
-                    sa.select(table.c.moment)
-                    .where(
-                        table.c.series_id == series_id,
-                        table.c.moment >= window.start,
-                        table.c.moment < window.end,
-                    )
-                    .order_by(table.c.moment)
-                ).yield_per(_STREAM)
-                gaps.extend(tick_gaps((row[0] for row in moments), window, sessions, self._rules))
-            else:
-                candle_unit = time_unit(unit)
-                table = tables.candle
-                opens = connection.execute(
-                    sa.select(table.c.opened_at)
-                    .where(
-                        table.c.series_id == series_id,
-                        table.c.opened_at > window.start - _lookback(candle_unit),
-                        table.c.opened_at < window.end,
-                    )
-                    .order_by(table.c.opened_at)
-                ).yield_per(_STREAM)
-                gaps.extend(
-                    candle_gaps(
-                        (row[0] for row in opens), candle_unit, window, sessions, self._rules
-                    )
-                )
-        return merge(gaps)
 
     def overview(self) -> Overview:
         """All series with count, first and last moment, covered periods and missing parts, and
         the newest instrument data per instrument and broker.
 
-        The missing parts are computed over the whole covered range of each series; the
-        computation reads all times of the series.
+        The missing parts are computed over the whole covered range of each series.
         """
         with _database_errors(), self._engine.connect() as connection:
             series_rows = connection.execute(
@@ -710,32 +648,20 @@ class MarketDataStore:
         return Overview(tuple(result), instruments)
 
     def _missing_parts(
-        self,
-        connection: Connection,
-        series_id: int,
-        unit: str,
-        covered: list[Interval],
-        sessions: list[TradingSession] | None,
+        self, covered: list[Interval], sessions: list[TradingSession] | None
     ) -> list[MissingPart]:
-        """The missing parts over the whole covered range of a series (rules of section 7)."""
+        """The gaps of a series: the missing parts over its whole covered range (5.2)."""
         if not covered:
             return []
         request = Interval(covered[0].start, max(part.end for part in covered))
-        gaps = self._gaps(connection, series_id, unit, request, covered, sessions)
-        return combine(request, covered, gaps, sessions, self._rules)[1]
+        return combine(request, covered, sessions, self._rules)[1]
 
     # ----- list of series, details, brokers -------------------------------------------------
 
     def brokers(self) -> tuple[str, ...]:
         """The brokers that occur in the data store (series or instrument data), sorted."""
         with _database_errors(), self._engine.connect() as connection:
-            names = {
-                row[0] for row in connection.execute(sa.select(tables.series.c.broker).distinct())
-            }
-            names |= {
-                row[0]
-                for row in connection.execute(sa.select(tables.instrument.c.broker).distinct())
-            }
+            names = broker_names(connection)
         return tuple(sorted(names, key=_name_key))
 
     def _row_keys(self, connection: Connection) -> list[tuple[str, str, str]]:
@@ -813,7 +739,7 @@ class MarketDataStore:
         ).one()
         covered = self._coverage(connection, series_id)
         sessions = self._sessions(connection, series_id) or None
-        missing = self._missing_parts(connection, series_id, data, covered, sessions)
+        missing = self._missing_parts(covered, sessions)
         return SeriesRow(broker, instrument, data, first, last, len(missing)), missing
 
     def series_details(self, broker: str, instrument: str, data: str) -> SeriesDetails | None:
@@ -857,7 +783,7 @@ class MarketDataStore:
         ).one()
         covered = self._coverage(connection, series_id)
         sessions = self._sessions(connection, series_id) or None
-        missing = self._missing_parts(connection, series_id, unit, covered, sessions)
+        missing = self._missing_parts(covered, sessions)
         return SeriesOverview(
             broker=broker,
             instrument=instrument,
@@ -869,3 +795,69 @@ class MarketDataStore:
             missing=tuple(missing),
             has_trading_hours=sessions is not None,
         )
+
+    # ----- deleting (specification 5.5) -----------------------------------------------------
+
+    def plan_delete_series(self, broker: str, instrument: str, data: str) -> Deletion:
+        """What ``delete_series`` would remove; nothing is changed.
+
+        ``data`` is a time unit identifier or ``ticks``. ``DeletionError`` if the broker, the
+        instrument or the series is unknown.
+        """
+        return self._delete(DeletionKind.SERIES, broker, instrument, data, None, execute=False)
+
+    def delete_series(self, broker: str, instrument: str, data: str) -> Deletion:
+        """Delete a whole series (all its candles or ticks, covered periods and trading hours),
+        in one transaction. Returns what was removed."""
+        return self._delete(DeletionKind.SERIES, broker, instrument, data, None, execute=True)
+
+    def plan_delete_period(
+        self, broker: str, instrument: str, data: str, start: datetime, end: datetime
+    ) -> Deletion:
+        """What ``delete_period`` would remove; nothing is changed.
+
+        The period runs from ``start`` (included) to ``end`` (excluded), both UTC and on the
+        minute. ``DeletionError`` if it is invalid, if the broker, the instrument or the series
+        is unknown, or if the series has neither data nor a covered period in it.
+        """
+        period = check_deletion_period(start, end)
+        return self._delete(DeletionKind.PERIOD, broker, instrument, data, period, execute=False)
+
+    def delete_period(
+        self, broker: str, instrument: str, data: str, start: datetime, end: datetime
+    ) -> Deletion:
+        """Delete the candles or ticks in a period and take the period out of the covered
+        periods of the series, in one transaction. A series without a candle or tick left is
+        removed. Returns what was removed."""
+        period = check_deletion_period(start, end)
+        return self._delete(DeletionKind.PERIOD, broker, instrument, data, period, execute=True)
+
+    def plan_delete_contract(self, broker: str, instrument: str) -> Deletion:
+        """What ``delete_contract`` would remove; nothing is changed."""
+        return self._delete(DeletionKind.CONTRACT, broker, instrument, None, None, execute=False)
+
+    def delete_contract(self, broker: str, instrument: str) -> Deletion:
+        """Delete all instrument data of an instrument at a broker, in one transaction."""
+        return self._delete(DeletionKind.CONTRACT, broker, instrument, None, None, execute=True)
+
+    def plan_delete_broker(self, broker: str) -> Deletion:
+        """What ``delete_broker`` would remove; nothing is changed."""
+        return self._delete(DeletionKind.BROKER, broker, None, None, None, execute=False)
+
+    def delete_broker(self, broker: str) -> Deletion:
+        """Delete all series and all instrument data of a broker, in one transaction. The broker
+        does not occur in the data store afterwards."""
+        return self._delete(DeletionKind.BROKER, broker, None, None, None, execute=True)
+
+    def _delete(
+        self,
+        kind: DeletionKind,
+        broker: str,
+        instrument: str | None,
+        data: str | None,
+        period: Interval | None,
+        *,
+        execute: bool,
+    ) -> Deletion:
+        with _database_errors(), self._engine.begin() as connection:
+            return run_deletion(connection, kind, broker, instrument, data, period, execute=execute)

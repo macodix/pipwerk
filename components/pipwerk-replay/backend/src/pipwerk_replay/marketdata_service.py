@@ -1,21 +1,24 @@
 """The data stock of pipwerk replay: the service in front of ``pipwerk_marketdata``.
 
 The service connects the library with the settings of pipwerk replay and applies the limits of
-specification 5.3 and 11 (a file is limited in size and in rows, an import in the number and the
-total size of its files, the number of imports that run at the same time is limited, lists in
-answers are cut). It knows no HTTP; ``marketdata_api.py`` connects it with the web API.
+specification 5.3 and 11 (a file is limited in size and in rows, an import has no limit for the
+number or the total size of its files, the number of files that are imported at the same time is
+limited, lists in answers are cut). It keeps the import processes (``import_processes.py``) and
+refuses to delete while one exists (specification 5.5). It knows no HTTP; ``marketdata_api.py``
+connects it with the web API.
 """
 
 from __future__ import annotations
 
 import threading
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 
 from pipwerk_marketdata import (
     TICKS,
     Completeness,
+    Deletion,
     FileFormat,
     ImportFile,
     ImportLimits,
@@ -30,11 +33,29 @@ from pipwerk_marketdata import (
 from pipwerk_replay import marketdata_models as models
 from pipwerk_replay.config import MarketDataSettings
 from pipwerk_replay.import_form import FormFile, ImportForm
-from pipwerk_replay.settings_service import SettingsService
+from pipwerk_replay.import_processes import (
+    ImportGoingOnError,
+    ImportProcesses,
+    ImportProcessNotFoundError,
+)
+from pipwerk_replay.settings_service import SettingsService, StoredTestRunBrokerInvalidError
+
+__all__ = [
+    "BrokerForTestRuns",
+    "BrokerNotInDataStockError",
+    "ConcurrencyLimit",
+    "ImportGoingOnError",
+    "ImportProcessNotFoundError",
+    "MarketDataService",
+    "NoBrokerError",
+    "TooManyRunningError",
+    "detect_format",
+    "import_limits",
+]
 
 
 class TooManyRunningError(Exception):
-    """Raised when the number of imports that may run at once is reached."""
+    """Raised when the number of files that may be imported at once is reached."""
 
 
 class NoBrokerError(Exception):
@@ -62,13 +83,11 @@ class ConcurrencyLimit:
 
 
 def import_limits(settings: MarketDataSettings) -> ImportLimits:
-    """The limits of one uploaded file and of one import from the settings."""
+    """The limits of one uploaded file from the settings."""
     return ImportLimits(
         max_bytes=settings.max_upload_bytes,
         max_rows=settings.max_rows,
         max_reported_rejections=settings.max_reported_rejections,
-        max_files=settings.max_files_per_import,
-        max_batch_bytes=settings.max_import_bytes,
     )
 
 
@@ -104,19 +123,21 @@ class BrokerForTestRuns:
 
 
 class MarketDataService:
-    """Import, list of series, details, brokers, instrument data and completeness."""
+    """Import, deleting, list of series, details, brokers, instrument data and completeness."""
 
     def __init__(
         self,
         store: MarketDataStore,
         settings: MarketDataSettings,
         stored: SettingsService,
+        processes: ImportProcesses | None = None,
     ) -> None:
         self._store = store
         self._settings = settings
         self._stored = stored
         self._limits = import_limits(settings)
         self._imports = ConcurrencyLimit(settings.max_concurrent_imports)
+        self._processes = processes or ImportProcesses(settings.import_idle_timeout_seconds)
 
     @property
     def settings(self) -> MarketDataSettings:
@@ -124,44 +145,62 @@ class MarketDataService:
 
     # ----- import -----------------------------------------------------------------------
 
-    def import_files(self, form: ImportForm) -> models.ImportOutcome:
-        """Import the files of one process, each in a transaction of its own.
-
-        ``ImportBatchError`` if the process has no file, too many or is too large together
-        (nothing is read then); a refused file is a result in the outcome and does not stop the
-        others. ``TooManyRunningError`` if the imports that may run at once are running."""
-        files = [
-            ImportFile(
-                name=item.name,
-                content=item.content,
-                format=detect_format(item.name, item.content),
-                instrument=item.instrument,
-                data=item.data,
-            )
-            for item in form.files
-        ]
-        with self._imports.hold():
-            batch = self._store.import_files(
-                files, broker=form.broker, timezone=form.timezone, limits=self._limits
-            )
-        outcomes = [models.FileOutcome.model_validate(item) for item in batch.files]
-        refused = sum(1 for item in outcomes if item.refused)
-        return models.ImportOutcome(
-            files=outcomes, imported_count=len(outcomes) - refused, refused_count=refused
+    def begin_import(self) -> models.ImportProcess:
+        """Begin an import process. It exists until it is ended or aborted, or until no request
+        of it has arrived for the idle timeout (specification 5.5)."""
+        started = self._processes.begin()
+        return models.ImportProcess(
+            id=started.id, idle_timeout_seconds=int(self._processes.idle_timeout_seconds)
         )
 
-    def preview(self, files: Sequence[FormFile]) -> models.ImportPreview:
-        """What the files say about themselves, without importing anything.
+    def import_file(self, process_id: str, form: ImportForm) -> models.FileOutcome:
+        """Import one file of an import process in a transaction of its own.
+
+        A file that is refused as a whole is a result (``refused``) and does not end the
+        process. ``ImportProcessNotFoundError`` if the process does not exist (any more),
+        ``TooManyRunningError`` if the files that may be imported at once are being imported."""
+        file = form.file
+        with self._processes.request(process_id), self._imports.hold():
+            # A broker that left the data stock without the knowledge of this service is not
+            # chosen again by importing it (specification 5.5).
+            self._forget_missing_broker()
+            batch = self._store.import_files(
+                [
+                    ImportFile(
+                        name=file.name,
+                        content=file.content,
+                        format=detect_format(file.name, file.content),
+                        instrument=file.instrument,
+                        data=file.data,
+                    )
+                ],
+                broker=form.broker,
+                timezone=form.timezone,
+                limits=self._limits,
+            )
+        outcome = models.FileOutcome.model_validate(batch.files[0])
+        self._processes.counted(process_id, imported=not outcome.refused)
+        return outcome
+
+    def end_import(self, process_id: str, *, aborted: bool) -> models.ImportProcessEnd:
+        """End an import process (``aborted`` for an abort). Files that were taken over stay
+        taken over. ``ImportProcessNotFoundError`` if the process does not exist (any more)."""
+        summary = self._processes.end(process_id)
+        return models.ImportProcessEnd(
+            id=summary.id,
+            state="aborted" if aborted else "finished",
+            imported_count=summary.imported_count,
+            refused_count=summary.refused_count,
+        )
+
+    def preview(self, item: FormFile) -> models.FileHint:
+        """What a file says about itself, without importing anything.
 
         A JSON file names broker, instrument and data in its content (the instrument from its
         name if the content has none); a CSV file only in its name, as far as it does (the
         content of a CSV file is not read). Nothing is written."""
         with self._imports.hold():
-            hints = [self._hint(item) for item in files]
-        brokers = {item.broker for item in hints if item.format == "json"}
-        json_found = any(item.format == "json" for item in hints)
-        common = next(iter(brokers)) if json_found and len(brokers) == 1 else None
-        return models.ImportPreview(files=hints, broker=common)
+            return self._hint(item)
 
     def _hint(self, item: FormFile) -> models.FileHint:
         named = recognize_filename(item.name)
@@ -182,6 +221,81 @@ class MarketDataService:
             instrument=found.instrument or named.instrument,
             data=found.data,
             error=found.error,
+        )
+
+    # ----- deleting -------------------------------------------------------------------------
+
+    def delete_series(self, request: models.SeriesDeletionRequest) -> models.DeletionResult:
+        """What deleting a whole series would remove or, with ``confirm``, delete it.
+
+        ``DeletionError`` for an unknown broker, instrument or series; ``ImportGoingOnError``
+        while an import process exists. The same holds for the other deletions."""
+        return self._delete(
+            request.confirm,
+            lambda: self._store.plan_delete_series(
+                request.broker, request.instrument, request.data
+            ),
+            lambda: self._store.delete_series(request.broker, request.instrument, request.data),
+        )
+
+    def delete_period(self, request: models.PeriodDeletionRequest) -> models.DeletionResult:
+        """What deleting a period of a series would remove or, with ``confirm``, delete it."""
+        return self._delete(
+            request.confirm,
+            lambda: self._store.plan_delete_period(
+                request.broker, request.instrument, request.data, request.start, request.end
+            ),
+            lambda: self._store.delete_period(
+                request.broker, request.instrument, request.data, request.start, request.end
+            ),
+        )
+
+    def delete_contract(self, request: models.ContractDeletionRequest) -> models.DeletionResult:
+        """What deleting the instrument data of an instrument would remove or, with ``confirm``,
+        delete them."""
+        return self._delete(
+            request.confirm,
+            lambda: self._store.plan_delete_contract(request.broker, request.instrument),
+            lambda: self._store.delete_contract(request.broker, request.instrument),
+        )
+
+    def delete_broker(self, request: models.BrokerDeletionRequest) -> models.DeletionResult:
+        """What deleting all data of a broker would remove or, with ``confirm``, delete it."""
+        return self._delete(
+            request.confirm,
+            lambda: self._store.plan_delete_broker(request.broker),
+            lambda: self._store.delete_broker(request.broker),
+        )
+
+    def _delete(
+        self, confirm: bool, plan: Callable[[], Deletion], execute: Callable[[], Deletion]
+    ) -> models.DeletionResult:
+        """Plan or delete while no import process exists and none can begin; after a deletion
+        that removes the chosen broker from the data stock, no broker is chosen for test runs."""
+        with self._processes.exclusive():
+            chosen = self._chosen_broker()
+            done = execute() if confirm else plan()
+            reset = done.broker_removed and chosen == done.broker
+            if confirm and reset:
+                self._stored.set_test_run_broker(None)
+            applying = self._applying_broker(chosen=None if confirm and reset else chosen)
+        return models.DeletionResult(
+            kind=done.kind.value,
+            deleted=confirm,
+            broker=done.broker,
+            instrument=done.instrument,
+            data=done.data,
+            start=done.start,
+            end=done.end,
+            candle_count=done.candle_count,
+            tick_count=done.tick_count,
+            series_count=done.series_count,
+            instrument_count=done.instrument_count,
+            broker_removed=done.broker_removed,
+            test_run_broker_reset=reset,
+            test_run_broker=models.BrokerForTestRuns(
+                broker=applying.broker, chosen=applying.chosen
+            ),
         )
 
     # ----- list of series, details, brokers -----------------------------------------------
@@ -233,16 +347,40 @@ class MarketDataService:
 
     # ----- broker for test runs -------------------------------------------------------------
 
-    def test_run_broker(self) -> BrokerForTestRuns:
-        """The broker a test run uses (specification 5.1): the chosen one if it still occurs in
-        the data stock, otherwise the first broker of the data stock in alphabetical order.
+    def _chosen_broker(self) -> str | None:
+        """The broker chosen for test runs as stored; ``None`` if none is chosen or the stored
+        value is no valid name (the choice is repaired by the next valid write)."""
+        try:
+            return self._stored.get_test_run_broker()
+        except StoredTestRunBrokerInvalidError:
+            return None
 
-        ``StoredTestRunBrokerInvalidError`` if the stored choice is no valid name."""
+    def _applying_broker(self, chosen: str | None) -> BrokerForTestRuns:
         brokers = self._store.brokers()
-        chosen = self._stored.get_test_run_broker()
         if chosen is not None and chosen in brokers:
             return BrokerForTestRuns(chosen, True)
         return BrokerForTestRuns(brokers[0] if brokers else None, False)
+
+    def _forget_missing_broker(self) -> bool:
+        """Remove the choice of the broker for test runs if that broker no longer occurs in the
+        data stock (it left it by any way: deleting its data, or deleting its last period).
+        Returns whether the choice was removed. Specification 5.1 and 5.5: a later import of the
+        same broker does not choose it again."""
+        chosen = self._chosen_broker()
+        if chosen is not None and chosen not in self._store.brokers():
+            self._stored.set_test_run_broker(None)
+            return True
+        return False
+
+    def test_run_broker(self) -> BrokerForTestRuns:
+        """The broker a test run uses (specification 5.1): the chosen one if it still occurs in
+        the data stock, otherwise the first broker of the data stock in alphabetical order. A
+        chosen broker that no longer occurs is no longer chosen.
+
+        ``StoredTestRunBrokerInvalidError`` if the stored choice is no valid name."""
+        self._stored.get_test_run_broker()  # raises if the stored value is invalid
+        self._forget_missing_broker()
+        return self._applying_broker(self._chosen_broker())
 
     def set_test_run_broker(self, broker: str | None) -> BrokerForTestRuns:
         """Choose the broker for test runs; ``None`` removes the choice.

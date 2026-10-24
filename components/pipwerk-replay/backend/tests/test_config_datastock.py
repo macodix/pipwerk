@@ -16,19 +16,20 @@ import pytest
 import uvicorn
 from datastock import SERIES_URL, candles_json, import_json_file, make_app, upload
 from fastapi.testclient import TestClient
+from pipwerk_marketdata import CalendarDay
 from sqlalchemy import create_engine, inspect
 
 from pipwerk_replay import cli
 from pipwerk_replay.app import create_app
 from pipwerk_replay.config import (
+    DEFAULT_IMPORT_IDLE_TIMEOUT_SECONDS,
     DEFAULT_MAX_CONCURRENT_IMPORTS,
-    DEFAULT_MAX_FILES_PER_IMPORT,
-    DEFAULT_MAX_IMPORT_BYTES,
     DEFAULT_MAX_LISTED_ITEMS,
     DEFAULT_MAX_PARTS_PER_REQUEST,
     DEFAULT_MAX_REPORTED_REJECTIONS,
     DEFAULT_MAX_ROWS_PER_FILE,
     DEFAULT_MAX_UPLOAD_BYTES,
+    DEFAULT_NO_TRADING_DAYS,
     MarketDataSettings,
     StartupConfigError,
     load_startup_config,
@@ -68,8 +69,10 @@ def test_the_defaults_are_those_of_the_data_stock_library(tmp_path: Path) -> Non
     assert config.marketdata == MarketDataSettings()
     assert config.marketdata.database_url is None
     assert config.marketdata.max_upload_bytes == DEFAULT_MAX_UPLOAD_BYTES == 32 * 1024 * 1024
-    assert config.marketdata.max_files_per_import == DEFAULT_MAX_FILES_PER_IMPORT == 100
-    assert config.marketdata.max_import_bytes == DEFAULT_MAX_IMPORT_BYTES == 256 * 1024 * 1024
+    assert (
+        config.marketdata.import_idle_timeout_seconds == DEFAULT_IMPORT_IDLE_TIMEOUT_SECONDS == 300
+    )
+    assert config.marketdata.no_trading_days == (CalendarDay(12, 25), CalendarDay(1, 1))
     assert config.marketdata.max_rows == DEFAULT_MAX_ROWS_PER_FILE == 500_000
     assert config.marketdata.max_reported_rejections == DEFAULT_MAX_REPORTED_REJECTIONS == 1000
     assert config.marketdata.max_concurrent_imports == DEFAULT_MAX_CONCURRENT_IMPORTS == 2
@@ -83,8 +86,8 @@ def test_every_entry_is_read(tmp_path: Path) -> None:
         "[marketdata]\n"
         "url = sqlite:///data.db\n"
         "max_upload_bytes = 2048\n"
-        "max_files_per_import = 7\n"
-        "max_import_bytes = 4096\n"
+        "import_idle_timeout_seconds = 60\n"
+        "no_trading_days = 12-24, 12-25, 12-26, 01-01\n"
         "max_rows = 7\n"
         "max_reported_rejections = 0\n"
         "max_concurrent_imports = 5\n"
@@ -95,8 +98,13 @@ def test_every_entry_is_read(tmp_path: Path) -> None:
     assert config.marketdata == MarketDataSettings(
         database_url="sqlite:///data.db",
         max_upload_bytes=2048,
-        max_files_per_import=7,
-        max_import_bytes=4096,
+        import_idle_timeout_seconds=60,
+        no_trading_days=(
+            CalendarDay(12, 24),
+            CalendarDay(12, 25),
+            CalendarDay(12, 26),
+            CalendarDay(1, 1),
+        ),
         max_rows=7,
         max_reported_rejections=0,
         max_concurrent_imports=5,
@@ -105,28 +113,69 @@ def test_every_entry_is_read(tmp_path: Path) -> None:
     )
 
 
-def test_without_an_entry_the_import_may_hold_at_least_the_largest_file(tmp_path: Path) -> None:
-    larger = 512 * 1024 * 1024
-    config = load(tmp_path, f"[marketdata]\nmax_upload_bytes = {larger}\n")
+def test_the_entries_for_the_removed_limits_of_an_import_are_ignored(tmp_path: Path) -> None:
+    """There is no limit for the number of files or the total size of an import; a startup
+    configuration that still names them starts like with every entry the loader does not know."""
+    # The names are joined from their words, so that a search for the removed names finds none.
+    files, size = "_".join(["max", "files", "per", "import"]), "_".join(["max", "import", "bytes"])
+    config = load(
+        tmp_path,
+        f"[marketdata]\n{files} = 7\n{size} = 4096\nmax_upload_bytes = 2048\n",
+    )
 
-    assert config.marketdata.max_import_bytes == larger  # more than the default of 256 MiB
+    assert config.marketdata == MarketDataSettings(max_upload_bytes=2048)
+    assert not hasattr(config.marketdata, files)
+    assert not hasattr(config.marketdata, size)
 
 
-def test_the_import_may_not_be_smaller_than_one_file(tmp_path: Path) -> None:
-    message = error_of(tmp_path, "[marketdata]\nmax_upload_bytes = 4096\nmax_import_bytes = 2048\n")
+def test_the_days_without_trade_are_a_list_of_days_of_the_year(tmp_path: Path) -> None:
+    def days(value: str) -> Any:
+        return load(
+            tmp_path, f"[marketdata]\nno_trading_days = {value}\n"
+        ).marketdata.no_trading_days
 
-    assert "[marketdata] max_import_bytes" in message
-    assert "smaller than max_upload_bytes" in message
-    with pytest.raises(ValueError, match="max_import_bytes"):
-        MarketDataSettings(max_upload_bytes=4096, max_import_bytes=2048)
+    assert days("12-25") == (CalendarDay(12, 25),)
+    assert days("12-25,01-01") == (CalendarDay(12, 25), CalendarDay(1, 1))
+    assert days(" 01-01 ,  12-25 , ") == (CalendarDay(1, 1), CalendarDay(12, 25))
+    assert days("02-29") == (CalendarDay(2, 29),)  # a leap day is a day of the year
+    assert days("12-25, 12-25, 01-01") == (CalendarDay(12, 25), CalendarDay(1, 1))  # once
+    assert days("") == ()  # an empty value says: no day
+    assert load(tmp_path, "").marketdata.no_trading_days == DEFAULT_NO_TRADING_DAYS
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "12/25",
+        "2026-12-25",
+        "25-12",
+        "1-1",
+        "13-01",
+        "00-10",
+        "02-30",
+        "04-31",
+        "xx-yy",
+        "12-25 01-01",
+        "12-25;01-01",
+        "Dec 25",
+        "١٢-٢٥",
+    ],
+)
+def test_an_invalid_day_without_trade_names_the_entry_and_never_the_value(
+    tmp_path: Path, value: str
+) -> None:
+    message = error_of(tmp_path, f"[marketdata]\nno_trading_days = 12-25, {value}\n")
+
+    assert "[marketdata] no_trading_days" in message
+    assert "invalid" in message
+    assert value not in message
 
 
 @pytest.mark.parametrize(
     ("entry", "values"),
     [
         ("max_upload_bytes", ["1023", "1073741825", "0", "-1", "x", "1.5", "1e3", ""]),
-        ("max_files_per_import", ["0", "1001", "-1", "many", "1.5"]),
-        ("max_import_bytes", ["1023", "4294967297", "0", "-1", "x", "1.5"]),
+        ("import_idle_timeout_seconds", ["0", "86401", "-1", "five", "1.5", "5 min", ""]),
         ("max_rows", ["0", "100000001", "-5", "ten", "1 000"]),
         ("max_reported_rejections", ["-1", "1000001", "all"]),
         ("max_concurrent_imports", ["0", "65", "two"]),
@@ -151,9 +200,8 @@ def test_an_invalid_number_names_the_entry_and_never_the_value(
     [
         ("max_upload_bytes", "1024"),
         ("max_upload_bytes", "1073741824"),
-        ("max_files_per_import", "1"),
-        ("max_files_per_import", "1000"),
-        ("max_import_bytes", "4294967296"),
+        ("import_idle_timeout_seconds", "1"),
+        ("import_idle_timeout_seconds", "86400"),
         ("max_rows", "1"),
         ("max_rows", "100000000"),
         ("max_reported_rejections", "0"),
@@ -270,7 +318,7 @@ def test_the_command_line_start_gives_the_settings_to_the_application(
     config = tmp_path / "pipwerk-replay.ini"
     config.write_text(
         f"[database]\nurl = sqlite:///{tmp_path / 'replay.db'}\n"
-        "[marketdata]\nmax_listed_items = 2\nmax_rows = 3\nmax_files_per_import = 1\n",
+        "[marketdata]\nmax_listed_items = 2\nmax_rows = 3\nno_trading_days = 12-25\n",
         encoding="utf-8",
     )
 
@@ -280,9 +328,9 @@ def test_the_command_line_start_gives_the_settings_to_the_application(
     assert client.get(SERIES_URL).json()["limit"] == 2
     refused = upload(client, [("a.json", candles_json(4))]).json()["files"][0]
     assert refused["error"] == "too_many_rows"
-    too_many = upload(client, [("a.json", candles_json(2)), ("b.json", candles_json(2))])
-    assert too_many.status_code == 413
-    assert too_many.json()["code"] == "too_many_files"
+    # any number of files: there is no limit for the number of files of a process
+    many = upload(client, [(f"{n}.json", candles_json(2, instrument=f"I{n}")) for n in range(8)])
+    assert many.json()["imported_count"] == 8
 
 
 def test_create_app_without_arguments_takes_the_settings_of_the_configuration(

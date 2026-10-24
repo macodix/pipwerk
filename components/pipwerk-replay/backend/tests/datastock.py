@@ -19,8 +19,8 @@ REPOSITORY = Path(__file__).resolve().parents[4]
 EXAMPLES = REPOSITORY / "contracts" / "market-data" / "v1" / "examples"
 
 API = "/api/v1/market-data"
-IMPORT_URL = f"{API}/imports"
-PREVIEW_URL = f"{API}/imports/preview"
+PROCESSES_URL = f"{API}/import-processes"
+PREVIEW_URL = f"{API}/import-preview"
 SERIES_URL = f"{API}/series"
 DETAILS_URL = f"{API}/series/details"
 BROKERS_URL = f"{API}/brokers"
@@ -104,6 +104,68 @@ def make_app(
     return create_app(f"sqlite:///{tmp_path / name}", marketdata=marketdata, **options)
 
 
+def begin(client: TestClient) -> str:
+    """Begin an import process and return its identifier."""
+    response = client.post(PROCESSES_URL, json={})
+    assert response.status_code == 201, response.text
+    return str(response.json()["id"])
+
+
+def end(client: TestClient, process: str, how: str = "finish") -> httpx2.Response:
+    """End (``finish``) or abort (``abort``) an import process."""
+    return client.post(f"{PROCESSES_URL}/{process}/{how}", json={})
+
+
+def file_url(process: str) -> str:
+    return f"{PROCESSES_URL}/{process}/files"
+
+
+def upload_file(
+    client: TestClient,
+    process: str,
+    name: str,
+    content: bytes,
+    *,
+    broker: str | None = BROKER,
+    timezone: str | None = None,
+    instrument: str | None = None,
+    data: str | None = None,
+    url: str | None = None,
+    headers: dict[str, str] | None = None,
+    **fields: str,
+) -> httpx2.Response:
+    """Post the form of one file of an import process: the file, ``broker``, ``timezone``,
+    ``instrument`` and ``data``. ``fields`` are further text fields. ``url`` replaces the path
+    (the preview)."""
+    form: dict[str, Any] = dict(fields)
+    for key, value in (
+        ("broker", broker),
+        ("timezone", timezone),
+        ("instrument", instrument),
+        ("data", data),
+    ):
+        if value is not None:
+            form[key] = value
+    parts = [("file", (name, content, "application/octet-stream"))]
+    return client.post(
+        file_url(process) if url is None else url, data=form, files=parts, headers=headers
+    )
+
+
+class Batch:
+    """The result of ``upload``: the answers of the requests of the files of one process, shaped
+    like the answer of a request. ``status_code`` is 200 if every request was answered with 200,
+    else the first other status, and ``json()`` then its body."""
+
+    def __init__(self, status_code: int, payload: dict[str, Any], text: str) -> None:
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text
+
+    def json(self) -> Any:
+        return self._payload
+
+
 def upload(
     client: TestClient,
     files: Sequence[Upload],
@@ -112,23 +174,40 @@ def upload(
     timezone: str | None = None,
     instruments: Sequence[str] | None = None,
     datas: Sequence[str] | None = None,
-    url: str = IMPORT_URL,
     headers: dict[str, str] | None = None,
     **fields: str,
-) -> httpx2.Response:
-    """Post the form of an import: the files, ``broker``, ``timezone`` and, for the file at the
-    same position, ``instrument`` and ``data``. ``fields`` are further text fields."""
-    data: dict[str, Any] = dict(fields)
-    if broker is not None:
-        data["broker"] = broker
-    if timezone is not None:
-        data["timezone"] = timezone
-    if instruments is not None:
-        data["instrument"] = list(instruments)
-    if datas is not None:
-        data["data"] = list(datas)
-    parts = [("file", (name, content, "application/octet-stream")) for name, content in files]
-    return client.post(url, data=data, files=parts or None, headers=headers)
+) -> Batch:
+    """Import the files in one import process, each in a request of its own, with the same
+    ``broker`` and ``timezone``; ``instruments`` and ``datas`` give ``instrument`` and ``data``
+    of the file at the same position. The process is ended afterwards."""
+    process = begin(client)
+    outcomes: list[dict[str, Any]] = []
+    try:
+        for position, (name, content) in enumerate(files):
+            response = upload_file(
+                client,
+                process,
+                name,
+                content,
+                broker=broker,
+                timezone=timezone,
+                instrument=(instruments[position] or None) if instruments else None,
+                data=(datas[position] or None) if datas else None,
+                headers=headers,
+                **fields,
+            )
+            if response.status_code != 200:
+                return Batch(response.status_code, response.json(), response.text)
+            outcomes.append(response.json())
+    finally:
+        end(client, process)
+    refused = sum(1 for item in outcomes if item["refused"])
+    payload = {
+        "files": outcomes,
+        "imported_count": len(outcomes) - refused,
+        "refused_count": refused,
+    }
+    return Batch(200, payload, json.dumps(payload))
 
 
 def raw_form(parts: Sequence[tuple[str, str | None, bytes]]) -> dict[str, Any]:
@@ -151,10 +230,29 @@ def raw_form(parts: Sequence[tuple[str, str | None, bytes]]) -> dict[str, Any]:
 
 
 def import_json_file(client: TestClient, content: bytes, *, broker: str = BROKER) -> None:
-    """Import one JSON file and expect that it is taken over."""
+    """Import one JSON file in a process of its own and expect that it is taken over."""
     response = upload(client, [("file.json", content)], broker=broker)
     assert response.status_code == 200, response.text
     assert response.json()["refused_count"] == 0, response.text
+
+
+def preview(client: TestClient, files: Sequence[Upload]) -> dict[str, Any]:
+    """The hints of the preview for each file (one request each), with the broker that all JSON
+    files name (``None`` if there is none, one names none, or they name different ones): what the
+    dialog of the import makes of the answers."""
+    hints: list[dict[str, Any]] = []
+    for name, content in files:
+        response = client.post(
+            PREVIEW_URL, files=[("file", (name, content, "application/octet-stream"))]
+        )
+        assert response.status_code == 200, response.text
+        hints.append(response.json())
+    brokers = {hint["broker"] for hint in hints if hint["format"] == "json"}
+    json_found = any(hint["format"] == "json" for hint in hints)
+    return {
+        "files": hints,
+        "broker": next(iter(brokers)) if json_found and len(brokers) == 1 else None,
+    }
 
 
 def part(kind: str = "candles", **changes: Any) -> dict[str, Any]:

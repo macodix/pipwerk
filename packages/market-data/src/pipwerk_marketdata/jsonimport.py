@@ -168,7 +168,8 @@ def _validate_entries(
 ) -> tuple[list[tuple[int, Any]], Rejections]:
     if len(entries) > limits.max_rows:
         raise ImportFileError(
-            FileErrorCode.TOO_MANY_ROWS, f"The file has more than {limits.max_rows} entries."
+            FileErrorCode.TOO_MANY_ROWS,
+            f"The file has more entries than the limit of {limits.max_rows} entries per file.",
         )
     rejections = Rejections(limits)
     valid: list[tuple[int, Any]] = []

@@ -77,15 +77,22 @@ def test_the_description_names_the_endpoints_of_this_order() -> None:
         "/api/v1/market-data/series/details": {"get"},
         "/api/v1/market-data/brokers": {"get"},
         "/api/v1/market-data/instrument": {"get"},
-        "/api/v1/market-data/imports": {"post"},
-        "/api/v1/market-data/imports/preview": {"post"},
+        "/api/v1/market-data/import-processes": {"post"},
+        "/api/v1/market-data/import-processes/{id}/files": {"post"},
+        "/api/v1/market-data/import-processes/{id}/finish": {"post"},
+        "/api/v1/market-data/import-processes/{id}/abort": {"post"},
+        "/api/v1/market-data/import-preview": {"post"},
+        "/api/v1/market-data/deletions/series": {"post"},
+        "/api/v1/market-data/deletions/period": {"post"},
+        "/api/v1/market-data/deletions/contract": {"post"},
+        "/api/v1/market-data/deletions/broker": {"post"},
         "/api/v1/market-data/completeness": {"post"},
     }
     assert "/api/v1/settings" not in paths
-    # no acquisition, no overview and no import of a single file any more
+    # no acquisition, no overview and no import of several files in one request any more
     assert not [path for path in paths if "acquisition" in path or "overview" in path]
-    assert "/api/v1/market-data/imports/json" not in paths
-    assert "/api/v1/market-data/imports/csv" not in paths
+    assert "/api/v1/market-data/imports" not in paths
+    assert "/api/v1/market-data/imports/preview" not in paths
 
 
 def test_the_technical_endpoint_is_not_in_the_file_but_stays_in_docs(database_url: str) -> None:
@@ -113,13 +120,28 @@ def test_only_the_schemas_that_the_public_paths_use_are_in_the_file() -> None:
         "SeriesPage",
         "SeriesDetails",
         "Brokers",
+        "ImportProcess",
+        "ImportProcessEnd",
+        "FileOutcome",
+        "FileHint",
+        "FileTooLarge",
+        "ImportResult",
+        "DeletionResult",
+        "DeletionRefused",
+        "DeletionBlocked",
+        "BrokerForTestRuns",
+        "Completeness",
+    } <= set(schemas)
+    assert not {
+        "Overview",
+        "FileRefused",
+        "Acquisition",
+        "AcquisitionRefused",
         "ImportOutcome",
         "ImportPreview",
         "ImportRefused",
-        "ImportResult",
-        "Completeness",
-    } <= set(schemas)
-    assert not {"Overview", "FileRefused", "Acquisition", "AcquisitionRefused"} & set(schemas)
+        "BatchErrorCode",
+    } & set(schemas)
     # the internal endpoints have no place in the description
     assert not {
         "Settings",
@@ -152,7 +174,7 @@ def test_the_operation_identifiers_are_unique() -> None:
         for operations in paths.values()  # type: ignore[attr-defined]
         for operation in operations.values()
     ]
-    assert len(identifiers) == len(set(identifiers)) == 12  # 5 of the test accounts, 7 of the data
+    assert len(identifiers) == len(set(identifiers)) == 19  # 5 of the test accounts, 14 of the data
 
 
 def test_the_request_bodies_are_described_with_the_strict_schemas() -> None:
