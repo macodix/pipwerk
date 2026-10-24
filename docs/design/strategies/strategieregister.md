@@ -27,6 +27,7 @@ Das Register verwaltet die acht Teststrategien getrennt voneinander. Gemeinsamke
 | str-06 | Pairs Trading / statistische Arbitrage | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |
 | str-07 | Multi-Timeframe-Trend und Entry | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |
 | str-08 | regimeabhängige Strategie | Testentwurf des Assistenten | fachlicher Entwurf vorhanden | isoliert präzisieren |
+| str-09 | Intraday-Trendfolge mit Markttechnik | Chat-Session 2026-10-24 | Strategiedokument `str-09-fachlich-intraday-trendfolge-markttechnik.md`, Status `draft`; in Strategiesammlung v0.5 als 7.4 aufgenommen | fachliche Klärung der 3 offenen Fragen |
 
 ## Korrekturhinweis
 
