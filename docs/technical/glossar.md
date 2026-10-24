@@ -105,7 +105,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. Die öffentliche Web-API von pipwerk Studio liegt unter `/api/v1/` und ist unter `contracts/api/` beschrieben; die übrigen Endpunkte unter `/api/` sind interne Verbindungen der Komponente. |
 | Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Die QA prüft dort aus Kundensicht, der Auftraggeber erprobt dort und nimmt ab. |
 | Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt, Entwicklungsleiter und Team liegen. |
-| Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#begriffe). |
+| Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf, Name, Ansicht, Oberflächenentwurf, Machbarkeitstest, Abbruch, Wiedervorlage | Begriffe des Entwicklungsprozesses, definiert in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#begriffe). |
 
 ## Werkzeuge und Bibliotheken
 
@@ -129,6 +129,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-24 | Begriffe des Entwicklungsprozesses Name, Ansicht, Oberflächenentwurf, Machbarkeitstest, Abbruch und Wiedervorlage verwiesen. „Machbarkeitstest“ und „Oberflächenentwurf“ sind die einzigen Begriffe für Prototypen. Folgt aus Festlegung 5 des Auftraggebers vom 2026-10-24 (Vorhaben `verfahren`, Spezifikation Abschnitt 6). |
 | 2026-10-24 | Import: Behalten oder Entfernen der Dateien; Einträge Ablageverzeichnis und Ablageform neu. Folgt aus der Festlegung des Auftraggebers vom 2026-10-24 (req-system-028). Hinweis 6 aus `development/backtest/reviews/requirements-10.md`. |
 | 2026-10-23 | Abruf statt Beschaffung. Folgt aus der Entscheidung des Auftraggebers vom 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
 | 2026-10-23 | Namensraum und Aktualisieren: Verwaltung einer Order gilt als über ihr „Order aufgeben“ erreicht, Stand einer Instanz des Hauptablaufs dort beim Aufgeben der Order. Folgt aus der Festlegung des Auftraggebers vom 2026-10-23 zu req-fach-055 (Abstimmung `strategiedesign/presentations/specification-3.html`, Punkt 24). Hinweis H7 aus `development/strategiedesign/reviews/requirements-20.md`. |
