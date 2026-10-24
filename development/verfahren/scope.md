@@ -23,6 +23,10 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
    In zwei bis drei Klicks ist erkennbar, wo ein Vorhaben steht und wer daran arbeitet: Team, Softwarearchitekt, Projektleiter oder Auftraggeber. Was auf den Auftraggeber wartet, ist hervorgehoben. Die Seite ist eine HTML-Datei im Repository, wird aus dem Stand im Repository erzeugt, nicht von Hand gepflegt, und bei jeder Änderung des Stands neu erzeugt. Der Auftraggeber öffnet sie über einen festen Link wie die Präsentationen. Kein eigener Dienst, kein Server. Sie enthält keine Namen von Rechnern oder Benutzern, keine Pfade und keine Ports.
 7. **Trennung der Vorhaben.** Ein Chat des Projektleiters bearbeitet nur sein eigenes Vorhaben. Er startet, wiederholt oder repariert nichts für ein anderes Vorhaben, auch nicht bei scheinbar stehengebliebener Arbeit. Kollisionen mit anderen Vorhaben behält er im Blick. Der Auftraggeber erfährt davon nur, wenn eine Kollision alle drei Bedingungen zugleich erfüllt: Sie blockiert die Arbeit vollständig, sie betrifft das Verhalten von pipwerk für den Anwender, und Entwicklungsleiter oder Softwarearchitekt können sie nicht selbst lösen.
 
+## Ablauf dieses Vorhabens
+
+Festlegung des Auftraggebers vom 24. Oktober 2026: Nach bestandener Prüfung der Spezifikation durch die QA wird sie ohne Präsentation, ohne Arbeitspaketplan und ohne Arbeitspakete direkt umgesetzt. Die QA prüft das Ergebnis. Der Auftraggeber bestätigt einmal am Ende anhand einer Präsentation des Ergebnisses.
+
 ## Offene Punkte des Auftraggebers
 
 - Präsentationen und Ablauf der Abnahme, wird gesondert geklärt.
