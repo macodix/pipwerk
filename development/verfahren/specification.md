@@ -6,7 +6,7 @@
 - stand: 2026-10-24
 - name: Entwicklungsverfahren verbessern
 - grundlage: Festlegungen 1 bis 7 in [scope.md](scope.md), Nachprüfung [requirements-2.md](reviews/requirements-2.md) bestanden. Hinweise H1 bis H15 aus [requirements-1.md](reviews/requirements-1.md) und H18 bis H21 aus [requirements-2.md](reviews/requirements-2.md) sind hier entschieden (Abschnitt 9).
-- offen: Abschnitt 7.4 (Gestaltung der Übersicht) folgt nach Bestätigung des neuen Oberflächenentwurfs ([prototype/order-02.md](prototype/order-02.md)). Prüfung durch die QA steht aus.
+- offen: Prüfung durch die QA steht aus.
 
 ## 1. Gegenstand
 
@@ -61,9 +61,14 @@ Der Chat des Projektleiters arbeitet in claude.ai in einem Projekt. Dort gibt es
 
 1. Sobald der Chat für sein Vorhaben eine Meldung an Softwarearchitekt oder Entwicklungsleiter überträgt, setzt er eine Wiedervorlage 20 Minuten später, falls nicht schon eine besteht. Ihr Text nennt die Kennung des Vorhabens.
 2. Bei jeder Wiedervorlage: `origin/main` lesen, in `development/messages/projectlead/` die Meldungen mit `ref` des eigenen Vorhabens oder seiner Pakete auswählen, die älteste zuerst bearbeiten. Meldungen anderer Vorhaben bleiben unberührt.
-3. Danach setzt der Chat die nächste Wiedervorlage 20 Minuten später, solange für sein Vorhaben eine Meldung in `development/messages/architect/` oder `development/messages/devlead/` liegt, also eine Antwortmeldung aussteht. Sonst setzt er keine. Eine Frist, nach der die Wiedervorlage ausläuft, gibt es nicht.
+3. Der Chat setzt die nächste Wiedervorlage 20 Minuten später (Zeitpunkt nach Punkt 6), solange für sein Vorhaben eine Meldung in `development/messages/architect/` oder `development/messages/devlead/` liegt, also eine Antwortmeldung aussteht. Sonst setzt er keine. Eine Frist, nach der die Wiedervorlage ausläuft, gibt es nicht.
 4. Übernahme durch einen neuen Chat: Der neue Chat listet die Wiedervorlagen auf und löscht die mit der Kennung seines Vorhabens. Er schreibt die Datei `development/<vorhaben>/followup.md` mit dem Zeitpunkt der Übernahme in UTC und einer zufälligen Kennung des Chats, überträgt sie auf `main` und setzt seine Wiedervorlage nach Punkt 1. Findet ein Chat bei einer Wiedervorlage dort eine andere Kennung als seine eigene, setzt er keine weitere und bearbeitet nichts mehr. Die Datei sichert die Übernahme auch dann, wenn das Löschen nicht gelingt. Sie enthält keine Namen von Rechnern oder Benutzern.
 5. Setzen, Wecken und Löschen sind erprobt, die Übernahme durch einen neuen Chat nicht. Vor der Abnahme des Pakets, das 4.1 umsetzt, erprobt der Projektleiter sie einmal und vermerkt das Ergebnis im Abnahmebericht. Gelingt sie nicht, ist das ein Mangel des Pakets.
+6. Verspätete Wiedervorlage: Am 24. Oktober 2026 wurde eine Wiedervorlage als zugestellt geführt, im Chat aber erst 50 Minuten später mit der nächsten Nachricht des Auftraggebers verarbeitet; die Ursache ist unbekannt (`scope.md`, Stand). Damit eine solche Wiedervorlage den Ablauf nicht anhält:
+   - Der Chat prüft den Eingang bei jeder Aktivierung zuerst, durch eine Wiedervorlage ebenso wie durch eine Nachricht des Auftraggebers.
+   - Er setzt die nächste Wiedervorlage zu Beginn der Bearbeitung, nicht am Ende, und hält zusätzlich eine zweite 40 Minuten später als Rückfall. Bei jeder Aktivierung löscht er beide und setzt sie neu. Bleibt eine Wiedervorlage aus, weckt ihn die zweite.
+   - Eine Meldung, die beim Projektleiter liegt, zeigt die Übersicht mit „bei wem: Projektleiter“ und „seit“ (7.2). Eine Verzögerung ist dort für den Auftraggeber sichtbar, ohne Benachrichtigung.
+   - Ob die zweite Wiedervorlage in dem beobachteten Fall geholfen hätte, ist ungeprüft. Der Projektleiter vermerkt im Abnahmebericht des Pakets, das 4.1 umsetzt, jede Wiedervorlage, die nicht pünktlich verarbeitet wurde, mit beiden Zeitpunkten. Bleibt danach eine Meldung ohne Nachricht des Auftraggebers länger als 40 Minuten unbearbeitet, ist das ein Mangel des Pakets.
 
 ### 4.2 Bearbeitung durch den Projektleiter
 
@@ -138,7 +143,18 @@ Die Seite enthält Namen, Kennungen, Phasen, Rollen und Zeitpunkte, keine Namen 
 
 ### 7.4 Gestaltung
 
-Folgt nach Bestätigung des Oberflächenentwurfs.
+Vorlage ist der vom Auftraggeber in Aufbau und Bedienung bestätigte Oberflächenentwurf [prototype/uebersicht-prototyp.html](prototype/uebersicht-prototyp.html) (Commit `f2e178dfcc3e8d1b69ae8fcc649001a1f0216be7`, [questions/verfahren-02.md](questions/verfahren-02.md)). Aufbau und Bedienung übernimmt die echte Seite unverändert. Die optische Gestaltung darf ansprechender werden, innerhalb der Punkte unten.
+
+1. Ebenen: erste Ebene je Vorhaben ein Kästchen, zweite die sechs Phasen des Vorhabens, dritte die Pakete der Phase. Eine weitere Ebene gibt es nicht (E5). Die Ebene steht im Anker der Adresse (`#`, `#<vorhaben>`, `#<vorhaben>/<nr>`). Oben eine Pfadleiste zurück, die Zurück-Taste des Browsers führt eine Ebene zurück. Kästchen, die weiterführen, sind Verweise und mit der Tastatur erreichbar.
+2. Stand: grau nicht begonnen, gelb begonnen, grün erledigt, nach 7.2. In jedem Kästchen zusätzlich als Wort mit Zeichen („Nicht begonnen“, „Begonnen“, „Erledigt“). Eine Legende erklärt Farben und Hervorhebung.
+3. Hervorhebung: Was auf den Auftraggeber wartet, hat auf allen drei Ebenen einen kräftigen blauen Rahmen und die Marke „Wartet auf Sie: <Handlung>“ (7.2), am Vorhaben, an der Phase, in der der Eintrag liegt, und am Paket oder Schritt. Ein Paket behält die Marke in jeder Phasenansicht. Blau unterscheidet sich von den drei Farben des Stands.
+4. Kästchen der ersten Ebene: Name, Kennung klein, Stand, Phase, bei wem, seit wann. Bei Vorhaben mit Paketen sind „bei wem“ die Stellen aller Pakete in Arbeit (weder fertig noch wartend) ohne Doppelte, „seit“ die jüngste Meldung dieser Pakete. Vorhaben in der Reihenfolge ihrer ersten Meldung, nicht begonnene danach, abgeschlossene zuletzt.
+5. Kästchen der zweiten Ebene: „Phase <n>“ und Name. In den Phasen 4 bis 6 „<n> von <m> Paketen in dieser Phase“, in der gelben Phase außerdem bei wem.
+6. Dritte Ebene, Phasen 4 bis 6: alle Pakete des Plans in seiner Reihenfolge, je Kästchen Name, Kennung, Stand; in dieser Phase bei wem und seit wann, bei `amend` der Zusatz „Lücke in der Spezifikation“, bei `question` „Frage wartet auf Antwort“, bei `failed` „Aufgabe abgebrochen“; fertig „in `main` seit <Tag der Meldung `integrated`>“; wartend „wartet auf <Name> (<Kennung>)“; sonst ein Satz, in welcher Phase das Paket steht.
+7. Dritte Ebene, Phasen 1 bis 3: ein Kästchen mit dem Schritt. In der gelben Phase ergibt er sich aus der jüngsten Meldung: `check` „Anforderungen werden geprüft“, `review` „Prüfbericht wird bearbeitet“, `specify` „Spezifikation wird erstellt“, `plan` „Plan wird erstellt“, `revise` „Einwände werden eingearbeitet“, `present` „Präsentation wartet auf Bestätigung“, `question` „Frage wartet auf Antwort“, `answer` „Antwort wird eingearbeitet“, `failed` „Aufgabe abgebrochen“; dazu bei wem und seit wann. In einer grünen Phase „<Phase> abgeschlossen“, in einer grauen „Noch nicht erreicht“.
+8. Kopf: Überschrift „Stand der Vorhaben“ und der Zeitpunkt der Erzeugung. Alle Zeitpunkte stehen in UTC in der Seite und werden im Browser in Ortszeit ausgeschrieben („24.10.2026, 09:40 Uhr“); ohne JavaScript steht UTC da. Die Zeile „Beispiel“ des Entwurfs entfällt.
+9. Anpassung an die Fenstergröße nach req-system-024 in den Größen des Entwurfs (390 × 844, 844 × 390, 820 × 1180, 1180 × 820, 1366 × 768, 1920 × 1080): keine waagerechte Bildlaufleiste, nichts liegt übereinander, die sechs Phasen auf schmalen Fenstern in Reihen oder untereinander.
+10. Optik: hell, Systemschrift, keine Schriften, Bilder oder Skripte aus dem Netz. Kontrast von Schrift zu Grund mindestens 4,5 : 1. Der Tastaturfokus ist deutlich sichtbar.
 
 ## 8. Änderungen an den Verfahrensdokumenten
 
@@ -183,3 +199,4 @@ Folgt nach Bestätigung des Oberflächenentwurfs.
 |---|---|
 | 2026-10-24 | Entwurf ohne Abschnitt 7.4. |
 | 2026-10-24 | Antworten aus [questions/verfahren-01.md](questions/verfahren-01.md) eingearbeitet: 4.1 Wiedervorlage als einmalige, immer neu gesetzte Wiedervorlage in claude.ai (Frage 3), 7.2 „Projektleiter“ ohne Hervorhebung (Frage 2) und Farben des Stands nach der neuen Festlegung 6 (Frage 1). H20 erledigt. |
+| 2026-10-24 | 7.4 nach dem bestätigten Oberflächenentwurf ([questions/verfahren-02.md](questions/verfahren-02.md)). 4.1 Punkt 6 nach dem Befund zur verspäteten Wiedervorlage in `scope.md`. |
