@@ -58,7 +58,7 @@ from pipwerk_relaycore.errors import (
 from pipwerk_relaycore.keys import ConnectionKey, SecretsDirectory
 from pipwerk_relaycore.loader import WAYS_GROUP, available_ways, load_way, load_way_class
 from pipwerk_relaycore.message import Attachment, Message
-from pipwerk_relaycore.migrate import migrate_database
+from pipwerk_relaycore.migrate import alembic_config, migrate_database, migrate_scripts
 from pipwerk_relaycore.way import (
     WAY_API_VERSION,
     FaultyEnvelope,
@@ -119,10 +119,12 @@ __all__ = [
     "WaySettingsError",
     "WayTooLargeError",
     "WayUnavailableError",
+    "alembic_config",
     "available_ways",
     "compute_mac",
     "load_way",
     "load_way_class",
     "migrate_database",
+    "migrate_scripts",
     "verify_attachments",
 ]

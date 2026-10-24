@@ -17,6 +17,9 @@ sees (as far as the file system keeps the order, see the technical documentation
 and limits of renaming"). File names are made only of the message id (a UUID) and the number.
 
 Acknowledging removes the envelope first, then its attachments.
+
+``clean_up`` removes what an interrupted ``send`` leaves behind: unfinished files (``*.part``)
+and attachments without an envelope, as soon as they are older than the period given.
 """
 
 import errno
@@ -26,7 +29,7 @@ import secrets
 import stat
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
@@ -51,6 +54,8 @@ from pipwerk_relaycore.way import (
 _ID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 _ID_ONLY = re.compile(_ID)
 _ENVELOPE_FILE = re.compile(rf"({_ID})\.json")
+_ATTACHMENT_FILE = re.compile(rf"({_ID})\.[0-9]{{1,4}}\.att")
+_UNFINISHED_FILE = re.compile(rf"{_ID}(?:\.json|\.[0-9]{{1,4}}\.att)\.[0-9a-f]{{16}}\.part")
 _NO_FOLLOW = getattr(os, "O_NOFOLLOW", 0)
 _BINARY = getattr(os, "O_BINARY", 0)
 _CLOSE_ON_EXEC = getattr(os, "O_CLOEXEC", 0)
@@ -138,6 +143,34 @@ class FilesWay(Way[FilesSettings]):
                 names = [entry.name for entry in entries if attachment_file.fullmatch(entry.name)]
             for name in names:
                 _remove(directory / name)
+
+    def clean_up(self, older_than: timedelta, now: datetime) -> int:
+        cutoff = (now - older_than).timestamp()
+        removed = 0
+        with _directory_errors():
+            directory = self._directory()
+            files: list[tuple[str, float]] = []
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    try:
+                        if entry.is_file(follow_symlinks=False):
+                            files.append((entry.name, entry.stat(follow_symlinks=False).st_mtime))
+                    except FileNotFoundError:
+                        continue  # taken away in the meantime
+            with_envelope = {
+                match.group(1) for name, _ in files if (match := _ENVELOPE_FILE.fullmatch(name))
+            }
+            for name, modified in files:
+                if modified >= cutoff:
+                    continue
+                attachment = _ATTACHMENT_FILE.fullmatch(name)
+                leftover = _UNFINISHED_FILE.fullmatch(name) or (
+                    attachment is not None and attachment.group(1) not in with_envelope
+                )
+                if leftover:
+                    _remove(directory / name)
+                    removed += 1
+        return removed
 
     def _read_one(self, directory: Path, message_id: str, modified: float) -> Incoming | None:
         arrived = datetime.fromtimestamp(modified, UTC)

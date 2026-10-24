@@ -1,0 +1,14 @@
+{
+  "network": "net1",
+  "name": "relay1",
+  "components": [
+    {
+      "name": "fetch-a",
+      "way": "files",
+      "settings": {
+        "directory": "/var/lib/pipwerk-relay/out-fetch-a"
+      },
+      "key_file": "../component-fetch-a.key"
+    }
+  ]
+}

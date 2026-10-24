@@ -1,0 +1,60 @@
+{
+  "network": "net1",
+  "name": "relay1",
+  "inputs": [
+    {
+      "name": "main",
+      "way": "files",
+      "settings": {
+        "directory": "/var/lib/pipwerk-relay/in"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "fetch-a",
+      "way": "files",
+      "settings": {
+        "directory": "/var/lib/pipwerk-relay/out-fetch-a"
+      },
+      "key_file": "component-fetch-a.key"
+    },
+    {
+      "name": "probe-a",
+      "way": "files",
+      "settings": {
+        "directory": "/var/lib/pipwerk-relay/out-probe-a",
+        "max_attachment_bytes": 1048576
+      },
+      "key_file": "component-probe-a.key"
+    }
+  ],
+  "address_book": [
+    {
+      "network": "net1",
+      "relay": "relay2",
+      "way": "files",
+      "settings": {
+        "directory": "/mnt/shared/pipwerk/relay2-in"
+      },
+      "key_file": "relay-relay2.key",
+      "standard": true
+    }
+  ],
+  "periods": {
+    "read_interval_seconds": 5,
+    "retry_first_seconds": 10,
+    "retry_max_seconds": 900,
+    "delivery_deadline_seconds": 86400,
+    "seen_for_seconds": 604800,
+    "attachment_grace_seconds": 300,
+    "leftover_after_seconds": 3600,
+    "cleanup_interval_seconds": 600
+  },
+  "limits": {
+    "max_hops": 8,
+    "read_batch": 100,
+    "max_queue_messages": 10000,
+    "max_attachment_storage_bytes": 10737418240
+  }
+}

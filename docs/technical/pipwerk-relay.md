@@ -4,9 +4,9 @@
 
 - status: `draft`
 - stand: 2026-10-24
-- komponenten: `packages/relay-core` (Python-Paket `pipwerk_relaycore`), `contracts/messages/`
-- grundlage: [Spezifikation relay](../../development/relay/specification.md), E1, E4 bis E7, 3.1 bis 3.5, 3.7, 4.4 (Nachrichtenarten `relay.receipt` und `relay.undeliverable`), Abschnitte 5, 7 und 8 (Bibliothek); [Plan](../../development/relay/plan.md), Paket `wp01`; Aufträge 01 und 02
-- umfang dieses stands: Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel der Verbindung, Schnittstelle „Weg“, Verzeichnis-Weg `files`, den Inhalten der Nachrichtenarten `relay.receipt`, `relay.undeliverable` und `probe.message`, dem Anschluss einer Komponente mit Prüfung, Wiederholungserkennung und Empfangsbestätigung sowie der Datenbank des Anschlusses. Das Relay (`components/pipwerk-relay`) und der Abruf kommen in späteren Aufträgen; sie ergänzen dieses Dokument.
+- komponenten: `packages/relay-core` (Python-Paket `pipwerk_relaycore`), `components/pipwerk-relay` (Python-Paket `pipwerk_relay`), `contracts/messages/`
+- grundlage: [Spezifikation relay](../../development/relay/specification.md), E1, E3 letzter Satz, E4 bis E7, 3.1 bis 3.5, 3.7, 4.1 bis 4.5, Abschnitte 5, 7 und 8; [Plan](../../development/relay/plan.md), Paket `wp01`; Aufträge 01 bis 03
+- umfang dieses stands: Teil A (Abschnitte 1 bis 17) die Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel der Verbindung, Schnittstelle „Weg“, Verzeichnis-Weg `files`, den Inhalten der Nachrichtenarten `relay.receipt`, `relay.undeliverable` und `probe.message`, dem Anschluss einer Komponente mit Prüfung, Wiederholungserkennung und Empfangsbestätigung sowie der Datenbank des Anschlusses. Teil B (Abschnitte 18 bis 31) das Relay `pipwerk-relay` mit Weg einer Nachricht, Speicher, Konfiguration, Befehlen, Begrenzungen und Sicherheit, ohne die Prüfkomponente. Die Prüfkomponente (Auftrag 04) und der Abruf (Aufträge 05 und 06) ergänzen dieses Dokument.
 
 ## 1. Gegenstand
 
@@ -35,13 +35,13 @@ Abhängigkeiten zur Laufzeit: Pydantic (Prüfung der Nachricht, des Umschlags un
 | `envelope` | `Envelope`, `EnvelopeBody`, `Link`, Prüfwert (`compute_mac`), `verify_attachments` |
 | `keys` | `ConnectionKey`, `SecretsDirectory` (Schlüssel erzeugen, laden, Rechte prüfen) |
 | `_windows_acl` | Prüfung der Zugriffsrechte unter Windows (wird nur dort geladen) |
-| `way` | Schnittstelle `Way` (Version 1), `WaySettings`, `ReceivedEnvelope`, `FaultyEnvelope` |
+| `way` | Schnittstelle `Way` (Version 1) mit `send`, `read`, `acknowledge` und `clean_up`, `WaySettings`, `ReceivedEnvelope`, `FaultyEnvelope` |
 | `loader` | Laden eines Wegs über die Einstiegspunkte der Gruppe `pipwerk_relay.ways` |
 | `ways.files` | Verzeichnis-Weg `files` |
 | `contents` | Inhalte von `relay.receipt`, `relay.undeliverable`, `probe.message`; Gründe der Unzustellbarkeit |
 | `connector` | Anschluss einer Komponente: `Connector`, `ConnectorConfig`, `WayConfig`, `Handler`, `PollResult` |
 | `store` | `ConnectorStore`: gesehene Nachrichten-IDs und wartende Bestätigungen |
-| `tables`, `migrate`, `migrations` | Tabellen (SQLAlchemy Core), Migration (Alembic), Versionen der Migration |
+| `tables`, `migrate`, `migrations` | Tabellen (SQLAlchemy Core), Migration (Alembic: `migrate_database` für die Tabellen des Anschlusses, `migrate_scripts` für die Migrationen eines Programms wie des Relays), Versionen der Migration |
 | `schemas` | erzeugt die JSON-Schemas unter `contracts/messages/v1/` aus den Modellen |
 | `errors` | Fehler und Ablehnungsgründe |
 
@@ -137,6 +137,7 @@ Ein Übertragungsweg ist eine Unterklasse von `Way` (Schnittstelle Version 1, `W
 | `send(envelope, attachments)` | Umschlag mit Anlagen (Inhalte in der Reihenfolge von `message.attachments`) übergeben. Die Rückkehr ist die Bestätigung, dass der Weg alles übernommen hat. |
 | `read(limit=100)` | Eingegangene Umschläge lesen, älteste zuerst. Ergebnis: `ReceivedEnvelope` (Token, Umschlag, Anlagen, Zeitpunkt des Eingangs) oder `FaultyEnvelope` (Token, Grund, Zeitpunkt). |
 | `acknowledge(token)` | Den gelesenen Umschlag nach dem Speichern quittieren; der Weg entfernt ihn aus dem Eingang. Wiederholbar. |
+| `clean_up(older_than, now)` | Wahlfrei, ohne Überschreiben tut der Aufruf nichts und liefert 0. Entfernt, was ein unterbrochenes `send` zurücklässt, wenn es älter ist als `older_than`; liefert die Zahl der entfernten Dateien. Das Relay ruft ihn von Zeit zu Zeit für jeden Weg auf (Abschnitt 26). Wie `read` wirft er `WayUnavailableError`, wenn der Weg nicht erreichbar ist. Er ergänzt die Schnittstelle, ohne einen vorhandenen Weg zu brechen; `WAY_API_VERSION` bleibt 1. |
 
 Fehler: `WayUnavailableError` (Ziel oder Eingang nicht erreichbar; Relay und Anschluss wiederholen), `WayTooLargeError` (Umschlag oder Anlage über der Höchstgröße; Wiederholen hilft nicht), `WayRefusedError` (der Weg weist den Umschlag aus einem anderen Grund ab), `WayError` als gemeinsame Grundlage.
 
@@ -199,10 +200,10 @@ Der Weg macht für Netzlaufwerke (SMB, NFS) folgende Annahmen. Sie gelten für j
 
 1. **Umbenennen im selben Verzeichnis ist vollständig oder gar nicht.** Die vorläufige und die endgültige Datei liegen im selben Verzeichnis derselben Freigabe. `os.replace` ist auf NTFS, ext4, XFS und über SMB2/3 und NFS eine einzelne Umbenennung auf dem Server; ein Leser sieht die Datei entweder gar nicht oder vollständig. Nicht unterstützt sind Dateisysteme und Einbindungen, bei denen Umbenennen als Kopieren und Löschen ausgeführt wird (manche Dateisystem-Brücken für Objektspeicher, Dateisysteme ohne atomares Umbenennen).
 2. **Daten sind vor dem Umbenennen auf dem Server.** Der Weg ruft vor dem Umbenennen `fsync` auf. Das reicht, wenn der Client `fsync` an den Server weitergibt (SMB: Flush-Anfrage, NFS: `COMMIT`). Einbindungen mit abgeschalteter Weitergabe (zum Beispiel `nostrictsync` bei Linux-CIFS) heben diese Zusicherung auf; der Betreiber verwendet sie nicht.
-3. **Der Zwischenspeicher des Clients kann Einträge verspätet zeigen.** SMB- und NFS-Clients halten Verzeichnislisten und negative Treffer („Datei nicht vorhanden“) einige Sekunden. Ein Leser kann einen Umschlag sehen, bevor er eine seiner Anlagen sieht. Der Weg meldet das als `FaultyEnvelope` mit `attachment_missing`. Dieser Fall ist deshalb nicht endgültig: **Der Aufrufer verwirft einen Umschlag mit fehlender Anlage erst, wenn `modified_at` länger zurückliegt als eine Schonfrist** (länger als der Zwischenspeicher der Einbindung hält; als Richtwert für das Relay mehrere Minuten, einstellbar) und liest ihn vorher bei jedem Durchlauf erneut. Die Schonfrist empfiehlt sich für alle Gründe zu Anlagen (`attachment_missing`, `attachment_size`, `attachment_hash`), denn ein Zwischenspeicher kann auch eine ältere Größe oder einen älteren Inhalt zeigen. Die Schonfrist selbst setzt das Relay um (späterer Auftrag); die Bibliothek liefert dafür `modified_at`.
+3. **Der Zwischenspeicher des Clients kann Einträge verspätet zeigen.** SMB- und NFS-Clients halten Verzeichnislisten und negative Treffer („Datei nicht vorhanden“) einige Sekunden. Ein Leser kann einen Umschlag sehen, bevor er eine seiner Anlagen sieht. Der Weg meldet das als `FaultyEnvelope` mit `attachment_missing`. Dieser Fall ist deshalb nicht endgültig: **Der Aufrufer verwirft einen Umschlag mit fehlender Anlage erst, wenn `modified_at` länger zurückliegt als eine Schonfrist** (länger als der Zwischenspeicher der Einbindung hält; als Richtwert für das Relay mehrere Minuten, einstellbar) und liest ihn vorher bei jedem Durchlauf erneut. Die Schonfrist empfiehlt sich für alle Gründe zu Anlagen (`attachment_missing`, `attachment_size`, `attachment_hash`), denn ein Zwischenspeicher kann auch eine ältere Größe oder einen älteren Inhalt zeigen. Die Schonfrist selbst setzt das Relay um (Abschnitt 26); die Bibliothek liefert dafür `modified_at`. `read` liest die ältesten `limit` Umschläge; liegen so viele fehlerhafte, noch nicht verworfene Umschläge im Eingang, dass sie alle ersten Plätze besetzen, kommen neuere nicht an die Reihe. Das Relay liest deshalb in diesem Fall mit wachsendem `limit` (Abschnitt 26).
 4. **Keine Sperren.** Der Weg verwendet keine Dateisperren und keine Lease-Verfahren. Zwei Leser desselben Eingangs können denselben Umschlag lesen; die Wiederholungserkennung (Spezifikation E4) verwirft die zweite Übergabe. Vorgesehen ist ein Leser je Eingang.
 5. **Uhren.** `modified_at` ist die Zeit des Dateisystems (auf einem Netzlaufwerk die Uhr des Servers). Der Aufrufer vergleicht sie mit seiner eigenen Uhr; die Schonfrist muss größer sein als die Abweichung der Uhren.
-6. **Verbindungsabbruch.** Ein Abbruch während des Schreibens lässt `*.part`-Dateien zurück und niemals einen halben Umschlag. Der Weg räumt `*.part`-Dateien nicht auf; das Aufräumen nach einer Frist gehört zum Relay (Spezifikation 3.6, 4.5).
+6. **Verbindungsabbruch.** Ein Abbruch während des Schreibens lässt `*.part`-Dateien und Anlagen ohne Umschlag zurück und niemals einen halben Umschlag. `read` und `send` räumen sie nicht auf. `clean_up(older_than, now)` entfernt sie, wenn sie älter sind als `older_than`: Dateien `<Nachrichten-ID>.json.<16 Zeichen>.part` und `<Nachrichten-ID>.<Nummer>.att.<16 Zeichen>.part`, und Anlagen `<Nachrichten-ID>.<Nummer>.att`, zu denen es keinen Umschlag `<Nachrichten-ID>.json` gibt. Alles andere im Verzeichnis, auch Dateien, die dem Aufbau fast entsprechen, bleibt unberührt. Das Relay ruft `clean_up` auf (Abschnitt 26). Das Alter ist das der letzten Änderung laut Dateisystem (Annahme 5).
 7. **Groß- und Kleinschreibung.** Alle Namen bestehen aus Kleinbuchstaben, Ziffern, Bindestrichen und Punkten; Dateisysteme, die Groß- und Kleinschreibung nicht unterscheiden, ändern nichts.
 8. **Links.** Der Weg folgt keinem Link: Ein Link anstelle einer Umschlagdatei wird ignoriert, ein Link anstelle einer Anlage zählt als fehlende Anlage.
 9. **Zugriffsrechte der Einbindung.** Wer schreibt und liest, braucht Schreib- und Leserecht im Verzeichnis, einschließlich Löschen und Umbenennen. Fehlt ein Recht, meldet der Weg `WayUnavailableError`.
@@ -311,7 +312,7 @@ Zwei Tabellen in einer SQLite-Datei (SQLAlchemy Core, `tables`), deren Pfad die 
 
 Zeitpunkte liegen als UTC ohne Zeitzone und kommen als UTC mit Zeitzone zurück. Einträge in `relaycore_seen`, die älter sind als `seen_for`, werden zu Beginn jedes Durchlaufs entfernt; eine ID, deren Eintrag abgelaufen ist, gilt als neu und wird bei der nächsten Speicherung ersetzt. Alle Tabellen beginnen mit `relaycore_`, damit die Komponente die Datenbank mit eigenen Tabellen teilen kann; die Version der Migrationen steht in der eigenen Tabelle `relaycore_alembic_version`.
 
-**Migration.** `migrate_database(engine)` bringt die Datenbank auf den neuesten Aufbau (Alembic, Version `0001`); der Anschluss ruft es beim Öffnen auf. Alles läuft in einer Transaktion: Scheitert eine Migration, wird zurückgerollt und `DatabaseMigrationError` geworfen (ohne Pfad im Text). Unter SQLite wird die Transaktionssteuerung des Treibers für die eine Verbindung abgeschaltet, und die Migration führt `BEGIN IMMEDIATE`, `COMMIT` und `ROLLBACK` selbst aus, weil `sqlite3` DDL sonst sofort bestätigt; `BEGIN IMMEDIATE` nimmt die Schreibsperre zuerst, ein zweiter Prozess wartet. Eine Datenbank mit einer neueren Version als der Code kennt, wird abgelehnt (`DatabaseMigrationError`) und nicht verändert. Die Migration läuft auch auf einer Datenbank mit fremden Tabellen und einer fremden Tabelle `alembic_version`; beide bleiben unberührt. Offline-Modus (SQL-Skripte) ist nicht vorgesehen.
+**Migration.** `migrate_database(engine)` bringt die Datenbank auf den neuesten Aufbau (Alembic, Version `0001`); der Anschluss ruft es beim Öffnen auf. `migrate_scripts(engine, verzeichnis, gegenstand)` ist dasselbe Verfahren für die Migrationen eines Programms, das die Bibliothek verwendet (das Relay, Abschnitt 22); `alembic_config(verbindung, verzeichnis)` liefert die Konfiguration von Alembic für eine Verbindung. Das `env.py` des Verzeichnisses führt seine eigene Versionstabelle. Alles läuft in einer Transaktion: Scheitert eine Migration, wird zurückgerollt und `DatabaseMigrationError` geworfen (ohne Pfad im Text). Unter SQLite wird die Transaktionssteuerung des Treibers für die eine Verbindung abgeschaltet, und die Migration führt `BEGIN IMMEDIATE`, `COMMIT` und `ROLLBACK` selbst aus, weil `sqlite3` DDL sonst sofort bestätigt; `BEGIN IMMEDIATE` nimmt die Schreibsperre zuerst, ein zweiter Prozess wartet. Eine Datenbank mit einer neueren Version als der Code kennt, wird abgelehnt (`DatabaseMigrationError`) und nicht verändert. Die Migration läuft auch auf einer Datenbank mit fremden Tabellen und einer fremden Tabelle `alembic_version`; beide bleiben unberührt. Offline-Modus (SQL-Skripte) ist nicht vorgesehen.
 
 **Ort der Datei.** Die Datenbank gehört auf einen lokalen Datenträger des Rechners der Komponente, nicht auf ein Netzlaufwerk: Die Sperren von SQLite sind über SMB und NFS nicht verlässlich. Ein Zugriff gleichzeitig kommt nur von der einen Komponente. Die Wartezeit bei einer gesperrten Datenbank ist 30 Sekunden.
 
@@ -369,13 +370,261 @@ Die übrigen Dateien aus Auftrag 01:
 | `test_envelope.py` | Umschlag und Prüfwert: veränderte Nachricht, veränderte Anlage, falscher Schlüssel, unbekannte Verbindung, falscher Empfänger, `stored`, Formfehler, Prüfvektor |
 | `test_keys.py` | Schlüssel erzeugen, laden, Rechte, Links, Namen |
 | `test_way_loading.py` | Test-Weg als Erweiterung aus eigenem Paket, Angaben, Fehler ohne Werte, Laden: unbekannt, doppelt, Version, kaputt |
-| `test_files_way.py` | Verzeichnis-Weg: Senden, Lesen, Quittieren, halber Umschlag, Anlagen vor Umschlag, nicht erreichbares Verzeichnis, Dateinamen mit Pfadzeichen, fehlerhafte Umschläge, Größen, gleichzeitiger Schreiber und Leser |
+| `test_files_way.py` | Verzeichnis-Weg: Senden, Lesen, Quittieren, halber Umschlag, Anlagen vor Umschlag, nicht erreichbares Verzeichnis, Dateinamen mit Pfadzeichen, fehlerhafte Umschläge, Größen, gleichzeitiger Schreiber und Leser, Aufräumen (`clean_up`: alte unfertige Dateien und Anlagen ohne Umschlag, junge und fremde Dateien bleiben) |
 | `test_schemas.py` | Schemas, Beispiele und Modelle stimmen überein |
 | `test_documentation.py` | Dokumentation nennt Ablehnungsgründe, Fehler und Schnittstellen |
+
+---
+
+# Teil B: Das Relay
+
+## 18. Gegenstand und Aufbau des Relays
+
+`pipwerk-relay` (Verzeichnis `components/pipwerk-relay`, Python-Paket `pipwerk_relay`) ist das Programm, das Nachrichten zwischen Komponenten und zwischen Relays weitergibt (Spezifikation E1, 4.1 bis 4.5). Es liest die Umschläge aus seinen Eingängen, prüft sie, legt jede Nachricht in seiner Warteschlange ab und gibt sie weiter: an eine angeschlossene Komponente, an ein Relay seines Adressbuchs oder an das Standard-Relay. Was nicht zustellbar ist, endet mit einer Nachricht `relay.undeliverable` an den Absender. Das Relay verwendet die Bibliothek aus Teil A für Adresse, Nachricht, Umschlag, Prüfwert, Schlüssel und Wege. Es kennt keinen Weg im Code: Welchen Weg ein Eingang, eine Komponente oder ein Eintrag des Adressbuchs verwendet, steht in der Betriebskonfiguration (Abschnitt 21) und wird über den Namen geladen (Abschnitt 7).
+
+Das Relay öffnet keinen Port und hat keine Web-API (die Web-API folgt mit Paket `wp05`). Es ist ein Prozess; zwei Prozesse auf derselben Datenbank sind nicht vorgesehen (Abschnitt 28, Grenzen).
+
+| Modul | Aufgabe |
+|---|---|
+| `cli` | die Befehle (Abschnitt 27), Exitcodes |
+| `startup` | die Startkonfiguration `pipwerk-relay.ini` (Abschnitt 20) |
+| `operating` | die Modelle der Betriebskonfiguration, ihre Prüfung und die Voreinstellungen (Abschnitt 21) |
+| `configuration` | `config load` und `config show`: `load_configuration`, `show_configuration` |
+| `runtime` | `build_runtime`: lädt die Wege und die Schlüssel einer Betriebskonfiguration |
+| `relay` | `Relay`: eine Runde der Arbeit (`cycle`) mit Lesen, Prüfen, Speichern, Weitergeben und Aufräumen (Abschnitte 23 bis 26) |
+| `store`, `tables`, `database`, `migrations` | der Speicher: Warteschlange, gesehene Übergaben, Betriebskonfiguration (Abschnitt 22) |
+| `attachments` | das Verzeichnis der Anlagen (Abschnitt 22) |
+| `service` | die Schleife `run_until_stopped` und das Protokoll |
+| `schemas` | erzeugt `relay-config.schema.json` aus dem Modell |
+| `errors` | `RelayError` und seine Unterklassen: `StartupConfigError`, `ConfigRejected`, `NotConfigured`, `SchemaOutdated`, `AttachmentLost` |
+
+Fehlermeldungen des Relays nennen den Eintrag, den Grund oder den Dateinamen, nie einen Wert aus einer Nachricht, einer Konfiguration oder einer Schlüsseldatei.
+
+## 19. Einrichtung des Relays
+
+Das Relay wird wie `pipwerk-fetch-mt5` mit uv eingerichtet (Spezifikation E7, Regel 6 der Entwicklungsregeln). Es läuft unter Windows und Linux.
+
+1. `scripts/install` (Linux) beziehungsweise `scripts\install.cmd` (Windows) legt aus der Sperrdatei `uv.lock` eine eigene Umgebung (`.venv`) unter der Komponente an, mit den Laufzeitabhängigkeiten und der Bibliothek `packages/relay-core` (Pfadabhängigkeit mit festgeschriebener Version `0.1.0` und `editable`, wie bei `pipwerk-marketdata`). Entwicklungswerkzeuge werden nicht installiert; an der Python-Installation des Systems ändert sich nichts.
+2. `pipwerk-relay.ini` aus `pipwerk-relay.example.ini` anlegen (Abschnitt 20).
+3. `pipwerk-relay migrate` legt die Tabellen an (Abschnitt 22).
+4. Für jede Verbindung `pipwerk-relay key new <Datei>` und eine Kopie der Datei auf sicherem Weg zur anderen Seite der Verbindung bringen (Komponente oder Relay), dort in das Verzeichnis für Geheimnisse legen.
+5. Die Betriebskonfiguration schreiben und mit `pipwerk-relay config load <Datei>` laden (Abschnitt 21).
+6. `pipwerk-relay run`.
+
+Aufruf: `scripts/pipwerk-relay <Befehl>` (Linux) beziehungsweise `scripts\pipwerk-relay.cmd <Befehl>` (Windows) führen den Befehl in der Umgebung aus; der Einstiegspunkt heißt `pipwerk-relay`, `python -m pipwerk_relay` ist dasselbe. Das Relay kann so ohne Dienst im Netz betrieben werden.
+
+## 20. Startkonfiguration
+
+Die Startkonfiguration ist eine INI-Datei `pipwerk-relay.ini` (req-system-016, req-system-017). Der Aufruf `-c <Pfad>` hat Vorrang; sonst sucht das Relay in dieser Reihenfolge `%USERPROFILE%\pipwerk\etc`, `%APPDATA%\pipwerk`, `%PROGRAMDATA%\pipwerk` (Windows) beziehungsweise `$HOME/pipwerk/etc`, `$HOME/.config/pipwerk`, `/etc/pipwerk` (Linux). Verwendet wird genau eine Datei; mehrere werden nie zusammengeführt. Ein relativer oder leerer Wert der Umgebungsvariablen zählt nicht als Suchort. Ohne gültige Datei startet das Relay nicht (Exitcode 2).
+
+| Abschnitt | Eintrag | Bedeutung |
+|---|---|---|
+| `[database]` | `url` (Pflicht) | Verbindung zur Datenbank als URL von SQLAlchemy, zum Beispiel `sqlite:///<Datei>`. Die URL kann ein Kennwort enthalten und steht nie in einer Fehlermeldung oder im Protokoll. |
+| `[storage]` | `attachments_directory` (Pflicht) | Verzeichnis der Anlagen der Warteschlange; das Relay legt es an, wenn es fehlt. |
+| `[secrets]` | `directory` (Pflicht) | Verzeichnis für Geheimnisse mit den Schlüsseldateien der Verbindungen. |
+| `[log]` | `level` (Voreinstellung `INFO`) | `DEBUG`, `INFO`, `WARNING` oder `ERROR`. |
+| `[log]` | `file` | Protokolldatei (wird angehängt); ohne Angabe schreibt das Relay das Protokoll auf die Standardfehlerausgabe. |
+
+Unbekannte Abschnitte und Einträge werden abgewiesen; ein Fehler nennt den Abschnitt oder den Eintrag, bei einem Syntaxfehler die Zeilennummer, nie den Wert (die Zeile kann die URL mit Kennwort enthalten). Ein Prozentzeichen ist ein gewöhnliches Zeichen. Die Betriebskonfiguration gehört nicht in diese Datei. Die Datei mit den eigenen Werten gehört nicht in ein Repository (`.gitignore` der Komponente); versioniert ist nur `pipwerk-relay.example.ini`.
+
+**Rechte vor dem Start (Spezifikation 4.5, Abschnitt 7).** `pipwerk-relay run` ruft vor allem anderen `SecretsDirectory.check()` der Bibliothek auf (Abschnitt 6): Verzeichnis und jede Datei darin gehören dem Benutzer des Relays und sind für andere nicht zugänglich (Linux: `0700` und `0600` oder `0400`; Windows: Zugriffsliste, Abschnitt 6). Sonst startet das Relay nicht, es führt keine Runde aus und endet mit Exitcode 1. Beim Laden der Schlüssel (`config load`, Start) prüft die Bibliothek dieselben Rechte noch einmal je Datei.
+
+## 21. Betriebskonfiguration
+
+Die Betriebskonfiguration ist ein JSON-Dokument nach `contracts/messages/v1/relay-config.schema.json` (Beispiel: `contracts/messages/v1/examples/relay-config.json`). Die Modelle in `pipwerk_relay.operating` sind streng: keine Umwandlung der Typen, zusätzliche Felder werden abgelehnt. Frei sind nur die Blöcke `settings`: Sie gehören dem Weg, der daneben genannt ist; das Relay reicht sie unverändert an den Weg weiter, und der Weg prüft sie selbst streng (Spezifikation 3.4, Abschnitt 7).
+
+| Feld | Bedeutung |
+|---|---|
+| `network`, `name` | pipwerk-Netz und Name dieses Relays. Regeln einer Adresse (Abschnitt 3). Das Relay ist als Seite einer Verbindung `<network>.<name>`; seine Meldungen senden von `relay.<network>.<name>`. |
+| `inputs` | die Eingänge des Relays, je `name` (Bezeichnung im Protokoll), `way` und `settings`. Das Relay liest alle Eingänge in jeder Runde. Ein Eingang ist der Ort, an dem Komponenten und andere Relays Umschläge für dieses Relay ablegen. |
+| `components` | die angeschlossenen Komponenten (Spezifikation 4.2), je `name` (Teil ihrer Adresse), `way` und `settings` (wo das Relay für die Komponente ablegt: ihr Eingang), `key_file` (Dateiname des Schlüssels der Verbindung). Der Name `relay` ist gesperrt. |
+| `address_book` | die bekannten Relays (Spezifikation 4.3), je `network`, `relay`, `way` und `settings` (wo das Relay für dieses Relay ablegt: dessen Eingang), `key_file` und `standard`. Höchstens ein Eintrag ist das Standard-Relay. |
+| `periods` | Fristen und Abstände in Sekunden, siehe unten |
+| `limits` | Grenzen, siehe unten und Abschnitt 25 |
+
+Regeln, die das Modell zusätzlich prüft (ein JSON-Schema drückt sie nicht aus): die Namen der Eingänge, der Komponenten und die Einträge des Adressbuchs unterscheiden sich; der Name `relay` gehört keiner Komponente; das Relay steht nicht in seinem eigenen Adressbuch; höchstens ein Standard-Relay; jede Schlüsseldatei gehört zu genau einer Verbindung (Spezifikation E5: ein Schlüssel je Verbindung); `retry_max_seconds` ist nicht kleiner als `retry_first_seconds`.
+
+**Verzeichnisse.** Mit dem Weg `files` nennt `settings.directory` bei einem Eingang das Verzeichnis, das das Relay liest; bei einer Komponente deren Eingang; bei einem Eintrag des Adressbuchs den Eingang des anderen Relays. Je Richtung einer Verbindung gibt es ein eigenes Verzeichnis. Ein Umschlag, der nicht für die lesende Seite bestimmt ist (`link.to`), wird verworfen (Abschnitt 5); zwei Seiten, die dasselbe Verzeichnis in beiden Richtungen verwenden, verwerfen deshalb die Umschläge des anderen.
+
+**Voreinstellungen** (die Werte legt dieser Auftrag fest; Spezifikation 4.1 und 4.5 überlassen sie den Aufträgen):
+
+| Feld | Voreinstellung | Bedeutung |
+|---|---|---|
+| `periods.read_interval_seconds` | 5 | Pause zwischen zwei Runden |
+| `periods.retry_first_seconds` | 10 | Pause vor dem zweiten Versuch der Übergabe; sie verdoppelt sich bei jedem Fehlschlag |
+| `periods.retry_max_seconds` | 900 (15 Minuten) | längste Pause zwischen zwei Versuchen |
+| `periods.delivery_deadline_seconds` | 86400 (24 Stunden) | Frist, nach der eine Nachricht, die sich nicht übergeben lässt, unzustellbar ist (Spezifikation 4.1 Schritt 7); gerechnet ab der Annahme |
+| `periods.seen_for_seconds` | 604800 (7 Tage) | wie lange eine Übergabe als gesehen gilt (E4) |
+| `periods.attachment_grace_seconds` | 300 (5 Minuten) | Schonfrist für einen Umschlag mit fehlender oder nicht stimmender Anlage (Abschnitt 26) |
+| `periods.leftover_after_seconds` | 3600 (1 Stunde) | Alter, ab dem Reste unterbrochener Übergaben entfernt werden (Abschnitt 26) |
+| `periods.cleanup_interval_seconds` | 600 (10 Minuten) | Abstand der Aufräumrunden |
+| `limits.max_hops` | 8 | Länge von `hops`, ab der eine Nachricht eine Schleife ist (1 bis 63) |
+| `limits.read_batch` | 100 | Zahl der Umschläge, die das Relay in einem Schritt aus einem Eingang liest (1 bis 1000), und der fälligen Einträge, die es in einem Schritt übergibt |
+| `limits.max_queue_messages` | 10000 | Zahl der Nachrichten in der Warteschlange (Abschnitt 25) |
+| `limits.max_attachment_storage_bytes` | 10737418240 (10 GiB) | Platz für die Anlagen der Warteschlange (Abschnitt 25) |
+
+**Laden** (`pipwerk-relay config load <Datei>`). `load_configuration` liest höchstens 1 MiB, prüft das Dokument gegen die Modelle, lädt jeden genannten Weg mit seinen Angaben (`WayLoadError`, `WaySettingsError`: unbekannter Weg, unbekannte oder ungültige Angaben, nur mit den Namen der Einträge) und jede Schlüsseldatei (`KeyHandlingError`: fehlt, Rechte, kein Schlüssel) und sammelt alle Probleme. Gibt es eines, wird die Datei als Ganzes abgelehnt (`ConfigRejected`), jedes Problem mit seiner Stelle (`components.0.key_file: …`) ausgegeben und nichts geändert. Sonst steht das Dokument mit allen Voreinstellungen als neue Version in der Tabelle `relay_config` (Abschnitt 22); `config show` gibt es als eingerückten JSON-Text aus.
+
+Die Schlüssel müssen beim Laden schon bestehen (`key new`), denn ein Relay, das mit der Datei nicht laufen könnte, soll sie nicht annehmen.
+
+**Übernahme ohne Neustart.** `Relay.cycle` fragt zu Beginn jeder Runde die Versionsnummer in der Datenbank ab. Ist sie neu, baut es die Wege und Schlüssel neu auf und arbeitet danach mit der neuen Konfiguration; das Protokoll vermerkt `operating configuration <n> taken over`. Lässt sich eine geladene Konfiguration nicht aufbauen (zum Beispiel weil eine Schlüsseldatei inzwischen fehlt), arbeitet ein laufendes Relay mit der bisherigen weiter und vermerkt das Problem einmal im Protokoll; ohne bisherige Konfiguration startet es nicht. Der Zustand der Warteschlange bleibt von einem Wechsel unberührt; die Entscheidungen zur Weitergabe (Abschnitt 23) trifft das Relay mit der Konfiguration zum Zeitpunkt der Übergabe.
+
+## 22. Speicher
+
+Warteschlange, gesehene Übergaben und Betriebskonfiguration liegen in der Datenbank der Startkonfiguration (SQLAlchemy Core mit gebundenen Werten, Alembic; Spezifikation E6), die Anlagen in einem Verzeichnis. Die Tabellen heißen `relay_*`, die Version der Migrationen steht in `relay_alembic_version`.
+
+| Tabelle | Inhalt |
+|---|---|
+| `relay_queue` | die Nachrichten, die das Relay angenommen und noch nicht übergeben hat: Reihenfolge (`seq`, wird nie wieder vergeben), Schlüssel des Eintrags (`entry_key`, eine UUID, die das Relay vergibt), `message_id`, `kind`, `sender`, `recipient`, die Nachricht als JSON (`message_json`), die Liste `hops` (`hops_json`), Zahl und Größe der Anlagen, `created_at`, `attempts`, `next_attempt_at`, `last_error` (Name des Fehlers der letzten Übergabe) |
+| `relay_seen` | die Übergaben, die das Relay gesehen hat: `message_id` und `hops` (Zahl der Einträge von `hops`, Spezifikation 4.1 Schritt 4), `seen_at` |
+| `relay_config` | eine Zeile: `version`, `document` (JSON) und `loaded_at` der Betriebskonfiguration |
+
+Die Anlagen einer Nachricht in der Warteschlange liegen im Verzeichnis der Anlagen als `<entry_key>.<Nummer>.att` (Nummer ab 0 in der Reihenfolge von `message.attachments`). Namen von Anlagen, Nachrichten-IDs und Adressen kommen in keinem Dateinamen vor; der Schlüssel des Eintrags wird vor jedem Zugriff gegen die Form einer UUID geprüft. Geschrieben wird unter einem vorläufigen Namen (`….att.<16 Zeichen>.part`), auf den Datenträger geschrieben (`fsync`) und dann umbenannt; gelesen wird ohne einem Link zu folgen. Das Verzeichnis legt das Relay mit den Rechten `0700` an.
+
+**Migration.** `pipwerk-relay migrate` bringt die Datenbank auf die neueste Version (Alembic, Version `0001`, alles oder nichts in einer Transaktion, siehe `migrate_scripts` in Abschnitt 13); scheitert eine Migration, wird zurückgerollt und der Befehl endet mit Exitcode 1. Eine Datenbank mit einer neueren Version, als der Code kennt, wird abgelehnt und nicht verändert. Alle anderen Befehle, die die Datenbank verwenden, prüfen zuerst, ob sie auf der neuesten Version ist, und lehnen sonst ab mit dem Hinweis auf `migrate` (`SchemaOutdated`): Der Betreiber entscheidet, wann sich das Schema ändert (Regel 8.2 Nr. 10). Die Migration läuft auch in einer Datenbank mit fremden Tabellen.
+
+**Ort und Sicherung.** Eine SQLite-Datei gehört auf einen lokalen Datenträger des Rechners, nicht auf ein Netzlaufwerk (Sperren von SQLite, Abschnitt 13). Die Datenbank und das Verzeichnis der Anlagen enthalten die Nachrichten, die warten: ihren Inhalt und ihre Anlagen, aber keine Schlüssel und keine Zugangsdaten. Wer sie lesen kann, liest wartende Nachrichten; der Betreiber gibt sie wie das Verzeichnis für Geheimnisse nur dem Benutzer des Relays frei. Geht die Datenbank verloren, gehen die wartenden Nachrichten verloren, und gesehene Übergaben werden nicht mehr erkannt.
+
+## 23. Weg einer Nachricht im Relay
+
+Eine Runde (`Relay.cycle`) liest zuerst alle Eingänge, übergibt dann, was fällig ist, und räumt von Zeit zu Zeit auf. Die Schritte nach Spezifikation 4.1:
+
+1. **Lesen und prüfen.** Für jeden Umschlag eines Eingangs (`Way.read`) prüft das Relay in dieser Reihenfolge: Prüfwert und Verbindung aus `link.from` (`Envelope.open` mit den Schlüsseln der angeschlossenen Komponenten und der Relays des Adressbuchs; `bad_mac`, `unknown_link`), dass der Umschlag für dieses Relay bestimmt ist (`link.to`; `wrong_recipient`), den Körper (`bad_body`), Größe und SHA-256 jeder Anlage (`attachment_*`) und dass der Inhalt einer Nachrichtenart, die die Bibliothek kennt, zu ihrem Schema passt (`bad_content`). Was nicht besteht, wird verworfen: Der Umschlag wird quittiert, und das Protokoll nennt die Kennung der Datei, den Eingang und den Grund (`envelope dropped inbox=… token=… reason=…`), ohne Inhalt, Absender und Adressat, denn sie sind vor einer bestandenen Prüfung nicht vertrauenswürdig. Das Relay schickt keine Meldung. Ein Umschlag mit fehlender oder nicht stimmender Anlage bekommt zuerst die Schonfrist (Abschnitt 26).
+2. **Wiederholung (E4).** Kennzeichen einer Übergabe ist die Nachrichten-ID mit der Zahl der Einträge in `hops`. Steht es in `relay_seen` und ist nicht älter als `periods.seen_for_seconds`, wird der Umschlag quittiert, ohne etwas zu speichern (`repetition message=…`). Das geschieht vor den Schritten 3 und 4: Eine wiederholte Übergabe erzeugt keine zweite Meldung.
+3. **Absender einer angeschlossenen Komponente.** Kommt der Umschlag von einer angeschlossenen Komponente (`link.from` ist ihr Name), muss `message.sender` `<Name>.<network>.<name>` sein. Sonst wird die Nachricht nicht weitergegeben; die Komponente erhält an ihre richtige Adresse eine Meldung mit dem Grund `sender_invalid`.
+4. **Schleife.** Steht `<network>.<name>` schon in `hops`, oder hat `hops` die Länge `limits.max_hops` erreicht, ist die Nachricht unzustellbar mit dem Grund `loop`. Das Relay trägt sich erst beim Weitergeben in `hops` ein; eine Wiederholung derselben Übergabe kommt deshalb ohne das eigene Relay in `hops` an, eine im Kreis gelaufene Nachricht mit ihm und mit mehr Einträgen (anderes Kennzeichen).
+5. **Annehmen.** Die Anlagen werden in das Verzeichnis der Anlagen geschrieben, dann hält eine Transaktion der Datenbank gemeinsam fest: die Übergabe als gesehen und die Nachricht in der Warteschlange (bei Schritt 3 und 4 statt ihrer die Meldung). Erst danach wird der Umschlag quittiert (`Way.acknowledge`). Ist die Übergabe in der Zwischenzeit schon gesehen worden, wird nichts gespeichert. Scheitert die Datenbank oder das Verzeichnis der Anlagen, bleibt der Umschlag im Eingang, die Dateien werden entfernt, und die nächste Runde versucht es noch einmal.
+6. **Weitergabe nach der Adresse** (`Relay._route`, wenn der Eintrag fällig ist): Gehören pipwerk-Netz und Relay der Adresse zu diesem Relay, geht die Nachricht an die angeschlossene Komponente dieses Namens (`unknown_recipient`, wenn es sie nicht gibt; `relay` ist nie eine Komponente). Sonst geht sie an den Eintrag des Adressbuchs für `<Netz>.<Relay>`, sonst an das Standard-Relay (`unknown_relay`, wenn keines eingestellt ist). Das Relay bildet für die nächste Verbindung einen neuen Umschlag: `hops` um `<network>.<name>` ergänzt, `link.from` ist dieses Relay, `link.to` die andere Seite (Komponente oder `<Netz>.<Relay>`), Prüfwert mit dem Schlüssel dieser Verbindung. Der Weg nimmt ihn mit allen Anlagen entgegen (`Way.send`); erst die Rückkehr gilt als Bestätigung, und dann erst wird der Eintrag aus der Warteschlange entfernt.
+7. **Wiederholung und Frist.** Scheitert die Übergabe (`WayUnavailableError` und jeder andere Fehler außer `WayTooLargeError`, auch von Wegen aus fremden Paketen), setzt das Relay den Eintrag auf einen späteren Zeitpunkt: Die Pause beginnt bei `retry_first_seconds` und verdoppelt sich bei jedem Fehlschlag bis `retry_max_seconds`. Ist seit der Annahme `periods.delivery_deadline_seconds` vergangen, ist die Nachricht unzustellbar mit `recipient_unreachable` (Übergabe an eine Komponente) beziehungsweise `relay_unreachable` (Übergabe an ein Relay). Ist die Nachricht für den Weg zu groß (`WayTooLargeError`: Umschlag oder Anlage über `max_envelope_bytes` oder `max_attachment_bytes` in den `settings` des Wegs), ist sie sofort unzustellbar mit `too_large`. Auch `WayRefusedError` zählt als Fehlschlag der Übergabe: Die Spezifikation kennt keinen eigenen Grund dafür.
+
+**Meldung `relay.undeliverable` (Spezifikation 4.4).** Das Relay ersetzt die unzustellbare Nachricht in einer Transaktion durch die Meldung: Absender `relay.<network>.<name>`, Adressat der Absender der Nachricht (bei `sender_invalid` die richtige Adresse der Komponente), Bezug-Nachrichten-ID die ID der Nachricht, Priorität wie die Nachricht, Inhalt mit Grund, festem Text, Adressat und Art der Nachricht (`UndeliverableContent`, Abschnitt 10), `receipt` nein. Die Meldung steht danach in der Warteschlange und wird wie jede Nachricht weitergegeben, auch über andere Relays zurück. Ist eine Nachricht der Art `relay.undeliverable` selbst unzustellbar (Grund `sender_invalid` oder `loop` beim Annehmen, jeder Grund bei der Weitergabe), wird sie verworfen und im Protokoll vermerkt, ohne neue Meldung (`dropped, no new notice`). Eine Meldung nach Schritt 1 gibt es nie. Die Anlagen einer unzustellbaren Nachricht werden entfernt.
+
+**Protokoll** (`logging`, Name `pipwerk_relay.relay`; Ziel und Stufe stellt die Startkonfiguration ein). Jede Annahme (`accepted`), Weitergabe (`forwarded`), Wiederholung (`repetition`), Unzustellbarkeit (`undeliverable`), jeder Fehlschlag einer Übergabe (mit Name des Fehlers, Nummer des Versuchs und Pause) und jede Verwerfung steht mit Nachrichten-ID, Nachrichtenart, Absender, Adressat, Weg (Name des Eingangs oder des Wegs) und Ergebnis im Protokoll, nie mit Inhalt, Anlagen oder Geheimnissen. Ein Fehler eines Wegs steht mit dem Namen des Fehlers, nicht mit seinem Text, wenn der Weg aus einem fremden Paket kommt.
+
+## 24. Wiederanlauf nach hartem Beenden
+
+Nach hartem Beenden (Absturz, `SIGKILL`, Stromausfall) geht zu keinem Zeitpunkt eine Nachricht verloren, und eine wiederholte Übergabe wird erkannt (E4). Die Schritte, die etwas außerhalb des Prozesses verändern, und was bei einem Abbruch dazwischen bleibt:
+
+| Abbruch | Zustand danach | Folge nach dem Neustart |
+|---|---|---|
+| nach dem Schreiben der Anlagen, vor der Transaktion | Umschlag im Eingang, Dateien im Verzeichnis der Anlagen ohne Eintrag | der Umschlag wird gelesen und angenommen (mit neuem Schlüssel des Eintrags); die Dateien ohne Eintrag werden nach `periods.leftover_after_seconds` entfernt |
+| nach der Transaktion, vor dem Quittieren | Nachricht in der Warteschlange und als gesehen vermerkt, Umschlag noch im Eingang | der Umschlag wird als Wiederholung erkannt und quittiert; die Nachricht wird einmal weitergegeben |
+| nach der Übergabe an den nächsten Weg, vor dem Entfernen des Eintrags | Umschlag beim nächsten Relay, Eintrag noch in der Warteschlange | der Eintrag wird noch einmal übergeben, mit denselben `hops`; die empfangende Seite erkennt die Wiederholung (Relay: Abschnitt 23 Schritt 2, Anschluss einer Komponente: Abschnitt 11) |
+| nach dem Entfernen des Eintrags, vor dem Entfernen der Anlagen | Dateien ohne Eintrag | werden nach der Frist entfernt |
+| während einer Meldung (Ersatz) | eine Transaktion: Nachricht oder Meldung, nie beide, nie keine | wie oben |
+
+Die Tests belegen das auf zwei Wegen (`tests/test_recovery.py`, `tests/test_process.py`): Das Relay wird an jedem seiner Schritte, die etwas verändern (`FilesWay.send`, `FilesWay.acknowledge`, `RelayStore.accept`, `RelayStore.replace`, `RelayStore.reschedule`, `AttachmentStore.write`, `AttachmentStore.remove`), vor und nach dem Schritt angehalten (`SimulatedCrash` ist eine `BaseException`, die das Relay nicht fängt, wie es einen harten Abbruch nicht fangen würde) und danach mit neuem `Relay` auf denselben Dateien neu gestartet; in jedem Fall kommt die Nachricht mit ihrer Anlage genau einmal an, die Bestätigung kommt zurück, Warteschlange und Eingänge sind leer, und die Reste sind nach der Frist entfernt. Dazu läuft das Relay als eigener Prozess, während 150 Nachrichten mit Anlagen eintreffen, und wird mit `SIGKILL` beendet, sobald die erste angekommen ist; nach dem Neustart kommt jede der 150 genau einmal an.
+
+## 25. Begrenzungen gegen Überlast
+
+Die Werte legt dieser Auftrag fest (Spezifikation 4.5); alle sind in der Betriebskonfiguration einstellbar.
+
+| Begrenzung | Wert | Verhalten bei erreichter Grenze |
+|---|---|---|
+| Größe von Umschlag und Anlage je Weg | Voreinstellung der Bibliothek: `max_envelope_bytes` 1 MiB, `max_attachment_bytes` 256 MiB; in den `settings` jedes Eingangs, jeder Komponente und jedes Eintrags einstellbar | Eingang: ein größerer Umschlag wird gar nicht gelesen und als fehlerhaft verworfen (`too_large`, Protokoll). Ziel: die Nachricht ist unzustellbar mit `too_large` (Abschnitt 23 Schritt 7). Anlagen liegen beim Lesen und Senden im Arbeitsspeicher; die Höchstgröße begrenzt auch den Bedarf daran. |
+| Zahl der Nachrichten in der Warteschlange | `limits.max_queue_messages`, 10000 | Das Relay liest keinen Eingang mehr, bis wieder Platz ist; die Umschläge bleiben im Eingang. Gelesen werden höchstens so viele Umschläge, wie noch Platz ist. |
+| Platz für Anlagen | `limits.max_attachment_storage_bytes`, 10 GiB | Würde der Platz überschritten, nimmt das Relay diesen Umschlag und alle späteren dieses Eingangs in dieser Runde nicht an (`STOP`); sie bleiben im Eingang. Eine einzelne Anlage, die größer ist als der ganze Platz, kann nie angenommen werden und wird als fehlerhaft verworfen. |
+| Umschläge je Schritt | `limits.read_batch`, 100 | begrenzt Arbeit und Speicher einer Runde; bei verzögerten Umschlägen liest das Relay bis zum 16fachen (Abschnitt 26) |
+| Länge von `hops` | `limits.max_hops`, 8 | Schleife (`loop`) |
+| Größe der Betriebskonfiguration | 1 MiB | die Datei wird abgelehnt |
+
+Wiederholungen eines Umschlags, der schon gesehen wurde, werden bei voller Warteschlange erst gelesen, wenn wieder Platz ist; sie bleiben bis dahin liegen. Das Platz-Prüfen geschieht vor dem Speichern, nie danach: Das Relay nimmt nie an, was es nicht speichern kann.
+
+## 26. Schonfrist, Eingänge mit verzögerten Umschlägen und Aufräumen
+
+Diese Regeln setzen die Hinweise 3 und 4 des Testberichts zu Auftrag 01 um (`development/relay/wp01/tests/01-functiontest-1.md`).
+
+**Schonfrist.** `Way.read` meldet einen Umschlag, dessen Anlage fehlt oder nicht zur Beschreibung in der Nachricht passt (Größe, SHA-256), als `FaultyEnvelope` mit dem Grund `attachment_missing`, `attachment_size` oder `attachment_hash`. Auf einem Netzlaufwerk kann das eine Verzögerung des Zwischenspeichers sein (Abschnitt 9, Annahme 3). Das Relay verwirft einen solchen Umschlag erst, wenn sein Eingang länger als `periods.attachment_grace_seconds` zurückliegt (`modified_at`); vorher bleibt er liegen und wird in der nächsten Runde erneut gelesen (`postponed`). Ein Umschlag, dessen Anlage später erscheint, wird so noch angenommen. Alle anderen Fehler (kein gültiger Umschlag, Umschlag oder angegebene Anlage über der Höchstgröße des Wegs, falsches `format`, `stored`) werden sofort verworfen. Die Schonfrist muss größer sein als die Abweichung der Uhren und der Zwischenspeicher der Einbindung (Abschnitt 9, Annahme 5).
+
+**Verzögerte Umschläge blockieren nicht.** `FilesWay.read` liest die ältesten `limit` Umschläge. Liegen so viele fehlerhafte, noch nicht verworfene Umschläge vor den übrigen, dass sie alle gelesenen Plätze besetzen, würde ein neuer Umschlag nie gelesen. Das Relay erkennt das daran, dass in einem Durchgang kein Umschlag erledigt wurde und alle gelesenen warten, und liest dann erneut mit doppelter Zahl, bis zum 16fachen von `limits.read_batch` (und höchstens so viele, wie in der Warteschlange noch Platz ist). Mit Ablauf der Schonfrist verschwinden die wartenden Umschläge.
+
+**Aufräumen.** Alle `periods.cleanup_interval_seconds` (und in der ersten Runde) tut das Relay:
+
+- gesehene Übergaben entfernen, die älter sind als `periods.seen_for_seconds`;
+- für jeden Weg, den die Konfiguration verwendet (Eingänge, Komponenten, Adressbuch; jeder einmal), `Way.clean_up(leftover_after_seconds, jetzt)` aufrufen. Der Verzeichnis-Weg entfernt damit `*.part`-Dateien und Anlagen ohne Umschlag, die älter sind als `periods.leftover_after_seconds` (Abschnitt 9, Annahme 6). Das gilt für die Eingänge (Reste unterbrochener Komponenten) und die Ziele (Reste eigener unterbrochener Übergaben). Ist ein Weg nicht erreichbar, vermerkt das Relay es im Protokoll;
+- im Verzeichnis der Anlagen Dateien entfernen, zu denen es keinen Eintrag in der Warteschlange gibt, und unfertige `*.part`-Dateien, wenn sie älter sind als `periods.leftover_after_seconds`.
+
+Die Frist muss länger sein als der längste Schreibvorgang einer Übergabe und die Verzögerung des Dateisystems (Voreinstellung 1 Stunde).
+
+## 27. Befehle
+
+`pipwerk-relay [-c <Pfad>] <Befehl>`; ohne `-c` sucht das Relay die Startkonfiguration (Abschnitt 20). Exitcode 0: erledigt. 1: der Befehl ist gescheitert (Text auf der Standardfehlerausgabe). 2: ungültiger Aufruf oder ungültige Startkonfiguration. Das Relay öffnet bei keinem Befehl einen Port (`tests/test_commands.py` verbietet in einem Test die Erzeugung eines Sockets).
+
+| Befehl | Wirkung |
+|---|---|
+| `migrate` | bringt die Datenbank auf die neueste Version des Schemas (Abschnitt 22) |
+| `key new <Datei>` | erzeugt einen Schlüssel für eine Verbindung im Verzeichnis für Geheimnisse (`SecretsDirectory.new_key`: 32 Byte aus `secrets`, Rechte `0600`, ein vorhandener Schlüssel wird nie überschrieben, `<Datei>` ist ein Dateiname, nie ein Pfad). Der Schlüssel wird nicht ausgegeben. Der Betreiber gibt eine Kopie der anderen Seite auf sicherem Weg. |
+| `config load <Datei>` | prüft die JSON-Datei und macht sie zur Betriebskonfiguration, oder lehnt sie als Ganzes ab (Abschnitt 21) |
+| `config show` | gibt die Betriebskonfiguration in Gebrauch als JSON aus |
+| `queue` | listet die Nachrichten der Warteschlange mit Stand, ohne Inhalt: `seq`, Nachrichten-ID, Art, Absender, Adressat, Stand (`new`: noch kein Versuch der Übergabe, `retrying`: mindestens ein Versuch ist gescheitert), Zahl der Versuche, Zeitpunkt der Annahme, Zeitpunkt des nächsten Versuchs und Name des letzten Fehlers; darunter die Zahl der Nachrichten und die Größe der Anlagen |
+| `run` | prüft die Rechte des Verzeichnisses für Geheimnisse, legt das Verzeichnis der Anlagen an, richtet das Protokoll ein, lädt die Betriebskonfiguration und arbeitet in Runden mit `periods.read_interval_seconds` Pause, bis es mit `SIGINT` (Strg+C), `SIGTERM` oder unter Windows `SIGBREAK` beendet wird; das Ende lässt die laufende Runde fertig werden (Exitcode 0) |
+
+Ohne geladene Betriebskonfiguration (`NotConfigured`) oder mit einer, die sich nicht aufbauen lässt, startet `run` nicht. Eine Runde, die an einem Fehler der Datenbank oder des Dateisystems scheitert, vermerkt den Namen des Fehlers im Protokoll, und die nächste Runde versucht es noch einmal. `probe listen|send` folgt in Auftrag 04.
+
+## 28. Sicherheit des Relays
+
+Zuordnung zu den Sicherheitsregeln ([Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md), 8.2, 8.3), zu BSI-Grundschutz und OWASP ASVS beziehungsweise OWASP API Security und zu Abschnitt 7 der Spezifikation, soweit sie auf das Relay anwendbar sind. Die Teile der Bibliothek stehen in Abschnitt 14.
+
+| Anforderung | Umsetzung im Relay | Test |
+|---|---|---|
+| Kein Port (Spezifikation E2, 7; Regel 8.2 Nr. 7; OWASP API8) | Das Relay hat keinen Server und keine Web-API; ausgehend verwendet es nur die Wege der Konfiguration (Verzeichnisse). Kein Befehl erzeugt einen Socket. | `test_commands` (Socket verboten) |
+| Eingaben vor jeder Verarbeitung prüfen (Regel 8.2 Nr. 2; ASVS V5) | Prüfwert, Verbindung, Empfänger, Körper, Anlagen (Größe, SHA-256) und Inhalt der bekannten Arten werden geprüft, bevor die Nachricht gelesen, gespeichert oder auch nur ihre ID verwendet wird. Betriebskonfiguration und Startkonfiguration: strenge Modelle, zusätzliche Einträge werden abgelehnt, ungültige Dateien als Ganzes. | `test_undeliverable`, `test_operating`, `test_startup`, `test_schemas` |
+| Fälschung (req-relay-010) und Meldungen (Spezifikation 4.1 Schritt 1) | Eine gefälschte oder veränderte Nachricht, Anlage oder ein falscher Schlüssel wird verworfen und ohne Absender, Adressat und Inhalt vermerkt; es geht keine Meldung an einen vermeintlichen Absender. Eine Komponente kann keine Nachricht unter fremder Adresse senden (`sender_invalid`, Meldung an die wirkliche Adresse). | `test_undeliverable` |
+| Kryptografie (ASVS V6; BSI CON.1) | Das Relay prüft und bildet Prüfwerte nur mit `Envelope` der Bibliothek (HMAC-SHA256, Vergleich in konstanter Zeit, Schlüssel 32 Byte aus `secrets`, ein Schlüssel je Verbindung); keine eigene Kryptografie. | `test_forwarding` (Weitergabe über Relays mit je eigenem Schlüssel) |
+| Umgang mit Geheimnissen (Regel 8.2 Nr. 1; ASVS V2.10) | Schlüssel nur als Dateien im Verzeichnis für Geheimnisse, dessen Rechte vor dem Start geprüft werden (Abschnitt 20); die Betriebskonfiguration nennt nur Dateinamen; Schlüssel stehen nie in Datenbank, Protokoll, Ausgabe oder Fehlermeldung (`key new` und `config show` zeigen keinen Schlüssel); die URL der Datenbank steht nie in einer Meldung. Das Relay startet nicht mit offenen Rechten. | `test_commands` (Rechte, Ausgabe), `test_startup`, `test_operating` |
+| Dateizugriffe (Regel 8.3 Nr. 5; ASVS V12) | Dateien im Verzeichnis der Anlagen entstehen nur aus dem Schlüssel des Eintrags (UUID, geprüft) und der Nummer; Schreiben atomar mit `fsync`; Lesen ohne Link, Verzeichnis mit `0700`. Die Dateien der Wege nach Abschnitt 8. | `test_attachments`, `test_limits` |
+| Fehlerbehandlung ohne Einzelheiten (Regel 8.2 Nr. 8; ASVS V7) | Fehlertexte nennen Eintrag, Grund oder Dateiname, nie Wert oder Pfad; Fehler fremder Wege erscheinen nur mit dem Namen der Fehlerklasse. | `test_operating`, `test_startup`, `test_commands`, `test_forwarding` |
+| Begrenzung von Ressourcen (Spezifikation 4.5; OWASP API4) | Größe je Weg, Zahl der Nachrichten, Platz für Anlagen, Länge von `hops`, Umschläge je Schritt, Größe der Betriebskonfiguration (Abschnitt 25). | `test_limits`, `test_operating` |
+| Protokollierung (Regel 8.3 Nr. 4; ASVS V7; BSI OPS.1.1.5) | Zeilen mit Nachrichten-ID, Art, Absender, Adressat, Weg, Ergebnis; keine Inhalte, Anlagen, Schlüssel, Pfade der Daten oder unprüfbare Angaben eines verworfenen Umschlags. | `test_forwarding`, `test_undeliverable`, `test_commands` |
+| Datenbank (Regel 9: SQLAlchemy, Alembic; Regel 8.2 Nr. 10) | SQLAlchemy Core mit gebundenen Werten, kein zusammengesetztes SQL; Migration alles oder nichts, vom Betreiber ausgelöst (`migrate`), andere Befehle lehnen ein altes Schema ab; Transaktion für „gesehen“ und „gespeichert“. | `test_database`, `test_commands` |
+| Zustellung mindestens einmal, Wiederholung erkennbar (E4) | Abschnitt 24 | `test_recovery`, `test_process` |
+| Erweiterungen (Regel 12; BSI APP.7) | Wege nur über die Einstiegspunkte der Bibliothek; der Name steht in der Konfiguration; Angaben prüft der Weg; ein Fehler eines Wegs hält die Runde nicht an. | `test_operating`, `test_forwarding` |
+| Sichere Voreinstellungen (Regel 8.3 Nr. 2) | kein Port; Verzeichnis der Anlagen `0700`; Rechte des Verzeichnisses für Geheimnisse geprüft; Grenzen gesetzt; ungültige Konfiguration wird nie teilweise übernommen. | `test_commands`, `test_operating`, `test_limits` |
+
+Abweichungen und Grenzen:
+
+- Die Prüfung der Zugriffsrechte unter Windows ist nicht ausgeführt (Abschnitt 6, „Stand des Nachweises“); sie braucht einen Lauf auf einem Windows-Rechner.
+- Mitlesen auf dem Weg und im Verzeichnis verhindert das Relay nicht (Verschlüsselung ist offen, req-relay-011). Wartende Nachrichten liegen unverschlüsselt in Datenbank und Verzeichnis der Anlagen (Abschnitt 22).
+- Die Relays eines pipwerk-Netzes betreibt der Betreiber, ihnen wird vertraut (E5). Ein Schutz von Absender zu Empfänger über alle Relays gibt es nicht.
+- Ein Prozess je Datenbank: Das Relay hindert einen zweiten Prozess auf derselben Datenbank nicht. Die Transaktionen der Datenbank halten die Tabellen auch dann zusammen, aber zwei Prozesse könnten dieselbe Nachricht zweimal übergeben (der Empfänger erkennt die Wiederholung, E4) und Dateien der Anlagen des anderen als Rest ansehen. Der Betreiber startet einen Prozess je Datenbank.
+- Eine Übergabe wird vom Empfänger als Wiederholung erkannt, solange sie in der Frist `periods.seen_for_seconds` liegt; danach gilt eine alte Nachricht, die noch einmal ankommt, als neu.
+- Ein Umschlag mit `stored` (Wege für Dateien, Paket `wp04`) wird als fehlerhaft verworfen.
+
+## 29. Abhängigkeiten des Relays
+
+Das Relay bringt keine neue Drittabhängigkeit mit. Laufzeit: Pydantic 2.13.5, SQLAlchemy 2.1.5 und Alembic 1.20.0 (dieselben festgeschriebenen Versionen und Prüfungen wie in Abschnitt 14) und die Bibliothek `pipwerk-relaycore` 0.1.0 als Pfadabhängigkeit auf `packages/relay-core` (Zweck: Abschnitt 18). Entwicklung: pytest 9.1.1, ruff 0.17.1, mypy 2.4.0, jsonschema 4.26.0 und types-jsonschema (dieselben Versionen wie bei `relay-core`). Die Versionen stehen in `pyproject.toml` und `uv.lock` der Komponente; `scripts/check --with-audit` prüft sie auf bekannte Schwachstellen. Kopplung: SQLAlchemy erscheint nur in `tables`, `store`, `database` und beim Erzeugen der Verbindung; die öffentlichen Typen (`QueueEntry`, `NewEntry` und so weiter) sind einfache Datenklassen, keine ORM-Klassen.
+
+## 30. Prüfskript des Relays und Tests
+
+`components/pipwerk-relay/scripts/check [--with-audit]` führt auf dem Arbeitsverzeichnis, zu dem das Skript gehört, nacheinander aus: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`, mit `--with-audit` zusätzlich `pip-audit` für die gesperrten Pakete. Es endet mit Exitcode 0, nur wenn alle bestehen, und enthält keine festen Pfade, Ports oder Rechnernamen. Die Bibliothek hat ihr eigenes Prüfskript (Abschnitt 16).
+
+Die Tests bauen Relays mit der echten Bibliothek und echten Anschlüssen (`Connector`) in temporären Verzeichnissen (`tests/support.py`: je Relay ein Eingang, je Komponente ein Verzeichnis für das, was das Relay ihr übergibt, eigene Datenbank und eigenes Verzeichnis für Geheimnisse; die Uhr stellt der Test).
+
+| Datei | Prüft |
+|---|---|
+| `test_forwarding.py` | Weitergabe im eigenen Relay, über das Adressbuch, über eine Kette von Standard-Relays (Vorrang des Adressbuchs), Antwort auf demselben Weg, Protokoll ohne Inhalt, Reihenfolge der Prüfungen (Wiederholung vor Absender), unerwartete Fehler von Wegen, nicht erreichbarer Eingang |
+| `test_undeliverable.py` | jeder Grund der Unzustellbarkeit (`sender_invalid`, `loop`, `unknown_recipient`, `unknown_relay`, `relay_unreachable`, `recipient_unreachable`, `too_large`) mit der Meldung beim Absender, wachsende Pausen, Zustellung nach Wiederkehr, Meldung über eine Meldung, Wiederholung derselben Übergabe, Schleife neben Wiederholung, Fälschungen (falscher Schlüssel, unbekannte Verbindung, falscher Empfänger, veränderte Anlage, Inhalt zur Art) ohne Meldung und ohne Inhalt im Protokoll |
+| `test_recovery.py` | Wiederanlauf: Anhalten vor und nach jedem Schritt, Wiederholung nach Anhalten vor dem Quittieren und nach der Übergabe |
+| `test_process.py` | das Relay als Prozess, `SIGKILL` mitten in 150 Nachrichten, Neustart, Beenden auf Wunsch |
+| `test_limits.py` | Zahl der Nachrichten, Platz für Anlagen, einzelne zu große Anlage, Größe je Weg am Eingang, Schonfrist, verzögerte Umschläge blockieren nicht, Aufräumen im Eingang, in Zielen und im Verzeichnis der Anlagen, gesehene Übergaben |
+| `test_operating.py` | Modelle der Betriebskonfiguration (Felder, Regeln, Grenzen, Namen), Laden als Ganzes, Ablehnung mit Stelle der Probleme, Übernahme ohne Neustart, nicht aufbaubare Konfiguration |
+| `test_schemas.py` | Schema gleich Modell, Beispiele, Grenzfälle in Schema und Modell gleich, Regeln nur im Modell |
+| `test_database.py` | Migration (leer, Wiederholung, fremde Tabellen, Gleichheit mit den Tabellen, Rücknahme, neuere Version, Rückrollen), Prüfung der Version, Speicher |
+| `test_attachments.py` | Verzeichnis der Anlagen |
+| `test_startup.py` | Startkonfiguration und ihr Beispiel |
+| `test_commands.py` | die Befehle, Exitcodes, Rechte vor dem Start, Lauf bis zum Beenden, kein Port |
+| `test_documentation.py` | die Dokumentation nennt Felder, Befehle, Tabellen, Werte und Gründe |
+
+## 31. Bekannte Grenzen dieses Stands
+
+- Die Prüfkomponente (`probe`) und die Testumgebung folgen in Auftrag 04, der Abruf in den Aufträgen 05 und 06.
+- Der Nachweis auf einem Netzlaufwerk (SMB, NFS) gehört zur Testumgebung des Pakets (Abschnitt 9, letzter Absatz); die Tests dieses Abschnitts laufen auf einem lokalen Dateisystem.
+- Die Anwenderdokumentation (`docs/user/pipwerk-relay.md`) schreibt Auftrag 04.
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-24 | Auftrag 03: Teil B (Abschnitte 18 bis 31) mit dem Relay: Aufbau, Einrichtung, Startkonfiguration, Betriebskonfiguration, Speicher, Weg einer Nachricht, Wiederanlauf, Begrenzungen, Schonfrist und Aufräumen, Befehle, Sicherheit, Abhängigkeiten, Prüfskript und Tests. Teil A: `Way.clean_up` (Abschnitte 7, 9), `migrate_scripts` und `alembic_config` (Abschnitt 13). |
 | 2026-10-24 | Auftrag 02: Anschluss einer Komponente (Abschnitt 11), Empfangsbestätigung (12), Datenbank des Anschlusses mit Migration (13), Inhalte der Nachrichtenarten `relay.receipt`, `relay.undeliverable`, `probe.message` (10), Regel zu `receipt` in der Nachricht (4), Ablehnungsgrund `bad_content` (5), neue Abhängigkeiten SQLAlchemy und Alembic (14), Schemas und Beispiele (15), Tests (17). Abschnitte 10 bis 13 der Fassung von Auftrag 01 tragen jetzt die Nummern 14 bis 17. |
 | 2026-10-24 | Erstfassung (Vorhaben `relay`, Paket `wp01`, Auftrag 01): Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel, Schnittstelle „Weg“, Verzeichnis-Weg. |

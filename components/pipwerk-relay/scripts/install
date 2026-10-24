@@ -1,0 +1,32 @@
+#!/bin/sh
+# Installation of pipwerk-relay (Linux).
+#
+# Installs the runtime dependencies from the lock file uv.lock into an environment of its own
+# below this component (the folder .venv), together with the library packages/relay-core.
+# The development tools (pytest, ruff, mypy) are not installed. Nothing is changed in the
+# Python installation of the system.
+#
+# Needs uv (https://docs.astral.sh/uv/) and access to the package index once.
+# Documentation: docs/technical/pipwerk-relay.md, section "Einrichtung des Relays".
+
+set -u
+
+PROG=install
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    {
+        printf '%s: cannot determine the directory of the script\n' "$PROG" >&2
+        exit 2
+    }
+component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    {
+        printf '%s: cannot determine the directory of the component\n' "$PROG" >&2
+        exit 2
+    }
+
+command -v uv >/dev/null 2>&1 || {
+    printf '%s: required program not found: uv\n' "$PROG" >&2
+    exit 2
+}
+
+exec uv --project "$component_dir" sync --frozen --no-dev

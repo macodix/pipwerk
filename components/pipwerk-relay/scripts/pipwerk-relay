@@ -1,0 +1,24 @@
+#!/bin/sh
+# Call of pipwerk-relay (Linux).
+#
+#   pipwerk-relay [-c <PATH>] run | config load <FILE> | config show | key new <FILE> | queue | migrate
+#
+# Runs the program from the environment that install has created. All parameters go to the
+# program; "pipwerk-relay --help" lists them. Without -c the program searches
+# $HOME/pipwerk/etc, $HOME/.config/pipwerk and /etc/pipwerk for the file pipwerk-relay.ini.
+# The working folder stays the one you call the script from, so relative paths are read from
+# there. The program opens no port.
+# Documentation: docs/technical/pipwerk-relay.md, section "Befehle".
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    {
+        printf 'pipwerk-relay: cannot determine the directory of the script\n' >&2
+        exit 2
+    }
+component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    {
+        printf 'pipwerk-relay: cannot determine the directory of the component\n' >&2
+        exit 2
+    }
+
+exec uv --project "$component_dir" run --frozen --no-dev pipwerk-relay "$@"

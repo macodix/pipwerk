@@ -24,12 +24,14 @@ Calls:
 ``acknowledge``
     Tell the way that the envelope behind a token is stored (or dropped); the way removes it from
     the inbox. The call is repeatable.
+``clean_up``
+    Optional. Remove leftovers of interrupted sending after a period (the relay calls it).
 """
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -118,3 +120,14 @@ class Way[S: WaySettings](ABC):
     @abstractmethod
     def acknowledge(self, token: str) -> None:
         """Remove the envelope behind ``token`` from the inbox."""
+
+    def clean_up(self, older_than: timedelta, now: datetime) -> int:
+        """Remove leftovers of interrupted sending that are older than ``older_than``.
+
+        An interrupted ``send`` can leave files behind that no reader ever uses (unfinished
+        files, attachments without an envelope). The relay calls this from time to time for
+        every way it uses; the number of removed items is returned. The default does nothing,
+        so a way written for the first form of this interface stays valid. Raises
+        ``WayUnavailableError`` like ``read``.
+        """
+        return 0
