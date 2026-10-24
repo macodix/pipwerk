@@ -1,0 +1,56 @@
+# Erzeugt die Übersicht über den Stand der Vorhaben (development/overview.html).
+# Beschreibung: docs/technical/entwicklungsverfahren.md, Abschnitt "Übersicht".
+# Läuft auf einem von GitHub betriebenen Runner, nicht auf dem selbst betriebenen.
+# Bewusst ohne Auslöser für Pull Requests.
+name: overview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "development/**"
+      - "!development/overview.html"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: overview
+  cancel-in-progress: true
+
+jobs:
+  overview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Repository mit vollständiger Geschichte holen
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Übersicht erzeugen und auf main schreiben
+        run: |
+          set -eu
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          attempt=1
+          while [ "$attempt" -le 3 ]; do
+            python3 tools/overview/generate.py . development/overview.html
+            if [ -z "$(git status --porcelain -- development/overview.html)" ]; then
+              echo "Übersicht unverändert."
+              exit 0
+            fi
+            git add development/overview.html
+            git commit -m "overview: Übersicht aktualisiert"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push abgelehnt (Versuch $attempt von 3), hole den neuen Stand."
+            git fetch origin main
+            git reset --hard origin/main
+            attempt=$((attempt + 1))
+          done
+          echo "Übersicht nach drei Versuchen nicht übertragen." >&2
+          exit 1
