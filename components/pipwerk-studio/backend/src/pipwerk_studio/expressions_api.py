@@ -30,7 +30,7 @@ from pipwerk_domain.expressions import (
     visible_names,
 )
 from pipwerk_domain.expressions.blocks import EMPTY, Block
-from pipwerk_domain.expressions.names import VisibleName
+from pipwerk_domain.expressions.names import ChoiceInfo, VisibleName
 from pipwerk_domain.expressions.symbols import Scope
 from pipwerk_domain.limits import (
     MAX_BLOCK_DEPTH,
@@ -91,7 +91,10 @@ class BlockModel(ApiModel):
     ``comparison`` and ``arithmetic`` their ``operator`` (an arithmetic block with one child is
     a sign), ``logic`` ``and``, ``or`` or ``not``, ``function`` the name of the function from the
     list of the functions, ``crossing`` its ``direction``; ``children`` are the operands in the
-    order of the expression."""
+    order of the expression. A ``name`` block with ``call`` true is the result of a method: its
+    ``path`` ends with the method (``["reihe", "wert_vor"]``) and its ``children`` are the blocks
+    of the arguments in the order of the method (none for a method without arguments;
+    ``call`` is false or left out for a plain name, which has no children)."""
 
     kind: BlockKindName
     path: list[str] | None = None
@@ -100,6 +103,7 @@ class BlockModel(ApiModel):
     operator: str | None = None
     function: str | None = None
     direction: CrossingDirection | None = None
+    call: bool = False
     children: list[BlockModel] = Field(default_factory=list)
 
 
@@ -138,6 +142,7 @@ def _block_from_model(root: BlockModel) -> Block:
             operator=model.operator,
             function=model.function,
             direction=model.direction,
+            call=model.call,
             children=tuple(built[id(child)] for child in model.children),
         )
     return built[id(root)]
@@ -174,6 +179,7 @@ def _block_data(root: Block) -> dict[str, Any]:
             "operator": block.operator,
             "function": block.function,
             "direction": block.direction,
+            "call": block.call,
             "children": [built[id(child)] for child in block.children],
         }
     return built[id(root)]
@@ -244,17 +250,48 @@ class VisiblePropertyModel(ApiModel):
     previous_value: bool
 
 
+class VisibleArgumentModel(ApiModel):
+    """An argument of a visible method: key, label, data type, whether it is mandatory
+    (``required``), its ``default`` value if it is optional, its explanation and the possible
+    values of a choice."""
+
+    key: str
+    label: LabelModel
+    datatype: str
+    required: bool
+    default: bool | int | float | str | None
+    explanation: LabelModel
+    choices: list[ChoiceValueModel]
+
+
+class VisibleMethodModel(ApiModel):
+    """A method of a visible name (specification 3.4): an expression addresses it as
+    ``Name.Method(Arguments)``. ``datatype`` is the data type of the result and ``choices`` its
+    values if it is a choice; ``previous_value`` tells that ``PREVIOUS`` may stand around the
+    result; ``arguments`` are the arguments in their order."""
+
+    key: str
+    label: LabelModel
+    datatype: str | None
+    explanation: LabelModel | None
+    choices: list[ChoiceValueModel]
+    arguments: list[VisibleArgumentModel]
+    previous_value: bool
+
+
 class VisibleNameModel(ApiModel):
     """A name that an expression can address at the place. ``display`` is the name in the
     language of the request and ``path`` the keys. ``contents`` are the instances and rules
-    contained in an instance or ruleset. ``properties_truncated`` is true if the list of
-    properties was cut at the limit."""
+    contained in an instance or ruleset. ``properties`` are the properties and ``methods`` the
+    methods of the name. ``properties_truncated`` is true if the list of properties or the list
+    of methods was cut at the limit."""
 
     display: str
     path: list[str]
     kind: NameKindName
     datatype: str | None
     properties: list[VisiblePropertyModel]
+    methods: list[VisibleMethodModel]
     properties_truncated: bool
     contents: list[VisibleNameModel]
 
@@ -306,6 +343,36 @@ def _property_models(name: VisibleName) -> list[VisiblePropertyModel]:
     ]
 
 
+def _choice_models(choices: tuple[ChoiceInfo, ...]) -> list[ChoiceValueModel]:
+    return [ChoiceValueModel(id=item.key, label=label_model(item.label)) for item in choices]
+
+
+def _method_models(name: VisibleName) -> list[VisibleMethodModel]:
+    return [
+        VisibleMethodModel(
+            key=item.key,
+            label=label_model(item.label),
+            datatype=item.datatype,
+            explanation=None if item.explanation is None else label_model(item.explanation),
+            choices=_choice_models(item.choices),
+            arguments=[
+                VisibleArgumentModel(
+                    key=argument.key,
+                    label=label_model(argument.label),
+                    datatype=argument.datatype,
+                    required=argument.required,
+                    default=argument.default,
+                    explanation=label_model(argument.explanation),
+                    choices=_choice_models(argument.choices),
+                )
+                for argument in item.arguments
+            ],
+            previous_value=item.previous_value,
+        )
+        for item in name.methods
+    ]
+
+
 def _name_model(name: VisibleName) -> VisibleNameModel:
     return VisibleNameModel(
         display=name.display,
@@ -313,6 +380,7 @@ def _name_model(name: VisibleName) -> VisibleNameModel:
         kind=name.kind,  # type: ignore[arg-type]
         datatype=name.datatype,
         properties=_property_models(name),
+        methods=_method_models(name),
         properties_truncated=name.properties_truncated,
         contents=[_name_model(item) for item in name.contents],
     )

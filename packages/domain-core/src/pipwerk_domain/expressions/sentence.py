@@ -3,7 +3,7 @@ the drawing area and the property view show for an expression, for example "EMA 
 EMA 50 in beide Richtungen"."""
 
 from pipwerk_domain.expressions.blocks import Block, BlockKind
-from pipwerk_domain.expressions.exprtypes import ExprType
+from pipwerk_domain.expressions.exprtypes import ExprType, labels_of, type_of
 from pipwerk_domain.expressions.symbols import SymbolKind
 
 _COMPARISON = {
@@ -64,6 +64,17 @@ def literal_choices(root: Block, expected: ExprType | None = None) -> dict[int, 
     type of the choice."""
     found: dict[int, ExprType] = {}
     for block in _walk(root):
+        if block.kind is BlockKind.NAME and block.call and block.symbols:
+            for spec, argument in zip(block.symbols[-1].arguments, block.children, strict=False):
+                wanted = type_of(
+                    spec.datatype,
+                    tuple(item.id for item in spec.choices),
+                    spec.object_type,
+                    labels_of(spec.choices),
+                )
+                if wanted.labels and wanted.choices:
+                    for literal in _result_literals(argument):
+                        found.setdefault(id(literal), wanted)
         if block.kind is BlockKind.COMPARISON and block.operator in ("=", "<>"):
             first, second = block.children
             for side, other in ((first, second), (second, first)):
@@ -81,11 +92,21 @@ def _number(value: int | float, language: str) -> str:
     return text.replace(".", ",") if language == "de" else text
 
 
-def _name_text(block: Block, language: str) -> str:
+def _name_text(block: Block, language: str, parts: list[str] | None = None) -> str:
     """A name: the main value of an object is called by its name, any other value by its
-    label and the object."""
+    label and the object. A method is called by its label with its arguments and the object:
+    "Wert vor (3) von EMA 20"."""
     de = language == "de"
     symbols = block.symbols
+    if block.call:
+        arguments = "; ".join(parts or ())
+        if len(symbols) < len(block.path) or len(symbols) < 2:
+            plain = ".".join(block.path) if block.path else _EMPTY
+            return f"{plain}({arguments})"
+        shown = [item.display_name(language) for item in symbols]
+        owner = _owner_text(shown[:-1], [item.name for item in symbols[:-1]], de)
+        method = f"{shown[-1]} ({arguments})" if arguments else shown[-1]
+        return f"{method} von {owner}" if de else f"{method} of {owner}"
     if not symbols:
         return ".".join(block.path) if block.path else _EMPTY
     shown = [item.display_name(language) for item in symbols]
@@ -159,7 +180,7 @@ def _sentence_of(
     if kind is BlockKind.EMPTY:
         return _EMPTY
     if kind is BlockKind.NAME:
-        return _name_text(block, language)
+        return _name_text(block, language, parts)
     if kind is BlockKind.LITERAL:
         return _literal_text(block, language, choices.get(id(block)))
     if kind is BlockKind.COMPARISON:

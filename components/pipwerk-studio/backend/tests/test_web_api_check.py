@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from web_api_support import (
+    CHECKED_CASES,
     check,
     codes,
     indicator_document,
@@ -24,7 +25,7 @@ from web_api_support import (
 from pipwerk_studio import web_api
 
 
-@pytest.mark.parametrize("name", ["str-01", "str-03"])
+@pytest.mark.parametrize("name", CHECKED_CASES)
 def test_a_test_case_has_no_finding(client: TestClient, name: str) -> None:
     response = check(client, load_case(name))
     assert response.status_code == 200
@@ -54,7 +55,7 @@ def test_a_template_of_every_kind_can_be_checked(
 
 
 def test_every_recognized_name_stands_where_the_answer_says(client: TestClient) -> None:
-    document = load_case("str-01")
+    document = load_case("str-03")
     elements = {item["id"]: item for item in document["elements"]}
     answer = check(client, document).json()
     seen = 0
@@ -77,7 +78,7 @@ def test_every_recognized_name_stands_where_the_answer_says(client: TestClient) 
 
 
 def test_the_names_of_a_rule_of_the_strategy_name_their_instance(client: TestClient) -> None:
-    answer = check(client, load_case("str-01")).json()
+    answer = check(client, load_case("str-03")).json()
     rule_expressions = [item for item in answer["expressions"] if item["subject"] == "risiko"]
     assert [item["field"] for item in rule_expressions] == ["expression"]
     assert rule_expressions[0]["element"] is None
@@ -144,6 +145,6 @@ def test_the_names_of_a_big_check_are_limited(
     from pipwerk_domain.consistency import engine
 
     monkeypatch.setattr(engine, "MAX_NAMES_PER_CHECK", 5)
-    answer = check(client, load_case("str-01")).json()
+    answer = check(client, load_case("str-03")).json()
     assert answer["names_truncated"] is True
     assert sum(len(item["names"]) for item in answer["expressions"]) == 5

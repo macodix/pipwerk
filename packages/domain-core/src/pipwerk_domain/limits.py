@@ -51,6 +51,9 @@ MAX_KEY_LENGTH = 200
 MAX_INPUTS_PER_ELEMENT = 50
 """Inputs of one element."""
 
+MAX_INPUT_ARGUMENTS = 20
+"""Values of arguments in one input that names a method."""
+
 MAX_ITEMS_PER_REQUEST = 50
 """Items of one request to ``/api/v1/expressions``."""
 

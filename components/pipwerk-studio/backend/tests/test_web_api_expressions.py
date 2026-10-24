@@ -169,6 +169,7 @@ def test_the_kinds_of_blocks(client: TestClient) -> None:
         "operator": None,
         "function": None,
         "direction": None,
+        "call": False,
         "children": [],
     }
     assert condition["kind"] == "if"
@@ -187,6 +188,7 @@ def test_the_kinds_of_blocks(client: TestClient) -> None:
         "operator": None,
         "function": None,
         "direction": None,
+        "call": False,
         "children": [],
     }
     assert (maximum["kind"], maximum["function"]) == ("function", "MAX")

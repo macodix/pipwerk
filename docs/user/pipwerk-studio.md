@@ -95,7 +95,7 @@ Die Bibliothek zeigt, was Sie in die Strategie einfügen können, in Gruppen:
 | Bedingungen und Aktionen | Schritte des Ablaufs, zum Beispiel „Bedingung“, „Berechnung“, „Order aufgeben“, „Position ändern“ |
 | Markt und Konto | Objekte der Anwendung: Konto, Instrument, Kerze, Tick |
 | Indikatoren | mitgelieferte und eigene Indikatoren, zum Beispiel „EMA“ und „ATR“, und „eigener Indikator“ |
-| Trends | mitgelieferte und eigene Trends, zum Beispiel „1-2-3-Trend (Markttechnik)“, und „eigener Trend“ |
+| Trends | „eigener Trend“ |
 | Regeln | Regeln und Regelwerke, zum Beispiel „Risiko je Trade“, und „eigene Regel“ |
 
 Eine gespeicherte Vorlage trägt die Marke „eigene“. Das Suchfeld oben filtert die Einträge nach Namen und Erklärung. Zeigen Sie mit dem Mauszeiger auf einen Eintrag oder wählen Sie ihn mit der Tabulatortaste, erscheint seine Erklärung.
@@ -452,7 +452,7 @@ Manchmal hat eine Eigenschaft keinen Wert. Dafür gibt es zwei Fälle. Sie wirke
 
 **„Nicht verfügbar“.** Ein Ausdruck spricht eine Eigenschaft an, die das Objekt im Zusammenhang der Auswertung nicht hat. Beispiele: `Order.limitpreis` bei einer Stop-Order (sie hat keinen Limitpreis), `Position`, solange die Order noch keine Position hat, oder `Position` in einer Regel, die auf eine Order angewendet wird. Jede Rechnung mit „nicht verfügbar“ ergibt wieder „nicht verfügbar“, auch eine Bedingung von `IF`. `ISNA(Wert)` fragt danach, `IFNA(Wert; Ersatz)` ersetzt den Wert. Die Regel „Risiko je Trade“ fängt `Position` so ab: `IF(ISNA(Position.volumen); …; …)`.
 
-**„Leer“.** Eine Eigenschaft hat keinen Wert, obwohl das Objekt sie kennt. Beispiel: `punkt_2` der Markttechnik, solange es keinen Trend gibt. Eine Eigenschaft, die Sie nicht belegt haben, aber nicht belegen müssen, ist ebenfalls leer. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung, ebenso eine Division durch null. `ISBLANK(Wert)` fragt danach.
+**„Leer“.** Eine Eigenschaft hat keinen Wert, obwohl das Objekt sie kennt. Beispiel: `vorletztes_hoch` des ZigZag, solange er noch kein zweites Hoch gefunden hat. Eine Eigenschaft, die Sie nicht belegt haben, aber nicht belegen müssen, ist ebenfalls leer. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung, ebenso eine Division durch null. `ISBLANK(Wert)` fragt danach.
 
 Die Wirkung bei der Ausführung, wenn ein Ausdruck einen Fehler, „leer“ oder „nicht verfügbar“ ergibt:
 
@@ -464,13 +464,12 @@ Die Wirkung bei der Ausführung, wenn ein Ausdruck einen Fehler, „leer“ oder
 | Bedingung | Jedes Ergebnis außer „wahr“ nimmt den Ausgang „falsch“. |
 | Berechnung | Das Ergebnis ist dieser Wert. Wer es verwendet, verhält sich nach dieser Tabelle. |
 | Belegung einer Eigenschaft bei „Order aufgeben“, „Order ändern“, „Position ändern“ oder „Position schließen“ | Die Eigenschaft ist nicht bestimmbar. „Order aufgeben“ nimmt den Ausgang „nicht gestellt“, „Order ändern“ und „Position ändern“ nehmen „nicht geändert“. „Position schließen“ schließt dann nichts, und der Ablauf geht weiter. |
-| „Parameter setzen“ | Der Strategieparameter bleibt unverändert. Der Ablauf geht weiter. |
 | Parameter einer Instanz, der mit einem Ausdruck belegt ist | Alle Eigenschaften der Instanz sind „leer“. Ein Auslöser, dessen Parameter so ein Ergebnis hat, tritt nicht ein. |
 | eigene Eigenschaft eines Indikators oder Trends | Die Eigenschaft ist „leer“. |
 
 Eine Order oder Position ohne Stop-Loss erfüllt die Regel „Risiko je Trade“ nicht, weil der Stop-Loss dann „leer“ ist.
 
-Beispiel: In `str-01` steht die Bedingung `mt_handel.trendrichtung = mt_signal.trendrichtung`. Hat die Markttechnik keinen Trend, ist der Vergleich ohne Ergebnis, und die Bedingung nimmt den Ausgang „falsch“. Es wird dann keine Order geplant.
+Beispiel: Die Bedingung `zigzag_h1.letztes_hoch > zigzag_h1.vorletztes_hoch` vergleicht die beiden letzten Hochs eines ZigZag. Hat er noch kein zweites Hoch, ist der Vergleich ohne Ergebnis, und die Bedingung nimmt den Ausgang „falsch“. Es wird dann keine Order geplant.
 
 ## 8. Befunde der Konsistenzprüfung und ihre Behebung
 
@@ -628,7 +627,7 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | Kennung | Der Name, unter dem eine Eigenschaft, ein Parameter oder ein Wert im Dokument und in Ausdrücken steht, zum Beispiel `stop_loss`. Die Oberfläche zeigt dafür den Namen in der gewählten Sprache. |
 | Herkunft | Die Angabe, woraus eine Instanz entstanden ist, zum Beispiel „ema20, aus Objekttyp EMA“ oder „…, aus Vorlage Risiko je Trade“. |
 | nicht verfügbar | Der Wert eines Ausdrucks, der eine Eigenschaft anspricht, die das Objekt im Zusammenhang der Auswertung nicht hat, zum Beispiel `Order.limitpreis` bei einer Stop-Order. Jede Rechnung damit ergibt wieder „nicht verfügbar“. `ISNA` und `IFNA` fangen ihn ab (Abschnitt 7.5). |
-| leer | Der Wert einer Eigenschaft ohne Wert, zum Beispiel `punkt_2` der Markttechnik ohne Trend. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung. `ISBLANK` fragt danach (Abschnitt 7.5). Nicht zu verwechseln mit „nicht verfügbar“. |
+| leer | Der Wert einer Eigenschaft ohne Wert, zum Beispiel `vorletztes_hoch` eines ZigZag ohne zweites Hoch. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung. `ISBLANK` fragt danach (Abschnitt 7.5). Nicht zu verwechseln mit „nicht verfügbar“. |
 | Konsistenzprüfung | Die Prüfung eines Dokuments auf Widersprüche, zum Beispiel einen Ausdruck mit Schreibfehler oder einen unbekannten Namen. Sie liefert Befunde. |
 | Befund | Ein Ergebnis der Konsistenzprüfung: ein Fehler (`error`) oder ein Hinweis (`hint`) mit einer Art (`code`) und, wenn möglich, dem betroffenen Element. Ein Dokument mit Befunden lässt sich trotzdem speichern. |
 | Tooltip | Ein kleines Hinweisfenster, das erscheint, wenn der Mauszeiger kurz über einer Anzeige verweilt. |

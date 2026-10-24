@@ -52,6 +52,7 @@
         "template_id": "7c1d4e2a-5b3f-4a86-9d27-e1f0a3c8b645",
         "template_name": null
       },
+      "first_use": null,
       "parameter_values": {
         "risikogrenze": {
           "kind": "fixed",
@@ -99,6 +100,7 @@
           "template_id": null,
           "template_name": null
         },
+        "first_use": null,
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -151,6 +153,7 @@
           "template_id": null,
           "template_name": null
         },
+        "first_use": null,
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -221,11 +224,17 @@
       "inputs": [
         {
           "instance": "mt_signal",
-          "property": "trend_intakt"
+          "property": "trend_intakt",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         },
         {
           "instance": "mt_signal",
-          "property": "phase"
+          "property": "phase",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -248,11 +257,17 @@
       "inputs": [
         {
           "instance": "mt_handel",
-          "property": "trendrichtung"
+          "property": "trendrichtung",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         },
         {
           "instance": "mt_signal",
-          "property": "trendrichtung"
+          "property": "trendrichtung",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -293,11 +308,17 @@
       "inputs": [
         {
           "instance": "mt_signal",
-          "property": "trendrichtung"
+          "property": "trendrichtung",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         },
         {
           "instance": "mt_handel",
-          "property": "punkt_2"
+          "property": "punkt_2",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -320,11 +341,17 @@
       "inputs": [
         {
           "instance": "mt_signal",
-          "property": "trendrichtung"
+          "property": "trendrichtung",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         },
         {
           "instance": "mt_handel",
-          "property": "punkt_13"
+          "property": "punkt_13",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -347,7 +374,10 @@
       "inputs": [
         {
           "instance": "mt_signal",
-          "property": "trendrichtung"
+          "property": "trendrichtung",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -395,7 +425,10 @@
       "inputs": [
         {
           "instance": "mt_signal",
-          "property": "trendrichtung"
+          "property": "trendrichtung",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [
@@ -408,6 +441,7 @@
             "template_id": null,
             "template_name": null
           },
+          "first_use": null,
           "parameter_values": {},
           "parameters": [],
           "properties": [],
@@ -456,7 +490,10 @@
       "inputs": [
         {
           "instance": "mt_handel",
-          "property": "punkt_13"
+          "property": "punkt_13",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -532,7 +569,10 @@
       "inputs": [
         {
           "instance": "mt_handel",
-          "property": "punkt_13"
+          "property": "punkt_13",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],

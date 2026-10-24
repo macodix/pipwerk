@@ -34,6 +34,7 @@
         "template_id": "7c1d4e2a-5b3f-4a86-9d27-e1f0a3c8b645",
         "template_name": null
       },
+      "first_use": null,
       "parameter_values": {
         "risikogrenze": {
           "kind": "fixed",
@@ -81,6 +82,7 @@
           "template_id": null,
           "template_name": null
         },
+        "first_use": null,
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -133,6 +135,7 @@
           "template_id": null,
           "template_name": null
         },
+        "first_use": null,
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -185,6 +188,7 @@
           "template_id": null,
           "template_name": null
         },
+        "first_use": null,
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -265,11 +269,17 @@
       "inputs": [
         {
           "instance": "ema20",
-          "property": "wert"
+          "property": "wert",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         },
         {
           "instance": "ema50",
-          "property": "wert"
+          "property": "wert",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -292,7 +302,10 @@
       "inputs": [
         {
           "instance": "atr14",
-          "property": "wert"
+          "property": "wert",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -336,6 +349,7 @@
             "template_id": null,
             "template_name": null
           },
+          "first_use": null,
           "parameter_values": {},
           "parameters": [],
           "properties": [],
@@ -406,11 +420,17 @@
       "inputs": [
         {
           "instance": "ema20",
-          "property": "wert"
+          "property": "wert",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         },
         {
           "instance": "ema50",
-          "property": "wert"
+          "property": "wert",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],
@@ -446,7 +466,10 @@
       "inputs": [
         {
           "instance": "atr14",
-          "property": "wert"
+          "property": "wert",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
         }
       ],
       "rules": [],

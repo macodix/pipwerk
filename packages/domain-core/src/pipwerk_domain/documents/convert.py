@@ -33,6 +33,7 @@ from pipwerk_domain.model import (
     DataLink,
     Element,
     ElementInput,
+    InputKind,
     Instance,
     ObjectContent,
     Orientation,
@@ -152,6 +153,7 @@ def _instance_to_document(instance: Instance) -> InstanceDocument:
             template_id=origin.template_id,
             template_name=origin.template_name,
         ),
+        first_use=instance.first_use,
         **_content_to_fields(instance),
     )
 
@@ -167,7 +169,14 @@ def _element_to_document(element: Element) -> ElementDocument:
         parameters=_bindings_to_document(element.parameters),
         properties=_bindings_to_document(element.properties),
         inputs=[
-            InputDocument(instance=item.instance, property=item.property) for item in element.inputs
+            InputDocument(
+                instance=item.instance,
+                property=item.property,
+                kind=item.kind.value,
+                arguments=list(item.arguments),
+                refresh=item.refresh,
+            )
+            for item in element.inputs
         ],
         rules=[_instance_to_document(item) for item in element.rules],
         management_of=element.management_of,
@@ -297,6 +306,7 @@ def _instance_from_document(document: InstanceDocument) -> Instance:
         origin=None
         if origin is None
         else Origin(origin.object_type, origin.template_id, origin.template_name),
+        first_use=document.first_use,
         **_content_from_document(document),
     )
 
@@ -311,7 +321,16 @@ def _element_from_document(document: ElementDocument) -> Element:
         position=None if position is None else Position(position.x, position.y),
         parameters=_bindings_from_document(document.parameters),
         properties=_bindings_from_document(document.properties),
-        inputs=[ElementInput(item.instance, item.property) for item in document.inputs],
+        inputs=[
+            ElementInput(
+                item.instance,
+                item.property,
+                InputKind(item.kind),
+                tuple(item.arguments),
+                item.refresh,
+            )
+            for item in document.inputs
+        ],
         rules=[_instance_from_document(item) for item in document.rules],
         management_of=document.management_of,
         instance=None if document.instance is None else _instance_from_document(document.instance),

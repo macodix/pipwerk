@@ -21,6 +21,7 @@ from pipwerk_domain.expressions.nodes import (
     Binary,
     Call,
     Group,
+    MethodCall,
     Name,
     NameSegment,
     Node,
@@ -34,10 +35,19 @@ from pipwerk_domain.expressions.nodes import (
 from pipwerk_domain.expressions.parser import ParseResult, parse
 from pipwerk_domain.expressions.symbols import Environment, Symbol, SymbolKind
 from pipwerk_domain.limits import MAX_FINDINGS_PER_EXPRESSION
-from pipwerk_domain.typedesc import DataType
+from pipwerk_domain.typedesc import ArgumentDescription, DataType
 
 _ORDERING = ("<", "<=", ">", ">=")
 _ARITHMETIC = ("+", "-", "*", "/", "^")
+
+
+def _integer_fits(datatype: DataType, node: Node) -> bool:
+    """A fixed number where a whole number is expected must be one (and no percentage)."""
+    if datatype is not DataType.INTEGER:
+        return True
+    while isinstance(node, Group):
+        node = node.inner
+    return not isinstance(node, Number) or (isinstance(node.value, int) and not node.percent)
 
 
 def result_texts(node: Node) -> list[String]:
@@ -68,6 +78,7 @@ class IssueKind(StrEnum):
     UNKNOWN_FUNCTION = "unknown_function"
     UNKNOWN_NAME = "unknown_name"
     UNKNOWN_PROPERTY = "unknown_property"
+    UNKNOWN_METHOD = "unknown_method"
     TYPE_MISMATCH = "type_mismatch"
     UNKNOWN_CHOICE_VALUE = "unknown_choice_value"
     ARGUMENT_COUNT = "argument_count"
@@ -142,6 +153,8 @@ class Analysis:
     """The type of every node of the tree, by ``id`` of the node."""
     slots: list[tuple[int, int]] = field(default_factory=list)
     """Start and end of every empty place."""
+    argument_types: dict[int, ExprType] = field(default_factory=dict)
+    """The type that a method expects for an argument, by ``id`` of the node of the argument."""
     display: bool = False
     """Whether the source was read in the display form."""
 
@@ -159,6 +172,7 @@ class Analysis:
         self.names = []
         self.functions = []
         self.types = {}
+        self.argument_types = {}
 
 
 def analyze(
@@ -310,6 +324,7 @@ class _Checker:
         self.name_identifiers: dict[int, str] = {}
         self.truncated = False
         self.previous_names: set[int] = set()
+        self.argument_types: dict[int, ExprType] = {}
 
     def run(self, tree: Node, expected: ExprType | None) -> Analysis:
         nodes = postorder(tree)
@@ -318,7 +333,7 @@ class _Checker:
                 isinstance(node, Call)
                 and node.name.upper() == "PREVIOUS"
                 and node.args
-                and isinstance(node.args[0], Name)
+                and isinstance(node.args[0], Name | MethodCall)
             ):
                 self.previous_names.add(id(node.args[0]))
         for node in nodes:
@@ -341,6 +356,7 @@ class _Checker:
             self.truncated,
             types=self.types,
             slots=self.slots,
+            argument_types=self.argument_types,
             display=self.display,
         )
 
@@ -406,6 +422,8 @@ class _Checker:
                 return self._binary(node)
             case Call():
                 return self._call(node)
+            case MethodCall():
+                return self._method_call(node)
         return et.UNKNOWN  # pragma: no cover - all node types are handled above
 
     # names --------------------------------------------------------------------------
@@ -443,6 +461,16 @@ class _Checker:
         self._remember_name(node, path, recognized, resolved=True)
         self.name_symbols[id(node)] = current
         self.name_identifiers[id(node)] = ".".join(item.identifier for item in recognized)
+        if current.kind is SymbolKind.METHOD:
+            # a method is addressed with its arguments in parentheses
+            self._issue(
+                IssueKind.ARGUMENT_COUNT,
+                node.start,
+                node.end,
+                "call_missing",
+                **self._method_details(path, current),
+            )
+            return et.UNKNOWN
         value_type = current.value_type
         if value_type is None:
             self._issue(
@@ -459,16 +487,18 @@ class _Checker:
 
     def _remember_name(
         self,
-        node: Name,
+        node: Name | MethodCall,
         path: list[Symbol],
         recognized: list[RecognizedSegment],
         *,
         resolved: bool,
     ) -> None:
+        # the name of a method call ends with the method, not with the closing parenthesis
+        end = node.method.end if isinstance(node, MethodCall) else node.end
         self.names.append(
             RecognizedName(
                 node.start,
-                node.end,
+                end,
                 ".".join(item.identifier for item in recognized),
                 tuple(recognized),
                 resolved,
@@ -477,6 +507,128 @@ class _Checker:
                 node.segments,
             )
         )
+
+    # methods ------------------------------------------------------------------------
+
+    @staticmethod
+    def _method_details(path: list[Symbol], method: Symbol) -> dict[str, object]:
+        """The data of a finding about a method: the object it belongs to, the method and the
+        number of its arguments."""
+        arguments = method.arguments
+        return {
+            "object": ".".join(item.name for item in path[:-1]),
+            "method": method.name,
+            "minimum": sum(1 for item in arguments if item.required),
+            "maximum": len(arguments),
+        }
+
+    def _method_call(self, node: MethodCall) -> ExprType:
+        """``Objekt.Methode(Argumente)``: the object and the method are looked up like a name,
+        the number and the types of the arguments are checked against the description of the
+        method, the type of the result is the one of the method (specification 3.4)."""
+        segments = node.segments
+        first = segments[0]
+        symbol = self.environment.resolve(first.text, self.display)
+        if symbol is None:
+            self._issue(IssueKind.UNKNOWN_NAME, first.start, first.end, name=first.text)
+            self.names.append(
+                RecognizedName(node.start, node.method.end, "", (), False, (), written=segments)
+            )
+            return et.UNKNOWN
+        path = [symbol]
+        recognized = [RecognizedSegment(first.start, first.end, symbol.name)]
+        self.replacements.append((first.start, first.end, symbol.name))
+        current = symbol
+        for index, segment in enumerate(segments[1:], start=1):
+            last = index == len(segments) - 1
+            member = current.member(segment.text, self.display)
+            if member is None:
+                owner = ".".join(item.identifier for item in recognized)
+                if last:
+                    self._issue(
+                        IssueKind.UNKNOWN_METHOD,
+                        segment.start,
+                        segment.end,
+                        "unknown",
+                        object=owner,
+                        method=segment.text,
+                    )
+                else:
+                    self._issue(
+                        IssueKind.UNKNOWN_PROPERTY,
+                        segment.start,
+                        segment.end,
+                        object=owner,
+                        property=segment.text,
+                    )
+                self._remember_name(node, path, recognized, resolved=False)
+                return et.UNKNOWN
+            path.append(member)
+            recognized.append(RecognizedSegment(segment.start, segment.end, member.name))
+            self.replacements.append((segment.start, segment.end, member.name))
+            current = member
+        self._remember_name(node, path, recognized, resolved=True)
+        self.name_symbols[id(node)] = current
+        self.name_identifiers[id(node)] = ".".join(item.identifier for item in recognized)
+        if current.kind is SymbolKind.UNRESOLVED:
+            return et.UNKNOWN  # a method of an object that cannot be checked yet
+        if current.kind is not SymbolKind.METHOD:
+            self._issue(
+                IssueKind.UNKNOWN_METHOD,
+                node.method.start,
+                node.method.end,
+                "not_a_method",
+                object=".".join(item.identifier for item in recognized[:-1]),
+                method=current.name,
+            )
+            return et.UNKNOWN
+        details = self._method_details(path, current)
+        arguments = current.arguments
+        count = len(node.args)
+        if count < details["minimum"] or count > details["maximum"]:  # type: ignore[operator]
+            self._issue(IssueKind.ARGUMENT_COUNT, node.start, node.end, "", found=count, **details)
+        for index, argument in enumerate(node.args):
+            if index < len(arguments):
+                self._check_method_argument(details, index, arguments[index], argument)
+        return current.value_type or et.UNKNOWN
+
+    def _check_method_argument(
+        self,
+        details: dict[str, object],
+        index: int,
+        spec: ArgumentDescription,
+        node: Node,
+    ) -> None:
+        """The value of an argument of a method must have the data type of the argument; a
+        fixed text is checked against the values of a choice (the empty place is reported as
+        such)."""
+        expected = et.type_of(
+            spec.datatype,
+            tuple(item.id for item in spec.choices),
+            spec.object_type,
+            et.labels_of(spec.choices),
+        )
+        self.argument_types[id(node)] = expected
+        found = self.types[id(node)]
+        if found.is_unknown or isinstance(node, Slot):
+            return
+        mismatch = et.mismatch_with(expected, found, self.display)
+        if mismatch is not None and mismatch.reason == "choice_value":
+            self._report_choice_value(node, mismatch, "method_argument")
+        elif mismatch is not None and mismatch.reason == "instrument":
+            self._report_instrument(node, mismatch)
+        elif mismatch is not None or not _integer_fits(spec.datatype, node):
+            self._issue(
+                IssueKind.TYPE_MISMATCH,
+                node.start,
+                node.end,
+                "method_argument",
+                expected=spec.datatype.value,
+                found=found.describe(),
+                argument=spec.id,
+                index=index,
+                **{key: details[key] for key in ("object", "method")},
+            )
 
     # operators ----------------------------------------------------------------------
 
@@ -614,11 +766,12 @@ class _Checker:
             self._mismatch(node, "argument", kind.value, found, function=function, index=index)
 
     def _check_previous_argument(self, function: str, node: Node) -> None:
-        """The first argument of ``PREVIOUS`` is a name for which the fachmodell defines an
-        earlier value (specification 3.4); every other argument is an error."""
+        """The first argument of ``PREVIOUS`` is a name or the result of a method for which the
+        fachmodell defines an earlier value (specification 3.4); every other argument is an
+        error."""
         if isinstance(node, Slot):
             return  # an empty place is reported as such
-        if not isinstance(node, Name):
+        if not isinstance(node, Name | MethodCall):
             self._issue(
                 IssueKind.PREVIOUS_ARGUMENT, node.start, node.end, "not_a_name", function=function
             )

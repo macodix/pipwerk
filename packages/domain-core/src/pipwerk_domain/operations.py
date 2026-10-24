@@ -250,8 +250,7 @@ def _every_content(strategy: Strategy) -> list[ObjectContent]:
 
 def remove_strategy_parameter(strategy: Strategy, key: str) -> None:
     """Remove the strategy parameter with this key. A use in an expression becomes an empty
-    place; a binding to it (kind strategy parameter, or the parameter of "Strategieparameter
-    ändern") becomes "not set" (specification 3.4)."""
+    place; a binding to it (kind strategy parameter) becomes "not set" (specification 3.4)."""
     _rewrite_expressions(strategy, (_STRATEGY_OBJECT, key))
     lowered = key.lower()
 
@@ -265,14 +264,6 @@ def remove_strategy_parameter(strategy: Strategy, key: str) -> None:
     for element in strategy.elements:
         _clear_bindings(element.parameters, uses_parameter)
         _clear_bindings(element.properties, uses_parameter)
-        if element.type == catalog.FLOW_SET_PARAMETER:
-            binding = element.parameters.get("strategieparameter")
-            if (
-                binding is not None
-                and isinstance(binding.value, str)
-                and binding.value.lower() == lowered
-            ):
-                del element.parameters["strategieparameter"]
     for part in _every_content(strategy):
         _clear_bindings(part.parameter_values, uses_parameter)
     strategy.parameters = [item for item in strategy.parameters if item.key.lower() != lowered]

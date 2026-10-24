@@ -22,6 +22,7 @@ from pipwerk_domain.model import Binding, Strategy, Template
 from pipwerk_domain.risk_rule import RISK_PER_TRADE_RULE_ID
 from pipwerk_domain.typedesc import BindingKind
 from tests.paths import (
+    CHECKED_TESTCASES,
     EMA_TRENDFOLGE,
     EXAMPLE_DIRECTORY_V1,
     SCHEMA_DIRECTORY_V1,
@@ -89,7 +90,7 @@ def test_a_template_of_the_format_one_is_converted(path: Path) -> None:
     assert check_template(value) == []
 
 
-@pytest.mark.parametrize("name", ["str-01", "str-03"])
+@pytest.mark.parametrize("name", CHECKED_TESTCASES)
 def test_the_converted_testcases_have_no_error(name: str) -> None:
     value = read_document((TESTCASE_DIRECTORY_V1 / f"{name}.strategy.json").read_bytes())
     assert isinstance(value, Strategy)
@@ -474,6 +475,92 @@ def test_an_instance_of_an_unknown_object_type_keeps_all_its_values() -> None:
     assert instance is not None
     assert instance.parameter_values == {"a": Binding(BindingKind.FIXED, 1)}
     assert any(item.code == "type.unknown" for item in check_strategy(value))
+
+
+def test_the_trigger_start_von_hand_is_read_as_manuell() -> None:
+    """Specification 3.7: the former identifier of "Start von Hand" is read as ``Manuell``."""
+    trigger = {
+        "id": "00000000-0000-4000-8000-000000000501",
+        "type": "trigger.manual_start",
+        "title": "Start von Hand",
+    }
+    order = management_strategy()["elements"][1]
+    data = v1_strategy(
+        elements=[trigger, order],
+        connections=[{"source": trigger["id"], "output": "weiter", "target": order["id"]}],
+    )
+    value = read(data)
+    assert value.elements[0].type == catalog.TRIGGER_MANUAL == "trigger.manual"
+    assert check_strategy(value) == []
+    assert json.loads(write_document(value))["elements"][0]["type"] == "trigger.manual"
+    assert "trigger.manual_start" not in write_document(value)
+
+
+def test_a_trigger_start_von_hand_in_a_management_is_still_a_trigger_of_that_management() -> None:
+    """The conversion adds no start connection to a management that has a trigger."""
+    manual = member(1, "trigger.manual_start")
+    data = management_strategy(manual, member(2))
+    data["connections"].append(
+        {"source": manual["id"], "output": "weiter", "target": member(2)["id"]}
+    )
+    value = read(data)
+    assert next(item.type for item in value.elements if item.management_of) == "trigger.manual"
+    assert [item for item in value.connections if item.output == "gestellt"] == []
+
+
+def test_parameter_setzen_and_markttechnik_stay_in_the_document_as_unknown_types() -> None:
+    setter = {
+        "id": "00000000-0000-4000-8000-000000000502",
+        "type": "flow.set_parameter",
+        "title": "Parameter setzen",
+        "parameters": {
+            "strategieparameter": {"kind": "fixed", "value": "zahl"},
+            "ausdruck": {"kind": "expression", "value": "Strategie.zahl + 1"},
+        },
+    }
+    indicator = {
+        "id": "00000000-0000-4000-8000-000000000503",
+        "type": "Markttechnik",
+        "title": "MT Signal",
+        "instance": {
+            "name": "mt_signal",
+            "object_type": "Markttechnik",
+            "parameter_values": {"zeiteinheit": {"kind": "fixed", "value": "h1"}},
+        },
+    }
+    value = read(
+        v1_strategy(
+            parameters=[{"name": "zahl", "datatype": "number", "value": 1}],
+            elements=[setter, indicator],
+        )
+    )
+    assert value.elements[0].type == "flow.set_parameter"
+    assert value.elements[0].parameters["ausdruck"].value == "Strategie.zahl + 1"
+    assert value.elements[1].instance is not None
+    assert value.elements[1].instance.object_type == "Markttechnik"
+    assert value.elements[1].instance.parameter_values["zeiteinheit"] == Binding(
+        BindingKind.FIXED, "h1"
+    )
+    unknown = [item for item in check_strategy(value) if item.code == "type.unknown"]
+    assert sorted(str(item.details["type"]) for item in unknown) == [
+        "Markttechnik",
+        "flow.set_parameter",
+    ]
+    assert read_document(write_document(value)) == value  # kept by writing and reading
+
+
+def test_an_input_of_the_format_one_has_no_method_and_no_refresh() -> None:
+    """A document of the format 1.0 has no inputs; the format 2.0 reads an input without the
+    indications as a property (specification 3.7)."""
+    value = read_document(EMA_TRENDFOLGE.read_bytes())
+    assert isinstance(value, Strategy)
+    assert all(item.refresh is False for element in value.elements for item in element.inputs)
+    assert all(
+        item.kind.value == "property" and item.arguments == ()
+        for element in value.elements
+        for item in element.inputs
+    )
+    assert all(element.instance.first_use is None for element in value.elements if element.instance)
 
 
 # invalid documents of the format 1.0 --------------------------------------------------------------

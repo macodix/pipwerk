@@ -757,35 +757,3 @@ def test_a_trend_template_needs_a_direction_and_another_method_does_not() -> Non
 
 def test_an_indicator_needs_no_direction() -> None:
     assert check_template(template(catalog.TYPE_INDICATOR)) == []
-
-
-# str-01: the new stop loss follows the direction of the order
-
-
-def test_str_01_management_calculations_use_the_direction_of_the_order() -> None:
-    strategy = read_document((TESTCASE_DIRECTORY / "str-01.strategy.json").read_text("utf-8"))
-    assert isinstance(strategy, Strategy)
-    order = next(item for item in strategy.elements if item.type == catalog.FLOW_PLACE_ORDER)
-    management = strategy.management(order.id)
-    assert management is not None
-    calculations = {
-        item.key: item
-        for item in management.elements
-        if item.key and item.type == catalog.FLOW_CALCULATION
-    }
-    assert set(calculations) == {"stop_neu", "ziel_neu"}
-    for name, item in calculations.items():
-        text = str(item.parameters["ausdruck"].value)
-        assert text.startswith('IF(Order.richtung = "buy"; '), name
-        assert "mt_signal" not in text, name
-    # the long side takes the stop below point 1/3, the short side above it plus the spread
-    stop = str(calculations["stop_neu"].parameters["ausdruck"].value)
-    assert stop == (
-        'IF(Order.richtung = "buy"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; '
-        "mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
-    )
-    # in the main flow the direction of the signal time unit decides, there is no order yet
-    main = [item for item in strategy.main_elements() if item.key in ("einstieg", "stop", "ziel")]
-    assert len(main) == 3
-    for item in main:
-        assert 'mt_signal.trendrichtung = "aufwaerts"' in str(item.parameters["ausdruck"].value)

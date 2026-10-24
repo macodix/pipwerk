@@ -6,12 +6,16 @@ from dataclasses import dataclass, replace
 from importlib.metadata import distributions
 from typing import Any, Protocol
 
+from pipwerk_domain.identifiers import is_valid_key
 from pipwerk_domain.typedesc import (
+    TIME_UNIT_IDS,
     TIME_UNITS,
+    ArgumentDescription,
     Choice,
     Condition,
     DataType,
     ElementKind,
+    MethodDescription,
     ParameterDescription,
     PropertyDescription,
     TypeDescription,
@@ -85,6 +89,14 @@ class ElementRegistry:
         """Query a type by its identifier."""
         description = self._types.get(type_id)
         return None if description is None else self._derived(description)
+
+    def can_refresh(self, type_id: str) -> bool:
+        """Whether a use of an instance of the type can choose "Aktualisieren" (specification
+        3.1, 3.2). A template of the user and an instance made from it have the object type
+        they were made from (``Indikator`` or ``Trend``) and take the indication from it. An
+        unknown type does not provide it."""
+        description = self._types.get(type_id)
+        return description is not None and description.can_refresh
 
     def list(self, kind: ElementKind | None = None) -> Descriptions:
         """All registered types in the order of registration, optionally of one kind."""
@@ -194,24 +206,108 @@ class ElementRegistry:
 
 
 def _check_valid(description: TypeDescription) -> None:
-    """At most one output of a type carries the management (specification 3.1)."""
+    """At most one output of a type carries the management (specification 3.1); the methods
+    have unique identifiers and valid arguments."""
     if sum(1 for item in description.outputs if item.holds_management) > 1:
         raise RegistryError("more than one output holds the management")
+    _check_methods(description)
 
 
-def _fill_time_unit[T: (ParameterDescription, PropertyDescription)](item: T) -> T:
+def _check_methods(description: TypeDescription) -> None:
+    taken = {item.id.lower() for item in description.properties}
+    seen: set[str] = set()
+    for method in description.methods:
+        if not isinstance(method, MethodDescription):
+            raise RegistryError("not a method description")
+        if not is_valid_key(method.id):
+            raise RegistryError(f"invalid method identifier: {method.id!r}")
+        key = method.id.lower()
+        if key in seen:
+            raise RegistryError(f"method identifier twice: {method.id}")
+        if key in taken:
+            raise RegistryError(f"method identifier equals a property: {method.id}")
+        seen.add(key)
+        if method.datatype is DataType.EXPRESSION:
+            raise RegistryError(f"method {method.id}: result of the data type expression")
+        _check_choices(f"method {method.id}", method.datatype, method.choices)
+        _check_arguments(method)
+
+
+def _check_choices(owner: str, datatype: DataType, choices: tuple[Choice, ...]) -> None:
+    identifiers = [item.id for item in choices]
+    if len(set(identifiers)) != len(identifiers):
+        raise RegistryError(f"{owner}: a value of a choice twice")
+    if datatype is DataType.CHOICE and not choices:
+        raise RegistryError(f"{owner}: a choice without values")
+
+
+def _check_arguments(method: MethodDescription) -> None:
+    seen: set[str] = set()
+    optional_seen = False
+    for argument in method.arguments:
+        if not isinstance(argument, ArgumentDescription):
+            raise RegistryError(f"method {method.id}: not an argument description")
+        where = f"method {method.id}, argument {argument.id!r}"
+        if not is_valid_key(argument.id):
+            raise RegistryError(f"{where}: invalid identifier")
+        if argument.id.lower() in seen:
+            raise RegistryError(f"{where}: identifier twice")
+        seen.add(argument.id.lower())
+        if argument.datatype is DataType.EXPRESSION:
+            raise RegistryError(f"{where}: data type expression")
+        _check_choices(where, argument.datatype, argument.choices)
+        if argument.required:
+            if optional_seen:
+                raise RegistryError(f"{where}: a mandatory argument after an optional one")
+            if argument.default is not None:
+                raise RegistryError(f"{where}: a mandatory argument has no default value")
+            continue
+        optional_seen = True
+        if argument.default is None:
+            raise RegistryError(f"{where}: an optional argument needs a default value")
+        if not _default_fits(argument):
+            raise RegistryError(f"{where}: the default value does not fit the data type")
+
+
+def _default_fits(argument: ArgumentDescription) -> bool:
+    """Whether the default value of an optional argument is a value of its data type."""
+    value = argument.default
+    match argument.datatype:
+        case DataType.BOOLEAN:
+            return isinstance(value, bool)
+        case DataType.INTEGER:
+            return isinstance(value, int) and not isinstance(value, bool)
+        case DataType.NUMBER | DataType.PERCENT:
+            return isinstance(value, int | float) and not isinstance(value, bool)
+        case DataType.CHOICE:
+            return value in {item.id for item in argument.choices}
+        case DataType.TIME_UNIT:
+            return value in TIME_UNIT_IDS
+        case _:
+            return isinstance(value, str)
+
+
+def _fill_time_unit[
+    T: (ParameterDescription, PropertyDescription, ArgumentDescription, MethodDescription)
+](item: T) -> T:
     if item.datatype is DataType.TIME_UNIT and not item.choices:
         return replace(item, choices=TIME_UNITS)
     return item
 
 
+def _fill_method(method: MethodDescription) -> MethodDescription:
+    method = _fill_time_unit(method)
+    return replace(method, arguments=tuple(_fill_time_unit(item) for item in method.arguments))
+
+
 def _with_time_units(description: TypeDescription) -> TypeDescription:
-    """Name all time units as ``choices`` of the parameters and properties of the data type
-    time unit (specification 3.1)."""
+    """Name all time units as ``choices`` of the parameters, properties and methods of the data
+    type time unit (specification 3.1)."""
     return replace(
         description,
         parameters=tuple(_fill_time_unit(item) for item in description.parameters),
         properties=tuple(_fill_time_unit(item) for item in description.properties),
+        methods=tuple(_fill_method(item) for item in description.methods),
     )
 
 

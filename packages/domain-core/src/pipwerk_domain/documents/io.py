@@ -6,6 +6,7 @@ from typing import Annotated
 
 from pydantic import Field, TypeAdapter, ValidationError
 
+from pipwerk_domain.catalog import current_type_id
 from pipwerk_domain.documents import v1
 from pipwerk_domain.documents.convert import from_document, to_document
 from pipwerk_domain.documents.models import (
@@ -60,7 +61,11 @@ def parse_document(data: str | bytes | dict[str, object]) -> AnyDocument:
     _reject_lone_surrogates(data)
     if _is_format_one(data):
         return upgrade_document(_ADAPTER_V1.validate_python(data, strict=True))
-    return _ADAPTER.validate_python(data, strict=True)
+    document = _ADAPTER.validate_python(data, strict=True)
+    if isinstance(document, StrategyDocument):
+        for element in document.elements:
+            element.type = current_type_id(element.type)
+    return document
 
 
 def _is_format_one(data: object) -> bool:

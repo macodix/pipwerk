@@ -130,6 +130,40 @@ def test_the_kinds_of_findings_in_expressions_are_listed() -> None:
         assert f"`{reason}`" in block, reason
 
 
+def test_the_fields_of_the_type_description_are_listed() -> None:
+    import dataclasses
+
+    from pipwerk_domain.typedesc import (
+        ArgumentDescription,
+        Group,
+        MethodDescription,
+        TypeDescription,
+    )
+
+    block = section("3", "4")
+    for field in dataclasses.fields(TypeDescription):
+        assert f"`{field.name}`" in block, field.name
+    for field in dataclasses.fields(MethodDescription):
+        assert f"`{field.name}`" in block, field.name
+    for field in dataclasses.fields(ArgumentDescription):
+        assert f"`{field.name}`" in block, field.name
+    for group in Group:
+        assert f"`{group.value}`" in block, group
+
+
+def test_the_fields_of_an_input_and_of_an_instance_are_listed() -> None:
+    block = section("10", "11")
+    for name in ("kind", "arguments", "refresh", "first_use"):
+        assert f"`{name}`" in block, name
+    assert "`trigger.manual_start`" in block  # the former identifier, read as `trigger.manual`
+
+
+def test_the_issues_of_methods_and_the_visible_names_are_documented() -> None:
+    block = section("7", "8")
+    for needle in ("MethodCall", "call_missing", "method_argument", "not_a_method", "MethodInfo"):
+        assert needle in block, needle
+
+
 def test_enumerations_are_listed() -> None:
     for enum in (DataType, BindingKind, ElementKind, ObjectCategory):
         for member in enum:
@@ -151,6 +185,7 @@ def test_every_limit_is_listed_with_its_value() -> None:
         "MAX_NAME_LENGTH": str(limits.MAX_NAME_LENGTH),
         "MAX_KEY_LENGTH": str(limits.MAX_KEY_LENGTH),
         "MAX_INPUTS_PER_ELEMENT": str(limits.MAX_INPUTS_PER_ELEMENT),
+        "MAX_INPUT_ARGUMENTS": str(limits.MAX_INPUT_ARGUMENTS),
         "MAX_ITEMS_PER_REQUEST": str(limits.MAX_ITEMS_PER_REQUEST),
         "MAX_NAMES_PER_ITEM": str(limits.MAX_NAMES_PER_ITEM),
         "MAX_PROPERTIES_PER_NAME": str(limits.MAX_PROPERTIES_PER_NAME),

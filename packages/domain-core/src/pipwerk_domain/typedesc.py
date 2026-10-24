@@ -65,13 +65,16 @@ ALL_BINDINGS = (
 
 
 class Group(StrEnum):
-    """Group of the element library (specification 5.2)."""
+    """Group of the element library (specification 3.1, 5.2). The names of the groups in
+    German and English are not part of the type description; the user interface has them."""
 
-    WHEN = "when"
-    ACTIONS = "actions"
-    MARKET = "market"
+    FLOW = "flow"
+    CALCULATION = "calculation"
     INDICATORS = "indicators"
     TRENDS = "trends"
+    MARKET = "market"
+    ACCOUNT = "account"
+    ACTIONS = "actions"
     RULES = "rules"
 
 
@@ -155,6 +158,55 @@ class PropertyDescription:
 
 
 @dataclass(frozen=True, slots=True)
+class ArgumentDescription:
+    """An argument of a method: identifier, data type, mandatory or optional, default value,
+    allowed values and label with explanation (specification 3.1).
+
+    An optional argument has a default value: an expression that leaves it out gets this
+    value. A mandatory argument has none.
+    """
+
+    id: str
+    datatype: DataType
+    label: Label
+    required: bool = False
+    default: Scalar | None = None
+    choices: tuple[Choice, ...] = ()
+    object_type: str | None = None
+    explanation: Label = NO_TEXT
+
+
+@dataclass(frozen=True, slots=True)
+class MethodDescription:
+    """A method of a type (specification 3.1, req-fach-055): identifier, data type of the
+    result, arguments and label with explanation. ``choices`` and ``object_type`` describe a
+    result that is a choice or an object, like those of a property."""
+
+    id: str
+    datatype: DataType
+    label: Label
+    arguments: tuple[ArgumentDescription, ...] = ()
+    choices: tuple[Choice, ...] = ()
+    object_type: str | None = None
+    explanation: Label = NO_TEXT
+
+    def argument(self, argument_id: str) -> ArgumentDescription | None:
+        for item in self.arguments:
+            if item.id == argument_id:
+                return item
+        return None
+
+    @property
+    def min_arguments(self) -> int:
+        """The number of mandatory arguments."""
+        return sum(1 for item in self.arguments if item.required)
+
+    @property
+    def max_arguments(self) -> int:
+        return len(self.arguments)
+
+
+@dataclass(frozen=True, slots=True)
 class OutputDescription:
     """An output of a flow element, for example ``wahr`` and ``falsch``.
 
@@ -196,6 +248,11 @@ class TypeDescription:
     """The short text the user interface shows on pointing at the type, in trader language."""
     group: Group | None = None
     """Group of the element library (specification 5.2), ``None`` for a type that is not in it."""
+    methods: tuple[MethodDescription, ...] = ()
+    """The methods of the type (specification 3.1); the delivered types have none."""
+    can_refresh: bool = False
+    """Whether a use of an instance of this type can choose "Aktualisieren" (specification 3.1,
+    3.2). A template of the user takes it from its object type."""
 
     def parameter(self, parameter_id: str) -> ParameterDescription | None:
         for item in self.parameters:
@@ -206,6 +263,12 @@ class TypeDescription:
     def property(self, property_id: str) -> PropertyDescription | None:
         for item in self.properties:
             if item.id == property_id:
+                return item
+        return None
+
+    def method(self, method_id: str) -> MethodDescription | None:
+        for item in self.methods:
+            if item.id == method_id:
                 return item
         return None
 

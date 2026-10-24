@@ -24,8 +24,9 @@ from pipwerk_domain.expressions import (
 )
 from pipwerk_domain.expressions.checker import analyze
 from pipwerk_domain.expressions.symbols import Scope
-from pipwerk_domain.model import Strategy
+from pipwerk_domain.model import Instance, Origin, Strategy
 from pipwerk_domain.pointers import below, pointer
+from tests.helpers import condition, connect, element, fixed, place_order, trigger, uid
 from tests.paths import TESTCASE_DIRECTORY
 
 
@@ -46,7 +47,33 @@ def env_of(strategy: Strategy, key: str) -> Any:
 
 
 STR03 = load("str-03")
-STR01 = load("str-01")
+
+
+def zigzag_strategy() -> Strategy:
+    """A strategy with a ZigZag ("ZZ Signal") and a condition ("Prüfen"): the delivered type
+    with choices and numbers that are empty at times."""
+    signal = Instance(
+        name="ZZ Signal",
+        key="zz_signal",
+        object_type="ZigZag",
+        origin=Origin("ZigZag"),
+        parameter_values={"zeiteinheit": fixed("h1")},
+    )
+    return Strategy(
+        id=uid(901),
+        name="ZigZag",
+        elements=[
+            trigger(1),
+            element(3, "ZigZag", instance=signal),
+            condition(5, "TRUE()", name="Prüfen"),
+            place_order(2),
+        ],
+        connections=[connect(1, "weiter", 5), connect(5, "wahr", 2)],
+    )
+
+
+ZIGZAG = zigzag_strategy()
+CHECK = "pruefen"
 
 
 def blocks(source: str, strategy: Strategy = STR03, key: str = "kreuzen") -> Block:
@@ -135,34 +162,31 @@ def test_a_name_that_is_not_found_stays_as_written() -> None:
 
 
 def test_values_of_a_choice_are_shown_by_their_label() -> None:
-    strategy = STR01
-    key = next(item.key for item in strategy.main_elements() if item.key and "intakter" in item.key)
-    env = env_of(strategy, key)
-    source = 'mt_signal.phase = "bewegung"'
+    env = env_of(ZIGZAG, CHECK)
+    source = 'zz_signal.wendepunkt_1_art = "hoch"'
     result = render(source, env, "de", display_input=False)
-    assert result.display == '[MT Signal].Phase = "Bewegung"'
+    assert result.display == '[ZZ Signal].[Wendepunkt 1 Art] = "hoch"'
     english = render(source, env, "en", display_input=False)
-    assert english.display == '[MT Signal].Phase = "movement"'
-    for text in ('[MT Signal].Phase = "Bewegung"', '[MT Signal].Phase = "movement"',
-                 '[MT Signal].Phase = "bewegung"'):  # fmt: skip
+    assert english.display == '[ZZ Signal].[Turning point 1 kind] = "high"'
+    for text in ('[ZZ Signal].[Wendepunkt 1 Art] = "Hoch"',
+                 '[ZZ Signal].[Turning point 1 kind] = "high"',
+                 '[ZZ Signal].[Wendepunkt 1 Art] = "hoch"'):  # fmt: skip
         assert render(text, env, "de", display_input=True).stored == source
 
 
 def test_a_text_that_is_not_a_value_of_the_choice_stays_as_written() -> None:
-    env = env_of(STR01, "intakter_trend_in_der_bewegung")
-    result = render('mt_signal.phase = "Seitwaerts"', env, "de", display_input=False)
-    assert result.display == '[MT Signal].Phase = "Seitwaerts"'
+    env = env_of(ZIGZAG, CHECK)
+    result = render('zz_signal.wendepunkt_1_art = "Seitwaerts"', env, "de", display_input=False)
+    assert result.display == '[ZZ Signal].[Wendepunkt 1 Art] = "Seitwaerts"'
     assert [item.kind.value for item in result.analysis.issues] == ["unknown_choice_value"]
 
 
 def test_the_result_of_a_choice_is_shown_by_label_where_a_choice_is_expected() -> None:
-    env = env_of(STR01, "einstieg")
-    result = render(
-        'IF(mt_signal.trendrichtung = "aufwaerts"; 1; 2)', env, "de", display_input=False
-    )
-    assert result.display == 'IF([MT Signal].Trendrichtung = "aufwärts"; 1; 2)'
+    env = env_of(STR03, "order_ausgefuehrt")
+    result = render('IF(Order.status = "ausgefuehrt"; 1; 2)', env, "de", display_input=False)
+    assert result.display == 'IF(Order.Status = "ausgeführt"; 1; 2)'
     assert render(result.display, env, "de", display_input=True).stored == (
-        'IF(mt_signal.trendrichtung = "aufwaerts"; 1; 2)'
+        'IF(Order.status = "ausgefuehrt"; 1; 2)'
     )
 
 
@@ -180,7 +204,7 @@ def test_functions_are_written_in_the_spelling_of_the_norm() -> None:
 
 def test_the_display_form_of_the_testcases_is_read_back_unchanged() -> None:
     """Writing the display form and reading it again gives the stored expression."""
-    for strategy in (STR01, STR03):
+    for strategy in (ZIGZAG, STR03):
         checker = check_with_contexts(strategy)
         for pointer_text, context in checker.contexts.items():
             index = pointer_text.split("/")[2] if pointer_text.startswith("/elements") else None
@@ -478,12 +502,12 @@ def test_the_sentence_of_other_blocks() -> None:
 
 
 def test_the_sentence_names_the_values_of_a_choice_by_label() -> None:
-    env = env_of(STR01, "intakter_trend_in_der_bewegung")
-    rendered = render('mt_signal.phase = "bewegung"', env, "de", display_input=False)
+    env = env_of(STR03, "order_ausgefuehrt")
+    rendered = render('Order.status = "ausgefuehrt"', env, "de", display_input=False)
     block = to_blocks(rendered.analysis)
     assert block is not None
-    assert sentence(block, "de") == "Phase von MT Signal ist gleich „Bewegung“"
-    assert sentence(block, "en") == "Phase of MT Signal equals “movement”"
+    assert sentence(block, "de") == "Status von Order ist gleich „ausgeführt“"
+    assert sentence(block, "en") == "Status of Order equals “filled”"
 
 
 def test_the_sentence_puts_mixed_logic_in_parentheses() -> None:
@@ -582,13 +606,13 @@ def test_the_names_after_a_calculation_show_its_result() -> None:
 
 
 def test_the_choices_of_a_property_are_listed_with_their_labels() -> None:
-    env = env_of(STR01, "intakter_trend_in_der_bewegung")
+    env = env_of(ZIGZAG, CHECK)
     names, _ = visible_names(env, "de")
-    signal = next(item for item in names if item.path == ("mt_signal",))
-    phase = next(item for item in signal.properties if item.key == "phase")
-    assert [(item.key, item.label.de, item.label.en) for item in phase.choices] == [
-        ("bewegung", "Bewegung", "movement"),
-        ("korrektur", "Korrektur", "correction"),
+    signal = next(item for item in names if item.path == ("zz_signal",))
+    kind = next(item for item in signal.properties if item.key == "wendepunkt_1_art")
+    assert [(item.key, item.label.de, item.label.en) for item in kind.choices] == [
+        ("hoch", "hoch", "high"),
+        ("tief", "tief", "low"),
     ]
 
 

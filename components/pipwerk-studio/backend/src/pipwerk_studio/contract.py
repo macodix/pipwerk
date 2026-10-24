@@ -28,7 +28,8 @@ from pipwerk_studio.web_api import is_public_path
 
 CONTRACT_VERSION = "1.0.0"
 CONTRACT_DESCRIPTION = (
-    "Public web API of pipwerk Studio, version 1: type descriptions, strategies and "
+    "Public web API of pipwerk Studio, version 1: type descriptions (with groups, methods and "
+    'the indication for "Aktualisieren"), strategies and '
     "templates (indicators, trends, rules, rulesets) in the document format 2.0 (documents of "
     "the format 1.0 are accepted and converted), their usages, the consistency check, the "
     "expressions in stored form, display form, blocks and as a sentence, and the keys of new "

@@ -35,6 +35,7 @@ from pipwerk_domain.registry import ElementRegistry
 from pipwerk_domain.typedesc import (
     DataType,
     ElementKind,
+    MethodDescription,
     PropertyDescription,
     TypeDescription,
 )
@@ -46,6 +47,7 @@ __all__ = [
     "has_earlier_values",
     "instance_symbol",
     "is_valid_name",
+    "method_symbol",
     "order_properties",
     "order_symbol",
     "parameter_symbol",
@@ -127,19 +129,58 @@ def property_symbol(
     )
 
 
+def method_symbol(
+    registry: ElementRegistry, method: MethodDescription, *, previous_value: bool = False
+) -> Symbol:
+    """The symbol of a method (specification 3.4). Its type is the type of the result; a result
+    that is an object has the members of its object type."""
+    object_type = method.object_type if method.datatype is DataType.OBJECT else None
+    return Symbol(
+        method.id,
+        SymbolKind.METHOD,
+        object_type=object_type,
+        type=type_of(
+            method.datatype,
+            tuple(item.id for item in method.choices),
+            method.object_type,
+            labels_of(method.choices),
+        ),
+        members_factory=(
+            None if object_type is None else (lambda: description_members(registry, object_type))
+        ),
+        label=method.label,
+        datatype=method.datatype,
+        explanation=method.explanation,
+        choices=method.choices,
+        previous_value=previous_value,
+        arguments=method.arguments,
+    )
+
+
 def description_members(
     registry: ElementRegistry, type_id: str, *, previous_value: bool | None = None
 ) -> dict[str, Symbol]:
-    """The properties of a type as members, by lower case identifier. ``previous_value``
-    says whether the properties have earlier values; by default the type decides."""
+    """The properties and methods of a type as members, by lower case identifier.
+    ``previous_value`` says whether the properties and the results of the methods have earlier
+    values; by default the type decides."""
     description = registry.get(type_id)
     if description is None:
         return {}
     earlier = has_earlier_values(description) if previous_value is None else previous_value
-    return {
+    members = {
         item.id: property_symbol(registry, item, previous_value=earlier)
         for item in description.properties
     }
+    # `PREVIOUS` stands around the result of a method only for an object with a time unit
+    # (specification 3.4); the tick has earlier values for its properties only
+    earlier_results = (
+        description.parameter(_TIME_UNIT_PARAMETER) is not None
+        if previous_value is None
+        else previous_value
+    )
+    for method in description.methods:
+        members[method.id.lower()] = method_symbol(registry, method, previous_value=earlier_results)
+    return members
 
 
 def order_properties(

@@ -14,7 +14,7 @@ from enum import StrEnum
 from typing import Protocol
 
 from pipwerk_domain.expressions.exprtypes import UNKNOWN, ExprType
-from pipwerk_domain.typedesc import Choice, DataType, Label
+from pipwerk_domain.typedesc import ArgumentDescription, Choice, DataType, Label
 
 _SPACES = re.compile(r"\s+")
 
@@ -36,6 +36,7 @@ class SymbolKind(StrEnum):
     RULE = "rule"
     RULESET = "ruleset"
     PROPERTY = "property"  # property of an object, ``Ergebnis`` of a rule and so on
+    METHOD = "method"  # method of an object, addressed as ``Objekt.Methode(Argumente)``
     UNRESOLVED = "unresolved"  # a property of an object that cannot be checked yet
 
 
@@ -66,6 +67,9 @@ class Symbol:
     explanation: Label | None = None
     choices: tuple[Choice, ...] = ()
     previous_value: bool = False
+    arguments: tuple[ArgumentDescription, ...] = ()
+    """The arguments of a method (symbol of the kind ``METHOD``); its ``type`` is the type of
+    the result, its ``choices`` the values of a result that is a choice."""
     _members: dict[str, Symbol] | None = field(default=None, repr=False)
     _by_label: dict[str, list[Symbol]] | None = field(default=None, repr=False)
     _resolving: bool = field(default=False, repr=False)
