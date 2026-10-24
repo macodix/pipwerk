@@ -178,7 +178,7 @@ Das Paket `MetaTrader5` läuft nur unter Windows und braucht ein installiertes M
 
 1. **uv installieren.** uv ist ein kleines Programm, das Python und die nötigen Pakete holt (https://docs.astral.sh/uv/). Es verändert das Python des Systems nicht. Nach der Installation ein neues Eingabeaufforderungsfenster öffnen.
 2. **Programm auf den Rechner legen.** Den Ordner `components\pipwerk-fetch-mt5` des Repositorys an einen beliebigen Ort kopieren, zum Beispiel `C:\pipwerk\pipwerk-fetch-mt5`.
-3. **Installieren.** In diesem Ordner `scripts\install.cmd` ausführen (Doppelklick oder in der Eingabeaufforderung). Es richtet im Unterordner `.venv` eine eigene Umgebung ein und holt dafür bei Bedarf Python (mindestens 3.14) und die Pakete, mit `MetaTrader5`. Dafür ist eine Internetverbindung nötig. Was dabei auf den Rechner kommt, woher es stammt und wie es sich entfernen lässt, steht in Abschnitt 16.
+3. **Installieren.** In diesem Ordner `scripts\install.cmd` ausführen (Doppelklick oder in der Eingabeaufforderung). Es richtet im Unterordner `.venv` eine eigene Umgebung ein und holt dafür bei Bedarf Python (genau 3.14.x) und die Pakete, mit `MetaTrader5`. Dafür ist eine Internetverbindung nötig. Was dabei auf den Rechner kommt, woher es stammt und wie es sich entfernen lässt, steht in Abschnitt 16.
 4. **Startkonfiguration anlegen.** Die Datei `pipwerk-fetch-mt5.example.ini` aus dem Ordner als `pipwerk-fetch-mt5.ini` in den Ordner `%USERPROFILE%\pipwerk\etc` kopieren (den Ordner anlegen, falls er fehlt; `%USERPROFILE%` ist der Ordner des angemeldeten Benutzers, zum Beispiel `C:\Users\Name`). In der Datei **`server_time_zone`** eintragen, die Zeitzone des Handelsservers Ihres Brokers (siehe unten). Wenn Ihr Broker ein Instrument anders nennt, als Sie es nennen wollen, im Abschnitt `[symbols]` eine Zeile `EURUSD = EURUSD.r` ergänzen. Mehr ist nicht nötig.
 
 **Die Zeitzone**
@@ -308,7 +308,7 @@ uv --project "%COMPONENT%" sync --frozen --extra mt5 --no-dev
 uv --project "%COMPONENT%" run --frozen --extra mt5 --no-dev pipwerk-fetch-mt5 %*
 ```
 
-Es startet das Programm `pipwerk-fetch-mt5` (Startpunkt `pipwerk_fetch_mt5.cli:main` aus `[project.scripts]`) in der Umgebung der Komponente und reicht alle Angaben weiter. Beide Skripte ändern nichts anderes: kein Eintrag in der Registrierung, kein Dienst, keine geplante Aufgabe, kein Autostart, keine Änderung von `PATH`, nichts am Python des Systems (Kommentar in `install.cmd`, Zeilen 4 bis 6).
+Es startet das Programm `pipwerk-fetch-mt5` (Startpunkt `pipwerk_fetch_mt5.cli:main` aus `[project.scripts]`) in der Umgebung der Komponente und reicht alle Angaben weiter. Beide Skripte enthalten außer diesem einen Befehl nur Kommentare, `setlocal`, das Setzen von `COMPONENT` und `exit /b %ERRORLEVEL%`; sie legen keinen Eintrag in der Registrierung, keinen Dienst, keine geplante Aufgabe, keinen Autostart an und ändern `PATH` nicht (Beleg: der Inhalt beider Skripte). Was `uv` mit dem Befehl selbst tut, steht in 16.2 bis 16.6. Dass das Python des Systems unverändert bleibt, sagt der Kommentar in `install.cmd` (Zeilen 6 und 7); `uv` legt die Umgebung `.venv` an und lädt Python nur in sein eigenes Verzeichnis.
 
 ### 16.2 uv und Python
 
@@ -318,7 +318,7 @@ Es startet das Programm `pipwerk-fetch-mt5` (Startpunkt `pipwerk_fetch_mt5.cli:m
 
 ### 16.3 Pakete (nach `uv.lock`)
 
-`uv.lock` führt 32 Pakete (Einträge `[[package]]`), alle von https://pypi.org/simple; die Dateien liegen auf `files.pythonhosted.org` (URLs in der Sperrdatei) mit SHA-256-Summe, die `uv` beim Laden prüft. Die Pfadabhängigkeit `pipwerk-marketdata` und die Komponente selbst liegen im Repository.
+`uv.lock` führt 32 Einträge (`[[package]]`): 30 Pakete von https://pypi.org/simple, deren Dateien auf `files.pythonhosted.org` liegen (URLs in der Sperrdatei) mit SHA-256-Summe, die `uv` beim Laden prüft, sowie die Komponente selbst und `pipwerk-marketdata` als Pfadquellen (`source = { editable = … }`) aus dem Repository.
 
 **Installiert von `install.cmd`** (Windows, `--extra mt5 --no-dev`): die Komponente selbst und acht Pakete, die Größen sind die der Räder für Windows (`win_amd64`, Python 3.14) in `uv.lock`:
 
@@ -370,7 +370,7 @@ Prozesse eines Abrufs: `fetch.cmd` läuft in der Eingabeaufforderung (`cmd.exe`)
 | Wann | Wohin | Wozu |
 | --- | --- | --- |
 | `uv` installieren (einmal) | astral.sh und GitHub, bei `winget` die Quelle von `winget` | `uv` laden (Dokumentation von `uv`, nicht ausgeführt) |
-| `install.cmd`, wenn kein Python ≥ 3.14 vorliegt | GitHub (Builds von `python-build-standalone`) | Python laden (Dokumentation von `uv`, nicht ausgeführt) |
+| `install.cmd`, wenn kein Python 3.14.x vorliegt | GitHub (Builds von `python-build-standalone`) | Python laden (Dokumentation von `uv`, nicht ausgeführt) |
 | `install.cmd` | `pypi.org` (Index) und `files.pythonhosted.org` (Räder) | die Pakete aus 16.3 laden; die Adressen stehen in `uv.lock`; `uv` prüft die SHA-256-Summen |
 | `install.cmd`, Bau der Komponente | `pypi.org` und `files.pythonhosted.org` | `hatchling` laden, soweit es nicht im Zwischenspeicher liegt (aus `[build-system]` abgeleitet) |
 | `fetch.cmd` | in der Regel keiner | `--frozen` löst nichts auf und fragt den Index nicht. Stimmt die Umgebung `.venv` mit `uv.lock` überein, lädt `uv` nichts. Fehlt `.venv` oder ist sie unvollständig, richtet `uv run` sie wie `install.cmd` ein und braucht dann das Netz (Dokumentation von `uv`, nicht ausgeführt) |
