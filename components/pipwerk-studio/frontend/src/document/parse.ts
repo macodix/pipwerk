@@ -66,6 +66,9 @@ function parseInstance(value: unknown, what: string): InstanceDocument {
   expectString(record.name, `${what}.name`);
   expectString(record.key, `${what}.key`);
   expectString(record.object_type, `${what}.object_type`);
+  if (record.first_use !== undefined && record.first_use !== null) {
+    expectString(record.first_use, `${what}.first_use`);
+  }
   if (record.parameter_values !== undefined) {
     parseBindings(record.parameter_values, `${what}.parameter_values`);
   }
@@ -96,6 +99,21 @@ function parseInput(value: unknown, what: string): InputDocument {
   const record = expectRecord(value, what);
   expectString(record.instance, `${what}.instance`);
   expectString(record.property, `${what}.property`);
+  // kind, arguments and refresh are optional (a document without them means: property, no arguments, no refresh);
+  // when they stand there, they must be what the format says, and they stay as they are
+  if (record.kind !== undefined && record.kind !== 'property' && record.kind !== 'method') {
+    throw new ResponseFormatError(`${what}.kind`);
+  }
+  if (record.arguments !== undefined) {
+    for (const [index, item] of expectArray(record.arguments, `${what}.arguments`).entries()) {
+      if (typeof item !== 'string' && typeof item !== 'number' && typeof item !== 'boolean') {
+        throw new ResponseFormatError(`${what}.arguments[${index}]`);
+      }
+    }
+  }
+  if (record.refresh !== undefined) {
+    expectBoolean(record.refresh, `${what}.refresh`);
+  }
   return record as InputDocument;
 }
 

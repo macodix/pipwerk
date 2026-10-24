@@ -152,10 +152,54 @@ describe('texts of the findings (specification 3.6, 5.5)', () => {
   });
 });
 
+function backendErrorCodes(): { codes: string[]; withParams: Map<string, string[]> } {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const source = readFileSync(join(here, '../../../backend/src/pipwerk_studio/errors.py'), 'utf-8');
+  const table = source.slice(source.indexOf('ERROR_CODES: dict'), source.indexOf('class ApiException'));
+  const codes = [...table.matchAll(/^ {4}"([a-z_]+\.[a-z_]+)": ErrorCodeInfo\(/gm)].map((match) => match[1] ?? '');
+  const withParams = new Map<string, string[]>();
+  for (const block of table.split(/^ {4}"/m).slice(1)) {
+    const code = block.slice(0, block.indexOf('"'));
+    // the names of the params stand in a tuple of identifiers behind the text: ("limit_bytes",)
+    const params = /,\s*\(((?:\s*"[a-z_]+",?)+)\s*\)/.exec(block);
+    const names = params === null ? [] : [...(params[1] ?? '').matchAll(/"([a-z_]+)"/g)].map((match) => match[1] ?? '');
+    withParams.set(code, names);
+  }
+  return { codes, withParams };
+}
+
 describe('texts of the causes of errors (specification 4.2, M4)', () => {
   it('have a text for the cause named in the specification in both languages', () => {
     for (const language of ['de', 'en'] as const) {
       expect(createI18n(language).exists('errors.codes.object_directory.not_absolute')).toBe(true);
+    }
+  });
+
+  it('read the list of the identifiers of the causes from the backend', () => {
+    const { codes } = backendErrorCodes();
+
+    expect(codes.length).toBeGreaterThan(30);
+    expect(codes).toContain('document.invalid');
+    expect(codes).toContain('object_directory.move_not_restored');
+  });
+
+  it.each(['de', 'en'] as const)('give every cause of an error answer of the backend a text of its own in %s', (language) => {
+    const instance = createI18n(language);
+    const { codes } = backendErrorCodes();
+
+    expect(codes.filter((code) => !instance.exists(`errors.codes.${code}`))).toEqual([]);
+  });
+
+  it.each(['de', 'en'] as const)('use only data that the cause carries and show no path and no identifier of the programming in %s', (language) => {
+    const instance = createI18n(language);
+    const { codes, withParams } = backendErrorCodes();
+    for (const code of codes) {
+      const raw = instance.getResource(language, 'translation', `errors.codes.${code}`) as string;
+      for (const name of [...raw.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1] ?? '')) {
+        expect(withParams.get(code) ?? [], `${code}: ${name}`).toContain(name);
+      }
+      const text = instance.t(`errors.codes.${code}`, { limit_bytes: 2097152 });
+      expect(text, code).not.toMatch(/\/[a-z]+\/|[A-Za-z]+_[a-z_]+|\bJSON\b|\bHTTP\b|\bHost\b/);
     }
   });
 });

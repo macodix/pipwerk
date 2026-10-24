@@ -244,11 +244,6 @@ export function FrameNode({ data }: NodeProps<Node<FrameData, 'frame'>>) {
         <span className="frame-title">{t('canvas.management', { name: data.title })}</span>
         {data.collapsed ? <span className="chip">{t('canvas.steps', { count: data.count })}</span> : null}
       </div>
-      {data.empty && !data.collapsed ? (
-        <p className="frame-empty" data-testid="frame-empty">
-          {t('canvas.managementEmpty')}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -339,7 +334,10 @@ export function SectionNode({ data }: NodeProps<Node<SectionNodeData, 'section'>
   );
 }
 
-/** The area "Objekte und ihre Werte" behind the cards; without objects it says what belongs there. */
+/**
+ * The area "Objekte und ihre Werte" behind the cards. It carries no hint: the drawing area shows none (specification
+ * 5.3). The area gives way to the placement of the objects at the element of their first use (order 12).
+ */
 export function LaneNode({ data }: NodeProps<Node<{ empty?: boolean }, 'lane'>>) {
   const { t } = useTranslation();
   return (
@@ -348,7 +346,6 @@ export function LaneNode({ data }: NodeProps<Node<{ empty?: boolean }, 'lane'>>)
         <Icon name="layers" size={14} />
         {t('canvas.lane')}
       </span>
-      {data.empty === true ? <p>{t('canvas.laneEmpty')}</p> : null}
     </div>
   );
 }

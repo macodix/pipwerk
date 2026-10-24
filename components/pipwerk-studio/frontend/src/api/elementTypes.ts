@@ -71,9 +71,14 @@ export type ObjectCategory = 'indicator' | 'trend' | 'rule' | 'ruleset';
 
 const objectCategories: readonly ObjectCategory[] = ['indicator', 'trend', 'rule', 'ruleset'];
 
-/** The groups of the element library (specification 5.2), in the order shown. */
-export const groupIds = ['when', 'actions', 'market', 'indicators', 'trends', 'rules'] as const;
-export type GroupId = (typeof groupIds)[number];
+/**
+ * The groups of the element library that the interface has names for (specification 5.2), in the order shown. A group
+ * value that is not in this list does not stop anything: the library shows such a group behind the known ones.
+ */
+export const groupIds = ['flow', 'calculation', 'indicators', 'trends', 'market', 'account', 'actions', 'rules'] as const;
+
+/** The identifier of a group as the type descriptions deliver it: a text, also one that is not in `groupIds`. */
+export type GroupId = string;
 
 export type Scalar = string | number | boolean | null;
 
@@ -110,6 +115,32 @@ export type PropertyDescription = {
   objectType: string | null;
 };
 
+/** An argument of a method (specification 3.1). Optional arguments carry their standard value in `default`. */
+export type ArgumentDescription = {
+  id: string;
+  datatype: DataType;
+  label: Label;
+  explanation: Label;
+  required: boolean;
+  default: Scalar;
+  choices: Choice[];
+  objectType: string | null;
+};
+
+/**
+ * A method of a type (specification 3.1): an expression addresses it as `Object.Method(Arguments)`. The data type is
+ * the one of the result; the arguments stand in their order, the mandatory ones first.
+ */
+export type MethodDescription = {
+  id: string;
+  datatype: DataType;
+  label: Label;
+  explanation: Label;
+  choices: Choice[];
+  objectType: string | null;
+  arguments: ArgumentDescription[];
+};
+
 /** An output of an element of the flow. The management of the element hangs at the output with `holdsManagement`. */
 export type OutputDescription = { id: string; label: Label; explanation: Label; holdsManagement: boolean };
 
@@ -125,6 +156,10 @@ export type TypeDescription = {
   group: GroupId | null;
   parameters: ParameterDescription[];
   properties: PropertyDescription[];
+  /** The methods of the type; none for the delivered types. */
+  methods: MethodDescription[];
+  /** Whether a use of an instance of the type can choose "Aktualisieren" (specification 3.1). */
+  canRefresh: boolean;
   outputs: OutputDescription[];
   /** An element of the flow has a name under which expressions address its result. */
   named: boolean;
@@ -161,6 +196,7 @@ export type FunctionDescription = {
  * A template document as the backend delivers it. Besides the fields used here it holds the whole content. A
  * delivered template names and explains itself in both languages (`label`, `explanation`), taken from
  * `template_texts` of the answer; `name` is the German name, the one that is stored in an instance of an own template.
+ * `group` is the group of the element library the answer names for the template; `null` if it names none.
  */
 export type TemplateDocument = {
   id: string;
@@ -169,6 +205,7 @@ export type TemplateDocument = {
   object_type: string;
   label: Label;
   explanation: Label;
+  group: GroupId | null;
   [field: string]: unknown;
 };
 
@@ -273,14 +310,47 @@ function parseProperty(value: unknown, what: string): PropertyDescription {
   };
 }
 
+/** A group is a text; one the interface has no name for is kept (the library shows it behind the known ones). */
 function parseGroup(value: unknown, what: string): GroupId | null {
   if (value === null || value === undefined) {
     return null;
   }
-  if (typeof value === 'string' && (groupIds as readonly string[]).includes(value)) {
-    return value as GroupId;
+  if (typeof value === 'string' && value !== '') {
+    return value;
   }
   throw new ResponseFormatError(what);
+}
+
+function parseArgument(value: unknown, what: string): ArgumentDescription {
+  const record = expectRecord(value, what);
+  return {
+    id: expectString(record.id, `${what}.id`),
+    datatype: parseDataType(record.datatype, `${what}.datatype`),
+    label: parseLabel(record.label, `${what}.label`),
+    explanation: optionalLabel(record.explanation, `${what}.explanation`),
+    required: expectBoolean(record.required, `${what}.required`),
+    default: parseScalar(record.default, `${what}.default`),
+    choices: record.choices === undefined ? [] : parseChoices(record.choices, `${what}.choices`),
+    objectType: record.object_type === undefined ? null : expectNullableString(record.object_type, `${what}.object_type`),
+  };
+}
+
+function parseMethod(value: unknown, what: string): MethodDescription {
+  const record = expectRecord(value, what);
+  return {
+    id: expectString(record.id, `${what}.id`),
+    datatype: parseDataType(record.datatype, `${what}.datatype`),
+    label: parseLabel(record.label, `${what}.label`),
+    explanation: optionalLabel(record.explanation, `${what}.explanation`),
+    choices: record.choices === undefined ? [] : parseChoices(record.choices, `${what}.choices`),
+    objectType: record.object_type === undefined ? null : expectNullableString(record.object_type, `${what}.object_type`),
+    arguments:
+      record.arguments === undefined
+        ? []
+        : expectArray(record.arguments, `${what}.arguments`).map((item, index) =>
+            parseArgument(item, `${what}.arguments[${index}]`),
+          ),
+  };
 }
 
 function parseType(value: unknown, what: string): TypeDescription {
@@ -311,6 +381,11 @@ function parseType(value: unknown, what: string): TypeDescription {
     properties: expectArray(record.properties, `${what}.properties`).map((item, index) =>
       parseProperty(item, `${what}.properties[${index}]`),
     ),
+    methods:
+      record.methods === undefined
+        ? []
+        : expectArray(record.methods, `${what}.methods`).map((item, index) => parseMethod(item, `${what}.methods[${index}]`)),
+    canRefresh: optionalBoolean(record.can_refresh, `${what}.can_refresh`),
     outputs: expectArray(record.outputs, `${what}.outputs`).map((item, index) => {
       const output = expectRecord(item, `${what}.outputs[${index}]`);
       return {
@@ -338,7 +413,7 @@ function parseBilingualName(value: unknown, what: string): Label {
 }
 
 /** The texts a delivered template shows, by template identifier (`template_texts` of the answer). */
-type TemplateTexts = { name: Label; explanation: Label };
+type TemplateTexts = { name: Label; explanation: Label; group: GroupId | null };
 
 function parseTemplateTexts(value: unknown): Map<string, TemplateTexts> {
   const texts = new Map<string, TemplateTexts>();
@@ -350,6 +425,7 @@ function parseTemplateTexts(value: unknown): Map<string, TemplateTexts> {
     texts.set(expectString(record.id, `template_texts[${index}].id`), {
       name: parseLabel(record.name, `template_texts[${index}].name`),
       explanation: parseLabel(record.explanation, `template_texts[${index}].explanation`),
+      group: parseGroup(record.group, `template_texts[${index}].group`),
     });
   });
   return texts;
@@ -368,6 +444,7 @@ function parseTemplate(value: unknown, what: string, texts: ReadonlyMap<string, 
     label,
     description,
     explanation: delivered?.explanation ?? { de: description, en: description },
+    group: delivered?.group ?? null,
   } as TemplateDocument;
 }
 

@@ -92,12 +92,18 @@
     "search": "Suchen …",
     "searchLabel": "Elementbibliothek durchsuchen",
     "groups": {
-      "when": "Wann wird gerechnet",
-      "actions": "Bedingungen und Aktionen",
-      "market": "Markt und Konto",
+      "flow": "Ablaufsteuerung",
+      "calculation": "Berechnung",
       "indicators": "Indikatoren",
       "trends": "Trends",
-      "rules": "Regeln"
+      "market": "Marktdaten",
+      "account": "Konto",
+      "actions": "Aktionen",
+      "rules": "Regeln und Regelwerke"
+    },
+    "connection": {
+      "name": "Verbindung",
+      "explanation": "Verbindet einen Schritt mit dem nächsten, ohne zu ziehen: Wählen Sie den Schritt, von dem es weitergeht, dann „Verbindung“ und dann den nächsten Schritt."
     },
     "own": "eigene",
     "unreadable": "nicht lesbar",
@@ -239,6 +245,9 @@
   },
   "wizard": {
     "title": "Assistent",
+    "start": "Assistent starten",
+    "resume": "Assistent fortsetzen",
+    "barStep": "Assistent, Schritt {{step}} von {{count}}",
     "step": "Schritt {{step}} von {{count}}",
     "progress": "Fortschritt",
     "leave": "Ohne Assistent weiterarbeiten",
@@ -258,7 +267,7 @@
     "triggerText": "Wann soll die Strategie rechnen? Der Auslöser startet jede Auswertung.",
     "timeUnitName": "Zeiteinheit",
     "asParameter": "Als Strategieparameter anlegen (empfohlen: So ändern Sie die Zeiteinheit an einer Stelle)",
-    "indicatorsText": "Welche Indikatoren braucht die Strategie? Sie erscheinen im Bereich „Objekte und ihre Werte“ der Zeichenfläche.",
+    "indicatorsText": "Welche Indikatoren braucht die Strategie? Sie erscheinen auf der Zeichenfläche.",
     "noIndicators": "Noch kein Indikator. Sie können diesen Schritt auch überspringen.",
     "removeIndicator": "Indikator entfernen",
     "conditionText": "Wann soll gehandelt werden? Stellen Sie eine einfache Bedingung zusammen. Feinere Bedingungen bauen Sie später aus Bausteinen.",
@@ -271,10 +280,7 @@
     "compareName": "Vergleich",
     "orderText": "Was soll bei „wahr“ geschehen? Hier wählen Sie die Order. Feinheiten wie den Stop-Loss stellen Sie danach in den Eigenschaften ein.",
     "withRule": "Regel „{{name}}“ anwenden (bestimmt das Volumen)",
-    "done": "Der Aufbau steht. Die Prüfung zeigt, was noch fehlt.",
-    "offerTitle": "Geführter Aufbau",
-    "offerText": "Der Assistent führt Sie in fünf Schritten zu einer ersten Strategie: Name, Auslöser, Indikatoren, Bedingung und Order.",
-    "offerButton": "Geführten Aufbau zeigen"
+    "done": "Der Aufbau steht. Die Prüfung zeigt, was noch fehlt."
   },
   "instances": {
     "parameters": "Parameter",
@@ -327,9 +333,6 @@
   },
   "canvas": {
     "noStrategyTitle": "Keine Strategie geöffnet",
-    "noStrategyText": "Nächster Schritt: Legen Sie mit „Neue Strategie“ eine leere Strategie an oder öffnen Sie eine gespeicherte.",
-    "emptyTitle": "Die Zeichenfläche ist leer",
-    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Sie finden ihn in der Elementbibliothek in der Gruppe „Wann wird gerechnet“.",
     "openLibrary": "Elementbibliothek zeigen",
     "wiresArrive": "{{count}} Wertlinie(n) enden hier",
     "portManagement": "Hier beginnt die Verwaltung dieser Order. Haben Sie in der Verwaltung keinen eigenen Auslöser, ziehen Sie von hier auf ihren ersten Schritt.",
@@ -343,16 +346,14 @@
     "management": "Verwaltung · {{name}}",
     "steps_one": "{{count}} Schritt",
     "steps_other": "{{count}} Schritte",
-    "managementEmpty": "Noch leer. Wählen Sie diesen Rahmen und fügen Sie einen Auslöser aus der Elementbibliothek ein.",
     "collapseSection": "Abschnitt einklappen",
     "expandSection": "Abschnitt ausklappen",
     "sectionName": "Name des Abschnitts",
     "lane": "Objekte und ihre Werte",
-    "laneEmpty": "Hier erscheinen Indikatoren, Trends und Objekte des Marktes. Ihre Werte verbinden Sie per Linie mit Schritten.",
     "deleteConnection": "Verbindung löschen",
     "wireOnlyExpression": "nur im Ausdruck verwendet",
     "unknownTypeSummary": "Unbekannter Typ „{{type}}“",
-    "expressionEmpty": "Noch leer – die Bedingung oder Berechnung wird später aus Bausteinen gebildet.",
+    "expressionEmpty": "Noch leer",
     "orientation": "Ausrichtung",
     "orientVerticalTip": "Ablauf senkrecht: Eingang oben, Ausgänge unten",
     "orientHorizontalTip": "Ablauf waagerecht von links nach rechts, für breite Bildschirme",
@@ -378,7 +379,6 @@
     "toStartTip": "Ansicht an den Anfang der Strategie setzen, in lesbarer Größe",
     "arrange": "Neu anordnen",
     "arrangeTip": "Alle Elemente wieder automatisch anordnen",
-    "armed": "Klicken Sie jetzt den Schritt an, der als Nächstes folgt.",
     "legend": "Legende",
     "legendFlow": "Ablauf: legt die Reihenfolge fest",
     "legendManagement": "Verwaltung einer Order (grün, gepunktet)",
@@ -389,6 +389,8 @@
   "properties": {
     "panel": "Eigenschaften",
     "none": "Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an, „Öffnen“ zeigt gespeicherte Strategien.",
+    "emptyTitle": "Die Strategie ist leer",
+    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Sie finden ihn in der Elementbibliothek in der Gruppe „Ablaufsteuerung“. Oder lassen Sie sich vom Assistenten führen.",
     "strategy": "Strategie",
     "strategyName": "Name der Strategie",
     "description": "Beschreibung",
@@ -516,11 +518,12 @@
       "cycle": "Zirkelbezug"
     },
     "trigger": {
-      "unconnected": "Der Auslöser ist mit keinem Element des Ablaufs verbunden."
+      "unconnected": "Der Auslöser ist mit keinem Element des Ablaufs verbunden.",
+      "manual_in_management": "Der Auslöser „{{element}}“ startet von Hand und steht in der Verwaltung einer Order. Dort wird er nie ausgelöst."
     },
     "flow": {
       "not_reached": "Kein Auslöser erreicht dieses Element des Ablaufs.",
-      "main_without_trigger": "Der Hauptablauf hat keinen Auslöser; die Strategie startet nie.",
+      "main_without_trigger": "Hauptablauf ohne Auslöser: Die Strategie startet nie, auch wenn eine Verwaltung eigene Auslöser hat.",
       "unending_loop": "Rückführung ohne Bedingung, die sie beendet (an {{elements}} Elementen).",
       "management_only": "„{{type}}“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf.",
       "no_order_reachable": "Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt."
@@ -533,7 +536,16 @@
       "type_mismatch": "Der Datentyp des verbundenen Werts passt nicht: erwartet {{expected}}, gefunden {{found}}."
     },
     "input": {
-      "unused": "Der Eingang „{{property}}“ wird nicht verwendet."
+      "unused": "Der Wert „{{property}}“ von „{{instance}}“ ist mit diesem Element verbunden, wird aber nicht verwendet.",
+      "refresh_not_allowed": "Der Wert „{{property}}“ von „{{instance}}“ soll bei diesem Element aktualisiert werden. Ein Objekt dieser Art kann seine Werte aber nicht neu ermitteln."
+    },
+    "instance": {
+      "not_usable": "„{{instance}}“ darf an diesem Element nicht verwendet werden. Das Objekt wird {{firstUse}} ermittelt, und nicht jeder Weg hierher führt dort vorbei.",
+      "unconnected": "„{{instance}}“ ist mit keinem Element verbunden. Es wird nirgends verwendet."
+    },
+    "firstUse": {
+      "named": "bei „{{name}}“",
+      "unnamed": "bei dem Element, das es zuerst verwendet,"
     },
     "key": {
       "invalid": "Die Kennung „{{key}}“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann."
@@ -543,7 +555,9 @@
     },
     "dataReasons": {
       "unknown_instance": "das Objekt gibt es nicht",
-      "unknown_property": "das Objekt hat diese Eigenschaft nicht"
+      "unknown_property": "das Objekt hat diese Eigenschaft nicht",
+      "unknown_method": "das Objekt hat diese Methode nicht",
+      "arguments": "die Angaben passen nicht zur Methode"
     },
     "layoutReasons": {
       "unknown_flow": "der Ablauf gehört zu keinem Element",
@@ -613,11 +627,12 @@
       "other": "Korrigieren Sie den Ausdruck an der genannten Stelle."
     },
     "trigger": {
-      "unconnected": "Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn."
+      "unconnected": "Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn.",
+      "manual_in_management": "Entfernen Sie den Auslöser aus der Verwaltung und legen Sie dort einen anderen Auslöser an, oder legen Sie ihn in den Hauptablauf."
     },
     "flow": {
       "not_reached": "Verbinden Sie einen vorherigen Schritt oder einen Auslöser mit diesem Schritt oder entfernen Sie ihn.",
-      "main_without_trigger": "Legen Sie einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt.",
+      "main_without_trigger": "Legen Sie in den Hauptablauf einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt.",
       "unending_loop": "Legen Sie in die Rückführung eine Bedingung, von der ein Ausgang aus der Rückführung hinausführt.",
       "management_only": "Verschieben Sie den Schritt in die Verwaltung einer Order oder entfernen Sie ihn.",
       "no_order_reachable": "Verbinden Sie den Ablauf mit einem Schritt, der eine Order aufgibt."
@@ -630,7 +645,12 @@
       "type_mismatch": "Verbinden Sie einen Wert vom passenden Datentyp."
     },
     "input": {
-      "unused": "Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie den Eingang."
+      "unused": "Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie die Verbindung.",
+      "refresh_not_allowed": "Schalten Sie „Aktualisieren“ für diesen Wert aus. Brauchen Sie aktuelle Werte, legen Sie ein weiteres Objekt mit eigenem Namen an und verwenden Sie dieses."
+    },
+    "instance": {
+      "not_usable": "Legen Sie ein weiteres Objekt mit eigenem Namen an und verwenden Sie dieses an diesem Element, oder verwenden Sie das Objekt nur an Elementen, die hinter seinem ersten Element liegen.",
+      "unconnected": "Verbinden Sie das Objekt mit dem Element, das seine Werte zuerst braucht, oder entfernen Sie es."
     },
     "key": {
       "invalid": "Ändern Sie den Namen."
@@ -695,7 +715,10 @@
     "inputAdded": "Der Wert ist jetzt ein Eingang des Elements.",
     "toMainFlow": "Das Element gehört jetzt zum Hauptablauf.",
     "toManagement": "Das Element gehört jetzt zur Verwaltung dieser Order.",
+    "armed": "Wählen Sie jetzt den nächsten Schritt.",
     "connection": {
+      "choose_step": "Wählen Sie zuerst den Schritt, von dem es weitergeht.",
+      "no_output": "Dieser Schritt hat keinen Ausgang, von dem eine Verbindung zum nächsten Schritt ausgeht.",
       "unknown_element": "Das Element gibt es nicht mehr.",
       "same_element": "Ein Schritt lässt sich nicht mit sich selbst verbinden.",
       "target_is_trigger": "Ein Auslöser hat keinen Eingang.",
@@ -753,8 +776,63 @@
     "checkFailed": "Die Strategie konnte nicht geprüft werden.",
     "insertFailed": "Der Eintrag konnte nicht eingefügt werden.",
     "codes": {
+      "object": {
+        "not_found": "Das Objekt gibt es nicht mehr. Vielleicht wurde es gelöscht.",
+        "unreadable": "Die Datei dieses Objekts lässt sich nicht lesen. Sie bleibt unverändert.",
+        "kind_conflict": "Im Objektverzeichnis liegt unter dieser Kennung schon etwas anderes. Es wurde nichts geschrieben.",
+        "name_taken": "Der Dateiname dieses Objekts ist im Objektverzeichnis durch einen anderen Eintrag belegt. Es wurde nichts geschrieben.",
+        "builtin": "Eine mitgelieferte Vorlage lässt sich weder ändern noch löschen.",
+        "write_failed": "Die Datei des Objekts konnte nicht geschrieben oder gelöscht werden. Prüfen Sie das Objektverzeichnis."
+      },
+      "document": {
+        "invalid": "Das Dokument ist nicht so aufgebaut, wie es sein muss, und wurde nicht angenommen.",
+        "format_mismatch": "Das Dokument gehört zu einer anderen Art von Objekt.",
+        "id_mismatch": "Die Kennung im Dokument passt nicht zu dem Objekt, das gespeichert werden soll.",
+        "too_large": "Das Dokument ist zu groß, um gespeichert zu werden (Grenze: {{limit_bytes}} Byte)."
+      },
+      "request": {
+        "invalid": "Die Anfrage ist unvollständig oder fehlerhaft.",
+        "not_json": "Die Anfrage hat nicht das erwartete Format.",
+        "too_large": "Die Anfrage ist zu groß (Grenze: {{limit_bytes}} Byte).",
+        "not_found": "Diese Adresse gibt es im Backend nicht.",
+        "method_not_allowed": "Diese Anfrage ist für diese Adresse nicht erlaubt.",
+        "failed": "Die Anfrage konnte nicht bearbeitet werden."
+      },
+      "host": {
+        "not_allowed": "Das Backend nimmt Anfragen unter diesem Rechnernamen nicht an."
+      },
+      "expressions": {
+        "pointer_invalid": "Die Stelle, an der ein Ausdruck stehen soll, gibt es in dieser Strategie nicht.",
+        "blocks_invalid": "Aus den gewählten Bausteinen lässt sich kein Ausdruck bilden."
+      },
+      "keys": {
+        "scope_invalid": "An dieser Stelle lässt sich kein neues Objekt anlegen."
+      },
+      "usage": {
+        "strategy_required": "Wo ein Objekt verwendet wird, lässt sich nur für eine Strategie abfragen, nicht für eine Vorlage."
+      },
+      "insert": {
+        "template_invalid": "Diese Vorlage lässt sich nicht einfügen.",
+        "type_unknown": "Diesen Objekttyp kennt das Backend nicht."
+      },
+      "removal": {
+        "strategy_required": "Entfernen mit Folgen für Ausdrücke gibt es nur in einer Strategie, nicht in einer Vorlage.",
+        "target_unknown": "Das, was entfernt werden soll, gibt es in der Strategie nicht."
+      },
       "object_directory": {
-        "not_absolute": "Das Objektverzeichnis muss ein absoluter Pfad sein."
+        "not_set": "Es ist kein Objektverzeichnis festgelegt. Legen Sie es in den Einstellungen fest.",
+        "stored_invalid": "Das gespeicherte Objektverzeichnis ist ungültig. Legen Sie es in den Einstellungen neu fest.",
+        "unreadable": "Das Objektverzeichnis lässt sich nicht lesen.",
+        "not_absolute": "Das Objektverzeichnis muss ein absoluter Pfad sein.",
+        "invalid_body": "Die Angabe zum Objektverzeichnis ist unvollständig: Sie braucht den Pfad und die Antwort, ob die Dateien verschoben werden.",
+        "conflict": "Im neuen Objektverzeichnis liegen schon Dateien mit denselben Namen. Es wurde nichts verschoben.",
+        "stored_invalid_no_move": "Das gespeicherte Objektverzeichnis ist ungültig, deshalb lassen sich keine Dateien verschieben. Speichern Sie das Verzeichnis ohne Verschieben, um es zu reparieren.",
+        "target_not_creatable": "Das neue Objektverzeichnis ließ sich nicht anlegen. Es wurde nichts verschoben, das Verzeichnis ist unverändert.",
+        "move_failed": "Beim Verschieben der Dateien ist ein Fehler aufgetreten. Die Dateien wurden zurückgeholt, das Verzeichnis ist unverändert.",
+        "move_not_restored": "Beim Verschieben der Dateien ist ein Fehler aufgetreten, und einige Dateien ließen sich nicht zurückholen. Das Verzeichnis ist unverändert."
+      },
+      "language": {
+        "stored_invalid": "Die gespeicherte Sprache ist ungültig. Wählen Sie die Sprache in den Einstellungen neu."
       }
     }
   },

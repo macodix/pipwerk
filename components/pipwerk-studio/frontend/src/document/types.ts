@@ -55,6 +55,11 @@ export type InstanceDocument = {
   key: string;
   object_type: string;
   origin?: Origin | null;
+  /**
+   * The element with which the user connected the instance first (specification 3.3); `null` if there is none. Only an
+   * instance that lies directly in the strategy has it. The interface keeps it as it is.
+   */
+  first_use?: string | null;
   parameter_values?: Bindings;
   parameters?: ParameterDefinition[];
   properties?: PropertyDefinition[];
@@ -67,8 +72,25 @@ export type InstanceDocument = {
   [field: string]: unknown;
 };
 
-/** An input of an element: a property of an instance on the drawing area that the user connected with the element. */
-export type InputDocument = { instance: string; property: string; [field: string]: unknown };
+/** The value of an argument of a method in an input: a number, a truth value or a text (specification 3.3). */
+export type InputArgument = string | number | boolean;
+
+/** Whether an input names a property or a method of the instance (`property` holds the identifier of either). */
+export type InputKind = 'property' | 'method';
+
+/**
+ * An input of an element (specification 3.3): a value the element uses, given as an instance on the drawing area and
+ * either its property or its method with the values of the arguments, and "Aktualisieren" (`refresh`). A document without
+ * these details means: a property, no arguments, no refresh. The interface keeps all five fields as they are.
+ */
+export type InputDocument = {
+  instance: string;
+  property: string;
+  kind?: InputKind;
+  arguments?: InputArgument[];
+  refresh?: boolean;
+  [field: string]: unknown;
+};
 
 export type Position = { x: number; y: number };
 

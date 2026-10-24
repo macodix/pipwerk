@@ -92,12 +92,18 @@
     "search": "Search …",
     "searchLabel": "Search the element library",
     "groups": {
-      "when": "When to calculate",
-      "actions": "Conditions and actions",
-      "market": "Market and account",
+      "flow": "Flow control",
+      "calculation": "Calculation",
       "indicators": "Indicators",
       "trends": "Trends",
-      "rules": "Rules"
+      "market": "Market data",
+      "account": "Account",
+      "actions": "Actions",
+      "rules": "Rules and rule sets"
+    },
+    "connection": {
+      "name": "Connection",
+      "explanation": "Connects one step with the next without dragging: choose the step that continues, then \"Connection\", then the next step."
     },
     "own": "own",
     "unreadable": "not readable",
@@ -239,6 +245,9 @@
   },
   "wizard": {
     "title": "Assistant",
+    "start": "Start the assistant",
+    "resume": "Continue with the assistant",
+    "barStep": "Assistant, step {{step}} of {{count}}",
     "step": "Step {{step}} of {{count}}",
     "progress": "Progress",
     "leave": "Continue without assistant",
@@ -258,7 +267,7 @@
     "triggerText": "When should the strategy calculate? The trigger starts every evaluation.",
     "timeUnitName": "Time unit",
     "asParameter": "Create as strategy parameter (recommended: change the time unit in one place)",
-    "indicatorsText": "Which indicators does the strategy need? They appear in the area \"Objects and their values\" of the drawing area.",
+    "indicatorsText": "Which indicators does the strategy need? They appear on the drawing area.",
     "noIndicators": "No indicator yet. You can also skip this step.",
     "removeIndicator": "Remove indicator",
     "conditionText": "When should the strategy trade? Put together a simple condition. Finer conditions can be built later from blocks.",
@@ -271,10 +280,7 @@
     "compareName": "Comparison",
     "orderText": "What should happen on \"true\"? Choose the order here. Details such as the stop loss are set afterwards in the properties.",
     "withRule": "Apply the rule \"{{name}}\" (determines the volume)",
-    "done": "The setup is in place. The check shows what is still missing.",
-    "offerTitle": "Guided setup",
-    "offerText": "The assistant leads you to a first strategy in five steps: name, trigger, indicators, condition and order.",
-    "offerButton": "Show the guided setup"
+    "done": "The setup is in place. The check shows what is still missing."
   },
   "instances": {
     "parameters": "Parameters",
@@ -327,9 +333,6 @@
   },
   "canvas": {
     "noStrategyTitle": "No strategy open",
-    "noStrategyText": "Next step: create an empty strategy with \"New strategy\" or open a saved one.",
-    "emptyTitle": "The canvas is empty",
-    "emptyText": "Next step: start with a trigger. It defines when the strategy calculates. You find it in the element library in the group \"When to calculate\".",
     "openLibrary": "Show the element library",
     "wiresArrive": "{{count}} value line(s) end here",
     "portManagement": "The management of this order starts here. If the management has no trigger of its own, drag from here to its first step.",
@@ -343,16 +346,14 @@
     "management": "Management · {{name}}",
     "steps_one": "{{count}} step",
     "steps_other": "{{count}} steps",
-    "managementEmpty": "Still empty. Select this frame and add a trigger from the element library.",
     "collapseSection": "Collapse section",
     "expandSection": "Expand section",
     "sectionName": "Name of the section",
     "lane": "Objects and their values",
-    "laneEmpty": "Indicators, trends and market objects appear here. You connect their values with steps by lines.",
     "deleteConnection": "Delete connection",
     "wireOnlyExpression": "only used in the expression",
     "unknownTypeSummary": "Unknown type \"{{type}}\"",
-    "expressionEmpty": "Still empty – the condition or calculation is built from blocks later.",
+    "expressionEmpty": "Still empty",
     "orientation": "Orientation",
     "orientVerticalTip": "Flow vertical: entry on top, exits below",
     "orientHorizontalTip": "Flow horizontal from left to right, for wide screens",
@@ -378,7 +379,6 @@
     "toStartTip": "Move the view to the beginning of the strategy, at a readable size",
     "arrange": "Arrange again",
     "arrangeTip": "Arrange all elements automatically again",
-    "armed": "Now click the step that follows next.",
     "legend": "Legend",
     "legendFlow": "Flow: defines the order",
     "legendManagement": "Management of an order (green, dotted)",
@@ -389,6 +389,8 @@
   "properties": {
     "panel": "Properties",
     "none": "Next step: \"New strategy\" creates an empty strategy, \"Open\" shows saved strategies.",
+    "emptyTitle": "The strategy is empty",
+    "emptyText": "Next step: start with a trigger. It defines when the strategy calculates. You find it in the element library in the group \"Flow control\". Or let the assistant guide you.",
     "strategy": "Strategy",
     "strategyName": "Name of the strategy",
     "description": "Description",
@@ -516,11 +518,12 @@
       "cycle": "circular reference"
     },
     "trigger": {
-      "unconnected": "The trigger is not connected with any element of the flow."
+      "unconnected": "The trigger is not connected with any element of the flow.",
+      "manual_in_management": "The trigger \"{{element}}\" starts by hand and stands in the management of an order. There it is never triggered."
     },
     "flow": {
       "not_reached": "No trigger reaches this element of the flow.",
-      "main_without_trigger": "The main flow has no trigger; the strategy never starts.",
+      "main_without_trigger": "Main flow without a trigger: the strategy never starts, even if a management has triggers of its own.",
       "unending_loop": "Loop without a condition that ends it (on {{elements}} elements).",
       "management_only": "\"{{type}}\" may only stand in a management, not in the main flow.",
       "no_order_reachable": "No element that places an order can be reached from the trigger."
@@ -533,7 +536,16 @@
       "type_mismatch": "The data type of the connected value does not fit: expected {{expected}}, found {{found}}."
     },
     "input": {
-      "unused": "The input \"{{property}}\" is not used."
+      "unused": "The value \"{{property}}\" of \"{{instance}}\" is connected with this element but not used.",
+      "refresh_not_allowed": "The value \"{{property}}\" of \"{{instance}}\" is to be refreshed at this element. An object of this kind cannot work out its values anew."
+    },
+    "instance": {
+      "not_usable": "\"{{instance}}\" may not be used at this element. The object is worked out {{firstUse}}, and not every way to here passes there.",
+      "unconnected": "\"{{instance}}\" is not connected with any element. It is not used anywhere."
+    },
+    "firstUse": {
+      "named": "at \"{{name}}\"",
+      "unnamed": "at the element that uses it first"
     },
     "key": {
       "invalid": "The identifier \"{{key}}\" contains characters that an expression cannot address."
@@ -543,7 +555,9 @@
     },
     "dataReasons": {
       "unknown_instance": "the object does not exist",
-      "unknown_property": "the object does not have this property"
+      "unknown_property": "the object does not have this property",
+      "unknown_method": "the object does not have this method",
+      "arguments": "the entries do not fit the method"
     },
     "layoutReasons": {
       "unknown_flow": "the flow belongs to no element",
@@ -613,7 +627,8 @@
       "other": "Correct the expression at the named position."
     },
     "trigger": {
-      "unconnected": "Connect the trigger with the first step or remove it."
+      "unconnected": "Connect the trigger with the first step or remove it.",
+      "manual_in_management": "Remove the trigger from the management and add another trigger there, or put it into the main flow."
     },
     "flow": {
       "not_reached": "Connect a previous step or a trigger with this step or remove it.",
@@ -630,7 +645,12 @@
       "type_mismatch": "Connect a value of the fitting data type."
     },
     "input": {
-      "unused": "Use the value in an expression or remove the input."
+      "unused": "Use the value in an expression or remove the connection.",
+      "refresh_not_allowed": "Switch \"Refresh\" off for this value. If you need current values, add another object with a name of its own and use that one."
+    },
+    "instance": {
+      "not_usable": "Add another object with a name of its own and use that one at this element, or use the object only at elements that lie behind the element where it is first used.",
+      "unconnected": "Connect the object with the element that needs its values first, or remove it."
     },
     "key": {
       "invalid": "Change the name."
@@ -695,7 +715,10 @@
     "inputAdded": "The value is now an input of the element.",
     "toMainFlow": "The element now belongs to the main flow.",
     "toManagement": "The element now belongs to the management of this order.",
+    "armed": "Now choose the next step.",
     "connection": {
+      "choose_step": "First choose the step that continues.",
+      "no_output": "This step has no output from which a connection leads to the next step.",
       "unknown_element": "The element no longer exists.",
       "same_element": "A step cannot be connected with itself.",
       "target_is_trigger": "A trigger has no input.",
@@ -753,8 +776,63 @@
     "checkFailed": "The strategy could not be checked.",
     "insertFailed": "The entry could not be inserted.",
     "codes": {
+      "object": {
+        "not_found": "The object does not exist any more. Perhaps it was deleted.",
+        "unreadable": "The file of this object cannot be read. It is left unchanged.",
+        "kind_conflict": "Something else already has this identifier in the object directory. Nothing was written.",
+        "name_taken": "The file name of this object is taken in the object directory by another entry. Nothing was written.",
+        "builtin": "A delivered template can be neither changed nor deleted.",
+        "write_failed": "The file of the object could not be written or deleted. Check the object directory."
+      },
+      "document": {
+        "invalid": "The document is not built as it must be and was not accepted.",
+        "format_mismatch": "The document belongs to another kind of object.",
+        "id_mismatch": "The identifier in the document does not fit the object that is to be saved.",
+        "too_large": "The document is too large to be saved (limit: {{limit_bytes}} bytes)."
+      },
+      "request": {
+        "invalid": "The request is incomplete or faulty.",
+        "not_json": "The request does not have the expected format.",
+        "too_large": "The request is too large (limit: {{limit_bytes}} bytes).",
+        "not_found": "The backend does not have this address.",
+        "method_not_allowed": "This request is not allowed for this address.",
+        "failed": "The request could not be processed."
+      },
+      "host": {
+        "not_allowed": "The backend does not accept requests under this host name."
+      },
+      "expressions": {
+        "pointer_invalid": "The place where an expression is to stand does not exist in this strategy.",
+        "blocks_invalid": "The chosen blocks do not make an expression."
+      },
+      "keys": {
+        "scope_invalid": "No new object can be added at this place."
+      },
+      "usage": {
+        "strategy_required": "Where an object is used can be asked for a strategy only, not for a template."
+      },
+      "insert": {
+        "template_invalid": "This template cannot be inserted.",
+        "type_unknown": "The backend does not know this object type."
+      },
+      "removal": {
+        "strategy_required": "Removing with consequences for expressions exists in a strategy only, not in a template.",
+        "target_unknown": "What is to be removed does not exist in the strategy."
+      },
       "object_directory": {
-        "not_absolute": "The object directory must be an absolute path."
+        "not_set": "No object directory is set. Set it in the settings.",
+        "stored_invalid": "The stored object directory is invalid. Set it anew in the settings.",
+        "unreadable": "The object directory cannot be read.",
+        "not_absolute": "The object directory must be an absolute path.",
+        "invalid_body": "The entry for the object directory is incomplete: it needs the path and the answer whether the files are moved.",
+        "conflict": "The new object directory already holds files with the same names. Nothing was moved.",
+        "stored_invalid_no_move": "The stored object directory is invalid, so no files can be moved. Save the directory without moving files to repair it.",
+        "target_not_creatable": "The new object directory could not be created. Nothing was moved and the directory is unchanged.",
+        "move_failed": "An error occurred while moving the files. The files were brought back and the directory is unchanged.",
+        "move_not_restored": "An error occurred while moving the files, and some files could not be brought back. The directory is unchanged."
+      },
+      "language": {
+        "stored_invalid": "The stored language is invalid. Choose the language anew in the settings."
       }
     }
   },

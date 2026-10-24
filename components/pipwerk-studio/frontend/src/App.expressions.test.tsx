@@ -85,7 +85,10 @@ describe('the blocks (specification 5.4)', () => {
     expect(groups.slice(0, 5)).toEqual(['Verbundene Werte', 'Objekte der Strategie', 'Objekte der Anwendung', 'Ergebnisse', 'Strategieparameter']);
     const document = await saved(user, api);
     expect(document.elements.find((element) => element.id === EMA_ELEMENT_IDS.stop)?.inputs).toEqual(
-      expect.arrayContaining([{ instance: 'ema20', property: 'wert' }, { instance: 'atr14', property: 'wert' }]),
+      expect.arrayContaining([
+        expect.objectContaining({ instance: 'ema20', property: 'wert', kind: 'property', arguments: [], refresh: false }),
+        expect.objectContaining({ instance: 'atr14', property: 'wert' }),
+      ]),
     );
   });
 });

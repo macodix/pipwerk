@@ -56,6 +56,8 @@ function type(id: string, kind: string, de: string, en: string, extra: Record<st
     group: null,
     parameters: [],
     properties: [],
+    methods: [],
+    can_refresh: false,
     outputs: [],
     rules_allowed: false,
     on_canvas: true,
@@ -72,7 +74,7 @@ const next = [{ id: 'next', label: label('weiter', 'next'), explanation: label('
 export const inventedTypesJson = {
   types: [
     type('zz.start', 'trigger', 'Beginn', 'Start', {
-      group: 'when',
+      group: 'flow',
       parameters: [parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true, choices: [{ id: 'fast', label: label('schnell', 'fast') }, { id: 'slow', label: label('langsam', 'slow') }], bindings: ['fixed', 'parameter', 'connection'] })],
       outputs: next,
     }),
@@ -167,6 +169,63 @@ export const inventedTypesJson = {
 
 export function inventedTypes(): TypeIndex {
   return createTypeIndex(parseElementTypes(inventedTypesJson));
+}
+
+/** The group of the invented type with a method: a group the interface has no name for. */
+export const UNKNOWN_GROUP = 'zz_unbekannt';
+
+/**
+ * An invented object type with a method (with a mandatory and an optional argument), that can refresh, in a group
+ * the interface does not know. A type description like this is what another package can register (specification E7).
+ */
+export const methodTypeJson = type('zz.gauge', 'object_type', 'Pegel', 'Gauge', {
+  group: UNKNOWN_GROUP,
+  category: 'indicator',
+  can_refresh: true,
+  parameters: [parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true })],
+  properties: [property('stand', 'number', 'Stand', 'Reading', { must: true })],
+  methods: [
+    {
+      id: 'mittel',
+      datatype: 'number',
+      label: label('Mittel', 'Average'),
+      explanation: label('Erklärung Mittel', 'Explanation Average'),
+      choices: [],
+      object_type: null,
+      arguments: [
+        {
+          id: 'anzahl',
+          datatype: 'integer',
+          label: label('Anzahl', 'Count'),
+          explanation: label('Erklärung Anzahl', 'Explanation Count'),
+          required: true,
+          default: null,
+          choices: [],
+          object_type: null,
+        },
+        {
+          id: 'gewicht',
+          datatype: 'number',
+          label: label('Gewicht', 'Weight'),
+          explanation: label('Erklärung Gewicht', 'Explanation Weight'),
+          required: false,
+          default: 1,
+          choices: [],
+          object_type: null,
+        },
+      ],
+    },
+  ],
+});
+
+/** The invented type descriptions together with the type with a method. */
+export const inventedTypesWithMethodJson = {
+  ...inventedTypesJson,
+  types: [...inventedTypesJson.types, methodTypeJson],
+};
+
+export function inventedTypesWithMethod(): TypeIndex {
+  return createTypeIndex(parseElementTypes(inventedTypesWithMethodJson));
 }
 
 /** An element of the flow for the tests: all fields a document needs. */

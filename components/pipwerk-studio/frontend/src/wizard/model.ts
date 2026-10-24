@@ -12,6 +12,9 @@ import { managementOutput, orderSelector, type TypeIndex } from '../model/typeIn
  * step that places an order.
  */
 
+/** The number of steps of the assistant: name, trigger, indicators, condition, order. */
+export const WIZARD_STEPS = 5;
+
 export function triggerTypes(types: TypeIndex): TypeDescription[] {
   return types.list.filter((type) => type.kind === 'trigger' && type.onCanvas);
 }

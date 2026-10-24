@@ -196,6 +196,19 @@ export function Wizard() {
         <Btn kind="ghost" small icon="x" onClick={leave} testid="wz-leave" tip={t('wizard.leaveTip')}>
           {t('wizard.leave')}
         </Btn>
+        <span className="only-narrow">
+          <Btn
+            kind="ghost"
+            small
+            icon="list"
+            testid="wz-show-library"
+            onClick={() => {
+              actions.setPanel('library');
+            }}
+          >
+            {t('canvas.openLibrary')}
+          </Btn>
+        </span>
       </div>
       <ol className="steps" aria-label={t('wizard.progress')}>
         {stepTitles.map((title, index) => (

@@ -3,7 +3,7 @@ import type { i18n as I18n, TFunction } from 'i18next';
 import type { Finding } from '../api/objects';
 import type { StrategyDocument } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
-import { elementName } from '../model/elements';
+import { elementName, instanceElementByKey, propertyRows } from '../model/elements';
 import { labelText, orderSelector, typeName, type TypeIndex } from '../model/typeIndex';
 
 /**
@@ -64,7 +64,17 @@ export const RESULT_REASONS = ['unknown_property', 'choice_value', 'type'] as co
 export const REFERENCE_KINDS = ['forward', 'cycle'] as const;
 
 /** The reasons of `data.unknown`. */
-export const DATA_REASONS = ['unknown_instance', 'unknown_property'] as const;
+export const DATA_REASONS = ['unknown_instance', 'unknown_property', 'unknown_method', 'arguments'] as const;
+
+/** Findings whose `instance` and `property` name a value of an object on the drawing area (instance key, property or method). */
+const MEMBER_CODES = new Set([
+  'input.unused',
+  'input.refresh_not_allowed',
+  'instance.not_usable',
+  'instance.unconnected',
+  'data.unknown',
+  'data.type_mismatch',
+]);
 
 /** The reasons of `layout.invalid`. */
 export const LAYOUT_REASONS = ['unknown_flow', 'unknown_element', 'element_twice', 'other_flow'] as const;
@@ -113,6 +123,9 @@ const knownDetails = [
   'instance',
   'value',
   'key',
+  'object_type',
+  'use',
+  'where',
 ] as const;
 
 function plain(value: unknown): string {
@@ -155,6 +168,25 @@ function labelOfId(ctx: FindingTextContext, finding: Finding, kind: 'parameter' 
   return id;
 }
 
+/**
+ * The name the user sees for the object with the identifier `key`, and the label of its value `member` (a property or
+ * a method). What the document or the type descriptions do not know stays as the identifier.
+ */
+function memberTexts(ctx: FindingTextContext, key: string, member: string | null): { instance: string; property: string } {
+  const owner = ctx.document === null ? undefined : instanceElementByKey(ctx.document).get(key.toLowerCase());
+  const instance = owner?.instance;
+  if (owner === undefined || instance === undefined || instance === null || ctx.types === null) {
+    return { instance: owner?.instance?.name ?? key, property: member ?? '' };
+  }
+  const type = ctx.types.byId.get(owner.type);
+  const row = member === null ? undefined : propertyRows(type, instance, ctx.language).find((candidate) => candidate.id === member);
+  const method = member === null ? undefined : type?.methods.find((candidate) => candidate.id === member);
+  return {
+    instance: instance.name,
+    property: row?.label ?? (method === undefined ? (member ?? '') : labelText(method.label, ctx.language)),
+  };
+}
+
 /** Codes whose `type` is an identifier the user interface does not translate. */
 const RAW_TYPE_CODES = new Set(['type.unknown', 'rule.invalid_type']);
 
@@ -176,6 +208,23 @@ export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextCo
   }
   if (typeof finding.details.type === 'string' && ctx.types !== null && !RAW_TYPE_CODES.has(finding.code)) {
     params.type = typeName(ctx.types, finding.details.type, ctx.language);
+  }
+  if (MEMBER_CODES.has(finding.code) && typeof finding.details.instance === 'string') {
+    const member = typeof finding.details.property === 'string' ? finding.details.property : null;
+    const texts = memberTexts(ctx, finding.details.instance, member);
+    params.instance = texts.instance;
+    params.property = texts.property;
+  }
+  if (finding.code === 'instance.not_usable') {
+    const firstUse = finding.details.first_use;
+    const home =
+      typeof firstUse === 'string' && ctx.document !== null && ctx.types !== null
+        ? ctx.document.elements.find((candidate) => candidate.id === firstUse)
+        : undefined;
+    params.firstUse =
+      home === undefined || ctx.types === null
+        ? t('findings.firstUse.unnamed')
+        : t('findings.firstUse.named', { name: elementName(home, ctx.types, ctx.language) });
   }
   const field = finding.details.field;
   if (typeof field === 'string') {

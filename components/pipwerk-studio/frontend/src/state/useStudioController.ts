@@ -1,5 +1,5 @@
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchElementTypes } from '../api/elementTypes';
@@ -74,6 +74,7 @@ import {
   isDirty,
   studioReducer,
   type ExpressionFocus,
+  initialWizard,
   type StudioAction,
   type Panel,
   type Selection,
@@ -104,6 +105,9 @@ export type DropTarget = { after?: string | null; flow?: string | null; ruleList
 export type StudioController = ReturnType<typeof useStudioController>;
 
 const TYPES_KEY = ['element-types'];
+
+/** How long a short message stays in the properties view (specification 5.1: it disappears on its own). */
+const MESSAGE_MILLISECONDS = 4200;
 
 /** Everything the application keeps and does for the open strategy: state, requests, dialogs, edits. */
 export function useStudioController(language: SupportedLanguage) {
@@ -150,9 +154,37 @@ export function useStudioController(language: SupportedLanguage) {
     storedData,
   );
   const storedFailed = storedQueries.some((query) => query.isError);
-  const library = useMemo(() => (types === null ? [] : buildLibrary(types, stored, language)), [types, stored, language]);
+  const library = useMemo(
+    () =>
+      types === null
+        ? []
+        : buildLibrary(types, stored, language, {
+            name: i18n.t('library.connection.name', { lng: language }),
+            explanation: i18n.t('library.connection.explanation', { lng: language }),
+          }),
+    [i18n, types, stored, language],
+  );
 
   const dirty = isDirty(state);
+
+  // A short message stays for a while and disappears on its own. The step that waits for its successor ("Verbindung")
+  // is a message for as long as it waits.
+  const [shownNotice, setShownNotice] = useState<number | null>(null);
+  const noticeSerial = state.notice?.serial ?? null;
+  useEffect(() => {
+    if (noticeSerial === null) {
+      return undefined;
+    }
+    setShownNotice(noticeSerial);
+    const timer = window.setTimeout(() => {
+      setShownNotice(null);
+    }, MESSAGE_MILLISECONDS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [noticeSerial]);
+  const noticeVisible = noticeSerial !== null && shownNotice === noticeSerial;
+  const messageShown = noticeVisible || state.armed !== null;
 
   const showError = useCallback((titleKey: string, error: unknown) => {
     setDialog({ kind: 'error', titleKey, error });
@@ -224,7 +256,8 @@ export function useStudioController(language: SupportedLanguage) {
         strategyToken.current += 1;
         dispatch({ type: 'loaded', document: newStrategy(name), persisted: false, findings: null });
         dispatch({ type: 'wizard', wizard: {} });
-        dispatch({ type: 'panel', panel: 'canvas' });
+        // below 1100 pixels the assistant stands in the properties view, which is shown after "Neue Strategie"
+        dispatch({ type: 'panel', panel: 'props' });
       } else {
         await openById(action.id);
       }
@@ -358,7 +391,7 @@ export function useStudioController(language: SupportedLanguage) {
         return null;
       }
       const entry = findEntry(library, entryKey);
-      if (entry === undefined || entry.unreadable) {
+      if (entry === undefined || entry.unreadable || entry.source.kind === 'connection') {
         return null;
       }
       try {
@@ -476,7 +509,60 @@ export function useStudioController(language: SupportedLanguage) {
     [edit],
   );
 
+  // --- the assistant ---------------------------------------------------------------------------
+
+  /** The user chose something else: the assistant waits where it is. Without a running assistant nothing happens. */
+  const pauseWizard = useCallback(() => {
+    dispatch({ type: 'wizardPaused', paused: true });
+  }, []);
+
+  /** "Assistent fortsetzen": the assistant takes up the step it was at; the properties view shows it again. */
+  const resumeWizard = useCallback(() => {
+    dispatch({ type: 'wizardPaused', paused: false });
+    dispatch({ type: 'panel', panel: 'props' });
+  }, []);
+
+  /** "Assistent starten" (hint of an empty strategy): the assistant begins at its first step. */
+  const startWizard = useCallback(() => {
+    dispatch({ type: 'wizard', wizard: { ...initialWizard } });
+    dispatch({ type: 'panel', panel: 'props' });
+  }, []);
+
   // --- the drawing area ------------------------------------------------------------------------
+
+  /**
+   * The entry "Verbindung" of the library (specification 5.2, 5.3): the selected step waits for its successor, and the
+   * next step that is chosen becomes it. The output is the first one that leads nowhere yet and does not hold a
+   * management; a step with only such outputs offers the first output without a management.
+   */
+  const startConnection = useCallback((): boolean => {
+    const current = stateRef.current;
+    const index = typesRef.current;
+    const document = current.document;
+    if (document === null || index === null) {
+      return false;
+    }
+    const selection = current.selection;
+    const from = selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
+    if (from === undefined || isCardElement(from, index)) {
+      notify('notices.connection.choose_step');
+      return false;
+    }
+    const type = index.byId.get(from.type);
+    if (type === undefined) {
+      notify('notices.connection.unknown_type');
+      return false;
+    }
+    const free = type.outputs.filter((output) => !output.holdsManagement);
+    const used = new Set(document.connections.filter((candidate) => candidate.source === from.id).map((candidate) => candidate.output));
+    const output = free.find((candidate) => !used.has(candidate.id)) ?? free[0];
+    if (output === undefined) {
+      notify('notices.connection.no_output');
+      return false;
+    }
+    dispatch({ type: 'armed', armed: { from: from.id, output: output.id } });
+    return true;
+  }, [notify]);
 
   const problemNotice = useCallback(
     (problem: ConnectionProblem) => {
@@ -682,6 +768,10 @@ export function useStudioController(language: SupportedLanguage) {
       insert,
       writeBlocks,
       selectQuietly,
+      pauseWizard,
+      resumeWizard,
+      startWizard,
+      startConnection,
       connectSteps,
       connectValue,
       dropStep,
@@ -771,14 +861,18 @@ export function useStudioController(language: SupportedLanguage) {
       elementDisplayName,
       insert,
       notify,
+      pauseWizard,
       queryClient,
       removalInfo,
       request,
       requestRemoveElement,
       requestRemoveParameter,
+      resumeWizard,
       save,
       select,
       selectQuietly,
+      startConnection,
+      startWizard,
       writeBlocks,
     ],
   );
@@ -793,6 +887,10 @@ export function useStudioController(language: SupportedLanguage) {
     library,
     dirty,
     language,
+    /** A short message is on (the properties view shows it). */
+    noticeVisible,
+    /** Something waits to be read in the properties view: a short message, or a step that waits for its successor. */
+    messageShown,
     actions,
     isCard: (id: string): boolean => {
       const found = state.document?.elements.find((candidate) => candidate.id === id);

@@ -14,6 +14,8 @@ export function PanelTabs() {
   const { t } = useTranslation();
   const { panel } = studio.state;
   const showsLibrary = panel === 'library';
+  // A short message stands in the properties view (specification 5.1): while the library hides it, its tab is marked.
+  const marked = (id: 'library' | 'props'): boolean => id === 'props' && showsLibrary && studio.messageShown;
   return (
     <div className="panel-tabs" role="tablist" aria-label={t('layout.sideArea')}>
       {(['library', 'props'] as const).map((id) => (
@@ -22,7 +24,8 @@ export function PanelTabs() {
           type="button"
           role="tab"
           aria-selected={(id === 'library') === showsLibrary}
-          className={(id === 'library') === showsLibrary ? 'on' : ''}
+          className={`${(id === 'library') === showsLibrary ? 'on' : ''}${marked(id) ? ' marked' : ''}`}
+          data-marked={marked(id) ? 'true' : undefined}
           onClick={() => {
             studio.actions.setPanel(id);
           }}
@@ -53,8 +56,12 @@ export function Library() {
       studio.actions.notify('notices.openFirst');
       return;
     }
-    // working with the library is working by hand: the guided setup ends
-    studio.actions.dispatch({ type: 'wizard', wizard: null });
+    // working with the library is working by hand: the assistant waits where it is (specification 5.5)
+    studio.actions.pauseWizard();
+    if (entry.target === 'connection') {
+      studio.actions.startConnection();
+      return;
+    }
     void studio.actions.insert(entry.key);
   };
 
@@ -86,7 +93,7 @@ export function Library() {
             }}
           >
             <Icon name={isClosed ? 'right' : 'down'} size={14} />
-            <span>{t(`library.groups.${group.id}`)}</span>
+            <span>{t(`library.groups.${group.id}`, { defaultValue: group.id })}</span>
             <span className="count">{group.entries.length}</span>
           </button>
           {isClosed ? null : (
@@ -97,7 +104,7 @@ export function Library() {
                     className="lib-item"
                     role="button"
                     tabIndex={0}
-                    draggable={!entry.unreadable}
+                    draggable={!entry.unreadable && entry.target !== 'connection'}
                     data-lib={entry.key}
                     data-testid="lib-item"
                     data-label={entry.name}

@@ -896,22 +896,65 @@ code {
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.35);
   pointer-events: none;
 }
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 44px;
-  transform: translateX(-50%);
-  z-index: 150;
+/* A short message stands in the properties view above its content and disappears on its own (specification 5.1). */
+.message-bar {
   display: flex;
   align-items: center;
   gap: 9px;
+  margin: 8px 10px 0;
   background: #0f2438;
   color: #fff;
-  padding: 10px 16px;
-  border-radius: 11px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.35);
-  max-width: min(560px, calc(100vw - 24px));
-  font-size: 13.5px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.message-bar .btn {
+  color: #fff;
+  margin-left: auto;
+}
+.message-bar.waiting {
+  background: #1d4ed8;
+}
+/* Below 1100 pixels the properties view can be hidden: the tab or button that leads to it is marked then. */
+.panel-tabs button.marked,
+.tabbar button.marked {
+  color: var(--accent);
+  box-shadow: inset 0 -3px 0 #1d4ed8;
+}
+.panel-tabs button.marked::after,
+.tabbar button.marked::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  display: inline-block;
+}
+.only-narrow {
+  display: none !important;
+}
+@media (max-width: 1099px) {
+  .only-narrow {
+    display: inline-flex !important;
+  }
+}
+/* The line that shows an assistant waiting, above the properties of the chosen element (specification 5.5). */
+.wizard-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 8px 10px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #eef5ff;
+  color: #1e3a8a;
+  font-size: 13px;
+}
+.wizard-bar .grow {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ---- badges ----------------------------------------------------------------------------------- */
@@ -956,6 +999,9 @@ code {
 }
 .b-rule {
   background: var(--k-rule);
+}
+.b-conn {
+  background: var(--k-trg);
 }
 .b-strategy {
   background: var(--brand-2);
@@ -1149,36 +1195,7 @@ code {
   pointer-events: auto;
   box-shadow: var(--shadow);
 }
-.armed-banner {
-  position: absolute;
-  z-index: 21;
-  top: 54px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #1d4ed8;
-  color: #fff;
-  padding: 7px 8px 7px 14px;
-  border-radius: 999px;
-  box-shadow: var(--shadow);
-  font-size: 13px;
-}
-.armed-banner .btn {
-  color: #fff;
-}
-.canvas-empty {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  padding: 60px 16px 16px;
-}
 .empty-card {
-  pointer-events: auto;
   max-width: 440px;
   background: #fff;
   border: 1px solid var(--line);
@@ -1287,9 +1304,6 @@ code {
     right: 6px;
     gap: 5px;
   }
-  .armed-banner {
-    top: 46px;
-  }
 }
 
 .lane,
@@ -1391,11 +1405,6 @@ code {
   font-size: 13px;
   color: #334155;
   cursor: pointer;
-}
-.frame-empty {
-  padding: 4px 18px;
-  color: var(--muted);
-  font-size: 12.5px;
 }
 
 .react-flow__edge .edge-line,

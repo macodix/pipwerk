@@ -31,9 +31,14 @@ export type WizardState = {
   indicators: readonly string[];
   /** The element the condition step made. */
   condition: string | null;
+  /**
+   * The user chose something else (an element, the strategy, an entry of the library) while the assistant was running:
+   * the properties view shows the choice, and above it "Assistent, Schritt n von 5" with "Assistent fortsetzen".
+   */
+  paused: boolean;
 };
 
-export const initialWizard: WizardState = { step: 1, trigger: null, indicators: [], condition: null };
+export const initialWizard: WizardState = { step: 1, trigger: null, indicators: [], condition: null, paused: false };
 
 export type StudioState = {
   document: StrategyDocument | null;
@@ -71,7 +76,8 @@ export const initialStudioState: StudioState = {
   persisted: false,
   findings: null,
   selection: { kind: 'strategy' },
-  panel: 'canvas',
+  // Without an open strategy the properties view is shown first in the narrow layouts (specification 5.1).
+  panel: 'props',
   wires: 'all',
   armed: null,
   openCards: [],
@@ -99,6 +105,7 @@ export type StudioAction =
   | { type: 'toggleCard'; id: string }
   | { type: 'focusField'; field: string; place?: ExpressionFocus }
   | { type: 'wizard'; wizard: Partial<WizardState> | null }
+  | { type: 'wizardPaused'; paused: boolean }
   | { type: 'notice'; key: string; params?: Record<string, string> };
 
 export function documentText(document: StrategyDocument): string {
@@ -130,6 +137,7 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         persisted: action.persisted,
         findings: action.findings,
         openCount: state.openCount + 1,
+        panel: 'canvas',
       };
     case 'closed':
       return { ...initialStudioState, wires: state.wires, openCount: state.openCount };
@@ -165,8 +173,8 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         selection: action.selection,
         armed: null,
         panel: action.panel ?? state.panel,
-        // choosing a step or an object on the drawing area ends the guided setup: the user works by hand
-        wizard: action.selection.kind === 'strategy' ? state.wizard : null,
+        // A choice of the user leaves the assistant where it is; "Assistent fortsetzen" takes it up again.
+        wizard: state.wizard === null ? null : { ...state.wizard, paused: true },
       };
     case 'panel':
       return { ...state, panel: action.panel };
@@ -188,6 +196,8 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         ...state,
         wizard: action.wizard === null ? null : { ...(state.wizard ?? initialWizard), ...action.wizard },
       };
+    case 'wizardPaused':
+      return state.wizard === null ? state : { ...state, wizard: { ...state.wizard, paused: action.paused } };
     case 'notice':
       return { ...state, notice: { serial: nextSerial(), key: action.key, params: action.params ?? {} } };
   }

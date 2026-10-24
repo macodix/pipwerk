@@ -156,7 +156,7 @@ export function definitionChoices(
 }
 
 /** The class of the colour of an element on the drawing area, derived from the description only. */
-export type KindClass = 'trg' | 'cond' | 'calc' | 'order' | 'act' | 'app' | 'ind' | 'trend' | 'rule' | 'unknown';
+export type KindClass = 'trg' | 'cond' | 'calc' | 'order' | 'act' | 'app' | 'ind' | 'trend' | 'rule' | 'conn' | 'unknown';
 
 export function kindClassOf(type: TypeDescription | undefined): KindClass {
   if (type === undefined) {
@@ -210,6 +210,8 @@ export function iconOfClass(kindClass: KindClass): string {
       return 'trend';
     case 'rule':
       return 'shield';
+    case 'conn':
+      return 'link';
     case 'ind':
       return 'wave';
     case 'unknown':

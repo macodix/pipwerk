@@ -58,8 +58,9 @@ describe('unsaved changes (specification 5.5)', () => {
     await menu(user, 'close');
     await user.click(await screen.findByRole('button', { name: 'Verwerfen' }));
 
+    // "Keine Strategie geöffnet" stands in the properties view (specification 5.5)
     await waitFor(() => {
-      expect(screen.getByTestId('canvas-no-strategy')).toBeInTheDocument();
+      expect(screen.getByTestId('props-none')).toBeInTheDocument();
     });
     expect(api.requests('PUT', /strategies/)).toHaveLength(0);
     expect((api.strategies.get(emaTrendfolge().id as string) as { name: string }).name).toBe('EMA-Trendfolge');
@@ -78,7 +79,7 @@ describe('unsaved changes (specification 5.5)', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Speichern' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('canvas-no-strategy')).toBeInTheDocument();
+      expect(screen.getByTestId('props-none')).toBeInTheDocument();
     });
     expect(api.requests('PUT', /strategies/)).toHaveLength(1);
     expect((api.strategies.get(emaTrendfolge().id as string) as { name: string }).name).toBe('EMA geändert');
@@ -142,7 +143,9 @@ describe('saving, checking and deleting', () => {
     await menu(user, 'save');
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Die Strategie konnte nicht gespeichert werden.' });
-    expect(dialog).toHaveTextContent('Ursache document.invalid');
+    // the cause is told in the language of the interface from its identifier (specification 4.2), not as the identifier
+    expect(dialog).toHaveTextContent('Das Dokument ist nicht so aufgebaut, wie es sein muss, und wurde nicht angenommen.');
+    expect(dialog).not.toHaveTextContent('document.invalid');
     expect(dialog).not.toHaveTextContent('The document does not fit');
     await user.click(within(dialog).getByRole('button', { name: 'OK' }));
     expect(screen.getByTestId('status-pill')).toHaveTextContent('ungespeichert');
@@ -218,7 +221,7 @@ describe('saving, checking and deleting', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Löschen' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('canvas-no-strategy')).toBeInTheDocument();
+      expect(screen.getByTestId('props-none')).toBeInTheDocument();
     });
     expect(api.strategies.size).toBe(0);
   });
@@ -256,7 +259,9 @@ describe('the language (specification 5.1, M4)', () => {
       'Senkrecht',
       'Waagerecht',
       'Legende',
-      'Wann wird gerechnet',
+      'Ablaufsteuerung',
+      'Marktdaten',
+      'Aktionen',
       'Befunde',
       'Objekte und ihre Werte',
       'gespeichert',
@@ -266,7 +271,8 @@ describe('the language (specification 5.1, M4)', () => {
     ]) {
       expect(text, german).not.toContain(german);
     }
-    expect(screen.getByTestId('library')).toHaveTextContent('When to calculate');
+    expect(screen.getByTestId('library')).toHaveTextContent('Flow control');
+    expect(screen.getByTestId('library')).toHaveTextContent('Market data');
     expect(screen.getByTestId('library')).toHaveTextContent('Candle close');
     expect(screen.getAllByTestId('finding')[0]).toHaveTextContent('How to fix it: Connect a previous step');
     // the names of the user are not translated
