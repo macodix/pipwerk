@@ -26,7 +26,7 @@ from pipwerk_replay.app import create_app
 from pipwerk_replay.migrate import DatabaseMigrationError, _alembic_config, migrate_database
 from pipwerk_replay.storage import Base, create_replay_engine
 
-NEWEST_REVISION = "0003"
+NEWEST_REVISION = "0004"
 
 
 def database_url(tmp_path: Path) -> str:
@@ -46,7 +46,15 @@ def test_new_database_gets_the_newest_schema(tmp_path: Path) -> None:
     engine = create_replay_engine(database_url(tmp_path))
     engine.dispose()
 
-    assert column_names(tmp_path, "replay_settings") == ["id", "language", "test_run_broker"]
+    assert column_names(tmp_path, "replay_settings") == [
+        "id",
+        "language",
+        "test_run_broker",
+        "keep_imported_files",
+        "storage_directory",
+        "import_directory",
+        "export_directory",
+    ]
     assert column_names(tmp_path, "test_accounts") == [
         "id",
         "name",
@@ -120,6 +128,7 @@ def test_the_migrations_are_part_of_the_package() -> None:
     assert "v0001_initial.py" in names
     assert "v0002_default_source.py" in names
     assert "v0003_test_run_broker.py" in names
+    assert "v0004_file_settings.py" in names
     assert resources.files("pipwerk_replay").joinpath("migrations", "env.py").is_file()
 
 
@@ -148,10 +157,14 @@ def test_the_migration_takes_over_the_default_source_as_the_broker_for_test_runs
     engine = create_replay_engine(database_url(tmp_path))  # migrates to the newest schema
     engine.dispose()
 
-    assert column_names(tmp_path, "replay_settings") == ["id", "language", "test_run_broker"]
+    assert column_names(tmp_path, "replay_settings")[:3] == ["id", "language", "test_run_broker"]
     assert sqlite_rows(tmp_path, "SELECT id, language, test_run_broker FROM replay_settings") == [
         (1, "en", "Live-1")
     ]
+    assert sqlite_rows(
+        tmp_path,
+        "SELECT keep_imported_files, storage_directory FROM replay_settings",
+    ) == [(0, None)]
     assert sqlite_rows(tmp_path, "SELECT version_num FROM alembic_version") == [(NEWEST_REVISION,)]
 
 

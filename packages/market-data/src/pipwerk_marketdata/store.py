@@ -59,6 +59,7 @@ from pipwerk_marketdata.records import (
     TradingSession,
     Weekday,
 )
+from pipwerk_marketdata.space import return_space
 from pipwerk_marketdata.timeunits import (
     CONTRACT,
     TICKS,
@@ -224,8 +225,12 @@ class MarketDataStore:
     def _write(self, parsed: ParsedImport) -> ImportResult:
         with _database_errors(), self._engine.begin() as connection:
             if parsed.kind == KIND_INSTRUMENT:
-                return self._write_info(connection, parsed)
-            return self._write_series(connection, parsed)
+                result = self._write_info(connection, parsed)
+            else:
+                result = self._write_series(connection, parsed)
+        if result.replaced:
+            return_space(self._engine)  # after the commit (specification 5.6)
+        return result
 
     def _write_info(self, connection: Connection, parsed: ParsedImport) -> ImportResult:
         info = parsed.info
@@ -860,4 +865,9 @@ class MarketDataStore:
         execute: bool,
     ) -> Deletion:
         with _database_errors(), self._engine.begin() as connection:
-            return run_deletion(connection, kind, broker, instrument, data, period, execute=execute)
+            deletion = run_deletion(
+                connection, kind, broker, instrument, data, period, execute=execute
+            )
+        if execute:
+            return_space(self._engine)  # after the commit (specification 5.6)
+        return deletion

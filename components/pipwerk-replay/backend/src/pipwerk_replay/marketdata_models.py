@@ -320,6 +320,13 @@ class FileOutcome(OutModel):
     result: ImportResult | None
     error: FileErrorCode | None
     message: str | None
+    kept: bool = Field(
+        description=(
+            "``true`` if the uploaded file was written to the storage directory (the request "
+            "asked to keep it, specification 5.6); always ``false`` for a file of the import "
+            "directory, which is never copied."
+        )
+    )
 
 
 class EmptyBody(ApiModel):
@@ -376,6 +383,80 @@ class FileHint(OutModel):
     instrument: str | None
     data: str | None
     error: FileErrorCode | None
+
+
+# --- import directory ---------------------------------------------------------------------------
+
+#: Longest path relative to the import directory that a request may name.
+MAX_RELATIVE_PATH_LENGTH = 4096
+
+RelativePath = Annotated[
+    str,
+    Field(
+        max_length=MAX_RELATIVE_PATH_LENGTH,
+        description=(
+            "Path relative to the import directory, parts separated by ``/``, without a "
+            "leading ``/``, without ``..`` and without an empty part. The empty text is the "
+            "import directory itself (listing only)."
+        ),
+    ),
+]
+
+
+class ImportDirectoryQuery(ApiModel):
+    """Parameters of the listing of the import directory."""
+
+    path: RelativePath = ""
+    offset: int = Field(0, ge=0, le=1_000_000_000, description="Number of entries to skip.")
+    limit: int | None = Field(
+        None,
+        ge=1,
+        description=(
+            "Largest number of entries. Without it, and at most, the limit of the startup "
+            "configuration (``max_listed_items``, default 1000)."
+        ),
+    )
+
+
+class ImportDirectoryEntry(OutModel):
+    """A file or a subdirectory of the import directory. ``size`` is the size in bytes of a file
+    (``null`` for a directory), ``modified_at`` the moment of the last change (UTC)."""
+
+    name: str
+    kind: Literal["file", "directory"]
+    size: int | None
+    modified_at: datetime
+
+
+class ImportDirectoryPage(OutModel):
+    """A page of the listing of a directory inside the import directory: first the
+    subdirectories, then the files, each sorted by name without regard to case. ``total``
+    counts all entries. Intermediate files of the backend are not listed."""
+
+    items: list[ImportDirectoryEntry]
+    total: int
+    offset: int
+    limit: int
+
+
+class DirectoryFileRequest(ApiModel):
+    """The request to import one file from the import directory: the path and what is known
+    about the file, as in the form of an uploaded file (``broker`` and ``timezone`` are those of
+    the whole import process). ``instrument`` and ``data`` are optional: a JSON file names them
+    in its content, a CSV file in its name as far as it does (the patterns of the preview); a
+    given value replaces what is found."""
+
+    path: RelativePath = Field(min_length=1)
+    broker: Name
+    timezone: str | None = Field(None, max_length=MAX_TIMEZONE_LENGTH)
+    instrument: str | None = Field(None, max_length=MAX_NAME_LENGTH)
+    data: str | None = Field(None, max_length=MAX_DATA_LENGTH)
+
+
+class DirectoryPreviewRequest(ApiModel):
+    """The request for what a file of the import directory says about itself."""
+
+    path: RelativePath = Field(min_length=1)
 
 
 # --- deleting ---------------------------------------------------------------------------------

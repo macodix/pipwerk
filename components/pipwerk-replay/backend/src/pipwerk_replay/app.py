@@ -2,15 +2,15 @@
 
 The application provides a technical health check, the public web API under ``/api/v1/`` (test
 accounts and data stock; ``web_api.py``, ``marketdata_api.py``) and the internal endpoints under
-``/api/replay/`` (language, broker for test runs, revision; ``internal_api.py``). The
-language is a component-wide, backend-authoritative setting that is never stored in the browser
-(req-ui-008). No other domain logic lives in this module.
+``/api/replay/`` (language, broker for test runs, settings for files, revision;
+``internal_api.py``). The language is a component-wide, backend-authoritative setting that is
+never stored in the browser (req-ui-008). No other domain logic lives in this module.
 """
 
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Literal
 
 from fastapi import FastAPI, Request
@@ -24,10 +24,12 @@ from pipwerk_replay.accounts import AccountService
 from pipwerk_replay.api_support import is_api_path, request_validation_response
 from pipwerk_replay.config import (
     DEFAULT_MAX_BODY_BYTES,
+    ConfigOrigin,
     MarketDataSettings,
     load_startup_config,
 )
 from pipwerk_replay.docs_page import install_docs
+from pipwerk_replay.file_keeping import remove_leftover_temporary_files
 from pipwerk_replay.host_check import HostCheckMiddleware, build_allowed_hosts
 from pipwerk_replay.import_processes import ImportProcesses
 from pipwerk_replay.marketdata_examples import keep_nulls_in_examples
@@ -39,7 +41,7 @@ from pipwerk_replay.revision import (
     lookup_git_commit_date,
     lookup_git_revision,
 )
-from pipwerk_replay.settings_service import SettingsService
+from pipwerk_replay.settings_service import SettingsService, StoredDirectoryInvalidError
 from pipwerk_replay.storage import (
     create_database_engine,
     create_replay_engine,
@@ -59,6 +61,19 @@ class HealthStatus(BaseModel):
     status: Literal["ok"]
 
 
+def _remove_leftover_files(settings: SettingsService) -> None:
+    """Remove the intermediate files of a crashed run from the storage directory in force
+    (specification 5.6). A stored directory that is invalid is not an error here; the settings
+    report it when they are read."""
+    try:
+        directory = settings.get_directory("storage").path
+    except StoredDirectoryInvalidError:
+        return
+    removed = remove_leftover_temporary_files(directory)
+    if removed:
+        logger.info("%d intermediate file(s) of an earlier run were removed.", removed)
+
+
 def create_app(
     database_url: str | None = None,
     allowed_hosts: Sequence[str] = (),
@@ -68,6 +83,8 @@ def create_app(
     revision_lookup: RevisionLookup = lookup_git_revision,
     commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
     import_clock: Callable[[], float] | None = None,
+    config_origin: ConfigOrigin | None = None,
+    environ: Mapping[str, str] | None = None,
 ) -> FastAPI:
     """Create the pipwerk replay HTTP application.
 
@@ -94,6 +111,13 @@ def create_app(
     size of one file plus the envelope of the form). ``revision_lookup`` and
     ``commit_date_lookup`` determine the revision (tests). ``import_clock`` is the clock of the
     idle time of the import processes (seconds; tests); default is the monotonic clock.
+
+    ``config_origin`` tells where the startup configuration was found (it decides the defaults
+    of the directories of the settings, ``directories.py``); without it, the origin of the
+    startup configuration that was loaded, else ``explicit``. ``environ`` replaces the
+    environment variables from which those defaults are built (tests). At the start the
+    intermediate files that a crash left in the storage directory are removed
+    (``file_keeping.py``).
     """
     if database_url is None:
         startup_config = load_startup_config()
@@ -101,11 +125,15 @@ def create_app(
         resolved_hosts = [*startup_config.allowed_hosts, *allowed_hosts]
         resolved_limit = startup_config.max_body_bytes if max_body_bytes is None else max_body_bytes
         resolved_marketdata = startup_config.marketdata if marketdata is None else marketdata
+        resolved_origin: ConfigOrigin = (
+            startup_config.origin if config_origin is None else config_origin
+        )
     else:
         resolved_database_url = database_url
         resolved_hosts = list(allowed_hosts)
         resolved_limit = DEFAULT_MAX_BODY_BYTES if max_body_bytes is None else max_body_bytes
         resolved_marketdata = MarketDataSettings() if marketdata is None else marketdata
+        resolved_origin = "explicit" if config_origin is None else config_origin
     engine = create_replay_engine(resolved_database_url)
     marketdata_url = resolved_marketdata.database_url
     if marketdata_url is None or marketdata_url == resolved_database_url:
@@ -114,7 +142,8 @@ def create_app(
         marketdata_engine = create_database_engine(marketdata_url)
     migrate_marketdata(marketdata_engine)
     session_factory = create_session_factory(engine)
-    settings_service = SettingsService(session_factory)
+    settings_service = SettingsService(session_factory, resolved_origin, environ=environ)
+    _remove_leftover_files(settings_service)
     account_service = AccountService(session_factory)
     if account_service.ensure_default_account():
         logger.info("The default test account was created.")

@@ -3,7 +3,7 @@
   "info": {
     "title": "pipwerk replay",
     "version": "1.0.0",
-    "description": "Web API of pipwerk replay, version 1: the test accounts and the data stock of historical price data (list of series, details, brokers, import processes with one request per file, deleting with a preview of what is deleted, completeness). Data come into the data stock only through the import. The paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal endpoints below /api/replay/ (settings, revision) are not part of this description."
+    "description": "Web API of pipwerk replay, version 1: the test accounts and the data stock of historical price data (list of series, details, brokers, import processes with one request per file, uploaded or read from the import directory, the listing of the import directory, deleting with a preview of what is deleted, completeness). Data come into the data stock only through the import. The paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal endpoints below /api/replay/ (settings, revision) are not part of this description."
   },
   "paths": {
     "/api/v1/accounts": {
@@ -1023,7 +1023,8 @@
                         "rejected_count": 1
                       },
                       "error": null,
-                      "message": null
+                      "message": null,
+                      "kept": true
                     }
                   },
                   "refused": {
@@ -1033,7 +1034,8 @@
                       "refused": true,
                       "result": null,
                       "error": "json_invalid",
-                      "message": "The file is not valid JSON."
+                      "message": "The file is not valid JSON.",
+                      "kept": false
                     }
                   }
                 }
@@ -1173,6 +1175,14 @@
                   "timezone": {
                     "type": "string",
                     "description": "IANA name of the time zone of the times in all CSV files of the process, for example Europe/Athens; needed if the file is a CSV file."
+                  },
+                  "keep": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "description": "Optional: ``true`` writes the file unchanged into the storage directory, also if it is refused (specification 5.6); ``false`` or none does not."
                   }
                 },
                 "required": [
@@ -1189,7 +1199,8 @@
                     "timezone": "Europe/Athens",
                     "file": "GBPUSD_H1_202301020000_202312292300.csv",
                     "instrument": "GBPUSD",
-                    "data": "h1"
+                    "data": "h1",
+                    "keep": "true"
                   }
                 }
               }
@@ -1569,6 +1580,476 @@
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-directory": {
+      "get": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "List a directory inside the import directory",
+        "description": "Lists the files and subdirectories of the directory ``path`` (relative to the import directory of the settings; the empty path is the import directory itself) with name, size and moment of the last change, page by page: first the subdirectories, then the files, each sorted by name without regard to case. ``total`` counts all entries. ``limit`` is at most ``max_listed_items`` (default 1000). The list never goes above the import directory and names no intermediate file of the backend; a symbolic link is listed only if its target lies inside the import directory. The path of the directory itself is a setting (``/api/replay/settings/files``). HTTP 409 if the import directory is not set, does not exist or cannot be read; HTTP 404 if ``path`` does not exist; HTTP 422 if ``path`` is not a plain relative path (``path_invalid``), leads outside the import directory (``outside_import_directory``) or is a file (``not_a_directory``).",
+        "operationId": "list_market_data_import_directory",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096,
+              "description": "Path relative to the import directory, parts separated by ``/``, without a leading ``/``, without ``..`` and without an empty part. The empty text is the import directory itself (listing only).",
+              "default": "",
+              "title": "Path"
+            },
+            "description": "Path relative to the import directory, parts separated by ``/``, without a leading ``/``, without ``..`` and without an empty part. The empty text is the import directory itself (listing only)."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000000,
+              "minimum": 0,
+              "description": "Number of entries to skip.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Number of entries to skip."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Largest number of entries. Without it, and at most, the limit of the startup configuration (``max_listed_items``, default 1000).",
+              "title": "Limit"
+            },
+            "description": "Largest number of entries. Without it, and at most, the limit of the startup configuration (``max_listed_items``, default 1000)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page of entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportDirectoryPage"
+                },
+                "examples": {
+                  "page": {
+                    "summary": "A directory with a file",
+                    "value": {
+                      "items": [
+                        {
+                          "name": "2023",
+                          "kind": "directory",
+                          "size": null,
+                          "modified_at": "2024-01-03T08:15:00Z"
+                        },
+                        {
+                          "name": "EURUSD_M1_202401021000_202401021004.json",
+                          "kind": "file",
+                          "size": 1284,
+                          "modified_at": "2024-01-02T17:30:12.250000Z"
+                        }
+                      ],
+                      "total": 2,
+                      "offset": 0,
+                      "limit": 1000
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such file or directory in the import directory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request cannot be served in the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-directory/preview": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Read what a file of the import directory says about itself",
+        "description": "The same as ``/market-data/import-preview`` for a file that lies in the import directory: the format, and the broker, instrument and data it names, from its content (JSON) or its name (CSV; the content of a CSV file is not read). The file is only read, up to the limit per file; a file that cannot be read gives the error ``not_readable``, a file over the limit the error ``too_large``. No import process is needed. The errors of the path are those of the listing (``not_a_file`` for a directory).",
+        "operationId": "preview_market_data_import_directory_file",
+        "requestBody": {
+          "description": "The path of the file inside the import directory.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "maxLength": 4096,
+                    "minLength": 1,
+                    "title": "Path",
+                    "description": "Path relative to the import directory, parts separated by ``/``, without a leading ``/``, without ``..`` and without an empty part. The empty text is the import directory itself (listing only)."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "title": "DirectoryPreviewRequest",
+                "description": "The request for what a file of the import directory says about itself."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What the file says about itself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileHint"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "A JSON file",
+                    "value": {
+                      "name": "candles.json",
+                      "format": "json",
+                      "broker": "ExampleBroker-Live",
+                      "instrument": "EURUSD",
+                      "data": "m1",
+                      "error": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such file or directory in the import directory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request cannot be served in the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many imports are running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-processes/{id}/directory-files": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Import one file of the import directory in an import process",
+        "description": "Imports one file that lies in the import directory, in a transaction of its own, like ``/market-data/import-processes/{id}/files`` does for an uploaded file. The body is JSON: ``path`` (relative to the import directory, see the listing), ``broker`` and ``timezone`` (those of the whole process) and optionally ``instrument`` and ``data``. The backend reads the file there directly and never copies, keeps, moves, removes or changes it, with or without 'keep files'. It resolves the path, symbolic links included, and refuses it if the result is outside the import directory (HTTP 422, ``outside_import_directory``) or not a plain file (``not_a_file``); HTTP 404 if there is nothing at the path, HTTP 409 if the import directory is not set or cannot be read. A JSON file names instrument and data in its content; for a CSV file the backend takes the instrument and the data from its name where the request gives none (the patterns of the preview). Checks, limit per file, answer (HTTP 200 with ``refused`` for a file refused as a whole, also for a file that cannot be read: ``not_readable``), idle time and counting are those of an uploaded file.",
+        "operationId": "import_market_data_directory_file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the import process (from its beginning).",
+              "title": "Id"
+            },
+            "description": "Identifier of the import process (from its beginning)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result for the file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileOutcome"
+                },
+                "examples": {
+                  "imported": {
+                    "summary": "A file that was taken over",
+                    "value": {
+                      "name": "EURUSD_M1_202401021000_202401021004.json",
+                      "refused": false,
+                      "result": {
+                        "kind": "candles",
+                        "broker": "ExampleBroker-Live",
+                        "instrument": "EURUSD",
+                        "unit": "m1",
+                        "accepted": 4,
+                        "replaced": 0,
+                        "period_start": "2024-01-02T10:00:00Z",
+                        "period_end": "2024-01-02T10:04:00Z",
+                        "rejected": [
+                          {
+                            "row": 3,
+                            "reason": "high_below_open"
+                          }
+                        ],
+                        "rejected_count": 1
+                      },
+                      "error": null,
+                      "message": null,
+                      "kept": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The import process does not exist. It has ended or its time has run out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request cannot be served in the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many imports are running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "The path of the file and what is known about it.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "description": "The request to import one file from the import directory: the path and what is known\nabout the file, as in the form of an uploaded file (``broker`` and ``timezone`` are those of\nthe whole import process). ``instrument`` and ``data`` are optional: a JSON file names them\nin its content, a CSV file in its name as far as it does (the patterns of the preview); a\ngiven value replaces what is found.",
+                "properties": {
+                  "path": {
+                    "description": "Path relative to the import directory, parts separated by ``/``, without a leading ``/``, without ``..`` and without an empty part. The empty text is the import directory itself (listing only).",
+                    "maxLength": 4096,
+                    "minLength": 1,
+                    "title": "Path",
+                    "type": "string"
+                  },
+                  "broker": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Broker",
+                    "type": "string"
+                  },
+                  "timezone": {
+                    "anyOf": [
+                      {
+                        "maxLength": 64,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Timezone"
+                  },
+                  "instrument": {
+                    "anyOf": [
+                      {
+                        "maxLength": 128,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Instrument"
+                  },
+                  "data": {
+                    "anyOf": [
+                      {
+                        "maxLength": 16,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Data"
+                  }
+                },
+                "required": [
+                  "path",
+                  "broker"
+                ],
+                "title": "DirectoryFileRequest",
+                "type": "object"
               }
             }
           }
@@ -3090,6 +3571,7 @@
           "header_invalid",
           "series_invalid",
           "timezone_unknown",
+          "not_readable",
           "period_invalid",
           "no_rows",
           "store_failed"
@@ -3208,6 +3690,11 @@
               }
             ],
             "title": "Message"
+          },
+          "kept": {
+            "type": "boolean",
+            "title": "Kept",
+            "description": "``true`` if the uploaded file was written to the storage directory (the request asked to keep it, specification 5.6); always ``false`` for a file of the import directory, which is never copied."
           }
         },
         "additionalProperties": false,
@@ -3217,7 +3704,8 @@
           "refused",
           "result",
           "error",
-          "message"
+          "message",
+          "kept"
         ],
         "title": "FileOutcome",
         "description": "The result for one file of an import, in the order of the files of the request.\n\nEither ``result`` is set (the file was taken over; single rows may be rejected, see\n``result``) or ``error`` and ``message`` (the whole file is refused and nothing of it was\nchanged). ``refused`` tells which. ``name`` is the name of the file without a directory.\n``message`` is a fixed text that names fields, never content of the file."
@@ -3247,6 +3735,81 @@
         ],
         "title": "FileTooLarge",
         "description": "Error body (HTTP 413) of the request of a file that is larger than the limit per file.\n``detail`` names the limit in the unit of the user, ``max_bytes`` is the limit in bytes\n(``max_upload_bytes`` of the startup configuration). The same reason as the code\n``too_large`` of a refused file."
+      },
+      "ImportDirectoryEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "directory"
+            ],
+            "title": "Kind"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "modified_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Modified At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "size",
+          "modified_at"
+        ],
+        "title": "ImportDirectoryEntry",
+        "description": "A file or a subdirectory of the import directory. ``size`` is the size in bytes of a file\n(``null`` for a directory), ``modified_at`` the moment of the last change (UTC)."
+      },
+      "ImportDirectoryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImportDirectoryEntry"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit"
+        ],
+        "title": "ImportDirectoryPage",
+        "description": "A page of the listing of a directory inside the import directory: first the\nsubdirectories, then the files, each sorted by name without regard to case. ``total``\ncounts all entries. Intermediate files of the backend are not listed."
       },
       "ImportProcess": {
         "properties": {

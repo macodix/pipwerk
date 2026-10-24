@@ -400,7 +400,7 @@ def test_the_two_schemas_are_migrated_separately_each_with_its_own_version_table
     with sqlite3.connect(tmp_path / "replay.db") as connection:
         replay = connection.execute("SELECT version_num FROM alembic_version").fetchall()
         data = connection.execute("SELECT version_num FROM marketdata_alembic_version").fetchall()
-    assert replay == [("0003",)]
+    assert replay == [("0004",)]
     assert len(data) == 1
     assert data != replay
 
@@ -436,7 +436,7 @@ def test_an_existing_database_of_the_first_order_gets_the_new_setting(tmp_path: 
     }
     with sqlite3.connect(tmp_path / "replay.db") as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchall() == [
-            ("0003",)
+            ("0004",)
         ]
 
 

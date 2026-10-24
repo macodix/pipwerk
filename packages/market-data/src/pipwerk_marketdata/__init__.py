@@ -2,7 +2,8 @@
 
 Public interface: ``MarketDataStore`` (import of files and processes, reading, list of series,
 completeness, deleting), ``recognize_filename`` and ``inspect_json`` (hints for the import
-dialog), ``migrate_database`` (schema) and the value objects of ``pipwerk_marketdata.records``.
+dialog), ``migrate_database`` (schema), ``enable_space_return`` and ``return_space`` (free space
+of a SQLite file to the file system) and the value objects of ``pipwerk_marketdata.records``.
 """
 
 from pipwerk_marketdata.errors import (
@@ -50,6 +51,7 @@ from pipwerk_marketdata.records import (
     TradingSession,
     Weekday,
 )
+from pipwerk_marketdata.space import enable_space_return, return_space
 from pipwerk_marketdata.store import MarketDataStore
 from pipwerk_marketdata.timeunits import CONTRACT, TICKS, TIME_UNITS, TimeUnit
 
@@ -98,8 +100,10 @@ __all__ = [
     "TimeUnit",
     "TradingSession",
     "Weekday",
+    "enable_space_return",
     "format_size",
     "inspect_json",
     "migrate_database",
     "recognize_filename",
+    "return_space",
 ]

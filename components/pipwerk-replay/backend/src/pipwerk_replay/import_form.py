@@ -9,6 +9,7 @@ fields:
 | --- | --- | --- |
 | ``broker`` | one (import) | the broker of all files of the import process |
 | ``timezone`` | at most one (import) | IANA name of the time zone of the times in all CSV files |
+| ``keep`` | none or one (import) | ``true``: keep the file in the storage directory (5.6) |
 | ``file`` | exactly one | the file; the file name of the part names the file |
 | ``instrument`` | none or one | the instrument of the file |
 | ``data`` | none or one | the data of the file |
@@ -17,8 +18,11 @@ An empty value says "not given". A field that is not in the table is refused. A 
 file only (specification 11): an import process sends its files one after the other.
 
 A file name is only read: it is reported back (without a directory and without control
-characters, at most 255 characters) and used to recognize instrument and data. It is never used
-as a path; the content of the file is held in memory and handed to the data stock as bytes.
+characters, at most 255 characters, never ``.`` or ``..``) and used to recognize instrument and
+data. It is never used as a path, except as the name of a kept file directly in the storage
+directory (``file_keeping.py``); the content of the file is held in memory and handed to the data
+stock as bytes. The parts of the form that the parser spools to the disk are files without a name
+(``tempfile.TemporaryFile``), closed when the form is closed, also after an error.
 
 The size of the request follows the file: the largest file (``max_upload_bytes``) plus the
 envelope of the form (``request_limit``). A file that is larger is answered with HTTP 413 and
@@ -46,6 +50,9 @@ FIELD_TIMEZONE = "timezone"
 FIELD_FILE = "file"
 FIELD_INSTRUMENT = "instrument"
 FIELD_DATA = "data"
+FIELD_KEEP = "keep"
+#: The two values of the field ``keep``.
+KEEP_VALUES = ("true", "false")
 
 UNSUPPORTED_FORM_TEXT = (
     "The request body must be a form with a file (Content-Type: multipart/form-data)."
@@ -99,13 +106,19 @@ class ImportForm:
     broker: str | None
     timezone: str | None
     file: FormFile
+    #: Whether the uploaded file is kept in the storage directory (specification 5.6).
+    keep: bool = False
 
 
 def file_name(raw: str | None, position: int = 1) -> str:
-    """The name that is reported back: the last part of the name (after ``/`` or ``\\``), without
-    control characters and at most 255 characters. ``file-<n>`` if nothing is left."""
+    """The cleaned name of a file (specification 11): the last part of the name (after ``/`` or
+    ``\\``), without control characters and at most 255 characters. ``file-<n>`` if nothing is
+    left or if what is left is ``.`` or ``..`` (a file is never kept under such a name). It is
+    the name that is reported back and the name of a kept file."""
     last = re.split(r"[/\\]", raw or "")[-1]
     cleaned = _CONTROL.sub("", last).strip()[:MAX_FILE_NAME_LENGTH]
+    if cleaned in (".", ".."):
+        cleaned = ""
     return cleaned or f"file-{position}"
 
 
@@ -195,9 +208,12 @@ async def read_form(request: Request, *, fields: frozenset[str]) -> ImportForm |
             errors.append(([key[:100]], "extra_forbidden"))
         else:
             values.setdefault(key, []).append(value)
-    for key in (FIELD_BROKER, FIELD_TIMEZONE, FIELD_INSTRUMENT, FIELD_DATA):
+    for key in (FIELD_BROKER, FIELD_TIMEZONE, FIELD_INSTRUMENT, FIELD_DATA, FIELD_KEEP):
         if len(values.get(key, [])) > 1:
             errors.append(([key], "too_long"))
+    keep_values = values.get(FIELD_KEEP, [])
+    if keep_values and keep_values[0] not in KEEP_VALUES:
+        errors.append(([FIELD_KEEP], "value_error"))
     if not uploaded:
         errors.append(([FIELD_FILE], "missing"))
     brokers = values.get(FIELD_BROKER, [])
@@ -217,4 +233,5 @@ async def read_form(request: Request, *, fields: frozenset[str]) -> ImportForm |
         broker=broker,
         timezone=timezone,
         file=FormFile(file_name(raw_name), content, instrument, data),
+        keep=bool(keep_values) and keep_values[0] == "true",
     )
