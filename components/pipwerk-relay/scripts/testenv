@@ -45,6 +45,7 @@ PROG=testenv
 STARTUP_TIMEOUT=120
 STOP_TIMEOUT=10
 FAULT_WAIT=30
+DELIVERY_WAIT=600
 
 die() {
     printf '%s: %s\n' "$PROG" "$*" >&2
@@ -787,7 +788,7 @@ cmd_fault() {
             "$PROG" "$(relay_of "$side")"
         delivery_waited=0
         while [ "$(count_lines "$delivery_log" "accepted.*kind=fetch.file")" -le "$delivery_before" ]; do
-            [ "$delivery_waited" -lt 60000 ] || die "no delivery of the retrieval in 10 minutes"
+            [ "$delivery_waited" -lt $((DELIVERY_WAIT * 100)) ] || die "no delivery of the retrieval in 10 minutes"
             sleep 0.01
             delivery_waited=$((delivery_waited + 1))
         done

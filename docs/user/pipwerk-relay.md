@@ -406,6 +406,58 @@ Mit `--directory <Ordner>` vor dem Befehl legen Sie den Ordner der Umgebung selb
 
 **Was geprüft ist.** Die Prüfkomponente, die Testumgebung und die Störungen 1 bis 7 sind auf einem Rechner mit Linux geprüft, mit Ordnern auf demselben Rechner. Ob sich ein echtes Netzlaufwerk (SMB, NFS) ebenso verhält, prüft der Auftraggeber in der Abnahme, ebenso den Betrieb unter Windows und mit zwei Rechnern.
 
+## Einrichtung auf den Rechnern des Auftraggebers
+
+Diese Anleitung richtet den Abruf auf zwei Rechnern ein, die ein Netzlaufwerk teilen. Die Namen sind Beispiele; Sie wählen eigene (Abschnitt „Begriffe“).
+
+| | Rechner 1 (MetaTrader 5, Windows) | Rechner 2 (will die Daten haben) |
+| --- | --- | --- |
+| Relay | `relay-mt5` | `relay-pc` |
+| Programm | `serve`, Adresse `fetch.netz1.relay-mt5` | `request`, Adresse `ask.netz1.relay-pc` |
+| Netzlaufwerk | `Z:` (Ordner `Z:\pipwerk-gemeinsam`) | unter Linux zum Beispiel `/mnt/pipwerk`, unter Windows ein Laufwerksbuchstabe |
+
+Beide Rechner haben dasselbe Netz (`netz1`). Alle Pfade unten schreiben Sie so, wie der jeweilige Rechner sie sieht.
+
+**1. Netzlaufwerk.** Binden Sie dasselbe Netzlaufwerk auf beiden Rechnern ein, mit denselben Rechten für Ihren Benutzer. Legen Sie darauf zwei Ordner an: `pipwerk-gemeinsam/in-relay-mt5` (Eingang von `relay-mt5`) und `pipwerk-gemeinsam/in-relay-pc` (Eingang von `relay-pc`). Die Datenbanken, die Schlüssel und das Protokoll liegen **nicht** auf dem Netzlaufwerk, sondern auf dem eigenen Laufwerk jedes Rechners (Abschnitt 4).
+
+**2. Programme einrichten.** Auf beiden Rechnern: `uv` und die Ordner `components\pipwerk-relay`, `components\pipwerk-fetch-mt5` und `packages\relay-core` (Abschnitt 1 und Abschnitt „Was Sie vorher brauchen“ beim Abruf). Auf Rechner 1 zusätzlich MetaTrader 5. Installieren Sie das Relay (`install.cmd` beziehungsweise `install`) und das Programm `pipwerk-fetch-mt5`.
+
+**3. Startkonfiguration und Datenbank des Relays.** Auf jedem Rechner legen Sie `pipwerk-relay.ini` an (Abschnitt 1) und rufen `pipwerk-relay migrate` auf.
+
+**4. Schlüssel.** Erzeugen Sie die Schlüssel dort, wo das Relay läuft, und kopieren Sie sie auf einem sicheren Weg:
+
+- Auf Rechner 1: `pipwerk-relay key new fetch.key` (Verbindung `serve` und `relay-mt5`; die Kopie gehört in `secrets_directory` von `serve`, auf demselben Rechner) und `pipwerk-relay key new relay-pc.key` (Verbindung der beiden Relays; die Kopie kommt in den Ordner für Schlüssel von Rechner 2).
+- Auf Rechner 2: `pipwerk-relay key new ask.key` (Verbindung `request` und `relay-pc`; die Kopie gehört in `secrets_directory` von `request`). Die Kopie von `relay-pc.key` aus Rechner 1 legen Sie hier als `relay-mt5.key` in den Ordner für Schlüssel des Relays ab.
+
+Die Schlüssel liegen nie auf dem Netzlaufwerk, und nur Ihr Benutzer darf sie lesen (Abschnitt 2).
+
+**5. Betriebskonfiguration.** Rechner 1 (`betrieb.json`, dann `pipwerk-relay config load betrieb.json`):
+
+```
+{
+  "network": "netz1", "name": "relay-mt5",
+  "inputs": [
+    {"name": "components", "way": "files", "settings": {"directory": "C:/pipwerk/relay/in"}},
+    {"name": "shared", "way": "files", "settings": {"directory": "Z:/pipwerk-gemeinsam/in-relay-mt5"}}
+  ],
+  "components": [
+    {"name": "fetch", "way": "files", "settings": {"directory": "C:/pipwerk/relay/an-fetch"}, "key_file": "fetch.key"}
+  ],
+  "address_book": [
+    {"network": "netz1", "relay": "relay-pc", "way": "files",
+     "settings": {"directory": "Z:/pipwerk-gemeinsam/in-relay-pc"}, "key_file": "relay-pc.key", "standard": false}
+  ]
+}
+```
+
+Rechner 2 hat dieselbe Form mit vertauschten Rollen: `"name": "relay-pc"`; Eingang `shared` im Ordner `in-relay-pc` (auf diesem Rechner sichtbar, zum Beispiel `/mnt/pipwerk/in-relay-pc`); die Komponente `ask` mit `key_file` `ask.key`; im Adressbuch `relay-mt5` mit dem Ordner `in-relay-mt5` und `key_file` `relay-mt5.key`. Mehr Einträge (Fristen, Grenzen) brauchen Sie nicht; die Voreinstellungen gelten.
+
+**6. Startkonfigurationen der Programme.** `serve` auf Rechner 1 (Beispiel im Abschnitt „`serve` einrichten und starten“) mit `address = fetch.netz1.relay-mt5`, `target.directory = C:\pipwerk\relay\in`, `inbox.directory = C:\pipwerk\relay\an-fetch` und `server_time_zone` im Abschnitt `[broker]`. `request` auf Rechner 2 mit `address = ask.netz1.relay-pc`, `target.directory` gleich dem Ordner des Eingangs `components` in der Betriebskonfiguration von `relay-pc` und `inbox.directory` gleich dem Ordner, den dort die Komponente `ask` nennt.
+
+**7. Starten.** Auf beiden Rechnern `pipwerk-relay run` (ein Fenster je Relay), dann auf Rechner 1 MetaTrader 5 und `serve`. Auf Rechner 2 rufen Sie `request` auf (Abschnitt „`request` einrichten und aufrufen“) mit `--address fetch.netz1.relay-mt5` und dem Namen Ihres Handelsservers bei `--broker`.
+
+**8. Prüfen.** Bevor Sie Kursdaten holen, prüfen Sie den Weg ohne MetaTrader 5 mit der Prüfkomponente (Abschnitt 6): `probe listen` auf Rechner 1 und `probe send … --receipt` von Rechner 2. Kommt `Receipt: …`, funktionieren Netzlaufwerk, Schlüssel und Adressbuch. Trennen Sie das Netzlaufwerk probeweise (Störung 2) und stecken Sie es wieder an: Die Nachricht muss danach ankommen.
+
 ## Abruf mit serve und request
 
 Mit pipwerk relay holen Sie Kursdaten von dem Rechner, auf dem MetaTrader 5 läuft, auf einen anderen Rechner. Dafür hat das Programm `pipwerk-fetch-mt5` zwei Befehle:
@@ -438,7 +490,7 @@ Beide Befehle reden nur mit dem Relay ihres eigenen Rechners. Sie öffnen keinen
    database = C:\pipwerk\zustand\fetch.db
 
    [relay.way]
-   target.directory = C:\pipwerk\relay\von-fetch
+   target.directory = C:\pipwerk\relay\in
    inbox.directory = C:\pipwerk\relay\an-fetch
    ```
 
@@ -469,7 +521,7 @@ Beide Befehle reden nur mit dem Relay ihres eigenen Rechners. Sie öffnen keinen
    Lassen Sie das Fenster offen. Das Programm arbeitet, solange es läuft. Es beantwortet Anfragen nacheinander. Zu jeder Anfrage erscheint eine Zeile, zum Beispiel:
 
    ```
-   Anfrage von ask.netz2.relay-pc beantwortet: 4 Dateien gesendet, 0 Teile nicht geholt.
+   Anfrage von ask.netz1.relay-pc beantwortet: 4 Dateien gesendet, 0 Teile nicht geholt.
    ```
 
    Beenden Sie es mit Strg+C. Dann steht `pipwerk-fetch-mt5 serve: beendet.` im Fenster.
@@ -479,7 +531,7 @@ Beide Befehle reden nur mit dem Relay ihres eigenen Rechners. Sie öffnen keinen
 ### `request` einrichten und aufrufen (Rechner, der die Daten haben will)
 
 1. Richten Sie das Programm auf diesem Rechner ein wie in der Anleitung zu pipwerk replay, Abschnitt 9, Schritte 1 bis 3, mit dem Ordner `packages\relay-core` daneben. MetaTrader 5 brauchen Sie hier **nicht**. Unter Linux genügt `uv --directory components/pipwerk-fetch-mt5 sync --frozen`; `request` läuft unter Windows und Linux.
-2. Legen Sie die Startkonfiguration `pipwerk-fetch-mt5.ini` an, mit `[relay]` und `[relay.way]` für dieses Relay wie oben. Die Adresse ist hier die **eigene** Adresse dieses Rechners, zum Beispiel `ask.netz2.relay-pc`; die Antworten kommen an diese Adresse zurück. `server_time_zone` brauchen Sie hier nicht.
+2. Legen Sie die Startkonfiguration `pipwerk-fetch-mt5.ini` an, mit `[relay]` und `[relay.way]` für dieses Relay wie oben. Die Adresse ist hier die **eigene** Adresse dieses Rechners, zum Beispiel `ask.netz1.relay-pc`; die Antworten kommen an diese Adresse zurück. `server_time_zone` brauchen Sie hier nicht.
 3. Rufen Sie `request` auf. Beispiel: Kerzen H1 und D1 und die Ticks von EURUSD für den Januar 2026, in den Ordner `daten`:
 
    ```
