@@ -85,4 +85,6 @@ def return_space(engine: Engine) -> None:
             while (_pragma(connection, "PRAGMA freelist_count") or 0) > 0:
                 _pragma(connection, f"PRAGMA incremental_vacuum({PAGES_PER_STEP})")
     except SQLAlchemyError as error:
-        logger.warning("The free space of the database was not returned (%s).", type(error).__name__)
+        logger.warning(
+            "The free space of the database was not returned (%s).", type(error).__name__
+        )

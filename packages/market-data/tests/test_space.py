@@ -1,5 +1,7 @@
-"""Giving the free space of the database back (specification 5.6): after deleting and replacing the
-SQLite file becomes smaller; a file that is not yet in the mode ``INCREMENTAL`` is converted once."""
+"""Giving the free space of the database back (specification 5.6).
+
+After deleting and replacing the SQLite file becomes smaller; a file that is not yet in the mode
+``INCREMENTAL`` is converted once."""
 
 from datetime import timedelta
 from pathlib import Path

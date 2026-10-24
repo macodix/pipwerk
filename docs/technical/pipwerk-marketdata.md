@@ -26,6 +26,7 @@ Abhängigkeiten: SQLAlchemy (Speicherung), Alembic (Migrationen), Pydantic (Prü
 | `documents` | die JSON-Formate als Pydantic-Modelle und ihre JSON-Schemas |
 | `completeness` | Zeiten ohne Handel, Lücken und Fehlendes nach 5.2 als reine Funktionen |
 | `deletion` | Löschen nach 5.5 in der Transaktion, die `MarketDataStore` öffnet (Abschnitt 8.1) |
+| `space` | Platz der Datenbank nach dem Löschen und Ersetzen an das Dateisystem zurückgeben (Abschnitt 8.2) |
 | `tables`, `migrate`, `migrations/` | Tabellen und Alembic-Migrationen |
 | `records`, `limits`, `errors`, `timeunits` | Wertobjekte, Begrenzungen, Fehler, Zeiteinheiten |
 
@@ -59,6 +60,7 @@ Freie Funktionen, die keine Datenbank brauchen:
 | `recognize_filename(name)` | `NameHints` mit Instrument und Daten (Abschnitt 5.3) |
 | `inspect_json(daten, grenzen)` | `FileHints` mit Broker, Instrument und Daten (Abschnitt 5.4) |
 | `migrate_database(engine)` | Schema auf den neuesten Stand (Abschnitt 9) |
+| `enable_space_return(engine)`, `return_space(engine)` | Platz einer SQLite-Datei zurückgeben (Abschnitt 8.2) |
 
 Alle Zeitpunkte, die die Bibliothek annimmt und liefert, sind Zeitpunkte mit Zeitzone (`datetime` mit `tzinfo`) und werden als UTC behandelt. Ein Zeitpunkt ohne Zeitzone ist ein `ValueError`.
 
@@ -143,6 +145,7 @@ Die Bibliothek meldet `ImportFileError` mit `code` (`FileErrorCode`) und fester 
 | `header_invalid` | CSV: Kopfzeile ohne Trennzeichen, mit doppelter oder fehlender Spalte |
 | `series_invalid` | Broker, Instrument oder Zeiteinheit unzulässig (leer, länger als 128 Zeichen, Steuerzeichen, Leerzeichen am Anfang oder Ende, unbekannte Zeiteinheit) |
 | `timezone_unknown` | CSV: Zeitzone ist kein IANA-Name |
+| `not_readable` | die Datei ließ sich dort, wo sie liegt, nicht lesen (eine Datei des Importverzeichnisses); die Bibliothek erzeugt den Code nicht selbst, ihn setzt pipwerk replay (`pipwerk-replay.md`, Abschnitt 2.7a) |
 | `period_invalid` | JSON: Zeitraum endet nicht nach seinem Beginn, liegt nicht zwischen 1970-01-01T00:00:00Z und 2100-01-01T00:00:00Z (Abschnitt 4.4) oder enthält nicht alle Einträge |
 | `no_rows` | die Datei enthält keine Zeile und keinen Zeitraum |
 | `store_failed` | nur im Vorgang (Abschnitt 4.5): die Datenbank hat die Datei nicht angenommen; die Transaktion dieser Datei wurde zurückgerollt |

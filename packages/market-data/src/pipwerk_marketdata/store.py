@@ -31,7 +31,6 @@ from pipwerk_marketdata.parsed import (
     content_data,
     with_names,
 )
-from pipwerk_marketdata.space import return_space
 from pipwerk_marketdata.records import (
     BatchErrorCode,
     Candle,
@@ -60,6 +59,7 @@ from pipwerk_marketdata.records import (
     TradingSession,
     Weekday,
 )
+from pipwerk_marketdata.space import return_space
 from pipwerk_marketdata.timeunits import (
     CONTRACT,
     TICKS,
