@@ -55,6 +55,8 @@ Benötigte Angabe: In welcher Umgebung arbeitet der Chat des Projektleiters? Kan
 
 Vorschlag: Der Chat arbeitet in Claude Code und nutzt dessen geplante Aufgaben (zum Beispiel `/loop 20m`). Läuft die Aufgabe nach einer Frist aus, richtet der Chat sie bei jeder Ansprache durch den Auftraggeber neu ein.
 
+**Antwort des Projektleiters (2026-10-24):** Der Chat arbeitet in claude.ai in einem Projekt. Dort gibt es keine wiederkehrende Aufgabe, sondern eine einmalige Wiedervorlage zu einem festen Zeitpunkt, die den Chat selbst weckt. Der Chat setzt bei jeder Wiedervorlage ohne Ergebnis die nächste, solange er auf eine Antwortmeldung wartet. Es gibt daher keine Frist, nach der sie ausläuft. Wiedervorlagen lassen sich auflisten und löschen, auch die eines anderen Chats desselben Kontos. Setzen, Wecken und Löschen sind am 24. Oktober 2026 in diesem Vorhaben erprobt, die Übernahme durch einen neuen Chat noch nicht.
+
 ## Hinweis an den Projektleiter
 
 Beim Bau des Entwurfs hat `npx playwright install` im gemeinsamen Zwischenspeicher der Browser auf dem Entwicklungsrechner die älteren Browserversionen von Playwright entfernt (Playwright 1.64.1 statt bisher älterer Versionen). Laut Entwickler hat das Playwright selbst getan, beim Aufräumen nach der Installation. Andere Vorhaben, deren Browsertests eine ältere Playwright-Version verwenden, müssen ihre Browser beim nächsten Lauf neu installieren. Für dieses Vorhaben ist nichts zu tun. Nach Festlegung 7 greift dieses Vorhaben dort nicht ein.
