@@ -15,7 +15,12 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
    - Oberflächenentwurf für den Auftraggeber zur Verständigung über die Bedienung, nur für eine Ansicht, für die noch keine umgesetzte Fassung besteht. Maßstab ist die einzelne Ansicht, auch eine neue Ansicht in einer bestehenden Komponente.
 
    Sobald sich eine Ansicht in der Testumgebung öffnen und bedienen lässt, sind Wünsche dazu Änderungen am bestehenden System. Ein Oberflächenentwurf ist dann eine Ausnahme: Projektleiter, Softwarearchitekt oder Entwicklungsleiter schlagen ihn vor, der Auftraggeber bestätigt oder lehnt ab.
-6. **Übersicht.** Eine Seite zeigt den aktuellen Stand: je Vorhaben die Arbeitspakete mit Namen, Phase und wer gerade daran arbeitet (Team, Softwarearchitekt oder Auftraggeber). Was auf den Auftraggeber wartet, ist hervorgehoben. Die Seite ist eine HTML-Datei im Repository, wird aus dem Stand im Repository erzeugt, nicht von Hand gepflegt, und bei jeder Änderung des Stands neu erzeugt. Der Auftraggeber öffnet sie über einen festen Link wie die Präsentationen. Kein eigener Dienst, kein Server. Sie enthält keine Namen von Rechnern oder Benutzern, keine Pfade und keine Ports.
+6. **Übersicht.** Eine Seite zeigt den aktuellen Stand in drei Ebenen, jede Ebene als Kästchen wie in der Folie „Sechs Phasen“ der [Präsentation Entwicklungsprozess](../../docs/technical/praesentation-entwicklungsprozess.html) und den Paketfolien der Planpräsentationen:
+   - Erste Ebene: je Vorhaben ein Kästchen. Nicht begonnen grau, begonnen gelb, erledigt grün.
+   - Klick auf ein Vorhaben zeigt seine sechs Phasen als Kästchen, gleich eingefärbt.
+   - Klick auf eine Phase zeigt die Arbeitspakete dieser Phase als Kästchen, gleich eingefärbt. Bei Bedarf weiter aufgeteilt.
+
+   In zwei bis drei Klicks ist erkennbar, wo ein Vorhaben steht. Was auf den Auftraggeber wartet, ist hervorgehoben. Die Seite ist eine HTML-Datei im Repository, wird aus dem Stand im Repository erzeugt, nicht von Hand gepflegt, und bei jeder Änderung des Stands neu erzeugt. Der Auftraggeber öffnet sie über einen festen Link wie die Präsentationen. Kein eigener Dienst, kein Server. Sie enthält keine Namen von Rechnern oder Benutzern, keine Pfade und keine Ports.
 7. **Trennung der Vorhaben.** Ein Chat des Projektleiters bearbeitet nur sein eigenes Vorhaben. Er startet, wiederholt oder repariert nichts für ein anderes Vorhaben, auch nicht bei scheinbar stehengebliebener Arbeit. Kollisionen mit anderen Vorhaben behält er im Blick. Der Auftraggeber erfährt davon nur, wenn eine Kollision alle drei Bedingungen zugleich erfüllt: Sie blockiert die Arbeit vollständig, sie betrifft das Verhalten von pipwerk für den Anwender, und Entwicklungsleiter oder Softwarearchitekt können sie nicht selbst lösen.
 
 ## Offene Punkte des Auftraggebers
@@ -27,3 +32,5 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
 2026-10-24: Phase 1. Vorhaben angelegt, Festlegungen 1 bis 7 vom Auftraggeber im Chat am 24. Oktober 2026 entschieden. Phase 2 mit `specify` angestoßen.
 
 2026-10-24: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (B1). Entscheidung des Auftraggebers im Chat: B1 Maßstab für den Oberflächenentwurf ist die einzelne Ansicht, umgesetzt ist sie, sobald sie sich in der Testumgebung öffnen und bedienen lässt (Festlegung 5). H16 und H17 aus den Aussagen des Auftraggebers im Chat beantwortet und in Festlegung 1 und 7 eingearbeitet. Phase 2 erneut mit `specify` angestoßen.
+
+2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-01](questions/verfahren-01.md), Frage 1) vom Auftraggeber abgelehnt, weil er keine grafische Übersicht ist. Festlegung 6 um seine Vorgabe ergänzt: drei Ebenen aus Kästchen mit Farben für den Stand.

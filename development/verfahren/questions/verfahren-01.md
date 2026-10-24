@@ -39,6 +39,8 @@ Im Entwurf sind folgende Punkte so gelöst. Festlegung 6 legt sie nicht fest. Mi
 
 Vorschlag: Entwurf bestätigen.
 
+**Antwort des Auftraggebers (2026-10-24):** Abgelehnt. Der Entwurf ist eine Liste mit Tabellen, keine grafische Übersicht. Vorgabe jetzt in Festlegung 6 von `scope.md`: drei Ebenen aus Kästchen (Vorhaben, Phasen, Arbeitspakete), grau nicht begonnen, gelb begonnen, grün erledigt, Klick führt zur nächsten Ebene. Neuer Oberflächenentwurf danach.
+
 ### 2. Wert „Projektleiter“ bei „bei wem“
 
 Sachverhalt: Festlegung 6 nennt „Team, Softwarearchitekt oder Auftraggeber“. Einige kurze Schritte erledigt der Projektleiter selbst, ohne den Auftraggeber: einen Prüfbericht einarbeiten oder eine Aufgabe nach dem dritten Abbruch wieder anstoßen (Spezifikation Abschnitt 7.2). Die Arbeit liegt dann bei keinem der drei.
