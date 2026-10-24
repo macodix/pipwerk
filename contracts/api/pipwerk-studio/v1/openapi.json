@@ -3,7 +3,7 @@
   "info": {
     "title": "pipwerk Studio",
     "version": "1.0.0",
-    "description": "Public web API of pipwerk Studio, version 1: type descriptions (with groups, methods and the indication for \"Aktualisieren\"), strategies and templates (indicators, trends, rules, rulesets) in the document format 2.0 (documents of the format 1.0 are accepted and converted), their usages, the consistency check, the expressions in stored form, display form, blocks and as a sentence, and the keys of new objects. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk Studio under /api/ are not part of this description.\n\nEvery error answer has the fixed English text `detail`, the `code` of the cause and the `params` for the text in the language of the user. The codes:\n\n- `object.not_found` (HTTP 404): The object does not exist.\n- `object.unreadable` (HTTP 409): The object file cannot be read or does not fit the document schema. It is left unchanged.\n- `object.kind_conflict` (HTTP 409): An entry of another kind has this identifier in the object directory (any entry, for example a file, a symbolic link or a directory). Nothing was written.\n- `object.name_taken` (HTTP 409): The file name of the object in the object directory is taken by an entry that is no readable regular file (for example a symbolic link or a directory). Nothing was written.\n- `object.builtin` (HTTP 403): A delivered template cannot be changed or deleted.\n- `object.write_failed` (HTTP 500): The object file could not be written or deleted.\n- `document.invalid` (HTTP 422): The document does not fit the document schema.\n- `document.format_mismatch` (HTTP 422): The format of the document does not fit the kind of object.\n- `document.id_mismatch` (HTTP 422): The identifier of the document differs from the identifier in the path.\n- `document.too_large` (HTTP 413): The document is too large to be stored. Params: limit_bytes.\n- `request.invalid` (HTTP 422): The request is invalid.\n- `request.not_json` (HTTP 415): The request body must be JSON (Content-Type: application/json).\n- `request.too_large` (HTTP 413): The request body is larger than the limit of 2 MiB. Params: limit_bytes.\n- `request.not_found` (HTTP 404): There is no such path.\n- `request.method_not_allowed` (HTTP 405): The method is not allowed for this path.\n- `request.failed` (HTTP 400): The request cannot be processed.\n- `host.not_allowed` (HTTP 400): The Host header of the request is not allowed.\n- `expressions.pointer_invalid` (HTTP 422): The pointer of an item does not name a place of an expression in the document. Params: index.\n- `expressions.blocks_invalid` (HTTP 422): The blocks of an item are no expression. Params: index, reason, details.\n- `keys.scope_invalid` (HTTP 422): The pointer names no list of the document that takes a new object.\n- `object_directory.not_set` (HTTP 503): The object directory of pipwerk Studio is not set.\n- `object_directory.stored_invalid` (HTTP 503): The stored pipwerk Studio object directory is invalid.\n- `object_directory.unreadable` (HTTP 500): The object directory of pipwerk Studio cannot be read.\n- `object_directory.not_absolute` (HTTP 422): The object directory must be an absolute path.\n- `object_directory.invalid_body` (HTTP 422): The request body must be a JSON object with the fields path (text) and move (true or false).\n- `object_directory.conflict` (HTTP 409): The new object directory already contains files with the same names. Nothing was moved.\n- `object_directory.stored_invalid_no_move` (HTTP 409): The stored pipwerk Studio object directory is invalid, so no files can be moved. Save the object directory without moving files to repair it.\n- `object_directory.target_not_creatable` (HTTP 500): The new object directory could not be created. Nothing was moved and the object directory is unchanged.\n- `object_directory.move_failed` (HTTP 500): Moving the object files failed. The files were brought back and the object directory is unchanged.\n- `object_directory.move_not_restored` (HTTP 500): Moving the object files failed and some files could not be brought back. The object directory is unchanged. Params: source_directory, target_directory, files.\n- `language.stored_invalid` (HTTP 503): The stored pipwerk Studio language is invalid."
+    "description": "Public web API of pipwerk Studio, version 1: type descriptions (with groups, methods and the indication for \"Aktualisieren\"), strategies and templates (indicators, trends, rules, rulesets) in the document format 2.0 (documents of the format 1.0 are accepted and converted), their usages, the consistency check, the expressions in stored form, display form, blocks and as a sentence, the keys of new objects, the use of the instances of a strategy (element of the first use, where an instance is usable, what an element uses), the instance for a template or an object type with its names, and the removal of an object with the list of its uses. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk Studio under /api/ are not part of this description.\n\nEvery error answer has the fixed English text `detail`, the `code` of the cause and the `params` for the text in the language of the user. The codes:\n\n- `object.not_found` (HTTP 404): The object does not exist.\n- `object.unreadable` (HTTP 409): The object file cannot be read or does not fit the document schema. It is left unchanged.\n- `object.kind_conflict` (HTTP 409): An entry of another kind has this identifier in the object directory (any entry, for example a file, a symbolic link or a directory). Nothing was written.\n- `object.name_taken` (HTTP 409): The file name of the object in the object directory is taken by an entry that is no readable regular file (for example a symbolic link or a directory). Nothing was written.\n- `object.builtin` (HTTP 403): A delivered template cannot be changed or deleted.\n- `object.write_failed` (HTTP 500): The object file could not be written or deleted.\n- `document.invalid` (HTTP 422): The document does not fit the document schema.\n- `document.format_mismatch` (HTTP 422): The format of the document does not fit the kind of object.\n- `document.id_mismatch` (HTTP 422): The identifier of the document differs from the identifier in the path.\n- `document.too_large` (HTTP 413): The document is too large to be stored. Params: limit_bytes.\n- `request.invalid` (HTTP 422): The request is invalid.\n- `request.not_json` (HTTP 415): The request body must be JSON (Content-Type: application/json).\n- `request.too_large` (HTTP 413): The request body is larger than the limit of 2 MiB. Params: limit_bytes.\n- `request.not_found` (HTTP 404): There is no such path.\n- `request.method_not_allowed` (HTTP 405): The method is not allowed for this path.\n- `request.failed` (HTTP 400): The request cannot be processed.\n- `host.not_allowed` (HTTP 400): The Host header of the request is not allowed.\n- `expressions.pointer_invalid` (HTTP 422): The pointer of an item does not name a place of an expression in the document. Params: index.\n- `expressions.blocks_invalid` (HTTP 422): The blocks of an item are no expression. Params: index, reason, details.\n- `keys.scope_invalid` (HTTP 422): The pointer names no list of the document that takes a new object.\n- `usage.strategy_required` (HTTP 422): The use of instances is asked for a strategy; the document is a template.\n- `insert.template_invalid` (HTTP 422): The template of the request is no template (indicator, trend, rule or ruleset).\n- `insert.type_unknown` (HTTP 422): The object type of the request is not registered.\n- `removal.strategy_required` (HTTP 422): A removal is asked for a strategy; the document is a template.\n- `removal.target_unknown` (HTTP 422): The strategy has no element, strategy parameter or rule of this kind and name.\n- `object_directory.not_set` (HTTP 503): The object directory of pipwerk Studio is not set.\n- `object_directory.stored_invalid` (HTTP 503): The stored pipwerk Studio object directory is invalid.\n- `object_directory.unreadable` (HTTP 500): The object directory of pipwerk Studio cannot be read.\n- `object_directory.not_absolute` (HTTP 422): The object directory must be an absolute path.\n- `object_directory.invalid_body` (HTTP 422): The request body must be a JSON object with the fields path (text) and move (true or false).\n- `object_directory.conflict` (HTTP 409): The new object directory already contains files with the same names. Nothing was moved.\n- `object_directory.stored_invalid_no_move` (HTTP 409): The stored pipwerk Studio object directory is invalid, so no files can be moved. Save the object directory without moving files to repair it.\n- `object_directory.target_not_creatable` (HTTP 500): The new object directory could not be created. Nothing was moved and the object directory is unchanged.\n- `object_directory.move_failed` (HTTP 500): Moving the object files failed. The files were brought back and the object directory is unchanged.\n- `object_directory.move_not_restored` (HTTP 500): Moving the object files failed and some files could not be brought back. The object directory is unchanged. Params: source_directory, target_directory, files.\n- `language.stored_invalid` (HTTP 503): The stored pipwerk Studio language is invalid."
   },
   "paths": {
     "/api/v1/element-types": {
@@ -2727,6 +2727,195 @@
           }
         }
       }
+    },
+    "/api/v1/usage": {
+      "post": {
+        "tags": [
+          "usage"
+        ],
+        "summary": "Show how the instances of a strategy are used",
+        "description": "For a strategy (format 2.0 or 1.0) the answer gives, for each instance on the drawing area, the element of its first use and where that comes from, whether it is connected, and the elements of the flow at which it is usable (the instance is usable at an element if every way to the element leads over the element of its first use). For each element it names the instances the element uses, the kind of the use (input, expression, rule, data connection) and the properties and methods used, with the indication Aktualisieren of an input. The uses by the rules of the strategy are listed apart. A document that is a template is answered with HTTP 422 and the code usage.strategy_required. The places at which an instance is usable are listed for at most 20000 entries together; the answer says where it left a list out.",
+        "operationId": "answer_usage",
+        "requestBody": {
+          "description": "The document.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The use of the instances.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/insert": {
+      "post": {
+        "tags": [
+          "usage"
+        ],
+        "summary": "Make the instance for a template or an object type",
+        "description": "Makes the complete instance (a copy, E4) of a template or of an object type for a document (strategy or template, format 2.0 or 1.0) and returns it; the document is not changed. The instance gets the requested name or the name of the template or type, made unique in the namespace of the document by a number (Name 2). Each instance and rule inside it gets the name of the instance that contains it and its former name, a number appended where that is taken; the keys are formed from the new names and the expressions inside the instance are written on them. The request gives exactly one of template (the document of an indicator, trend, rule or ruleset) and object_type.",
+        "operationId": "insert_instance",
+        "requestBody": {
+          "description": "The document, the template or object type, the name.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The instance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsertResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/removals": {
+      "post": {
+        "tags": [
+          "usage"
+        ],
+        "summary": "Name the uses of an object and remove it",
+        "description": "For an element, a strategy parameter or a rule of a strategy (format 2.0 or 1.0) the answer names the elements and rules of the strategy that use it, for the question before a removal. With apply true it removes the object and returns the strategy: every use in an expression that can be read becomes an empty place (an expression with a spelling error keeps the key and the check reports an unknown name), a binding of the kind strategy parameter or data connection to it becomes not set, and inputs, connections and places in sections of the removed elements go with them. The management of an element that places an order goes with it. The document is not saved. An object that does not exist is answered with HTTP 422 and the code removal.target_unknown.",
+        "operationId": "answer_removal",
+        "requestBody": {
+          "description": "The document and the object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemovalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The uses and, with apply, the result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemovalResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body or the document is too large (limit 2 MiB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the document does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2760,6 +2949,11 @@
               "expressions.pointer_invalid",
               "expressions.blocks_invalid",
               "keys.scope_invalid",
+              "usage.strategy_required",
+              "insert.template_invalid",
+              "insert.type_unknown",
+              "removal.strategy_required",
+              "removal.target_unknown",
               "object_directory.not_set",
               "object_directory.stored_invalid",
               "object_directory.unreadable",
@@ -3413,6 +3607,75 @@
         "title": "ElementTypesResponse",
         "description": "All type descriptions of the element register, the delivered templates as documents\nwith their texts in both languages, and the functions of expressions."
       },
+      "ElementUsageModel": {
+        "properties": {
+          "element": {
+            "type": "string",
+            "title": "Element"
+          },
+          "uses": {
+            "items": {
+              "$ref": "#/components/schemas/ElementUseModel"
+            },
+            "type": "array",
+            "title": "Uses"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "element",
+          "uses"
+        ],
+        "title": "ElementUsageModel",
+        "description": "The instances an element uses, in the order of the flow of the strategy."
+      },
+      "ElementUseModel": {
+        "properties": {
+          "instance": {
+            "type": "string",
+            "title": "Instance"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "input",
+              "expression",
+              "rule",
+              "data_link"
+            ],
+            "title": "Kind"
+          },
+          "by_instance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Instance"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberUseModel"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance",
+          "kind",
+          "by_instance",
+          "members"
+        ],
+        "title": "ElementUseModel",
+        "description": "How an element uses an instance. ``kind`` is ``input`` (an input of the element),\n``expression`` (a name in an expression of the element), ``rule`` (a name in a rule of the\nelement or of the strategy) or ``data_link`` (a data connection: a binding of the element or\nof another instance). ``by_instance`` is the key of that other instance: the use then\ntakes place at the element of its first use. ``members`` are the properties and methods that\nare used."
+      },
       "ErrorPlace": {
         "properties": {
           "location": {
@@ -4063,6 +4326,116 @@
         "title": "InputDocument",
         "description": "An input of an element: an instance on the drawing area and either its property or its\nmethod with the values of the arguments, and the indication \"Aktualisieren\".\n\n``property`` is the key of the property or, with ``kind`` ``method``, of the method.\n``kind`` is ``property`` if it is left out, ``arguments`` is empty and ``refresh`` false\n(a document without these indications)."
       },
+      "InsertRequest": {
+        "additionalProperties": false,
+        "description": "The request of ``/api/v1/insert``: the document the instance is for (strategy or template,\nformat 2.0 or 1.0) and exactly one of ``template`` (the document of a template: indicator,\ntrend, rule or ruleset) and ``object_type`` (the identifier of a registered object type).\n``name`` is the wanted name of the instance, else the name of the template or of the type in\n``language`` (``de`` if left out).",
+        "properties": {
+          "document": {
+            "description": "",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyDocument"
+              },
+              {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              },
+              {
+                "$ref": "#/components/schemas/TrendDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RuleDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "format",
+              "mapping": {
+                "pipwerk.strategy": "#/components/schemas/StrategyDocument",
+                "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                "pipwerk.trend": "#/components/schemas/TrendDocument",
+                "pipwerk.rule": "#/components/schemas/RuleDocument",
+                "pipwerk.ruleset": "#/components/schemas/RulesetDocument"
+              }
+            }
+          },
+          "template": {
+            "description": "",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              },
+              {
+                "$ref": "#/components/schemas/TrendDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RuleDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RulesetDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Object Type"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "language": {
+            "default": "de",
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "title": "InsertRequest",
+        "type": "object"
+      },
+      "InsertResponse": {
+        "properties": {
+          "instance": {
+            "$ref": "#/components/schemas/InstanceDocument"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance"
+        ],
+        "title": "InsertResponse",
+        "description": "The new instance, complete (E4): its name is made unique in the namespace of the document;\neach instance and rule inside it has the name \"<name of the instance that contains it> <former\nname>\" (a number appended where that is taken), its own key, and the expressions inside the\ninstance use the new keys. ``origin`` names the object type and the template. The document\nitself is not changed; the caller puts the instance where it belongs (an element, the rules of\nthe strategy or of an element, or the instances or rules of another instance)."
+      },
       "InstanceDocument": {
         "properties": {
           "name": {
@@ -4205,6 +4578,94 @@
         "title": "InstanceDocument",
         "description": "A complete copy of a template or object type (E4). The base classes are in this\norder so that name, key, object type and origin come before the content."
       },
+      "InstanceUsageModel": {
+        "properties": {
+          "instance": {
+            "type": "string",
+            "title": "Instance"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "element": {
+            "type": "string",
+            "title": "Element"
+          },
+          "object_type": {
+            "type": "string",
+            "title": "Object Type"
+          },
+          "can_refresh": {
+            "type": "boolean",
+            "title": "Can Refresh"
+          },
+          "connected": {
+            "type": "boolean",
+            "title": "Connected"
+          },
+          "first_use": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Use"
+          },
+          "first_use_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "stored",
+                  "flow",
+                  "instance",
+                  "rule"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Use Source"
+          },
+          "usable_everywhere": {
+            "type": "boolean",
+            "title": "Usable Everywhere"
+          },
+          "usable_at": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Usable At"
+          },
+          "usable_at_omitted": {
+            "type": "boolean",
+            "title": "Usable At Omitted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance",
+          "name",
+          "element",
+          "object_type",
+          "can_refresh",
+          "connected",
+          "first_use",
+          "first_use_source",
+          "usable_everywhere",
+          "usable_at",
+          "usable_at_omitted"
+        ],
+        "title": "InstanceUsageModel",
+        "description": "The use of one instance on the drawing area (specification 3.3).\n\n``instance`` is its key and ``element`` the identifier of the element that shows it.\n``first_use`` is the identifier of the element of its first use, ``null`` if no element uses\nit (the check then reports ``instance.unconnected``); ``first_use_source`` tells where that\ncomes from: ``stored`` (the instance stores it), ``flow`` (the first element in the order of the\nflow that uses it), ``instance`` (only another instance uses it: the element of that instance)\nor ``rule`` (only a rule of the strategy uses it: the first element that takes rules).\n``usable_everywhere`` is true if the instance is usable at every element (no first use, or no\nway of the flow leads to it); otherwise ``usable_at`` lists the elements of the flow at which\nit is usable. ``usable_at_omitted`` is true where the list was left out because the limit of\nentries of the answer was reached. A rule of the strategy can use every instance."
+      },
       "InvalidRequest": {
         "properties": {
           "detail": {
@@ -4234,6 +4695,11 @@
               "expressions.pointer_invalid",
               "expressions.blocks_invalid",
               "keys.scope_invalid",
+              "usage.strategy_required",
+              "insert.template_invalid",
+              "insert.type_unknown",
+              "removal.strategy_required",
+              "removal.target_unknown",
               "object_directory.not_set",
               "object_directory.stored_invalid",
               "object_directory.unreadable",
@@ -4392,6 +4858,56 @@
         ],
         "title": "LabelModel",
         "description": "A text in German and English."
+      },
+      "MemberUseModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "property",
+              "method"
+            ],
+            "title": "Kind"
+          },
+          "arguments": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Arguments"
+          },
+          "refresh": {
+            "type": "boolean",
+            "title": "Refresh"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "arguments",
+          "refresh"
+        ],
+        "title": "MemberUseModel",
+        "description": "A property or method of an instance that an element uses. ``name`` is its identifier (for\nsomething inside a contained instance the identifiers joined with points); ``arguments`` are\nthe fixed values of the arguments of an input that names a method; ``refresh`` is the\nindication \"Aktualisieren\" of an input."
       },
       "MethodModel": {
         "properties": {
@@ -5029,6 +5545,113 @@
         ],
         "title": "PropertyModel",
         "description": "A property of a type."
+      },
+      "RemovalRequest": {
+        "additionalProperties": false,
+        "description": "The request of ``/api/v1/removals``: the document (a strategy, format 2.0 or 1.0), what\nto remove and whether to do it. ``kind`` is ``element`` (``target`` is the identifier of the\nelement; an element that places an order takes its management with it),\n``strategy_parameter`` (``target`` is its key) or ``rule`` (``target`` is the key of a rule\nof the strategy or of an element). Without ``apply`` the answer only names the uses, for\nthe question before the removal.",
+        "properties": {
+          "document": {
+            "description": "",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyDocument"
+              },
+              {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              },
+              {
+                "$ref": "#/components/schemas/TrendDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RuleDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "format",
+              "mapping": {
+                "pipwerk.strategy": "#/components/schemas/StrategyDocument",
+                "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                "pipwerk.trend": "#/components/schemas/TrendDocument",
+                "pipwerk.rule": "#/components/schemas/RuleDocument",
+                "pipwerk.ruleset": "#/components/schemas/RulesetDocument"
+              }
+            }
+          },
+          "kind": {
+            "enum": [
+              "element",
+              "strategy_parameter",
+              "rule"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "target": {
+            "maxLength": 200,
+            "title": "Target",
+            "type": "string"
+          },
+          "apply": {
+            "default": false,
+            "title": "Apply",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document",
+          "kind",
+          "target"
+        ],
+        "title": "RemovalRequest",
+        "type": "object"
+      },
+      "RemovalResponse": {
+        "properties": {
+          "used_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Used By"
+          },
+          "used_by_rules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Used By Rules"
+          },
+          "removed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Removed"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StrategyDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "used_by",
+          "used_by_rules",
+          "removed",
+          "document"
+        ],
+        "title": "RemovalResponse",
+        "description": "Who uses the object: ``used_by`` the identifiers of the elements, in the order of the\nstrategy (an instance counts as the element that shows it), and ``used_by_rules`` the keys of\nthe rules of the strategy. With ``apply`` the object is removed: ``removed`` lists the\nidentifiers of the removed elements and ``document`` is the strategy after the removal, in the\nformat 2.0 (every use in an expression is an empty place, a binding to it is \"not set\", inputs,\nconnections and places in sections of removed elements are gone); else both are empty."
       },
       "ResultKind": {
         "type": "string",
@@ -6042,6 +6665,86 @@
         "title": "UsageEntry",
         "description": "A strategy or template that contains an instance made from the template."
       },
+      "UsageRequest": {
+        "additionalProperties": false,
+        "description": "The request of ``/api/v1/usage``: the document (a strategy, format 2.0 or 1.0).",
+        "properties": {
+          "document": {
+            "description": "",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyDocument"
+              },
+              {
+                "$ref": "#/components/schemas/IndicatorDocument"
+              },
+              {
+                "$ref": "#/components/schemas/TrendDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RuleDocument"
+              },
+              {
+                "$ref": "#/components/schemas/RulesetDocument"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "format",
+              "mapping": {
+                "pipwerk.strategy": "#/components/schemas/StrategyDocument",
+                "pipwerk.indicator": "#/components/schemas/IndicatorDocument",
+                "pipwerk.trend": "#/components/schemas/TrendDocument",
+                "pipwerk.rule": "#/components/schemas/RuleDocument",
+                "pipwerk.ruleset": "#/components/schemas/RulesetDocument"
+              }
+            }
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "title": "UsageRequest",
+        "type": "object"
+      },
+      "UsageResponse": {
+        "properties": {
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/InstanceUsageModel"
+            },
+            "type": "array",
+            "title": "Instances"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/ElementUsageModel"
+            },
+            "type": "array",
+            "title": "Elements"
+          },
+          "strategy_rules": {
+            "items": {
+              "$ref": "#/components/schemas/ElementUseModel"
+            },
+            "type": "array",
+            "title": "Strategy Rules"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instances",
+          "elements",
+          "strategy_rules",
+          "truncated"
+        ],
+        "title": "UsageResponse",
+        "description": "The use of the instances of a strategy: ``instances`` in the order of the strategy,\n``elements`` the elements that use instances in the order of the flow, ``strategy_rules`` the\nuses by rules of the strategy. ``truncated`` is true if the limit of entries was reached."
+      },
       "UsagesResponse": {
         "properties": {
           "usages": {
@@ -6348,6 +7051,9 @@
     },
     {
       "name": "trends"
+    },
+    {
+      "name": "usage"
     }
   ]
 }

@@ -70,6 +70,10 @@ class Symbol:
     arguments: tuple[ArgumentDescription, ...] = ()
     """The arguments of a method (symbol of the kind ``METHOD``); its ``type`` is the type of
     the result, its ``choices`` the values of a result that is a choice."""
+    listed: bool = True
+    """Whether the list of the visible names (:meth:`Scope.visible`) offers the symbol. A contained
+    instance or rule is addressable everywhere in the strategy (specification 3.3), but the list
+    shows it with the instance or ruleset that contains it."""
     _members: dict[str, Symbol] | None = field(default=None, repr=False)
     _by_label: dict[str, list[Symbol]] | None = field(default=None, repr=False)
     _resolving: bool = field(default=False, repr=False)
@@ -146,8 +150,9 @@ class Environment(Protocol):
 
 
 class Scope:
-    """A namespace: names of one level and the enclosing namespace. An inner name hides an
-    outer one without a finding (specification 3.3)."""
+    """A namespace: names of one level and the enclosing namespace. The namespace of a strategy
+    is one level (specification 3.3); a name that occurs twice in a level is a finding of the
+    consistency check, and the first one is the one an expression finds."""
 
     def __init__(self, parent: Scope | None = None) -> None:
         self.parent = parent
@@ -192,8 +197,9 @@ class Scope:
         return list(self._symbols.values())
 
     def visible(self) -> list[Symbol]:
-        """The symbols visible from this level, the inner ones first; an inner symbol hides an
-        outer one of the same key."""
+        """The symbols visible from this level that the list of names offers, the inner ones
+        first. A symbol of an enclosing level with the same key as an inner one is left out (the
+        management of an order has its own ``Order``)."""
         result: list[Symbol] = []
         seen: set[str] = set()
         scope: Scope | None = self
@@ -201,6 +207,7 @@ class Scope:
             for key, symbol in scope._symbols.items():
                 if key not in seen:
                     seen.add(key)
-                    result.append(symbol)
+                    if symbol.listed:
+                        result.append(symbol)
             scope = scope.parent
         return result

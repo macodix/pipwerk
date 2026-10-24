@@ -9,6 +9,7 @@ from math import isfinite
 
 from pipwerk_domain import catalog
 from pipwerk_domain.consistency import findings as fc
+from pipwerk_domain.consistency import usage as us
 from pipwerk_domain.consistency.findings import (
     ExpressionNames,
     Finding,
@@ -23,7 +24,7 @@ from pipwerk_domain.consistency.graph import (
 )
 from pipwerk_domain.expressions import Analysis, analyze
 from pipwerk_domain.expressions import exprtypes as et
-from pipwerk_domain.expressions.checker import IssueKind, analyze_spelling
+from pipwerk_domain.expressions.checker import IssueKind, RecognizedName, analyze_spelling
 from pipwerk_domain.expressions.exprtypes import ExprType, type_of
 from pipwerk_domain.expressions.functions import list_functions
 from pipwerk_domain.expressions.symbols import (
@@ -194,6 +195,9 @@ class _Ctx:
     rule_template: bool = False
     in_template: bool = False
     path: str = ""
+    instance_owner: str | None = None
+    """The key in lower case of the instance on the drawing area whose content is checked, else
+    ``None``: a binding of its parameter values is a use that the instance makes."""
 
     def below(self, name: str) -> str:
         return f"{self.subject}.{name}" if self.subject else name
@@ -327,6 +331,19 @@ class Checker:
         self._used_inputs: dict[str, set[tuple[str, str]]] = {}
         self._reserved_names = _reserved_names(registry)
         self._reserved_keys = _reserved_keys(registry)
+        self._inner_scopes: dict[int, Scope] = {}
+        # the symbols of the instances on the drawing area and of the instances they contain:
+        # the symbol by `id` to the key in lower case of the instance on the drawing area
+        self._owner_of: dict[int, str] = {}
+        self._top_symbols: set[int] = set()
+        self._contained_symbols: set[int] = set()
+        self._tops: dict[str, us.TopInstance] = {}
+        self._raw_uses: list[us.RawUse] = []
+        self._flow_kinds: dict[str, ElementKind | None] = {}
+        self._flow_edges: dict[str, list[tuple[str, str]]] = {}
+        self.usage: us.Analysis | None = None
+        """The use of the instances of the checked strategy (``None`` for a template and after a
+        check that only spelled the expressions)."""
 
     # ------------------------------------------------------------------------------
     # entry points
@@ -370,18 +387,9 @@ class Checker:
         self._strategy_params = {
             item.key.lower(): _param_of_strategy_parameter(item) for item in strategy.parameters
         }
-        entries: list[_Entry] = []
-        for element in strategy.elements:
-            symbol = self._element_symbol(element)
-            if symbol is not None:
-                scope.add(symbol)
-                entries.append(
-                    _Entry(symbol.shown or symbol.name, symbol.name, element.id, symbol.name)
-                )
-        for rule in strategy.rules:
-            scope.add(self._rule_symbol(rule, scope))
-            entries.append(_Entry(rule.name, rule.key, None, rule.key))
+        entries, contents = self._build_namespace(strategy, scope)
         self._duplicates(entries, "strategy", against_application=True)
+        self._check_parameter_clashes(entries, contents, "strategy")
         self._check_strategy_parameters(strategy)
         self._analyze_calculations(strategy)
         for index, element in enumerate(strategy.elements):
@@ -398,6 +406,166 @@ class Checker:
         self._check_layout(strategy)
         self._check_candle_uses(strategy)
         self._check_inputs_used(strategy)
+        self._check_usage(strategy)
+
+    # ------------------------------------------------------------------------------
+    # the namespace of a strategy (specification 3.3)
+
+    def _build_namespace(
+        self, strategy: Strategy, scope: Scope
+    ) -> tuple[list[_Entry], list[tuple[ObjectContent, str | None, str | None]]]:
+        """Put every name of the strategy into its one namespace: the instances (also the ones
+        they contain), the rules and rulesets of the strategy and of the elements (also the ones
+        inside rulesets and instances), the conditions and the calculations. Returns the names
+        for the check of doubles and, for the check of the parameters, every instance and rule
+        with the element and the subject where it stands."""
+        entries: list[_Entry] = []
+        contents: list[tuple[ObjectContent, str | None, str | None]] = []
+        for element in strategy.elements:
+            symbol = self._element_symbol(element)
+            if symbol is None:
+                continue
+            scope.add(symbol)
+            entries.append(
+                _Entry(symbol.shown or symbol.name, symbol.name, element.id, symbol.name)
+            )
+            instance = element.instance
+            if instance is not None:
+                owner = instance.key.lower()
+                self._owner_of[id(symbol)] = owner
+                self._top_symbols.add(id(symbol))
+                self._tops.setdefault(
+                    owner,
+                    us.TopInstance(
+                        instance.key,
+                        instance.name,
+                        element.id,
+                        instance.object_type,
+                        instance.first_use,
+                        self.registry.can_refresh(instance.object_type),
+                    ),
+                )
+                self._add_contained(
+                    scope, instance, owner, element.id, instance.key, entries, contents
+                )
+        for rule in strategy.rules:
+            scope.add(self._rule_symbol(rule, scope))
+            entries.append(_Entry(rule.name, rule.key, None, rule.key))
+            self._add_contained(scope, rule, None, None, rule.key, entries, contents)
+        for element in strategy.elements:
+            for rule in element.rules:
+                scope.add(self._rule_symbol(rule, scope))
+                entries.append(_Entry(rule.name, rule.key, element.id, rule.key))
+                self._add_contained(scope, rule, None, element.id, rule.key, entries, contents)
+        return entries, contents
+
+    def _add_contained(
+        self,
+        scope: Scope,
+        root: Instance,
+        owner: str | None,
+        element_id: str | None,
+        subject: str,
+        entries: list[_Entry],
+        contents: list[tuple[ObjectContent, str | None, str | None]],
+    ) -> None:
+        """Register ``root`` and everything inside it in the namespace ``scope``: each contained
+        instance and rule is addressable everywhere by its key, listed with its container only.
+        ``owner`` is the key of the instance on the drawing area that holds them."""
+        contents.append((root, element_id, subject))
+        stack: list[tuple[ObjectContent, str]] = [(root, subject)]
+        while stack:
+            item, path = stack.pop()
+            self._inner_scope(item)  # the rules inside get their namespace before any analysis
+            found: list[tuple[ObjectContent, str]] = []
+            for child in item.instances:
+                child_path = f"{path}.{child.key}"
+                symbol = instance_symbol(self.registry, child, self._rule_symbol)
+                symbol.listed = False
+                self._contained_symbols.add(id(symbol))
+                if owner is not None:
+                    self._owner_of[id(symbol)] = owner
+                scope.add(symbol)
+                entries.append(_Entry(child.name, child.key, element_id, child_path))
+                contents.append((child, element_id, child_path))
+                found.append((child, child_path))
+            for rule in item.rules:
+                child_path = f"{path}.{rule.key}"
+                symbol = self._rule_symbol(rule)
+                symbol.listed = False
+                scope.add(symbol)
+                entries.append(_Entry(rule.name, rule.key, element_id, child_path))
+                contents.append((rule, element_id, child_path))
+                found.append((rule, child_path))
+            stack.extend(reversed(found))
+
+    def _inner_scope(self, content: ObjectContent) -> Scope | None:
+        """The namespace inside an instance or template of an indicator or trend: its parameters,
+        the instances and rules it contains, then the objects of the application. Built once, so
+        the rules inside know their namespace before any expression is analyzed."""
+        found = self._inner_scopes.get(id(content))
+        if found is not None:
+            return found
+        description = self.registry.get(content.object_type)
+        if description is None or description.id not in (catalog.TYPE_INDICATOR, TREND_TYPE_ID):
+            return None
+        scope = Scope(self._closed)
+        for item in description.parameters:
+            param = _param_of_description(item)
+            symbol = parameter_symbol(
+                param.id,
+                param.datatype,
+                param.choices,
+                object_type=param.object_type,
+                registry=self.registry,
+            )
+            symbol.label = item.label
+            symbol.explanation = item.explanation
+            scope.add(symbol)
+        for definition in content.parameters:
+            scope.add(
+                parameter_symbol(
+                    definition.key,
+                    definition.datatype,
+                    definition.choices,
+                    shown=definition.name,
+                    object_type=definition.object_type,
+                    registry=self.registry,
+                )
+            )
+        for child in content.instances:
+            scope.add(instance_symbol(self.registry, child, self._rule_symbol))
+        for rule in content.rules:
+            scope.add(self._rule_symbol(rule, scope))
+        self._inner_scopes[id(content)] = scope
+        return scope
+
+    def _check_parameter_clashes(
+        self,
+        entries: Sequence[_Entry],
+        contents: Iterable[tuple[ObjectContent, str | None, str | None]],
+        space: str,
+    ) -> None:
+        """A parameter of a rule and an own parameter of a template stand without a point, so
+        its name and its key must be none of the names and keys of the namespace (specification
+        3.3)."""
+        names = {normalized_name(item.name) for item in entries}
+        keys = {item.key.lower() for item in entries}
+        for content, element_id, subject in contents:
+            for definition in content.parameters:
+                by_name = normalized_name(definition.name) in names
+                if by_name or definition.key.lower() in keys:
+                    self._add(
+                        Level.ERROR,
+                        fc.NAME_DUPLICATE,
+                        element_id,
+                        subject,
+                        name=definition.name,
+                        key=definition.key,
+                        namespace=space,
+                        what="name" if by_name else "key",
+                        with_parameter=True,
+                    )
 
     def _check_template(self, template: Template) -> None:
         description = self.registry.get(template.object_type)
@@ -408,6 +576,7 @@ class Checker:
         # of `Strategie` is accepted and reported as a hint
         self._closed = application_scope(self.registry, None, open_strategy=True)
         ctx = _Ctx(None, "", self._closed, {}, False, _INDICATOR, False, in_template=True)
+        self._check_template_namespace(template)
         category = description.category
         if category is ObjectCategory.RULE:
             item = self._item(template, self._closed)
@@ -417,6 +586,25 @@ class Checker:
             self._check_rule(template, self._item(template, self._closed), ctx, None, "")
         else:
             self._check_object(template, description, ctx)
+
+    def _check_template_namespace(self, template: Template) -> None:
+        """A template has the namespace of its content: each instance and rule inside it, at any
+        depth, once (specification 3.3); an own parameter is none of those names."""
+        entries: list[_Entry] = []
+        contents: list[tuple[ObjectContent, str | None, str | None]] = [(template, None, None)]
+        stack: list[tuple[ObjectContent, str]] = [(template, "")]
+        while stack:
+            item, path = stack.pop()
+            self._inner_scope(item)  # the rules inside get their namespace before any analysis
+            found: list[tuple[ObjectContent, str]] = []
+            for child in (*item.instances, *item.rules):
+                child_path = f"{path}.{child.key}" if path else child.key
+                entries.append(_Entry(child.name, child.key, None, child_path))
+                contents.append((child, None, child_path))
+                found.append((child, child_path))
+            stack.extend(reversed(found))
+        self._duplicates(entries, "template", against_application=True)
+        self._check_parameter_clashes(entries, contents, "template")
 
     def _analyze_calculations(self, strategy: Strategy) -> None:
         """Analyze the calculations so that a calculation is analyzed after the ones whose
@@ -675,6 +863,7 @@ class Checker:
                 end=end,
             )
         for name in analysis.names:
+            self._record_use(name, ctx)
             if ctx.in_template and any(
                 symbol.kind is SymbolKind.UNRESOLVED for symbol in name.symbols
             ):
@@ -714,6 +903,32 @@ class Checker:
                 field=field,
                 context=ctx.order_context,
             )
+
+    def _record_use(self, name: RecognizedName, ctx: _Ctx) -> None:
+        """Keep a name in an expression that stands for an instance on the drawing area (or for
+        something inside it) as a use, for the element of its first use."""
+        if self.spelling_only or not name.symbols:
+            return
+        owner = self._owner_of.get(id(name.symbols[0]))
+        if owner is None:
+            return
+        members = name.symbols[1:]
+        in_rule = ctx.element_id is None or bool(ctx.subject)
+        if ctx.instance_owner is not None:
+            kind = us.USE_EXPRESSION
+        else:
+            kind = us.USE_RULE if in_rule else us.USE_EXPRESSION
+        self._raw_uses.append(
+            us.RawUse(
+                owner,
+                ctx.element_id,
+                kind,
+                ".".join(item.name for item in members) or None,
+                "method" if members and members[-1].kind is SymbolKind.METHOD else "property",
+                via=ctx.instance_owner,
+                rule=ctx.subject or None,
+            )
+        )
 
     def _collect_names(
         self, field: str, analysis: Analysis, element: str | None, subject: str | None
@@ -843,6 +1058,37 @@ class Checker:
                     element,
                     subject,
                     {"field": field, "context": context.order_context},
+                )
+            )
+        found.extend(self._unusable_names(context, analysis))
+        return found
+
+    def _unusable_names(self, context: ExpressionContext, analysis: Analysis) -> list[Finding]:
+        """The names in an expression at an element that stand for an instance that is not usable
+        there (specification 3.3), with their place: the expression may be one that the user has
+        just typed, which the check of the saved document has not seen."""
+        if self.usage is None:
+            return []
+        hidden = self.usage.hidden_at(context.element_id)
+        found: list[Finding] = []
+        for name in analysis.names:
+            owner = self._owner_of.get(id(name.symbols[0])) if name.symbols else None
+            if owner is None or owner not in hidden:
+                continue
+            found.append(
+                Finding(
+                    Level.ERROR,
+                    fc.INSTANCE_NOT_USABLE,
+                    context.element_id,
+                    self._tops[owner].key,
+                    {
+                        "field": context.field,
+                        "start": name.start,
+                        "end": name.end,
+                        "instance": self._tops[owner].key,
+                        "first_use": self.usage.first_uses[owner],
+                        "use": us.USE_EXPRESSION,
+                    },
                 )
             )
         return found
@@ -1108,23 +1354,18 @@ class Checker:
             )
         if in_main_flow and element.type in catalog.MANAGEMENT_ONLY_FLOW_TYPES:
             self._add(Level.ERROR, fc.FLOW_MANAGEMENT_ONLY, element.id, None, type=element.type)
+        if not in_main_flow and element.type == catalog.TRIGGER_MANUAL:
+            self._add(Level.ERROR, fc.TRIGGER_MANUAL_IN_MANAGEMENT, element.id, None)
         if element.instance is not None:
             self._check_instance_element(element, ctx)
         elif description.kind in (ElementKind.TRIGGER, ElementKind.FLOW):
             self._check_flow_element(element, description, ctx)
         self._check_element_inputs(element, ctx)
         if element.rules:
-            list_scope = Scope(self._strategy_scope)
-            for rule in element.rules:
-                list_scope.add(self._rule_symbol(rule, list_scope))
-            self._duplicates(
-                [_Entry(rule.name, rule.key, element.id, rule.key) for rule in element.rules],
-                "element_rules",
-            )
             self._check_rule_list(
                 element.rules,
                 replace(self._strategy_ctx(element, order_error=False), path=path),
-                list_scope=list_scope,
+                list_scope=self._strategy_scope,
                 ordered=False,
                 list_name="element",
                 list_path=below(path, "rules"),
@@ -1135,7 +1376,7 @@ class Checker:
         (specification 3.3, 3.6)."""
         for entry in element.inputs:
             symbol = self._strategy_scope.resolve(entry.instance)
-            if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
+            if symbol is None or id(symbol) not in self._top_symbols:
                 self._add(
                     Level.ERROR,
                     fc.DATA_UNKNOWN,
@@ -1147,6 +1388,32 @@ class Checker:
                     property=entry.property,
                 )
                 continue
+            self._raw_uses.append(
+                us.RawUse(
+                    symbol.name.lower(),
+                    element.id,
+                    us.USE_INPUT,
+                    entry.property,
+                    "method" if entry.kind is InputKind.METHOD else "property",
+                    entry.arguments,
+                    entry.refresh,
+                )
+            )
+            owner = self._tops[symbol.name.lower()]
+            if (
+                entry.refresh
+                and not owner.can_refresh
+                and self.registry.get(owner.object_type) is not None
+            ):
+                self._add(
+                    Level.ERROR,
+                    fc.INPUT_REFRESH_NOT_ALLOWED,
+                    element.id,
+                    symbol.name,
+                    instance=symbol.name,
+                    property=entry.property,
+                    object_type=owner.object_type,
+                )
             member = symbol.member(entry.property)
             wanted = SymbolKind.METHOD if entry.kind is InputKind.METHOD else SymbolKind.PROPERTY
             if member is None or member.kind is not wanted:
@@ -1183,7 +1450,7 @@ class Checker:
             used = self._used_inputs.get(element.id, set())
             for entry in element.inputs:
                 symbol = self._strategy_scope.resolve(entry.instance)
-                if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
+                if symbol is None or id(symbol) not in self._top_symbols:
                     continue  # reported as an input that does not exist
                 member = symbol.member(entry.property)
                 wanted = (
@@ -1237,7 +1504,12 @@ class Checker:
         self._check_object(
             instance,
             description,
-            replace(ctx, subject=instance.key, path=below(ctx.path, "instance")),
+            replace(
+                ctx,
+                subject=instance.key,
+                path=below(ctx.path, "instance"),
+                instance_owner=instance.key.lower(),
+            ),
         )
 
     def _check_flow_element(
@@ -1449,7 +1721,14 @@ class Checker:
             self._invalid(ctx, label, item.id, "value")
             return
         symbol = ctx.env.resolve(link.instance)
-        if symbol is None or symbol.kind is not SymbolKind.INSTANCE:
+        # the strategy addresses an instance contained in another one by its key too, but a data
+        # connection names an instance on the drawing area; inside a template there is no such
+        # difference
+        if (
+            symbol is None
+            or symbol.kind is not SymbolKind.INSTANCE
+            or id(symbol) in self._contained_symbols
+        ):
             self._add(
                 Level.ERROR,
                 fc.DATA_UNKNOWN,
@@ -1463,6 +1742,17 @@ class Checker:
                 target_kind=label,
             )
             return
+        if not self.spelling_only and id(symbol) in self._top_symbols:
+            self._raw_uses.append(
+                us.RawUse(
+                    symbol.name.lower(),
+                    ctx.element_id,
+                    us.USE_DATA_LINK,
+                    link.property,
+                    via=ctx.instance_owner,
+                    rule=ctx.subject or None,
+                )
+            )
         member = symbol.member(link.property)
         if member is None or member.kind is not SymbolKind.PROPERTY:
             self._add(
@@ -1523,48 +1813,23 @@ class Checker:
         all_params = [*params, *own]
         if description.id == TREND_TYPE_ID:
             self._check_trend_direction(content, ctx)
-        scope = Scope(self._closed)
-        entries: list[_Entry] = []
-        for item in params:
-            symbol = parameter_symbol(
-                item.id,
-                item.datatype,
-                item.choices,
-                object_type=item.object_type,
-                registry=self.registry,
-            )
-            description_item = description.parameter(item.id)
-            if description_item is not None:
-                symbol.label = description_item.label
-                symbol.explanation = description_item.explanation
-            scope.add(symbol)
-            entries.append(_Entry(item.id, item.id, ctx.element_id, subject))
-        fixed_entries = list(entries)
+        scope = self._inner_scope(content)
+        assert scope is not None  # noqa: S101 - an indicator or trend has an inner namespace
         for definition in content.parameters:
-            scope.add(
-                parameter_symbol(
-                    definition.key,
-                    definition.datatype,
-                    definition.choices,
-                    shown=definition.name,
-                    object_type=definition.object_type,
-                    registry=self.registry,
-                )
-            )
-            entries.append(_Entry(definition.name, definition.key, ctx.element_id, subject))
             self._check_key(definition.key, ctx.element_id, subject, "parameter")
         for child in content.instances:
-            scope.add(instance_symbol(self.registry, child, self._rule_symbol))
-            entries.append(_Entry(child.name, child.key, ctx.element_id, ctx.below(child.key)))
             self._check_key(child.key, ctx.element_id, ctx.below(child.key), "instance")
-        for rule in content.rules:
-            scope.add(self._rule_symbol(rule, scope))
-            entries.append(_Entry(rule.name, rule.key, ctx.element_id, ctx.below(rule.key)))
+        # an own parameter must not take the key of a parameter the type brings along; the names
+        # of the instances and rules inside are checked in the namespace of the whole strategy or
+        # template
         self._duplicates(
-            entries[len(fixed_entries) :],
+            [
+                _Entry(definition.name, definition.key, ctx.element_id, subject)
+                for definition in content.parameters
+            ],
             "template",
             against_application=True,
-            existing=fixed_entries,
+            existing=[_Entry(item.id, item.id, ctx.element_id, subject) for item in params],
         )
         self._check_parameters(all_params, content.parameter_values, ctx)
         inner = replace(
@@ -1768,13 +2033,6 @@ class Checker:
         inner_scope = item.inner
         assert inner_scope is not None  # noqa: S101 - created with the item of a ruleset
         inner_ctx = replace(ctx, env=inner_scope, params={}, order_error=False)
-        self._duplicates(
-            [
-                _Entry(child.name, child.key, ctx.element_id, ctx.below(child.key))
-                for child in rule.rules
-            ],
-            "ruleset",
-        )
         self._check_rule_list(
             rule.rules,
             inner_ctx,
@@ -1881,6 +2139,8 @@ class Checker:
                 )
                 continue
             edges[connection.source].append((connection.output, connection.target))
+        self._flow_kinds = kinds
+        self._flow_edges = edges
         triggers = [item.id for item in strategy.elements if kinds[item.id] is ElementKind.TRIGGER]
         successors = {node: [target for _, target in pairs] for node, pairs in edges.items()}
         reached = reachable(triggers, successors)
@@ -2055,6 +2315,150 @@ class Checker:
                 affected = True
             if affected:
                 self._add(Level.ERROR, fc.CANDLE_NO_INSTANCE, element_id, subject)
+
+    # ------------------------------------------------------------------------------
+    # use of the instances (specification 3.3, 3.6)
+
+    def hidden_instances(self, element_id: str | None) -> frozenset[str]:
+        """The keys in lower case of the instances that are not usable at an element: the list
+        of visible names leaves them out (specification 3.4). Empty for a place that is no
+        element of the flow, and for a check that did not analyze the use."""
+        return frozenset() if self.usage is None else self.usage.hidden_at(element_id)
+
+    def _check_usage(self, strategy: Strategy) -> None:
+        """Work out the element of the first use of each instance on the drawing area and report
+        a use at an element where the instance is not usable and an instance that no element
+        uses."""
+        if self.spelling_only:
+            return
+        kinds = self._flow_kinds
+        elements = {item.id: item for item in strategy.elements}
+        nodes = [
+            item.id
+            for item in strategy.elements
+            if kinds.get(item.id) in (ElementKind.TRIGGER, ElementKind.FLOW)
+        ]
+        order = self._flow_order(strategy, nodes, elements)
+        successors: dict[str, list[str]] = {
+            node: [target for _, target in self._flow_edges.get(node, ())] for node in nodes
+        }
+        for node in nodes:
+            if elements[node].type != catalog.FLOW_PLACE_ORDER:
+                continue
+            # the own triggers of a management start after its order has been placed
+            successors[node].extend(self._management_triggers(strategy, node, kinds))
+        main_triggers = [
+            node
+            for node in nodes
+            if kinds[node] is ElementKind.TRIGGER and elements[node].management_of is None
+        ]
+        rule_elements = frozenset(
+            node
+            for node in nodes
+            if (description := self.registry.get(elements[node].type)) is not None
+            and description.rules_allowed
+        )
+        analysis = us.build_report(
+            list(self._tops.values()),
+            self._raw_uses,
+            flow_order=order,
+            successors=successors,
+            main_triggers=main_triggers,
+            rule_elements=rule_elements,
+        )
+        self.usage = analysis
+        for problem in analysis.problems:
+            if problem.kind == "not_usable":
+                self._add(
+                    Level.ERROR,
+                    fc.INSTANCE_NOT_USABLE,
+                    problem.element,
+                    problem.subject,
+                    **problem.details,
+                )
+            else:
+                self._add(
+                    Level.ERROR,
+                    fc.INSTANCE_UNCONNECTED,
+                    problem.element,
+                    problem.subject,
+                    **problem.details,
+                )
+
+    @staticmethod
+    def _management_triggers(
+        strategy: Strategy, owner: str, kinds: dict[str, ElementKind | None]
+    ) -> list[str]:
+        return [
+            item.id
+            for item in strategy.elements
+            if item.management_of == owner and kinds.get(item.id) is ElementKind.TRIGGER
+        ]
+
+    def _flow_order(
+        self, strategy: Strategy, nodes: list[str], elements: dict[str, Element]
+    ) -> list[str]:
+        """The elements of the flow in the order of the flow (specification 3.3): from the
+        triggers of the main flow along the connections, depth first, the outputs of an element in
+        the order of its type; then each management, from its own triggers and from the output
+        of its order, after the main flow; elements that no trigger reaches come last."""
+        allowed = set(nodes)
+        rank: dict[str, dict[str, int]] = {}
+        for node in nodes:
+            description = self.registry.get(elements[node].type)
+            outputs = [] if description is None else [item.id for item in description.outputs]
+            rank[node] = {name: index for index, name in enumerate(outputs)}
+
+        def followers(node: str) -> list[str]:
+            ordered = sorted(
+                enumerate(self._flow_edges.get(node, ())),
+                key=lambda entry: (rank[node].get(entry[1][0], len(rank[node])), entry[0]),
+            )
+            return [target for _, (_, target) in ordered]
+
+        order: list[str] = []
+        seen: set[str] = set()
+
+        def walk(starts: list[str]) -> None:
+            stack = list(reversed(starts))
+            while stack:
+                node = stack.pop()
+                if node in seen or node not in allowed:
+                    continue
+                seen.add(node)
+                order.append(node)
+                stack.extend(reversed(followers(node)))
+
+        kinds = self._flow_kinds
+        walk(
+            [
+                node
+                for node in nodes
+                if kinds[node] is ElementKind.TRIGGER and elements[node].management_of is None
+            ]
+        )
+        position = 0
+        while True:
+            while position < len(order):
+                node = order[position]
+                position += 1
+                if elements[node].type != catalog.FLOW_PLACE_ORDER:
+                    continue
+                starts = self._management_triggers(strategy, node, kinds)
+                description = self.registry.get(elements[node].type)
+                managing = None if description is None else description.management_output()
+                if managing is not None:
+                    starts += [
+                        target
+                        for output, target in self._flow_edges.get(node, ())
+                        if output == managing.id
+                    ]
+                walk(starts)
+            remaining = next((node for node in nodes if node not in seen), None)
+            if remaining is None:
+                break
+            walk([remaining])
+        return order
 
 
 @dataclass(frozen=True, slots=True)

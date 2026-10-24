@@ -33,6 +33,7 @@ from tests.helpers import (
     template,
     trigger,
     uid,
+    use,
     valid_strategy,
 )
 
@@ -269,8 +270,13 @@ def test_the_result_of_a_ruleset_and_its_rules_can_be_addressed() -> None:
     strategy.rules.append(rule("aussen", "werk.ergebnis"))
     strategy.rules.append(rule("tief", "werk.a.ergebnis"))
     assert check(strategy) == []
-    strategy.rules.append(rule("falsch", "a.ergebnis"))  # the rule inside is not visible outside
-    assert only(check(strategy), fc.EXPRESSION_INVALID)
+    # the rule inside a ruleset is addressable everywhere in the strategy by its own name
+    strategy.rules.append(rule("von_aussen", "a.ergebnis"))
+    assert check(strategy) == []
+    # which is why its name may be taken once only
+    strategy.rules.append(rule("a", "TRUE()"))
+    found = only(check(strategy), fc.NAME_DUPLICATE)
+    assert [(item.subject, item.details["namespace"]) for item in found] == [("a", "strategy")]
 
 
 def test_result_expression_of_a_ruleset_is_checked_in_the_namespace_of_its_rules() -> None:
@@ -454,61 +460,89 @@ def test_s18_a_rule_of_the_element_is_checked_against_all_order_types_too() -> N
 # Namensräume (Hinweis S17) --------------------------------------------------------------------
 
 
-def test_the_parameters_of_a_rule_hide_names_of_the_list_and_of_the_namespace_around() -> None:
+def test_the_parameter_of_a_rule_must_not_take_a_name_of_the_namespace() -> None:
+    """Parameters of a rule stand without a point, so their name must be no name of the
+    namespace of the strategy (specification 3.3)."""
     strategy = valid_strategy()
     strategy.elements.append(element(5, "EMA", instance=ema("grenze")))  # strategy level
+    use(strategy, "grenze")
     strategy.rules += [
         rule("andere", "TRUE()"),
         rule(
             "r",
-            "grenze > 1",
-            parameters=[definition("grenze", DataType.NUMBER, required=True, default=1)],
+            "schwelle > 1",
+            parameters=[definition("schwelle", DataType.NUMBER, required=True, default=1)],
         ),
     ]
-    # the parameter (a number) hides the instance of the namespace around it
     assert check(strategy) == []
-    # without the parameter the name means the instance, which is no value
-    strategy.rules[1].parameters.clear()
-    assert only(check(strategy), fc.EXPRESSION_INVALID)
-    # a parameter also hides a rule of the same list
-    strategy.rules[1].parameters.append(definition("andere", DataType.NUMBER, default=1))
+    # a parameter named like an instance of the strategy
+    strategy.rules[1].parameters[0] = definition("grenze", DataType.NUMBER, default=1)
+    strategy.rules[1].expression = "grenze > 1"
+    found = only(check(strategy), fc.NAME_DUPLICATE)
+    assert [(item.subject, item.details["with_parameter"]) for item in found] == [("r", True)]
+    assert found[0].details["what"] == "name"
+    # and named like a rule of the same list
+    strategy.rules[1].parameters[0] = definition("andere", DataType.NUMBER, default=1)
     strategy.rules[1].expression = "andere > 1"
-    assert check(strategy) == []
+    assert [item.subject for item in only(check(strategy), fc.NAME_DUPLICATE)] == ["r"]
 
 
-def test_a_rule_sees_the_other_rules_of_its_list_before_the_namespace_around() -> None:
+def test_the_parameter_of_an_own_indicator_must_not_take_a_name_of_the_namespace() -> None:
     strategy = valid_strategy()
-    strategy.elements.append(element(5, "EMA", instance=ema("a")))  # an instance named "a"
+    strategy.elements.append(element(5, "EMA", instance=ema("grenze")))
+    use(strategy, "grenze")
+    strategy.elements.append(
+        element(
+            6,
+            catalog.TYPE_INDICATOR,
+            instance=indicator_instance(
+                "eigener", parameters=[definition("Grenze", required=True)]
+            ),
+        )
+    )
+    use(strategy, "eigener", "x")
+    found = only(check(strategy), fc.NAME_DUPLICATE)
+    assert [(item.subject, item.details["with_parameter"]) for item in found] == [("eigener", True)]
+
+
+def test_a_name_that_a_rule_of_an_element_takes_twice_with_an_instance_is_a_duplicate() -> None:
+    """Instances and rules of the strategy and of its elements are one namespace: an instance
+    "a" and a rule "a" of an element are the same name twice, no rule hides an instance."""
+    strategy = valid_strategy()
+    strategy.elements.append(element(5, "EMA", instance=ema("a")))
+    use(strategy, "a")
     strategy.elements[1].rules += [
-        rule("a", "Konto.kapital > 0"),  # a rule of the element named "a"
-        rule("b", "NOT(a.ergebnis)"),  # means the rule of the element, not the instance
+        rule("a", "Konto.kapital > 0"),
+        rule("b", "NOT(a.ergebnis)"),
     ]
+    found = only(check(strategy), fc.NAME_DUPLICATE)
+    assert [(item.element, item.subject) for item in found] == [(uid(2), "a")]
+    strategy.elements[1].rules[0].name = "c"
+    strategy.elements[1].rules[0].key = "c"
+    strategy.elements[1].rules[1].expression = "NOT(c.ergebnis)"
     assert check(strategy) == []
 
 
-def test_a_rule_of_the_element_means_its_own_rule_not_the_rule_of_the_strategy() -> None:
-    """Rule of the element and rule of the strategy with the same name are no duplicate; an
-    expression of a rule of the element means the rule of the element."""
+def test_a_rule_of_the_element_and_a_rule_of_the_strategy_with_one_name_are_a_duplicate() -> None:
     strategy = valid_strategy()
     strategy.rules.append(
         rule("risiko", "1", determined_property="volumen", comparison=Comparison.AT_MOST)
-    )  # its result is a number
+    )
     strategy.elements[1].rules += [
-        rule("risiko", "Konto.kapital > 0"),  # its result is a truth value
+        rule("risiko", "Konto.kapital > 0"),
         rule("pruefung", "NOT(risiko.ergebnis)"),
     ]
     found = check(strategy)
-    assert only(found, fc.NAME_DUPLICATE) == []
-    assert only(found, fc.EXPRESSION_INVALID) == []
+    assert [(item.element, item.subject) for item in only(found, fc.NAME_DUPLICATE)] == [
+        (uid(2), "risiko")
+    ]
 
 
-def test_a_rule_of_the_strategy_does_not_see_the_rules_of_an_element() -> None:
+def test_a_rule_of_the_strategy_sees_the_rules_of_an_element() -> None:
     strategy = valid_strategy()
     strategy.elements[1].rules.append(rule("nur_element", "Konto.kapital > 0"))
     strategy.rules.append(rule("aussen", "nur_element.ergebnis"))
-    found = only(check(strategy), fc.EXPRESSION_INVALID)
-    assert found[0].details["issue"] == "unknown_name"
-    assert found[0].subject == "aussen"
+    assert check(strategy) == []
 
 
 def test_a_rule_of_an_element_sees_the_names_of_the_strategy() -> None:
@@ -550,6 +584,7 @@ def test_the_name_of_the_rule_template_is_checked_in_each_strategy() -> None:
     strategy.rules.append(rule("r", "ema20.wert > 1"))  # the same expression in a strategy
     assert only(check(strategy), fc.EXPRESSION_INVALID)
     strategy.elements.append(element(5, "EMA", instance=ema("ema20")))
+    use(strategy, "ema20")
     assert check(strategy) == []
     strategy.rules[0].expression = "Strategie.stop_puffer > 1"
     assert only(check(strategy), fc.EXPRESSION_INVALID)
@@ -648,7 +683,8 @@ def test_instances_conditions_calculations_and_rules_share_the_namespace_of_the_
     assert len(found) == 2
 
 
-def test_the_same_name_in_two_namespaces_is_no_duplicate() -> None:
+def test_the_same_name_at_different_elements_is_a_duplicate() -> None:
+    """The names of the rules of the strategy and of all its elements are one namespace."""
     strategy = valid_strategy()
     strategy.rules.append(rule("r", "TRUE()"))
     strategy.elements[1].rules.append(rule("r", "TRUE()"))
@@ -658,15 +694,17 @@ def test_the_same_name_in_two_namespaces_is_no_duplicate() -> None:
     other.rules.append(rule("r", "TRUE()"))
     strategy.elements.append(other)
     strategy.connections.append(connect(1, "weiter", 6))
-    assert only(check(strategy), fc.NAME_DUPLICATE) == []
+    found = only(check(strategy), fc.NAME_DUPLICATE)
+    assert [item.element for item in found] == [uid(2), uid(6)]
 
 
 def test_the_same_template_at_the_strategy_and_at_an_element_gives_two_instances() -> None:
+    """Two instances, two names (specification 3.3): no finding."""
     from pipwerk_domain.risk_rule import risk_per_trade_instance
 
     strategy = valid_strategy()
     strategy.rules.append(risk_per_trade_instance("risiko"))
-    strategy.elements[1].rules.append(risk_per_trade_instance("risiko"))
+    strategy.elements[1].rules.append(risk_per_trade_instance("risiko_element"))
     del strategy.elements[1].properties["volumen"]
     assert check(strategy) == []
 
@@ -675,15 +713,14 @@ def test_duplicates_in_a_list_of_rules_of_an_element() -> None:
     strategy = valid_strategy()
     strategy.elements[1].rules += [rule("r", "TRUE()"), rule("R", "TRUE()")]
     found = only(check(strategy), fc.NAME_DUPLICATE)
-    assert [(item.element, item.details["namespace"]) for item in found] == [
-        (uid(2), "element_rules")
-    ]
+    assert [(item.element, item.details["namespace"]) for item in found] == [(uid(2), "strategy")]
 
 
 def test_a_strategy_parameter_does_not_collide_with_an_instance_of_the_same_name() -> None:
     strategy = valid_strategy()
     strategy.parameters = [StrategyParameter("ema20", DataType.NUMBER, 1)]
     strategy.elements.append(element(5, "EMA", instance=ema("ema20")))
+    use(strategy, "ema20")
     assert check(strategy) == []  # `Strategie.ema20` and `ema20` are different names
     strategy.parameters.append(StrategyParameter("EMA20", DataType.NUMBER, 1))
     assert only(check(strategy), fc.NAME_DUPLICATE)

@@ -55,6 +55,7 @@ from pipwerk_domain.expressions.functions import (
     list_functions,
 )
 from pipwerk_domain.limits import MAX_BLOCK_DEPTH, MAX_DOCUMENT_BYTES
+from pipwerk_domain.model import Template
 from pipwerk_domain.registry import ElementRegistry
 from pipwerk_domain.typedesc import BindingKind, DataType, ElementKind, Group, ObjectCategory
 from pydantic import AwareDatetime, ConfigDict, Field, ValidationError, create_model
@@ -98,6 +99,17 @@ from pipwerk_studio.object_service import (
     SavedObject,
 )
 from pipwerk_studio.settings_service import StoredObjectDirectoryInvalidError
+from pipwerk_studio.usage_api import (
+    InsertRequest,
+    InsertResponse,
+    RemovalRequest,
+    RemovalResponse,
+    UsageRequest,
+    UsageResponse,
+    answer_insert,
+    answer_removal,
+    answer_usage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -983,6 +995,137 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
 
         return _guarded(run)
 
+    @router.post(
+        "/usage",
+        operation_id="answer_usage",
+        tags=["usage"],
+        summary="Show how the instances of a strategy are used",
+        description=(
+            "For a strategy (format 2.0 or 1.0) the answer gives, for each instance on the "
+            "drawing area, the element of its first use and where that comes from, whether it "
+            "is connected, and the elements of the flow at which it is usable (the instance "
+            "is usable at an element if every way to the element leads over the element of its "
+            "first use). For each element it names the instances the element uses, the kind of "
+            "the use (input, expression, rule, data connection) and the properties and methods "
+            "used, with the indication Aktualisieren of an input. The uses by the rules of the "
+            "strategy are listed apart. A document that is a template is answered with HTTP 422 "
+            "and the code usage.strategy_required. The places at which an instance is usable "
+            "are listed for at most 20000 entries together; the answer says where it left a "
+            "list out."
+        ),
+        response_model=None,
+        responses={
+            200: {"description": "The use of the instances.", "model": UsageResponse},
+            **_error_responses(413, 415, 422),
+        },
+        openapi_extra=_document_body(_ref(UsageRequest), "The document."),
+    )
+    def usage(body: JsonBody) -> Response:
+        def run() -> Response:
+            data = _load_request(body)
+            try:
+                request = UsageRequest.model_validate(data, strict=True)
+            except ValidationError as error:
+                return invalid_request("request.invalid", error)
+            try:
+                value = from_document(parse_document(request.document))
+            except DocumentError as error:
+                return invalid_request("document.invalid", error, ("document",))
+            result = answer_usage(value, registry)
+            return JSONResponse(content=result.model_dump(mode="json"))
+
+        return _guarded(run)
+
+    @router.post(
+        "/insert",
+        operation_id="insert_instance",
+        tags=["usage"],
+        summary="Make the instance for a template or an object type",
+        description=(
+            "Makes the complete instance (a copy, E4) of a template or of an object type for a "
+            "document (strategy or template, format 2.0 or 1.0) and returns it; the document is "
+            "not changed. The instance gets the requested name or the name of the template or "
+            "type, made unique in the namespace of the document by a number (Name 2). Each "
+            "instance and rule inside it gets the name of the instance that contains it and its "
+            "former name, a number appended where that is taken; the keys are formed from the new "
+            "names and the expressions inside the instance are written on them. The request "
+            "gives exactly one of template (the document of an indicator, trend, rule or "
+            "ruleset) and object_type."
+        ),
+        response_model=None,
+        responses={
+            200: {"description": "The instance.", "model": InsertResponse},
+            **_error_responses(413, 415, 422),
+        },
+        openapi_extra=_document_body(
+            _ref(InsertRequest), "The document, the template or object type, the name."
+        ),
+    )
+    def insert(body: JsonBody) -> Response:
+        def run() -> Response:
+            data = _load_request(body)
+            try:
+                request = InsertRequest.model_validate(data, strict=True)
+            except ValidationError as error:
+                return invalid_request("request.invalid", error)
+            try:
+                target = from_document(parse_document(request.document))
+            except DocumentError as error:
+                return invalid_request("document.invalid", error, ("document",))
+            template: Template | None = None
+            if request.template is not None:
+                try:
+                    given = from_document(parse_document(request.template))
+                except DocumentError as error:
+                    return invalid_request("document.invalid", error, ("template",))
+                if not isinstance(given, Template):
+                    raise ApiException("insert.template_invalid")
+                template = given
+            result = answer_insert(target, template, request, registry)
+            return JSONResponse(content=result.model_dump(mode="json"))
+
+        return _guarded(run)
+
+    @router.post(
+        "/removals",
+        operation_id="answer_removal",
+        tags=["usage"],
+        summary="Name the uses of an object and remove it",
+        description=(
+            "For an element, a strategy parameter or a rule of a strategy (format 2.0 or 1.0) "
+            "the answer names the elements and rules of the strategy that use it, for the "
+            "question before a removal. With apply true it removes the object and returns the "
+            "strategy: every use in an expression that can be read becomes an empty place (an "
+            "expression with a spelling error keeps the key and the check reports an unknown "
+            "name), a binding of the kind strategy parameter or data connection to it becomes "
+            "not set, and inputs, connections and places in sections of the removed elements "
+            "go with them. The management of an element that places an order goes with it. "
+            "The document is not saved. An object that does not exist is answered with HTTP "
+            "422 and the code removal.target_unknown."
+        ),
+        response_model=None,
+        responses={
+            200: {"description": "The uses and, with apply, the result.", "model": RemovalResponse},
+            **_error_responses(413, 415, 422),
+        },
+        openapi_extra=_document_body(_ref(RemovalRequest), "The document and the object."),
+    )
+    def removals(body: JsonBody) -> Response:
+        def run() -> Response:
+            data = _load_request(body)
+            try:
+                request = RemovalRequest.model_validate(data, strict=True)
+            except ValidationError as error:
+                return invalid_request("request.invalid", error)
+            try:
+                value = from_document(parse_document(request.document))
+            except DocumentError as error:
+                return invalid_request("document.invalid", error, ("document",))
+            result = answer_removal(value, request)
+            return JSONResponse(content=result.model_dump(mode="json"))
+
+        return _guarded(run)
+
     return router
 
 
@@ -995,7 +1138,13 @@ def _add_request_models(app: FastAPI) -> None:
         if app.openapi_schema is None:
             description = original()
             schemas = description.setdefault("components", {}).setdefault("schemas", {})
-            for model in (ExpressionsRequest, KeyRequest):
+            for model in (
+                ExpressionsRequest,
+                KeyRequest,
+                UsageRequest,
+                InsertRequest,
+                RemovalRequest,
+            ):
                 schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
                 for key, definition in schema.pop("$defs", {}).items():
                     schemas.setdefault(key, definition)
@@ -1004,6 +1153,21 @@ def _add_request_models(app: FastAPI) -> None:
                     "description": document.get("description", ""),
                     **_any_document_schema(),
                 }
+                if model is InsertRequest:
+                    template = schema["properties"]["template"]
+                    schema["properties"]["template"] = {
+                        "description": template.get("description", ""),
+                        "anyOf": [
+                            _ref(DOCUMENT_MODELS[name])
+                            for name in (
+                                "pipwerk.indicator",
+                                "pipwerk.trend",
+                                "pipwerk.rule",
+                                "pipwerk.ruleset",
+                            )
+                        ]
+                        + [{"type": "null"}],
+                    }
                 schemas[model.__name__] = schema
         return app.openapi_schema or {}
 

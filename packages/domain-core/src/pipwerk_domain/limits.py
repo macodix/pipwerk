@@ -64,3 +64,8 @@ are dropped and the answer says so."""
 MAX_PROPERTIES_PER_NAME = 200
 """Properties that the answer lists for one visible name. Further properties are dropped and
 the answer says so."""
+
+MAX_USAGE_ENTRIES = 20000
+"""Elements that the answer of ``/api/v1/usage`` lists for all instances together as the places at
+which an instance is usable. Where the limit is reached the list of an instance is left out and
+the answer says so."""

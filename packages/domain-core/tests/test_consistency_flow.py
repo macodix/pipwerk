@@ -30,6 +30,7 @@ from tests.helpers import (
     place_order,
     trigger,
     uid,
+    use,
     valid_strategy,
 )
 
@@ -166,9 +167,13 @@ def test_management_elements_need_incoming_connections_too() -> None:
     assert [item.element for item in found] == [uid(4)]
 
 
-def test_objects_on_the_canvas_need_no_connection() -> None:
+def test_objects_on_the_canvas_need_no_ablauf_connection() -> None:
+    """An instance has no connection of the flow (specification 3.3): it is connected by being
+    used, by an input or a name in an expression; an instance that nothing uses is an error."""
     strategy = valid_strategy()
     strategy.elements.append(element(5, "EMA", instance=ema("ema20")))
+    assert codes(check(strategy)) == [fc.INSTANCE_UNCONNECTED]
+    use(strategy, "ema20")
     assert check(strategy) == []
 
 
@@ -480,6 +485,7 @@ def test_mandatory_parameter_of_an_instance_without_value() -> None:
 def test_parameter_with_a_default_needs_no_value() -> None:
     strategy = valid_strategy()
     strategy.elements.append(element(5, "EMA", instance=ema("ema20")))  # verschiebung is absent
+    use(strategy, "ema20")
     assert check(strategy) == []
 
 
@@ -1008,6 +1014,7 @@ def test_candle_is_fine_with_a_candle_instance_with_a_time_unit() -> None:
             ),
         )
     )
+    use(strategy, "kerze_h1", "schluss")
     assert check(strategy) == []
 
 

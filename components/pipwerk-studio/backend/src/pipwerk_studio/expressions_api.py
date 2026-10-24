@@ -435,8 +435,12 @@ def _answer_item(
     omitted = root is not None and _block_depth(root) > MAX_BLOCK_DEPTH
     shown = None if root is None or omitted else root
     found = checker.context_findings(context, analysis)
+    # an instance that is no use at the element of the expression is not offered (specification
+    # 3.4); a name the user has typed all the same is reported among the findings
     names, names_truncated = (
-        visible_names(environment, language) if isinstance(environment, Scope) else ([], False)
+        visible_names(environment, language, checker.hidden_instances(context.element_id))
+        if isinstance(environment, Scope)
+        else ([], False)
     )
     return ExpressionAnswer(
         stored=rendering.stored,

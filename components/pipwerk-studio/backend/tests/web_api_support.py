@@ -36,10 +36,9 @@ EMA_TRENDFOLGE_FILE = (
 )
 CASES = ("str-01", "str-03")
 """The test case documents."""
-CHECKED_CASES = ("str-03",)
-"""The test cases whose content the tests check (no finding, names). ``str-01`` uses the indicator
-``Markttechnik``, which is no longer delivered (specification 3.2); order 10 builds the test case
-documents anew with the ZigZag, then ``str-01`` joins this tuple."""
+CHECKED_CASES = ("str-01", "str-03")
+"""The test cases whose content the tests check (no finding, names): both, ``str-01`` uses the
+``ZigZag`` (specification 3.2, 6)."""
 JSON = {"content-type": "application/json"}
 RISK_TEMPLATE_ID = "7c1d4e2a-5b3f-4a86-9d27-e1f0a3c8b645"
 OTHER_ID = "11111111-2222-4333-8444-555555555555"

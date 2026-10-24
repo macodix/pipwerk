@@ -158,6 +158,12 @@ def _instance_to_document(instance: Instance) -> InstanceDocument:
     )
 
 
+def instance_to_document(instance: Instance) -> InstanceDocument:
+    """The document of an instance (what stands in ``rules``, ``instances`` or ``instance`` of
+    another document)."""
+    return _instance_to_document(instance)
+
+
 def _element_to_document(element: Element) -> ElementDocument:
     position = element.position
     return ElementDocument(

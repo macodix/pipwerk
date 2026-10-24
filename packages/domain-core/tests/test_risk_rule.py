@@ -118,7 +118,7 @@ def test_as_a_rule_of_the_strategy_and_of_an_element_at_once() -> None:
     strategy = valid_strategy()
     del strategy.elements[1].properties["volumen"]
     strategy.rules.append(risk_per_trade_instance("risiko", 0.01))
-    strategy.elements[1].rules.append(risk_per_trade_instance("risiko", 0.02))
+    strategy.elements[1].rules.append(risk_per_trade_instance("risiko_element", 0.02))
     assert check_strategy(strategy) == []
 
 

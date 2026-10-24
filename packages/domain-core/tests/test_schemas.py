@@ -69,7 +69,7 @@ EXAMPLES = sorted(EXAMPLE_DIRECTORY.iterdir())
 
 
 def test_there_are_examples() -> None:
-    assert len(EXAMPLES) == 9
+    assert len(EXAMPLES) == 13  # two rule templates and eleven changed versions of str-03
 
 
 @pytest.mark.parametrize("path", EXAMPLES, ids=[item.name for item in EXAMPLES])

@@ -2,6 +2,7 @@
 req-ui-013, req-ui-015, Mangel M15): what the user interface offers after a name and a point
 and in the lists of the blocks."""
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 
 from pipwerk_domain.expressions.symbols import Scope, Symbol, SymbolKind
@@ -181,13 +182,21 @@ def _entry(
     return entry
 
 
-def visible_names(scope: Scope, language: str) -> tuple[list[VisibleName], bool]:
+def visible_names(
+    scope: Scope, language: str, hidden: Collection[str] = ()
+) -> tuple[list[VisibleName], bool]:
     """The names visible from ``scope`` (the inner ones first) and whether the list was cut
-    off at the limit. Strategy parameters are names of their own, under ``Strategie``."""
+    off at the limit. Strategy parameters are names of their own, under ``Strategie``.
+
+    ``hidden`` are the keys, in lower case, of instances that are no use at the place of the
+    expression (specification 3.3, 3.4): the list leaves them out, although an expression can
+    still name them (the consistency check reports that)."""
     budget = _Budget()
     result: list[VisibleName] = []
     truncated = False
     for symbol in scope.visible():
+        if symbol.kind is SymbolKind.INSTANCE and symbol.name.lower() in hidden:
+            continue
         entry = _entry(symbol, (symbol.name,), language, budget, 0)
         if entry is None:
             truncated = True
