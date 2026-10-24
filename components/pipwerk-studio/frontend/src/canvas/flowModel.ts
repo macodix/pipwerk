@@ -1,24 +1,15 @@
 import type { Edge, Node } from '@xyflow/react';
 import type { TFunction } from 'i18next';
 
-import {
-  CARD_HEAD,
-  CARD_W,
-  LANE_GAP,
-  ROW_H,
-  pathThrough,
-  wirePath,
-  type Box,
-  type Dir,
-  type Pt,
-  type Scene,
-} from '../arrange/scene';
+import type { MemberUse } from '../api/usage';
+import { linkPath, pathThrough, type Box, type Dir, type Pt, type Scene } from '../arrange/scene';
 import type { StrategyDocument } from '../document/types';
 import type { IndexedFindings } from '../findings/findingsModel';
 import type { SupportedLanguage } from '../i18n';
 import { cardSubtitle, stepSummary, type DescribeContext } from '../model/describe';
-import { elementName, isCardElement, outputsOf, propertyRows } from '../model/elements';
+import { cardRows, elementName, isCardElement, outputsOf, type CardRow as TypeRow } from '../model/elements';
 import { iconOf, kindClassOf, labelText, type KindClass, type TypeIndex } from '../model/typeIndex';
+import type { UsageModel } from '../model/uses';
 import type { Selection, WireMode } from '../state/studioState';
 
 /**
@@ -48,14 +39,26 @@ export type StepData = {
   armed: string | null;
   /** Another step is waiting for a successor: this step can be clicked to become it. */
   armable: boolean;
+  /** A value is being connected: whether this element takes it (the instance is usable here); `null` if none is. */
+  accepts: boolean | null;
   outputs: StepOutput[];
+  /** The number of lines of values that end here: with none, the connection point for values is not shown. */
   wireCount: number;
   dir: Dir;
   width: number;
   height: number;
 };
 
-export type CardRow = { id: string; label: string; datatype: string; explanation: string; used: boolean; y: number };
+export type CardRow = {
+  id: string;
+  label: string;
+  /** The name of the datatype, or "Methode". */
+  datatype: string;
+  method: boolean;
+  explanation: string;
+  used: boolean;
+  y: number;
+};
 
 export type CardData = {
   element: string;
@@ -67,9 +70,12 @@ export type CardData = {
   level: Level;
   selected: boolean;
   rows: CardRow[];
-  /** All properties of the object, shown and hidden. */
+  /** All properties and methods of the object, shown and hidden. */
   total: number;
   open: boolean;
+  toggle: boolean;
+  /** The card has no element that uses it: it is marked as a card without connection. */
+  unconnected: boolean;
   wireCount: number;
   color: string;
   dir: Dir;
@@ -103,20 +109,19 @@ export type FlowEdgeData = {
 export type WireEdgeData = {
   path: string;
   color: string;
-  solid: boolean;
+  /** The line to the element of the first use: solid and always shown. The others are dashed. */
+  first: boolean;
   related: boolean;
-  dimmed: boolean;
-  count: number;
   midpoint: Pt;
   stubs: Pt[][];
   end: Pt;
+  /** What the line carries: properties and methods with their arguments, in the language of the interface. */
   label: string;
+  /** At least one of the values is passed with "Aktualisieren". */
+  refresh: boolean;
 };
 
-export type StudioNode = Node<
-  StepData | CardData | FrameData | BandData | SectionNodeData | { empty?: boolean },
-  'step' | 'card' | 'frame' | 'band' | 'section' | 'lane'
->;
+export type StudioNode = Node<StepData | CardData | FrameData | BandData | SectionNodeData, 'step' | 'card' | 'frame' | 'band' | 'section'>;
 
 export type StudioEdge = Edge<FlowEdgeData | WireEdgeData, 'flow' | 'wire'>;
 
@@ -124,6 +129,8 @@ export type FlowInput = {
   document: StrategyDocument;
   types: TypeIndex;
   scene: Scene;
+  /** Who uses which instance: the lines of values and which element takes a value. */
+  uses: UsageModel;
   dir: Dir;
   language: SupportedLanguage;
   t: TFunction;
@@ -131,15 +138,13 @@ export type FlowInput = {
   findings: IndexedFindings;
   selection: Selection;
   armed: { from: string; output: string } | null;
+  /** The mode of the switch "Weitere Verwendungen". */
   wires: WireMode;
+  /** The element whose instance is being connected (by dragging from a row or by a click on it), if any. */
+  connecting: string | null;
   selectedEdge: string | null;
   openCards: ReadonlySet<string>;
 };
-
-/** Where the note "objects belong here" stands while the drawing area has no object. */
-export function emptyLanePlace(dir: Dir): Box {
-  return dir === 'v' ? { x: -(CARD_W + LANE_GAP) - 14, y: -44, w: 262, h: 112 } : { x: -14, y: -170, w: 262, h: 112 };
-}
 
 function levelOf(findings: IndexedFindings, id: string): Level {
   return findings.levelOfElement(id);
@@ -149,56 +154,57 @@ function worst(levels: Level[]): Level {
   return levels.includes('error') ? 'error' : levels.includes('hint') ? 'hint' : null;
 }
 
+/**
+ * Whether a line of values is shown (specification 5.3): the line to the element of the first use always; the others
+ * with "Alle", with "Auswahl" only those of the selected element or object, with "Aus" none.
+ */
+export function lineShown(link: { first: boolean; src: string; dst: string }, mode: WireMode, selected: string | null): boolean {
+  if (link.first) {
+    return true;
+  }
+  if (mode === 'all') {
+    return true;
+  }
+  return mode === 'selection' && selected !== null && (link.src === selected || link.dst === selected);
+}
+
+function argumentText(value: string | number | boolean, language: SupportedLanguage, t: TFunction): string {
+  if (typeof value === 'boolean') {
+    return value ? t('values.yes') : t('values.no');
+  }
+  if (typeof value === 'number') {
+    return new Intl.NumberFormat(language, { maximumFractionDigits: 10 }).format(value);
+  }
+  return `"${value}"`;
+}
+
+/** The text of a value on a line: `Wert`, `Mittel(3; 0,5)`, with the sign of "Aktualisieren" behind it. */
+export function memberText(member: MemberUse, rows: ReadonlyMap<string, TypeRow>, language: SupportedLanguage, t: TFunction): string {
+  const name = rows.get(member.name)?.label ?? member.name;
+  const call = member.kind === 'method' ? `${name}(${member.arguments.map((value) => argumentText(value, language, t)).join('; ')})` : name;
+  return member.refresh ? `${call} ${REFRESH_SIGN}` : call;
+}
+
+/** The sign of "Aktualisieren" on a line and in the legend. */
+export const REFRESH_SIGN = '↻';
+
 /** The nodes and edges React Flow shows for a document and its arrangement. */
 export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: StudioEdge[] } {
-  const { document, types, scene, dir, language, t, describe, findings, selection, armed, wires, selectedEdge } = input;
+  const { document, types, scene, uses, dir, language, t, describe, findings, selection, armed, wires, selectedEdge } = input;
   const nodes: StudioNode[] = [];
   const edges: StudioEdge[] = [];
   const selectedElement = selection.kind === 'element' ? selection.id : null;
   const rep = (id: string): string => scene.rep.get(id) ?? id;
+  const cardOrder = new Map(document.elements.filter((element) => isCardElement(element, types)).map((element, index) => [element.id, index]));
+  const colorOf = (card: string): string => WIRE_COLORS[(cardOrder.get(card) ?? 0) % WIRE_COLORS.length] ?? WIRE_COLORS[0];
+  const shownLinks = scene.links.filter((link) => lineShown(link, wires, selectedElement));
   const wireCountTo = new Map<string, number>();
-  for (const wire of scene.wires) {
-    const target = rep(wire.dst);
+  for (const link of shownLinks) {
+    const target = rep(link.dst);
     wireCountTo.set(target, (wireCountTo.get(target) ?? 0) + 1);
   }
-  const cardIndex = new Map([...scene.cards.keys()].map((id, index) => [id, index]));
 
-  // --- lane, frames, bands: the background ---
-  if (scene.lane !== null) {
-    nodes.push({
-      id: 'lane',
-      type: 'lane',
-      position: { x: scene.lane.x, y: scene.lane.y },
-      data: {},
-      width: scene.lane.w,
-      height: scene.lane.h,
-      measured: { width: scene.lane.w, height: scene.lane.h },
-      draggable: false,
-      selectable: false,
-      focusable: false,
-      connectable: false,
-      zIndex: 0,
-      className: 'rf-passive',
-    });
-  } else if (document.elements.length > 0) {
-    // no object yet: the area says what belongs there
-    const place = emptyLanePlace(dir);
-    nodes.push({
-      id: 'lane',
-      type: 'lane',
-      position: { x: place.x, y: place.y },
-      data: { empty: true },
-      width: place.w,
-      height: place.h,
-      measured: { width: place.w, height: place.h },
-      draggable: false,
-      selectable: false,
-      focusable: false,
-      connectable: false,
-      zIndex: 0,
-      className: 'rf-passive',
-    });
-  }
+  // --- frames and bands: the background ---
   for (const frame of scene.frames) {
     const owner = document.elements.find((candidate) => candidate.id === frame.owner);
     if (owner === undefined) {
@@ -304,7 +310,8 @@ export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: Studi
         level: levelOf(findings, element.id),
         selected: selectedElement === element.id,
         armed: armed !== null && armed.from === element.id ? armed.output : null,
-        armable: armed !== null && armed.from !== element.id && type !== undefined && !trigger,
+        armable: armed !== null && !armed.output.startsWith('prop:') && armed.from !== element.id && type !== undefined && !trigger,
+        accepts: input.connecting === null ? null : uses.usable(input.connecting, element.id),
         outputs,
         wireCount: wireCountTo.get(element.id) ?? 0,
         dir,
@@ -329,8 +336,8 @@ export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: Studi
     }
     const geo = scene.cards.get(element.id);
     if (geo !== undefined && isCardElement(element, types)) {
-      const properties = propertyRows(type, element.instance, language);
-      const used = new Set(scene.usage.filter((usage) => usage.src === element.id).map((usage) => usage.prop));
+      const properties = cardRows(type, element.instance, language);
+      const used = new Set(scene.links.filter((link) => link.src === element.id).flatMap((link) => link.rows));
       const rows: CardRow[] = geo.rows.flatMap((id) => {
         const property = properties.find((candidate) => candidate.id === id);
         const y = geo.rowY.get(id);
@@ -341,7 +348,8 @@ export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: Studi
           {
             id,
             label: property.label,
-            datatype: t(`datatype.${property.datatype}`),
+            datatype: property.method ? t('canvas.method') : t(`datatype.${property.datatype}`),
+            method: property.method,
             explanation: property.explanation,
             used: used.has(id),
             y: y - geo.y,
@@ -360,8 +368,10 @@ export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: Studi
         rows,
         total: properties.length,
         open: input.openCards.has(element.id),
+        toggle: geo.toggle,
+        unconnected: !uses.connected(element.id),
         wireCount: wireCountTo.get(element.id) ?? 0,
-        color: WIRE_COLORS[(cardIndex.get(element.id) ?? 0) % WIRE_COLORS.length] ?? WIRE_COLORS[0],
+        color: colorOf(element.id),
         dir,
         width: geo.w,
         height: geo.h,
@@ -420,56 +430,45 @@ export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: Studi
     });
   }
 
-  // --- the lines of the values ---
-  if (wires !== 'off') {
-    for (const wire of scene.wires) {
-      const related = selectedElement !== null && (wire.src === selectedElement || wire.dst === selectedElement);
-      if (wires === 'selection' && !related) {
-        continue;
-      }
-      const target = rep(wire.dst);
-      const firstProp = wire.props[0];
-      if (firstProp === undefined) {
-        continue;
-      }
-      const source = document.elements.find((candidate) => candidate.id === wire.src);
-      const targetElement = document.elements.find((candidate) => candidate.id === wire.dst);
-      const sourceType = source === undefined ? undefined : types.byId.get(source.type);
-      const labels = wire.props.map((prop) => {
-        const row = source === undefined ? undefined : propertyRows(sourceType, source.instance, language).find((candidate) => candidate.id === prop);
-        return row === undefined ? prop : row.label;
-      });
-      const a = wire.pts[0];
-      const b = wire.pts[1];
-      if (a === undefined || b === undefined) {
-        continue;
-      }
-      edges.push({
-        id: `w:${wire.key}`,
-        type: 'wire',
-        source: wire.src,
-        target,
-        sourceHandle: `prop:${firstProp}`,
-        targetHandle: 'data',
-        zIndex: 2,
-        selectable: false,
-        focusable: false,
-        data: {
-          path: wirePath(wire, dir),
-          color: WIRE_COLORS[(cardIndex.get(wire.src) ?? 0) % WIRE_COLORS.length] ?? WIRE_COLORS[0],
-          solid: wire.solid,
-          related,
-          dimmed: selectedElement !== null && !related,
-          count: wire.props.length,
-          midpoint: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-          stubs: wire.stubs,
-          end: b,
-          label: `${source === undefined ? '' : elementName(source, types, language)} → ${
-            targetElement === undefined ? '' : elementName(targetElement, types, language)
-          }: ${labels.join(', ')}${wire.solid ? '' : ` (${t('canvas.wireOnlyExpression')})`}`,
-        },
-      });
+  // --- the lines of values: one per object and element, with all its values in the label ---
+  const linkOf = new Map(uses.links.map((link) => [link.key, link]));
+  for (const wire of scene.links) {
+    if (!lineShown(wire, wires, selectedElement)) {
+      continue;
     }
+    const source = document.elements.find((candidate) => candidate.id === wire.src);
+    const model = linkOf.get(wire.key);
+    const a = wire.pts[0];
+    const b = wire.pts[1];
+    const geo = scene.cards.get(wire.src);
+    if (source === undefined || model === undefined || a === undefined || b === undefined || geo === undefined) {
+      continue;
+    }
+    const rows = new Map(cardRows(types.byId.get(source.type), source.instance, language).map((row) => [row.id, row]));
+    const firstRow = wire.rows.find((row) => geo.rows.includes(row));
+    const label = model.members.map((member) => memberText(member, rows, language, t)).join(', ');
+    edges.push({
+      id: `w:${wire.key}`,
+      type: 'wire',
+      source: wire.src,
+      target: rep(wire.dst),
+      sourceHandle: firstRow === undefined ? 'out' : `prop:${firstRow}`,
+      targetHandle: 'data',
+      zIndex: 2,
+      selectable: false,
+      focusable: false,
+      data: {
+        path: linkPath(wire, dir),
+        color: colorOf(wire.src),
+        first: wire.first,
+        related: selectedElement !== null && (wire.src === selectedElement || wire.dst === selectedElement),
+        midpoint: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        stubs: wire.stubs,
+        end: b,
+        label,
+        refresh: model.members.some((member) => member.refresh),
+      },
+    });
   }
   return { nodes, edges };
 }
@@ -488,5 +487,3 @@ export function stepAt(scene: Scene, point: Pt): string | undefined {
   }
   return undefined;
 }
-
-export { CARD_HEAD, ROW_H };

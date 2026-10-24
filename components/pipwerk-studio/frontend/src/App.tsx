@@ -19,6 +19,8 @@ import type { RemovalPlan } from './state/removal';
 import { StudioContext, useStudio, type StudioValue } from './state/StudioContext';
 import { languageOf, useStudioController } from './state/useStudioController';
 import { useExpressions } from './state/useExpressions';
+import { useUsage } from './state/useUsage';
+import { buildUsageModel } from './model/uses';
 import { Icon } from './ui/Icon';
 import { TipLayer } from './ui/TipLayer';
 import { useStudioLanguage } from './useStudioLanguage';
@@ -251,9 +253,14 @@ export function App() {
         : { document: state.document, types, language, t, answers: expressions.answer },
     [expressions.answer, language, state.document, t, types],
   );
+  const report = useUsage(state.document, types !== null);
+  const uses = useMemo(
+    () => (state.document === null || types === null ? null : buildUsageModel(state.document, types, report, expressions.references)),
+    [expressions.references, report, state.document, types],
+  );
   const value = useMemo<StudioValue>(
-    () => ({ studio, types, expressions, findings, describe }),
-    [describe, expressions, findings, studio, types],
+    () => ({ studio, types, expressions, findings, describe, uses }),
+    [describe, expressions, findings, studio, types, uses],
   );
 
   useEffect(() => {

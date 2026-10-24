@@ -45,11 +45,13 @@ export function StepNode({ data }: NodeProps<Node<StepData, 'step'>>) {
   const outputCount = data.outputs.length;
   return (
     <div
-      className={`node k-${data.cls}${data.selected ? ' selected' : ''}${state}${data.armed !== null ? ' armed' : ''}${data.armable ? ' armable' : ''}${data.unknown ? ' unknown' : ''}`}
+      className={`node k-${data.cls}${data.selected ? ' selected' : ''}${state}${data.armed !== null ? ' armed' : ''}${data.armable ? ' armable' : ''}${data.unknown ? ' unknown' : ''}${data.accepts === true ? ' accepts' : ''}${data.accepts === false ? ' refuses' : ''}`}
       data-testid="node"
       data-node-id={data.element}
       data-node-name={data.name}
       data-type-name={data.typeName}
+      data-accepts={data.accepts === null ? undefined : data.accepts ? 'yes' : 'no'}
+      data-tip={data.accepts === false ? t('canvas.refuses') : undefined}
       tabIndex={0}
       aria-label={`${data.typeName}: ${data.name}`}
       onKeyDown={(event) => {
@@ -144,6 +146,7 @@ export function CardNode({ data }: NodeProps<Node<CardData, 'card'>>) {
       data-testid="card"
       data-node-id={data.element}
       data-node-name={data.name}
+      data-unconnected={data.unconnected ? '1' : undefined}
       tabIndex={0}
       aria-label={`${data.typeName}: ${data.name}`}
       onKeyDown={(event) => {
@@ -192,12 +195,25 @@ export function CardNode({ data }: NodeProps<Node<CardData, 'card'>>) {
               className="port prop"
               data-testid={`port-prop-${row.id}`}
               data-tip={t('canvas.portValue')}
+              aria-label={row.label}
               isConnectableEnd={false}
+              onClick={(event) => {
+                event.stopPropagation();
+                actions.armOutput(data.element, `prop:${row.id}`);
+              }}
             />
           </li>
         ))}
       </ul>
-      {data.total > 3 && (data.rows.length < data.total || data.open) ? (
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="out"
+        className="port prop-fallback"
+        style={{ top: 25 }}
+        isConnectable={false}
+      />
+      {data.toggle ? (
         <button
           type="button"
           className="card-more nodrag nopan"
@@ -334,18 +350,3 @@ export function SectionNode({ data }: NodeProps<Node<SectionNodeData, 'section'>
   );
 }
 
-/**
- * The area "Objekte und ihre Werte" behind the cards. It carries no hint: the drawing area shows none (specification
- * 5.3). The area gives way to the placement of the objects at the element of their first use (order 12).
- */
-export function LaneNode({ data }: NodeProps<Node<{ empty?: boolean }, 'lane'>>) {
-  const { t } = useTranslation();
-  return (
-    <div className={data.empty === true ? 'lane-empty' : 'lane'} data-testid={data.empty === true ? 'lane-empty' : 'lane'}>
-      <span className="lane-title">
-        <Icon name="layers" size={14} />
-        {t('canvas.lane')}
-      </span>
-    </div>
-  );
-}

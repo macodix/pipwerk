@@ -1,8 +1,9 @@
 // Geometry of the drawing area: automatic arrangement of the flow, the frames of the
-// managements, the sections and the area for objects, plus the lines of the data
-// connections between them. The arrangement is taken over from the confirmed prototype
-// (specification E8, 5.3); React Flow shows what is computed here. The input is
-// reduced to what the arrangement needs, so that it knows no single type (E2).
+// managements and the sections, the places of the objects beside the elements that use
+// them, plus the lines of the data connections between them. The arrangement is taken over
+// from the confirmed prototype (specification E8, 5.3); React Flow shows what is computed
+// here. The input is reduced to what the arrangement needs, so that it knows no single
+// type (E2).
 import { layered } from './layout';
 import type { LEdge, LNode, Pt } from './layout';
 
@@ -18,8 +19,15 @@ export const ROW_H = 27;
 export const CARD_HEAD = 50;
 export const FRAME_HEAD = 36;
 export const FRAME_PAD = 18;
-export const LANE_GAP = 96;
+/** The room between a card and the element it sits beside (the label of the line stands there). */
+export const CARD_GAP = 72;
+/** The room between two cards that sit beside the same element. */
+export const CARD_STACK_GAP = 16;
+/** The room between the flow and a card that no element uses. */
+export const FREE_GAP = 72;
 const MORE_ROW_H = 30;
+/** The rows of an object that no element uses yet. */
+export const UNUSED_ROWS = 3;
 
 export interface Box {
   x: number;
@@ -49,11 +57,19 @@ export interface SceneStep {
   pos: Pt | null;
 }
 
-/** An object on the drawing area, shown as a card with a row per property. */
+/**
+ * An object on the drawing area, shown as a card with a row per property and method. `home` is the element (or the
+ * card of another instance) it sits beside, `null` if no element uses it; `pos` is the place the user gave it.
+ */
 export interface SceneCard {
   id: string;
-  properties: string[];
+  /** Every property and method of the object, in the order of the card. */
+  rows: string[];
+  /** The rows whose values an element uses. */
+  usedRows: string[];
   open: boolean;
+  home: string | null;
+  pos: Pt | null;
 }
 
 export interface SceneConnection {
@@ -70,12 +86,13 @@ export interface SceneSection {
   collapsed: boolean;
 }
 
-/** A value of a property of an object that an element uses. `solid`: the user connected it; otherwise only an expression uses it. */
-export interface Usage {
+/** The line of values from a card to an element (or to the card of another instance). `first`: it leads to the element of the first use. */
+export interface SceneLink {
+  key: string;
   src: string;
-  prop: string;
   dst: string;
-  solid: boolean;
+  first: boolean;
+  rows: string[];
 }
 
 export interface SceneInput {
@@ -84,7 +101,7 @@ export interface SceneInput {
   connections: SceneConnection[];
   sections: SceneSection[];
   collapsedManagements: string[];
-  usage: Usage[];
+  links: SceneLink[];
 }
 
 export interface FlowEdgeGeo {
@@ -103,17 +120,21 @@ export interface FlowEdgeGeo {
 
 export interface CardGeo extends Box {
   id: string;
+  /** The rows that are shown. */
   rows: string[];
+  /** The number of rows that are hidden until "Alle anzeigen". */
   more: number;
+  /** Whether the card has the button that shows all rows or fewer. */
+  toggle: boolean;
   rowY: Map<string, number>;
 }
 
-export interface WireGeo {
+export interface LinkGeo {
   key: string;
   src: string;
   dst: string;
-  props: string[];
-  solid: boolean;
+  first: boolean;
+  rows: string[];
   pts: Pt[];
   stubs: Pt[][];
 }
@@ -135,12 +156,10 @@ export interface Scene {
   frames: FrameGeo[];
   bands: BandGeo[];
   edges: FlowEdgeGeo[];
-  wires: WireGeo[];
-  lane: Box | null;
+  links: LinkGeo[];
   bounds: Box;
   /** Elements inside a collapsed section: the identifier of the box that stands for them. */
   rep: Map<string, string>;
-  usage: Usage[];
 }
 
 // ---- ports ------------------------------------------------------------------------
@@ -152,8 +171,76 @@ export function outPort(b: Box, i: number, n: number, dir: Dir): Pt {
 export function inPort(b: Box, dir: Dir): Pt {
   return dir === 'v' ? { x: b.x + b.w / 2, y: b.y } : { x: b.x, y: b.y + b.h / 2 };
 }
+/** The one point at which the lines of values end: at the side where the objects lie (left, or above). */
 export function dataPort(b: Box, dir: Dir): Pt {
   return dir === 'v' ? { x: b.x, y: b.y + b.h / 2 } : { x: b.x + b.w / 2, y: b.y };
+}
+
+// ---- cards ------------------------------------------------------------------------
+
+interface CardShape {
+  card: SceneCard;
+  rows: string[];
+  more: number;
+  toggle: boolean;
+  h: number;
+}
+
+/** The rows of a card that are shown: the used ones, for an unused object the first three, with "Alle anzeigen" all. */
+function shapeOf(card: SceneCard): CardShape {
+  const total = card.rows.length;
+  const used = card.rows.filter((row) => card.usedRows.includes(row));
+  const rows = card.open ? card.rows : used.length > 0 ? used : card.rows.slice(0, UNUSED_ROWS);
+  const toggle = total > UNUSED_ROWS && (rows.length < total || card.open);
+  return { card, rows, more: total - rows.length, toggle, h: CARD_HEAD + rows.length * ROW_H + (toggle ? MORE_ROW_H : 8) };
+}
+
+/** The places of cards relative to the box they sit beside, and the room they need on the side of the objects. */
+interface Attachment {
+  rel: Map<string, Pt>;
+  /** Vertical flow: the room to the left of the element; horizontal flow: the room above it. */
+  before: number;
+  /** The extent of the cards across that direction. */
+  across: number;
+}
+
+/**
+ * Lays the cards that sit beside one box relative to its top left corner: in columns to its left (vertical flow) or in
+ * rows above it (horizontal flow), a card of an instance that only another instance uses one column or row further out.
+ */
+function attach(levels: CardShape[][], parentOf: Map<string, string>, dir: Dir): Attachment {
+  const rel = new Map<string, Pt>();
+  let across = 0;
+  let before = 0;
+  if (dir === 'v') {
+    levels.forEach((level, index) => {
+      let cursor = 0;
+      for (const shape of level) {
+        const parent = rel.get(parentOf.get(shape.card.id) ?? '');
+        const y = Math.max(cursor, index === 0 || parent === undefined ? 0 : parent.y);
+        rel.set(shape.card.id, { x: -(index + 1) * (CARD_W + CARD_GAP), y });
+        cursor = y + shape.h + CARD_STACK_GAP;
+      }
+      across = Math.max(across, cursor - CARD_STACK_GAP);
+    });
+    before = levels.length * (CARD_W + CARD_GAP);
+  } else {
+    let bottom = -CARD_GAP;
+    levels.forEach((level, index) => {
+      let cursor = 0;
+      const tallest = Math.max(0, ...level.map((shape) => shape.h));
+      for (const shape of level) {
+        const parent = rel.get(parentOf.get(shape.card.id) ?? '');
+        const x = Math.max(cursor, index === 0 || parent === undefined ? 0 : parent.x);
+        rel.set(shape.card.id, { x, y: bottom - shape.h });
+        cursor = x + CARD_W + CARD_STACK_GAP;
+      }
+      across = Math.max(across, cursor - CARD_STACK_GAP);
+      bottom -= tallest + CARD_GAP;
+    });
+    before = levels.length === 0 ? 0 : -(bottom + CARD_GAP);
+  }
+  return { rel, before, across };
 }
 
 interface FlowPlan {
@@ -165,7 +252,10 @@ interface FlowPlan {
   via: Map<string, Pt[]>;
   size: Box;
   edges: LEdge[];
+  /** The size of a node of the layout: the element together with the cards that sit beside it. */
   nodeSize: Map<string, { w: number; h: number }>;
+  /** Where the element lies inside its node of the layout. */
+  offset: Map<string, Pt>;
 }
 
 function transpose(p: Pt): Pt {
@@ -189,7 +279,6 @@ export function frameAt(scene: Scene, p: Pt, exclude?: string): FrameGeo | undef
 
 export function buildScene(input: SceneInput, dir: Dir): Scene {
   const stepById = new Map(input.steps.map((s) => [s.id, s]));
-  const sectionById = new Map(input.sections.map((s) => [s.id, s]));
   const rep = new Map<string, string>();
   for (const sec of input.sections) {
     if (sec.collapsed) {
@@ -216,7 +305,85 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
   });
   const hasStart = new Set(startConnections.map((c) => c.from));
 
+  // ---- cards: the box each one sits beside, in columns (levels) around it ----
+  const shapes = new Map(input.cards.map((card) => [card.id, shapeOf(card)]));
+  const cardById = new Map(input.cards.map((card) => [card.id, card]));
+  /** The step, section box or card the user placed that a card is arranged around, the card it hangs at, and its column. */
+  const rootOf = new Map<string, string>();
+  const parentOf = new Map<string, string>();
+  const depthOf = new Map<string, number>();
+  /** Follows `home` from a card to the element, or to a card the user placed; `null` if it ends nowhere. */
+  const chainOf = (card: SceneCard): { cards: SceneCard[]; root: string } | null => {
+    const cards = [card];
+    let current = card;
+    for (;;) {
+      const home = current.home;
+      if (home === null) {
+        return null;
+      }
+      const next = cardById.get(home);
+      if (next === undefined) {
+        return stepById.has(home) ? { cards, root: repOf(home) } : null;
+      }
+      if (next === card || cards.includes(next)) {
+        return null;
+      }
+      if (next.pos !== null) {
+        return { cards, root: next.id };
+      }
+      cards.push(next);
+      current = next;
+    }
+  };
+  for (const card of input.cards) {
+    const chain = card.pos === null ? chainOf(card) : null;
+    if (chain !== null) {
+      rootOf.set(card.id, chain.root);
+      depthOf.set(card.id, chain.cards.length - 1);
+      const parent = chain.cards[1];
+      if (parent !== undefined) {
+        parentOf.set(card.id, parent.id);
+      }
+    }
+  }
+  const attachments = new Map<string, Attachment>();
+  {
+    const byRoot = new Map<string, CardShape[][]>();
+    for (const card of input.cards) {
+      const root = rootOf.get(card.id);
+      const shape = shapes.get(card.id);
+      if (card.pos !== null || root === undefined || shape === undefined) {
+        continue;
+      }
+      const levels = byRoot.get(root) ?? [];
+      const depth = depthOf.get(card.id) ?? 0;
+      while (levels.length <= depth) {
+        levels.push([]);
+      }
+      levels[depth]?.push(shape);
+      byRoot.set(root, levels);
+    }
+    for (const [root, levels] of byRoot) {
+      attachments.set(root, attach(levels, parentOf, dir));
+    }
+  }
+
   const plans = new Map<string | null, FlowPlan>();
+
+  /** The size of a node of the layout for an element or a section box and the place of the element inside it. */
+  function sized(id: string, w: number, h: number, nodeSize: Map<string, { w: number; h: number }>, offset: Map<string, Pt>): void {
+    const around = attachments.get(id);
+    if (around === undefined) {
+      nodeSize.set(id, { w, h });
+      offset.set(id, { x: 0, y: 0 });
+    } else if (dir === 'v') {
+      nodeSize.set(id, { w: w + around.before, h: Math.max(h, around.across) });
+      offset.set(id, { x: around.before, y: 0 });
+    } else {
+      nodeSize.set(id, { w: Math.max(w, around.across), h: h + around.before });
+      offset.set(id, { x: 0, y: around.before });
+    }
+  }
 
   function plan(key: string | null): FlowPlan {
     const cached = plans.get(key);
@@ -225,18 +392,19 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
     }
     const members = input.steps.filter((s) => s.mgmt === key);
     const nodeSize = new Map<string, { w: number; h: number }>();
+    const offset = new Map<string, Pt>();
     const nodeIds: string[] = [];
     const secNodes: FlowPlan['secNodes'] = [];
     for (const s of members) {
       const r = repOf(s.id);
       if (r.startsWith('sec:')) {
         if (!nodeSize.has(r)) {
-          nodeSize.set(r, { w: EL_W, h: SEC_H });
+          sized(r, EL_W, SEC_H, nodeSize, offset);
           nodeIds.push(r);
           secNodes.push({ id: r, secId: r.slice(4) });
         }
       } else {
-        nodeSize.set(s.id, { w: EL_W, h: EL_H });
+        sized(s.id, EL_W, EL_H, nodeSize, offset);
         nodeIds.push(s.id);
       }
     }
@@ -304,6 +472,7 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
       via,
       edges,
       nodeSize,
+      offset,
       size: { x: 0, y: 0, w: sw ? res.w : res.h, h: sw ? res.h : res.w },
     };
     plans.set(key, result);
@@ -324,6 +493,7 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
     for (const id of pl.ids) {
       const p = pl.pos.get(id) ?? { x: 0, y: 0 };
       const sz = pl.nodeSize.get(id) ?? { w: EL_W, h: EL_H };
+      const inside = pl.offset.get(id) ?? { x: 0, y: 0 };
       if (id.startsWith('frame:')) {
         const owner = id.slice(6);
         const fr = pl.frames.get(owner);
@@ -337,14 +507,14 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
           emit(fr, ox + p.x + FRAME_PAD + (sz.w - 2 * FRAME_PAD - fr.size.w) / 2, oy + p.y + FRAME_HEAD + FRAME_PAD);
         }
       } else if (id.startsWith('sec:')) {
-        secNodes.set(id, { x: ox + p.x, y: oy + p.y, w: sz.w, h: sz.h });
+        secNodes.set(id, { x: ox + p.x + inside.x, y: oy + p.y + inside.y, w: EL_W, h: SEC_H });
       } else {
         const step = stepById.get(id);
         const user = step?.pos ?? null;
         if (user !== null) {
           moved.add(id);
         }
-        nodes.set(id, { x: user?.x ?? ox + p.x, y: user?.y ?? oy + p.y, w: sz.w, h: sz.h });
+        nodes.set(id, { x: user?.x ?? ox + p.x + inside.x, y: user?.y ?? oy + p.y + inside.y, w: EL_W, h: EL_H });
       }
     }
     for (const ed of pl.edges) {
@@ -447,94 +617,72 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
     bands.push({ id: sec.id, x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
   }
 
-  // ---- objects without flow connection: in the order of the elements ----
-  const usedProps = new Map<string, Set<string>>();
-  for (const u of input.usage) {
-    const set = usedProps.get(u.src) ?? new Set<string>();
-    set.add(u.prop);
-    usedProps.set(u.src, set);
-  }
-  const heights = input.cards.map((card) => {
-    const used = card.properties.filter((p) => usedProps.get(card.id)?.has(p) === true);
-    const rows = card.open ? card.properties : used.length > 0 ? used : card.properties.slice(0, 3);
-    const more = card.properties.length - rows.length;
-    return { card, rows, more, h: CARD_HEAD + rows.length * ROW_H + (card.properties.length > 3 || card.open ? MORE_ROW_H : 8) };
-  });
+  // ---- cards: where the user put them, beside their element, or beside the flow ----
   const cards = new Map<string, CardGeo>();
-  let lane: Box | null = null;
-  if (heights.length > 0) {
-    if (dir === 'v') {
-      const x = -(CARD_W + LANE_GAP);
-      let y = 0;
-      for (const hh of heights) {
-        const rowY = new Map<string, number>();
-        hh.rows.forEach((p, i) => rowY.set(p, y + CARD_HEAD + i * ROW_H + ROW_H / 2));
-        cards.set(hh.card.id, { id: hh.card.id, x, y, w: CARD_W, h: hh.h, rows: hh.rows, more: hh.more, rowY });
-        y += hh.h + 22;
+  const putCard = (shape: CardShape, x: number, y: number): void => {
+    const rowY = new Map<string, number>();
+    shape.rows.forEach((row, index) => rowY.set(row, y + CARD_HEAD + index * ROW_H + ROW_H / 2));
+    cards.set(shape.card.id, { id: shape.card.id, x, y, w: CARD_W, h: shape.h, rows: shape.rows, more: shape.more, toggle: shape.toggle, rowY });
+  };
+  for (const shape of shapes.values()) {
+    if (shape.card.pos !== null) {
+      putCard(shape, shape.card.pos.x, shape.card.pos.y);
+    }
+  }
+  const rootBox = (root: string): Box | undefined => (root.startsWith('sec:') ? secNodes.get(root) : (nodes.get(root) ?? cards.get(root)));
+  for (const [root, around] of attachments) {
+    const box = rootBox(root);
+    if (box === undefined) {
+      continue;
+    }
+    for (const [id, at] of around.rel) {
+      const shape = shapes.get(id);
+      if (shape !== undefined) {
+        putCard(shape, box.x + at.x, box.y + at.y);
       }
-      lane = { x: x - 14, y: -44, w: CARD_W + 28, h: y + 44 };
-    } else {
-      const maxH = Math.max(...heights.map((x) => x.h));
-      const y = -(maxH + 120);
-      let x = 0;
-      for (const hh of heights) {
-        const rowY = new Map<string, number>();
-        hh.rows.forEach((p, i) => rowY.set(p, y + CARD_HEAD + i * ROW_H + ROW_H / 2));
-        cards.set(hh.card.id, { id: hh.card.id, x, y, w: CARD_W, h: hh.h, rows: hh.rows, more: hh.more, rowY });
-        x += CARD_W + 22;
+    }
+  }
+  // objects that no element uses and the user did not place: beside the flow, covering nothing
+  const free = input.cards.filter((card) => card.pos === null && !rootOf.has(card.id));
+  if (free.length > 0) {
+    const others: Box[] = [...nodes.values(), ...secNodes.values(), ...frames, ...bands, ...cards.values()];
+    const right = others.length === 0 ? 0 : Math.max(...others.map((b) => b.x + b.w));
+    const bottom = others.length === 0 ? 0 : Math.max(...others.map((b) => b.y + b.h));
+    const left = others.length === 0 ? 0 : Math.min(...others.map((b) => b.x));
+    const top = others.length === 0 ? 0 : Math.min(...others.map((b) => b.y));
+    let cursor = 0;
+    for (const card of free) {
+      const shape = shapes.get(card.id);
+      if (shape === undefined) {
+        continue;
       }
-      lane = { x: -14, y: y - 44, w: x + 14, h: maxH + 58 };
+      if (dir === 'v') {
+        putCard(shape, right + FREE_GAP, top + cursor);
+        cursor += shape.h + CARD_STACK_GAP;
+      } else {
+        putCard(shape, left + cursor, bottom + FREE_GAP);
+        cursor += CARD_W + CARD_STACK_GAP;
+      }
     }
   }
 
-  // ---- data wires ----
-  const wires: WireGeo[] = [];
-  const groups = new Map<string, Usage[]>();
-  for (const u of input.usage) {
-    if (!cards.has(u.src)) {
+  // ---- lines of values ----
+  const links: LinkGeo[] = [];
+  for (const link of input.links) {
+    const src = cards.get(link.src);
+    const dst: Box | undefined = cards.get(link.dst) ?? nodes.get(link.dst) ?? secNodes.get(repOf(link.dst));
+    if (src === undefined || dst === undefined || link.src === link.dst) {
       continue;
     }
-    const dstBox = nodes.get(u.dst) ?? cards.get(u.dst);
-    const dstVisible = dstBox !== undefined || rep.has(u.dst);
-    if (!dstVisible || u.src === u.dst) {
-      continue;
-    }
-    const k = `${u.src}>${u.dst}`;
-    const list = groups.get(k) ?? [];
-    list.push(u);
-    groups.set(k, list);
-  }
-  for (const [k, us] of groups) {
-    const first = us[0];
-    if (first === undefined) {
-      continue;
-    }
-    const src = cards.get(first.src);
-    const dst: Box | undefined = nodes.get(first.dst) ?? cards.get(first.dst) ?? secNodes.get(repOf(first.dst));
-    if (src === undefined || dst === undefined) {
-      continue;
-    }
-    const ys = us.map((u) => src.rowY.get(u.prop)).filter((y): y is number => y !== undefined);
-    const avgY = ys.length > 0 ? ys.reduce((a, b) => a + b, 0) / ys.length : src.y + src.h / 2;
+    const ys = link.rows.map((row) => src.rowY.get(row)).filter((y): y is number => y !== undefined);
+    const avgY = ys.length > 0 ? ys.reduce((a, b) => a + b, 0) / ys.length : src.y + CARD_HEAD / 2;
     const stubs = ys.length > 1 ? ys.map((y) => [{ x: src.x + src.w, y }, { x: src.x + src.w + 14, y }]) : [];
     const start: Pt = { x: src.x + src.w + (ys.length > 1 ? 14 : 0), y: avgY };
-    const end = dataPort(dst, dir);
-    wires.push({
-      key: k,
-      src: first.src,
-      dst: first.dst,
-      props: us.map((u) => u.prop),
-      solid: us.some((u) => u.solid),
-      pts: [start, end],
-      stubs,
-    });
+    links.push({ key: link.key, src: link.src, dst: link.dst, first: link.first, rows: link.rows, pts: [start, dataPort(dst, dir)], stubs });
   }
 
   // ---- bounds ----
   const all: Box[] = [...nodes.values(), ...secNodes.values(), ...cards.values(), ...frames, ...bands];
-  if (lane !== null) {
-    all.push(lane);
-  }
   if (all.length === 0) {
     all.push({ x: 0, y: 0, w: EL_W, h: EL_H });
   }
@@ -543,8 +691,7 @@ export function buildScene(input: SceneInput, dir: Dir): Scene {
   const x1 = Math.max(...all.map((b) => b.x + b.w));
   const y1 = Math.max(...all.map((b) => b.y + b.h));
 
-  void sectionById;
-  return { nodes, secNodes, cards, frames, bands, edges, wires, lane, bounds: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, rep, usage: input.usage };
+  return { nodes, secNodes, cards, frames, bands, edges, links, bounds: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, rep };
 }
 
 /** Smooth path through points with tangents along the main axis. */
@@ -571,8 +718,8 @@ export function pathThrough(pts: Pt[], dir: Dir): string {
   return d;
 }
 
-/** Wire path: leaves the card to the right (vertical) or downward (horizontal). */
-export function wirePath(w: WireGeo, dir: Dir): string {
+/** Path of a line of values: leaves the card to the right and ends at the connection point of the element. */
+export function linkPath(w: LinkGeo, dir: Dir): string {
   const a = w.pts[0];
   const b = w.pts[1];
   if (a === undefined || b === undefined) {

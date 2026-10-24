@@ -1,8 +1,6 @@
 import type { Choice, DataType, Label, TypeDescription } from '../api/elementTypes';
 import type { ElementDocument, InstanceDocument, StrategyDocument } from '../document/types';
-import { isConnectionValue } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
-import type { Usage } from '../arrange/scene';
 import { holdsInstance, labelText, managementOutput, type TypeIndex } from './typeIndex';
 
 /** The name the user sees for an element: the name of its instance, its own name, or the name of its type. */
@@ -67,6 +65,37 @@ export function propertyRows(
     });
   }
   return rows;
+}
+
+/** A row of a card: a property or a method of the object, with its name and the datatype or the word "Methode". */
+export type CardRow = PropertyRow & {
+  /** The row is a method; the datatype is the one of its result. */
+  method: boolean;
+};
+
+/**
+ * The rows of the card of an object (specification 5.3): its properties, then its methods, then the own properties of
+ * the instance. Each is one row with its name and a connection point.
+ */
+export function cardRows(
+  type: TypeDescription | undefined,
+  instance: InstanceDocument | null | undefined,
+  language: SupportedLanguage,
+): CardRow[] {
+  const rows = propertyRows(type, instance, language);
+  const own = rows.filter((row) => row.own);
+  const supplied = rows.filter((row) => !row.own);
+  const methods: CardRow[] = (type?.methods ?? []).map((method) => ({
+    id: method.id,
+    label: labelOrText(method.label, language),
+    explanation: labelOrText(method.explanation, language),
+    datatype: method.datatype,
+    choices: method.choices,
+    objectType: method.objectType,
+    own: false,
+    method: true,
+  }));
+  return [...supplied.map((row) => ({ ...row, method: false })), ...methods, ...own.map((row) => ({ ...row, method: false }))];
 }
 
 /** The outputs of an element: those of its type, for an unknown type the ones with a stored connection. */
@@ -138,47 +167,3 @@ export function instanceElementByKey(document: StrategyDocument): Map<string, El
 
 /** A property of an instance that an expression addresses: the identifiers of the instance and the property. */
 export type ExpressionReference = { instance: string; property: string };
-
-/**
- * The values that the user connected or that expressions use, for the lines of the drawing area. `references` holds,
- * per element, the properties its expressions address (from the answer of the expression endpoint).
- */
-export function collectUsage(
-  document: StrategyDocument,
-  references: ReadonlyMap<string, readonly ExpressionReference[]>,
-): Usage[] {
-  const byKey = instanceElementByKey(document);
-  const found = new Map<string, Usage>();
-  const add = (instanceKey: string, property: string, dst: string, solid: boolean): void => {
-    const source = byKey.get(instanceKey.toLowerCase());
-    if (source === undefined || source.id === dst) {
-      return;
-    }
-    const key = `${source.id}|${property}|${dst}`;
-    const existing = found.get(key);
-    if (existing === undefined) {
-      found.set(key, { src: source.id, prop: property, dst, solid });
-    } else if (solid) {
-      existing.solid = true;
-    }
-  };
-  for (const element of document.elements) {
-    for (const input of element.inputs) {
-      add(input.instance, input.property, element.id, true);
-    }
-    const bindings = [
-      ...Object.values(element.parameters),
-      ...Object.values(element.properties),
-      ...Object.values(element.instance?.parameter_values ?? {}),
-    ];
-    for (const binding of bindings) {
-      if (binding.kind === 'connection' && isConnectionValue(binding.value)) {
-        add(binding.value.instance, binding.value.property, element.id, true);
-      }
-    }
-    for (const reference of references.get(element.id) ?? []) {
-      add(reference.instance, reference.property, element.id, false);
-    }
-  }
-  return [...found.values()];
-}

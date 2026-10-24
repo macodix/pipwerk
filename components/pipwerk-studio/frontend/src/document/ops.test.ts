@@ -9,8 +9,7 @@ import {
   addInput,
   connect,
   createSection,
-  moveObject,
-  placeObject,
+  setFirstUse,
   removeElement,
   removeInput,
   removeSection,
@@ -315,20 +314,19 @@ describe('assignments, names and strategy parameters', () => {
   });
 });
 
-describe('order of the objects (specification 5.3)', () => {
-  it('moves an instance up and down and puts it at a place', () => {
+describe('first use of an instance (specification 3.3, 5.3)', () => {
+  it('writes the element with which an instance was connected first, and clears it', () => {
     let document = inventedStrategy();
     document = addElement(document, types, meterElement('Zweiter', 'zweiter'), null);
-    document = addElement(document, types, meterElement('Dritter', 'dritter'), null);
-    const names = () => document.elements.filter((element) => element.instance !== undefined).map((element) => element.instance?.name);
-    expect(names()).toEqual(['Messer', 'Zweiter', 'Dritter']);
+    const meter = byName(document, 'Zweiter');
+    const step = byName(document, 'Tun');
 
-    document = moveObject(document, types, byName(document, 'Zweiter'), -1);
-    expect(names()).toEqual(['Zweiter', 'Messer', 'Dritter']);
-    document = moveObject(document, types, byName(document, 'Zweiter'), -1);
-    expect(names()).toEqual(['Zweiter', 'Messer', 'Dritter']);
-    document = placeObject(document, types, byName(document, 'Zweiter'), 2);
-    expect(names()).toEqual(['Messer', 'Dritter', 'Zweiter']);
+    document = setFirstUse(document, meter, step);
+    expect(document.elements.find((element) => element.id === meter)?.instance?.first_use).toBe(step);
+    document = setFirstUse(document, meter, null);
+    expect(document.elements.find((element) => element.id === meter)?.instance?.first_use).toBeNull();
+    // an element without an instance stays as it is
+    expect(setFirstUse(document, step, meter)).toEqual(document);
   });
 });
 

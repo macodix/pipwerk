@@ -51,8 +51,12 @@ export function FlowEdge({ data }: EdgeProps<Edge<FlowEdgeData, 'flow'>>) {
   );
 }
 
-/** The line of a value: from the row of an object to an element, dashed in the colour of the object; several values of one object are one line with their number. */
-export function WireEdge({ data }: EdgeProps<Edge<WireEdgeData, 'wire'>>) {
+/**
+ * The line of values from the card of an object to an element, in the colour of the object. The line to the element of
+ * the first use is solid and always there, the others are dashed (specification 5.3). Several values of one object
+ * for one element are one line; the label names them all, a method with its arguments, and marks "Aktualisieren".
+ */
+export function WireEdge({ id, data }: EdgeProps<Edge<WireEdgeData, 'wire'>>) {
   if (data === undefined) {
     return null;
   }
@@ -61,11 +65,12 @@ export function WireEdge({ data }: EdgeProps<Edge<WireEdgeData, 'wire'>>) {
   const lastStub = stubs[stubs.length - 1];
   return (
     <g
-      className={`wire${data.solid ? ' solid' : ' name'}${data.related ? ' on' : ''}${data.dimmed ? ' dim' : ''}`}
+      className={`wire${data.first ? ' first' : ' more'}${data.related ? ' on' : ''}`}
       style={{ color: data.color }}
       data-testid="wire"
-      data-solid={data.solid ? '1' : '0'}
-      data-count={data.count}
+      data-first={data.first ? '1' : '0'}
+      data-refresh={data.refresh ? '1' : '0'}
+      data-label={data.label}
     >
       {stubs.map((stub, index) =>
         stub[0] !== undefined && stub[1] !== undefined ? (
@@ -73,21 +78,25 @@ export function WireEdge({ data }: EdgeProps<Edge<WireEdgeData, 'wire'>>) {
         ) : null,
       )}
       {firstStub?.[1] !== undefined && lastStub?.[1] !== undefined && stubs.length > 1 ? (
-        <path
-          d={`M ${firstStub[1].x} ${firstStub[1].y} L ${lastStub[1].x} ${lastStub[1].y}`}
-          className="wire-stub"
-        />
+        <path d={`M ${firstStub[1].x} ${firstStub[1].y} L ${lastStub[1].x} ${lastStub[1].y}`} className="wire-stub" />
       ) : null}
       <path d={data.path} className="wire-line" />
       <path d={data.path} className="wire-hit" data-tip={data.label} />
       <circle cx={data.end.x} cy={data.end.y} r="4" className="wire-end" />
-      {data.count > 1 ? (
-        <g transform={`translate(${data.midpoint.x} ${data.midpoint.y})`} className="wire-badge">
-          <rect x="-13" y="-9" width="26" height="18" rx="9" />
-          <text textAnchor="middle" dy="4">
-            {data.count}
-          </text>
-        </g>
+      {data.label !== '' ? (
+        <EdgeLabelRenderer>
+          <span
+            className={`wire-label${data.first ? ' first' : ''}`}
+            style={{
+              color: data.color,
+              transform: `translate(-50%, -50%) translate(${data.midpoint.x}px, ${data.midpoint.y}px)`,
+            }}
+            data-testid="wire-label"
+            data-wire={id}
+          >
+            {data.label}
+          </span>
+        </EdgeLabelRenderer>
       ) : null}
     </g>
   );

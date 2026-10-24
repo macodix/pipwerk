@@ -471,33 +471,6 @@ export function ElementView({ element }: { element: ElementDocument }) {
         </Section>
       ) : null}
 
-      {card ? (
-        <Section title={t('properties.placeInArea')} testid="sec-place">
-          <div className="btn-row">
-            <Btn
-              small
-              icon="up"
-              testid="object-up"
-              onClick={() => {
-                actions.moveObject(element.id, -1);
-              }}
-            >
-              {t('properties.up')}
-            </Btn>
-            <Btn
-              small
-              icon="down"
-              testid="object-down"
-              onClick={() => {
-                actions.moveObject(element.id, 1);
-              }}
-            >
-              {t('properties.down')}
-            </Btn>
-          </div>
-        </Section>
-      ) : null}
-
       <footer className="props-foot">
         <Btn
           icon="trash"

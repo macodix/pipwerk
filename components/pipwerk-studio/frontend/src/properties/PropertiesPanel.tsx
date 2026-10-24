@@ -48,10 +48,19 @@ function MessageBar() {
   const { t } = useTranslation();
   const { state, actions } = studio;
   if (state.armed !== null) {
+    const value = state.armed.output.startsWith('prop:');
     return (
       <div className="message-bar waiting" role="status" data-testid="armed-banner">
         <Icon name="link" size={16} />
-        <span>{t('notices.armed')}</span>
+        <span>
+          {t(value ? 'notices.armedValue' : 'notices.armed')}
+          {value && state.notice !== null && studio.noticeVisible && state.notice.key.startsWith('notices.connection.') ? (
+            <>
+              {' '}
+              <span data-testid="message">{t(state.notice.key, state.notice.params)}</span>
+            </>
+          ) : null}
+        </span>
         <Btn
           small
           kind="quiet"

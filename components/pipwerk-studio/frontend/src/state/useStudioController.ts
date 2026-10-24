@@ -28,8 +28,6 @@ import {
   connect,
   createSection,
   disconnect,
-  moveObject,
-  placeObject,
   removeElement,
   removeInput,
   removeRule,
@@ -37,6 +35,7 @@ import {
   renameSection,
   setBinding,
   setElementName,
+  setFirstUse,
   setManagement,
   setOrientation,
   setPosition,
@@ -590,9 +589,13 @@ export function useStudioController(language: SupportedLanguage) {
     [edit, problemNotice],
   );
 
-  /** A value of an object is connected with an element: it becomes an input (specification 5.3). */
+  /**
+   * A value of an object is connected with an element: it becomes an input (specification 5.3). The first connection
+   * of an instance that no element uses makes that element the element of its first use (`firstUse`, specification
+   * 3.3).
+   */
   const connectValue = useCallback(
-    (instanceElement: string, property: string, to: string) => {
+    (instanceElement: string, property: string, to: string, firstUse = false) => {
       const document = stateRef.current.document;
       const index = typesRef.current;
       const source = document?.elements.find((candidate) => candidate.id === instanceElement);
@@ -600,14 +603,33 @@ export function useStudioController(language: SupportedLanguage) {
       if (document === null || index === null || source?.instance === undefined || source.instance === null || target === undefined) {
         return;
       }
-      if (source.id === target.id) {
+      if (source.id === target.id || isCardElement(target, index)) {
         return;
       }
       const key = source.instance.key;
-      edit((latest) => addInput(latest, to, { instance: key, property }), { selection: { kind: 'element', id: to } });
+      edit(
+        (latest) => {
+          const withInput = addInput(latest, to, { instance: key, property });
+          return firstUse ? setFirstUse(withInput, instanceElement, to) : withInput;
+        },
+        { selection: { kind: 'element', id: to } },
+      );
       notify('notices.inputAdded');
     },
     [edit, notify],
+  );
+
+  /** An object the user put down on the drawing area stays where it was put (specification 5.3). */
+  const dropObject = useCallback(
+    (id: string, position: Pt) => {
+      const index = typesRef.current;
+      const found = stateRef.current.document?.elements.find((candidate) => candidate.id === id);
+      if (index === null || found === undefined || !isCardElement(found, index)) {
+        return;
+      }
+      edit((latest) => setPosition(latest, id, position));
+    },
+    [edit],
   );
 
   /** After a step was dragged: it belongs to the frame it lies in, never to one it only touches (specification 5.3). */
@@ -775,6 +797,7 @@ export function useStudioController(language: SupportedLanguage) {
       connectSteps,
       connectValue,
       dropStep,
+      dropObject,
       addParameter,
       removalInfo,
       requestRemoveElement,
@@ -832,18 +855,6 @@ export function useStudioController(language: SupportedLanguage) {
         edit((document) => setSectionCollapsed(document, sectionId, collapsed)),
       removeSection: (sectionId: string) =>
         edit((document) => removeSection(document, sectionId), { selection: { kind: 'strategy' } }),
-      moveObject: (id: string, delta: -1 | 1) => {
-        const index = typesRef.current;
-        if (index !== null) {
-          edit((document) => moveObject(document, index, id, delta));
-        }
-      },
-      placeObject: (id: string, position: number) => {
-        const index = typesRef.current;
-        if (index !== null) {
-          edit((document) => placeObject(document, index, id, position));
-        }
-      },
       removeRule: (owner: string | null, key: string) => edit((document) => removeRule(document, owner, key)),
       newId: newUuid,
     }),
@@ -856,6 +867,7 @@ export function useStudioController(language: SupportedLanguage) {
       confirmRemoveParameter,
       connectSteps,
       connectValue,
+      dropObject,
       dropStep,
       edit,
       elementDisplayName,

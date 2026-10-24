@@ -30,6 +30,8 @@ export type FakeApiOptions = {
   directory?: { path: string | null; is_default: boolean };
   /** The findings a check reports; by default a small check (see `check`). */
   findings?: (document: Json) => FakeFinding[];
+  /** The report of the use of the instances (`/api/v1/usage`); by default a small one made from inputs and expressions. */
+  usage?: (document: Json) => Json;
   /** Makes a kind of request fail with this answer. */
   fail?: Partial<Record<string, FakeResponse>>;
   /** Directories that already hold a file of the same name: moving there fails with a conflict. */
@@ -73,6 +75,92 @@ function check(document: Json, types: Map<string, Json>): FakeFinding[] {
     found.push({ level: 'hint', code: 'flow.no_order_reachable', element: null, subject: null, details: {} });
   }
   return found;
+}
+
+/**
+ * A small report of the use of the instances (`/api/v1/usage`): an element uses the instances of its inputs and the
+ * ones its expressions name; the first use is the stored element if it uses the instance, else the first element in
+ * the order of the document; every instance is usable everywhere. The real backend walks the flow.
+ */
+function usageReport(document: Json): Json {
+  const elements = asArray(document.elements);
+  const instanceElements = elements.filter((element) => typeof asRecord(element.instance).key === 'string');
+  const keys = instanceElements.map((element) => String(asRecord(element.instance).key));
+  const perElement = new Map<string, Map<string, { kind: string; members: Json[] }>>();
+  const note = (elementId: string, instance: string, kind: string, member: Json): void => {
+    const uses = perElement.get(elementId) ?? new Map<string, { kind: string; members: Json[] }>();
+    perElement.set(elementId, uses);
+    const use = uses.get(`${instance}|${kind}`) ?? { kind, members: [] };
+    uses.set(`${instance}|${kind}`, use);
+    if (!use.members.some((existing) => JSON.stringify(existing) === JSON.stringify(member))) {
+      use.members.push(member);
+    }
+  };
+  for (const element of elements) {
+    if (asRecord(element.instance).key !== undefined) {
+      continue;
+    }
+    for (const input of asArray(element.inputs)) {
+      note(String(element.id), String(input.instance), 'input', {
+        name: String(input.property),
+        kind: input.kind === 'method' ? 'method' : 'property',
+        arguments: input.arguments ?? [],
+        refresh: input.refresh === true,
+      });
+    }
+    const texts: string[] = [];
+    for (const record of [asRecord(element.parameters), asRecord(element.properties)]) {
+      for (const binding of Object.values(record)) {
+        if (asRecord(binding).kind === 'expression' && typeof asRecord(binding).value === 'string') {
+          texts.push(String(asRecord(binding).value));
+        }
+      }
+    }
+    for (const text of texts) {
+      for (const match of text.matchAll(/([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)/g)) {
+        if (keys.some((key) => key.toLowerCase() === (match[1] ?? '').toLowerCase())) {
+          note(String(element.id), String(match[1]), 'expression', { name: match[2], kind: 'property', arguments: [], refresh: false });
+        }
+      }
+    }
+  }
+  const order = elements.map((element) => String(element.id));
+  const instances = instanceElements.map((element) => {
+    const instance = asRecord(element.instance);
+    const key = String(instance.key);
+    const users = order.filter((id) => [...(perElement.get(id)?.keys() ?? [])].some((entry) => entry.split('|')[0]?.toLowerCase() === key.toLowerCase()));
+    const stored = typeof instance.first_use === 'string' && users.includes(instance.first_use) ? instance.first_use : null;
+    const first = stored ?? users[0] ?? null;
+    return {
+      instance: key,
+      name: instance.name,
+      element: element.id,
+      object_type: instance.object_type,
+      can_refresh: false,
+      connected: first !== null,
+      first_use: first,
+      first_use_source: first === null ? null : stored !== null ? 'stored' : 'flow',
+      usable_everywhere: true,
+      usable_at: [],
+      usable_at_omitted: false,
+    };
+  });
+  return {
+    instances,
+    elements: order
+      .filter((id) => perElement.has(id))
+      .map((id) => ({
+        element: id,
+        uses: [...(perElement.get(id) ?? [])].map(([entry, use]) => ({
+          instance: entry.split('|')[0],
+          kind: use.kind,
+          by_instance: null,
+          members: use.members,
+        })),
+      })),
+    strategy_rules: [],
+    truncated: false,
+  };
 }
 
 export class FakeApi {
@@ -229,6 +317,10 @@ export class FakeApi {
     }
     if (url === '/api/v1/check' && method === 'POST') {
       return fail('check') ?? { status: 200, body: { findings: this.findings(body) } };
+    }
+    if (url === '/api/v1/usage' && method === 'POST') {
+      const document = asRecord(body.document);
+      return fail('usage') ?? { status: 200, body: this.options.usage === undefined ? usageReport(document) : this.options.usage(document) };
     }
     if (url === '/api/v1/keys' && method === 'POST') {
       const document = asRecord(body.document);
