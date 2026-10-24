@@ -104,7 +104,7 @@ def test_a_file_of_a_process_is_a_form_with_one_file_and_the_settings_of_the_pro
     assert body["required"] is True
     assert list(body["content"]) == ["multipart/form-data"]
     assert schema["additionalProperties"] is False
-    assert set(schema["properties"]) == {"broker", "timezone", "file", "instrument", "data"}
+    assert set(schema["properties"]) == {"broker", "timezone", "keep", "file", "instrument", "data"}
     assert set(schema["required"]) == {"broker", "file"}
     assert schema["properties"]["file"]["type"] == "string"
     assert schema["properties"]["file"]["format"] == "binary"
@@ -225,6 +225,9 @@ def test_the_endpoints_of_the_data_stock_are_those_of_the_order(
         f"{PROCESSES}/{{id}}/finish": {"post"},
         f"{PROCESSES}/{{id}}/abort": {"post"},
         PREVIEW: {"post"},
+        "/api/v1/market-data/import-directory": {"get"},
+        "/api/v1/market-data/import-directory/preview": {"post"},
+        f"{PROCESSES}/{{id}}/directory-files": {"post"},
         f"{DELETIONS}/series": {"post"},
         f"{DELETIONS}/period": {"post"},
         f"{DELETIONS}/contract": {"post"},

@@ -82,6 +82,9 @@ def test_the_description_names_the_endpoints_of_this_order() -> None:
         "/api/v1/market-data/import-processes/{id}/finish": {"post"},
         "/api/v1/market-data/import-processes/{id}/abort": {"post"},
         "/api/v1/market-data/import-preview": {"post"},
+        "/api/v1/market-data/import-directory": {"get"},
+        "/api/v1/market-data/import-directory/preview": {"post"},
+        "/api/v1/market-data/import-processes/{id}/directory-files": {"post"},
         "/api/v1/market-data/deletions/series": {"post"},
         "/api/v1/market-data/deletions/period": {"post"},
         "/api/v1/market-data/deletions/contract": {"post"},
@@ -174,7 +177,7 @@ def test_the_operation_identifiers_are_unique() -> None:
         for operations in paths.values()  # type: ignore[attr-defined]
         for operation in operations.values()
     ]
-    assert len(identifiers) == len(set(identifiers)) == 19  # 5 of the test accounts, 14 of the data
+    assert len(identifiers) == len(set(identifiers)) == 22  # 5 of the test accounts, 17 of the data
 
 
 def test_the_request_bodies_are_described_with_the_strict_schemas() -> None:

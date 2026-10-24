@@ -159,6 +159,7 @@ def test_a_refused_file_does_not_stop_the_others(client: TestClient) -> None:
         "result": None,
         "error": "json_invalid",
         "message": broken["message"],
+        "kept": False,
     }
     assert isinstance(broken["message"], str)
     assert (second["refused"], second["result"]["accepted"]) == (False, 3)
@@ -781,7 +782,7 @@ def test_the_old_endpoints_no_longer_exist(client: TestClient) -> None:
         ("x" * 300 + ".json", "x" * 255),
         ("", "file-1"),
         ("/", "file-1"),
-        ("..", ".."),
+        ("..", "file-1"),  # never ``.`` or ``..``: the name may become the name of a kept file
         ("  ", "file-1"),
     ],
 )
