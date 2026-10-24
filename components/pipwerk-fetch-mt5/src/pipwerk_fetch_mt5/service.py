@@ -98,9 +98,11 @@ class _Omissions:
     def __init__(self) -> None:
         self.count = 0
         self.rows: list[OmittedRow] = []
+        self.by_reason: dict[OmittedReason, int] = {}
 
     def add(self, server_time: datetime, reason: OmittedReason) -> None:
         self.count += 1
+        self.by_reason[reason] = self.by_reason.get(reason, 0) + 1
         if len(self.rows) < MAX_REPORTED:
             text = (
                 server_time.strftime("%Y-%m-%dT%H:%M:%S.")
@@ -191,6 +193,12 @@ class FetchService:
     def check_terminal(self) -> None:
         """Raise ``FetchError("terminal_unavailable")`` if MetaTrader 5 cannot be reached."""
         self._gateway.ping()
+
+    def broker_name(self) -> str:
+        """The name of the trade server MetaTrader 5 is logged in to (the broker of every file).
+
+        Raises ``FetchError("broker_unknown")`` if it cannot be determined."""
+        return self._broker()
 
     def _broker(self) -> str:
         # The broker is the name of the trade server MetaTrader 5 is logged in to (5.4).
@@ -330,6 +338,7 @@ class FetchService:
             ),
             omitted_count=omitted.count,
             omitted=omitted.rows,
+            omitted_by_reason=omitted.by_reason,
         )
 
     # --- ticks -----------------------------------------------------------------------------
@@ -366,6 +375,7 @@ class FetchService:
             ),
             omitted_count=omitted.count,
             omitted=omitted.rows,
+            omitted_by_reason=omitted.by_reason,
         )
 
     # --- details of the instrument ---------------------------------------------------------

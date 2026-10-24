@@ -5,8 +5,8 @@ The startup configuration is an INI file named ``pipwerk-fetch-mt5.ini``. It is 
 contents of several files are never merged. The program does not start without a valid one.
 
 Sections and entries (all other sections and entries are rejected, so that a misspelled
-entry never goes unnoticed; the program has no address, port, key or list of hosts, because it
-has no server):
+entry never goes unnoticed; the program has no server, so there is no port, no list of hosts
+and no key to log in to it):
 
 ``[broker]``
     ``server_time_zone`` (required): IANA name of the time zone of the server time of the
@@ -19,7 +19,21 @@ has no server):
     the terminal that is running, with the account it is logged in to.
 ``[symbols]``
     Table designation -> symbol of the broker. Without an entry the designation itself is the
-    symbol.
+    symbol. It applies to the call on the command line only: a request through pipwerk relay
+    names the symbol itself.
+``[relay]``
+    Optional; required by the commands ``serve`` and ``request``. The connection of the
+    component to its relay (specification relay 3.5, 6.1): ``address`` (own address
+    ``<component>.<network>.<relay>``), ``way`` (name of the transmission way),
+    ``secrets_directory`` and ``key_file`` (the key of the connection with the relay),
+    ``database`` (the SQLite file of the connection), optionally ``relay_link`` and
+    ``poll_interval_seconds``.
+``[relay.way]``
+    The own settings of the way, passed on unchanged: ``target.<entry>`` for the target (where
+    the relay reads what this component sends) and ``inbox.<entry>`` for the inbox (where the
+    relay puts what is meant for this component). The way checks them itself; this file does
+    not know them. ``[relay.file_way]`` does not exist in this version and is rejected like
+    every other unknown section.
 
 Error messages name the entry that is wrong, never a value of the file: the file may hold a
 password.
@@ -57,8 +71,28 @@ BROKER_NAME_PATTERN = re.compile(r"\S(?:[^\x00-\x1f\x7f]*\S)?")
 _ALLOWED_OPTIONS: dict[str, frozenset[str]] = {
     "broker": frozenset({"server_time_zone", "max_rows_per_file", "max_reads_per_file"}),
     "metatrader5": frozenset({"path", "login", "password", "server", "timeout_ms"}),
+    "relay": frozenset(
+        {
+            "address",
+            "way",
+            "secrets_directory",
+            "key_file",
+            "database",
+            "relay_link",
+            "poll_interval_seconds",
+        }
+    ),
 }
-_FREE_SECTIONS = frozenset({"symbols"})
+#: Sections with entries of any name: the table of symbols and the own settings of the way,
+#: which only the way knows and checks (specification relay 3.4).
+_FREE_SECTIONS = frozenset({"symbols", "relay.way"})
+
+#: ``[relay]`` entries that must be given.
+_RELAY_REQUIRED = ("address", "way", "secrets_directory", "key_file", "database")
+DEFAULT_POLL_INTERVAL_SECONDS = 2
+MAX_POLL_INTERVAL_SECONDS = 3600
+TARGET_PREFIX = "target."
+INBOX_PREFIX = "inbox."
 
 
 class StartupConfigError(Exception):
@@ -74,6 +108,27 @@ class MetaTraderSettings:
     password: str | None = field(default=None, repr=False)
     server: str | None = None
     timeout_ms: int = DEFAULT_TIMEOUT_MS
+
+
+@dataclass(frozen=True)
+class RelaySettings:
+    """The connection of the component to its relay, as the file states it.
+
+    The values are text as they stand in the file. The library of pipwerk relay checks them
+    (address, key, way) when ``serve`` or ``request`` opens the connection; this module does
+    not load the library. ``target`` and ``inbox`` are the own settings of the way, passed on
+    unchanged.
+    """
+
+    address: str
+    way: str
+    secrets_directory: Path
+    key_file: str
+    database: Path
+    target: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    inbox: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    relay_link: str | None = None
+    poll_interval_seconds: int = DEFAULT_POLL_INTERVAL_SECONDS
 
 
 @dataclass(frozen=True)
@@ -276,21 +331,115 @@ def _metatrader(parser: configparser.ConfigParser, path: Path) -> MetaTraderSett
     )
 
 
-def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfig:
-    """Load and check the startup configuration (``-c <PATH>`` or the search locations)."""
+def _way_settings(parser: configparser.ConfigParser, path: Path) -> tuple[dict[str, str], ...]:
+    """The own settings of the way for the target and for the inbox, passed on unchanged."""
+    target: dict[str, str] = {}
+    inbox: dict[str, str] = {}
+    if parser.has_section("relay.way"):
+        for entry, value in parser.items("relay.way"):
+            for prefix, settings in ((TARGET_PREFIX, target), (INBOX_PREFIX, inbox)):
+                if entry.startswith(prefix) and len(entry) > len(prefix):
+                    settings[entry[len(prefix) :]] = value.strip()
+                    break
+            else:
+                raise StartupConfigError(
+                    f"Startup configuration {path}: [relay.way] entry {entry!r} must begin with "
+                    f"{TARGET_PREFIX!r} or {INBOX_PREFIX!r}."
+                )
+    return target, inbox
+
+
+def _relay(parser: configparser.ConfigParser, path: Path) -> RelaySettings | None:
+    """The section ``[relay]``; ``None`` if the file has none. ``[relay.way]`` without
+    ``[relay]`` is an error."""
+    if not parser.has_section("relay"):
+        if parser.has_section("relay.way"):
+            raise StartupConfigError(
+                f"Startup configuration {path} has [relay.way] without [relay]."
+            )
+        return None
+    values: dict[str, str] = {}
+    for option in _RELAY_REQUIRED:
+        text = _text(parser, "relay", option)
+        if text is None:
+            raise StartupConfigError(
+                f"Startup configuration {path} is missing the entry {option} in section [relay]."
+            )
+        values[option] = text
+    target, inbox = _way_settings(parser, path)
+    return RelaySettings(
+        address=values["address"],
+        way=values["way"],
+        secrets_directory=Path(values["secrets_directory"]),
+        key_file=values["key_file"],
+        database=Path(values["database"]),
+        target=MappingProxyType(target),
+        inbox=MappingProxyType(inbox),
+        relay_link=_text(parser, "relay", "relay_link"),
+        poll_interval_seconds=_integer(
+            parser,
+            path,
+            "relay",
+            "poll_interval_seconds",
+            DEFAULT_POLL_INTERVAL_SECONDS,
+            1,
+            MAX_POLL_INTERVAL_SECONDS,
+        ),
+    )
+
+
+def _read(explicit_path: str | Path | None) -> tuple[Path, configparser.ConfigParser]:
     path = resolve_config_path(explicit_path)
     parser = _parse(path)
     _check_names(parser, path)
+    return path, parser
+
+
+def _common(
+    parser: configparser.ConfigParser, path: Path
+) -> tuple[int, int, Mapping[str, str], MetaTraderSettings]:
+    """The entries that every use of the file checks: limits, table of symbols, MetaTrader 5."""
     max_rows = _integer(
         parser, path, "broker", "max_rows_per_file", DEFAULT_MAX_ROWS, 1, MAX_ROWS_LIMIT
     )
     max_reads = _integer(
         parser, path, "broker", "max_reads_per_file", DEFAULT_MAX_READS, 1, MAX_READS_LIMIT
     )
+    return max_rows, max_reads, _symbols(parser, path), _metatrader(parser, path)
+
+
+def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfig:
+    """Load and check the startup configuration (``-c <PATH>`` or the search locations).
+
+    Used by the call on the command line and by ``serve``: ``server_time_zone`` is required.
+    The section ``[relay]`` is checked for unknown entries like every section, but its values are
+    not read here: ``load_relay_settings`` reads them (``serve`` and ``request``).
+    """
+    path, parser = _read(explicit_path)
+    max_rows, max_reads, symbols, metatrader = _common(parser, path)
     return StartupConfig(
         server_time_zone=_time_zone(parser, path),
         max_rows=max_rows,
         max_reads=max_reads,
-        symbols=_symbols(parser, path),
-        metatrader=_metatrader(parser, path),
+        symbols=symbols,
+        metatrader=metatrader,
     )
+
+
+def load_relay_settings(explicit_path: str | Path | None = None) -> RelaySettings:
+    """Load and check the startup configuration for ``request``.
+
+    ``request`` does not read MetaTrader 5, so ``server_time_zone`` is not required (a given one
+    is checked like everywhere else). ``[relay]`` is required.
+    """
+    path, parser = _read(explicit_path)
+    _common(parser, path)
+    if _text(parser, "broker", "server_time_zone") is not None:
+        _time_zone(parser, path)
+    relay = _relay(parser, path)
+    if relay is None:
+        raise StartupConfigError(
+            f"Startup configuration {path} has no section [relay]: the commands serve and "
+            "request need the connection to the relay."
+        )
+    return relay

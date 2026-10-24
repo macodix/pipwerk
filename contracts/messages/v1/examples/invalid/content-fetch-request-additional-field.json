@@ -1,0 +1,11 @@
+{
+  "broker": "Broker-Live-1",
+  "symbol": "EURUSD",
+  "time_units": [
+    "H1"
+  ],
+  "ticks": false,
+  "from": "2026-01-05T00:00:00Z",
+  "to": "2026-01-06T00:00:00Z",
+  "directory": "/tmp"
+}

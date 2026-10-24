@@ -151,12 +151,15 @@ class CandleSeriesResponse(_Strict):
     file: CandleSeriesDocument
     omitted_count: int
     omitted: list[OmittedRow]
+    #: How many rows were left out for each reason (complete, unlike ``omitted``).
+    omitted_by_reason: dict[OmittedReason, int] = Field(default_factory=dict)
 
 
 class TickSeriesResponse(_Strict):
     file: TickSeriesDocument
     omitted_count: int
     omitted: list[OmittedRow]
+    omitted_by_reason: dict[OmittedReason, int] = Field(default_factory=dict)
 
 
 class InstrumentResponse(_Strict):

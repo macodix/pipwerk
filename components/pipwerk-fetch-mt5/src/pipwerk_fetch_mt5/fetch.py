@@ -14,7 +14,8 @@ the connection to time out. They get the same reason.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from collections.abc import Iterator, Mapping
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -23,13 +24,17 @@ from pydantic import BaseModel
 from pipwerk_fetch_mt5.errors import FetchError
 from pipwerk_fetch_mt5.files import file_name, write_file
 from pipwerk_fetch_mt5.gateway import TimeUnit
-from pipwerk_fetch_mt5.models import OmittedRow
+from pipwerk_fetch_mt5.models import OmittedReason, OmittedRow
 from pipwerk_fetch_mt5.service import FetchService
 
 logger = logging.getLogger(__name__)
 
 CONTRACT = "CONTRACT"
 TICKS = "TICKS"
+
+#: The periods the files of the import can hold (``pipwerk_marketdata.limits``).
+FIRST_YEAR = 1970
+LAST_YEAR = 2100
 
 
 @dataclass(frozen=True)
@@ -65,6 +70,27 @@ class PartOutcome:
     error: FetchError | None = None
 
 
+@dataclass(frozen=True)
+class PartDocument:
+    """A part that was fetched: the name and the bytes of its file (nothing is written yet)."""
+
+    part: Part
+    name: str
+    content: bytes
+    rows: int | None = None
+    omitted_count: int = 0
+    omitted: tuple[OmittedRow, ...] = ()
+    omitted_by_reason: Mapping[OmittedReason, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class PartFailure:
+    """A part that could not be fetched."""
+
+    part: Part
+    error: FetchError
+
+
 def parts_of(request: Request) -> list[Part]:
     parts: list[Part] = []
     for instrument in request.instruments:
@@ -79,50 +105,84 @@ def _document_bytes(document: BaseModel) -> bytes:
     return document.model_dump_json(by_alias=True).encode("utf-8")
 
 
-def _fetch_part(service: FetchService, request: Request, part: Part) -> PartOutcome:
-    """Fetch one part and write its file; raises ``FetchError`` if that is not possible."""
+def _fetch_part(service: FetchService, request: Request, part: Part) -> PartDocument:
+    """Fetch one part and build its file; raises ``FetchError`` if that is not possible."""
     name = file_name(part.instrument, part.data, request.start, request.end)
     if part.data == CONTRACT:
         details = service.instrument_details(part.instrument)
-        path = write_file(request.directory, name, _document_bytes(details.file))
-        return PartOutcome(part, path=path)
+        return PartDocument(part, name, _document_bytes(details.file))
     if part.data == TICKS:
         ticks = service.ticks(part.instrument, request.start, request.end)
-        path = write_file(request.directory, name, _document_bytes(ticks.file))
-        return PartOutcome(
+        return PartDocument(
             part,
-            path=path,
+            name,
+            _document_bytes(ticks.file),
             rows=len(ticks.file.ticks),
             omitted_count=ticks.omitted_count,
             omitted=tuple(ticks.omitted),
+            omitted_by_reason=ticks.omitted_by_reason,
         )
     unit = next(unit for unit in request.time_units if unit.upper() == part.data)
     candles = service.candles(part.instrument, unit, request.start, request.end)
-    path = write_file(request.directory, name, _document_bytes(candles.file))
-    return PartOutcome(
+    return PartDocument(
         part,
-        path=path,
+        name,
+        _document_bytes(candles.file),
         rows=len(candles.file.candles),
         omitted_count=candles.omitted_count,
         omitted=tuple(candles.omitted),
+        omitted_by_reason=candles.omitted_by_reason,
+    )
+
+
+def fetch_documents(
+    service: FetchService, request: Request
+) -> Iterator[PartDocument | PartFailure]:
+    """Fetch every part of the request, one after the other, and hand over each file as it is
+    ready (nothing is written; ``request.directory`` is not used).
+
+    A part that cannot be fetched comes back as ``PartFailure`` and does not stop the others. If
+    MetaTrader 5 is not reachable, the remaining parts are not tried (see the module text).
+    """
+    unreachable: FetchError | None = None
+    for part in parts_of(request):
+        if unreachable is not None:
+            yield PartFailure(part, unreachable)
+            continue
+        try:
+            yield _fetch_part(service, request, part)
+        except FetchError as error:
+            if error.code == "terminal_unavailable":
+                unreachable = error
+            yield PartFailure(part, error)
+        except Exception as error:  # a defect must not stop the other parts
+            logger.error("A part failed with an unexpected error (%s).", type(error).__name__)
+            yield PartFailure(part, FetchError("internal_error"))
+
+
+def _write_part(document: PartDocument, directory: Path) -> PartOutcome:
+    path = write_file(directory, document.name, document.content)
+    return PartOutcome(
+        document.part,
+        path=path,
+        rows=document.rows,
+        omitted_count=document.omitted_count,
+        omitted=document.omitted,
     )
 
 
 def fetch(service: FetchService, request: Request) -> list[PartOutcome]:
     """Fetch every part of the request, one after the other, and write the files."""
     outcomes: list[PartOutcome] = []
-    unreachable: FetchError | None = None
-    for part in parts_of(request):
-        if unreachable is not None:
-            outcomes.append(PartOutcome(part, error=unreachable))
+    for item in fetch_documents(service, request):
+        if isinstance(item, PartFailure):
+            outcomes.append(PartOutcome(item.part, error=item.error))
             continue
         try:
-            outcomes.append(_fetch_part(service, request, part))
+            outcomes.append(_write_part(item, request.directory))
         except FetchError as error:
-            if error.code == "terminal_unavailable":
-                unreachable = error
-            outcomes.append(PartOutcome(part, error=error))
+            outcomes.append(PartOutcome(item.part, error=error))
         except Exception as error:  # a defect must not stop the other parts
             logger.error("A part failed with an unexpected error (%s).", type(error).__name__)
-            outcomes.append(PartOutcome(part, error=FetchError("internal_error")))
+            outcomes.append(PartOutcome(item.part, error=FetchError("internal_error")))
     return outcomes

@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "failed": [
+    {
+      "data": "H1",
+      "from": "2026-01-05T00:00:00Z",
+      "to": "2026-01-06T00:00:00Z",
+      "code": "no_such_reason",
+      "text": "Unbekannt"
+    }
+  ]
+}

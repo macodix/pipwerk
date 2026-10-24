@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Content of ``fetch.file``: the one file in the attachment of the message.",
+  "properties": {
+    "name": {
+      "examples": [
+        "EURUSD_H1_20260105_20260106.json"
+      ],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._#+-]{0,63}_[A-Z][A-Z0-9]{1,7}_[0-9]{8}(?:T[0-9]{6})?_[0-9]{8}(?:T[0-9]{6})?\\.json$",
+      "title": "Name",
+      "type": "string"
+    },
+    "data": {
+      "enum": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M10",
+        "M12",
+        "M15",
+        "M20",
+        "M30",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H6",
+        "H8",
+        "H12",
+        "D1",
+        "W1",
+        "MN1",
+        "TICKS",
+        "CONTRACT"
+      ],
+      "title": "Data",
+      "type": "string"
+    },
+    "rows": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rows"
+    },
+    "omitted": {
+      "additionalProperties": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "propertyNames": {
+        "enum": [
+          "time_does_not_exist",
+          "double_local_time",
+          "duplicate_time",
+          "invalid_price"
+        ]
+      },
+      "title": "Omitted",
+      "type": "object"
+    }
+  },
+  "required": [
+    "name",
+    "data"
+  ],
+  "title": "FetchFileContent",
+  "type": "object"
+}

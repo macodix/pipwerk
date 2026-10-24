@@ -1,0 +1,12 @@
+{
+  "broker": "Broker-Live-1",
+  "symbol": "EURUSD.r",
+  "instrument": "EURUSD",
+  "time_units": [
+    "H1",
+    "D1"
+  ],
+  "ticks": true,
+  "from": "2026-01-05T00:00:00Z",
+  "to": "2026-01-06T00:00:00Z"
+}

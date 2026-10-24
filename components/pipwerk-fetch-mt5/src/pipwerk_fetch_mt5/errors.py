@@ -3,6 +3,9 @@
 The program prints the reason to the user next to the instrument, the kind and the period of the
 part. The reasons are fixed texts. They name neither a value of the call nor an exception text
 nor anything of the startup configuration (the details of the connection).
+
+``request_invalid`` and ``broker_mismatch`` are reasons for a whole request that arrives through
+pipwerk relay (``serve``); they are not reasons of a part.
 """
 
 from __future__ import annotations
@@ -19,6 +22,8 @@ ErrorCode = Literal[
     "invalid_broker_data",
     "write_failed",
     "internal_error",
+    "request_invalid",
+    "broker_mismatch",
 ]
 
 #: The reason (fixed text) of every error code.
@@ -35,6 +40,10 @@ REASONS: dict[ErrorCode, str] = {
     "invalid_broker_data": "Der Broker liefert ungültige Angaben zum Instrument",
     "write_failed": "Die Datei konnte nicht geschrieben werden",
     "internal_error": "Interner Fehler im Programm",
+    "request_invalid": "Die Anfrage ist ungültig",
+    "broker_mismatch": (
+        "Die Anfrage nennt einen anderen Broker als den, an dem MetaTrader 5 angemeldet ist"
+    ),
 }
 
 

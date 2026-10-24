@@ -23,28 +23,40 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, TextIO, cast
+from typing import TYPE_CHECKING, Any, TextIO, cast
 
 from pipwerk_fetch_mt5.config import StartupConfigError, load_startup_config
 from pipwerk_fetch_mt5.errors import FetchError
-from pipwerk_fetch_mt5.fetch import CONTRACT, TICKS, PartOutcome, Request, fetch
+from pipwerk_fetch_mt5.fetch import (
+    CONTRACT,
+    FIRST_YEAR,
+    LAST_YEAR,
+    TICKS,
+    PartOutcome,
+    Request,
+    fetch,
+)
 from pipwerk_fetch_mt5.files import INSTRUMENT_PATTERN
 from pipwerk_fetch_mt5.gateway import TIME_UNIT_MINUTES, TimeUnit
 from pipwerk_fetch_mt5.mt5_gateway import Mt5Gateway
 from pipwerk_fetch_mt5.service import FetchService
 
+if TYPE_CHECKING:  # only for the type checker: the call on the command line must not load it
+    from pipwerk_fetch_mt5.relay.commands import RelayHooks
+
 EXIT_OK = 0
 EXIT_PARTS_FAILED = 1
 EXIT_INVALID_CALL = 2
 
-#: The periods the files of the import can hold (``pipwerk_marketdata.limits``).
-_FIRST_YEAR = 1970
-_LAST_YEAR = 2100
+#: The commands that take part in pipwerk relay. They are in the package ``relay``, which is
+#: loaded only when one of them is called: the call on the command line does not load the
+#: library of pipwerk relay and opens no connection.
+RELAY_COMMANDS = ("serve", "request")
 
 #: How many omitted rows the summary names per file.
 _NAMED_OMISSIONS = 5
 
-_OMISSION_TEXTS = {
+OMISSION_TEXTS = {
     "time_does_not_exist": "Uhrzeit des Servers gab es nicht (Umstellung auf Sommerzeit)",
     "double_local_time": "zweite Stunde der doppelten Uhrzeit (Rückstellung der Uhr)",
     "duplicate_time": "Kerze mit der Zeit der vorigen",
@@ -69,8 +81,8 @@ def parse_moment(text: str) -> datetime:
     if moment.microsecond:
         raise CallError(f"'{text}' has fractions of a second; use whole seconds.")
     moment = moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
-    if not _FIRST_YEAR <= moment.year <= _LAST_YEAR:
-        raise CallError(f"'{text}' is not between the years {_FIRST_YEAR} and {_LAST_YEAR}.")
+    if not FIRST_YEAR <= moment.year <= LAST_YEAR:
+        raise CallError(f"'{text}' is not between the years {FIRST_YEAR} and {LAST_YEAR}.")
     return moment
 
 
@@ -125,7 +137,10 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Exit code 0: all files written. 1: at least one part could not be fetched (the "
-            "other files are written). 2: invalid call or startup configuration."
+            "other files are written). 2: invalid call or startup configuration. "
+            "Through pipwerk relay: 'pipwerk-fetch-mt5 serve' answers requests on the machine "
+            "of MetaTrader 5, 'pipwerk-fetch-mt5 request' asks for files from another machine "
+            "(see 'serve --help' and 'request --help'; the command stands first)."
         ),
     )
     parser.add_argument("instruments", nargs="+", metavar="INSTRUMENT", help="Designation(s).")
@@ -203,7 +218,7 @@ def _request(args: argparse.Namespace) -> Request:
     )
 
 
-def _prepare_directory(directory: Path) -> None:
+def prepare_directory(directory: Path) -> None:
     """Create the target directory if it is missing."""
     try:
         directory.mkdir(parents=True, exist_ok=True)
@@ -213,11 +228,11 @@ def _prepare_directory(directory: Path) -> None:
         raise CallError("The target directory is not a directory.")
 
 
-def _moment_text(moment: datetime) -> str:
+def moment_text(moment: datetime) -> str:
     return moment.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
-def _kind_text(data: str) -> str:
+def kind_text(data: str) -> str:
     if data == CONTRACT:
         return "Angaben zum Instrument (CONTRACT)"
     if data == TICKS:
@@ -226,7 +241,7 @@ def _kind_text(data: str) -> str:
 
 
 def _success_lines(outcome: PartOutcome, path: Path) -> list[str]:
-    detail = _kind_text(outcome.part.data)
+    detail = kind_text(outcome.part.data)
     if outcome.rows is not None:
         detail += f", {outcome.rows} Zeilen"
     if outcome.omitted_count:
@@ -236,15 +251,15 @@ def _success_lines(outcome: PartOutcome, path: Path) -> list[str]:
     if outcome.omitted_count:
         for reason, count in reasons.items():
             shown = f"{count}x" if count < outcome.omitted_count else "alle"
-            lines.append(f"  ausgelassen ({shown}): {_OMISSION_TEXTS[reason]}")
+            lines.append(f"  ausgelassen ({shown}): {OMISSION_TEXTS[reason]}")
         for row in outcome.omitted[:_NAMED_OMISSIONS]:
-            lines.append(f"  Serverzeit {row.server_time}: {_OMISSION_TEXTS[row.reason]}")
+            lines.append(f"  Serverzeit {row.server_time}: {OMISSION_TEXTS[row.reason]}")
     return lines
 
 
 def report(request: Request, outcomes: Sequence[PartOutcome], *, out: TextIO, err: TextIO) -> int:
     """Print the outcome of every part and a summary; return the exit code."""
-    period = f"{_moment_text(request.start)} bis {_moment_text(request.end)}"
+    period = f"{moment_text(request.start)} bis {moment_text(request.end)}"
     written = 0
     failed: list[tuple[PartOutcome, FetchError]] = []
     for outcome in outcomes:
@@ -256,7 +271,7 @@ def report(request: Request, outcomes: Sequence[PartOutcome], *, out: TextIO, er
                 print(line, file=out)
     for outcome, error in failed:
         print(
-            f"Fehler: {outcome.part.instrument}, {_kind_text(outcome.part.data)}, {period}: "
+            f"Fehler: {outcome.part.instrument}, {kind_text(outcome.part.data)}, {period}: "
             f"{error.reason}",
             file=err,
         )
@@ -278,14 +293,30 @@ def main(
     clock: Callable[[], datetime] | None = None,
     out: TextIO | None = None,
     err: TextIO | None = None,
+    relay_hooks: RelayHooks | None = None,
 ) -> int:
+    """Run the program. ``relay_hooks`` is for the tests of ``serve`` and ``request``."""
     out = out or sys.stdout
     err = err or sys.stderr
-    args = build_parser().parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] in RELAY_COMMANDS:
+        # Loaded only now: the call on the command line never loads pipwerk relay.
+        from pipwerk_fetch_mt5.relay.commands import run_command
+
+        return run_command(
+            arguments[0],
+            arguments[1:],
+            module=module,
+            clock=clock,
+            out=out,
+            err=err,
+            hooks=relay_hooks,
+        )
+    args = build_parser().parse_args(arguments)
     try:
         request = _request(args)
         config = load_startup_config(args.config_path)
-        _prepare_directory(request.directory)
+        prepare_directory(request.directory)
     except (CallError, StartupConfigError) as error:
         print(f"pipwerk-fetch-mt5: {error}", file=err)
         return EXIT_INVALID_CALL

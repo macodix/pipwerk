@@ -1,0 +1,15 @@
+{
+  "files": [
+    "EURUSD_CONTRACT_20260105_20260106.json",
+    "EURUSD_H1_20260105_20260106.json"
+  ],
+  "failed": [
+    {
+      "data": "TICKS",
+      "from": "2026-01-05T00:00:00Z",
+      "to": "2026-01-06T00:00:00Z",
+      "code": "range_too_large",
+      "text": "Zeitraum zu groß: mehr Zeilen oder Abrufe als erlaubt, bitte einen kleineren Zeitraum wählen"
+    }
+  ]
+}
