@@ -8,7 +8,8 @@ server and opens no port.
 
 Exit code 0: every file was written. 1: at least one part could not be fetched (the other
 files were written, every failed part is named with its reason on the error output). 2: the
-call or the startup configuration is invalid; nothing was fetched.
+call or the startup configuration is invalid; nothing was fetched. 130: interrupted (Ctrl+C
+or a request to end); the files finished so far stay, no temporary file is left.
 
 ``main`` takes ``module`` (a replica of the package ``MetaTrader5``) and ``clock`` for the
 tests; a real call passes neither.
@@ -17,10 +18,12 @@ tests; a real call passes neither.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
+import signal
 import sys
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TextIO, cast
@@ -28,7 +31,7 @@ from typing import Any, TextIO, cast
 from pipwerk_fetch_mt5.config import StartupConfigError, load_startup_config
 from pipwerk_fetch_mt5.errors import FetchError
 from pipwerk_fetch_mt5.fetch import CONTRACT, TICKS, PartOutcome, Request, fetch
-from pipwerk_fetch_mt5.files import INSTRUMENT_PATTERN
+from pipwerk_fetch_mt5.files import INSTRUMENT_PATTERN, remove_stale_temporaries
 from pipwerk_fetch_mt5.gateway import TIME_UNIT_MINUTES, TimeUnit
 from pipwerk_fetch_mt5.mt5_gateway import Mt5Gateway
 from pipwerk_fetch_mt5.service import FetchService
@@ -36,6 +39,7 @@ from pipwerk_fetch_mt5.service import FetchService
 EXIT_OK = 0
 EXIT_PARTS_FAILED = 1
 EXIT_INVALID_CALL = 2
+EXIT_INTERRUPTED = 130
 
 #: The periods the files of the import can hold (``pipwerk_marketdata.limits``).
 _FIRST_YEAR = 1970
@@ -213,6 +217,31 @@ def _prepare_directory(directory: Path) -> None:
         raise CallError("The target directory is not a directory.")
 
 
+@contextlib.contextmanager
+def _signals_as_interrupt() -> Iterator[None]:
+    """Turn a request to end (SIGTERM, SIGHUP, and SIGBREAK on Windows) into a
+    ``KeyboardInterrupt`` for the time of the call, so that the cleanup runs like for Ctrl+C.
+    Outside the main thread nothing is changed."""
+    names = ("SIGTERM", "SIGHUP", "SIGBREAK")
+    numbers = [getattr(signal, name) for name in names if hasattr(signal, name)]
+
+    def interrupt(_number: int, _frame: object) -> None:
+        raise KeyboardInterrupt
+
+    previous: dict[int, Any] = {}
+    try:
+        for number in numbers:
+            previous[number] = signal.signal(number, interrupt)
+    except ValueError, OSError:
+        pass  # not the main thread, or not allowed here
+    try:
+        yield
+    finally:
+        for number, handler in previous.items():
+            with contextlib.suppress(ValueError, OSError):
+                signal.signal(number, handler)
+
+
 def _moment_text(moment: datetime) -> str:
     return moment.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -290,10 +319,17 @@ def main(
         print(f"pipwerk-fetch-mt5: {error}", file=err)
         return EXIT_INVALID_CALL
 
+    removed = remove_stale_temporaries(request.directory)
+    if removed:
+        print(f"Zwischendateien eines früheren Abbruchs entfernt: {removed}.", file=out)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     gateway = Mt5Gateway(config.metatrader, module)
     try:
-        outcomes = fetch(FetchService(gateway, config, clock), request)
+        with _signals_as_interrupt():
+            outcomes = fetch(FetchService(gateway, config, clock), request)
+    except KeyboardInterrupt:
+        print("Abgebrochen. Fertige Dateien bleiben, eine halbe Datei bleibt nicht.", file=err)
+        return EXIT_INTERRUPTED
     finally:
         gateway.close()
     return report(request, outcomes, out=out, err=err)
