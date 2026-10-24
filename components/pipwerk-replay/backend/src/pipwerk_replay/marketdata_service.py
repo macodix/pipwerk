@@ -14,11 +14,13 @@ import threading
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 from pipwerk_marketdata import (
     TICKS,
     Completeness,
     Deletion,
+    FileErrorCode,
     FileFormat,
     ImportFile,
     ImportLimits,
@@ -29,10 +31,24 @@ from pipwerk_marketdata import (
     inspect_json,
     recognize_filename,
 )
+from pipwerk_marketdata import (
+    FileOutcome as LibraryOutcome,
+)
 
 from pipwerk_replay import marketdata_models as models
 from pipwerk_replay.config import MarketDataSettings
-from pipwerk_replay.import_form import FormFile, ImportForm
+from pipwerk_replay.file_keeping import KeepFailedError, keep_file
+from pipwerk_replay.import_directory import (
+    FileNotReadableError,
+    ImportDirectoryUnavailableError,
+    OutsideImportDirectoryError,
+    PathInvalidError,
+    PathNotFoundError,
+    WrongKindError,
+    list_directory,
+    open_file,
+)
+from pipwerk_replay.import_form import FormFile, ImportForm, file_name
 from pipwerk_replay.import_processes import (
     ImportGoingOnError,
     ImportProcesses,
@@ -44,11 +60,19 @@ __all__ = [
     "BrokerForTestRuns",
     "BrokerNotInDataStockError",
     "ConcurrencyLimit",
+    "FileNotReadableError",
+    "ImportDirectoryUnavailableError",
     "ImportGoingOnError",
     "ImportProcessNotFoundError",
+    "KeepFailedError",
     "MarketDataService",
     "NoBrokerError",
+    "OutsideImportDirectoryError",
+    "PathInvalidError",
+    "PathNotFoundError",
+    "StorageDirectoryUnavailableError",
     "TooManyRunningError",
+    "WrongKindError",
     "detect_format",
     "import_limits",
 ]
@@ -64,6 +88,11 @@ class NoBrokerError(Exception):
 
 class BrokerNotInDataStockError(Exception):
     """Raised when a broker is to be chosen for test runs that does not occur in the data stock."""
+
+
+class StorageDirectoryUnavailableError(Exception):
+    """Raised when files are to be kept and no storage directory can be determined (nothing is
+    stored and the default of the operating system is undetermined)."""
 
 
 class ConcurrencyLimit:
@@ -102,6 +131,33 @@ def detect_format(name: str, content: bytes) -> FileFormat:
         return FileFormat.CSV
     start = content[:1024].lstrip(b"\xef\xbb\xbf \t\r\n")
     return FileFormat.JSON if start.startswith(b"{") else FileFormat.CSV
+
+
+NOT_READABLE_TEXT = "The file could not be read."
+
+
+def _outcome(found: LibraryOutcome, *, kept: bool) -> models.FileOutcome:
+    """The answer for a file from the outcome of the data stock and whether it was kept."""
+    return models.FileOutcome(
+        name=found.name,
+        refused=found.refused,
+        result=None if found.result is None else models.ImportResult.model_validate(found.result),
+        error=found.error,
+        message=found.message,
+        kept=kept,
+    )
+
+
+def _not_readable(name: str) -> models.FileOutcome:
+    """The answer for a file of the import directory that cannot be read: refused as a whole."""
+    return models.FileOutcome(
+        name=name,
+        refused=True,
+        result=None,
+        error=FileErrorCode.NOT_READABLE,
+        message=NOT_READABLE_TEXT,
+        kept=False,
+    )
 
 
 def _periods(items: Sequence[Interval], maximum: int) -> list[models.Period]:
@@ -164,6 +220,7 @@ class MarketDataService:
             # A broker that left the data stock without the knowledge of this service is not
             # chosen again by importing it (specification 5.5).
             self._forget_missing_broker()
+            kept = self._keep(form)
             batch = self._store.import_files(
                 [
                     ImportFile(
@@ -178,9 +235,127 @@ class MarketDataService:
                 timezone=form.timezone,
                 limits=self._limits,
             )
-        outcome = models.FileOutcome.model_validate(batch.files[0])
+        outcome = _outcome(batch.files[0], kept=kept)
         self._processes.counted(process_id, imported=not outcome.refused)
         return outcome
+
+    def _keep(self, form: ImportForm) -> bool:
+        """Write the uploaded file into the storage directory if the request asks for it
+        (specification 5.6), before it is imported, so that also a refused file is kept.
+
+        ``StorageDirectoryUnavailableError`` if no storage directory can be determined,
+        ``KeepFailedError`` if the file cannot be written; the file is not imported then."""
+        if not form.keep:
+            return False
+        directory = self._stored.get_directory("storage").path
+        if directory is None:
+            raise StorageDirectoryUnavailableError
+        keep_file(directory, form.file.name, form.file.content)
+        return True
+
+    # ----- import directory (specification 5.3) -----------------------------------------------
+
+    def list_import_directory(
+        self, query: models.ImportDirectoryQuery
+    ) -> models.ImportDirectoryPage:
+        """The files and subdirectories of a directory inside the import directory, one page.
+
+        ``limit`` of the query is at most ``max_listed_items`` (the caller checks that). The
+        errors are those of ``import_directory`` (``ImportDirectoryUnavailableError``,
+        ``PathInvalidError``, ``OutsideImportDirectoryError``, ``PathNotFoundError``,
+        ``WrongKindError``)."""
+        limit = self._settings.max_listed_items if query.limit is None else query.limit
+        listing = list_directory(self._import_root(), query.path, offset=query.offset, limit=limit)
+        return models.ImportDirectoryPage(
+            items=[models.ImportDirectoryEntry.model_validate(item) for item in listing.items],
+            total=listing.total,
+            offset=query.offset,
+            limit=limit,
+        )
+
+    def import_directory_file(
+        self, process_id: str, request: models.DirectoryFileRequest
+    ) -> models.FileOutcome:
+        """Import one file of the import directory in a transaction of its own.
+
+        The file is read there directly (at most the limit per file plus one byte), never
+        copied, kept, moved or changed. A CSV file whose request gives no ``instrument`` or
+        ``data`` gets them from its name, as far as the name contains them (``recognize_filename``);
+        a JSON file names them in its content. A file that cannot be read is refused as a
+        whole (``not_readable``). Other errors: those of ``import_directory`` and of
+        ``import_file``."""
+        with self._processes.request(process_id), self._imports.hold():
+            self._forget_missing_broker()
+            name, content = self._read_directory_file(request.path, whole=lambda _name, _head: True)
+            if content is None:
+                outcome = _not_readable(name)
+            else:
+                file_format = detect_format(name, content)
+                instrument, data = request.instrument, request.data
+                if file_format is FileFormat.CSV:
+                    named = recognize_filename(name)
+                    instrument = instrument or named.instrument
+                    data = data or named.data
+                batch = self._store.import_files(
+                    [
+                        ImportFile(
+                            name=name,
+                            content=content,
+                            format=file_format,
+                            instrument=instrument or None,
+                            data=data or None,
+                        )
+                    ],
+                    broker=request.broker,
+                    timezone=request.timezone or None,
+                    limits=self._limits,
+                )
+                outcome = _outcome(batch.files[0], kept=False)
+        self._processes.counted(process_id, imported=not outcome.refused)
+        return outcome
+
+    def preview_directory_file(self, request: models.DirectoryPreviewRequest) -> models.FileHint:
+        """What a file of the import directory says about itself (as ``preview`` for an
+        uploaded file); a file that cannot be read gives the error ``not_readable``."""
+        with self._imports.hold():
+            shown, content = self._read_directory_file(
+                request.path, whole=lambda name, head: detect_format(name, head) is FileFormat.JSON
+            )
+            if content is None:
+                return models.FileHint(
+                    name=shown,
+                    format="json" if detect_format(shown, b"") is FileFormat.JSON else "csv",
+                    broker=None,
+                    instrument=None,
+                    data=None,
+                    error=FileErrorCode.NOT_READABLE,
+                )
+            return self._hint(FormFile(shown, content, None, None))
+
+    def _import_root(self) -> Path | None:
+        return self._stored.get_directory("import").path
+
+    def _read_directory_file(
+        self, path: str, *, whole: Callable[[str, bytes], bool]
+    ) -> tuple[str, bytes | None]:
+        """The cleaned name and the content of a file of the import directory; the content is
+        ``None`` if the file cannot be read. The first 1024 bytes are read; the rest, up to the
+        limit per file plus one byte (so the data stock sees that a file is too large), only if
+        ``whole(name, head)`` says so. The errors of ``import_directory.open_file`` go on."""
+        shown = file_name(path.rsplit("/", 1)[-1])
+        try:
+            stream, name, _size = open_file(self._import_root(), path)
+        except FileNotReadableError:
+            return shown, None
+        shown = file_name(name)
+        try:
+            with stream:
+                content = stream.read(1024)
+                if whole(shown, content):
+                    content += stream.read(max(self._settings.max_upload_bytes + 1 - 1024, 0))
+        except OSError:
+            return shown, None
+        return shown, content
 
     def end_import(self, process_id: str, *, aborted: bool) -> models.ImportProcessEnd:
         """End an import process (``aborted`` for an abort). Files that were taken over stay

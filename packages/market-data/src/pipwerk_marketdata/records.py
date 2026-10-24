@@ -255,6 +255,8 @@ class FileErrorCode(StrEnum):
     HEADER_INVALID = "header_invalid"
     SERIES_INVALID = "series_invalid"
     TIMEZONE_UNKNOWN = "timezone_unknown"
+    #: The file could not be read from where it is (a file of the import directory).
+    NOT_READABLE = "not_readable"
     PERIOD_INVALID = "period_invalid"
     NO_ROWS = "no_rows"
     STORE_FAILED = "store_failed"

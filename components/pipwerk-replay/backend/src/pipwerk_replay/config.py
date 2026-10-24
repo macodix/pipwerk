@@ -49,6 +49,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from pipwerk_marketdata import CalendarDay
 from pipwerk_marketdata import limits as marketdata_limits
@@ -112,6 +113,13 @@ class MarketDataSettings:
     max_parts_per_request: int = DEFAULT_MAX_PARTS_PER_REQUEST
 
 
+#: Where the startup configuration was found. It decides the defaults of the directories of the
+#: settings (specification 5.7), as for the object directory of pipwerk Studio: ``system`` is the
+#: system-wide search location (``/etc/pipwerk`` or ``%PROGRAMDATA%`` plus ``pipwerk``), ``user``
+#: any other search location, ``explicit`` a file given with ``-c``.
+ConfigOrigin = Literal["system", "user", "explicit"]
+
+
 @dataclass(frozen=True)
 class StartupConfig:
     """The content of the startup configuration."""
@@ -128,6 +136,8 @@ class StartupConfig:
     max_body_bytes: int = DEFAULT_MAX_BODY_BYTES
     #: Data stock.
     marketdata: MarketDataSettings = field(default_factory=MarketDataSettings)
+    #: Where the file was found.
+    origin: ConfigOrigin = "explicit"
 
 
 class StartupConfigError(Exception):
@@ -188,8 +198,21 @@ def default_search_locations() -> list[Path]:
     return _posix_search_locations()
 
 
+def system_search_location() -> Path | None:
+    """The system-wide search location, or ``None`` if it is not available."""
+    if os.name == "nt":
+        base = _env_base("PROGRAMDATA")
+        return None if base is None else base.joinpath("pipwerk", CONFIG_FILE_NAME)
+    return _POSIX_SYSTEM_DIR / CONFIG_FILE_NAME
+
+
 def resolve_config_path(explicit_path: str | Path | None) -> Path:
-    """Resolve which startup configuration file to use.
+    """Resolve which startup configuration file to use (see ``resolve_config_source``)."""
+    return resolve_config_source(explicit_path)[0]
+
+
+def resolve_config_source(explicit_path: str | Path | None) -> tuple[Path, ConfigOrigin]:
+    """Resolve which startup configuration file to use, and where it was found.
 
     An explicitly given path has the highest priority (req-system-017). If
     none is given, the documented automatic search locations are checked in
@@ -200,10 +223,11 @@ def resolve_config_path(explicit_path: str | Path | None) -> Path:
         path = Path(explicit_path)
         if not path.is_file():
             raise StartupConfigError(f"Startup configuration not found: {path}")
-        return path
+        return path, "explicit"
+    system_location = system_search_location()
     for candidate in default_search_locations():
         if candidate.is_file():
-            return candidate
+            return candidate, "system" if candidate == system_location else "user"
     searched = ", ".join(str(location) for location in default_search_locations())
     raise StartupConfigError(
         "No startup configuration found. pipwerk replay does not start without one. "
@@ -331,7 +355,7 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
     if it has no non-empty ``url`` in its ``[database]`` section or if an
     entry of ``[server]`` is invalid.
     """
-    path = resolve_config_path(explicit_path)
+    path, origin = resolve_config_source(explicit_path)
     parser = configparser.ConfigParser(interpolation=None)
     try:
         read_files = parser.read(path, encoding="utf-8")
@@ -385,4 +409,5 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
         allowed_hosts=tuple(hosts),
         max_body_bytes=max_body_bytes,
         marketdata=_marketdata_settings(parser, path),
+        origin=origin,
     )

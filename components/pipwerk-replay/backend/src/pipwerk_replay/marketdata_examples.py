@@ -17,6 +17,7 @@ from pipwerk_replay.import_form import (
     FIELD_DATA,
     FIELD_FILE,
     FIELD_INSTRUMENT,
+    FIELD_KEEP,
     FIELD_TIMEZONE,
 )
 
@@ -103,6 +104,7 @@ FILE_IMPORTED = {
     },
     "error": None,
     "message": None,
+    "kept": True,
 }
 FILE_REFUSED = {
     "name": "broken.json",
@@ -110,7 +112,25 @@ FILE_REFUSED = {
     "result": None,
     "error": "json_invalid",
     "message": "The file is not valid JSON.",
+    "kept": False,
 }
+
+IMPORT_DIRECTORY_PAGE = {
+    "items": [
+        {"name": "2023", "kind": "directory", "size": None, "modified_at": "2024-01-03T08:15:00Z"},
+        {
+            "name": "EURUSD_M1_202401021000_202401021004.json",
+            "kind": "file",
+            "size": 1284,
+            "modified_at": "2024-01-02T17:30:12.250000Z",
+        },
+    ],
+    "total": 2,
+    "offset": 0,
+    "limit": 1000,
+}
+#: The same file, taken over from the import directory: never kept.
+FILE_IMPORTED_FROM_DIRECTORY = {**FILE_IMPORTED, "kept": False}
 FILE_TOO_LARGE = {
     "detail": "The file is larger than the limit of 32 MiB per file.",
     "code": "too_large",
@@ -157,6 +177,7 @@ IMPORT_FORM = {
     FIELD_FILE: "GBPUSD_H1_202301020000_202312292300.csv",
     FIELD_INSTRUMENT: "GBPUSD",
     FIELD_DATA: "h1",
+    FIELD_KEEP: "true",
 }
 PREVIEW_FORM = {FIELD_FILE: "GBPUSD_H1_202301020000_202312292300.csv"}
 

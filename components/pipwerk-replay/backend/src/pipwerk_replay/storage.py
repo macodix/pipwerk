@@ -9,8 +9,9 @@ test accounts.
 from __future__ import annotations
 
 from pipwerk_marketdata import DatabaseMigrationError as MarketDataMigrationError
+from pipwerk_marketdata import enable_space_return
 from pipwerk_marketdata import migrate_database as migrate_marketdata_database
-from sqlalchemy import Float, Integer, String, create_engine
+from sqlalchemy import Boolean, Float, Integer, String, create_engine, false
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -41,6 +42,16 @@ class SettingsRecord(Base):
     language: Mapped[str] = mapped_column(String(8), nullable=False)
     #: Name of the broker chosen for test runs (specification 5.1); ``NULL``: none is chosen.
     test_run_broker: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: "Keep imported files" (specification 5.7): the preset of the box of the import. ``False``
+    #: as long as nothing is stored.
+    keep_imported_files: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    #: Directories of the settings (specification 5.7), absolute paths; ``NULL``: the default of
+    #: the operating system applies.
+    storage_directory: Mapped[str | None] = mapped_column(String(4096), nullable=True)
+    import_directory: Mapped[str | None] = mapped_column(String(4096), nullable=True)
+    export_directory: Mapped[str | None] = mapped_column(String(4096), nullable=True)
 
 
 class AccountRecord(Base):
@@ -75,11 +86,16 @@ def migrate_marketdata(engine: Engine) -> None:
     """Bring the data stock (``pipwerk_marketdata``) in the database of ``engine`` to its
     newest schema. It has its own migrations and its own version table, so it may share the
     database with pipwerk replay. A failure is a ``DatabaseMigrationError`` of pipwerk replay
-    (the text of the library names no detail)."""
+    (the text of the library names no detail).
+
+    Afterwards a SQLite file is put in the mode that returns free space to the file system
+    after deleting and replacing (specification 5.6); a file from before is converted once
+    (see ``pipwerk_marketdata.space``)."""
     try:
         migrate_marketdata_database(engine)
     except MarketDataMigrationError as error:
         raise DatabaseMigrationError(str(error)) from error
+    enable_space_return(engine)
 
 
 def create_database_engine(database_url: str) -> Engine:

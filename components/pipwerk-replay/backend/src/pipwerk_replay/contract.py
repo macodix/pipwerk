@@ -28,6 +28,7 @@ CONTRACT_VERSION = "1.0.0"
 CONTRACT_DESCRIPTION = (
     "Web API of pipwerk replay, version 1: the test accounts and the data stock of historical "
     "price data (list of series, details, brokers, import processes with one request per file, "
+    "uploaded or read from the import directory, the listing of the import directory, "
     "deleting with a preview of what is deleted, completeness). "
     "Data come into the data stock only through the import. "
     "The paths below /api/v1/ are versioned; the technical endpoint /api/health and the "

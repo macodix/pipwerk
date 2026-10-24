@@ -65,7 +65,9 @@ from pipwerk_replay.import_form import (
     FIELD_DATA,
     FIELD_FILE,
     FIELD_INSTRUMENT,
+    FIELD_KEEP,
     FIELD_TIMEZONE,
+    KEEP_VALUES,
     ImportForm,
     file_too_large,
     read_form,
@@ -73,13 +75,23 @@ from pipwerk_replay.import_form import (
 )
 from pipwerk_replay.marketdata_examples import json_examples
 from pipwerk_replay.marketdata_service import (
+    ImportDirectoryUnavailableError,
     ImportGoingOnError,
     ImportProcessNotFoundError,
+    KeepFailedError,
     MarketDataService,
     NoBrokerError,
+    OutsideImportDirectoryError,
+    PathInvalidError,
+    PathNotFoundError,
+    StorageDirectoryUnavailableError,
     TooManyRunningError,
+    WrongKindError,
 )
-from pipwerk_replay.settings_service import StoredTestRunBrokerInvalidError
+from pipwerk_replay.settings_service import (
+    StoredDirectoryInvalidError,
+    StoredTestRunBrokerInvalidError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +113,11 @@ STORED_TEST_RUN_BROKER_INVALID_TEXT = "The stored pipwerk replay broker for test
 PROCESS_NOT_FOUND_TEXT = "The import process does not exist. It has ended or its time has run out."
 DELETION_REFUSED_TEXT = "The data cannot be deleted: the broker, the data or the period is unknown."
 IMPORT_RUNNING_TEXT = "Data cannot be deleted while an import process exists. End it first."
+IMPORT_DIRECTORY_TEXT = "The import directory is not set or cannot be read."
+PATH_NOT_FOUND_TEXT = "There is no such file or directory in the import directory."
+NO_STORAGE_DIRECTORY_TEXT = "There is no storage directory to keep the file in."
+KEEP_FAILED_TEXT = "The file could not be kept in the storage directory. It was not imported."
+STORED_DIRECTORY_INVALID_TEXT = "A stored pipwerk replay directory is invalid."
 
 ProcessId = Annotated[
     UUID, Path(alias="id", description="Identifier of the import process (from its beginning).")
@@ -141,7 +158,29 @@ def _import_running(_error: ImportGoingOnError) -> Response:
     return JSONResponse(status_code=409, content=body.model_dump(mode="json"))
 
 
+def _stored_directory_invalid(error: StoredDirectoryInvalidError) -> Response:
+    logger.error("%s", error)
+    return api_error(503, STORED_DIRECTORY_INVALID_TEXT)
+
+
+def _path_handlers(location: list[str | int], wrong_kind: str) -> dict[type[Exception], Handler]:
+    """The answers to a path that the import directory refuses; ``location`` is the place of the
+    path in the request, ``wrong_kind`` the error type for a path of the wrong kind."""
+    return {
+        PathInvalidError: lambda _error: invalid_place(location, "path_invalid"),
+        OutsideImportDirectoryError: lambda _error: invalid_place(
+            location, "outside_import_directory"
+        ),
+        WrongKindError: lambda _error: invalid_place(location, wrong_kind),
+    }
+
+
 _HANDLERS: dict[type[Exception], Handler] = {
+    ImportDirectoryUnavailableError: lambda _error: api_error(409, IMPORT_DIRECTORY_TEXT),
+    KeepFailedError: lambda _error: api_error(503, KEEP_FAILED_TEXT),
+    PathNotFoundError: lambda _error: api_error(404, PATH_NOT_FOUND_TEXT),
+    StorageDirectoryUnavailableError: lambda _error: api_error(409, NO_STORAGE_DIRECTORY_TEXT),
+    StoredDirectoryInvalidError: _stored_directory_invalid,
     DeletionError: _deletion_refused,
     ImportGoingOnError: _import_running,
     ImportProcessNotFoundError: lambda _error: api_error(404, PROCESS_NOT_FOUND_TEXT),
@@ -187,6 +226,14 @@ def _form_description(
             "description": (
                 "IANA name of the time zone of the times in all CSV files of the process, for "
                 "example Europe/Athens; needed if the file is a CSV file."
+            ),
+        }
+        properties[FIELD_KEEP] = {
+            "type": "string",
+            "enum": list(KEEP_VALUES),
+            "description": (
+                "Optional: ``true`` writes the file unchanged into the storage directory, also "
+                "if it is refused (specification 5.6); ``false`` or none does not."
             ),
         }
         required = [FIELD_BROKER, FIELD_FILE]
@@ -439,7 +486,9 @@ def build_router(service: MarketDataService) -> APIRouter:
         ),
     )
     async def import_file(process_id: ProcessId, request: Request) -> Response:
-        form = await read_form(request, fields=frozenset({FIELD_BROKER, FIELD_TIMEZONE}))
+        form = await read_form(
+            request, fields=frozenset({FIELD_BROKER, FIELD_TIMEZONE, FIELD_KEEP})
+        )
         if isinstance(form, Response):
             return form
         return await run_in_threadpool(_run_import, str(process_id), form)
@@ -561,6 +610,124 @@ def build_router(service: MarketDataService) -> APIRouter:
             return JSONResponse(content=service.preview(form.file).model_dump(mode="json"))
 
         return guarded(run, _HANDLERS)
+
+    # --- import directory (specification 5.3 and 11) -------------------------------------------
+
+    @router.get(
+        "/market-data/import-directory",
+        operation_id="list_market_data_import_directory",
+        summary="List a directory inside the import directory",
+        description=(
+            "Lists the files and subdirectories of the directory ``path`` (relative to the import "
+            "directory of the settings; the empty path is the import directory itself) with name, "
+            "size and moment of the last change, page by page: first the subdirectories, then "
+            "the files, each sorted by name without regard to case. ``total`` counts all "
+            "entries. ``limit`` is at most ``max_listed_items`` (default 1000). The list never "
+            "goes above the import directory and names no intermediate file of the backend; a "
+            "symbolic link is listed only if its target lies inside the import directory. The "
+            "path of the directory itself is a setting (``/api/replay/settings/files``). HTTP "
+            "409 if the import directory is not set, does not exist or cannot be read; HTTP "
+            "404 if ``path`` does not exist; HTTP 422 if ``path`` is not a plain relative path "
+            "(``path_invalid``), leads outside the import directory "
+            "(``outside_import_directory``) or is a file (``not_a_directory``)."
+        ),
+        responses={
+            200: {
+                "description": "The page of entries.",
+                "model": models.ImportDirectoryPage,
+                "content": json_examples(
+                    page=("A directory with a file", ex.IMPORT_DIRECTORY_PAGE)
+                ),
+            },
+            **error_responses(404, 409, 422, 503, not_found=PATH_NOT_FOUND_TEXT),
+        },
+    )
+    def list_import_directory(query: Annotated[models.ImportDirectoryQuery, Query()]) -> Response:
+        def run() -> Response:
+            if query.limit is not None and query.limit > limits.max_listed_items:
+                return invalid_place(["query", "limit"], "less_than_equal")
+            return JSONResponse(
+                content=service.list_import_directory(query).model_dump(mode="json")
+            )
+
+        return guarded(run, {**_HANDLERS, **_path_handlers(["query", "path"], "not_a_directory")})
+
+    @router.post(
+        "/market-data/import-directory/preview",
+        operation_id="preview_market_data_import_directory_file",
+        summary="Read what a file of the import directory says about itself",
+        description=(
+            "The same as ``/market-data/import-preview`` for a file that lies in the import "
+            "directory: the format, and the broker, instrument and data it names, from its "
+            "content (JSON) or its name (CSV; the content of a CSV file is not read). The "
+            "file is only read, up to the limit per file; a file that cannot be read gives the "
+            "error ``not_readable``, a file over the limit the error ``too_large``. "
+            "No import process is needed. The errors of the path are those of the listing "
+            "(``not_a_file`` for a directory)."
+        ),
+        responses={
+            200: {
+                "description": "What the file says about itself.",
+                "model": models.FileHint,
+                "content": json_examples(json=("A JSON file", ex.HINT_JSON)),
+            },
+            **error_responses(404, 409, 413, 415, 422, 429, 503, not_found=PATH_NOT_FOUND_TEXT),
+        },
+        openapi_extra=body_description(
+            models.DirectoryPreviewRequest, "The path of the file inside the import directory."
+        ),
+    )
+    def preview_directory_file(body: JsonBody) -> Response:
+        def run() -> Response:
+            request = parse_body(body, models.DirectoryPreviewRequest)
+            return JSONResponse(
+                content=service.preview_directory_file(request).model_dump(mode="json")
+            )
+
+        return guarded(run, {**_HANDLERS, **_path_handlers(["path"], "not_a_file")})
+
+    @router.post(
+        "/market-data/import-processes/{id}/directory-files",
+        operation_id="import_market_data_directory_file",
+        summary="Import one file of the import directory in an import process",
+        description=(
+            "Imports one file that lies in the import directory, in a transaction of its own, "
+            "like ``/market-data/import-processes/{id}/files`` does for an uploaded file. The "
+            "body is JSON: ``path`` (relative to the import directory, see the listing), "
+            "``broker`` and ``timezone`` (those of the whole process) and optionally "
+            "``instrument`` and ``data``. The backend reads the file there directly and "
+            "never copies, keeps, moves, removes or changes it, with or without 'keep files'. "
+            "It resolves the path, symbolic links included, and refuses it if the result is "
+            "outside the import directory (HTTP 422, ``outside_import_directory``) or not a "
+            "plain file (``not_a_file``); HTTP 404 if there is nothing at the path, HTTP 409 if "
+            "the import directory is not set or cannot be read. A JSON file names instrument "
+            "and data in its content; for a CSV file the backend takes the instrument and the "
+            "data from its name where the request gives none (the patterns of the preview). "
+            "Checks, limit per file, answer (HTTP 200 with ``refused`` for a file refused as a "
+            "whole, also for a file that cannot be read: ``not_readable``), idle time and counting "
+            "are those of an uploaded file."
+        ),
+        responses={
+            200: {
+                "description": "The result for the file.",
+                "model": models.FileOutcome,
+                "content": json_examples(
+                    imported=("A file that was taken over", ex.FILE_IMPORTED_FROM_DIRECTORY)
+                ),
+            },
+            **error_responses(404, 409, 413, 415, 422, 429, 503, not_found=PROCESS_NOT_FOUND_TEXT),
+        },
+        openapi_extra=body_description(
+            models.DirectoryFileRequest, "The path of the file and what is known about it."
+        ),
+    )
+    def import_directory_file(process_id: ProcessId, body: JsonBody) -> Response:
+        def run() -> Response:
+            request = parse_body(body, models.DirectoryFileRequest)
+            outcome = service.import_directory_file(str(process_id), request)
+            return JSONResponse(content=outcome.model_dump(mode="json"))
+
+        return guarded(run, {**_HANDLERS, **_path_handlers(["path"], "not_a_file")})
 
     # --- deleting (specification 5.5) ---------------------------------------------------------
 
