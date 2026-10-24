@@ -9,6 +9,13 @@ from pipwerk_domain.consistency.findings import (
     NameOccurrence,
     NameSegment,
 )
+from pipwerk_domain.consistency.usage import (
+    ElementUsage,
+    ElementUse,
+    InstanceUsage,
+    MemberUse,
+    UsageReport,
+)
 from pipwerk_domain.defaults import default_registry
 from pipwerk_domain.model import Strategy, Template
 from pipwerk_domain.registry import ElementRegistry
@@ -57,15 +64,30 @@ def check_with_contexts(
     return checker
 
 
+def analyze_usage(strategy: Strategy, registry: ElementRegistry | None = None) -> UsageReport:
+    """The use of the instances on the drawing area of a strategy: for each instance the element
+    of its first use and the elements at which it is usable, for each element the instances it
+    uses (specification 3.3). The check runs with it; its findings are not part of the answer."""
+    checker = Checker(default_registry() if registry is None else registry)
+    checker.check_strategy(strategy)
+    return UsageReport() if checker.usage is None else checker.usage.report
+
+
 __all__ = [
     "CheckResult",
     "Checker",
+    "ElementUsage",
+    "ElementUse",
     "ExpressionContext",
     "ExpressionNames",
     "Finding",
+    "InstanceUsage",
     "Level",
+    "MemberUse",
     "NameOccurrence",
     "NameSegment",
+    "UsageReport",
+    "analyze_usage",
     "check_strategy",
     "check_strategy_with_names",
     "check_template",

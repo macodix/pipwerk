@@ -153,6 +153,16 @@ def definition(
     return ParameterDefinition(name, datatype, **kwargs)  # type: ignore[arg-type]
 
 
+def use(strategy: Strategy, key: str, prop: str = "wert", element_number: int = 2) -> None:
+    """Let an order element of the strategy use the instance ``key``: the expression of its
+    property ``bemerkung`` names ``key.prop``, so that the instance is connected (an input as well
+    would only be a hint when nothing uses it). Another call adds a further name."""
+    target = next(item for item in strategy.elements if item.id == uid(element_number))
+    earlier = target.properties.get("bemerkung")
+    text = '""' if earlier is None else str(earlier.value)
+    target.properties["bemerkung"] = expr(f"{text} & {key}.{prop}")
+
+
 def codes(findings: Iterable[Finding]) -> list[str]:
     return [item.code for item in findings]
 

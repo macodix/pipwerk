@@ -310,28 +310,29 @@ _TIPS: dict[str, tuple[str, str]] = {
 }
 
 _TURNING_POINT_ORDINALS = (
-    ("jüngsten", "most recent"),
-    ("zweitjüngsten", "second most recent"),
-    ("drittjüngsten", "third most recent"),
+    ("jüngste", "jüngsten", "most recent"),
+    ("zweitjüngste", "zweitjüngsten", "second most recent"),
+    ("drittjüngste", "drittjüngsten", "third most recent"),
 )
 
 
 def _turning_point_tip(number: int, kind: str) -> tuple[str, str]:
     """The explanation of a property (``price``, ``kind`` or ``final``) of the ``number``-th
-    most recent turning point."""
-    ordinal_de, ordinal_en = _TURNING_POINT_ORDINALS[number - 1]
+    most recent turning point. The German ordinal stands in the nominative after "wenn der" and in
+    the genitive after "des"."""
+    nominative_de, genitive_de, ordinal_en = _TURNING_POINT_ORDINALS[number - 1]
     texts = {
         "price": (
-            f"Der Kurs des {ordinal_de} Wendepunkts des ZigZag.",
+            f"Der Kurs des {genitive_de} Wendepunkts des ZigZag.",
             f"The price of the {ordinal_en} turning point of the ZigZag.",
         ),
         "kind": (
-            f"Die Art (Hoch oder Tief) des {ordinal_de} Wendepunkts des ZigZag.",
+            f"Die Art (Hoch oder Tief) des {genitive_de} Wendepunkts des ZigZag.",
             f"The kind (high or low) of the {ordinal_en} turning point of the ZigZag.",
         ),
         "final": (
-            f"Ja, wenn der {ordinal_de} Wendepunkt des ZigZag endgültig ist und sich nicht mehr "
-            "verschiebt.",
+            f"Ja, wenn der {nominative_de} Wendepunkt des ZigZag endgültig ist und sich nicht "
+            "mehr verschiebt.",
             f"Yes if the {ordinal_en} turning point of the ZigZag is final and does not move "
             "any more.",
         ),

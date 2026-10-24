@@ -6,7 +6,7 @@ The section was part of the user documentation until order 04; it is now section
 files in ``contracts/strategies/v2/examples/`` (format 2.0). Every example is loaded, checked
 against the document format and used through the web API exactly as the documentation says: the
 rule template with its changed version and the flow with ``usages`` and deleting (criterion 7),
-and the seven changed versions of the test case ``str-03`` with the findings of ``check`` and of
+and the eleven changed versions of the test case ``str-03`` with the findings of ``check`` and of
 ``PUT`` (criterion 5). The tests also read the documentation: it must name every file and the
 findings of every change, and the instance that it shows is the one used here.
 """
@@ -46,6 +46,7 @@ CONDITION = "7e1ab090-5a18-5414-9f00-5541c0e4b325"  # the element "Kreuzen" of s
 DIRECTION = "81ddf1b2-15f1-54f0-8a7e-7387b4dd119f"  # the element "Richtung"
 STOP_CALCULATION = "d68f936b-4e65-5d0c-a4eb-a1438baaa470"  # the element "Stop-Loss" of str-03
 PLACE_ORDER = "7896d1ad-8c07-517d-b451-80fe53d46681"  # the element "Order aufgeben"
+CLOSE_POSITION = "37e7dd94-7a0d-5ed3-b79d-e777b1657640"  # "Position schließen" in its management
 MAIN_TRIGGER = "fd3b87fb-a152-51fa-bd12-4579eba0a33d"
 NEW_A = "00000000-0000-4000-8000-0000000000aa"
 NEW_B = "00000000-0000-4000-8000-0000000000bb"
@@ -103,7 +104,7 @@ def empty_content() -> dict[str, Any]:
     }
 
 
-# --- the seven changes, written out as the documentation describes them -------------------------
+# --- the eleven changes, written out as the documentation describes them ------------------------
 
 
 def remove_the_trigger(document: dict[str, Any]) -> None:
@@ -157,6 +158,52 @@ def add_an_unknown_element_type(document: dict[str, Any]) -> None:
     document["elements"].append(new_element(NEW_B, "x.unbekannt", name="?"))
 
 
+def use_an_instance_on_the_other_branch(document: dict[str, Any]) -> None:
+    """`ATR 14` is first used by "Stop-Loss" on the branch "wahr" of "Kreuzen"; a calculation on
+    the branch "falsch" is no place where it is usable."""
+    document["elements"].append(
+        new_element(
+            NEW_A,
+            "flow.calculation",
+            name="Prüfung",
+            key="pruefung",
+            parameters={"ausdruck": {"kind": "expression", "value": "atr14.wert > 0"}},
+        )
+    )
+    document["connections"].append(
+        {"id": NEW_CONNECTION, "source": CONDITION, "output": "falsch", "target": NEW_A}
+    )
+
+
+def add_an_instance_that_nothing_uses(document: dict[str, Any]) -> None:
+    instance = {
+        **empty_content(),
+        "name": "EMA 100",
+        "key": "ema100",
+        "object_type": "EMA",
+        "origin": {"object_type": "EMA", "template_id": None, "template_name": None},
+        "parameter_values": {
+            "zeiteinheit": {"kind": "parameter", "value": "zeiteinheit"},
+            "periode": {"kind": "fixed", "value": 100},
+            "instrument": {"kind": "fixed", "value": "instrument_der_anwendung"},
+        },
+    }
+    document["elements"].append(new_element(NEW_A, "EMA", instance=instance))
+
+
+def add_a_manual_trigger_to_the_management(document: dict[str, Any]) -> None:
+    document["elements"].append(
+        new_element(NEW_A, "trigger.manual", name="Manuell", management_of=PLACE_ORDER)
+    )
+    document["connections"].append(
+        {"id": NEW_CONNECTION, "source": NEW_A, "output": "weiter", "target": CLOSE_POSITION}
+    )
+
+
+def give_two_things_the_same_name(document: dict[str, Any]) -> None:
+    element(document, DIRECTION)["name"] = "EMA 20"
+
+
 CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
     (
         "str-03-ohne-ausloeser.strategy.json",
@@ -187,7 +234,10 @@ CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
     (
         "str-03-order-im-indikator.strategy.json",
         add_an_indicator_with_an_order_rule,
-        [("error", "rule.order_in_indicator", NEW_A)],
+        [
+            ("error", "rule.order_in_indicator", NEW_A),
+            ("error", "instance.unconnected", NEW_A),  # nothing uses the new indicator
+        ],
     ),
     (
         "str-03-order-aendern-ausserhalb.strategy.json",
@@ -198,6 +248,26 @@ CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
         "str-03-unbekannter-elementtyp.strategy.json",
         add_an_unknown_element_type,
         [("error", "type.unknown", NEW_B)],
+    ),
+    (
+        "str-03-instanz-nicht-verwendbar.strategy.json",
+        use_an_instance_on_the_other_branch,
+        [("error", "instance.not_usable", NEW_A)],
+    ),
+    (
+        "str-03-instanz-ohne-verbindung.strategy.json",
+        add_an_instance_that_nothing_uses,
+        [("error", "instance.unconnected", NEW_A)],
+    ),
+    (
+        "str-03-manuell-in-verwaltung.strategy.json",
+        add_a_manual_trigger_to_the_management,
+        [("error", "trigger.manual_in_management", NEW_A)],
+    ),
+    (
+        "str-03-doppelter-name.strategy.json",
+        give_two_things_the_same_name,
+        [("error", "name.duplicate", DIRECTION)],
     ),
 ]
 IDS = [item[0].removeprefix("str-03-").removesuffix(".strategy.json") for item in CASES]
@@ -239,7 +309,7 @@ def test_the_documentation_names_the_findings_of_every_change() -> None:
     rows = {
         match.group(2): match.group(0)
         for match in re.finditer(
-            r"^\| (\d) \| `(\S+)` \| .* \|$",
+            r"^\| (\d+) \| `(\S+)` \| .* \|$",
             documentation_section("#### Befunde der Konsistenzprüfung", "#### Ausdrücke"),
             re.MULTILINE,
         )

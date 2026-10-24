@@ -468,6 +468,32 @@ def test_the_zigzag_has_its_parameters_the_last_highs_and_lows_and_three_turning
     assert zigzag.group is Group.INDICATORS
 
 
+def test_the_german_explanations_of_the_turning_points_have_the_right_case() -> None:
+    """Nominative after "wenn der", genitive after "des" (hint H1 of the test report of order 9)."""
+    zigzag = get("ZigZag")
+    final = {
+        number: zigzag.property(f"wendepunkt_{number}_endgueltig").explanation.de  # type: ignore[union-attr]
+        for number in (1, 2, 3)
+    }
+    assert final[1].startswith("Ja, wenn der jüngste Wendepunkt des ZigZag endgültig ist")
+    assert final[2].startswith("Ja, wenn der zweitjüngste Wendepunkt des ZigZag endgültig ist")
+    assert final[3].startswith("Ja, wenn der drittjüngste Wendepunkt des ZigZag endgültig ist")
+    price = zigzag.property("wendepunkt_2_kurs").explanation.de  # type: ignore[union-attr]
+    assert price.startswith("Der Kurs des zweitjüngsten Wendepunkts des ZigZag.")
+    kind = zigzag.property("wendepunkt_3_art").explanation.de  # type: ignore[union-attr]
+    assert kind.startswith("Die Art (Hoch oder Tief) des drittjüngsten Wendepunkts")
+    # no German explanation of any type puts an adjective with the ending "-en" after "der" or
+    # "wenn der" in front of a masculine noun
+    wrong = re.compile(r"\b(?:wenn )?der \w+(?:jüngsten|letzten) (?:Wendepunkt|Kurs|Wert)\b")
+    for description in REGISTRY.list():
+        texts = [description.explanation.de, description.description.de]
+        texts += [item.explanation.de for item in description.parameters]
+        texts += [item.explanation.de for item in description.properties]
+        texts += [item.explanation.de for item in description.outputs]
+        for text in texts:
+            assert not wrong.search(text), text
+
+
 def test_general_object_types() -> None:
     assert get("Indikator").category is ObjectCategory.INDICATOR
     assert get("Trend").category is ObjectCategory.TREND

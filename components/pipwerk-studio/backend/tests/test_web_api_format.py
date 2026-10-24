@@ -14,7 +14,6 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from web_api_support import (
-    CHECKED_CASES,
     EMA_TRENDFOLGE_FILE,
     codes,
     load_case,
@@ -61,8 +60,14 @@ def test_a_document_of_the_format_one_is_accepted_and_saved_as_two(
     created = post(client, "strategies", old)
     assert created.status_code == 201, created.text
     answer = created.json()
-    if name in CHECKED_CASES:
+    if (
+        name == "str-03"
+    ):  # the document 1.0 of str-01 has the indicator Markttechnik (not delivered)
         assert answer["findings"] == []
+    else:
+        assert {
+            item["details"]["type"] for item in answer["findings"] if item["code"] == "type.unknown"
+        } == {"Markttechnik"}
     document = answer["document"]
     assert document["format_version"] == "2.0"
     assert document["name"] == old["title"]

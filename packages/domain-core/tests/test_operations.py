@@ -11,12 +11,24 @@ from pipwerk_domain.defaults import default_registry
 from pipwerk_domain.documents import read_document
 from pipwerk_domain.expressions import Scope, analyze
 from pipwerk_domain.expressions.slots import replace_names_with_slot
-from pipwerk_domain.model import Binding, DataLink, Strategy
+from pipwerk_domain.model import (
+    Binding,
+    DataLink,
+    Element,
+    ElementInput,
+    Instance,
+    Origin,
+    Strategy,
+)
 from pipwerk_domain.namespaces import application_scope, instance_symbol
 from pipwerk_domain.operations import (
+    Uses,
     remove_element,
     remove_rule,
     remove_strategy_parameter,
+    uses_of_element,
+    uses_of_rule,
+    uses_of_strategy_parameter,
 )
 from pipwerk_domain.pointers import PointerError, below, pointer, split_pointer
 from pipwerk_domain.typedesc import BindingKind
@@ -225,3 +237,152 @@ def test_remove_a_rule() -> None:
     remove_rule(strategy, risk)
     assert strategy.rules == []
     assert check_strategy(strategy) != []  # the volume is no longer determined
+
+
+# the uses before a removal ------------------------------------------------------------------------
+
+
+def shown(strategy: Strategy, uses: Uses) -> list[str | None]:
+    """The names of the elements in a list of uses."""
+    names: list[str | None] = []
+    for item in uses.elements:
+        found = strategy.element(item)
+        assert found is not None
+        names.append(found.shown_name)
+    return names
+
+
+def test_the_uses_of_an_instance_are_the_elements_that_name_it() -> None:
+    strategy = load("str-03")
+    uses = uses_of_element(strategy, element_of(strategy, "ema20"))
+    assert shown(strategy, uses) == ["Kreuzen", "Richtung", "Kreuzen gegen die Position"]
+    assert uses.rules == []
+    atr = uses_of_element(strategy, element_of(strategy, "atr14"))
+    assert shown(strategy, atr) == ["Stop-Loss", "Neuer Stop-Loss"]
+
+
+def test_the_uses_count_an_input_and_a_data_connection() -> None:
+    strategy = load("str-03")
+    ema50 = element_of(strategy, "ema50")
+    other = next(item for item in strategy.elements if item.shown_name == "Stop-Loss")
+    other.inputs.append(ElementInput("ema50", "wert"))
+    order = next(item for item in strategy.elements if item.type == catalog.FLOW_PLACE_ORDER)
+    order.properties["take_profit"] = Binding(BindingKind.CONNECTION, DataLink("ema50", "wert"))
+    uses = uses_of_element(strategy, ema50)
+    assert order.id in uses.elements and other.id in uses.elements
+    # in the order of the strategy
+    assert uses.elements == [item.id for item in strategy.elements if item.id in uses.elements]
+
+
+def test_the_uses_of_an_instance_include_the_instance_that_binds_to_it() -> None:
+    strategy = load("str-03")
+    second = next(
+        item for item in strategy.elements if item.instance and item.instance.key == "ema50"
+    )
+    assert second.instance is not None
+    second.instance.parameter_values["periode"] = Binding(
+        BindingKind.CONNECTION, DataLink("atr14", "wert")
+    )
+    uses = uses_of_element(strategy, element_of(strategy, "atr14"))
+    assert second.id in uses.elements
+
+
+def test_the_uses_of_a_strategy_parameter() -> None:
+    strategy = load("str-03")
+    uses = uses_of_strategy_parameter(strategy, "stop_abstand")
+    assert shown(strategy, uses) == ["Stop-Loss", "Neuer Stop-Loss"]
+    unit = uses_of_strategy_parameter(strategy, "ZEITEINHEIT")  # bindings of the kind parameter
+    assert len(unit.elements) == 5  # three instances and the two triggers
+    assert uses_of_strategy_parameter(strategy, "gibtesnicht") == Uses()
+
+
+def test_the_uses_of_a_rule_of_the_strategy_and_the_rules_that_use_it() -> None:
+    strategy = load("str-03")
+    first = Instance(name="Eins", key="eins", object_type="Regel", expression="Konto.kapital > 0")
+    second = Instance(name="Zwei", key="zwei", object_type="Regel", expression="eins.ergebnis")
+    strategy.rules += [first, second]
+    stop = next(item for item in strategy.elements if item.shown_name == "Stop-Loss")
+    stop.parameters["ausdruck"] = Binding(BindingKind.EXPRESSION, "IF(eins.ergebnis; 1; 2)")
+    uses = uses_of_rule(strategy, first)
+    assert uses == Uses([stop.id], ["zwei"])
+    assert uses_of_rule(strategy, second) == Uses()
+
+
+def test_the_uses_of_an_order_with_its_management_leave_out_the_management() -> None:
+    strategy = load("str-03")
+    order = next(item for item in strategy.elements if item.type == catalog.FLOW_PLACE_ORDER)
+    # the elements of the management use `Stop abstand`, the order uses `stop.ergebnis` etc.; the
+    # uses of the calculations in the management come from inside: none counts
+    assert uses_of_element(strategy, order.id) == Uses()
+    stop_neu = element_of(strategy, "stop_neu")
+    assert shown(strategy, uses_of_element(strategy, stop_neu)) == [
+        "Stop-Loss verbessert",
+        "Position ändern",
+    ]
+
+
+def test_uses_of_something_that_is_not_there_are_empty() -> None:
+    strategy = load("str-03")
+    assert uses_of_element(strategy, "00000000-0000-4000-8000-0000000000ff") == Uses()
+
+
+# removing what is inside an instance --------------------------------------------------------------
+
+
+def test_removing_an_instance_removes_the_uses_of_what_it_contains_too() -> None:
+    strategy = load("str-03")
+    inner = ema("inner")
+    outer = Instance(
+        name="Aussen",
+        key="aussen",
+        object_type=catalog.TYPE_INDICATOR,
+        origin=Origin(catalog.TYPE_INDICATOR),
+        parameter_values={"zeiteinheit": Binding(BindingKind.FIXED, "h1")},
+        instances=[inner],
+        rules=[Instance(name="Pr", key="pr", object_type="Regel", expression="TRUE()")],
+    )
+    holder = Element(
+        id="00000000-0000-4000-8000-0000000000aa", type=catalog.TYPE_INDICATOR, instance=outer
+    )
+    strategy.elements.append(holder)
+    strategy.rules.append(
+        Instance(
+            name="Ausserhalb",
+            key="ausserhalb",
+            object_type="Regel",
+            expression="inner.wert > 1 and pr.ergebnis",
+        )
+    )
+    strategy.rules[-1].expression = "AND(inner.wert > 1; pr.ergebnis)"
+    assert uses_of_element(strategy, holder.id) == Uses([], ["ausserhalb"])
+    remove_element(strategy, holder.id)
+    assert strategy.rules[-1].expression == "AND([] > 1; [])"
+
+
+def test_removing_an_element_clears_the_first_use_that_names_it() -> None:
+    strategy = load("str-03")
+    crossing = element_of(strategy, "kreuzen")
+    instance = next(
+        item for item in strategy.elements if item.instance and item.instance.key == "ema20"
+    )
+    assert instance.instance is not None and instance.instance.first_use == crossing
+    remove_element(strategy, crossing)
+    assert instance.instance.first_use is None
+
+
+def test_removing_a_rule_removes_the_uses_of_the_rules_inside_it() -> None:
+    strategy = load("str-03")
+    inner = Instance(name="Innen", key="innen", object_type="Regel", expression="TRUE()")
+    werk = Instance(
+        name="Werk",
+        key="werk",
+        object_type=catalog.TYPE_RULESET,
+        origin=Origin(catalog.TYPE_RULESET),
+        rules=[inner],
+    )
+    outside = Instance(
+        name="Aussen", key="aussen", object_type="Regel", expression="innen.ergebnis"
+    )
+    strategy.rules += [werk, outside]
+    remove_rule(strategy, werk)
+    assert strategy.rules[-1].expression == "[]"

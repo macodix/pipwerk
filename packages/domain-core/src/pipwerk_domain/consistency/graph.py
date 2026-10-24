@@ -110,3 +110,99 @@ def reachable(starts: Collection[str], successors: Mapping[str, Collection[str]]
                 seen.add(target)
                 queue.append(target)
     return seen
+
+
+class Dominance:
+    """Dominance in a flow: ``a`` dominates ``b`` if every path from a start node to ``b`` goes
+    through ``a`` (a node dominates itself). Computed once (iterative algorithm of Cooper, Harvey
+    and Kennedy, no recursion); a question is answered in constant time.
+
+    Only nodes that a start node reaches are part of the tree. ``dominates`` is ``False`` for a
+    node outside of it; ``contains`` tells whether a node is inside."""
+
+    def __init__(self, starts: Sequence[str], successors: Mapping[str, Collection[str]]) -> None:
+        root = "\0root"
+        self._enter: dict[str, int] = {}
+        self._leave: dict[str, int] = {}
+        order = self._reverse_postorder(root, starts, successors)
+        position = {node: index for index, node in enumerate(order)}
+        predecessors: dict[str, list[str]] = {node: [] for node in order}
+        for node in order:
+            targets = starts if node == root else successors.get(node, ())
+            for target in targets:
+                if target in predecessors and target != root:
+                    predecessors[target].append(node)
+        immediate: dict[str, str] = {root: root}
+        changed = True
+        while changed:
+            changed = False
+            for node in order[1:]:
+                chosen: str | None = None
+                for pred in predecessors[node]:
+                    if pred not in immediate:
+                        continue
+                    chosen = (
+                        pred if chosen is None else self._meet(immediate, position, pred, chosen)
+                    )
+                if chosen is not None and immediate.get(node) != chosen:
+                    immediate[node] = chosen
+                    changed = True
+        children: dict[str, list[str]] = {node: [] for node in order}
+        for node in order[1:]:
+            children[immediate[node]].append(node)
+        counter = 0
+        stack: list[tuple[str, int]] = [(root, 0)]
+        while stack:
+            node, state = stack.pop()
+            if state == 0:
+                self._enter[node] = counter
+                counter += 1
+                stack.append((node, 1))
+                stack.extend((child, 0) for child in reversed(children[node]))
+            else:
+                self._leave[node] = counter
+                counter += 1
+        self._root = root
+
+    @staticmethod
+    def _reverse_postorder(
+        root: str, starts: Sequence[str], successors: Mapping[str, Collection[str]]
+    ) -> list[str]:
+        seen: set[str] = {root}
+        post: list[str] = []
+        stack: list[tuple[str, list[str]]] = [(root, list(reversed(list(starts))))]
+        while stack:
+            node, pending = stack[-1]
+            if pending:
+                target = pending.pop()
+                if target not in seen:
+                    seen.add(target)
+                    stack.append((target, list(reversed(list(successors.get(target, ()))))))
+            else:
+                stack.pop()
+                post.append(node)
+        post.reverse()
+        return post
+
+    @staticmethod
+    def _meet(
+        immediate: Mapping[str, str], position: Mapping[str, int], first: str, second: str
+    ) -> str:
+        while first != second:
+            while position[first] > position[second]:
+                first = immediate[first]
+            while position[second] > position[first]:
+                second = immediate[second]
+        return first
+
+    def contains(self, node: str) -> bool:
+        """Whether a start node reaches the node."""
+        return node in self._enter
+
+    def dominates(self, first: str, second: str) -> bool:
+        """Whether ``first`` dominates ``second`` (both inside the tree, else ``False``)."""
+        if first not in self._enter or second not in self._enter:
+            return False
+        return (
+            self._enter[first] <= self._enter[second] and self._leave[second] <= self._leave[first]
+        )

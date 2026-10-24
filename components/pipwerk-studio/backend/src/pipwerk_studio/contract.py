@@ -32,8 +32,11 @@ CONTRACT_DESCRIPTION = (
     'the indication for "Aktualisieren"), strategies and '
     "templates (indicators, trends, rules, rulesets) in the document format 2.0 (documents of "
     "the format 1.0 are accepted and converted), their usages, the consistency check, the "
-    "expressions in stored form, display form, blocks and as a sentence, and the keys of new "
-    "objects. The paths below /api/v1/ are versioned; the internal endpoints of pipwerk "
+    "expressions in stored form, display form, blocks and as a sentence, the keys of new "
+    "objects, the use of the instances of a strategy (element of the first use, where an "
+    "instance is usable, what an element uses), the instance for a template or an object type "
+    "with its names, and the removal of an object with the list of its uses. The paths below "
+    "/api/v1/ are versioned; the internal endpoints of pipwerk "
     "Studio under /api/ are not part of this description.\n\n"
     "Every error answer has the fixed English text `detail`, the `code` of the cause and the "
     "`params` for the text in the language of the user. The codes:\n\n" + error_codes_markdown()

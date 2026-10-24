@@ -51,6 +51,9 @@ def test_the_description_names_the_public_endpoints_of_the_specification() -> No
         "/api/v1/check": {"post"},
         "/api/v1/expressions": {"post"},
         "/api/v1/keys": {"post"},
+        "/api/v1/usage": {"post"},
+        "/api/v1/insert": {"post"},
+        "/api/v1/removals": {"post"},
     }
     for art in ART_OF_KIND.values():
         expected[f"/api/v1/{art}"] = {"get", "post"}
@@ -123,7 +126,7 @@ def test_the_operation_identifiers_are_unique() -> None:
         for operations in paths.values()  # type: ignore[attr-defined]
         for operation in operations.values()
     ]
-    assert len(identifiers) == len(set(identifiers)) == 4 + 5 * 6
+    assert len(identifiers) == len(set(identifiers)) == 4 + 3 + 5 * 6
 
 
 def test_title_and_texts_spell_the_name() -> None:

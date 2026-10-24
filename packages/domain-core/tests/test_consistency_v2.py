@@ -36,14 +36,17 @@ from tests.helpers import (
     rule,
     trigger,
     uid,
+    use,
     valid_strategy,
 )
 
 
 def with_ema(**changes: Any) -> Strategy:
-    """The smallest strategy plus an instance ``ema20`` on the drawing area."""
+    """The smallest strategy plus an instance ``ema20`` on the drawing area, which the order
+    uses (an instance that nothing uses is an error)."""
     strategy = valid_strategy()
     strategy.elements.append(element(10, "EMA", instance=ema("ema20")))
+    use(strategy, "ema20")
     for key, value in changes.items():
         setattr(strategy, key, value)
     return strategy
@@ -198,6 +201,7 @@ def test_a_data_connection_to_an_existing_property_of_a_fitting_type() -> None:
         )
     )
     del link
+    use(strategy, "ema50")
     # a number property to an integer parameter: both are numbers
     assert check(strategy) == []
 
@@ -239,6 +243,7 @@ def test_a_data_connection_between_unfitting_types() -> None:
             ),
         )
     )
+    use(strategy, "mt", "letztes_hoch")
     assert check(strategy) == []  # a number into an integer
     strategy.elements[-1].instance.parameter_values["zeiteinheit"] = Binding(  # type: ignore[union-attr]
         BindingKind.CONNECTION, DataLink("ema20", "wert")
@@ -336,6 +341,7 @@ def test_an_input_that_a_data_connection_of_the_element_uses() -> None:
 
 def test_an_expression_of_another_element_does_not_use_the_input() -> None:
     strategy = with_condition("ema20.wert > 1", [])
+    del strategy.elements[2].properties["bemerkung"]  # the order does not use the instance
     strategy.elements[2].inputs.append(ElementInput("ema20", "wert"))
     assert [item.element for item in only(check(strategy), fc.INPUT_UNUSED)] == [uid(2)]
 
@@ -695,6 +701,7 @@ def test_a_trend_with_the_instrument_a_time_unit_and_a_method() -> None:
             ),
         )
     )
+    use(strategy, "trend_h1", "richtung")
     assert codes(check(strategy)) == [fc.TREND_DIRECTION_MISSING]
 
 

@@ -52,6 +52,7 @@ from tests.helpers import (
     template,
     trigger,
     uid,
+    use,
     valid_strategy,
 )
 from tests.paths import TESTCASE_DIRECTORY
@@ -95,6 +96,7 @@ def test_strategy_parameters_in_an_indicator_instance() -> None:
             ),
         )
     )
+    use(strategy, "ind", "x")
     assert check(strategy) == []
     strategy.elements[2].instance.properties[0].expression = "Strategie.q * 2"  # type: ignore[union-attr]
     assert only(check(strategy), fc.EXPRESSION_INVALID)
@@ -118,6 +120,7 @@ def test_strategy_parameters_in_a_trend_instance() -> None:
             ),
         )
     )
+    use(strategy, "tr", "richtung")
     assert check(strategy) == []
 
 
@@ -721,6 +724,7 @@ def test_a_trend_with_the_method_expression_needs_a_direction() -> None:
     strategy.elements[2].instance = trend(
         properties=[PropertyDefinition("Richtung", DataType.TEXT, '"aufwaerts"')]
     )
+    use(strategy, "tr", "richtung")
     assert check(strategy) == []
 
 

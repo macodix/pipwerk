@@ -78,6 +78,19 @@ ERROR_CODES: dict[str, ErrorCodeInfo] = {
     "keys.scope_invalid": ErrorCodeInfo(
         422, "The pointer names no list of the document that takes a new object."
     ),
+    "usage.strategy_required": ErrorCodeInfo(
+        422, "The use of instances is asked for a strategy; the document is a template."
+    ),
+    "insert.template_invalid": ErrorCodeInfo(
+        422, "The template of the request is no template (indicator, trend, rule or ruleset)."
+    ),
+    "insert.type_unknown": ErrorCodeInfo(422, "The object type of the request is not registered."),
+    "removal.strategy_required": ErrorCodeInfo(
+        422, "A removal is asked for a strategy; the document is a template."
+    ),
+    "removal.target_unknown": ErrorCodeInfo(
+        422, "The strategy has no element, strategy parameter or rule of this kind and name."
+    ),
     "object_directory.not_set": ErrorCodeInfo(
         503, "The object directory of pipwerk Studio is not set."
     ),

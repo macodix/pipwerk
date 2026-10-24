@@ -82,7 +82,7 @@
           "template_id": null,
           "template_name": null
         },
-        "first_use": null,
+        "first_use": "7e1ab090-5a18-5414-9f00-5541c0e4b325",
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -135,7 +135,7 @@
           "template_id": null,
           "template_name": null
         },
-        "first_use": null,
+        "first_use": "7e1ab090-5a18-5414-9f00-5541c0e4b325",
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -188,7 +188,7 @@
           "template_id": null,
           "template_name": null
         },
-        "first_use": null,
+        "first_use": "d68f936b-4e65-5d0c-a4eb-a1438baaa470",
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -416,14 +416,14 @@
           "property": "wert",
           "kind": "property",
           "arguments": [],
-          "refresh": false
+          "refresh": true
         },
         {
           "instance": "ema50",
           "property": "wert",
           "kind": "property",
           "arguments": [],
-          "refresh": false
+          "refresh": true
         }
       ],
       "rules": [],
@@ -462,7 +462,7 @@
           "property": "wert",
           "kind": "property",
           "arguments": [],
-          "refresh": false
+          "refresh": true
         }
       ],
       "rules": [],

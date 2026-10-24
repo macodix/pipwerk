@@ -68,7 +68,7 @@ def test_the_finding_identifiers_of_the_documentation_are_those_of_the_code() ->
         for name, value in vars(findings_module).items()
         if name.isupper() and isinstance(value, str) and re.match(r"^[a-z_]+\.[a-z_]+$", value)
     }
-    assert len(codes) == 33
+    assert len(codes) == 37
     documented = set(first_cells(section("9", "10")))
     assert documented == codes
 
@@ -97,6 +97,10 @@ def test_the_table_of_the_specification_is_complete() -> None:
         "name.duplicate",
         "type.unknown",
         "flow.no_order_reachable",
+        "input.refresh_not_allowed",
+        "instance.not_usable",
+        "trigger.manual_in_management",
+        "instance.unconnected",
     }
 
 
@@ -192,6 +196,7 @@ def test_every_limit_is_listed_with_its_value() -> None:
         "MAX_FINDINGS_PER_EXPRESSION": str(limits.MAX_FINDINGS_PER_EXPRESSION),
         "MAX_FINDINGS_PER_CHECK": str(limits.MAX_FINDINGS_PER_CHECK),
         "MAX_NAMES_PER_CHECK": str(limits.MAX_NAMES_PER_CHECK),
+        "MAX_USAGE_ENTRIES": str(limits.MAX_USAGE_ENTRIES),
     }
     constants = {name for name in vars(limits) if name.startswith("MAX_")}
     assert constants == set(rows)

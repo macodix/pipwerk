@@ -20,7 +20,7 @@
 """
 
 import uuid
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -29,13 +29,14 @@ from pipwerk_domain.defaults import builtin_templates, default_registry
 from pipwerk_domain.documents import models as v2
 from pipwerk_domain.documents import v1
 from pipwerk_domain.expressions.functions import list_functions
-from pipwerk_domain.expressions.lexer import SyntaxProblem, TokenKind, tokenize
+from pipwerk_domain.expressions.rename import Rewrite, compose, identity, renamer
 from pipwerk_domain.identifiers import (
     form_key,
     identifier_from_name,
     is_valid_key,
     name_from_programming_name,
 )
+from pipwerk_domain.limits import MAX_INPUTS_PER_ELEMENT
 from pipwerk_domain.registry import ElementRegistry
 from pipwerk_domain.typedesc import (
     APPLICATION_INSTRUMENT,
@@ -43,55 +44,12 @@ from pipwerk_domain.typedesc import (
     ElementKind,
 )
 
-type Rewrite = Callable[[str], str]
-
 _CONNECTION_NAMESPACE = uuid.UUID("0b5d4c1e-7a39-4f58-9d2c-3e8a61b7f4c2")
 _KURSQUELLE = "kursquelle"
 _ANWENDEN_AUF = "anwenden_auf"
-
-
-def _identity(text: str) -> str:
-    return text
-
-
-def _compose(first: Rewrite, second: Rewrite) -> Rewrite:
-    if first is _identity:
-        return second
-    if second is _identity:
-        return first
-    return lambda text: second(first(text))
-
-
-def _renamer(mapping: dict[str, str]) -> Rewrite:
-    """A function that replaces the first part of a name in an expression that equals a
-    former name (without regard to upper and lower case) by the new key."""
-    if not mapping:
-        return _identity
-
-    def rewrite(text: str) -> str:
-        try:
-            tokens = tokenize(text)
-        except SyntaxProblem:
-            return text
-        edits: list[tuple[int, int, str]] = []
-        for index, token in enumerate(tokens):
-            if token.kind is not TokenKind.NAME or not token.parts or token.parts[0].bracketed:
-                continue
-            following = tokens[index + 1] if index + 1 < len(tokens) else None
-            if (
-                len(token.parts) == 1
-                and following is not None
-                and following.kind is TokenKind.LEFT_PAREN
-            ):
-                continue  # a function
-            replacement = mapping.get(token.parts[0].text.lower())
-            if replacement is not None:
-                edits.append((token.parts[0].start, token.parts[0].end, replacement))
-        for start, end, replacement in sorted(edits, reverse=True):
-            text = text[:start] + replacement + text[end:]
-        return text
-
-    return rewrite
+_identity = identity
+_compose = compose
+_renamer = renamer
 
 
 @dataclass(slots=True)
@@ -335,7 +293,7 @@ class _Upgrader:
             for item in source.connections
         ]
         connections.extend(self._management_starts(source, connections))
-        return v2.StrategyDocument(
+        document = v2.StrategyDocument(
             format="pipwerk.strategy",
             format_version=v2.FORMAT_VERSION,
             id=source.id,
@@ -359,6 +317,53 @@ class _Upgrader:
             elements=elements,
             connections=connections,
         )
+        self._refresh_inputs(document)
+        return document
+
+    def _refresh_inputs(self, document: v2.StrategyDocument) -> None:
+        """Lay an input with "Aktualisieren" at each element of a management with triggers of its
+        own that uses an instance whose first use is in the main flow (specification 3.7): 1.0
+        knew neither the first use nor "Aktualisieren", and the management must calculate with
+        current values when its triggers fire, not with the state at placing the order."""
+        # imported here: the check reads documents, and this module is read with them
+        from pipwerk_domain.consistency import analyze_usage
+        from pipwerk_domain.documents.convert import strategy_from_document
+
+        by_id = {item.id: item for item in document.elements}
+        triggered = {
+            item.management_of
+            for item in document.elements
+            if item.management_of is not None
+            and (description := self.registry.get(item.type)) is not None
+            and description.kind is ElementKind.TRIGGER
+        }
+        if not triggered:
+            return
+        report = analyze_usage(strategy_from_document(document), self.registry)
+        first_use = {item.instance.lower(): item for item in report.instances}
+        for usage in report.elements:
+            element = by_id.get(usage.element)
+            if element is None or element.management_of not in triggered:
+                continue
+            for use in usage.uses:
+                if use.by_instance is not None or use.kind == "input":
+                    continue
+                info = first_use.get(use.instance.lower())
+                home = None if info is None or info.first_use is None else by_id.get(info.first_use)
+                if info is None or home is None or home.management_of is not None:
+                    continue
+                if not info.can_refresh:
+                    continue
+                for member in use.members:
+                    if member.kind != "property" or "." in member.name:
+                        continue
+                    if len(element.inputs) >= MAX_INPUTS_PER_ELEMENT:
+                        break
+                    entry = v2.InputDocument(
+                        instance=use.instance, property=member.name, refresh=True
+                    )
+                    if entry not in element.inputs:
+                        element.inputs.append(entry)
 
     def _parameter_keys(self, source: v1.StrategyDocument) -> list[str]:
         """The keys of the strategy parameters: the former name; they stand behind

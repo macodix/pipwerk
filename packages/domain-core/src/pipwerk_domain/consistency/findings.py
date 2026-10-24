@@ -36,6 +36,10 @@ FLOW_MANAGEMENT_ONLY = "flow.management_only"
 NAME_DUPLICATE = "name.duplicate"
 TYPE_UNKNOWN = "type.unknown"
 FLOW_NO_ORDER_REACHABLE = "flow.no_order_reachable"
+INPUT_REFRESH_NOT_ALLOWED = "input.refresh_not_allowed"
+INSTANCE_NOT_USABLE = "instance.not_usable"
+TRIGGER_MANUAL_IN_MANAGEMENT = "trigger.manual_in_management"
+INSTANCE_UNCONNECTED = "instance.unconnected"
 
 # Further findings that the table does not list but the check needs
 RULE_UNRESOLVED_NAME = "rule.unresolved_name"  # hint for a rule template (specification 3.4)

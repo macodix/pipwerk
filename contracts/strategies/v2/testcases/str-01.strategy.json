@@ -44,7 +44,7 @@
   ],
   "rules": [
     {
-      "name": "Risiko",
+      "name": "risiko",
       "key": "risiko",
       "object_type": "Regel",
       "origin": {
@@ -81,8 +81,8 @@
   ],
   "elements": [
     {
-      "id": "e4e3f2b1-5bd2-52e0-b863-9d27e857c3c3",
-      "type": "Markttechnik",
+      "id": "bc6aab4b-0b70-5519-9f5f-24b632e5f18d",
+      "type": "ZigZag",
       "name": null,
       "key": null,
       "position": null,
@@ -92,15 +92,15 @@
       "rules": [],
       "management_of": null,
       "instance": {
-        "name": "MT Signal",
-        "key": "mt_signal",
-        "object_type": "Markttechnik",
+        "name": "ZigZag Signal",
+        "key": "zz_signal",
+        "object_type": "ZigZag",
         "origin": {
-          "object_type": "Markttechnik",
+          "object_type": "ZigZag",
           "template_id": null,
           "template_name": null
         },
-        "first_use": null,
+        "first_use": "b84e478f-13a1-51a3-8383-c5e1068ad2c4",
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -134,8 +134,8 @@
       }
     },
     {
-      "id": "d5dba214-707c-5358-98a9-2387c1d9f065",
-      "type": "Markttechnik",
+      "id": "054681ff-ffbe-5da5-a464-f7210e517c88",
+      "type": "ZigZag",
       "name": null,
       "key": null,
       "position": null,
@@ -145,15 +145,15 @@
       "rules": [],
       "management_of": null,
       "instance": {
-        "name": "MT Handel",
-        "key": "mt_handel",
-        "object_type": "Markttechnik",
+        "name": "ZigZag Handel",
+        "key": "zz_handel",
+        "object_type": "ZigZag",
         "origin": {
-          "object_type": "Markttechnik",
+          "object_type": "ZigZag",
           "template_id": null,
           "template_name": null
         },
-        "first_use": null,
+        "first_use": "05d2b6e6-d94f-5abd-9208-e477e7aee2c4",
         "parameter_values": {
           "zeiteinheit": {
             "kind": "parameter",
@@ -187,7 +187,7 @@
       }
     },
     {
-      "id": "8952d02c-c5cb-5cd3-ba2a-30c681821257",
+      "id": "235cc1bc-a50e-5e6e-b192-3e4e2d691ce5",
       "type": "trigger.candle_close",
       "name": "Kerzenschluss",
       "key": null,
@@ -209,29 +209,43 @@
       "instance": null
     },
     {
-      "id": "cd3a3bb1-3d24-58b4-84a6-baf266f8cd48",
-      "type": "flow.condition",
-      "name": "Intakter Trend in der Bewegung",
-      "key": "intakter_trend_in_der_bewegung",
+      "id": "b84e478f-13a1-51a3-8383-c5e1068ad2c4",
+      "type": "flow.calculation",
+      "name": "Trend Signalzeiteinheit",
+      "key": "trend_signal",
       "position": null,
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "AND(mt_signal.trend_intakt; mt_signal.phase = \"bewegung\")"
+          "value": "IF(AND(zz_signal.letztes_hoch > zz_signal.vorletztes_hoch; zz_signal.letztes_tief > zz_signal.vorletztes_tief); \"aufwaerts\"; IF(AND(zz_signal.letztes_hoch < zz_signal.vorletztes_hoch; zz_signal.letztes_tief < zz_signal.vorletztes_tief); \"abwaerts\"; \"kein\"))"
         }
       },
       "properties": {},
       "inputs": [
         {
-          "instance": "mt_signal",
-          "property": "trend_intakt",
+          "instance": "zz_signal",
+          "property": "letztes_hoch",
           "kind": "property",
           "arguments": [],
           "refresh": false
         },
         {
-          "instance": "mt_signal",
-          "property": "phase",
+          "instance": "zz_signal",
+          "property": "vorletztes_hoch",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
+        },
+        {
+          "instance": "zz_signal",
+          "property": "letztes_tief",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
+        },
+        {
+          "instance": "zz_signal",
+          "property": "vorletztes_tief",
           "kind": "property",
           "arguments": [],
           "refresh": false
@@ -242,29 +256,43 @@
       "instance": null
     },
     {
-      "id": "4d26c88f-ac3c-5e73-8944-e7c3055273c8",
-      "type": "flow.condition",
-      "name": "Handelszeiteinheit in Trendrichtung",
-      "key": "handelszeiteinheit_in_trendrichtung",
+      "id": "05d2b6e6-d94f-5abd-9208-e477e7aee2c4",
+      "type": "flow.calculation",
+      "name": "Trend Handelszeiteinheit",
+      "key": "trend_handel",
       "position": null,
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "mt_handel.trendrichtung = mt_signal.trendrichtung"
+          "value": "IF(AND(zz_handel.letztes_hoch > zz_handel.vorletztes_hoch; zz_handel.letztes_tief > zz_handel.vorletztes_tief); \"aufwaerts\"; IF(AND(zz_handel.letztes_hoch < zz_handel.vorletztes_hoch; zz_handel.letztes_tief < zz_handel.vorletztes_tief); \"abwaerts\"; \"kein\"))"
         }
       },
       "properties": {},
       "inputs": [
         {
-          "instance": "mt_handel",
-          "property": "trendrichtung",
+          "instance": "zz_handel",
+          "property": "letztes_hoch",
           "kind": "property",
           "arguments": [],
           "refresh": false
         },
         {
-          "instance": "mt_signal",
-          "property": "trendrichtung",
+          "instance": "zz_handel",
+          "property": "vorletztes_hoch",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
+        },
+        {
+          "instance": "zz_handel",
+          "property": "letztes_tief",
+          "kind": "property",
+          "arguments": [],
+          "refresh": false
+        },
+        {
+          "instance": "zz_handel",
+          "property": "vorletztes_tief",
           "kind": "property",
           "arguments": [],
           "refresh": false
@@ -275,7 +303,25 @@
       "instance": null
     },
     {
-      "id": "05f8429c-8a1a-588e-97ef-b14eb221feaf",
+      "id": "7905ae2d-73ad-570a-b7ed-bdf8fc6b62ad",
+      "type": "flow.condition",
+      "name": "Trend in beiden Zeiteinheiten gleich",
+      "key": "trend_in_beiden_zeiteinheiten_gleich",
+      "position": null,
+      "parameters": {
+        "ausdruck": {
+          "kind": "expression",
+          "value": "AND(trend_signal.ergebnis <> \"kein\"; trend_handel.ergebnis = trend_signal.ergebnis)"
+        }
+      },
+      "properties": {},
+      "inputs": [],
+      "rules": [],
+      "management_of": null,
+      "instance": null
+    },
+    {
+      "id": "16c77ff2-fe08-54da-a815-5640e4671931",
       "type": "flow.condition",
       "name": "Keine Order und keine Position",
       "key": "keine_order_und_keine_position",
@@ -293,7 +339,7 @@
       "instance": null
     },
     {
-      "id": "0af5a226-c588-5ce7-b9f7-0acbec5aec4b",
+      "id": "0dd3562e-a1dd-5825-a783-2ba5edbcc9ff",
       "type": "flow.calculation",
       "name": "Einstieg",
       "key": "einstieg",
@@ -301,21 +347,21 @@
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "IF(mt_signal.trendrichtung = \"aufwaerts\"; mt_handel.punkt_2 + Instrument.spread + Strategie.entry_puffer * Instrument.pip; mt_handel.punkt_2 - Strategie.entry_puffer * Instrument.pip)"
+          "value": "IF(trend_signal.ergebnis = \"aufwaerts\"; zz_handel.letztes_hoch + Instrument.spread + Strategie.entry_puffer * Instrument.pip; zz_handel.letztes_tief - Strategie.entry_puffer * Instrument.pip)"
         }
       },
       "properties": {},
       "inputs": [
         {
-          "instance": "mt_signal",
-          "property": "trendrichtung",
+          "instance": "zz_handel",
+          "property": "letztes_hoch",
           "kind": "property",
           "arguments": [],
           "refresh": false
         },
         {
-          "instance": "mt_handel",
-          "property": "punkt_2",
+          "instance": "zz_handel",
+          "property": "letztes_tief",
           "kind": "property",
           "arguments": [],
           "refresh": false
@@ -326,7 +372,7 @@
       "instance": null
     },
     {
-      "id": "cc59417a-544f-532e-b339-daf1d199268d",
+      "id": "dcc12770-8cbb-5b73-9c7f-abb047c67851",
       "type": "flow.calculation",
       "name": "Stop-Loss",
       "key": "stop",
@@ -334,21 +380,21 @@
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "IF(mt_signal.trendrichtung = \"aufwaerts\"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
+          "value": "IF(trend_signal.ergebnis = \"aufwaerts\"; zz_handel.letztes_tief - Strategie.stop_puffer * Instrument.pip; zz_handel.letztes_hoch + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
         }
       },
       "properties": {},
       "inputs": [
         {
-          "instance": "mt_signal",
-          "property": "trendrichtung",
+          "instance": "zz_handel",
+          "property": "letztes_hoch",
           "kind": "property",
           "arguments": [],
           "refresh": false
         },
         {
-          "instance": "mt_handel",
-          "property": "punkt_13",
+          "instance": "zz_handel",
+          "property": "letztes_tief",
           "kind": "property",
           "arguments": [],
           "refresh": false
@@ -359,7 +405,7 @@
       "instance": null
     },
     {
-      "id": "f5ff9353-bbe0-5ab4-8157-cc00a484e811",
+      "id": "08c79f45-65df-580b-81ea-157e5a1847ec",
       "type": "flow.calculation",
       "name": "Take-Profit",
       "key": "ziel",
@@ -367,25 +413,17 @@
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "IF(mt_signal.trendrichtung = \"aufwaerts\"; einstieg.ergebnis + (einstieg.ergebnis - stop.ergebnis) + Instrument.spread; einstieg.ergebnis - (stop.ergebnis - einstieg.ergebnis) - Instrument.spread)"
+          "value": "IF(trend_signal.ergebnis = \"aufwaerts\"; einstieg.ergebnis + (einstieg.ergebnis - stop.ergebnis) + Instrument.spread; einstieg.ergebnis - (stop.ergebnis - einstieg.ergebnis) - Instrument.spread)"
         }
       },
       "properties": {},
-      "inputs": [
-        {
-          "instance": "mt_signal",
-          "property": "trendrichtung",
-          "kind": "property",
-          "arguments": [],
-          "refresh": false
-        }
-      ],
+      "inputs": [],
       "rules": [],
       "management_of": null,
       "instance": null
     },
     {
-      "id": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "id": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "type": "flow.place_order",
       "name": "Order aufgeben",
       "key": null,
@@ -399,7 +437,7 @@
       "properties": {
         "richtung": {
           "kind": "expression",
-          "value": "IF(mt_signal.trendrichtung = \"aufwaerts\"; \"buy\"; \"sell\")"
+          "value": "IF(trend_signal.ergebnis = \"aufwaerts\"; \"buy\"; \"sell\")"
         },
         "preis": {
           "kind": "expression",
@@ -422,15 +460,7 @@
           "value": "instrument_der_anwendung"
         }
       },
-      "inputs": [
-        {
-          "instance": "mt_signal",
-          "property": "trendrichtung",
-          "kind": "property",
-          "arguments": [],
-          "refresh": false
-        }
-      ],
+      "inputs": [],
       "rules": [
         {
           "name": "Mindestvolumen",
@@ -457,7 +487,7 @@
       "instance": null
     },
     {
-      "id": "3c3861a0-8565-562b-8772-fbea2f1934a6",
+      "id": "70f7ac41-001f-50db-808d-38e0c318e882",
       "type": "trigger.tick",
       "name": "Tick",
       "key": null,
@@ -471,37 +501,44 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "50cf64e7-b566-5536-8cdc-f18471cd29dc",
+      "id": "5324029b-78e2-537f-971b-9fa8cab722d2",
       "type": "flow.condition",
-      "name": "Kurs durchbricht Punkt 1/3",
-      "key": "kurs_durchbricht_punkt_13",
+      "name": "Kurs durchbricht den Stop-Bezug",
+      "key": "kurs_durchbricht_den_stop_bezug",
       "position": null,
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "AND(Order.status = \"wartend\"; IF(Order.richtung = \"buy\"; Tick.geld < mt_handel.punkt_13; Tick.brief > mt_handel.punkt_13))"
+          "value": "AND(Order.status = \"wartend\"; IF(Order.richtung = \"buy\"; Tick.geld < zz_handel.letztes_tief; Tick.brief > zz_handel.letztes_hoch))"
         }
       },
       "properties": {},
       "inputs": [
         {
-          "instance": "mt_handel",
-          "property": "punkt_13",
+          "instance": "zz_handel",
+          "property": "letztes_hoch",
           "kind": "property",
           "arguments": [],
-          "refresh": false
+          "refresh": true
+        },
+        {
+          "instance": "zz_handel",
+          "property": "letztes_tief",
+          "kind": "property",
+          "arguments": [],
+          "refresh": true
         }
       ],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "eee85459-28c6-5752-a9cf-85e2c29e52d9",
+      "id": "b1889b9d-775e-57a4-adc1-c82951cab530",
       "type": "flow.delete_order",
       "name": "Order löschen",
       "key": null,
@@ -510,11 +547,11 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "d3b9dfcb-571b-5543-b91e-6645caf0dd96",
+      "id": "3b9c4f77-aaf7-55c7-a925-864097d30465",
       "type": "trigger.candle_close",
       "name": "Kerzenschluss",
       "key": null,
@@ -532,11 +569,11 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "2d62fbf1-b526-5efb-9168-60b67d50adb2",
+      "id": "964ddc83-35ec-5438-ba7c-06488fc4f7ea",
       "type": "flow.condition",
       "name": "Order wartet",
       "key": "order_wartet",
@@ -550,11 +587,11 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "b4c441ba-39dc-52dc-858c-f9b492dec463",
+      "id": "9618a7eb-4e6b-5b02-992f-029070626ec1",
       "type": "flow.calculation",
       "name": "Neuer Stop-Loss",
       "key": "stop_neu",
@@ -562,25 +599,32 @@
       "parameters": {
         "ausdruck": {
           "kind": "expression",
-          "value": "IF(Order.richtung = \"buy\"; mt_handel.punkt_13 - Strategie.stop_puffer * Instrument.pip; mt_handel.punkt_13 + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
+          "value": "IF(Order.richtung = \"buy\"; zz_handel.letztes_tief - Strategie.stop_puffer * Instrument.pip; zz_handel.letztes_hoch + Strategie.stop_puffer * Instrument.pip + Instrument.spread)"
         }
       },
       "properties": {},
       "inputs": [
         {
-          "instance": "mt_handel",
-          "property": "punkt_13",
+          "instance": "zz_handel",
+          "property": "letztes_hoch",
           "kind": "property",
           "arguments": [],
-          "refresh": false
+          "refresh": true
+        },
+        {
+          "instance": "zz_handel",
+          "property": "letztes_tief",
+          "kind": "property",
+          "arguments": [],
+          "refresh": true
         }
       ],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "25ab0a57-d404-569f-b9b2-2c141884a059",
+      "id": "74cf0389-8da1-5a90-9891-a648c38fb6c5",
       "type": "flow.condition",
       "name": "Stop-Loss weicht ab",
       "key": "stop_loss_weicht_ab",
@@ -594,11 +638,11 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "92f4cb89-fe5f-5ee6-85ed-89a2e705856b",
+      "id": "6c8609f1-94c0-5611-8aeb-6a174398d280",
       "type": "flow.calculation",
       "name": "Neuer Take-Profit",
       "key": "ziel_neu",
@@ -612,11 +656,11 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "247e5f3e-62a4-5610-a5e2-4c4a47fde90d",
+      "id": "6ff4ad45-76c7-5165-9e1b-24205434041a",
       "type": "flow.modify_order",
       "name": "Order ändern",
       "key": null,
@@ -634,11 +678,11 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     },
     {
-      "id": "0941089c-f994-54c8-8b13-7f930d551535",
+      "id": "79e3a0d5-a508-5e39-bd92-f03accd7b07c",
       "type": "flow.delete_order",
       "name": "Order löschen",
       "key": null,
@@ -647,100 +691,106 @@
       "properties": {},
       "inputs": [],
       "rules": [],
-      "management_of": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba",
+      "management_of": "99db2ccc-4093-5a38-8249-bdbb35b07f95",
       "instance": null
     }
   ],
   "connections": [
     {
-      "id": "da329e65-4a85-5f1b-ad55-aff86d08d374",
-      "source": "8952d02c-c5cb-5cd3-ba2a-30c681821257",
+      "id": "a0f5a515-7797-5491-af06-9d44549c6153",
+      "source": "235cc1bc-a50e-5e6e-b192-3e4e2d691ce5",
       "output": "weiter",
-      "target": "cd3a3bb1-3d24-58b4-84a6-baf266f8cd48"
+      "target": "b84e478f-13a1-51a3-8383-c5e1068ad2c4"
     },
     {
-      "id": "82114bc9-66b3-500d-98e1-c5dcc72b60ba",
-      "source": "cd3a3bb1-3d24-58b4-84a6-baf266f8cd48",
+      "id": "a631d33b-4d18-5e6a-9688-e5f192f92602",
+      "source": "b84e478f-13a1-51a3-8383-c5e1068ad2c4",
+      "output": "weiter",
+      "target": "05d2b6e6-d94f-5abd-9208-e477e7aee2c4"
+    },
+    {
+      "id": "fbb7ed1d-5b0d-54f8-9f0a-1dab546d8097",
+      "source": "05d2b6e6-d94f-5abd-9208-e477e7aee2c4",
+      "output": "weiter",
+      "target": "7905ae2d-73ad-570a-b7ed-bdf8fc6b62ad"
+    },
+    {
+      "id": "a127f88e-4dab-5072-8a5f-ff755d6ac401",
+      "source": "7905ae2d-73ad-570a-b7ed-bdf8fc6b62ad",
       "output": "wahr",
-      "target": "4d26c88f-ac3c-5e73-8944-e7c3055273c8"
+      "target": "16c77ff2-fe08-54da-a815-5640e4671931"
     },
     {
-      "id": "f45e84a5-5139-5280-9c68-4f6ba91db89c",
-      "source": "4d26c88f-ac3c-5e73-8944-e7c3055273c8",
+      "id": "0dc4ecc1-ee5c-5cc2-b59a-248ef12b42fc",
+      "source": "16c77ff2-fe08-54da-a815-5640e4671931",
       "output": "wahr",
-      "target": "05f8429c-8a1a-588e-97ef-b14eb221feaf"
+      "target": "0dd3562e-a1dd-5825-a783-2ba5edbcc9ff"
     },
     {
-      "id": "0f096877-3d32-57cb-915c-7a171e557689",
-      "source": "05f8429c-8a1a-588e-97ef-b14eb221feaf",
+      "id": "a0d94fc1-1529-5051-8b73-ad8f9d68dbcf",
+      "source": "0dd3562e-a1dd-5825-a783-2ba5edbcc9ff",
+      "output": "weiter",
+      "target": "dcc12770-8cbb-5b73-9c7f-abb047c67851"
+    },
+    {
+      "id": "483a0eb0-23ce-5299-95cf-91593bea4037",
+      "source": "dcc12770-8cbb-5b73-9c7f-abb047c67851",
+      "output": "weiter",
+      "target": "08c79f45-65df-580b-81ea-157e5a1847ec"
+    },
+    {
+      "id": "1812fcf0-184f-5f2a-85d4-2cac05c08fa4",
+      "source": "08c79f45-65df-580b-81ea-157e5a1847ec",
+      "output": "weiter",
+      "target": "99db2ccc-4093-5a38-8249-bdbb35b07f95"
+    },
+    {
+      "id": "65df2d29-8b93-591e-8214-45eff6af1ee2",
+      "source": "70f7ac41-001f-50db-808d-38e0c318e882",
+      "output": "weiter",
+      "target": "5324029b-78e2-537f-971b-9fa8cab722d2"
+    },
+    {
+      "id": "bef1d16f-7731-51b1-84d1-30d7eaed3f9f",
+      "source": "5324029b-78e2-537f-971b-9fa8cab722d2",
       "output": "wahr",
-      "target": "0af5a226-c588-5ce7-b9f7-0acbec5aec4b"
+      "target": "b1889b9d-775e-57a4-adc1-c82951cab530"
     },
     {
-      "id": "7dc1bf0c-805f-5f9f-b99d-16cfbedde145",
-      "source": "0af5a226-c588-5ce7-b9f7-0acbec5aec4b",
+      "id": "dbc50158-98ea-5878-b2ae-a5233bae6fb9",
+      "source": "3b9c4f77-aaf7-55c7-a925-864097d30465",
       "output": "weiter",
-      "target": "cc59417a-544f-532e-b339-daf1d199268d"
+      "target": "964ddc83-35ec-5438-ba7c-06488fc4f7ea"
     },
     {
-      "id": "7a1928d5-6525-5b24-a494-127ba6ab43a9",
-      "source": "cc59417a-544f-532e-b339-daf1d199268d",
-      "output": "weiter",
-      "target": "f5ff9353-bbe0-5ab4-8157-cc00a484e811"
-    },
-    {
-      "id": "290de282-93c1-5ed2-acd1-cd4a617cfa44",
-      "source": "f5ff9353-bbe0-5ab4-8157-cc00a484e811",
-      "output": "weiter",
-      "target": "b1ba6bd5-8657-5e4d-94f4-f160b55c45ba"
-    },
-    {
-      "id": "bc509822-a240-5945-b90e-5bd4036ec3ed",
-      "source": "3c3861a0-8565-562b-8772-fbea2f1934a6",
-      "output": "weiter",
-      "target": "50cf64e7-b566-5536-8cdc-f18471cd29dc"
-    },
-    {
-      "id": "ad4a6229-46bf-56ad-87ff-17f739be185d",
-      "source": "50cf64e7-b566-5536-8cdc-f18471cd29dc",
+      "id": "b3536df4-8eaa-5461-ad6c-60a5bfb1b7fc",
+      "source": "964ddc83-35ec-5438-ba7c-06488fc4f7ea",
       "output": "wahr",
-      "target": "eee85459-28c6-5752-a9cf-85e2c29e52d9"
+      "target": "9618a7eb-4e6b-5b02-992f-029070626ec1"
     },
     {
-      "id": "eb055fb1-34c5-58ae-8113-6b7c0e70f446",
-      "source": "d3b9dfcb-571b-5543-b91e-6645caf0dd96",
+      "id": "46a7dfb7-89f3-5ee9-91bb-56530a2cb1b5",
+      "source": "9618a7eb-4e6b-5b02-992f-029070626ec1",
       "output": "weiter",
-      "target": "2d62fbf1-b526-5efb-9168-60b67d50adb2"
+      "target": "74cf0389-8da1-5a90-9891-a648c38fb6c5"
     },
     {
-      "id": "a8f918db-d580-535e-97d7-44b941820cf2",
-      "source": "2d62fbf1-b526-5efb-9168-60b67d50adb2",
+      "id": "3f5cecd2-9e23-51f7-aa69-143ad40091ac",
+      "source": "74cf0389-8da1-5a90-9891-a648c38fb6c5",
       "output": "wahr",
-      "target": "b4c441ba-39dc-52dc-858c-f9b492dec463"
+      "target": "6c8609f1-94c0-5611-8aeb-6a174398d280"
     },
     {
-      "id": "0e87c864-4718-54de-bca8-dae52c0323ac",
-      "source": "b4c441ba-39dc-52dc-858c-f9b492dec463",
+      "id": "a1393f5e-16b8-501c-a202-c8b205a263e7",
+      "source": "6c8609f1-94c0-5611-8aeb-6a174398d280",
       "output": "weiter",
-      "target": "25ab0a57-d404-569f-b9b2-2c141884a059"
+      "target": "6ff4ad45-76c7-5165-9e1b-24205434041a"
     },
     {
-      "id": "b83e243a-91da-503b-a929-2ea097886ea4",
-      "source": "25ab0a57-d404-569f-b9b2-2c141884a059",
-      "output": "wahr",
-      "target": "92f4cb89-fe5f-5ee6-85ed-89a2e705856b"
-    },
-    {
-      "id": "edafded7-2f47-520c-bf59-db759b09dcf4",
-      "source": "92f4cb89-fe5f-5ee6-85ed-89a2e705856b",
-      "output": "weiter",
-      "target": "247e5f3e-62a4-5610-a5e2-4c4a47fde90d"
-    },
-    {
-      "id": "aa53b2e6-18b8-5a43-8751-5a0b8d603199",
-      "source": "247e5f3e-62a4-5610-a5e2-4c4a47fde90d",
+      "id": "5bc3b2b5-c52c-5407-bc25-268dcb5d210e",
+      "source": "6ff4ad45-76c7-5165-9e1b-24205434041a",
       "output": "nicht_geaendert",
-      "target": "0941089c-f994-54c8-8b13-7f930d551535"
+      "target": "79e3a0d5-a508-5e39-bd92-f03accd7b07c"
     }
   ],
   "sections": [],

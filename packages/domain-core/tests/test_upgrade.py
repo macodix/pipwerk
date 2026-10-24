@@ -22,7 +22,6 @@ from pipwerk_domain.model import Binding, Strategy, Template
 from pipwerk_domain.risk_rule import RISK_PER_TRADE_RULE_ID
 from pipwerk_domain.typedesc import BindingKind
 from tests.paths import (
-    CHECKED_TESTCASES,
     EMA_TRENDFOLGE,
     EXAMPLE_DIRECTORY_V1,
     SCHEMA_DIRECTORY_V1,
@@ -90,31 +89,40 @@ def test_a_template_of_the_format_one_is_converted(path: Path) -> None:
     assert check_template(value) == []
 
 
-@pytest.mark.parametrize("name", CHECKED_TESTCASES)
-def test_the_converted_testcases_have_no_error(name: str) -> None:
-    value = read_document((TESTCASE_DIRECTORY_V1 / f"{name}.strategy.json").read_bytes())
+def test_the_converted_str_03_has_no_finding() -> None:
+    value = read_document((TESTCASE_DIRECTORY_V1 / "str-03.strategy.json").read_bytes())
     assert isinstance(value, Strategy)
     assert check_strategy(value) == []
 
 
-def test_the_converted_testcases_mean_the_same_as_the_ones_of_the_format_two() -> None:
-    """The expressions of the conversion are those of the testcases in 2.0, except where the
+def test_the_converted_str_01_has_unknown_types_only_for_the_markttechnik() -> None:
+    """The test case 1.0 of str-01 uses the indicator `Markttechnik`, which is no longer
+    delivered (specification 3.2); the conversion keeps it, and it is the one thing the check
+    reports as an error besides what follows from it."""
+    value = read_document((TESTCASE_DIRECTORY_V1 / "str-01.strategy.json").read_bytes())
+    assert isinstance(value, Strategy)
+    unknown = [item for item in check_strategy(value) if item.code == "type.unknown"]
+    assert {str(item.details["type"]) for item in unknown} == {"Markttechnik"}
+    assert len(unknown) == 2
+
+
+def test_the_converted_str_03_means_the_same_as_the_one_of_the_format_two() -> None:
+    """The expressions of the conversion are those of the testcase in 2.0, except where the
     specification changed them: the rules use the instrument of the order."""
-    for name in ("str-01", "str-03"):
-        old = read_document((TESTCASE_DIRECTORY_V1 / f"{name}.strategy.json").read_bytes())
-        new = read_document((TESTCASE_DIRECTORY / f"{name}.strategy.json").read_bytes())
-        assert isinstance(old, Strategy)
-        assert isinstance(new, Strategy)
-        assert old.id == new.id
-        assert [item.id for item in old.elements] == [item.id for item in new.elements]
-        assert [(item.source, item.output, item.target) for item in old.connections] == [
-            (item.source, item.output, item.target) for item in new.connections
-        ]
-        for before, after in zip(old.elements, new.elements, strict=True):
-            for key, binding in before.parameters.items():
-                if binding.kind is BindingKind.EXPRESSION:
-                    assert after.parameters[key].value == binding.value, key
-            assert before.key == after.key
+    old = read_document((TESTCASE_DIRECTORY_V1 / "str-03.strategy.json").read_bytes())
+    new = read_document((TESTCASE_DIRECTORY / "str-03.strategy.json").read_bytes())
+    assert isinstance(old, Strategy)
+    assert isinstance(new, Strategy)
+    assert old.id == new.id
+    assert [item.id for item in old.elements] == [item.id for item in new.elements]
+    assert [(item.source, item.output, item.target) for item in old.connections] == [
+        (item.source, item.output, item.target) for item in new.connections
+    ]
+    for before, after in zip(old.elements, new.elements, strict=True):
+        for key, binding in before.parameters.items():
+            if binding.kind is BindingKind.EXPRESSION:
+                assert after.parameters[key].value == binding.value, key
+        assert before.key == after.key
 
 
 # the strategy of the client ---------------------------------------------------------------------
@@ -185,7 +193,18 @@ def test_the_strategy_of_the_client_means_the_same(ema_trendfolge: Strategy) -> 
 def test_the_rest_of_the_conversion(ema_trendfolge: Strategy) -> None:
     strategy = ema_trendfolge
     assert all(item.position is None for item in strategy.elements)  # the position is dropped
-    assert all(item.inputs == [] for item in strategy.elements)
+    # 1.0 has no inputs; the conversion lays "Aktualisieren" inputs at the elements of the
+    # management that use an instance of the main flow (specification 3.7), and nothing else
+    with_inputs = {
+        item.shown_name: [(entry.instance, entry.property, entry.refresh) for entry in item.inputs]
+        for item in strategy.elements
+        if item.inputs
+    }
+    assert with_inputs == {
+        "Kreuzen gegen die position": [("ema20", "wert", True), ("ema50", "wert", True)],
+        "Neuer Stop-Loss": [("atr14", "wert", True)],
+    }
+    assert all(item.management_of is not None for item in strategy.elements if item.inputs)
     assert strategy.sections == []
     assert strategy.orientation.value == "vertical"
     assert strategy.collapsed_managements == []
@@ -417,6 +436,146 @@ def test_a_management_with_a_trigger_of_its_own_gets_no_start_connection() -> No
     assert check_strategy(value) == []
 
 
+# "Aktualisieren" for a management with triggers of its own ----------------------------------------
+
+
+def v1_instance(name: str, object_type: str = "EMA") -> dict[str, Any]:
+    return {
+        "name": name,
+        "object_type": object_type,
+        "origin": {"object_type": object_type},
+        "parameter_values": {
+            "zeiteinheit": {"kind": "fixed", "value": "h1"},
+            "periode": {"kind": "fixed", "value": 20},
+        },
+    }
+
+
+def refresh_strategy(
+    *, main_use: bool = True, own_trigger: bool = True, instance_type: str = "EMA"
+) -> dict[str, Any]:
+    """A trigger → calculation (uses the instance `ema` if `main_use`) → order; the management
+    has a condition that uses `ema`, with a trigger of its own if `own_trigger`."""
+    data = management_strategy(
+        {
+            "id": "00000000-0000-4000-8000-000000000400",
+            "type": instance_type,
+            "title": "Linie",
+            "instance": v1_instance("ema", instance_type),
+        },
+        {
+            "id": "00000000-0000-4000-8000-000000000401",
+            "type": "flow.calculation",
+            "title": "Rechnen",
+            "name": "rechnen",
+            "parameters": {
+                "ausdruck": {
+                    "kind": "expression",
+                    "value": "ema.wert * 2" if main_use else "1",
+                }
+            },
+        },
+        member(
+            1,
+            "flow.condition",
+            name="pruefen",
+            parameters={"ausdruck": {"kind": "expression", "value": "ema.wert > Position.volumen"}},
+        ),
+        *(
+            [
+                member(
+                    2,
+                    "trigger.candle_close",
+                    parameters={"zeiteinheit": {"kind": "fixed", "value": "h1"}},
+                )
+            ]
+            if own_trigger
+            else []
+        ),
+    )
+    trigger_id = "00000000-0000-4000-8000-000000000200"
+    order_id = "00000000-0000-4000-8000-000000000201"
+    calculation_id = "00000000-0000-4000-8000-000000000401"
+    data["connections"] = [
+        {"source": trigger_id, "output": "weiter", "target": calculation_id},
+        {"source": calculation_id, "output": "weiter", "target": order_id},
+    ]
+    if own_trigger:
+        data["connections"].append(
+            {"source": member(2)["id"], "output": "weiter", "target": member(1)["id"]}
+        )
+    return data
+
+
+def inputs_of(value: Strategy) -> dict[str, list[tuple[str, str, bool]]]:
+    return {
+        str(item.shown_name): [
+            (entry.instance, entry.property, entry.refresh) for entry in item.inputs
+        ]
+        for item in value.elements
+        if item.inputs
+    }
+
+
+def test_an_element_of_a_management_with_triggers_gets_an_input_with_refresh() -> None:
+    value = read(refresh_strategy())
+    assert inputs_of(value) == {"Schritt": [("ema", "wert", True)]}
+    assert check_strategy(value) == []
+    # the instance of the main flow keeps its first use in the main flow
+    instance = next(item.instance for item in value.elements if item.instance)
+    assert instance is not None and instance.first_use is None  # 1.0 stores none
+
+
+def test_a_management_without_triggers_of_its_own_gets_no_input() -> None:
+    """It runs in the evaluation that placed the order, with the same state (specification 3.3)."""
+    data = refresh_strategy(own_trigger=False)
+    data["connections"].append(
+        {
+            "source": "00000000-0000-4000-8000-000000000201",
+            "output": "gestellt",
+            "target": member(1)["id"],
+        }
+    )
+    assert inputs_of(read(data)) == {}
+
+
+def test_an_instance_first_used_inside_the_management_gets_no_input() -> None:
+    value = read(refresh_strategy(main_use=False))
+    assert inputs_of(value) == {}
+    assert [item for item in check_strategy(value) if item.code.startswith("instance.")] == []
+
+
+def test_the_element_in_the_main_flow_gets_no_input() -> None:
+    value = read(refresh_strategy())
+    assert [item for item in value.elements if item.shown_name == "Rechnen" and item.inputs] == []
+
+
+def test_an_object_of_the_application_on_the_canvas_gets_the_input_too() -> None:
+    data = refresh_strategy(instance_type="Kerze")
+    data["elements"][2]["instance"]["parameter_values"] = {
+        "zeiteinheit": {"kind": "fixed", "value": "h1"}
+    }
+    data["elements"][3]["parameters"]["ausdruck"]["value"] = "ema.schluss * 2"
+    data["elements"][4]["parameters"]["ausdruck"]["value"] = "ema.schluss > Position.volumen"
+    value = read(data)
+    assert inputs_of(value) == {"Schritt": [("ema", "schluss", True)]}  # a candle can refresh
+
+
+def test_the_conversion_makes_one_input_for_each_used_property_and_none_twice() -> None:
+    data = refresh_strategy(instance_type="ZigZag")
+    data["elements"][2]["instance"]["parameter_values"] = {
+        "zeiteinheit": {"kind": "fixed", "value": "h1"}
+    }
+    data["elements"][3]["parameters"]["ausdruck"]["value"] = "ema.letztes_hoch * 2"
+    data["elements"][4]["parameters"]["ausdruck"]["value"] = (
+        "AND(ema.letztes_hoch > 1; ema.letztes_tief > 1; ema.letztes_hoch < 5)"
+    )
+    value = read(data)
+    assert inputs_of(value) == {
+        "Schritt": [("ema", "letztes_hoch", True), ("ema", "letztes_tief", True)]
+    }
+
+
 def test_the_connections_get_the_same_identifiers_each_time() -> None:
     first = read(management_strategy(member(1)))
     second = read(management_strategy(member(1)))
@@ -549,17 +708,16 @@ def test_parameter_setzen_and_markttechnik_stay_in_the_document_as_unknown_types
     assert read_document(write_document(value)) == value  # kept by writing and reading
 
 
-def test_an_input_of_the_format_one_has_no_method_and_no_refresh() -> None:
-    """A document of the format 1.0 has no inputs; the format 2.0 reads an input without the
-    indications as a property (specification 3.7)."""
+def test_an_input_of_the_conversion_names_a_property_and_refreshes() -> None:
+    """A document of the format 1.0 has no inputs; the conversion makes inputs with
+    "Aktualisieren" for the management with triggers of its own, each naming a property
+    (specification 3.7)."""
     value = read_document(EMA_TRENDFOLGE.read_bytes())
     assert isinstance(value, Strategy)
-    assert all(item.refresh is False for element in value.elements for item in element.inputs)
-    assert all(
-        item.kind.value == "property" and item.arguments == ()
-        for element in value.elements
-        for item in element.inputs
-    )
+    inputs = [item for element in value.elements for item in element.inputs]
+    assert len(inputs) == 3
+    assert all(item.refresh is True for item in inputs)
+    assert all(item.kind.value == "property" and item.arguments == () for item in inputs)
     assert all(element.instance.first_use is None for element in value.elements if element.instance)
 
 
