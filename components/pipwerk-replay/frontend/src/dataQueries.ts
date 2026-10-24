@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { fetchFileSettings } from './fileSettingsApi';
 import {
   fetchBrokers,
   fetchSeries,
@@ -62,5 +63,19 @@ export function useTestRunBroker() {
   return useQuery({
     queryKey: TEST_RUN_BROKER_QUERY_KEY,
     queryFn: ({ signal }) => fetchTestRunBroker(signal),
+  });
+}
+
+export const FILE_SETTINGS_QUERY_KEY = ['file-settings'];
+
+/** The settings for files (keep, storage, import and export directory). */
+export function useFileSettings() {
+  return useQuery({
+    queryKey: FILE_SETTINGS_QUERY_KEY,
+    queryFn: ({ signal }) => fetchFileSettings(signal),
+    // Read again whenever a view or the dialog is opened: the dialog presets "Dateien behalten"
+    // from the stored value, so it must not show an older one.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }

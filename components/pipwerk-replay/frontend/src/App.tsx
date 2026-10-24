@@ -7,17 +7,19 @@ import { BackendStatus } from './BackendStatus';
 import { DataView } from './DataView';
 import { LanguageSelect } from './LanguageSelect';
 import { RevisionDisplay } from './RevisionDisplay';
+import { SettingsView } from './SettingsView';
 import { Btn, Icon, TipLayer } from './ui';
 
 /**
- * The views of this stage: data stock and test accounts. The test run and the saved backtests
- * come with later work packages; their menu entries do not exist yet.
+ * The views of this stage: data stock, test accounts and settings. The test run and the saved
+ * backtests come with later work packages; their menu entries do not exist yet.
  */
-export type View = 'data' | 'accounts';
+export type View = 'data' | 'accounts' | 'settings';
 
 const MENU: { id: View; icon: string }[] = [
   { id: 'data', icon: 'database' },
   { id: 'accounts', icon: 'wallet' },
+  { id: 'settings', icon: 'gear' },
 ];
 
 export function App() {
@@ -140,7 +142,15 @@ export function App() {
         </div>
       </header>
       <main className="main" data-testid="main">
-        {view === 'data' ? <DataView /> : <AccountsView />}
+        {view === 'data' && (
+          <DataView
+            onOpenSettings={() => {
+              choose('settings');
+            }}
+          />
+        )}
+        {view === 'accounts' && <AccountsView />}
+        {view === 'settings' && <SettingsView />}
       </main>
       <footer className="region footer" data-testid="footer">
         <BackendStatus />

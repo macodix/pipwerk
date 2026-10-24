@@ -341,6 +341,8 @@ export type FileOutcome = {
   error: string | null;
   /** The limit per file if that is the reason (named in the text of the backend). */
   limit: FileLimit | null;
+  /** The uploaded file was written to the storage directory ("Dateien behalten", 5.6). */
+  kept: boolean;
 };
 
 function parseOutcome(value: unknown): FileOutcome {
@@ -353,6 +355,7 @@ function parseOutcome(value: unknown): FileOutcome {
     result: result === null || result === undefined ? null : parseImportResult(result),
     error: strOrNull(record, 'error'),
     limit: limitFromMessage(record.message === undefined ? null : strOrNull(record, 'message')),
+    kept: bool(record, 'kept'),
   };
 }
 
@@ -383,6 +386,7 @@ export async function importProcessFile(
   broker: string,
   timezone: string,
   item: ImportFile,
+  keep: boolean,
   signal?: AbortSignal,
 ): Promise<FileOutcome> {
   const form = fileForm(item.file, item.file.name);
@@ -392,6 +396,7 @@ export async function importProcessFile(
   }
   form.append('instrument', item.instrument);
   form.append('data', item.data);
+  form.append('keep', keep ? 'true' : 'false');
   try {
     return parseOutcome(
       await request(`${BASE}/import-processes/${encodeURIComponent(processId)}/files`, {
@@ -405,8 +410,91 @@ export async function importProcessFile(
     if (limit === undefined) {
       throw error;
     }
-    return { name: item.file.name, refused: true, result: null, error: 'too_large', limit };
+    return { name: item.file.name, refused: true, result: null, error: 'too_large', limit, kept: false };
   }
+}
+
+// --- import directory (specification 5.3, 5.7) ----------------------------------------
+
+/** One entry of a directory inside the import directory. */
+export type DirectoryEntry = {
+  name: string;
+  kind: 'file' | 'directory';
+  /** The size in bytes of a file; `null` for a directory. */
+  size: number | null;
+  modifiedAt: string;
+};
+
+export type DirectoryPage = { items: DirectoryEntry[]; total: number; offset: number; limit: number };
+
+/** How many entries one page of the listing of the import directory shows. */
+export const DIRECTORY_PAGE_SIZE = 50;
+
+function parseEntry(value: unknown): DirectoryEntry {
+  const record = asRecord(value, 'entry of the import directory');
+  const kind = str(record, 'kind');
+  if (kind !== 'file' && kind !== 'directory') {
+    throw new UnexpectedAnswerError('kind of an entry');
+  }
+  return { name: str(record, 'name'), kind, size: numOrNull(record, 'size'), modifiedAt: str(record, 'modified_at') };
+}
+
+/**
+ * The files and subdirectories of a directory inside the import directory, subdirectories first.
+ * `path` is relative to the import directory (the empty text is the import directory itself).
+ */
+export async function fetchImportDirectory(
+  path: string,
+  offset: number,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<DirectoryPage> {
+  const query = new URLSearchParams({ path, offset: String(offset), limit: String(limit) });
+  const record = asRecord(await request(`${BASE}/import-directory?${query.toString()}`, { signal }), 'listing');
+  return {
+    items: list(record, 'items', parseEntry),
+    total: num(record, 'total'),
+    offset: num(record, 'offset'),
+    limit: num(record, 'limit'),
+  };
+}
+
+/** What the backend recognises about a file of the import directory (as for an uploaded file). */
+export async function previewDirectoryFile(path: string, signal?: AbortSignal): Promise<FileHint> {
+  return parseHint(await request(`${BASE}/import-directory/preview`, { method: 'POST', json: { path }, signal }));
+}
+
+/** A file of the import directory with what the user says about it (empty: nothing). */
+export type ImportDirectoryFile = { path: string; instrument: string; data: string };
+
+/**
+ * Imports one file of the import directory in the process. The backend reads it where it is and
+ * copies nothing; the request has no `keep`. `timezone` is sent only if it is given.
+ */
+export async function importProcessDirectoryFile(
+  processId: string,
+  broker: string,
+  timezone: string,
+  item: ImportDirectoryFile,
+  signal?: AbortSignal,
+): Promise<FileOutcome> {
+  const body: Record<string, string> = { path: item.path, broker };
+  if (timezone !== '') {
+    body.timezone = timezone;
+  }
+  if (item.instrument !== '') {
+    body.instrument = item.instrument;
+  }
+  if (item.data !== '') {
+    body.data = item.data;
+  }
+  return parseOutcome(
+    await request(`${BASE}/import-processes/${encodeURIComponent(processId)}/directory-files`, {
+      method: 'POST',
+      json: body,
+      signal,
+    }),
+  );
 }
 
 export type ImportProcessEnd = {

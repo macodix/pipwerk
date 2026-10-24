@@ -26,6 +26,7 @@ const PATHS: Record<string, string> = {
   left: 'M15 6l-6 6 6 6',
   right: 'M9 6l6 6-6 6',
   x: 'M6 6l12 12M18 6L6 18',
+  gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z',
 };
 
 export function Icon({ name, size = 18, className = '' }: { name: string; size?: number; className?: string }) {
@@ -289,6 +290,49 @@ export function Info({ tip }: { tip: string }) {
     <span className="info" tabIndex={0} data-tip={tip} role="img" aria-label={`${t('common.explanation')}: ${tip}`}>
       <Icon name="info" size={14} />
     </span>
+  );
+}
+
+/**
+ * A checkbox with its label and the explanation (same place as for `Field`: pointing at the label
+ * or the symbol, or the focus on the symbol). `note` is a line of text under it.
+ */
+export function CheckField({
+  label,
+  tip,
+  checked,
+  onChange,
+  testid,
+  disabled,
+  note,
+}: {
+  label: string;
+  tip: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  testid?: string;
+  disabled?: boolean;
+  note?: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <div className="field check-field" data-testid={testid === undefined ? undefined : `field-${testid}`}>
+      <div className="field-label" data-tip={tip}>
+        <input
+          type="checkbox"
+          id={id}
+          checked={checked}
+          disabled={disabled}
+          data-testid={testid}
+          onChange={(event) => {
+            onChange(event.target.checked);
+          }}
+        />
+        <label htmlFor={id}>{label}</label>
+        <Info tip={tip} />
+      </div>
+      {note !== undefined && <div className="muted">{note}</div>}
+    </div>
   );
 }
 
