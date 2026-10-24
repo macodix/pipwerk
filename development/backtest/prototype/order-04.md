@@ -4,7 +4,7 @@
 - zuständig: Entwickler Backend
 - Zweig: `backtest/proto-ticks`, Probeumsetzung, wird nicht übernommen
 - Ausgangscommit: `b309f8ad52a015d3828ea04e0d90aaec6f4a89f5` (Stand von `backtest/wp02`)
-- Stand: 2026-10-23
+- Stand: 2026-10-23, geändert am 2026-10-24 nach req-system-028 (Abschnitt „Speicherplatz“, Punkte 4a und 6). Gilt bei Wiederaufnahme; die abgebrochene Fassung hat rund 24 GB erzeugte Daten zurückgelassen.
 
 ## Ziel
 
@@ -24,9 +24,19 @@ Heutiger Stand (zu belegen, nicht zu übernehmen): eine Zeile je Tick in `market
    - Löschen: eine ganze Reihe und ein Zeitraum von einem Monat (req-system-025).
    - Lesen für einen Backtest: alle Ticks der zwei Jahre in Zeitordnung als Strom mit begrenztem Speicher, und ein Zeitraum von 30 Tagen; Dauer, Ticks je Sekunde, höchster Speicherbedarf.
    - Lesen für die Ansicht „Datenbestand“: abgedeckte Zeiträume und Lücken der Reihe.
-4a. JSON (Ergänzung vom 2026-10-23): `pipwerk-fetch-mt5` schreibt Ticks als JSON nach `contracts/market-data/v1/ticks.schema.json`, also ebenfalls Dateien von mehreren GB. Miss den Import einer gleich großen JSON-Tick-Datei als Strom mit begrenztem Speicher (Dauer, Speicherbedarf), mit Standardbibliothek und, zum Vergleich, mit einem schrittweise lesenden JSON-Parser als neuer Abhängigkeit. Nenne, ob das heutige Format dafür genügt oder ob eine Änderung des Formats nötig wäre.
+4a. Dateiformat (Fassung vom 2026-10-24): Version 1 des JSON-Formats wird nicht gemessen; sie belegt das 1,4- bis 1,7-Fache der CSV-Datei und wird ersetzt (Spezifikation 5.6). Miss stattdessen den Import derselben Ticks in den Kandidaten für Version 2 nach Spezifikation 5.6 (JSON oder CSV nach req-system-026, Angaben der Reihe einmal am Anfang, eine Zeile je Tick nur mit Zeitpunkt in ganzen Millisekunden UTC, Geld und Brief) als Strom mit begrenztem Speicher: Dauer, Speicherbedarf, Größe der Datei im Verhältnis zur CSV-Datei. Der Messbericht empfiehlt einen Kandidaten mit genauem Aufbau und begründet die Wahl mit den Messwerten (req-system-028: effizientestes Format für Platzbedarf und Verarbeitung). Dasselbe gilt für die Wahl zwischen Variante A und B.
 5. Übertragung: Miss, ob das Hochladen der großen Datei vom Browser in Stücken (zum Beispiel je 64 MiB in eigenen Anfragen) mit gleichzeitigem Einlesen auf dem Server praktikabel ist, oder ob der Server die Datei zuerst vollständig zwischenspeichern muss. Eine einfache Messung mit einem Skript als Gegenstelle genügt, ohne Oberfläche.
-6. Messbericht `development/backtest/prototype/ticks-probe.md` auf dem Zweig: Rechner (Kerne, Speicher), Größen, Messwerte beider Varianten in einer Tabelle, Bewertung gegen die Richtwerte unten, Empfehlung mit Begründung (Speichermodell, Größe der Blöcke, Übertragung, Abbrechen), was die Empfehlung für Schema, Migration bestehender Datenbanken, Grenzen und Lesen in `wp03` bedeutet. Höchstens etwa 80 Zeilen. Messskripte liegen auf dem Zweig unter `development/backtest/prototype/ticks-probe/`, damit die Messung wiederholbar ist. Generierte Dateien und Datenbanken werden nicht committet und nach der Messung gelöscht.
+6. Messbericht `development/backtest/prototype/ticks-probe.md` auf dem Zweig: Rechner (Kerne, Speicher), Größen, Messwerte beider Varianten in einer Tabelle, Bewertung gegen die Richtwerte unten, Empfehlung mit Begründung (Speichermodell, Größe der Blöcke, Übertragung, Abbrechen), was die Empfehlung für Schema, Migration bestehender Datenbanken, Grenzen und Lesen in `wp03` bedeutet. Höchstens etwa 80 Zeilen. Messskripte liegen auf dem Zweig unter `development/backtest/prototype/ticks-probe/`, damit die Messung wiederholbar ist. Generierte Dateien und Datenbanken werden nicht committet; für ihr Entfernen gilt der Abschnitt „Speicherplatz“.
+
+## Speicherplatz
+
+Nach req-system-028, Fassung vom 2026-10-24:
+
+- Alle erzeugten Dateien, Datenbanken und Teilstücke liegen in genau einem Datenverzeichnis, das der Startauftrag des Entwicklers nennt. Die Skripte nehmen es als Angabe beim Aufruf und schreiben nirgends sonst hin, auch nicht in das Verzeichnis für temporäre Dateien.
+- Höchstens 20 GB zusammen (Testdatei 5,8 GB, dieselben Ticks in Version 2 und eine Datenbank höchstens so groß wie die Datei). Vor jedem Schritt berechnet das Skript den Platzbedarf des Schritts, nennt ihn in der Ausgabe und bricht ohne zu schreiben ab, wenn das Datenverzeichnis danach über der Grenze läge oder auf dem Datenträger weniger als 10 GB frei blieben. Der Messbericht nennt den Platzbedarf jedes Schritts. Gemessen wird nacheinander: Die Datenbank einer Variante wird nach ihren Messungen entfernt, bevor die nächste entsteht.
+- Jedes Skript entfernt, was es erzeugt hat, am Ende, bei Fehler und bei Abbruch mit Strg+C oder Signal. Beim Start entfernt es Reste eines früheren abgebrochenen oder abgestürzten Laufs im Datenverzeichnis. Die Testdatei aus Punkt 1 darf für weitere Messungen liegen bleiben, bis der Messbericht fertig ist.
+- Nach dem Messbericht ist das Datenverzeichnis leer; der Entwickler prüft das mit einem Befehl und nennt die Ausgabe in seinem Ergebnis.
+- Bei Punkt 5 legt die Gegenstelle empfangene Teilstücke nur im Datenverzeichnis ab und entfernt jedes nach seiner Übernahme, beim Abbrechen und beim nächsten Start nach einem Absturz.
 
 Richtwerte für „brauchbar“ (Festlegung des Softwarearchitekten, zu bestätigen oder mit Messwerten zu widerlegen):
 

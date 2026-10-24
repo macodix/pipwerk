@@ -99,6 +99,16 @@ Mehrere Hauptkomponenten oder Komponenten dürfen denselben physischen Speicher 
 
 Wenn mehrere Komponenten einen Speicher gemeinsam verwenden, müssen ihre Datenbestände voneinander abgrenzbar sein. Die konkrete Art dieser Abgrenzung ist abhängig vom verwendeten Speicher-Backend und wird nicht allgemein festgelegt.
 
+### req-system-028 -- Sparsamer Umgang mit Speicherplatz
+
+Jede Komponente vermeidet Datenmengen, die sie nicht braucht: keine Kopien derselben Daten ohne Erfordernis und keine Speicherformen, die durch Aufbau statt Inhalt ein Vielfaches des Inhalts belegen.
+
+Daten, die eine Komponente nur für einen Vorgang anlegt (zum Beispiel hochgeladene Dateien, Teilstücke, Zwischenergebnisse), entfernt sie selbst, sobald sie nicht mehr gebraucht werden, auch nach Abbruch, Fehler oder Absturz. Das Entfernen ist Aufgabe der Komponente, nicht des Anwenders.
+
+Wo pipwerk ein Format selbst festlegt (zum Beispiel für den Datenbestand oder für Dateien, die der Abruf schreibt), wird das effizienteste Format für Platzbedarf und Verarbeitung gewählt und die Wahl in der Spezifikation begründet. Formate fremder Programme (zum Beispiel der CSV-Export von MetaTrader 5) bleiben davon unberührt.
+
+Für ihre Arbeit hält eine Komponente ihre Daten in genau einer Ablageform. Für historische Kursdaten ist das der Datenbestand (req-system-025). Importierte Dateien braucht die Komponente danach nicht mehr. Beim Import legt der Anwender fest, ob die Dateien behalten werden. Behaltene Dateien liegen in einem Ablageverzeichnis; um ihre Pflege kümmert sich der Anwender selbst. Sonst entfernt die Komponente sie nach dem Import.
+
 ## 3. Historische Kursdaten
 
 ### req-system-025 -- Datenbestand historischer Kursdaten
@@ -252,3 +262,5 @@ Die Festlegung schließt auch nicht aus, dass eine Benutzeroberfläche Funktione
 | 2026-10-23 | req-system-027: Anstoßen von Hand aus pipwerk gilt mit pipwerk relay. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H3). |
 | 2026-10-23 | req-system-025: Löschen von Reihen, Zeiträumen, Angaben zum Instrument und allen Daten eines Brokers. req-system-026: beliebig viele Dateien, Größe nur durch den Speicherplatz begrenzt, Fortschritt und Abbrechen. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`, Versuch 2). |
 | 2026-10-23 | req-system-027: „Abruf“ statt „Beschaffung“, nur Bezeichnung. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
+| 2026-10-24 | req-system-028 neu: sparsamer Umgang mit Speicherplatz, Vermeiden unnötiger Datenmengen, Entfernen nicht mehr benötigter Daten durch die Komponente selbst. Festlegung des Auftraggebers im Chat am 2026-10-24. Anlass: rund 24 GB zurückgebliebene Daten der abgebrochenen Probeumsetzung `backtest/prototype/order-04.md`. |
+| 2026-10-24 | req-system-028: effizientestes Format, wo pipwerk es festlegt; genau eine Ablageform je Komponente, für Kursdaten der Datenbestand; beim Import Wahl, ob Dateien behalten werden, Pflege behaltener Dateien durch den Anwender. Festlegung des Auftraggebers im Chat am 2026-10-24. |

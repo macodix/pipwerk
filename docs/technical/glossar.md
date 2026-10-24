@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-23
+- stand: 2026-10-24
 
 ## Regeln
 
@@ -74,12 +74,14 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Interne Order | Order im Strategietester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
 | Handelnde Stelle | Auswertung im Einzelschritt-Test, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
 | Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument je Broker, aus dem der Strategietester liest. Alle Zeitpunkte stehen in UTC. Pipwerk berechnet keine Kerzen aus Ticks und keine Ticks aus Kerzen. Die Ansicht „Datenbestand“ zeigt, was vorliegt, mit Zeiträumen und Lücken. Der Anwender kann eine Reihe ganz oder für einen Zeitraum löschen, ebenso die Angaben zu einem Instrument je Broker und alle Daten eines Brokers, jeweils nach einer Rückfrage (req-system-025). |
-| Import | Übernahme von Dateien im festgelegten Dateiformat (JSON, CSV im Exportformat von MetaTrader 5) in den Datenbestand historischer Kursdaten, beliebig viele in einem Vorgang, mit Fortschritt und Abbrechen (req-system-026). Bei CSV gibt der Anwender Broker, Instrument, Zeiteinheit und Zeitzone an, weil die Datei sie nicht enthält. Vorhandene Daten desselben Zeitpunkts werden ersetzt; fehlerhafte Zeilen werden abgelehnt und mit Grund genannt. |
+| Import | Übernahme von Dateien im festgelegten Dateiformat (JSON, CSV im Exportformat von MetaTrader 5) in den Datenbestand historischer Kursdaten, beliebig viele in einem Vorgang, mit Fortschritt und Abbrechen (req-system-026). Der Anwender legt fest, ob die Dateien behalten werden; sonst entfernt die Komponente sie danach (req-system-028). Bei CSV gibt der Anwender Broker, Instrument, Zeiteinheit und Zeitzone an, weil die Datei sie nicht enthält. Vorhandene Daten desselben Zeitpunkts werden ersetzt; fehlerhafte Zeilen werden abgelehnt und mit Grund genannt. |
 | Abruf | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). Eine Anfrage an den Abruf und die Lieferung der Dateien laufen über pipwerk relay (Anforderungen an das Nachrichtensystem req-relay-007). pipwerk replay ruft nichts ab, weder vor dem Start eines Testlaufs noch von Hand (Spezifikation 5.4): Der Anwender holt die Dateien mit `pipwerk-fetch-mt5` auf dem Rechner von MetaTrader 5 und importiert sie in den Datenbestand. Das gilt als Übergangslösung, bis pipwerk relay den Abruf übernimmt. |
 | Quelle | Der Ort, von dem Kursdaten stammen, zum Beispiel MetaTrader 5, aus dem `pipwerk-fetch-mt5` Dateien für den Import schreibt (Spezifikation 5.4). pipwerk replay kennt keine Quelle: Es hat keine Adresse, keinen Schlüssel und keine Verbindung zu ihr; die Dateien kommen nur durch den Import hinein. |
 | Standardquelle | Frühere Bezeichnung des „Broker für Testläufe“ (Spezifikation 5.1; Abnahmebericht `wp02`, M4). Sie war nicht die Quelle eines Abrufs und wird nicht mehr verwendet. |
 | Broker für Testläufe | Der Broker, dessen Daten ein Testlauf verwendet; eine Einstellung von pipwerk replay, wählbar in der Ansicht „Datenbestand“ unter den Brokern, die im Datenbestand vorkommen (Spezifikation 5.1). Ist keiner gewählt oder kommt der gewählte nicht mehr vor, gilt der erste Broker des Datenbestands in alphabetischer Reihenfolge. |
 | Lücke | Ein Zeitraum einer Reihe im Datenbestand, in dem zu den Handelszeiten Kerzen oder Ticks fehlen, obwohl die Reihe den Zeitraum sonst abdeckt. Zeiten ohne Handel, auch Feiertage, sind keine Lücken (Spezifikation 5.2, req-test-003). |
+| Ablageverzeichnis | Verzeichnis, in dem beim Import behaltene Dateien liegen. Die Komponente liest sie nicht wieder; um ihre Pflege kümmert sich der Anwender (req-system-028). |
+| Ablageform | Die eine Form, in der eine Komponente ihre Daten für ihre Arbeit hält, für historische Kursdaten der Datenbestand historischer Kursdaten (req-system-028). |
 | Nachrichtensystem | Produktname pipwerk relay. Überträgt Nachrichten zwischen eigenständig laufenden Komponenten, auch zwischen verschiedenen Rechnern (req-system-005, Anforderungen an das Nachrichtensystem). |
 | Nachricht | Einheit, die über das Nachrichtensystem übertragen wird, mit Nachrichten-ID, Absender, Adressat, Priorität, Nachrichtenart, Inhalt und Bezug-Nachrichten-ID (Anforderungen an das Handelssystem req-grund-004). |
 | Relay | Teil des Nachrichtensystems, der auf jedem Rechner läuft, auf dem eine Komponente Nachrichten sendet oder empfängt. Eine Komponente tauscht Nachrichten nur mit dem Relay ihres Rechners aus (req-relay-001, req-relay-002). |
@@ -131,6 +133,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-24 | Import: Behalten oder Entfernen der Dateien; Einträge Ablageverzeichnis und Ablageform neu. Folgt aus der Festlegung des Auftraggebers vom 2026-10-24 (req-system-028). Hinweis 6 aus `development/backtest/reviews/requirements-10.md`. |
 | 2026-10-24 | Vorhaben `backtest`, Arbeitspaket `wp02`, Behebung der Mängel M1, M2, M3, M5, M6 (Abnahmebericht Versuch 2): Datenbestand um Löschen und Zeiten ohne Handel, Import um beliebig viele Dateien, Abruf mit Übergangslösung `pipwerk-fetch-mt5`. Zusammenführung mit `main` (Abruf statt Beschaffung). Folgt aus req-system-025, req-system-026, req-test-003. |
 | 2026-10-23 | Vorhaben `backtest`, Arbeitspaket `wp02`, Auftrag 12: Beschaffung, Quelle und Standardquelle an 5.4 und 5.1 angepasst (pipwerk replay beschafft nichts, hat keine Quelle; „Standardquelle“ ist die frühere Bezeichnung); Broker für Testläufe ergänzt. Folgt aus dem Abnahmebericht `wp02`, Mangel M4 (`development/backtest/wp02/acceptance/1.md`), und req-system-027. |
 | 2026-10-23 | Abruf statt Beschaffung. Folgt aus der Entscheidung des Auftraggebers vom 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
