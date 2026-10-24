@@ -295,6 +295,7 @@ test('the management folds in and out, and its output can be connected with a st
   void api;
   await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
+  await page.getByTestId('zoom-fit').click();
   const frame = page.getByTestId('frame');
   const full = await boxOf(frame);
 

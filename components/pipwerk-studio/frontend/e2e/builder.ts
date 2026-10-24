@@ -139,12 +139,12 @@ export async function select(page: Page, name: string): Promise<void> {
   await showArea(page, 'canvas');
   const target = node(page, name).or(card(page, name)).first();
   const size = page.viewportSize();
+  // the objects lie beside their elements and make the drawing taller: the step may lie outside of the window, so the
+  // whole drawing is brought into the window first (scrolling the page cannot move the drawing)
+  await page.getByTestId('zoom-fit').click();
   if ((size?.width ?? 1366) < 1100 || (size?.height ?? 768) < 500) {
-    // on a narrow window the step may lie outside of it: the whole drawing is brought into the window first
-    await page.getByTestId('zoom-fit').click();
     await target.click();
   } else {
-    await target.scrollIntoViewIfNeeded();
     await target.click({ position: { x: 44, y: 14 } });
   }
   await showArea(page, 'props');

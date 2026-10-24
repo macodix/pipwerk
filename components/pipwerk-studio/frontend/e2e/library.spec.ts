@@ -115,6 +115,8 @@ test('lets the user change the order type: the new properties get their standard
   void api;
   await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
+  // "Order aufgeben" lies below the objects beside the earlier steps: the whole drawing is brought into the window
+  await page.getByTestId('zoom-fit').click();
   await node(page, 'Order aufgeben').click({ position: { x: 40, y: 14 } });
 
   await expect(page.getByTestId('field-gueltigkeit')).toHaveCount(0);
