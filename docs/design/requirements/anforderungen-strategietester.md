@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
-- zuletzt aktualisiert: `2026-10-23`
+- zuletzt aktualisiert: `2026-10-24`
 - abgestimmt: Festlegungen des Auftraggebers im Chat am 19. bis 21. Oktober 2026. Prüfung durch die QA bestanden ([requirements-4.md](../../../development/backtest/reviews/requirements-4.md)), [Präsentation](../../../development/backtest/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -74,6 +74,12 @@ Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategieteste
 
 Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Das gilt auch für Strategieparameter vom Objekttyp `Instrument`.
 
+### req-test-009 -- Einstellungsbereich
+
+pipwerk replay bietet einen Einstellungsbereich. Dort werden die Einstellungen angezeigt und geändert, die über die Oberfläche änderbar sind; sie liegen im Speicher der Komponente (Gesamtsystem req-system-016). Dazu gehören Voreinstellungen für Import und Export, zum Beispiel Importverzeichnis, Exportverzeichnis und ob importierte Dateien behalten werden, mit ihrem Ablageverzeichnis (Gesamtsystem req-system-028). Weitere Einstellungen kommen hinzu, wenn sie festgelegt werden.
+
+Offen: Aufbau und Gestaltung des Einstellungsbereichs. Sie werden für pipwerk übergreifend vom Auftraggeber geklärt und hier danach angeglichen (vergleiche Anforderungen an den Strategiedesigner req-ui-009).
+
 ## 3. Einzelschritt-Test
 
 ### req-test-010 -- Darstellung
@@ -131,6 +137,7 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 ## 5. Noch offene Punkte
 
 1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
+2. Aufbau und Gestaltung des Einstellungsbereichs (req-test-009), übergreifende Klärung durch den Auftraggeber.
 
 ## 6. Änderungsnachweis
 
@@ -151,3 +158,4 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-23 | req-test-003: keine automatische Beschaffung bis pipwerk relay (Übergangslösung nach req-system-027). Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |
 | 2026-10-23 | req-test-001 und req-test-003 an die Übergangslösung angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H1, H2). |
 | 2026-10-23 | Abschnitt 1, req-test-003: „Abruf“ statt „Beschaffung“, nur Bezeichnung. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
+| 2026-10-24 | req-test-009 neu: Einstellungsbereich mit Voreinstellungen für Import und Export; Aufbau und Gestaltung offen (offener Punkt 2). Festlegung des Auftraggebers im Chat am 2026-10-24. |
