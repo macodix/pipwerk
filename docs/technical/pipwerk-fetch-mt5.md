@@ -5,7 +5,7 @@
 - status: `draft`
 - stand: 2026-10-24
 - komponente: `pipwerk-fetch-mt5`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt; in Auftrag 16 (Abnahmebericht Versuch 2, M2) neuer Abschnitt 16 „Installierte Software und laufende Prozesse“, Abschnitt 10 Schritt 3 und Abschnitt 15 Punkt 10 angepasst
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt; in Auftrag 16 (Abnahmebericht Versuch 2, M2) neuer Abschnitt 16 „Installierte Software und laufende Prozesse“, Abschnitt 10 Schritt 3 angepasst; Python auf `>=3.14,<3.15` festgelegt (`pyproject.toml`, `uv.lock` neu erzeugt, Entscheidung 14, Abschnitt 16.2)
 
 ## 1. Gegenstand
 
@@ -276,6 +276,7 @@ Fest gelegt vom Entwickler, soweit die Spezifikation es offenlässt (Auftrag 13)
 11. Ausgabe an den Anwender (Dateien, Fehler mit Grund, Zusammenfassung) deutsch, Hilfetext und Meldungen zu Aufruf und Startkonfiguration englisch wie bisher.
 12. Windows-Skript `scripts/fetch.cmd` ersetzt `scripts/start.cmd`; `scripts/install.cmd` bleibt unverändert.
 13. Die Nachbildung für Tests ist eine Nachbildung des Pakets `MetaTrader5` (`tests/support.py`) und liegt nur in den Tests; `fake_source.py` entfällt. Andere Komponenten, die `fake_source` verwendeten (pipwerk replay), brauchen es nicht mehr (Auftrag 12).
+14. Python ist auf 3.14 festgelegt: `requires-python = ">=3.14,<3.15"` (Auftrag 16, Entscheidung des Entwicklungsleiters). `MetaTrader5` 5.0.6231 hat nur ein Rad für Python 3.14 unter Windows; ohne Obergrenze könnte `uv` eine Version wählen, für die es kein Rad gibt. `install.cmd` und `fetch.cmd` bleiben unverändert. Beim nächsten Wechsel der Python-Version sind Obergrenze, `uv.lock` und ein neues Rad von `MetaTrader5` gemeinsam zu prüfen.
 
 ## 15. Offene Punkte
 
@@ -288,7 +289,6 @@ Fest gelegt vom Entwickler, soweit die Spezifikation es offenlässt (Auftrag 13)
 7. **Echtes MetaTrader 5.** Aufruf, Name des Handelsservers (`account_info().server`), Fehlercodes und Zeitzone sind nur gegen die Nachbildung geprüft; der Auftraggeber prüft sie in der Abnahme.
 8. **Windows.** Das Skript `fetch.cmd` und das atomare Umbenennen unter Windows sind auf dem Entwicklungsrechner (Linux) nicht ausgeführt; `Path.replace` ersetzt unter Windows eine bestehende Datei, scheitert aber, wenn eine andere Anwendung sie geöffnet hält (dann `write_failed`).
 9. Erledigt: pipwerk replay (Backend in Auftrag 12, Oberfläche und Anwenderdokumentation in Auftrag 14) und das Glossar verweisen nicht mehr auf die frühere Schnittstelle.
-10. **Python-Version nicht festgelegt.** Weder `pyproject.toml` (`requires-python = ">=3.14"`, keine Obergrenze) noch eine Datei `.python-version` noch `install.cmd` legen die Python-Version fest. `MetaTrader5` 5.0.6231 hat in `uv.lock` genau ein Rad (`cp314-cp314-win_amd64`) und keine Quelldatei. Wählt `uv` eine andere Version als 3.14 (zum Beispiel 3.15, wenn diese auf dem Rechner liegt oder die neueste ist), gibt es für `MetaTrader5` kein passendes Rad, und `install.cmd` scheitert aus dieser Ableitung (Abschnitt 16.2). Nicht auf Windows ausgeführt. Eine Festlegung (Obergrenze `<3.15` oder `.python-version`) braucht eine Entscheidung des Entwicklungsleiters.
 
 ## 16. Installierte Software und laufende Prozesse
 
@@ -314,7 +314,7 @@ Es startet das Programm `pipwerk-fetch-mt5` (Startpunkt `pipwerk_fetch_mt5.cli:m
 
 **uv.** `uv` (https://docs.astral.sh/uv/) ist ein Programm der Firma Astral zur Verwaltung von Python, virtuellen Umgebungen und Paketen. Hier ersetzt es `pip` und `venv`: Es legt die Umgebung `.venv` an und installiert die Pakete aus `uv.lock`. Das Repository enthält `uv` nicht; der Anwender installiert es einmal selbst (Abschnitt 10, Schritt 1). Nach der Dokumentation von `uv` (nicht ausgeführt): Das Installationsprogramm für Windows lädt `uv.exe` (und `uvx.exe`) von astral.sh beziehungsweise GitHub in einen Ordner des Benutzers (Voreinstellung `%USERPROFILE%\.local\bin`) und trägt diesen Ordner in `PATH` des Benutzers ein; alternativ `winget install astral-sh.uv`. Es braucht keine Administratorrechte. Der Ort lässt sich mit `where uv` anzeigen.
 
-**Python.** Version: Die Komponente verlangt `requires-python = ">=3.14"` (`pyproject.toml`; `uv.lock`, Zeile 2). Eine Obergrenze und eine feste Version gibt es nicht (offener Punkt 10). Das einzige Rad von `MetaTrader5` in `uv.lock` ist `cp314-cp314-win_amd64`, also für Python 3.14 unter Windows mit 64 Bit; `numpy` und `pydantic-core` haben dort Räder für 3.14 und 3.15. Wer Python lädt: Nach der Dokumentation von `uv` nimmt es zuerst ein Python, das auf dem Rechner liegt und `>=3.14` erfüllt, und lädt sonst selbst ein Python (die Builds von `python-build-standalone`, von GitHub) in sein eigenes Verzeichnis. Wann: beim ersten `install.cmd`, nur wenn kein passendes Python da ist. Das Python des Systems verändert `uv` dabei nicht. Wie viele Byte das Python hat, ist nicht gemessen.
+**Python.** Version: Die Komponente verlangt `requires-python = ">=3.14,<3.15"` (`pyproject.toml`; in `uv.lock` als `==3.14.*`), also Python 3.14 in einer beliebigen Unterversion (Entscheidung 14). Grund: Das einzige Rad von `MetaTrader5` in `uv.lock` ist `cp314-cp314-win_amd64`, also für Python 3.14 unter Windows mit 64 Bit, und es gibt keine Quelldatei. Ohne Obergrenze hätte `uv` ein Python 3.15 wählen können, für das es kein Rad gibt. `install.cmd` bleibt unverändert; die Auswahl ergibt sich aus `requires-python`. Wer Python lädt: Nach der Dokumentation von `uv` nimmt es zuerst ein Python, das auf dem Rechner liegt und `>=3.14,<3.15` erfüllt, und lädt sonst selbst ein Python (die Builds von `python-build-standalone`, von GitHub) in sein eigenes Verzeichnis. Wann: beim ersten `install.cmd`, nur wenn kein passendes Python da ist. Das Python des Systems verändert `uv` dabei nicht. Wie viele Byte das Python hat, ist nicht gemessen.
 
 ### 16.3 Pakete (nach `uv.lock`)
 

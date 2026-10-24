@@ -3,7 +3,7 @@ name = "pipwerk-fetch-mt5"
 version = "0.1.0.dev0"
 description = "pipwerk-fetch-mt5: command line program that writes historical market data from MetaTrader 5 as files for the import"
 license = "GPL-3.0-only"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "pydantic==2.13.5",
     "tzdata>=2025.2",
