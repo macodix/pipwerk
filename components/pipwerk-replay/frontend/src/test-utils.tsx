@@ -214,7 +214,9 @@ export class FakeBackend {
   /** The settings for files as the backend holds them (`GET /api/replay/settings/files`). */
   fileSettings: Json = fileSettingsJson();
   /** A special answer to reading the settings for files (an error), instead of the settings. */
-  fileSettingsAnswer: (() => Response) | null = null;
+  fileSettingsAnswer: (() => Response | Promise<Response>) | null = null;
+  /** A special answer to the preview of a file of the import directory, instead of the hints. */
+  directoryPreviewAnswer: ((path: string) => Response) | null = null;
   /**
    * The refusal of `PUT /api/replay/settings/files`: the reason per field (`storage_directory`
    * ...), or `null` to accept. A refusal changes nothing, as in the backend.
@@ -291,6 +293,9 @@ export class FakeBackend {
     }
     if (path === '/api/v1/market-data/import-directory/preview' && method === 'POST') {
       const requested = (body as { path: string }).path;
+      if (this.directoryPreviewAnswer !== null) {
+        return this.directoryPreviewAnswer(requested);
+      }
       const name = requested.split('/').pop() ?? requested;
       return json(200, this.directoryHints[requested] ?? this.hints[name] ?? hintJson(name));
     }
@@ -368,7 +373,7 @@ export class FakeBackend {
     return json(404, { detail: 'Not Found' });
   }
 
-  private files(method: string, body: unknown): Response {
+  private files(method: string, body: unknown): Response | Promise<Response> {
     if (method === 'PUT') {
       const wanted = body as Json;
       if (this.fileSettingsRefusal !== null) {
