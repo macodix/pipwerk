@@ -87,21 +87,22 @@ pipwerk replay läuft als eigene Komponente. Der Anwender holt Kursdaten mit `pi
 
 - Komponente `components/pipwerk-replay` durch Umbenennen von `components/pipwerk-backtest` mit allen Verweisen; Backend mit Startkonfiguration, eigener Datenbank, Alembic und Prüfung des Kopfs `Host` wie pipwerk Studio (E3, E6); Prüfskript und Testumgebungsskript.
 - Bibliothek `packages/market-data`: Speichermodell, Import JSON und CSV mit Zeitzone, Prüfung auf Vollständigkeit mit Lücken nach 5.2 einschließlich der Tage ohne Handel aus der Startkonfiguration von pipwerk replay, Löschen (5.5), Lesen (E4, 5.1 bis 5.3, 5.5); Schema `contracts/market-data/v1/`.
-- Backend und Oberfläche von pipwerk replay: Import beliebig vieler Dateien, je Datei eine Anfrage, mit Stand und Abbrechen (5.3); Löschen mit Rückfrage und Ablehnung während eines Imports (5.5).
+- Backend und Oberfläche von pipwerk replay: Import beliebig vieler Dateien, hochgeladen oder direkt aus dem Importverzeichnis, je Datei eine Anfrage, mit Stand und Abbrechen (5.3); Löschen mit Rückfrage und Ablehnung während eines Imports (5.5).
 - `components/pipwerk-fetch-mt5` als Programm, das der Anwender auf dem Rechner von MetaTrader 5 aufruft, mit Zuordnungstabelle und Zeitzone, ohne Server und Port (E5, 5.4). Eine HTTP-Schnittstelle von `pipwerk-fetch-mt5` und ihre Beschreibung unter `contracts/` entfallen, ebenso Adresse und Schlüssel der Quelle in der Startkonfiguration von pipwerk replay.
 - Testkonten mit Standard-Testkonto (6.2).
 - Web-API (Abschnitt 7) für Datenbestand, Testkonten und Einstellungen, darunter der Broker für Testläufe (5.1).
 - Oberfläche nach dem bestätigten Prototyp (8.1, 8.2): Kopfzeile mit Menü, „Über pipwerk replay“, Sprachwahl, Fußzeile mit Stand und Erreichbarkeit des Backends; Ansichten „Datenbestand“ mit Dialog „Datei importieren“ und „Testkonten“ (8.3); Fenstergrößen nach 8.4 Punkt 1 für diese Ansichten.
 - Sicherheit nach Abschnitt 11 für Import und `pipwerk-fetch-mt5`.
-- Einstellungsbereich nach 5.7 (req-test-009): Menüpunkt „Einstellungen“ mit „Importierte Dateien behalten“ und „Ablageverzeichnis“.
+- Einstellungsbereich nach 5.7 (req-test-009): Menüpunkt „Einstellungen“ mit „Importierte Dateien behalten“, „Ablageverzeichnis“, „Importverzeichnis“ und „Exportverzeichnis“; Import aus dem Importverzeichnis nach 5.3, ohne die Dateien dort je zu entfernen.
 - Speicherplatz nach 5.6 (req-system-028): Import ohne zurückbleibende Dateien, „Dateien behalten“ mit Ablageverzeichnis, Platz der Datenbank nach Löschen und Ersetzen zurückgeben, Zwischendateien von `pipwerk-fetch-mt5`.
 - Tests nach Abschnitt 10, Punkte Datenbestand, Speicherplatz und Abruf; Backend, Oberfläche und Browsertests für dieses Paket.
-- Dokumentation (Abschnitt 12): `docs/technical/pipwerk-replay.md` für dieses Paket, `docs/technical/pipwerk-marketdata.md`, `docs/technical/pipwerk-fetch-mt5.md` nach M2, Beschreibungen unter `contracts/`; `docs/user/pipwerk-replay.md` zu Testkonten, Datenbestand, Import beliebig vieler Dateien mit „Dateien behalten“, Einstellungen, Lücken, Löschen, Einrichtung von `uv` nach M1, Einrichtung und Aufruf von `pipwerk-fetch-mt5` und Import seiner Dateien; Glossar: Testkonto, Datenbestand historischer Kursdaten, Abruf, Quelle.
+- Dokumentation (Abschnitt 12): `docs/technical/pipwerk-replay.md` für dieses Paket, `docs/technical/pipwerk-marketdata.md`, `docs/technical/pipwerk-fetch-mt5.md` nach M2, Beschreibungen unter `contracts/`; `docs/user/pipwerk-replay.md` zu Testkonten, Datenbestand, Import beliebig vieler Dateien mit „Dateien behalten“, Einstellungen mit Import- und Exportverzeichnis, Import aus dem Importverzeichnis, Lücken, Löschen, Einrichtung von `uv` nach M1, Einrichtung und Aufruf von `pipwerk-fetch-mt5` und Import seiner Dateien; Glossar: Testkonto, Datenbestand historischer Kursdaten, Abruf, Quelle.
 
 ### Nicht-Umfang
 
 - Testlauf, Backtest und Einzelschritt-Test (`wp03`, `wp04`); die Menüeinträge dafür und die Umschaltung der Betriebsart erscheinen erst mit diesen Paketen.
 - Abruf aus pipwerk replay und Austausch über pipwerk relay (5.4)
+- Exporte; das Exportverzeichnis ist in diesem Paket nur Einstellung (5.7)
 - Import großer Dateien über die Grenze je Datei hinaus (M4, Abschnitt „Offen“) und Version 2 des Dateiformats (5.6, letzter Punkt)
 
 ### Umgesetzte Teile der Spezifikation
@@ -128,7 +129,7 @@ Der Auftraggeber kann in der Testumgebung selbst prüfen:
 10. `docs/technical/pipwerk-fetch-mt5.md` nennt vollständig, was auf dem Rechner von MetaTrader 5 installiert wird und läuft, nach Spezifikation Abschnitt 12 (M2).
 11. Bricht er `pipwerk-fetch-mt5` während des Schreibens mit Strg+C ab, liegen im Zielverzeichnis danach nur vollständige Dateien und keine Zwischendateien (req-system-028).
 12. Im Dialog „Datei importieren“ ist „Dateien behalten“ so vorbelegt wie „Importierte Dateien behalten“ in den Einstellungen, anfangs nicht angekreuzt; die Erklärung beim Zeigen nennt das Ablageverzeichnis. Kreuzt er es an, liegen die übertragenen Dateien danach unverändert im Ablageverzeichnis; ohne Kreuz liegt dort keine Datei des Vorgangs. Die Anwenderdokumentation sagt, dass er behaltene Dateien selbst pflegt (req-system-028).
-13. Unter „Einstellungen“ ändert er „Importierte Dateien behalten“ und das Ablageverzeichnis und speichert. Der nächste Import ist danach so vorbelegt und behält die Dateien im neuen Verzeichnis. Ein relativer Pfad wird mit Grund abgelehnt (req-test-009).
+13. Unter „Einstellungen“ ändert er „Importierte Dateien behalten“, Ablageverzeichnis, Importverzeichnis und Exportverzeichnis und speichert; ein relativer Pfad wird mit Grund abgelehnt. Der nächste Import ist danach so vorbelegt und behält hochgeladene Dateien im neuen Ablageverzeichnis. Im Dialog „Datei importieren“ wählt er Dateien aus dem neuen Importverzeichnis, auch aus einem Unterverzeichnis, und importiert sie ohne Hochladen in einem Vorgang zusammen mit einer hochgeladenen Datei. Danach liegen die Dateien unverändert im Importverzeichnis, auch mit „Dateien behalten“ (req-test-009, req-system-028).
 
 Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 10 für Datenbestand, Speicherplatz und Abruf und die Browsertests. Positive Testberichte beider Tester liegen vor.
 
@@ -290,3 +291,4 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 2026-10-23 | Hinweise aus [specification-5.md](reviews/specification-5.md) (Nachprüfung bestanden, auch Kriterium 9) ohne weitere Prüfung eingearbeitet: H1 Randtage in Kriterium 9; H3 Tage ohne Handel im Umfang von `wp02`, früher Handelsschluss in Kriterium 9. Den Schlüssel in der Startkonfiguration legt der Auftrag fest. |
 | 2026-10-24 | Nach req-system-028 mit Ergänzung vom selben Tag und Spezifikation 5.6: `wp02` Umfang (Speicherplatz mit „Dateien behalten“, Tests), Nicht-Umfang (Version 2 des Dateiformats), umgesetzte Teile, neue Kriterien 11 und 12, technische Nachweise; Abdeckung 5.6; „Offen“ mit Version 2 des Dateiformats und der geänderten Probeumsetzung `prototype/order-04.md`. Prüfung zusammen mit der Spezifikation in [specification-6.md](reviews/specification-6.md), bestanden. |
 | 2026-10-24 | Nach req-test-009 und Spezifikation 5.7: `wp02` Umfang (Einstellungsbereich), umgesetzte Teile, Kriterium 12 (Vorbelegung) und neues Kriterium 13; Abdeckung 5.7. Prüfung zusammen mit der Spezifikation in [specification-7.md](reviews/specification-7.md). |
+| 2026-10-24 | Nach dem Einwand des Auftraggebers zu Kriterium 13 (Meldung `revise` vom 2026-10-24, Kriterien 11 und 12 bestätigt) und Spezifikation 5.3, 5.6, 5.7: `wp02` Umfang (Import aus dem Importverzeichnis, Import- und Exportverzeichnis, Anwenderdokumentation; damit auch H2 aus `specification-7.md`), Nicht-Umfang (Exporte), Kriterium 13. |
