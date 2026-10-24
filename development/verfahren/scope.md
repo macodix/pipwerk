@@ -36,3 +36,5 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
 2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-01](questions/verfahren-01.md), Frage 1) vom Auftraggeber abgelehnt, weil er keine grafische Übersicht ist. Festlegung 6 um seine Vorgabe ergänzt: drei Ebenen aus Kästchen mit Farben für den Stand.
 
 2026-10-24: Frage 2 aus verfahren-01 beantwortet: „Projektleiter“ als Bearbeiter in der Übersicht, ohne Hervorhebung. Alle Fragen beantwortet, Meldung `answer`.
+
+2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-02](questions/verfahren-02.md)) vom Auftraggeber im Chat bestätigt. Meldung `answer`.

@@ -36,3 +36,5 @@ So ist der Entwurf gelöst. Mit der Bestätigung gelten diese Punkte als bestät
 5. Ein Paket wird in einer Phase grau angezeigt, solange es sie nicht erreicht hat, gelb, solange es in ihr ist, grün danach. Die Phase Umsetzung bleibt gelb, bis alle Pakete fertig sind, auch wenn gerade kein Paket in ihr ist (im Beispiel „Strategietester“: „0 von 3 Paketen in dieser Phase“).
 
 Vorschlag: Entwurf bestätigen.
+
+**Antwort des Auftraggebers (2026-10-24):** Bestätigt in Aufbau und Bedienung, „nicht wirklich hübsch, aber funktional“. Die optische Gestaltung der echten Seite darf ansprechender werden.
