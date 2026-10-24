@@ -7,6 +7,7 @@
 - komponenten: `packages/relay-core` (neu), `components/pipwerk-relay` (neu), `components/pipwerk-fetch-mt5`, `contracts/messages/`, `contracts/api/pipwerk-relay/`
 - grundlage: [specification.md](specification.md), [Präsentation](presentations/specification-2.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026; Abschnitt 8 geändert nach dem Einwand des Auftraggebers zur [Präsentation des Plans](presentations/plan-1.html)
 - prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Fassung nach dem Einwand: Durchlauf 2 [plan-2.md](reviews/plan-2.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet
+- bestätigung: [Präsentation](presentations/plan-2.html) bestätigt vom Auftraggeber im Chat am 24. Oktober 2026
 
 ## Übersicht
 
