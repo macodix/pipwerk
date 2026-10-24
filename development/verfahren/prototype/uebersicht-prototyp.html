@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stand der Vorhaben</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --text: #23262b;
+    --muted: #5d636c;
+    --line: #d9d6cc;
+    --accent: #8a5a00;
+    --accent-bg: #fff4d6;
+    --accent-line: #c98a00;
+    --phase-bg: #e9edf2;
+    --done: #6b7178;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+
+  header h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
+  header .meta { margin: 2px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .beispiel {
+    margin: 8px 0 14px;
+    padding: 4px 10px;
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    background: #fbfaf7;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  /* Wartet auf Sie */
+  .wartet {
+    border: 3px solid var(--accent-line);
+    background: var(--accent-bg);
+    border-radius: 10px;
+    padding: 10px 14px 12px;
+    margin-bottom: 22px;
+  }
+  .wartet h2 {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+    color: var(--accent);
+  }
+  .wartet h2::before { content: "\25B6\00a0"; }
+  .wartet ul { list-style: none; margin: 0; padding: 0; }
+  .wartet li {
+    padding: 8px 0;
+    border-top: 1px solid var(--accent-line);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 16px;
+    align-items: baseline;
+  }
+  .wartet li:first-child { border-top: 0; }
+  .wartet .was { font-weight: 700; }
+  .wartet .wo { color: var(--text); }
+  .wartet .wo small { color: var(--muted); }
+  .wartet .seit { color: var(--muted); font-size: 0.92rem; white-space: nowrap; }
+  .nichts { margin: 0; }
+
+  /* Vorhaben */
+  .vorhaben {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px 8px;
+    margin-bottom: 16px;
+  }
+  .vorhaben h3 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
+  .vorhaben h3 small { font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 8px; }
+  .phase {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--phase-bg);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .phase.wartet-p { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
+  .phase.fertig-p { background: transparent; border: 1px solid var(--line); color: var(--done); }
+
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th:nth-child(1) { width: 38%; }
+  th:nth-child(2) { width: 18%; }
+  th:nth-child(3) { width: 24%; }
+  th:nth-child(4) { width: 20%; }
+  th { text-align: left; font-size: 0.8rem; font-weight: 600; color: var(--muted); padding: 4px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td small { color: var(--muted); }
+  .hinweis { display: block; color: var(--muted); font-size: 0.85rem; }
+
+  tr.auftraggeber td { background: var(--accent-bg); }
+  tr.auftraggeber td:first-child { border-left: 5px solid var(--accent-line); }
+  .marke {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 0 7px;
+    border: 1px solid var(--accent-line);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  tr.fertig td { color: var(--done); font-size: 0.93rem; }
+
+  .einzel {
+    display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline;
+    padding: 8px; margin-bottom: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .einzel.auftraggeber {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-line);
+    border-left: 5px solid var(--accent-line);
+    border-radius: 4px;
+  }
+  .einzel .label { color: var(--muted); font-size: 0.85rem; margin-right: 4px; }
+
+  /* Abgeschlossene */
+  details.abgeschlossen { margin-top: 24px; }
+  details.abgeschlossen > summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    font-weight: 600;
+  }
+  details.abgeschlossen[open] > summary { margin-bottom: 12px; }
+  details.abgeschlossen .vorhaben { opacity: 0.9; }
+
+  /* schmale Fenster: Tabellen als Karten */
+  @media (max-width: 720px) {
+    main { padding: 12px; }
+    thead { position: absolute; left: -9999px; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tr { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+    tr.auftraggeber { border: 2px solid var(--accent-line); border-left-width: 6px; }
+    tr.auftraggeber td:first-child { border-left: 0; }
+    td { border-bottom: 0; padding: 3px 10px; }
+    td:first-child { padding-top: 8px; font-weight: 600; }
+    td:last-child { padding-bottom: 8px; }
+    td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+    td:first-child::before { content: none; }
+    .wartet li { grid-template-columns: minmax(0, 1fr); }
+    .wartet .seit { white-space: normal; }
+  }
+  @media (max-height: 460px) {
+    main { padding-top: 8px; }
+    header h1 { font-size: 1.25rem; }
+    .beispiel { margin: 4px 0 8px; padding: 2px 8px; }
+    .wartet { padding: 6px 12px 8px; margin-bottom: 14px; }
+    .wartet li { padding: 4px 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Stand der Vorhaben</h1>
+    <p class="meta">erzeugt am 24.10.2026 um 09:40 Uhr</p>
+    <p class="beispiel">Beispiel: Alle Angaben auf dieser Seite sind fest eingetragene Beispieldaten.</p>
+  </header>
+
+  <section class="wartet" aria-labelledby="wartet-titel">
+    <h2 id="wartet-titel">Wartet auf Sie</h2>
+    <ul>
+      <li>
+        <span class="was">Abnahme durchführen</span>
+        <span class="seit">seit 23.10.2026, 16:20 Uhr</span>
+        <span class="wo">Strategietester <small>(backtest)</small> &ndash; Einzelschritt-Test <small>(wp02)</small></span>
+      </li>
+      <li>
+        <span class="was">Frage beantworten</span>
+        <span class="seit">seit 24.10.2026, 08:55 Uhr</span>
+        <span class="wo">Neues Vorhaben <small>(beispiel)</small></span>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-label="Laufende Vorhaben">
+
+    <article class="vorhaben">
+      <div class="kopf">
+        <h3>Entwicklungsverfahren verbessern <small>verfahren</small></h3>
+      </div>
+      <div class="einzel">
+        <span><span class="label">Phase</span><span class="phase">Konzeption</span></span>
+        <span><span class="label">Bei</span>Softwarearchitekt</span>
+        <span><span class="label">Seit</span>24.10.2026, 07:30 Uhr</span>
+      </div>
+    </article>
+
+    <article class="vorhaben">
+      <div class="kopf">
+        <h3>Strategietester <small>backtest</small></h3>
+        <span class="phase">Umsetzung</span>
+      </div>
+      <table>
+        <thead><tr><th>Arbeitspaket</th><th>Phase</th><th>Bei</th><th>Seit</th></tr></thead>
+        <tbody>
+          <tr class="auftraggeber">
+            <td>Einzelschritt-Test <small>wp02</small></td>
+            <td data-label="Phase"><span class="phase">Abnahme</span></td>
+            <td data-label="Bei"><span class="marke">Wartet auf Sie</span>Auftraggeber</td>
+            <td data-label="Seit">23.10.2026, 16:20 Uhr</td>
+          </tr>
+          <tr>
+            <td>Backtest und Vergleich <small>wp03</small></td>
+            <td data-label="Phase"><span class="phase wartet-p">wartet</span><span class="hinweis">auf wp02</span></td>
+            <td data-label="Bei">&ndash;</td>
+            <td data-label="Seit">&ndash;</td>
+          </tr>
+          <tr class="fertig">
+            <td>Kursdaten und Datenbestand <small>wp01</small></td>
+            <td data-label="Phase"><span class="phase fertig-p">fertig</span></td>
+            <td data-label="Bei">&ndash;</td>
+            <td data-label="Seit">in main seit 21.10.2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="vorhaben">
+      <div class="kopf">
+        <h3>Strategiedesigner <small>strategiedesign</small></h3>
+        <span class="phase">Umsetzung</span>
+      </div>
+      <table>
+        <thead><tr><th>Arbeitspaket</th><th>Phase</th><th>Bei</th><th>Seit</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Bearbeiten von Strategien <small>wp02</small></td>
+            <td data-label="Phase"><span class="phase">Umsetzung</span></td>
+            <td data-label="Bei">Team</td>
+            <td data-label="Seit">24.10.2026, 06:10 Uhr</td>
+          </tr>
+          <tr class="fertig">
+            <td>Grundgerüst <small>wp01</small></td>
+            <td data-label="Phase"><span class="phase fertig-p">fertig</span></td>
+            <td data-label="Bei">&ndash;</td>
+            <td data-label="Seit">in main seit 20.10.2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="vorhaben">
+      <div class="kopf">
+        <h3>Verbindung zum Broker <small>relay</small></h3>
+        <span class="phase">Umsetzung</span>
+      </div>
+      <table>
+        <thead><tr><th>Arbeitspaket</th><th>Phase</th><th>Bei</th><th>Seit</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Abruf von Kursdaten <small>wp01</small></td>
+            <td data-label="Phase"><span class="phase">Umsetzung</span><span class="hinweis">Lücke in der Spezifikation</span></td>
+            <td data-label="Bei">Softwarearchitekt</td>
+            <td data-label="Seit">24.10.2026, 09:05 Uhr</td>
+          </tr>
+          <tr>
+            <td>Handel <small>wp02</small></td>
+            <td data-label="Phase"><span class="phase wartet-p">wartet</span><span class="hinweis">auf wp01</span></td>
+            <td data-label="Bei">&ndash;</td>
+            <td data-label="Seit">&ndash;</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="vorhaben">
+      <div class="kopf">
+        <h3>Neues Vorhaben <small>beispiel</small></h3>
+      </div>
+      <div class="einzel auftraggeber">
+        <span class="marke">Wartet auf Sie</span>
+        <span><span class="label">Phase</span><span class="phase">Anforderung</span></span>
+        <span><span class="label">Bei</span>Auftraggeber (Frage beantworten)</span>
+        <span><span class="label">Seit</span>24.10.2026, 08:55 Uhr</span>
+      </div>
+    </article>
+
+  </section>
+
+  <details class="abgeschlossen" id="abgeschlossen">
+    <summary>Abgeschlossene Vorhaben (1)</summary>
+    <article class="vorhaben">
+      <div class="kopf">
+        <h3>Über-Dialog <small>ablauftest</small></h3>
+        <span class="phase fertig-p">Integration</span>
+      </div>
+      <table>
+        <thead><tr><th>Arbeitspaket</th><th>Phase</th><th>Bei</th><th>Seit</th></tr></thead>
+        <tbody>
+          <tr class="fertig">
+            <td>Dialog mit Versionsangabe <small>wp02</small></td>
+            <td data-label="Phase"><span class="phase fertig-p">fertig</span></td>
+            <td data-label="Bei">&ndash;</td>
+            <td data-label="Seit">in main seit 18.10.2026</td>
+          </tr>
+          <tr class="fertig">
+            <td>Menüeintrag <small>wp01</small></td>
+            <td data-label="Phase"><span class="phase fertig-p">fertig</span></td>
+            <td data-label="Bei">&ndash;</td>
+            <td data-label="Seit">in main seit 17.10.2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+  </details>
+</main>
+</body>
+</html>
