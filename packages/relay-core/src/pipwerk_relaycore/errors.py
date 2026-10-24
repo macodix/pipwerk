@@ -25,6 +25,7 @@ class RejectionReason(StrEnum):
     WRONG_RECIPIENT = "wrong_recipient"
     BAD_MAC = "bad_mac"
     BAD_BODY = "bad_body"
+    BAD_CONTENT = "bad_content"
     STORED_NOT_SUPPORTED = "stored_not_supported"
     ATTACHMENT_MISSING = "attachment_missing"
     ATTACHMENT_UNEXPECTED = "attachment_unexpected"
@@ -50,6 +51,13 @@ class SecretsAccessError(KeyHandlingError):
 
 class KeyFileError(KeyHandlingError):
     """A key file does not hold a valid key, or a key file already exists."""
+
+
+class DatabaseMigrationError(RelayCoreError):
+    """The database of a connector cannot be brought to the newest schema.
+
+    The changes of the failed migration are rolled back. The text never names a path.
+    """
 
 
 class WayError(RelayCoreError):

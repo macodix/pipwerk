@@ -1,0 +1,12 @@
+{
+  "id": "7d3b1c84-9a5e-4f10-b6c2-2e8f0a4d5b33",
+  "sender": "app-b.net1.relay2",
+  "recipient": "app-a.net1.relay1",
+  "priority": "normal",
+  "kind": "relay.receipt",
+  "content": {},
+  "reference_id": "5c1e5d52-7b0f-4c63-8a47-3d2f6a9b7e22",
+  "created_at": "2026-10-24T12:00:09Z",
+  "attachments": [],
+  "receipt": true
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "UndeliverableReason": {
+      "description": "Why a message cannot be delivered (specification 4.4).",
+      "enum": [
+        "sender_invalid",
+        "loop",
+        "unknown_recipient",
+        "unknown_relay",
+        "relay_unreachable",
+        "recipient_unreachable",
+        "too_large"
+      ],
+      "title": "UndeliverableReason",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Content of ``relay.undeliverable``: reason, recipient and kind of the lost message.",
+  "properties": {
+    "reason": {
+      "$ref": "#/$defs/UndeliverableReason"
+    },
+    "text": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "recipient": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+      "title": "Recipient",
+      "type": "string"
+    },
+    "kind": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+      "title": "Kind",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "text",
+    "recipient",
+    "kind"
+  ],
+  "title": "UndeliverableContent",
+  "type": "object"
+}

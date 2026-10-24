@@ -1,12 +1,14 @@
 [project]
 name = "pipwerk-relaycore"
 version = "0.1.0"
-description = "Message library of pipwerk relay: address, message, envelope with check value and transmission ways as extensions"
+description = "Message library of pipwerk relay: address, message, envelope with check value, transmission ways as extensions and the connector of a component"
 readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [
+    "alembic==1.20.0",
     "pydantic==2.13.5",
+    "sqlalchemy==2.1.5",
 ]
 
 [project.scripts]

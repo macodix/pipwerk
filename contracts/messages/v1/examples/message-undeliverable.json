@@ -1,0 +1,17 @@
+{
+  "id": "a41f6e07-3c2b-4d95-8e18-5b7a9c0d1e44",
+  "sender": "relay.net1.relay1",
+  "recipient": "app-a.net1.relay1",
+  "priority": "normal",
+  "kind": "relay.undeliverable",
+  "content": {
+    "reason": "unknown_recipient",
+    "text": "No component with the name of the recipient is connected to the responsible relay.",
+    "recipient": "app-c.net1.relay2",
+    "kind": "example.request"
+  },
+  "reference_id": "0b0a6f3e-2f1d-4a58-9a52-6a6a1f1c2d11",
+  "created_at": "2026-10-24T12:00:07Z",
+  "attachments": [],
+  "receipt": false
+}

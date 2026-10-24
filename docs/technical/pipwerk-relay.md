@@ -5,8 +5,8 @@
 - status: `draft`
 - stand: 2026-10-24
 - komponenten: `packages/relay-core` (Python-Paket `pipwerk_relaycore`), `contracts/messages/`
-- grundlage: [Spezifikation relay](../../development/relay/specification.md), E1, E4 bis E7, 3.1 bis 3.4, Abschnitte 5, 7 und 8 (Bibliothek); [Plan](../../development/relay/plan.md), Paket `wp01`; Auftrag 01
-- umfang dieses stands: Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel der Verbindung, Schnittstelle „Weg“ und Verzeichnis-Weg `files`. Das Relay (`components/pipwerk-relay`), der Anschluss einer Komponente mit Wiederholungserkennung und Empfangsbestätigung (Auftrag 02) und der Abruf kommen in späteren Aufträgen; sie ergänzen dieses Dokument.
+- grundlage: [Spezifikation relay](../../development/relay/specification.md), E1, E4 bis E7, 3.1 bis 3.5, 3.7, 4.4 (Nachrichtenarten `relay.receipt` und `relay.undeliverable`), Abschnitte 5, 7 und 8 (Bibliothek); [Plan](../../development/relay/plan.md), Paket `wp01`; Aufträge 01 und 02
+- umfang dieses stands: Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel der Verbindung, Schnittstelle „Weg“, Verzeichnis-Weg `files`, den Inhalten der Nachrichtenarten `relay.receipt`, `relay.undeliverable` und `probe.message`, dem Anschluss einer Komponente mit Prüfung, Wiederholungserkennung und Empfangsbestätigung sowie der Datenbank des Anschlusses. Das Relay (`components/pipwerk-relay`) und der Abruf kommen in späteren Aufträgen; sie ergänzen dieses Dokument.
 
 ## 1. Gegenstand
 
@@ -17,11 +17,14 @@
 - den Umschlag mit Prüfwert, der auf jedem Übertragungsweg liegt (Abschnitt 5),
 - den Schlüssel der Verbindung und das Verzeichnis für Geheimnisse (Abschnitt 6),
 - die Schnittstelle „Weg“ und das Laden eines Wegs nach seinem Namen (Abschnitt 7),
-- den Verzeichnis-Weg `files` (Abschnitte 8 und 9).
+- den Verzeichnis-Weg `files` (Abschnitte 8 und 9),
+- die Inhalte der Nachrichtenarten, die die Bibliothek selbst kennt (Abschnitt 10),
+- den Anschluss einer Komponente `Connector`: Senden, Lesen mit Prüfung, Wiederholungen (Abschnitt 11) und Empfangsbestätigung (Abschnitt 12),
+- die Datenbank des Anschlusses (Abschnitt 13).
 
 Die Bibliothek kennt keinen Weg im Code. Sie liest keine Konfiguration und kennt keine festen Pfade, Ports oder Namen: Verzeichnisse, Dateinamen von Schlüsseln, Größen und Namen von Wegen kommen als Parameter oder Konfiguration vom Aufrufer.
 
-Abhängigkeiten zur Laufzeit: Pydantic (Prüfung der Nachricht, des Umschlags und der Angaben eines Wegs). Mehr nicht; alles Übrige ist die Standardbibliothek von Python. Entwicklungsabhängigkeiten: pytest, ruff, mypy, jsonschema (Vergleich der Schemas mit den Modellen) und das Testpaket `pipwerk-relay-testway`.
+Abhängigkeiten zur Laufzeit: Pydantic (Prüfung der Nachricht, des Umschlags und der Angaben eines Wegs), SQLAlchemy und Alembic (Datenbank des Anschlusses, Abschnitt 13; Alembic bringt Mako und MarkupSafe mit). Alles Übrige ist die Standardbibliothek von Python. Entwicklungsabhängigkeiten: pytest, ruff, mypy, jsonschema (Vergleich der Schemas mit den Modellen) und das Testpaket `pipwerk-relay-testway`.
 
 ## 2. Aufbau
 
@@ -35,10 +38,14 @@ Abhängigkeiten zur Laufzeit: Pydantic (Prüfung der Nachricht, des Umschlags un
 | `way` | Schnittstelle `Way` (Version 1), `WaySettings`, `ReceivedEnvelope`, `FaultyEnvelope` |
 | `loader` | Laden eines Wegs über die Einstiegspunkte der Gruppe `pipwerk_relay.ways` |
 | `ways.files` | Verzeichnis-Weg `files` |
+| `contents` | Inhalte von `relay.receipt`, `relay.undeliverable`, `probe.message`; Gründe der Unzustellbarkeit |
+| `connector` | Anschluss einer Komponente: `Connector`, `ConnectorConfig`, `WayConfig`, `Handler`, `PollResult` |
+| `store` | `ConnectorStore`: gesehene Nachrichten-IDs und wartende Bestätigungen |
+| `tables`, `migrate`, `migrations` | Tabellen (SQLAlchemy Core), Migration (Alembic), Versionen der Migration |
 | `schemas` | erzeugt die JSON-Schemas unter `contracts/messages/v1/` aus den Modellen |
 | `errors` | Fehler und Ablehnungsgründe |
 
-Fehler: Alle Fehler der Bibliothek sind Unterklassen von `RelayCoreError`. `AddressError` (zugleich `ValueError`) meldet einen ungültigen Namen oder eine ungültige Adresse, `EnvelopeRejected` einen abgelehnten Umschlag (Abschnitt 5), `KeyHandlingError` mit `SecretsAccessError` und `KeyFileError` die Schlüssel (Abschnitt 6), `WayError` mit seinen Unterklassen die Wege (Abschnitt 7).
+Fehler: Alle Fehler der Bibliothek sind Unterklassen von `RelayCoreError`. `AddressError` (zugleich `ValueError`) meldet einen ungültigen Namen oder eine ungültige Adresse, `EnvelopeRejected` einen abgelehnten Umschlag (Abschnitt 5), `KeyHandlingError` mit `SecretsAccessError` und `KeyFileError` die Schlüssel (Abschnitt 6), `WayError` mit seinen Unterklassen die Wege (Abschnitt 7), `DatabaseMigrationError` eine gescheiterte Migration der Datenbank des Anschlusses (Abschnitt 13).
 
 Die Bibliothek ist synchron. Wer sie in einer Schleife mit mehreren Aufgaben braucht, ruft sie aus einem Thread auf.
 
@@ -61,11 +68,11 @@ Dieselbe Regel gilt für die Namen der beiden Seiten einer Verbindung (`link.fro
 | `content` | ein JSON-Objekt |
 | `created_at` | Zeitpunkt mit Zeitzone UTC (Offset 0); eine Zeit ohne Zeitzone oder mit anderem Offset ist ungültig |
 | `attachments` | bis zu 256 Anlagen, ohne Angabe leer; die Namen unterscheiden sich |
-| `receipt` | ja oder nein, ohne Angabe nein |
+| `receipt` | ja oder nein, ohne Angabe nein; bei den Arten `relay.receipt` und `relay.undeliverable` nie ja |
 
 Anlage (`Attachment`): `name` (1 bis 128 Zeichen aus Buchstaben, Ziffern und `. _ # + -`, nicht mit einem Punkt am Anfang), `size` (Byte, nicht negativ), `sha256` (64 Kleinbuchstaben und Ziffern, hexadezimal). Der Name einer Anlage wird nie als Pfad verwendet; die Dateien des Verzeichnis-Wegs entstehen nur aus Nachrichten-ID und Nummer (Abschnitt 8). `Attachment.of(name, inhalt)` beschreibt eine Datei durch ihre Größe und ihren SHA-256.
 
-Die Priorität und `receipt` trägt die Bibliothek unverändert weiter. Die Regeln der Empfangsbestätigung (Spezifikation 3.7) setzt Auftrag 02 um.
+Die Priorität und `receipt` trägt die Bibliothek unverändert weiter. Eine Nachricht der Art `relay.receipt` oder `relay.undeliverable` mit `receipt` ja ist ungültig (Spezifikation 3.7, „Ausnahmen“): Das Modell lehnt sie ab, und das Schema `message.schema.json` drückt die Regel mit `if`/`then` aus. Grund: Sonst entstünden Bestätigungen über Bestätigungen. Die übrigen Regeln der Empfangsbestätigung stehen in Abschnitt 12.
 
 ## 5. Umschlag und Prüfwert
 
@@ -97,7 +104,7 @@ Dieser Schlüssel gehört den Beispielen und Tests. Er schützt nichts und wird 
 
 Der Körper schreibt nicht gesetzte wahlfreie Felder als `null` (`reference_id`, `stored`); beim Lesen sind fehlende Felder und `null` gleich.
 
-**Ablehnungsgründe** (`RejectionReason`, Werte als Text): `malformed`, `unsupported_format`, `too_large`, `unknown_link`, `wrong_recipient`, `bad_mac`, `bad_body`, `stored_not_supported`, `attachment_missing`, `attachment_unexpected`, `attachment_size`, `attachment_hash`. Der Text einer Ablehnung (`EnvelopeRejected`) nennt nur den Grund, nie Inhalt, Schlüssel oder Pfade.
+**Ablehnungsgründe** (`RejectionReason`, Werte als Text): `malformed`, `unsupported_format`, `too_large`, `unknown_link`, `wrong_recipient`, `bad_mac`, `bad_body`, `bad_content`, `stored_not_supported`, `attachment_missing`, `attachment_unexpected`, `attachment_size`, `attachment_hash`. `bad_content` meldet der Anschluss (Abschnitt 11), wenn der Inhalt einer Nachricht einer Art, die die Bibliothek kennt, nicht zu deren Schema passt. Der Text einer Ablehnung (`EnvelopeRejected`) nennt nur den Grund, nie Inhalt, Schlüssel oder Pfade.
 
 ## 6. Schlüssel der Verbindung und Verzeichnis für Geheimnisse
 
@@ -202,7 +209,115 @@ Der Weg macht für Netzlaufwerke (SMB, NFS) folgende Annahmen. Sie gelten für j
 
 Die Annahmen 1 bis 3 sind die Voraussetzung dafür, dass ein Leser nie einen halben Umschlag sieht; belegt sind sie auf einem lokalen Dateisystem durch die Tests. Ein Lauf auf einem Netzlaufwerk gehört zur Testumgebung des Pakets (Spezifikation 8, Durchgang 1).
 
-## 10. Sicherheit der Teile
+## 10. Inhalte der Nachrichtenarten
+
+Für die Arten, die die Bibliothek selbst sendet oder kennt, gibt es ein Modell des Inhalts (`pipwerk_relaycore.contents`, `CONTENT_MODELS`) und ein Schema unter `contracts/messages/v1/` (`<Art>.schema.json`). Die Modelle sind streng, zusätzliche Felder werden abgelehnt. Alle anderen Arten (zum Beispiel `fetch.request`) prüft die Bibliothek nicht; das tut die Komponente, die sie definiert.
+
+| Art | Inhalt | Schema |
+|---|---|---|
+| `relay.receipt` | leer (`{}`); die Bezug-Nachrichten-ID nennt die bestätigte Nachricht | `relay.receipt.schema.json` |
+| `relay.undeliverable` | `reason` (Grund), `text` (fester Text zum Grund, 1 bis 200 Zeichen), `recipient` (Adresse des Adressaten der unzustellbaren Nachricht), `kind` (Art dieser Nachricht) | `relay.undeliverable.schema.json` |
+| `probe.message` | `text` (1 bis 1000 Zeichen) | `probe.message.schema.json` |
+
+Die Konstanten `KIND_RECEIPT`, `KIND_UNDELIVERABLE` und `KIND_PROBE` nennen die Arten. `is_valid_content(art, inhalt)` prüft einen Inhalt gegen sein Modell; eine unbekannte Art ist immer gültig.
+
+**Gründe der Unzustellbarkeit** (`UndeliverableReason`, Spezifikation 4.4). Jeder Grund hat einen festen Text (`reason.text`, englisch, höchstens 200 Zeichen), den das Relay in `text` einträgt; `UndeliverableContent.of(grund, adressat, art)` bildet den Inhalt, `to_content()` liefert das JSON-Objekt für eine Nachricht. Die Texte sind eine Hilfe für die Anzeige; maßgeblich ist die Kennung.
+
+| Grund | fester Text |
+|---|---|
+| `sender_invalid` | The sender address does not belong to the component that sent the message. |
+| `loop` | The message went around in a circle between relays. |
+| `unknown_recipient` | No component with the name of the recipient is connected to the responsible relay. |
+| `unknown_relay` | The responsible relay of the recipient is unknown and no standard relay is set. |
+| `relay_unreachable` | The next relay could not be reached in time. |
+| `recipient_unreachable` | The recipient could not be reached in time. |
+| `too_large` | The message or an attachment is too large for a way. |
+
+## 11. Anschluss einer Komponente
+
+Der Anschluss (`Connector`, Modul `connector`; Spezifikation 3.5, E4) ist das, was eine Komponente zum Senden und Empfangen von Nachrichten benutzt. Eine Komponente hat einen Anschluss und ruft `send` und `poll` nicht gleichzeitig aus mehreren Threads auf; die Bibliothek ist synchron (Abschnitt 2).
+
+**Angaben** (`ConnectorConfig`). Woher die Komponente sie nimmt, legt sie selbst fest (Spezifikation 3.5).
+
+| Angabe | Bedeutung |
+|---|---|
+| `address` | eigene Adresse (`Address`) |
+| `key` | Schlüssel der Verbindung mit dem Relay (`ConnectionKey`, Abschnitt 6) |
+| `target` | `WayConfig(name, angaben)`: Weg und eigene Angaben des Ziels, wo das Relay liest, was die Komponente sendet |
+| `inbox` | `WayConfig(name, angaben)`: Weg und eigene Angaben des Eingangs, wo das Relay ablegt, was für die Komponente bestimmt ist |
+| `database` | Pfad der SQLite-Datei des Anschlusses (Abschnitt 13); das Verzeichnis muss bestehen |
+| `relay_link` | Name der Relay-Seite der Verbindung, `<pipwerk-Netz>.<Relay>`; ohne Angabe das Relay der Adresse |
+| `seen_for` | Frist, in der eine Nachrichten-ID als gesehen gilt (Voreinstellung 7 Tage, `DEFAULT_SEEN_FOR`) |
+| `receipt_timeout` | Frist auf eine Empfangsbestätigung, wenn die Nachricht keine eigene nennt (Voreinstellung 1 Stunde, `DEFAULT_RECEIPT_TIMEOUT`) |
+| `attachment_grace` | Schonfrist für Umschläge mit fehlender oder nicht stimmender Anlage (Voreinstellung 5 Minuten, `DEFAULT_ATTACHMENT_GRACE`) |
+
+Die Namen der beiden Seiten der Verbindung sind der Name der Komponente (`address.component`) und `relay_link`. Der Anschluss kennt keinen Weg im Code: `target.name` und `inbox.name` werden über `load_way` geladen (Abschnitt 7), die Angaben reicht er unverändert an den Weg weiter. Ein unbekannter Weg oder fehlerhafte Angaben (`WayLoadError`, `WaySettingsError`) verhindern das Öffnen; vorher wird nichts angelegt. Die Datenbank wird beim Öffnen migriert (Abschnitt 13). `close()` oder `with Connector(…) as anschluss` gibt sie frei. Der Parameter `clock` (nur für Tests) ersetzt die Uhr.
+
+**Senden** (`send(adressat, art, inhalt, attachments=…, priority=…, reference_id=…, receipt=…, receipt_timeout=…)`). Der Anschluss vergibt die Nachrichten-ID (UUID) und den Zeitpunkt, setzt die eigene Adresse als Absender, beschreibt die Anlagen (Name, Größe, SHA-256), packt alles mit `hops` leer in einen Umschlag, schützt ihn mit dem Schlüssel (`from` = Name der Komponente, `to` = `relay_link`) und übergibt ihn dem Weg des Ziels. Die Rückgabe ist die gesendete `Message`. Fehler: ein ungültiger Wert (`pydantic.ValidationError`, zugleich `ValueError`: Adresse, Priorität, Art, Anlagenname, doppelter Anlagenname, `receipt` bei `relay.receipt`/`relay.undeliverable`), ein Inhalt, der nicht zur Art passt (`ValueError`), eine Frist ohne `receipt` oder eine Frist, die nicht positiv ist (`ValueError`), und die Fehler des Wegs (`WayUnavailableError`, `WayTooLargeError`, `WayRefusedError`). Bei einem Fehler des Wegs steht keine Nachricht im Ziel und nichts wartet auf eine Bestätigung. Unverändert gilt: Senden braucht kein Relay in Betrieb; der Umschlag liegt im Ziel, bis das Relay ihn liest.
+
+**Lesen** (`poll(handler, limit=100)`). Ein Durchlauf liest den Eingang einmal und tut für jeden Umschlag der Reihe nach:
+
+1. Ist der Umschlag fehlerhaft (`FaultyEnvelope` des Wegs) und ist der Grund eine Anlage (`attachment_missing`, `attachment_size`, `attachment_hash`), bleibt er im Eingang, solange sein Zeitpunkt (`modified_at`) weniger als die Schonfrist zurückliegt; das kann eine Verzögerung des Dateisystems sein (Abschnitt 9, Annahme 3). Danach und bei jedem anderen Grund wird er verworfen.
+2. Prüfung, in dieser Reihenfolge: Prüfwert und Verbindung (`Envelope.open` mit dem Schlüssel; `bad_mac`, `unknown_link`), Umschlag für die eigene Seite (`wrong_recipient`), Körper (`bad_body`, darin auch die Regel zu `receipt` aus Abschnitt 4), Größe und SHA-256 jeder Anlage (`attachment_*`), Adressat der Nachricht ist die eigene Adresse (`wrong_recipient`), Inhalt passt zur Art (`bad_content`). Was nicht besteht, wird verworfen: Der Umschlag wird quittiert (`acknowledge`), im Protokoll steht eine Zeile mit der Kennung der Datei und dem Grund, ohne Inhalt (req-relay-010). Es geht keine Meldung an den Absender (Spezifikation 4.1 Schritt 1).
+3. Ist die Nachrichten-ID innerhalb der Frist schon gesehen, ist es eine Wiederholung (E4): Sie wird nicht übergeben, sondern quittiert; verlangt sie eine Bestätigung, wird diese noch einmal geschickt (Abschnitt 12).
+4. Eine Nachricht `relay.receipt` geht nicht an die Komponente, sondern wird als Bestätigung behandelt (Abschnitt 12).
+5. Jede andere Nachricht übergibt der Anschluss mit `handler.store(ReceivedMessage)` an die Komponente. `ReceivedMessage` hat `message`, `hops` und `attachments` (Inhalte in der Reihenfolge von `message.attachments`) und `files` (Anlagen nach Namen). Kehrt `store` zurück, hat die Komponente die Nachricht gespeichert. Löst `store` eine Ausnahme aus (`Exception`), vermerkt der Anschluss das im Protokoll (Kennung, Art, Absender und Name der Ausnahme, nie deren Text), lässt den Umschlag im Eingang und die ID ungesehen; der nächste Durchlauf übergibt die Nachricht erneut, auch nach einem Neustart. Endet die Komponente (zum Beispiel durch `KeyboardInterrupt` oder einen Absturz), geschieht dasselbe.
+6. Nach `store`: Handelt es sich um `relay.undeliverable` mit Bezug auf eine wartende Nachricht, endet deren Warten (Abschnitt 12). Dann wird die ID als gesehen vermerkt, bei `receipt` die Bestätigung geschickt und der Umschlag quittiert.
+
+Danach meldet der Anschluss die Nachrichten, deren Frist auf eine Bestätigung abgelaufen ist (Abschnitt 12). Das Ergebnis ist ein `PollResult` mit Zählern (`delivered`, `repeated`, `dropped`, `postponed`, `failed`, `receipts`, `missing_receipts`) und `available`. Ist der Eingang nicht erreichbar (`WayUnavailableError`), wirft `poll` nichts: Es vermerkt den Fehler im Protokoll, setzt `available` auf falsch und liest beim nächsten Aufruf erneut (Spezifikation 8, Störung 2). Der Aufrufer legt die Abstände der Durchläufe fest.
+
+**Komponente** (`Handler`). `store(received)` ist Pflicht. `receipt_arrived(ReceiptArrived)` und `receipt_missing(ReceiptMissing)` sind wahlweise und tun ohne Überschreiben nichts. Löst eine davon eine Ausnahme aus, gilt das als nicht entgegengenommen: Die Bestätigung bleibt im Eingang beziehungsweise der Eintrag in der Datenbank, und der nächste Durchlauf versucht es erneut.
+
+**Protokoll.** Der Anschluss schreibt über `logging` unter dem Namen `pipwerk_relaycore.connector`: gesendet, zugestellt, Wiederholung, Bestätigung angekommen, Bestätigung fehlt, verworfen, Fehler der Komponente. Jede Zeile nennt Nachrichten-ID, Art, Absender und Adressat oder bei einem verworfenen Umschlag die Kennung der Datei und den Grund; nie Inhalt, Anlagen, Schlüssel oder Pfade. Nachrichten-ID und Absender eines verworfenen Umschlags stehen nicht im Protokoll, weil sie vor der Prüfung nicht vertrauenswürdig sind. Wohin die Zeilen gehen, bestimmt die Komponente mit der Konfiguration von `logging`.
+
+**Quittieren.** Scheitert das Quittieren (`WayError`), vermerkt der Anschluss es im Protokoll; der Umschlag bleibt im Eingang und kommt im nächsten Durchlauf als Wiederholung oder wird wieder verworfen.
+
+## 12. Empfangsbestätigung
+
+Die Empfangsbestätigung (Spezifikation 3.7, req-relay-013) ist eine Aufgabe des Anschlusses auf beiden Seiten.
+
+**Absender.** `send(…, receipt=True)` setzt `receipt` in der Nachricht und legt die Nachricht mit Frist in die Datenbank (Tabelle `relaycore_waiting`, Abschnitt 13), bevor der Umschlag übergeben wird. Die Frist ist `receipt_timeout` der Angabe oder die Frist der Nachricht; sie steht nicht in der Nachricht. Scheitert die Übergabe, wird der Eintrag wieder entfernt.
+
+**Empfänger.** Hat die Komponente eine Nachricht mit `receipt` gespeichert (`store` kehrt zurück), schickt der Anschluss ohne weiteres Zutun eine Nachricht `relay.receipt`: Absender ist die eigene Adresse, Adressat der Absender der bestätigten Nachricht, Bezug-Nachrichten-ID deren ID, Inhalt leer, Priorität wie die bestätigte Nachricht, `receipt` nein, ohne Anlagen.
+
+**Entscheidung des Entwicklers (Reihenfolge).** Die Spezifikation nennt die Reihenfolge Bestätigung, dann Quittieren und Vermerken als gesehen. Der Anschluss vermerkt die ID als gesehen, bevor er die Bestätigung schickt, und quittiert erst nach der Bestätigung. Scheitert das Senden der Bestätigung (zum Beispiel weil das Ziel nicht erreichbar ist), bleibt der Umschlag im Eingang. Der nächste Durchlauf findet ihn als Wiederholung und schickt die Bestätigung, ohne die Nachricht ein zweites Mal zu übergeben. Wäre die ID erst nach der Bestätigung vermerkt, würde die Komponente die Nachricht bei jedem Fehler beim Senden der Bestätigung noch einmal bekommen. Das Ergebnis für Absender und Komponente ist sonst gleich: keine Bestätigung ohne gespeicherte Nachricht, kein Verlust, keine doppelte Übergabe.
+
+**Fälle.**
+
+| Fall | Verhalten |
+|---|---|
+| Komponente meldet einen Fehler oder endet vor dem Speichern | keine Bestätigung, Umschlag bleibt, ID nicht gesehen, erneute Übergabe beim nächsten Durchlauf (auch nach Neustart), Fehler im Protokoll |
+| Wiederholung einer Nachricht mit `receipt` | erneute Bestätigung, keine erneute Übergabe |
+| Wiederholung einer Nachricht ohne `receipt` | keine Bestätigung, keine Übergabe |
+| Bestätigung kommt an, Absender ist der Adressat der wartenden Nachricht | `handler.receipt_arrived(ReceiptArrived)`, Eintrag entfernt, ID gesehen, quittiert |
+| Bestätigung von einer anderen Adresse, ohne wartende Nachricht (auch eine späte nach Ablauf der Frist) oder ohne Bezug | verworfen: nur Protokoll (`receipt dropped`), quittiert; ein Eintrag bleibt bestehen |
+| `relay.undeliverable` mit Bezug auf eine wartende Nachricht | geht wie jede Nachricht an `handler.store` (req-relay-008); danach endet das Warten, es folgt keine Meldung über die abgelaufene Frist |
+| `relay.undeliverable` mit Bezug auf eine Nachricht ohne Bestätigung | geht an `handler.store`, sonst nichts |
+| Frist abgelaufen | `handler.receipt_missing(ReceiptMissing)` mit Nachrichten-ID, Art, Adressat, Zeitpunkt des Sendens und Frist, danach wird der Eintrag entfernt; die Meldung kommt einmal |
+| Neustart des Absenders | die Einträge liegen in der Datenbank; eine bereits abgelaufene Frist wird beim ersten Durchlauf gemeldet |
+| Bestätigung liegt im Eingang, während die Frist abläuft | die Bestätigung zählt: der Anschluss liest den Eingang vor der Prüfung der Fristen |
+| `relay.receipt` oder `relay.undeliverable` mit `receipt` ja | ungültig (Abschnitt 4), beim Senden `ValueError`, beim Lesen verworfen (`bad_body`) |
+
+Beim Absender kommt eine Bestätigung nur an, wenn die Komponente `poll` aufruft. Eine Anfrage mit Antwort braucht keine Bestätigung: Die Antwort ist die Bestätigung (Spezifikation 3.7); der Abruf setzt `receipt` nie.
+
+## 13. Datenbank des Anschlusses
+
+Zwei Tabellen in einer SQLite-Datei (SQLAlchemy Core, `tables`), deren Pfad die Komponente in `database` nennt:
+
+| Tabelle | Inhalt |
+|---|---|
+| `relaycore_seen` | `message_id` (Schlüssel), `seen_at` (UTC): die Nachrichten-IDs, die die Komponente gespeichert hat |
+| `relaycore_waiting` | `message_id` (Schlüssel), `kind`, `recipient`, `sent_at`, `deadline` (UTC): gesendete Nachrichten mit `receipt`, deren Bestätigung aussteht |
+
+Zeitpunkte liegen als UTC ohne Zeitzone und kommen als UTC mit Zeitzone zurück. Einträge in `relaycore_seen`, die älter sind als `seen_for`, werden zu Beginn jedes Durchlaufs entfernt; eine ID, deren Eintrag abgelaufen ist, gilt als neu und wird bei der nächsten Speicherung ersetzt. Alle Tabellen beginnen mit `relaycore_`, damit die Komponente die Datenbank mit eigenen Tabellen teilen kann; die Version der Migrationen steht in der eigenen Tabelle `relaycore_alembic_version`.
+
+**Migration.** `migrate_database(engine)` bringt die Datenbank auf den neuesten Aufbau (Alembic, Version `0001`); der Anschluss ruft es beim Öffnen auf. Alles läuft in einer Transaktion: Scheitert eine Migration, wird zurückgerollt und `DatabaseMigrationError` geworfen (ohne Pfad im Text). Unter SQLite wird die Transaktionssteuerung des Treibers für die eine Verbindung abgeschaltet, und die Migration führt `BEGIN IMMEDIATE`, `COMMIT` und `ROLLBACK` selbst aus, weil `sqlite3` DDL sonst sofort bestätigt; `BEGIN IMMEDIATE` nimmt die Schreibsperre zuerst, ein zweiter Prozess wartet. Eine Datenbank mit einer neueren Version als der Code kennt, wird abgelehnt (`DatabaseMigrationError`) und nicht verändert. Die Migration läuft auch auf einer Datenbank mit fremden Tabellen und einer fremden Tabelle `alembic_version`; beide bleiben unberührt. Offline-Modus (SQL-Skripte) ist nicht vorgesehen.
+
+**Ort der Datei.** Die Datenbank gehört auf einen lokalen Datenträger des Rechners der Komponente, nicht auf ein Netzlaufwerk: Die Sperren von SQLite sind über SMB und NFS nicht verlässlich. Ein Zugriff gleichzeitig kommt nur von der einen Komponente. Die Wartezeit bei einer gesperrten Datenbank ist 30 Sekunden.
+
+**Sicherung.** Die Datei enthält keine Geheimnisse und keinen Inhalt von Nachrichten, nur IDs, Arten, Adressen und Zeitpunkte. Geht sie verloren, kann eine Nachricht, deren ID vergessen wurde, noch einmal übergeben werden, und wartende Bestätigungen werden nicht mehr gemeldet.
+
+## 14. Sicherheit der Teile
 
 Zuordnung zu den Sicherheitsregeln ([Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md), 8.2, 8.3) und zu BSI-Grundschutz und OWASP ASVS, soweit sie auf die Bibliothek anwendbar sind:
 
@@ -216,20 +331,36 @@ Zuordnung zu den Sicherheitsregeln ([Entwicklungs-, Test- und Sicherheitsregeln]
 | Fehlerbehandlung ohne Einzelheiten (Regel 8.2 Nr. 8; ASVS V7) | Fehler nennen Grund, Eintrag oder Dateiname, nie Wert, Pfad oder Inhalt | `test_envelope`, `test_way_loading`, `test_files_way` |
 | Begrenzung von Ressourcen (OWASP API4) | Höchstgrößen von Umschlag und Anlage, Zahl der Anlagen (256) und der Einträge von `hops` (64), `limit` beim Lesen | `test_files_way`, `test_message` |
 | Erweiterungen (Regel 12; BSI APP.7) | Wege nur über Einstiegspunkte, Name doppelt: kein Laden, Fehler ohne Einzelheiten, Version der Schnittstelle geprüft | `test_way_loading` |
+| Prüfung vor Verarbeitung (req-relay-010; ASVS V5) | der Anschluss übergibt einer Komponente nichts, bevor Prüfwert, Verbindung, Empfänger, Anlagen und Inhalt geprüft sind; Verworfenes steht ohne Inhalt im Protokoll, der Absender erhält keine Meldung | `test_connector` |
+| Wiederholung (E4) | gesehene Nachrichten-IDs in der Datenbank, mit Frist, über Neustarts | `test_connector`, `test_receipt` |
+| Protokollierung ohne Geheimnisse (Regel 8.3 Nr. 4; ASVS V7) | Zeilen mit Kennungen, Art, Adressen, Grund; Fehler der Komponente nur mit dem Namen der Ausnahme | `test_connector`, `test_receipt` |
+| Datenbank (Regel 9: SQLAlchemy, Alembic; Regel 8.2 Nr. 10) | nur Ausdrücke von SQLAlchemy Core mit gebundenen Werten, kein zusammengesetztes SQL; Migration alles oder nichts, getestet an einer Testdatenbank | `test_migrations`, `test_connector` |
+| Vermeiden von Bestätigungen über Bestätigungen | `relay.receipt` und `relay.undeliverable` mit `receipt` ja ungültig in Modell und Schema | `test_receipt`, `test_contents`, `test_connector` |
 
-Abweichungen und Grenzen: Die Windows-Prüfung der Zugriffsrechte ist nicht ausgeführt (Abschnitt 6). Mitlesen auf dem Weg verhindert die Bibliothek nicht (Verschlüsselung ist offen, req-relay-011). Ein Schutz von Absender zu Empfänger über alle Relays gehört nicht zum Umfang (Spezifikation E5).
+Abweichungen und Grenzen: Die Windows-Prüfung der Zugriffsrechte ist nicht ausgeführt (Abschnitt 6). Mitlesen auf dem Weg verhindert die Bibliothek nicht (Verschlüsselung ist offen, req-relay-011). Ein Schutz von Absender zu Empfänger über alle Relays gehört nicht zum Umfang (Spezifikation E5). Die Datenbank des Anschlusses ist eine SQLite-Datei ohne Verschlüsselung; sie enthält nur IDs, Arten, Adressen und Zeitpunkte (Abschnitt 13).
 
-Neue Abhängigkeiten (Regel 12): keine. Pydantic 2.13.5 (Lizenz MIT, gepflegt) war schon Abhängigkeit der Bibliotheken `pipwerk_domain` und `pipwerk_marketdata`.
+Abhängigkeiten (Regel 12). Pydantic 2.13.5 (Lizenz MIT, gepflegt) war schon Abhängigkeit der Bibliotheken `pipwerk_domain` und `pipwerk_marketdata`. Neu mit Auftrag 02: SQLAlchemy 2.1.5 und Alembic 1.20.0, dazu Mako 1.4.3 und MarkupSafe 3.0.4 (von Alembic verlangt). Zweck: die Datenbank des Anschlusses nach Regel 9 und Abschnitt 3 der Entwicklungsregeln (SQLAlchemy für die Speicherung, Alembic für versionierte Migration, Spezifikation E6). Lizenz: SQLAlchemy MIT, Alembic MIT, Mako MIT, MarkupSafe BSD-3-Clause; alle vier sind mit GPL-3.0 vereinbar. Wartungszustand: alle vier werden gepflegt; SQLAlchemy und Alembic verwenden bereits `pipwerk_marketdata`, pipwerk Studio und pipwerk replay. Sicherheit: `scripts/check --with-audit` prüft die gesperrten Versionen auf bekannte Schwachstellen. Kopplung: SQLAlchemy erscheint nur in `tables`, `store`, `migrate` und beim Erzeugen der Verbindung im Anschluss; die öffentlichen Typen (`WaitingMessage`, `ReceiptMissing` und so weiter) sind einfache Datenklassen, keine ORM-Klassen. Die Versionen sind in `pyproject.toml` und `uv.lock` festgeschrieben.
 
-## 11. Schemas und Beispiele
+## 15. Schemas und Beispiele
 
-`contracts/messages/v1/` enthält `message.schema.json` und `envelope.schema.json` (JSON Schema 2020-12), erzeugt aus den Modellen mit `pipwerk-relaycore-schemas <Verzeichnis>`, Beispiele unter `examples/` und ungültige Beispiele unter `examples/invalid/`; beschrieben in [contracts/messages/README.md](../../contracts/messages/README.md). `tests/test_schemas.py` prüft, dass die Dateien genau vom Modell erzeugt werden, dass gültige und ungültige Beispiele von Schema und Modell gleich beurteilt werden und dass Schema und Modell in einer Reihe von Grenzfällen übereinstimmen. Regeln, die ein Schema nicht ausdrücken kann (verschiedene Namen der Anlagen, Zeit in UTC, Form eines Zeitpunkts), prüft nur das Modell.
+`contracts/messages/v1/` enthält `message.schema.json`, `envelope.schema.json` und je ein Schema des Inhalts der Nachrichtenarten `relay.receipt`, `relay.undeliverable` und `probe.message` (JSON Schema 2020-12), erzeugt aus den Modellen mit `pipwerk-relaycore-schemas <Verzeichnis>`, Beispiele unter `examples/` (Nachrichten `message-*.json`, Inhalte `content-*.json`, Umschläge `envelope*.json`) und ungültige Beispiele unter `examples/invalid/`; beschrieben in [contracts/messages/README.md](../../contracts/messages/README.md). `tests/test_schemas.py` prüft, dass die Dateien genau vom Modell erzeugt werden, dass gültige und ungültige Beispiele von Schema und Modell gleich beurteilt werden und dass Schema und Modell in einer Reihe von Grenzfällen übereinstimmen; `tests/test_contents.py` prüft dasselbe für die Inhalte der Nachrichtenarten und dass die Beispielnachrichten zum Inhaltsschema ihrer Art passen. Regeln, die ein Schema nicht ausdrücken kann (verschiedene Namen der Anlagen, Zeit in UTC, Form eines Zeitpunkts), prüft nur das Modell.
 
-## 12. Prüfskript
+## 16. Prüfskript
 
 `packages/relay-core/scripts/check [--with-audit]` führt auf dem Arbeitsverzeichnis, zu dem das Skript gehört, nacheinander aus: `uv sync --frozen`, `pytest`, `ruff check`, `ruff format --check`, `mypy`, mit `--with-audit` zusätzlich `pip-audit`. Es endet mit Exitcode 0, nur wenn alle Prüfungen bestehen. Es enthält keine festen Pfade, Ports oder Rechnernamen und lässt sich aus jedem Verzeichnis aufrufen.
 
-## 13. Tests
+## 17. Tests
+
+Die Tests des Anschlusses (`tests/network.py`) bilden ein Netz mit zwei Komponenten nach: Jede hat zwei Verzeichnisse (Ziel und Eingang) und einen Anschluss mit dem Weg `files`; dazwischen liegen zwei Schritte, die ein Relay nachbilden (lesen, Prüfwert prüfen, das eigene Relay in `hops` eintragen, für die nächste Verbindung neu packen), und ein Verzeichnis zwischen den Relays. Die Uhr ist eine Uhr des Tests, die der Test vorstellt.
+
+| Datei | Prüft |
+|---|---|
+| `test_connector.py` | Anschluss: Senden und Lesen mit Anlagen über zwei Relays und zurück, Wiederholung (auch nach Neustart, bei anderer Zahl von `hops`, nach Ablauf der Frist), gefälschte und nicht passende Umschläge (falscher Schlüssel, unbekannte Seite, falscher Empfänger, `receipt` bei `relay.receipt`, Inhalt zur Art), kaputte Datei, veränderte und verspätete Anlage mit Schonfrist, Fehler der Komponente, nicht erreichbarer Eingang und Ziel, Höchstgröße des Wegs, Prüfung beim Senden, Angaben |
+| `test_receipt.py` | Empfangsbestätigung: nach dem Speichern, mit Bezug und Priorität, ohne Wunsch keine, Wiederholung mit zweiter Bestätigung ohne zweite Übergabe, Bestätigung, die nicht gesendet werden kann, Frist (Voreinstellung, eigene Frist, Neustart, späte Bestätigung, Komponente läuft verspätet), `relay.undeliverable` beendet das Warten, Bestätigung von fremder Adresse und ohne wartende Nachricht, Ausnahme der Komponente |
+| `test_contents.py` | Inhalte der Nachrichtenarten: Modelle, Schemas, Beispiele, feste Texte der Gründe |
+| `test_migrations.py` | Migration: leere Datenbank, Wiederholung, fremde Tabellen, Gleichheit mit den Tabellen, neuere Version, Rücknahme |
+
+Die übrigen Dateien aus Auftrag 01:
 
 | Datei | Prüft |
 |---|---|
@@ -246,4 +377,5 @@ Neue Abhängigkeiten (Regel 12): keine. Pydantic 2.13.5 (Lizenz MIT, gepflegt) w
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-24 | Auftrag 02: Anschluss einer Komponente (Abschnitt 11), Empfangsbestätigung (12), Datenbank des Anschlusses mit Migration (13), Inhalte der Nachrichtenarten `relay.receipt`, `relay.undeliverable`, `probe.message` (10), Regel zu `receipt` in der Nachricht (4), Ablehnungsgrund `bad_content` (5), neue Abhängigkeiten SQLAlchemy und Alembic (14), Schemas und Beispiele (15), Tests (17). Abschnitte 10 bis 13 der Fassung von Auftrag 01 tragen jetzt die Nummern 14 bis 17. |
 | 2026-10-24 | Erstfassung (Vorhaben `relay`, Paket `wp01`, Auftrag 01): Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel, Schnittstelle „Weg“, Verzeichnis-Weg. |
