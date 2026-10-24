@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Content of ``fetch.request`` (specification relay 6.2).",
+  "properties": {
+    "broker": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+      "title": "Broker",
+      "type": "string"
+    },
+    "symbol": {
+      "pattern": "^[^\\x00-\\x1f\\x7f]{1,64}$",
+      "title": "Symbol",
+      "type": "string"
+    },
+    "instrument": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._#+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instrument"
+    },
+    "time_units": {
+      "items": {
+        "enum": [
+          "M1",
+          "M2",
+          "M3",
+          "M4",
+          "M5",
+          "M6",
+          "M10",
+          "M12",
+          "M15",
+          "M20",
+          "M30",
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H6",
+          "H8",
+          "H12",
+          "D1",
+          "W1",
+          "MN1"
+        ],
+        "type": "string"
+      },
+      "maxItems": 21,
+      "title": "Time Units",
+      "type": "array"
+    },
+    "ticks": {
+      "title": "Ticks",
+      "type": "boolean"
+    },
+    "from": {
+      "examples": [
+        "2026-01-05T00:00:00Z"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "title": "From",
+      "type": "string"
+    },
+    "to": {
+      "examples": [
+        "2026-01-05T00:00:00Z"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "title": "To",
+      "type": "string"
+    }
+  },
+  "required": [
+    "broker",
+    "symbol",
+    "time_units",
+    "ticks",
+    "from",
+    "to"
+  ],
+  "title": "FetchRequestContent",
+  "type": "object"
+}

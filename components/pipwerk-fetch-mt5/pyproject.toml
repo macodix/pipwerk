@@ -1,10 +1,11 @@
 [project]
 name = "pipwerk-fetch-mt5"
 version = "0.1.0.dev0"
-description = "pipwerk-fetch-mt5: command line program that writes historical market data from MetaTrader 5 as files for the import"
+description = "pipwerk-fetch-mt5: program that writes historical market data from MetaTrader 5 as files for the import, on the command line and as a component of pipwerk relay"
 license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [
+    "pipwerk-relaycore==0.1.0",
     "pydantic==2.13.5",
     "tzdata>=2025.2",
 ]
@@ -20,6 +21,9 @@ mt5 = [
 pipwerk-fetch-mt5 = "pipwerk_fetch_mt5.cli:main"
 
 [tool.uv.sources]
+# The library of pipwerk relay: the commands serve and request use it. The call on the command
+# line does not load it.
+pipwerk-relaycore = { path = "../../packages/relay-core", editable = true }
 # Only for the tests: the files the program writes must be importable with the library.
 pipwerk-marketdata = { path = "../../packages/market-data", editable = true }
 

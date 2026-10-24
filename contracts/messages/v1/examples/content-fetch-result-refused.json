@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "failed": [],
+  "error": {
+    "code": "broker_mismatch",
+    "text": "Die Anfrage nennt einen anderen Broker als den, an dem MetaTrader 5 angemeldet ist"
+  }
+}
