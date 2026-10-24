@@ -7,7 +7,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from pipwerk_relaycore import ConnectionKey
+from pipwerk_relaycore.ways import files as files_module
 
 from tests.support import Site, World, make_message, names, place
 
@@ -144,6 +146,99 @@ def test_a_waiting_envelope_is_dropped_after_the_grace_period(world: World) -> N
     world.clock.advance(seconds=100)  # 200 s in all: still within the 300 s
     assert site.relay.cycle().postponed == 1
     world.clock.advance(seconds=200)
+    assert site.relay.cycle().dropped == 1
+    assert names(site.inbox) == set()
+
+
+def watch_attachments(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """The names of the attachment files that the way opens for reading."""
+    real = files_module._read_file
+    opened: list[str] = []
+
+    def record(path: Path, limit: int) -> bytes:
+        if path.name.endswith(".att"):
+            opened.append(path.name)
+        return real(path, limit)
+
+    monkeypatch.setattr(files_module, "_read_file", record)
+    return opened
+
+
+def test_no_attachment_is_opened_for_an_envelope_without_a_valid_check_value(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    site = world.site("r1", components=["app-a"])
+    world.start()
+    files = [(f"f{number}", b"x" * 1000) for number in range(5)]
+    message = make_message("app-a.net1.r1", "app-a.net1.r1", attachments=files)
+    place(
+        site.inbox,
+        message,
+        ConnectionKey.generate(),  # not the key of the connection
+        sender="app-a",
+        recipient=site.own,
+        attachments=[content for _, content in files],
+    )
+    opened = watch_attachments(monkeypatch)
+    result = site.relay.cycle()
+    assert (result.dropped, result.accepted) == (1, 0)
+    assert opened == []
+    assert names(site.inbox) == set()
+
+
+def test_no_attachment_is_opened_for_an_envelope_from_an_unknown_side(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    site = world.site("r1", components=["app-a"])
+    world.start()
+    message = make_message("app-a.net1.r1", "app-a.net1.r1", attachments=[("a", b"1")])
+    place(
+        site.inbox,
+        message,
+        ConnectionKey.generate(),
+        sender="stranger",
+        recipient=site.own,
+        attachments=[b"1"],
+    )
+    opened = watch_attachments(monkeypatch)
+    assert site.relay.cycle().dropped == 1
+    assert opened == []
+
+
+def test_no_attachment_is_opened_for_a_repetition(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    site = world.site("r1", components=["app-a", "app-b"])
+    world.start()
+    key = site.secrets.load_key("comp-app-a")
+    message = make_message("app-a.net1.r1", "app-b.net1.r1", attachments=[("a", b"1")])
+    place(site.inbox, message, key, sender="app-a", recipient=site.own, attachments=[b"1"])
+    assert site.relay.cycle().accepted == 1
+    place(site.inbox, message, key, sender="app-a", recipient=site.own, attachments=[b"1"])
+    opened = watch_attachments(monkeypatch)
+    assert site.relay.cycle().repeated == 1
+    assert opened == []
+
+
+def test_an_attachment_that_can_never_fit_is_not_opened(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first, _ = blocked_pair(world, max_attachment_storage_bytes=100)
+    first.components["app-a"].send("app-b.net1.r2", attachments=[("f", b"x" * 101)])
+    opened = watch_attachments(monkeypatch)
+    assert first.relay.cycle().dropped == 1
+    assert opened == []
+
+
+def test_the_grace_period_runs_out_for_a_change_time_in_the_future(world: World) -> None:
+    site = world.site("r1", components=["app-a"])
+    world.start()
+    key = site.secrets.load_key("comp-app-a")
+    faulty(site, key, -30 * 86400)  # the change time is 30 days ahead
+    assert site.relay.cycle().postponed == 1
+    world.clock.advance(seconds=200)
+    assert site.relay.cycle().postponed == 1
+    world.clock.advance(seconds=200)  # more than the 300 s since the first sight
     assert site.relay.cycle().dropped == 1
     assert names(site.inbox) == set()
 

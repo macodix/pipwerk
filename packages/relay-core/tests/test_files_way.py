@@ -74,7 +74,7 @@ def test_an_envelope_with_attachments_is_handed_over_read_and_acknowledged(inbox
     (item,) = make_way(inbox).read()
     assert isinstance(item, ReceivedEnvelope)
     assert item.token == str(message.id)
-    assert item.attachments == (b"one", b"")
+    assert item.load() == (b"one", b"")
     assert item.envelope.open({SENDER_LINK: EXAMPLE_KEY}).message == message
     way.acknowledge(item.token)
     assert names(inbox) == set()
@@ -87,7 +87,27 @@ def test_an_envelope_without_attachments(inbox: Path) -> None:
     assert names(inbox) == {f"{message.id}.json"}
     (item,) = way.read()
     assert isinstance(item, ReceivedEnvelope)
-    assert item.attachments == ()
+    assert item.load() == ()
+
+
+def test_reading_an_envelope_reads_no_attachment(
+    inbox: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    way = make_way(inbox)
+    send(way, [("a.csv", b"one"), ("b.csv", b"two")])
+    opened: list[str] = []
+    real = files_module._read_file
+
+    def record(path: Path, limit: int) -> bytes:
+        opened.append(path.name)
+        return real(path, limit)
+
+    monkeypatch.setattr(files_module, "_read_file", record)
+    (item,) = way.read()
+    assert isinstance(item, ReceivedEnvelope)
+    assert [name for name in opened if name.endswith(".att")] == []  # only the envelope
+    assert item.load() == (b"one", b"two")
+    assert [name for name in opened if name.endswith(".att")] != []
 
 
 def test_the_names_of_files_come_from_the_id_only(inbox: Path) -> None:
@@ -239,7 +259,7 @@ def test_a_reader_never_sees_a_broken_envelope_while_a_writer_works(inbox: Path)
             if isinstance(item, FaultyEnvelope):
                 problems.append(item)
             else:
-                assert item.attachments == (payload,)
+                assert item.load() == (payload,)
                 received += 1
             reader.acknowledge(item.token)
         if finished.is_set() and not names(inbox):
@@ -258,29 +278,54 @@ def only_item(way: FilesWay) -> FaultyEnvelope:
     return item
 
 
-def test_a_missing_attachment_is_reported_as_faulty(inbox: Path) -> None:
+def load_reason(way: FilesWay) -> RejectionReason:
+    """The reason why the attachments of the only envelope cannot be loaded."""
+    (item,) = way.read()
+    assert isinstance(item, ReceivedEnvelope)
+    with pytest.raises(EnvelopeRejected) as raised:
+        item.load()
+    return raised.value.reason
+
+
+def test_a_missing_attachment_is_reported_when_loading(inbox: Path) -> None:
     way = make_way(inbox)
     message = send(way, [("a.csv", b"one"), ("b.csv", b"two")])
     (inbox / f"{message.id}.1.att").unlink()
-    item = only_item(way)
-    assert item.reason is RejectionReason.ATTACHMENT_MISSING
-    assert item.token == str(message.id)
-    way.acknowledge(item.token)  # the drop is the step of the connection; this removes the files
+    assert load_reason(way) is RejectionReason.ATTACHMENT_MISSING
+    way.acknowledge(str(message.id))  # the drop is the step of the connection; this removes files
     assert names(inbox) == set()
 
 
-def test_a_changed_attachment_is_reported_as_faulty(inbox: Path) -> None:
+def test_a_changed_attachment_is_reported_when_loading(inbox: Path) -> None:
     way = make_way(inbox)
     message = send(way, [("a.csv", b"one")])
     (inbox / f"{message.id}.0.att").write_bytes(b"oNe")
-    assert only_item(way).reason is RejectionReason.ATTACHMENT_HASH
+    assert load_reason(way) is RejectionReason.ATTACHMENT_HASH
 
 
-def test_an_attachment_of_another_size_is_reported_as_faulty(inbox: Path) -> None:
+def test_an_attachment_of_another_size_is_reported_when_loading(inbox: Path) -> None:
     way = make_way(inbox)
     message = send(way, [("a.csv", b"one")])
     (inbox / f"{message.id}.0.att").write_bytes(b"one and more")
-    assert only_item(way).reason is RejectionReason.ATTACHMENT_SIZE
+    assert load_reason(way) is RejectionReason.ATTACHMENT_SIZE
+
+
+def test_an_attachment_declared_larger_than_the_way_allows_is_not_opened(
+    inbox: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    way = make_way(inbox, max_attachment_bytes=50)
+    message = make_message([("a.csv", b"x" * 100)])
+    (inbox / f"{message.id}.json").write_text(make_envelope(message).to_json(), encoding="utf-8")
+    real = files_module._read_file
+    opened: list[str] = []
+
+    def record(path: Path, limit: int) -> bytes:
+        opened.append(path.name)
+        return real(path, limit)
+
+    monkeypatch.setattr(files_module, "_read_file", record)
+    assert load_reason(way) is RejectionReason.TOO_LARGE
+    assert opened == [f"{message.id}.json"]
 
 
 def test_a_link_in_place_of_an_attachment_is_reported_as_missing(
@@ -295,13 +340,13 @@ def test_a_link_in_place_of_an_attachment_is_reported_as_missing(
         (inbox / f"{message.id}.0.att").symlink_to(target)
     except OSError:
         pytest.skip("links are not available")
-    assert only_item(way).reason is RejectionReason.ATTACHMENT_MISSING
+    assert load_reason(way) is RejectionReason.ATTACHMENT_MISSING
 
 
-def test_an_attachment_larger_than_the_way_allows_is_reported_as_faulty(inbox: Path) -> None:
+def test_an_attachment_larger_than_the_way_allows_is_reported_when_loading(inbox: Path) -> None:
     message = make_message([("a.csv", b"x" * 100)])
     make_way(inbox).send(make_envelope(message), [b"x" * 100])
-    assert only_item(make_way(inbox, max_attachment_bytes=50)).reason is RejectionReason.TOO_LARGE
+    assert load_reason(make_way(inbox, max_attachment_bytes=50)) is RejectionReason.TOO_LARGE
 
 
 def test_an_unreadable_envelope_is_reported_as_faulty(inbox: Path) -> None:

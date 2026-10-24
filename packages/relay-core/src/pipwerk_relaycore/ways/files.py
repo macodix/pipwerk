@@ -191,28 +191,34 @@ class FilesWay(Way[FilesSettings]):
             return faulty(error.reason)
         if str(body.message.id) != message_id:
             return faulty(RejectionReason.BAD_BODY)
-        contents: list[bytes] = []
-        for number, declared in enumerate(body.message.attachments):
-            if declared.size > self.settings.max_attachment_bytes:
-                return faulty(RejectionReason.TOO_LARGE)
-            try:
-                content = _read_file(
-                    directory / attachment_file_name(message_id, number), declared.size
-                )
-            except FileNotFoundError:
-                return faulty(RejectionReason.ATTACHMENT_MISSING)
-            except _TooLargeFileError:
-                return faulty(RejectionReason.ATTACHMENT_SIZE)
-            contents.append(content)
-        try:
-            verify_attachments(body.message, contents)
-        except EnvelopeRejected as error:
-            return faulty(error.reason)
+        message = body.message
+        limit = self.settings.max_attachment_bytes
+
+        def load() -> tuple[bytes, ...]:
+            """Read the attachments; called only after the envelope has been checked."""
+            if any(declared.size > limit for declared in message.attachments):
+                raise EnvelopeRejected(RejectionReason.TOO_LARGE)
+            contents: list[bytes] = []
+            with _directory_errors():
+                for number, declared in enumerate(message.attachments):
+                    try:
+                        content = _read_file(
+                            directory / attachment_file_name(message_id, number), declared.size
+                        )
+                    except FileNotFoundError:
+                        raise EnvelopeRejected(RejectionReason.ATTACHMENT_MISSING) from None
+                    except _TooLargeFileError:
+                        raise EnvelopeRejected(RejectionReason.ATTACHMENT_SIZE) from None
+                    contents.append(content)
+            verify_attachments(message, contents)
+            return tuple(contents)
+
         return ReceivedEnvelope(
             token=message_id,
             envelope=envelope,
-            attachments=tuple(contents),
+            attachments=(),
             modified_at=arrived,
+            loader=load,
         )
 
     def _limit_envelope(self) -> int:

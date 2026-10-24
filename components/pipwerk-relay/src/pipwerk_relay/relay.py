@@ -44,12 +44,14 @@ from pipwerk_relaycore import (
     WayUnavailableError,
     verify_attachments,
 )
+from pipwerk_relaycore.address import RESERVED_COMPONENT_NAME
 from pipwerk_relaycore.contents import UndeliverableContent, is_valid_content
+from pipwerk_relaycore.grace import GraceClock
 from pydantic import ValidationError
 
 from pipwerk_relay.attachments import AttachmentStore
 from pipwerk_relay.errors import AttachmentLost, ConfigRejected, NotConfigured
-from pipwerk_relay.operating import RESERVED_COMPONENT_NAME, parse_config
+from pipwerk_relay.operating import parse_config
 from pipwerk_relay.runtime import Connection, Inbox, Runtime, build_runtime
 from pipwerk_relay.store import NewEntry, QueueEntry, RelayStore
 
@@ -123,6 +125,7 @@ class Relay:
         self._runtime: Runtime | None = None
         self._failed_version: int | None = None
         self._last_cleanup: datetime | None = None
+        self._grace = GraceClock()
 
     # configuration --------------------------------------------------------------------------
 
@@ -239,32 +242,33 @@ class Relay:
         result: CycleResult,
     ) -> _Outcome:
         if isinstance(item, FaultyEnvelope):
-            grace = timedelta(seconds=runtime.config.periods.attachment_grace_seconds)
-            if item.reason in _ATTACHMENT_REASONS and now - item.modified_at < grace:
-                result.postponed += 1  # may be a delay of the file system: read it again later
-                return _Outcome.LEFT
-            self._drop(inbox, item.token, item.reason, result)
-            return _Outcome.CONSUMED
+            return self._reject(
+                runtime, inbox, item.token, item.reason, item.modified_at, now, result
+            )
+        # Nothing is read from the attachments before the envelope has passed every check
+        # (check value, connection, size, schema; specification 7).
         try:
             opened = item.envelope.open(runtime.keys, recipient=runtime.own)
-            verify_attachments(opened.message, item.attachments)
             message = opened.message
             if not is_valid_content(message.kind, message.content):
                 raise EnvelopeRejected(RejectionReason.BAD_CONTENT)
         except EnvelopeRejected as error:
+            self._grace.forget(item.token)
             self._drop(inbox, item.token, error.reason, result)
             return _Outcome.CONSUMED
         # From here on the envelope is genuine: it carries the key of a known connection.
         hops = opened.hops
         not_before = now - timedelta(seconds=runtime.config.periods.seen_for_seconds)
         if self._store.is_seen(message.id, len(hops), not_before):
+            self._grace.forget(item.token)
             self._log("repetition", message, inbox.name)
             self._acknowledge(inbox, item.token)
             result.repeated += 1
             return _Outcome.CONSUMED
-        size = sum(len(content) for content in item.attachments)
+        size = sum(declared.size for declared in message.attachments)  # as declared, not read yet
         limits = runtime.config.limits
         if size > limits.max_attachment_storage_bytes:
+            self._grace.forget(item.token)
             self._drop(inbox, item.token, RejectionReason.TOO_LARGE, result)
             return _Outcome.CONSUMED
         if intake.messages >= limits.max_queue_messages:
@@ -273,12 +277,23 @@ class Relay:
         if intake.attachment_bytes + size > limits.max_attachment_storage_bytes:
             self._note_full(inbox, result, "the space for attachments is used up")
             return _Outcome.STOP
-        entries, reason = self._decide(runtime, opened.sender, message, hops, item, now)
+        try:
+            contents = item.load()
+            verify_attachments(message, contents)
+        except EnvelopeRejected as error:
+            return self._reject(
+                runtime, inbox, item.token, error.reason, item.modified_at, now, result
+            )
+        except WayUnavailableError as error:
+            LOGGER.warning("inbox %s: the attachments cannot be read: %s", inbox.name, error)
+            return _Outcome.LEFT
+        self._grace.forget(item.token)
+        entries, reason = self._decide(runtime, opened.sender, message, hops, contents, now)
         keys = [entry.entry_key for entry in entries]
         try:
             for entry in entries:
                 if entry.attachment_count:
-                    self._attachments.write(entry.entry_key, item.attachments)
+                    self._attachments.write(entry.entry_key, contents)
             accepted = self._store.accept(message.id, len(hops), now, not_before, entries)
         except (sa.exc.SQLAlchemyError, OSError) as error:
             for key in keys:
@@ -304,13 +319,36 @@ class Relay:
             result.notices += 1
         return _Outcome.CONSUMED
 
+    def _reject(
+        self,
+        runtime: Runtime,
+        inbox: Inbox,
+        token: str,
+        reason: RejectionReason,
+        arrived: datetime,
+        now: datetime,
+        result: CycleResult,
+    ) -> _Outcome:
+        """Drop an envelope; one with bad attachments waits until the grace period is over.
+
+        The period runs from the arrival or from the first sight, whichever is earlier, so a
+        change time in the future does not keep an envelope for ever.
+        """
+        grace = timedelta(seconds=runtime.config.periods.attachment_grace_seconds)
+        if reason in _ATTACHMENT_REASONS and not self._grace.over(token, arrived, now, grace):
+            result.postponed += 1  # may be a delay of the file system: read it again later
+            return _Outcome.LEFT
+        self._grace.forget(token)
+        self._drop(inbox, token, reason, result)
+        return _Outcome.CONSUMED
+
     def _decide(
         self,
         runtime: Runtime,
         link_from: str,
         message: Message,
         hops: tuple[str, ...],
-        item: ReceivedEnvelope,
+        contents: tuple[bytes, ...],
         now: datetime,
     ) -> tuple[list[NewEntry], UndeliverableReason | None]:
         """The entries to store for an envelope that passed the checks (steps 2 and 3)."""
@@ -327,8 +365,8 @@ class Relay:
                 entry_key=str(uuid4()),
                 message=message,
                 hops=hops,
-                attachment_count=len(item.attachments),
-                attachment_bytes=sum(len(content) for content in item.attachments),
+                attachment_count=len(contents),
+                attachment_bytes=sum(len(content) for content in contents),
                 created_at=now,
                 next_attempt_at=now,
             )

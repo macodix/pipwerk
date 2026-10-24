@@ -69,7 +69,7 @@ def forward(
         envelope = Envelope.create(
             opened.message, hops=(*opened.hops, me), sender=sender, recipient=recipient, key=key
         )
-        writing.send(envelope, item.attachments)
+        writing.send(envelope, item.load())
         reading.acknowledge(item.token)
         moved += 1
     return moved

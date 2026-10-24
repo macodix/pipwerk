@@ -295,6 +295,16 @@ def test_a_notice_of_the_relay_ends_the_waiting_and_goes_to_the_component(
     assert network.a.handler.missing == []
 
 
+def test_a_notice_of_a_component_does_not_end_the_waiting(network: Network) -> None:
+    sent = ask(network)
+    notice = notice_for(sent, UndeliverableReason.UNKNOWN_RECIPIENT).model_copy(
+        update={"sender": ADDRESS_B}
+    )
+    place(network.a.inbox, notice, network.key_a, sender=RELAY_1, recipient="app-a", hops=())
+    assert network.a.poll().delivered == 1  # it comes to the component like any message
+    assert network.a.connector.waiting_count == 1  # but the waiting for the receipt goes on
+
+
 def test_a_notice_about_a_message_without_receipt_goes_to_the_component_too(
     network: Network,
 ) -> None:

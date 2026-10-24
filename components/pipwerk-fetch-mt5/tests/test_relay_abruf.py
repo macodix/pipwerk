@@ -609,6 +609,59 @@ def test_a_message_from_another_sender_is_ignored(tmp_path: Path) -> None:
     assert list((tmp_path / "files").iterdir()) == []
 
 
+NOTICE: dict[str, JsonValue] = {
+    "reason": "unknown_recipient",
+    "text": "no such\x1b[2J component\r\nfake line",
+}
+
+
+def test_a_notice_from_a_component_does_not_end_the_request(tmp_path: Path) -> None:
+    delivery, _ = make_delivery(tmp_path)
+    answer(delivery, "relay.undeliverable", NOTICE, sender=RETRIEVAL)
+    answer(delivery, "relay.undeliverable", NOTICE, sender="other.net1.relay2")
+    assert delivery.notice is None
+
+
+def test_the_text_of_a_notice_is_shown_without_control_characters(tmp_path: Path) -> None:
+    delivery, _ = make_delivery(tmp_path)
+    answer(delivery, "relay.undeliverable", NOTICE, sender="relay.net1.relay1")
+    assert delivery.notice == ("unknown_recipient", "no such?[2J component??fake line")
+
+
+def test_serve_ignores_a_notice_from_a_component(network: Network, serve: ServeSide) -> None:
+    message = Message(
+        id=uuid4(),
+        sender="other.net1.relay2",
+        recipient=RETRIEVAL,
+        priority="normal",
+        kind="relay.undeliverable",
+        content=NOTICE,
+        reference_id=uuid4(),
+        created_at=CLOCK,
+    )
+    serve.handler.store(ReceivedMessage(message, (), ()))
+    assert serve.out.getvalue() == ""
+
+
+def test_serve_shows_the_text_of_a_notice_of_a_relay_without_control_characters(
+    network: Network, serve: ServeSide
+) -> None:
+    message = Message(
+        id=uuid4(),
+        sender="relay.net1.relay1",
+        recipient=RETRIEVAL,
+        priority="normal",
+        kind="relay.undeliverable",
+        content=NOTICE,
+        reference_id=uuid4(),
+        created_at=CLOCK,
+    )
+    serve.handler.store(ReceivedMessage(message, (), ()))
+    shown = serve.out.getvalue()
+    assert "no such?[2J component??fake line" in shown
+    assert not any(not character.isprintable() for character in shown.rstrip("\n"))
+
+
 @pytest.mark.parametrize(
     ("content", "attachment"),
     [

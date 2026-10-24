@@ -15,7 +15,15 @@ RELAY_REGEX = rf"^{NAME_REGEX}\.{NAME_REGEX}$"
 LINK_NAME_REGEX = rf"^{NAME_REGEX}(\.{NAME_REGEX})?$"
 """Name of one side of a connection: a component or ``<pipwerk network>.<relay>``."""
 
+RESERVED_COMPONENT_NAME = "relay"
+"""The component part of the address of a relay (``relay.<network>.<relay>``)."""
+
 _NAME = re.compile(NAME_REGEX)
+
+
+def is_from_relay(sender: str) -> bool:
+    """Whether the address ``sender`` is that of a relay (its component part is reserved)."""
+    return sender.split(".")[0] == RESERVED_COMPONENT_NAME
 
 
 def check_name(text: str) -> str:

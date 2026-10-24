@@ -1,6 +1,7 @@
 """The connector of a component (specification 3.5, E4, req-relay-010)."""
 
 import logging
+import os
 from collections.abc import Iterator
 from datetime import timedelta
 from pathlib import Path
@@ -26,6 +27,7 @@ from pipwerk_relaycore import (
     WayUnavailableError,
     compute_mac,
 )
+from pipwerk_relaycore.ways import files as files_module
 from tests.helpers import make_message
 from tests.network import ADDRESS_A, ADDRESS_B, RELAY_1, RELAY_2, Network, count_files, place
 
@@ -269,6 +271,70 @@ def test_the_grace_period_is_adjustable(network: Network) -> None:
     (network.b.inbox / f"{message.id}.0.att").unlink()
     network.clock.advance(seconds=2)
     assert network.b.poll().dropped == 1
+
+
+def watch_attachments(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """The names of the attachment files that the way opens for reading."""
+    real = files_module._read_file
+    opened: list[str] = []
+
+    def record(path: Path, limit: int) -> bytes:
+        if path.name.endswith(".att"):
+            opened.append(path.name)
+        return real(path, limit)
+
+    monkeypatch.setattr(files_module, "_read_file", record)
+    return opened
+
+
+def test_no_attachment_is_opened_for_an_envelope_with_a_wrong_check_value(
+    network: Network, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    files = [(f"f{number}.bin", b"data") for number in range(5)]
+    message = make_message(files)
+    place(network.b.inbox, message, ConnectionKey.generate(), [content for _, content in files])
+    opened = watch_attachments(monkeypatch)
+    result = network.b.poll()
+    assert (result.delivered, result.dropped) == (0, 1)
+    assert opened == []
+    assert count_files(network.b.inbox) == 0
+
+
+def test_no_attachment_is_opened_for_an_envelope_for_another_component(
+    network: Network, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    message = make_message([("f.csv", b"data")])
+    place(network.b.inbox, message, network.key_b, [b"data"], recipient="app-x")
+    opened = watch_attachments(monkeypatch)
+    assert network.b.poll().dropped == 1
+    assert opened == []
+
+
+def test_no_attachment_is_opened_for_a_repetition(
+    network: Network, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    message = make_message([("f.csv", b"data")])
+    place(network.b.inbox, message, network.key_b, [b"data"])
+    assert network.b.poll().delivered == 1
+    place(network.b.inbox, message, network.key_b, [b"data"])
+    opened = watch_attachments(monkeypatch)
+    assert network.b.poll().repeated == 1
+    assert opened == []
+
+
+def test_the_grace_period_runs_out_for_a_change_time_in_the_future(network: Network) -> None:
+    message = make_message([("f.csv", b"data")])
+    place(network.b.inbox, message, network.key_b, [b"data"])
+    (network.b.inbox / f"{message.id}.0.att").unlink()
+    future = network.clock().timestamp() + 30 * 86400
+    os.utime(network.b.inbox / f"{message.id}.json", (future, future))
+    assert network.b.poll().postponed == 1
+    network.clock.advance(minutes=4)
+    assert network.b.poll().postponed == 1
+    network.clock.advance(minutes=2)
+    later = network.b.poll()
+    assert (later.postponed, later.dropped) == (0, 1)
+    assert count_files(network.b.inbox) == 0
 
 
 # Errors of the component and of the ways ---------------------------------------------------

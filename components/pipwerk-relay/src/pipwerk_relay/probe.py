@@ -141,11 +141,36 @@ class Listener(Handler):
             for attachment, content in zip(
                 received.message.attachments, received.attachments, strict=True
             ):
-                _write_file(part / FILES_DIRECTORY / attachment.name, content)
+                _write_file(part / FILES_DIRECTORY / safe_file_name(attachment.name), content)
             _publish(part, final)
         except BaseException:
             shutil.rmtree(part, ignore_errors=True)
             raise
+
+
+_WINDOWS_DEVICES = frozenset(
+    {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        *(f"COM{n}" for n in range(1, 10)),
+        *(f"LPT{n}" for n in range(1, 10)),
+    }
+)
+"""Names that Windows reserves for devices, with or without an extension."""
+
+
+def safe_file_name(name: str) -> str:
+    """The name under which an attachment is stored: usable on Windows as well as on Linux.
+
+    A name that Windows reserves for a device (``NUL``, ``CON``, ``COM1``, also with an
+    extension) or that ends with a dot gets a ``~`` at the end. The character is not allowed
+    in the name of an attachment, so the result cannot collide with another attachment.
+    """
+    if name.split(".")[0].upper() in _WINDOWS_DEVICES or name.endswith("."):
+        return f"{name}~"
+    return name
 
 
 def _publish(part: Path, final: Path) -> None:
