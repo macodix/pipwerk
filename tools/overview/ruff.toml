@@ -1,0 +1,12 @@
+line-length = 100
+target-version = "py314"
+
+[lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF"]
+
+[lint.per-file-ignores]
+# Die Tests legen ein Git-Repository an und rufen dafür git auf (S603, S607);
+# assert ist in Tests üblich (S101); die Texte der Tests sind deutsch (RUF001, RUF002, RUF003).
+"tests/**" = ["S101", "S603", "S607", "RUF001", "RUF002", "RUF003"]
+# Die Texte der Seite sind deutsch (Zeichen wie „ und –).
+"generate.py" = ["RUF001", "RUF002", "RUF003"]
