@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-23
+- stand: 2026-10-24
 
 ## Regeln
 
@@ -74,7 +74,9 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Interne Order | Order im Strategietester. pipwerk wickelt sie rechnerisch gegen historische Kurse ab, ein Broker erhält sie nicht (req-test-004). |
 | Handelnde Stelle | Auswertung im Einzelschritt-Test, in der der Ablauf „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“ oder „Position schließen“ erreicht (req-test-011). |
 | Datenbestand historischer Kursdaten | Von pipwerk geführter Bestand an Kerzen, Ticks und Angaben zum Instrument, aus dem der Strategietester liest. Der Anwender kann eine Reihe ganz oder für einen Zeitraum löschen, ebenso die Angaben zu einem Instrument je Broker, jeweils nach einer Rückfrage (req-system-025). |
-| Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten, beliebig viele in einem Vorgang, mit Fortschritt und Abbrechen (req-system-026). |
+| Import | Übernahme von Dateien im festgelegten Dateiformat in den Datenbestand historischer Kursdaten, beliebig viele in einem Vorgang, mit Fortschritt und Abbrechen (req-system-026). Der Anwender legt fest, ob die Dateien behalten werden; sonst entfernt die Komponente sie danach (req-system-028). |
+| Ablageverzeichnis | Verzeichnis, in dem beim Import behaltene Dateien liegen. Die Komponente liest sie nicht wieder; um ihre Pflege kümmert sich der Anwender (req-system-028). |
+| Ablageform | Die eine Form, in der eine Komponente ihre Daten für ihre Arbeit hält, für historische Kursdaten der Datenbestand historischer Kursdaten (req-system-028). |
 | Abruf | Holen von Kursdaten und Angaben zum Instrument aus einer Quelle, zum Beispiel MetaTrader 5, als Dateien für den Import (req-system-027). Eine Anfrage an den Abruf und die Lieferung der Dateien laufen über pipwerk relay (Anforderungen an das Nachrichtensystem req-relay-007). |
 | Nachrichtensystem | Produktname pipwerk relay. Überträgt Nachrichten zwischen eigenständig laufenden Komponenten, auch zwischen verschiedenen Rechnern (req-system-005, Anforderungen an das Nachrichtensystem). |
 | Nachricht | Einheit, die über das Nachrichtensystem übertragen wird, mit Nachrichten-ID, Absender, Adressat, Priorität, Nachrichtenart, Inhalt und Bezug-Nachrichten-ID (Anforderungen an das Handelssystem req-grund-004). |
@@ -127,6 +129,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-24 | Import: Behalten oder Entfernen der Dateien; Einträge Ablageverzeichnis und Ablageform neu. Folgt aus der Festlegung des Auftraggebers vom 2026-10-24 (req-system-028). Hinweis 6 aus `development/backtest/reviews/requirements-10.md`. |
 | 2026-10-23 | Abruf statt Beschaffung. Folgt aus der Entscheidung des Auftraggebers vom 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
 | 2026-10-23 | Namensraum und Aktualisieren: Verwaltung einer Order gilt als über ihr „Order aufgeben“ erreicht, Stand einer Instanz des Hauptablaufs dort beim Aufgeben der Order. Folgt aus der Festlegung des Auftraggebers vom 2026-10-23 zu req-fach-055 (Abstimmung `strategiedesign/presentations/specification-3.html`, Punkt 24). Hinweis H7 aus `development/strategiedesign/reviews/requirements-20.md`. |
 | 2026-10-23 | Methode: Beispiel des Werts vor einer Anzahl Kerzen ersetzt, mitgelieferte Objekttypen vorerst ohne Methoden. Namensraum: Verwendbarkeit nur an Stellen über die erste Verwendung. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-23 zu req-fach-055 und req-ui-014 (Abstimmung `strategiedesign/presentations/specification-3.html`, Punkte 23 und 24). Hinweise H2 und H3 aus `development/strategiedesign/reviews/requirements-19.md`. |
