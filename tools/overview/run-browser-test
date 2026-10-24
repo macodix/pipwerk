@@ -1,0 +1,42 @@
+#!/bin/sh
+# Starts the browser test of the overview page (tools/overview).
+#
+#   run-browser-test [<option of playwright test>...]
+#
+# Installs the pinned Node packages of browser/ (npm ci) and runs the Playwright
+# tests in Chromium, Firefox and WebKit in the six window sizes of the
+# specification. Before the tests, browser/global-setup.mjs creates a test
+# repository and the page from it (browser/make_fixture.py) in a temporary
+# directory and removes it afterwards. Options are handed to "playwright test",
+# for example "--project=chromium". Ends with exit code 0 only if all tests pass.
+#
+# The directory is derived from the path of this script; it can be called from
+# any directory. The Python program is "python3" or the program named in
+# OVERVIEW_PYTHON. The script writes only into temporary directories and into
+# browser/node_modules and browser/test-results.
+#
+# Documentation: tools/overview/README.md, section "Browsertest".
+
+set -u
+
+PROG=run-browser-test
+
+die() {
+    printf '%s: %s\n' "$PROG" "$*" >&2
+    exit 2
+}
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    die "cannot determine the directory of the script"
+browser_dir="$script_dir/browser"
+
+command -v npm >/dev/null 2>&1 || die "required program not found: npm"
+command -v npx >/dev/null 2>&1 || die "required program not found: npx"
+command -v "${OVERVIEW_PYTHON:-python3}" >/dev/null 2>&1 ||
+    die "required program not found: ${OVERVIEW_PYTHON:-python3}"
+
+printf '%s: npm ci\n' "$PROG"
+(cd "$browser_dir" && npm ci) || die "npm ci failed"
+
+printf '%s: playwright test\n' "$PROG"
+(cd "$browser_dir" && npx playwright test "$@")
