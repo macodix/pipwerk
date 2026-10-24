@@ -26,7 +26,7 @@ test('opens "EMA-Trendfolge" with the names after specification 3.7', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('arranges "EMA-Trendfolge" without overlap, with the management in its frame and the area for objects beside the flow', async ({ page, api }) => {
+test('arranges "EMA-Trendfolge" without overlap, with the management in its frame and the objects beside the elements that use them', async ({ page, api }) => {
   void api;
   await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
@@ -68,10 +68,13 @@ test('arranges "EMA-Trendfolge" without overlap, with the management in its fram
     }
   }
 
-  // the area for objects lies beside the flow (vertical)
-  const lane = await boxOf(page.getByTestId('lane'));
-  const trigger = await boxOf(page.locator(`[data-node-id="${EMA_ELEMENT_IDS.trigger}"]`));
-  expect(lane.x + lane.width).toBeLessThanOrEqual(trigger.x + 1);
+  // there is no area for objects: each card lies beside the element of its first use (specification 5.3)
+  await expect(page.getByTestId('lane')).toHaveCount(0);
+  const cross = await boxOf(node(page, 'Kreuzen'));
+  for (const name of ['EMA20', 'EMA50']) {
+    const box = await boxOf(card(page, name));
+    expect(box.x + box.width, name).toBeLessThanOrEqual(cross.x);
+  }
   await expect(page.locator('[data-testid="card"] [data-testid="card-row"]').first()).toBeVisible();
 });
 

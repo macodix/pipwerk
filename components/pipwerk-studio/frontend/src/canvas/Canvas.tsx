@@ -217,12 +217,30 @@ function CanvasView() {
   );
 
   // The view is set when a strategy is opened and when the direction changes, after React Flow is ready.
+  // Once more when the backend has told who uses which object, as long as the user has not touched the view: the cards
+  // move beside their elements then, and the first view must show the arrangement that stays.
+  const fitStage = useRef<{ key: string; stage: number; document: unknown }>({ key: '', stage: 0, document: null });
+  const reported = uses?.fromReport === true;
   useLayoutEffect(() => {
-    if (ready) {
+    if (!ready) {
+      return;
+    }
+    const key = `${state.openCount}|${dir}`;
+    if (fitStage.current.key !== key) {
+      fitStage.current = { key, stage: 0, document: null };
+    }
+    if (fitStage.current.stage === 0) {
       fit();
+      fitStage.current = { key, stage: reported ? 2 : 1, document };
+    } else if (fitStage.current.stage === 1 && reported) {
+      // only while the document is still the one that was opened
+      if (fitStage.current.document === document) {
+        fit();
+      }
+      fitStage.current.stage = 2;
     }
     // `fit` is left out on purpose: the view is set only when a strategy is opened or the direction changes
-  }, [ready, state.openCount, dir]);
+  }, [ready, state.openCount, dir, reported]);
 
   // A new or targeted element is brought into view only if it is completely outside of the view, and only as far as needed.
   const revealSerial = state.reveal?.serial;
@@ -407,8 +425,7 @@ function CanvasView() {
   );
 
   const onConnect = useCallback(
-    (connection: Connection) => {
-      connectTo(connection.source, connection.sourceHandle, connection.target);
+    (connection: Connection) => {      connectTo(connection.source, connection.sourceHandle, connection.target);
     },
     [connectTo],
   );
@@ -419,8 +436,7 @@ function CanvasView() {
 
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
-      setDragged(null);
-      if (state.isValid === true || state.fromNode === null || state.fromHandle === null) {
+      setDragged(null);      if (state.isValid === true || state.fromNode === null || state.fromHandle === null) {
         return;
       }
       // dropped on the body of an element and not on a connection point: the element is the target all the same
@@ -429,8 +445,7 @@ function CanvasView() {
         return;
       }
       const under = window.document.elementFromPoint(point.clientX, point.clientY);
-      const target = under?.closest<HTMLElement>('.react-flow__node')?.dataset.id;
-      if (target !== undefined) {
+      const target = under?.closest<HTMLElement>('.react-flow__node')?.dataset.id;      if (target !== undefined) {
         connectTo(state.fromNode.id, state.fromHandle.id ?? null, target);
       }
     },
@@ -554,6 +569,7 @@ function CanvasView() {
       data-region="canvas"
       data-testid="canvas"
       data-orient={dir}
+      data-usage={reported ? 'report' : 'document'}
       onKeyDown={onKeyDown}
     >
       <svg className="canvas-defs" width="0" height="0" aria-hidden="true">

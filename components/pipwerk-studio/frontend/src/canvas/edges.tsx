@@ -81,7 +81,6 @@ export function WireEdge({ id, data }: EdgeProps<Edge<WireEdgeData, 'wire'>>) {
         <path d={`M ${firstStub[1].x} ${firstStub[1].y} L ${lastStub[1].x} ${lastStub[1].y}`} className="wire-stub" />
       ) : null}
       <path d={data.path} className="wire-line" />
-      <path d={data.path} className="wire-hit" data-tip={data.label} />
       <circle cx={data.end.x} cy={data.end.y} r="4" className="wire-end" />
       {data.label !== '' ? (
         <EdgeLabelRenderer>

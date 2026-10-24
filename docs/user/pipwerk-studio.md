@@ -111,12 +111,12 @@ Ein Klick auf einen Eintrag fügt das Element hinter dem gewählten Schritt ein 
 Die Zeichenfläche zeigt die Strategie:
 
 - Ein **Schritt** (Auslöser, Bedingung, Berechnung, Order …) ist ein Kasten mit dem Namen, einem Satz, der sagt, was er tut, und seinen Ausgängen. Eine Bedingung hat die Ausgänge „wahr“ und „falsch“, die meisten anderen Schritte „weiter“. Die Linie von einem Ausgang zum nächsten Schritt bedeutet „danach folgt“.
-- Eine **Karte** zeigt ein Objekt (Indikator, Trend, Kerze …) im Bereich „Objekte und ihre Werte“ neben dem Ablauf. Die Zeilen der Karte sind die Werte des Objekts. Von einer Zeile aus lässt sich ein Wert mit einem Schritt verbinden (Abschnitt 6.3).
+- Eine **Karte** zeigt ein Objekt (Indikator, Trend, Kerze …). Sie liegt neben dem Schritt, der das Objekt zuerst verwendet, bei senkrechtem Ablauf links davon, bei waagerechtem darüber. Einen eigenen Bereich für Objekte gibt es nicht. Jede Zeile der Karte ist ein Wert oder eine Methode des Objekts, mit dem Namen und einem Anschlusspunkt; dahinter steht der Datentyp, bei einer Methode das Wort „Methode“. Sichtbar sind die Zeilen, die ein Schritt verwendet, bei einem Objekt, das noch niemand verwendet, die ersten drei; „Alle … anzeigen“ klappt die übrigen auf. Ein Objekt, das noch kein Schritt verwendet, liegt dort, wo Sie es abgelegt haben, oder neben dem Ablauf. Von einer Zeile aus lässt sich ein Wert mit einem Schritt verbinden (Abschnitt 6.3).
 - Der **Rahmen** „Verwaltung · Order aufgeben“ hängt unter dem Schritt „Order aufgeben“. In ihm läuft die Verwaltung der Order: zuerst für die wartende Order, nach der Ausführung für die Position. Der Knopf am Titel klappt den Rahmen ein und aus.
 - Ein **Abschnitt** fasst zusammengehörige Schritte eines Ablaufs unter einem Namen zusammen und lässt sich ein- und ausklappen.
-- **Wertlinien** zeigen, welche Werte von Objekten ein Schritt verwendet. Kräftige Linien sind Eingänge, blasse, gepunktete Linien Werte, die nur ein Ausdruck verwendet.
+- **Wertlinien** zeigen, welche Werte von Objekten ein Schritt verwendet. Die Linie von der Karte zu dem Schritt, der das Objekt zuerst verwendet, ist durchgezogen, hat die Farbe des Objekts und ist immer zu sehen. Verwendet ein weiterer Schritt das Objekt, führt eine gestrichelte Linie in derselben Farbe dorthin, auch wenn nur ein Ausdruck den Wert verwendet. Mehrere Werte desselben Objekts für denselben Schritt sind eine Linie. Ihre Beschriftung nennt die Werte, bei einer Methode mit ihren Argumenten, zum Beispiel „Mittel(3; 0,5)“; steht dahinter das Zeichen ↻, wird der Wert dort mit „Aktualisieren“ neu ermittelt. Die Linien enden an einem einzigen Anschlusspunkt des Schritts, auf der Seite, an der die Karten liegen. Ergebnisse von Bedingungen und Berechnungen und Objekte der Anwendung (zum Beispiel „Order“) haben keine Linie.
 
-Die Werkzeugleiste enthält „Ausrichtung“ (senkrecht oder waagerecht), „Wertlinien“ (alle, Auswahl, aus), Vergrößern und Verkleinern, „Alles zeigen“, „Zum Anfang“ und „Neu anordnen“ (alle Schritte wieder automatisch anordnen). Die Legende erklärt die Linien. Ein Schritt, den Sie verschieben, behält seinen Platz; alle anderen ordnet pipwerk Studio selbst.
+Die Werkzeugleiste enthält „Ausrichtung“ (senkrecht oder waagerecht; die Wahl gehört zur Strategie), „Weitere Verwendungen“ (Alle, Auswahl, Aus), Vergrößern und Verkleinern, „Alles zeigen“, „Zum Anfang“ und „Neu anordnen“ (alle Schritte und Karten wieder automatisch anordnen). „Weitere Verwendungen“ steuert nur die gestrichelten Linien: „Alle“ zeigt sie für alle Schritte, „Auswahl“ nur für den gewählten Schritt oder das gewählte Objekt, „Aus“ keine. Am Anfang steht „Auswahl“, weil „Alle“ bei vielen Verwendungen lange Linien quer über die Fläche legt. Die Legende erklärt die Linien. Ein Schritt oder eine Karte, die Sie verschieben, behält den Platz; alle anderen ordnet pipwerk Studio selbst, mit möglichst wenigen Kreuzungen und kurzen Linien.
 
 Ein rot umrandeter Schritt hat einen Fehler, ein orange umrandeter einen Hinweis der Prüfung (Abschnitt 8). Ein Schritt mit einem Typ, den diese Fassung nicht kennt, ist rot und zeigt die Kennung seines Typs; seine Belegungen bleiben beim Speichern unverändert.
 
@@ -128,7 +128,7 @@ Die Eigenschaftenansicht zeigt, was Sie auf der Zeichenfläche gewählt haben. E
 
 - **Strategie:** Name, Beschreibung, „Regeln der Strategie“, die Befunde der Prüfung mit „Prüfen“.
 - **Schritt:** Name, die Einstellungen des Schritts (Abschnitt 6.4), bei „Order aufgeben“ die „Eigenschaften der Order“, „Liefert“ (was der Schritt für andere bereitstellt, zum Beispiel das Ergebnis einer Berechnung), „Eingänge“ (Werte von Objekten, die mit dem Schritt verbunden sind), „Regeln dieses Elements“, „Abschnitt“, „Gehört zu“ (Hauptablauf oder Verwaltung einer Order) und „Entfernen“.
-- **Objekt:** Name, Herkunft (zum Beispiel „EMA 20, aus Objekttyp EMA“), die Einstellungen des Objekts, „Liefert“ (die Werte), „Stelle im Bereich der Objekte“ und „Entfernen“. Ein eigener Indikator, ein eigener Trend und ein Regelwerk haben dazu ihren Inhalt (Abschnitt 6.7).
+- **Objekt:** Name, Herkunft (zum Beispiel „EMA 20, aus Objekttyp EMA“), die Einstellungen des Objekts, „Liefert“ (die Werte) und „Entfernen“. Ein eigener Indikator, ein eigener Trend und ein Regelwerk haben dazu ihren Inhalt (Abschnitt 6.7).
 - **Rahmen** und **Abschnitt:** was sie sind und was Sie damit tun können.
 
 Zu jedem Feld gehört eine Erklärung: Zeigen Sie auf die Beschriftung oder auf das Symbol „i“. Ein Feld mit einem Befund trägt dessen Farbe.
@@ -276,15 +276,18 @@ Dieser Abschnitt beschreibt die Arbeitsabläufe der Reihe nach. Die Einstellunge
 
 ### 6.3 Werte von Objekten verwenden
 
-Indikatoren, Trends und die Objekte des Marktes liegen als Karten im Bereich „Objekte und ihre Werte“. Jede Zeile einer Karte ist ein Wert, den das Objekt liefert. Damit ein Schritt einen Wert verwenden kann, ist der Wert ein **Eingang** des Schritts. Einen Eingang legen Sie auf drei Wegen an:
+Indikatoren, Trends und die Objekte des Marktes liegen als Karten neben dem Schritt, der sie zuerst verwendet (Abschnitt 3.4). Jede Zeile einer Karte ist ein Wert oder eine Methode, die das Objekt liefert. Damit ein Schritt einen Wert verwenden kann, ist der Wert ein **Eingang** des Schritts. Einen Eingang legen Sie auf vier Wegen an:
 
 - Sie wählen den Wert in den Bausteinen eines Ausdrucks (Abschnitt 7.4). Der Eingang entsteht von selbst.
-- Sie ziehen auf der Zeichenfläche eine Linie von der Zeile der Karte auf den Schritt.
+- Sie ziehen auf der Zeichenfläche eine Linie vom Anschlusspunkt der Zeile einer Karte auf den Schritt.
+- Sie klicken den Anschlusspunkt der Zeile an und dann den Schritt. Die Aufforderung „Wählen Sie jetzt das Element, das den Wert verwenden soll.“ steht in der Eigenschaftenansicht, mit „Abbrechen“.
 - Sie wählen in der Eigenschaftenansicht des Schritts unter „Eingänge“ den Eintrag „+ Wert verbinden …“.
+
+Beim Ziehen und beim Klick nehmen nur die Schritte die Linie an, an denen das Objekt verwendbar ist: Ein Objekt, das ein Schritt zuerst verwendet, steht nur Schritten zur Verfügung, die immer über diesen Schritt erreicht werden. Im Zweig „falsch“ einer Bedingung lässt sich deshalb kein Objekt verbinden, das erst im Zweig „wahr“ ermittelt wird. Die anderen Schritte erscheinen blass mit gestricheltem Rand; ein Klick darauf verbindet nichts und sagt in der Meldung, an welchem Schritt der Wert zuerst ermittelt wird. Verbinden Sie ein Objekt, das noch kein Schritt verwendet, wird dieser Schritt der Schritt seiner ersten Verwendung: Die Karte rückt neben ihn, und die Linie ist durchgezogen. Eine Karte nehmen die Linien nicht an.
 
 Unter „Eingänge“ stehen die Werte mit dem Namen des Objekts; das Kreuz daneben entfernt den Eingang. Ein Eingang, den kein Ausdruck verwendet, wird bei der Prüfung als Hinweis gemeldet.
 
-Die Reihenfolge der Karten ändern Sie unter „Stelle im Bereich der Objekte“ in der Eigenschaftenansicht des Objekts mit „Nach oben“ und „Nach unten“ oder durch Ziehen der Karte.
+Eine Karte verschieben Sie, indem Sie sie ziehen; sie bleibt dort, wo Sie sie ablegen, und die Linie folgt. „Neu anordnen“ in der Werkzeugleiste ordnet alles wieder selbst an. Ein Objekt, das noch kein Schritt verwendet, trägt nach „Prüfen“ den Befund „Instanz ohne Verbindung“.
 
 ### 6.4 Parameter und Eigenschaften belegen
 
@@ -570,10 +573,10 @@ Jede Bedienung, für die Sie ziehen können, geht auch mit Klicks. Das hilft auf
 | --- | --- | --- |
 | ein Element einfügen | den Eintrag der Bibliothek auf die Zeichenfläche, hinter einen Schritt oder in einen Rahmen ziehen | den Eintrag anklicken (mit der Tastatur: Tabulator, dann Eingabetaste oder Leertaste); gewählt ist der Schritt oder der Rahmen, hinter beziehungsweise in dem es stehen soll |
 | zwei Schritte verbinden | vom Ausgang auf den Schritt ziehen | den Ausgang anklicken, dann den Schritt |
-| einen Wert eines Objekts mit einem Schritt verbinden | von der Zeile der Karte auf den Schritt ziehen | in den Bausteinen den Wert wählen, oder in der Eigenschaftenansicht des Schritts „+ Wert verbinden …“ wählen |
+| einen Wert eines Objekts mit einem Schritt verbinden | vom Anschlusspunkt der Zeile der Karte auf den Schritt ziehen | den Anschlusspunkt der Zeile anklicken, dann den Schritt; oder in den Bausteinen den Wert wählen; oder in der Eigenschaftenansicht des Schritts „+ Wert verbinden …“ wählen |
 | einen Schritt in die Verwaltung einer Order oder heraus bringen | den Schritt in den Rahmen oder heraus ziehen | in der Eigenschaftenansicht unter „Gehört zu“ wählen |
 | einen Schritt einem Abschnitt zuordnen | – | in der Eigenschaftenansicht unter „Abschnitt“ wählen |
-| die Reihenfolge der Objekte ändern | die Karte ziehen | in der Eigenschaftenansicht unter „Stelle im Bereich der Objekte“ „Nach oben“ oder „Nach unten“ wählen |
+| eine Karte verschieben | die Karte ziehen | nicht nötig: pipwerk Studio legt die Karte neben den Schritt, der sie zuerst verwendet |
 | eine Linie löschen | – | die Linie anklicken, dann das Kreuz |
 | die Ansicht ändern | die Fläche ziehen | „Verkleinern“, „Vergrößern“, „Alles zeigen“ und „Zum Anfang“ in der Werkzeugleiste |
 
@@ -616,9 +619,12 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | Verwaltung (Rahmen) | Der Teil des Ablaufs, der nach dem Ausgang „gestellt“ von „Order aufgeben“ läuft und sich um die gestellte Order kümmert. Auf der Zeichenfläche ist sie ein Rahmen unter dem Element. Elemente im Rahmen gehören zur Verwaltung. |
 | Strategieparameter | Ein Wert, den Sie an einer Stelle der Strategie festlegen und überall in ihr verwenden. Ausdrücke sprechen ihn als `Strategie.<Name>` an. |
 | Schritt | Ein Element des Ablaufs auf der Zeichenfläche: ein Auslöser oder ein Element wie Bedingung, Berechnung oder Order aufgeben. Ein Schritt ist ein Kasten mit Ausgängen. |
-| Karte | Die Darstellung eines Objekts (Indikator, Trend, Kerze …) im Bereich „Objekte und ihre Werte“. Jede Zeile ist ein Wert des Objekts. |
-| Eingang | Ein Wert eines Objekts, den ein Schritt verwendet. Er entsteht, wenn Sie den Wert in den Bausteinen wählen oder eine Linie von der Karte zum Schritt ziehen. |
-| Wertlinie | Die Linie von der Zeile einer Karte zu einem Schritt, der den Wert verwendet. Kräftig ist ein Eingang, blass und gepunktet ein Wert, den nur ein Ausdruck verwendet. |
+| Karte | Die Darstellung eines Objekts (Indikator, Trend, Kerze …) neben dem Schritt, der es zuerst verwendet. Jede Zeile ist ein Wert oder eine Methode des Objekts. |
+| Eingang | Ein Wert eines Objekts, den ein Schritt verwendet. Er entsteht, wenn Sie den Wert in den Bausteinen wählen oder eine Linie von der Karte zum Schritt ziehen oder klicken. |
+| Schritt der ersten Verwendung | Der Schritt, mit dem Sie ein Objekt zuerst verbunden haben, oder, wenn Sie das nicht getan haben, der erste Schritt im Ablauf, dessen Ausdruck das Objekt nennt. Das Objekt ermittelt seine Werte, wenn der Ablauf diesen Schritt erreicht; spätere Verwendungen erhalten diese Werte. Die Karte liegt neben diesem Schritt. |
+| Datenverbindung | Das Verbinden eines Werts mit einem Schritt (ein Eingang) und die Belegung eines Parameters mit dem Wert eines Objekts. Auf der Zeichenfläche ist sie eine Wertlinie. |
+| Wertlinie | Die Linie von der Zeile einer Karte zu einem Schritt, der den Wert verwendet. Durchgezogen ist die Linie zum Schritt der ersten Verwendung, gestrichelt die zu einer weiteren Verwendung; beide haben die Farbe des Objekts. Die Beschriftung nennt die Werte. |
+| Weitere Verwendungen | Der Umschalter der Werkzeugleiste für die gestrichelten Wertlinien: Alle, Auswahl oder Aus. |
 | Baustein | Ein Stück eines Ausdrucks, das Sie in einer Liste wählen, statt es zu schreiben: ein Wert, eine Zahl, ein Text, eine Rechnung, eine Fallunterscheidung, eine Funktion oder eine Bedingung. Aus Bausteinen setzt sich ein Ausdruck zusammen (Abschnitt 7.4). |
 | leerer Platz | Ein Platz in einem Ausdruck, an dem noch kein Wert gewählt ist („Wert wählen …“). Er macht den Ausdruck unvollständig. Er entsteht auch, wenn Sie ein Objekt entfernen, das der Ausdruck verwendet hat. |
 | Formelansicht | Die Ansicht „Ausdruck für Fortgeschrittene“: Der Ausdruck als Text in der Anzeigeform, mit Farben, markierten Fehlern und Vorschlägen (Abschnitt 7.4). |

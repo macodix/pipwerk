@@ -28,6 +28,8 @@ export type UseLink = {
 
 export type UsageModel = {
   links: UseLink[];
+  /** The facts come from the report of the backend and not from the approximation of the document. */
+  fromReport: boolean;
   /**
    * Per card (element that shows an instance): the element or card it sits beside, `null` if no element uses it.
    * A card of an instance that only another instance uses sits beside the card of that instance.
@@ -236,6 +238,7 @@ export function buildUsageModel(
 
   return {
     links,
+    fromReport: report !== null,
     homes,
     connected: (card) => (usageOf.get(card)?.firstUse ?? null) !== null,
     firstUse: (card) => usageOf.get(card)?.firstUse ?? null,

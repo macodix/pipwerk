@@ -107,6 +107,9 @@ export async function openStrategy(page: Page, name: string): Promise<void> {
   await page.getByRole('dialog').getByRole('button', { name, exact: true }).click();
   await expect(page.getByTestId('status-pill')).toContainText(name);
   await expect(page.locator('[data-testid="node"], [data-testid="card"]').first()).toBeAttached();
+  // the backend has told who uses which object: the cards lie beside their elements and the view is set for that
+  await expect(page.getByTestId('canvas')).toHaveAttribute('data-usage', 'report');
+  await expect.poll(async () => viewOf(page)).not.toBe('');
 }
 
 /** The node of a step or the card of an object by name. */
