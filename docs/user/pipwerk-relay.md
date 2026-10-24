@@ -271,6 +271,14 @@ Das Relay wird mitten in der Arbeit ohne Vorwarnung beendet. Nach dem Neustart f
 
 *Herbeiführen:* Senden Sie mehrere Nachrichten hintereinander, zum Beispiel mit dem Abruf (Abschnitt „Abruf mit serve und request“) eine große Anfrage oder mit der Prüfkomponente mehrere Nachrichten mit Datei, und beenden Sie währenddessen ein Relay hart (im Betrieb: Rechner ausschalten oder den Prozess beenden; in der Testumgebung `testenv fault 3 on a` oder `testenv fault 3 on b`, das schickt dem Prozess `kill -9`).
 
+*Herbeiführen mitten in einer Lieferung des Abrufs:* Das Relay `relay-b` soll genau dann enden, wenn es eine Datei der Antwort von `serve` verarbeitet. Rufen Sie in einem ersten Fenster `testenv fault 3 delivery b` auf; der Befehl wartet und beendet das Relay in dem Augenblick, in dem die erste Datei der Antwort ankommt (`testenv: the relay relay-b is ended hard in the middle of a delivery`). Starten Sie im zweiten Fenster eine Anfrage, die mehrere Dateien ergibt:
+
+```
+testenv request --address fetch.netz.relay-b --broker Testbroker-1 --from 2026-01-05 --to 2026-01-06 -u M1,H1 --ticks -o daten EURUSD
+```
+
+*Sehen und beheben beim Abruf:* `request` wartet weiter (es zeigt nur die Dateien, die schon angekommen sind). Starten Sie im ersten Fenster das Relay wieder (`testenv fault 3 off b`). Die Antwort läuft zu Ende; `request` schreibt jede Datei einmal und endet mit Exitcode 0 (`N Dateien geschrieben nach daten.`). Die Dateien sind Byte für Byte die, die ohne Störung ankommen. Mit `testenv fault 3 delivery a` treffen Sie stattdessen das Relay `relay-a`, das die Dateien an `request` übergibt.
+
 *Sie sehen:* `testenv status` zeigt das Relay als `not running`. Nachrichten, die das Relay schon angenommen hatte, bleiben in seiner Warteschlange (`testenv queue a`), Umschläge, die es noch nicht gelesen hatte, liegen in seinem Eingang.
 
 *Beheben:* Starten Sie das Relay wieder (`testenv fault 3 off a` beziehungsweise `b`). Es liest dort weiter, wo es war. Danach liegt zu jeder gesendeten Nachricht genau ein Ordner in `side-b/received`, jede Datei ist unverändert, und jede verlangte Bestätigung kommt. Übergibt das Relay nach dem Neustart eine Nachricht noch einmal, erkennt das andere Relay oder die Komponente sie an der Nummer und verwirft die zweite; im Protokoll steht dann `repetition message=…`.
@@ -294,6 +302,8 @@ Verändern Sie dann den Umschlag (`testenv fault 4 envelope`) oder die Datei (`t
 Dieselbe Nachricht wird nicht zweimal zugestellt. Das Relay und die Komponente erkennen den Umschlag an der Nachrichtennummer, verwerfen ihn und quittieren ihn. Kommt er bei der Komponente noch einmal an, schickt sie die Empfangsbestätigung erneut, falls der Absender eine verlangt hat, weil die erste verloren gegangen sein kann; der Absender verwirft die zweite.
 
 *Herbeiführen:* Beenden Sie die lauschende Prüfkomponente auf `relay-b` (`testenv fault 7 on`), senden Sie eine Nachricht mit Datei und Bestätigungswunsch (`testenv send a --address listen.netz.relay-b --text hallo --file bericht.txt --receipt --wait 5`), kopieren Sie den wartenden Umschlag mit seiner Datei (`testenv fault 5 save`), starten Sie die Prüfkomponente wieder (`testenv fault 7 off`; sie speichert die Nachricht und bestätigt) und legen Sie den kopierten Umschlag noch einmal ab (`testenv fault 5 on`). Für das Relay statt der Komponente geben Sie bei beiden Befehlen `relay` an (`testenv fault 5 save relay` mit beendetem Relay `relay-b`, `testenv fault 5 on relay`).
+
+*Mit dem Abruf:* Beenden Sie `serve` (`testenv fault 7 on fetch`), starten Sie in einem zweiten Fenster `testenv request …` (Abschnitt 10), kopieren Sie die wartende Anfrage (`testenv fault 5 save fetch`), starten Sie `serve` wieder (`testenv fault 7 off fetch`; es beantwortet die Anfrage) und legen Sie die Kopie noch einmal ab (`testenv fault 5 on fetch`). `serve` beantwortet die Kopie nicht noch einmal: Der Umschlag ist eine Wiederholung, die Antwort kommt nur einmal. Die Dateien im Ordner von `request` sind dieselben wie ohne Störung.
 
 *Sie sehen:* Die lauschende Prüfkomponente zeigt die Nachricht nur einmal; in `side-b/received` liegt ein Ordner. Im Protokoll von `relay-b` steht die Bestätigung ein zweites Mal (`accepted … kind=relay.receipt` und `forwarded … kind=relay.receipt`): Die Komponente hat den Umschlag als Wiederholung erkannt, die Nachricht nicht noch einmal übernommen und nur die Bestätigung noch einmal geschickt. Das Relay `relay-a` leitet sie an `send.netz.relay-a` weiter, wo sie als verspätet verworfen wird. Legen Sie den Umschlag statt dessen in den Eingang des Relays (`relay`), erkennt das Relay `relay-b` die Wiederholung selbst: Im Protokoll steht `repetition message=…`, es wird nichts zugestellt und keine zweite Bestätigung geschickt.
 
@@ -325,6 +335,8 @@ testenv send a --address listen.netz.relay-b --text hallo --file bericht.txt --r
 *Sie sehen:* Nach 10 Sekunden `No receipt: message … to listen.netz.relay-b was not confirmed within 10 seconds.` (Exitcode 1). Im Ordner `side-b/to-listen` liegt der Umschlag der Nachricht; `side-b/received` ist leer.
 
 *Beheben:* Starten Sie die Prüfkomponente (`testenv fault 7 off`). Sie speichert die Nachricht (eine Zeile `Message … from send.netz.relay-a: 1 attachments (bericht.txt), stored in …` in ihrer Ausgabe `side-b/listen/listen.log`), und der Ordner `side-b/received` enthält die Nachricht mit der Datei. Die Bestätigung kommt zum Absender zurück, wird aber nur im Protokoll vermerkt (`receipt dropped`).
+
+*Mit dem Abruf:* Beenden Sie `serve` (`testenv fault 7 on fetch`) und rufen Sie `testenv request … --wait 1` auf. Nach einer Minute endet `request` mit `Fehler: Nach 1 Minuten ist kein Ergebnis der Anfrage eingetroffen.` und Exitcode 1; die Anfrage wartet im Ordner `side-b/to-fetch`. Starten Sie `serve` (`testenv fault 7 off fetch`), beantwortet es sie; die späte Antwort verwirft der nächste Aufruf von `request`. Rufen Sie dann `testenv request …` noch einmal auf: Jetzt kommen die Dateien.
 
 ### Umschläge, die die Grenzen des Eingangs übersteigen
 
