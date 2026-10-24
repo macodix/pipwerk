@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stand der Vorhaben</title>
 <style>
-/* Vorlage der Übersicht. Aufbau und Bedienung nach dem bestätigten Oberflächenentwurf.
-   Die optische Gestaltung folgt in einem nachfolgenden Auftrag.
-   Platzhalter: ZEIT und INHALT (in doppelten geschweiften Klammern). */
+/* Vorlage der Übersicht. Aufbau und Bedienung nach dem bestätigten Oberflächenentwurf
+   (Spezifikation 7.4). Platzhalter: ZEIT und INHALT (in doppelten geschweiften Klammern). */
 :root{
   --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#5d6c64; --line:#d5ddd8;
   --grau-bg:#eceeed; --grau-rand:#8d9a94;
@@ -23,6 +22,9 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);f
 .seite{max-width:1500px;margin:0 auto;padding:20px 24px 40px}
 h1{margin:0;font-size:32px;font-weight:600;line-height:1.15}
 h2{margin:0 0 12px;font-size:24px;font-weight:600;line-height:1.2}
+h1,h2,nav.pfad li{min-width:0;overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto}
+nav.pfad li{flex-wrap:wrap;max-width:100%}
+nav.pfad li>*{min-width:0}
 h2 small{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:1px}
 p{margin:0}
 .kopf{display:flex;flex-direction:column;gap:4px;padding-bottom:12px}
@@ -40,8 +42,10 @@ nav.pfad li{display:inline-flex;gap:8px;align-items:center}
 nav.pfad li+li::before{content:"\203A";color:var(--muted)}
 nav.pfad a{color:var(--blau);text-decoration:underline;text-underline-offset:3px;font-weight:500}
 nav.pfad [aria-current]{font-weight:600}
-a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+a:focus-visible{outline:3px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 3px var(--card)}
 h2:focus{outline:none}
+.kopf{border-bottom:1px solid var(--line);margin-bottom:6px}
+nav.pfad[hidden]{display:none}
 
 .kaesten{display:grid;gap:16px;align-items:stretch;list-style:none;margin:0;padding:0}
 .kaesten>li{display:flex;min-width:0}
@@ -65,7 +69,9 @@ main>section+section{margin-top:32px}
 .kasten .warte{font-size:14px;color:var(--ink);font-style:italic}
 .kasten .oeffnen{margin-top:auto;padding-top:6px;font-size:14px;font-weight:600;color:var(--ink)}
 a.kasten{cursor:pointer}
-a.kasten:hover{box-shadow:0 3px 10px rgba(27,42,36,.22)}
+a.kasten:hover{box-shadow:0 3px 10px rgba(27,42,36,.22);transform:translateY(-1px)}
+a.kasten:focus-visible{box-shadow:0 0 0 6px var(--card),0 0 0 9px var(--ink)}
+@media (prefers-reduced-motion:reduce){a.kasten:hover{transform:none}}
 a.kasten .oeffnen::after{content:" \203A"}
 .marke{hyphens:none;-webkit-hyphens:none;align-self:flex-start;background:var(--blau);color:#fff;font-weight:700;font-size:14px;line-height:1.3;padding:5px 10px;border-radius:6px}
 .marke::before{content:"\25B6\00a0"}
@@ -83,7 +89,7 @@ a.kasten .oeffnen::after{content:" \203A"}
   <span><i class="punkt s-gruen"></i>grün: erledigt</span>
   <span><i class="punkt wartet"></i>blauer Rahmen: wartet auf Sie</span>
 </div>
-<nav class="pfad" aria-label="Ebenen"><ol id="pfad"></ol></nav>
+<nav class="pfad" aria-label="Ebenen" hidden><ol id="pfad"></ol></nav>
 <main id="inhalt">
 {{INHALT}}
 </main>
@@ -146,6 +152,7 @@ a.kasten .oeffnen::after{content:" \203A"}
       teile = [{ text: 'Alle Vorhaben' }];
     }
     pfad(teile);
+    document.querySelector('nav.pfad').hidden = false;
     if (!erster) { ziel.querySelector('h2').focus({ preventScroll: true }); }
     erster = false;
     window.scrollTo(0, 0);
