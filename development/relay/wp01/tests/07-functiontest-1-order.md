@@ -1,0 +1,9 @@
+# Prüfauftrag Tester Funktion: Auftrag 07, Durchlauf 1
+
+- ref: `relay/wp01`
+- zu prüfender Commit: `7894eba68eb2380838d3d00f4634e1a2d7ce3f68` (Zweig `relay/wp01-07`)
+- Prüfgrundlagen: Auftrag `development/relay/wp01/orders/07.md` (liegt auf `relay/wp01`: `git show origin/relay/wp01:development/relay/wp01/orders/07.md`), Testbericht Sicherheit `development/relay/wp01/tests/security-1.md` (B1, H1 bis H5), Testbericht `development/relay/wp01/tests/06-functiontest-1.md` (Hinweise 1 bis 3), `development/relay/specification.md` (Abschnitt 7 und 8), `development/relay/plan.md` (`wp01`), `docs/technical/development-test-security-rules.md`; Prüfskripte `packages/relay-core/scripts/check`, `components/pipwerk-relay/scripts/check`, `components/pipwerk-fetch-mt5/scripts/check`.
+- Bericht: Dateiname `07-functiontest-1.md` im Berichtsverzeichnis `/srv/aixlab/dev/pipwerk/work/relay/wp01/reports/`.
+- Umfang: erster Durchlauf vollständig; Regeln „Umfang der Prüfungen“ in `docs/technical/entwicklungsverfahren.md#umfang-der-prüfungen`, nur blockierende Befunde verhindern das Bestehen.
+- Befehle, die länger als 5 Minuten dauern können (Prüfskripte, `testenv`, Tests), laufen im Hintergrund mit Ausgabe in eine Datei unter `/srv/aixlab/dev/pipwerk/work/relay/wp01/`; warte mit `Monitor`, Zeitlimit höchstens 600 Sekunden. Befehle enthalten keine Variablen, keine Kommandoersetzung und kein `cd`.
+- Hinweise des Entwicklers: `ReceivedEnvelope` hat ein neues Feld `loader` und die Methode `load()`; `WAY_API_VERSION` bleibt 1 (Entscheidung des Entwicklers, prüfe Vereinbarkeit mit Spezifikation und Dokumentation). H2 ist als „Komponententeil `relay` im Absender“ umgesetzt wie in `request.py`, nicht als Prüfung auf ein bestimmtes Relay; prüfe, ob das mit Spezifikation Abschnitt 7 vereinbar ist. Prüfe, dass Durchgang 1 und die Störungen 1 bis 7 weiter laufen (auch in `testenv`, soweit der Code geändert ist).
