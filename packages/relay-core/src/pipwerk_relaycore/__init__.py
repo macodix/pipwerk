@@ -2,11 +2,20 @@
 
 Address, message, envelope with check value, the interface "Way" for transmission ways as
 extensions, the way ``files`` (a directory in the file system) and the connector of a component
-(sending and receiving with attachments, repetitions, receipts). Technical documentation:
+(sending and receiving with attachments, repetitions, receipts) and the connection of a component
+as its startup configuration states it (``[relay]`` and ``[relay.way]``). Technical documentation:
 ``docs/technical/pipwerk-relay.md``.
 """
 
 from pipwerk_relaycore.address import Address
+from pipwerk_relaycore.connection import (
+    DEFAULT_POLL_INTERVAL_SECONDS,
+    ConnectionSettings,
+    ConnectionSettingsError,
+    connector_config,
+    open_connector,
+    read_connection_settings,
+)
 from pipwerk_relaycore.connector import (
     DEFAULT_ATTACHMENT_GRACE,
     DEFAULT_RECEIPT_TIMEOUT,
@@ -70,6 +79,7 @@ from pipwerk_relaycore.way import (
 
 __all__ = [
     "DEFAULT_ATTACHMENT_GRACE",
+    "DEFAULT_POLL_INTERVAL_SECONDS",
     "DEFAULT_RECEIPT_TIMEOUT",
     "DEFAULT_SEEN_FOR",
     "FORMAT",
@@ -82,6 +92,8 @@ __all__ = [
     "AddressError",
     "Attachment",
     "ConnectionKey",
+    "ConnectionSettings",
+    "ConnectionSettingsError",
     "Connector",
     "ConnectorConfig",
     "DatabaseMigrationError",
@@ -122,9 +134,12 @@ __all__ = [
     "alembic_config",
     "available_ways",
     "compute_mac",
+    "connector_config",
     "load_way",
     "load_way_class",
     "migrate_database",
     "migrate_scripts",
+    "open_connector",
+    "read_connection_settings",
     "verify_attachments",
 ]

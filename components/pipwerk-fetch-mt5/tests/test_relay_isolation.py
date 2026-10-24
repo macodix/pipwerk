@@ -121,6 +121,8 @@ def test_only_the_dispatch_of_the_command_line_names_the_relay_package() -> None
     assert mentions == [
         ("cli.py", "pipwerk_fetch_mt5.relay.commands"),  # under TYPE_CHECKING
         ("cli.py", "pipwerk_fetch_mt5.relay.commands"),  # in main, when a command is called
+        ("config.py", "pipwerk_relaycore.connection"),  # under TYPE_CHECKING
+        ("config.py", "pipwerk_relaycore.connection"),  # in _relay, when serve or request read it
     ]
 
 

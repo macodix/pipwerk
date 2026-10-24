@@ -5,6 +5,11 @@ rem   pipwerk-relay.cmd [-c <PATH>] run
 rem   pipwerk-relay.cmd [-c <PATH>] config load <FILE> | config show
 rem   pipwerk-relay.cmd [-c <PATH>] key new <FILE>
 rem   pipwerk-relay.cmd [-c <PATH>] queue | migrate
+rem   pipwerk-relay.cmd probe listen -c <PATH> -o <DIRECTORY>
+rem   pipwerk-relay.cmd probe send -c <PATH> --address <ADDRESS> --text <TEXT> [--file <FILE>]
+rem
+rem The probe has a startup configuration of its own (pipwerk-relay-probe.ini), given with -c
+rem after the action.
 rem
 rem Runs the program from the environment that install.cmd has created. All parameters go
 rem to the program; "pipwerk-relay.cmd --help" lists them. Without -c the program searches

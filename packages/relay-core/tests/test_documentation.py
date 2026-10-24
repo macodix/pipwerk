@@ -4,16 +4,19 @@ import pytest
 
 import pipwerk_relaycore
 from pipwerk_relaycore import (
+    DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_RECEIPT_TIMEOUT,
     DEFAULT_SEEN_FOR,
     KIND_PROBE,
     KIND_RECEIPT,
     KIND_UNDELIVERABLE,
+    ConnectionSettings,
     ConnectorConfig,
     RejectionReason,
     UndeliverableReason,
     WaySettings,
 )
+from pipwerk_relaycore.connection import RELAY_OPTIONS
 from pipwerk_relaycore.ways.files import FilesSettings
 from tests.helpers import CONTRACT_DIRECTORY, REPOSITORY, TECHNICAL_DOCUMENT
 
@@ -105,6 +108,28 @@ def test_the_settings_of_the_ways_are_described() -> None:
 def test_the_settings_of_the_connector_are_described() -> None:
     for field in ConnectorConfig.__dataclass_fields__:
         assert f"`{field}`" in DOCUMENT
+
+
+def test_the_connection_from_the_startup_configuration_is_described() -> None:
+    section = DOCUMENT[DOCUMENT.index("### 11.1 ") : DOCUMENT.index("## 12. ")]
+    for field in ConnectionSettings.__dataclass_fields__:
+        assert f"`{field}`" in section, field
+    for option in RELAY_OPTIONS:
+        assert f"| `{option}` |" in section or f"`{option}`" in section, option
+    for name in (
+        "read_connection_settings",
+        "open_connector",
+        "connector_config",
+        "ConnectionSettings",
+        "ConnectionSettingsError",
+        "RELAY_OPTIONS",
+        "RELAY_REQUIRED",
+        "[relay.way]",
+        "target.",
+        "inbox.",
+    ):
+        assert name in section, name
+    assert str(DEFAULT_POLL_INTERVAL_SECONDS) in section
 
 
 @pytest.mark.parametrize("reason", list(UndeliverableReason))

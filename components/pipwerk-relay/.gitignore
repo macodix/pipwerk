@@ -5,6 +5,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# The state, the logs and the data of the test environment (scripts/testenv)
+.testenv/
+
 # The filled-in startup configuration names the database and the directories of one
 # machine (the versioned example is pipwerk-relay.example.ini)
 pipwerk-relay.ini
+pipwerk-relay-probe.ini

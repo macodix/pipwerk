@@ -8,20 +8,22 @@
     pipwerk-relay [-c <PATH>] key new <FILE>
     pipwerk-relay [-c <PATH>] queue
     pipwerk-relay [-c <PATH>] migrate
+    pipwerk-relay probe listen|send -c <PATH> ...
 
 Exit codes: 0 done, 1 the command failed, 2 invalid call or invalid startup configuration.
 Text for the operator goes to the standard output, errors to the standard error output. Neither
 shows content of a message, a key or a value of a configuration. The relay opens no port.
+
+``probe`` is a component of its own (``probe.py``) with a startup configuration of its own, given
+after the action; it does not read ``pipwerk-relay.ini``.
 """
 
 import argparse
-import signal
 import sys
 import threading
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from types import FrameType
 
 import sqlalchemy as sa
 from pipwerk_relaycore import (
@@ -41,8 +43,14 @@ from pipwerk_relay.errors import (
     StartupConfigError,
 )
 from pipwerk_relay.operating import MAX_CONFIG_BYTES
+from pipwerk_relay.probe import add_probe_parser, run_probe
 from pipwerk_relay.relay import Relay
-from pipwerk_relay.service import configure_logging, remove_logging, run_until_stopped
+from pipwerk_relay.service import (
+    configure_logging,
+    remove_logging,
+    run_until_stopped,
+    stop_on_signals,
+)
 from pipwerk_relay.startup import StartupConfig, load_startup_config
 from pipwerk_relay.store import QueueEntry, RelayStore
 
@@ -76,12 +84,15 @@ def _parser() -> argparse.ArgumentParser:
     new.add_argument("file", metavar="FILE", help="file name of the key (not a path)")
     commands.add_parser("queue", help="list the messages in the queue (without content)")
     commands.add_parser("migrate", help="bring the database to the newest schema")
+    add_probe_parser(commands)
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run a command; returns the exit code."""
     arguments = _parser().parse_args(argv)  # an invalid call ends with exit code 2
+    if arguments.command == "probe":
+        return run_probe(arguments)  # the probe has a startup configuration of its own
     try:
         startup = load_startup_config(arguments.config)
     except StartupConfigError as error:
@@ -211,26 +222,15 @@ def _run(startup: StartupConfig, store: RelayStore) -> int:
         )
         return EXIT_FAILED
     stop = threading.Event()
-
-    def request_stop(_number: int, _frame: FrameType | None) -> None:
-        stop.set()
-
-    previous = {number: signal.signal(number, request_stop) for number in _stop_signals()}
     try:
-        relay = Relay(store, attachments, secrets)
-        try:
-            relay.cycle()  # a missing or unusable configuration ends here, before the loop
-        except (NotConfigured, ConfigRejected) as error:
-            print(f"{PROG}: not started: {error}", file=sys.stderr)
-            return EXIT_FAILED
-        run_until_stopped(relay, stop)
+        with stop_on_signals(stop):
+            relay = Relay(store, attachments, secrets)
+            try:
+                relay.cycle()  # a missing or unusable configuration ends here, before the loop
+            except (NotConfigured, ConfigRejected) as error:
+                print(f"{PROG}: not started: {error}", file=sys.stderr)
+                return EXIT_FAILED
+            run_until_stopped(relay, stop)
     finally:
-        for number, old in previous.items():
-            signal.signal(number, old)
         remove_logging(handler)
     return EXIT_OK
-
-
-def _stop_signals() -> list[signal.Signals]:
-    names = ("SIGINT", "SIGTERM", "SIGBREAK")
-    return [getattr(signal, name) for name in names if hasattr(signal, name)]

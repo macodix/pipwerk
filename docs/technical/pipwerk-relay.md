@@ -5,8 +5,8 @@
 - status: `draft`
 - stand: 2026-10-24
 - komponenten: `packages/relay-core` (Python-Paket `pipwerk_relaycore`), `components/pipwerk-relay` (Python-Paket `pipwerk_relay`), `contracts/messages/`
-- grundlage: [Spezifikation relay](../../development/relay/specification.md), E1, E3 letzter Satz, E4 bis E7, 3.1 bis 3.5, 3.7, 4.1 bis 4.5, Abschnitte 5, 7 und 8; [Plan](../../development/relay/plan.md), Paket `wp01`; Aufträge 01 bis 03
-- umfang dieses stands: Teil A (Abschnitte 1 bis 17) die Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel der Verbindung, Schnittstelle „Weg“, Verzeichnis-Weg `files`, den Inhalten der Nachrichtenarten `relay.receipt`, `relay.undeliverable` und `probe.message`, dem Anschluss einer Komponente mit Prüfung, Wiederholungserkennung und Empfangsbestätigung sowie der Datenbank des Anschlusses. Teil B (Abschnitte 18 bis 31) das Relay `pipwerk-relay` mit Weg einer Nachricht, Speicher, Konfiguration, Befehlen, Begrenzungen und Sicherheit, ohne die Prüfkomponente. Die Prüfkomponente (Auftrag 04) und der Abruf (Aufträge 05 und 06) ergänzen dieses Dokument.
+- grundlage: [Spezifikation relay](../../development/relay/specification.md), E1, E3 letzter Satz, E4 bis E7, 3.1 bis 3.5, 3.7, 4.1 bis 4.5, Abschnitte 5, 7 und 8; [Plan](../../development/relay/plan.md), Paket `wp01`; Aufträge 01 bis 04
+- umfang dieses stands: Teil A (Abschnitte 1 bis 17) die Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel der Verbindung, Schnittstelle „Weg“, Verzeichnis-Weg `files`, den Inhalten der Nachrichtenarten `relay.receipt`, `relay.undeliverable` und `probe.message`, dem Anschluss einer Komponente mit Prüfung, Wiederholungserkennung und Empfangsbestätigung, der Verbindung aus der Startkonfiguration (Abschnitt 11.1) sowie der Datenbank des Anschlusses. Teil B (Abschnitte 18 bis 34) das Relay `pipwerk-relay` mit Weg einer Nachricht, Speicher, Konfiguration, Befehlen, Begrenzungen und Sicherheit, die Prüfkomponente (Abschnitt 31), die Testumgebung (Abschnitt 32) und die Tests der Störungen 1 bis 7 (Abschnitt 33). Der Abruf (Aufträge 05 und 06) ergänzt dieses Dokument; sein Teil steht in `pipwerk-fetch-mt5.md`.
 
 ## 1. Gegenstand
 
@@ -20,6 +20,7 @@
 - den Verzeichnis-Weg `files` (Abschnitte 8 und 9),
 - die Inhalte der Nachrichtenarten, die die Bibliothek selbst kennt (Abschnitt 10),
 - den Anschluss einer Komponente `Connector`: Senden, Lesen mit Prüfung, Wiederholungen (Abschnitt 11) und Empfangsbestätigung (Abschnitt 12),
+- die Verbindung einer Komponente aus ihrer Startkonfiguration: `[relay]` und `[relay.way]` lesen und den Anschluss öffnen (Abschnitt 11.1),
 - die Datenbank des Anschlusses (Abschnitt 13).
 
 Die Bibliothek kennt keinen Weg im Code. Sie liest keine Konfiguration und kennt keine festen Pfade, Ports oder Namen: Verzeichnisse, Dateinamen von Schlüsseln, Größen und Namen von Wegen kommen als Parameter oder Konfiguration vom Aufrufer.
@@ -40,6 +41,7 @@ Abhängigkeiten zur Laufzeit: Pydantic (Prüfung der Nachricht, des Umschlags un
 | `ways.files` | Verzeichnis-Weg `files` |
 | `contents` | Inhalte von `relay.receipt`, `relay.undeliverable`, `probe.message`; Gründe der Unzustellbarkeit |
 | `connector` | Anschluss einer Komponente: `Connector`, `ConnectorConfig`, `WayConfig`, `Handler`, `PollResult` |
+| `connection` | die Verbindung aus der Startkonfiguration: `ConnectionSettings`, `read_connection_settings`, `connector_config`, `open_connector`, `ConnectionSettingsError` (Abschnitt 11.1) |
 | `store` | `ConnectorStore`: gesehene Nachrichten-IDs und wartende Bestätigungen |
 | `tables`, `migrate`, `migrations` | Tabellen (SQLAlchemy Core), Migration (Alembic: `migrate_database` für die Tabellen des Anschlusses, `migrate_scripts` für die Migrationen eines Programms wie des Relays), Versionen der Migration |
 | `schemas` | erzeugt die JSON-Schemas unter `contracts/messages/v1/` aus den Modellen |
@@ -273,6 +275,24 @@ Danach meldet der Anschluss die Nachrichten, deren Frist auf eine Bestätigung a
 
 **Quittieren.** Scheitert das Quittieren (`WayError`), vermerkt der Anschluss es im Protokoll; der Umschlag bleibt im Eingang und kommt im nächsten Durchlauf als Wiederholung oder wird wieder verworfen.
 
+### 11.1 Die Verbindung aus der Startkonfiguration
+
+Welche Angaben ein Anschluss braucht, legt jede Komponente selbst fest (Spezifikation 3.5). Die Komponenten von pipwerk relay, die eine Startkonfiguration im INI-Format haben (`pipwerk-fetch-mt5` mit `serve` und `request`, die Prüfkomponente in Abschnitt 31), geben sie in derselben Form an. Lesen und Öffnen liegen deshalb in der Bibliothek (Modul `connection`, seit Auftrag 04; die bisherige Schnittstelle der Bibliothek ist unverändert, das Modul ist eine Ergänzung): `read_connection_settings(parser, herkunft)` liest die Abschnitte `[relay]` und `[relay.way]` eines `ConfigParser` (vom Aufrufer mit `interpolation=None` gebaut, weil ein Wert `%` enthalten kann; die Prüfkomponente und `pipwerk-fetch-mt5` behalten außerdem die Schreibweise der Einträge). Die Rückgabe sind `ConnectionSettings`, oder `None`, wenn die Datei kein `[relay]` hat. `open_connector(einstellungen, clock=…)` prüft, was die Bibliothek prüft (Adresse, Schlüssel und Rechte des Verzeichnisses für Geheimnisse, Name und eigene Angaben des Wegs, Datenbank), legt das Verzeichnis der Datenbank an und liefert den `Connector`; `connector_config(einstellungen)` liefert nur die `ConnectorConfig`.
+
+| Abschnitt | Eintrag | Bedeutung |
+|---|---|---|
+| `[relay]` | `address` | Pflicht. Eigene Adresse `<Komponente>.<Netz>.<Relay>` |
+| | `way` | Pflicht. Name des Übertragungswegs, hier `files` |
+| | `secrets_directory` | Pflicht. Verzeichnis für Geheimnisse mit dem Schlüssel der Verbindung; nur der eigene Benutzer darf es erreichen |
+| | `key_file` | Pflicht. Dateiname des Schlüssels der Verbindung mit dem Relay in diesem Verzeichnis |
+| | `database` | Pflicht. SQLite-Datei des Anschlusses (Abschnitt 13); das Verzeichnis wird angelegt; auf einem lokalen Laufwerk |
+| | `relay_link` | wahlweise. `<Netz>.<Relay>`, wenn die Relay-Seite der Verbindung nicht das Relay der Adresse ist |
+| | `poll_interval_seconds` | wahlweise, 1 bis 3600, Voreinstellung 2 (`DEFAULT_POLL_INTERVAL_SECONDS`). Abstand, in dem die Komponente ihren Eingang liest |
+| `[relay.way]` | `target.<Eintrag>` | eigene Angaben des Wegs für das Ziel, ohne das Vorwort an den Weg gereicht |
+| | `inbox.<Eintrag>` | eigene Angaben des Wegs für den Eingang |
+
+`ConnectionSettings` hat die Felder `address`, `way`, `secrets_directory`, `key_file`, `database`, `target`, `inbox`, `relay_link` und `poll_interval_seconds`; die Werte sind der Text der Datei (Pfade als `Path`), `target` und `inbox` unveränderlich. Ein unbekannter Eintrag von `[relay]`, ein fehlender Pflichteintrag, ein Eintrag von `[relay.way]` ohne Vorwort `target.` oder `inbox.` und `[relay.way]` ohne `[relay]` sind Fehler (`ConnectionSettingsError`); die Meldung beginnt mit der Herkunft („Startup configuration <Pfad>“) und nennt den Eintrag, nie den Wert. `[relay.way]` ist von der Abweisung unbekannter Einträge ausgenommen; der Weg prüft seine Angaben selbst streng (Abschnitt 7). Fehler beim Öffnen (`open_connector`) beginnen mit `[relay]:` und nennen den Eintrag oder die Datei, nie den Schlüssel; sie sind ebenfalls `ConnectionSettingsError`. Die Namen der Einträge von `[relay]` stehen als `RELAY_OPTIONS`, die Pflichteinträge als `RELAY_REQUIRED` in der Bibliothek. `tests/test_connection.py` prüft das Lesen und das Öffnen.
+
 ## 12. Empfangsbestätigung
 
 Die Empfangsbestätigung (Spezifikation 3.7, req-relay-013) ist eine Aufgabe des Anschlusses auf beiden Seiten.
@@ -359,6 +379,7 @@ Die Tests des Anschlusses (`tests/network.py`) bilden ein Netz mit zwei Komponen
 | `test_connector.py` | Anschluss: Senden und Lesen mit Anlagen über zwei Relays und zurück, Wiederholung (auch nach Neustart, bei anderer Zahl von `hops`, nach Ablauf der Frist), gefälschte und nicht passende Umschläge (falscher Schlüssel, unbekannte Seite, falscher Empfänger, `receipt` bei `relay.receipt`, Inhalt zur Art), kaputte Datei, veränderte und verspätete Anlage mit Schonfrist, Fehler der Komponente, nicht erreichbarer Eingang und Ziel, Höchstgröße des Wegs, Prüfung beim Senden, Angaben |
 | `test_receipt.py` | Empfangsbestätigung: nach dem Speichern, mit Bezug und Priorität, ohne Wunsch keine, Wiederholung mit zweiter Bestätigung ohne zweite Übergabe, Bestätigung, die nicht gesendet werden kann, Frist (Voreinstellung, eigene Frist, Neustart, späte Bestätigung, Komponente läuft verspätet), `relay.undeliverable` beendet das Warten, Bestätigung von fremder Adresse und ohne wartende Nachricht, Ausnahme der Komponente |
 | `test_contents.py` | Inhalte der Nachrichtenarten: Modelle, Schemas, Beispiele, feste Texte der Gründe |
+| `test_connection.py` | Verbindung aus der Startkonfiguration (Abschnitt 11.1): Lesen mit Voreinstellungen, Angaben des Wegs unverändert, jeder Pflichteintrag, unbekannter Eintrag, Fehler ohne Werte, Öffnen mit Schlüsseln, Rechten, Weg, Datenbank |
 | `test_migrations.py` | Migration: leere Datenbank, Wiederholung, fremde Tabellen, Gleichheit mit den Tabellen, neuere Version, Rücknahme |
 
 Die übrigen Dateien aus Auftrag 01:
@@ -382,19 +403,20 @@ Die übrigen Dateien aus Auftrag 01:
 
 `pipwerk-relay` (Verzeichnis `components/pipwerk-relay`, Python-Paket `pipwerk_relay`) ist das Programm, das Nachrichten zwischen Komponenten und zwischen Relays weitergibt (Spezifikation E1, 4.1 bis 4.5). Es liest die Umschläge aus seinen Eingängen, prüft sie, legt jede Nachricht in seiner Warteschlange ab und gibt sie weiter: an eine angeschlossene Komponente, an ein Relay seines Adressbuchs oder an das Standard-Relay. Was nicht zustellbar ist, endet mit einer Nachricht `relay.undeliverable` an den Absender. Das Relay verwendet die Bibliothek aus Teil A für Adresse, Nachricht, Umschlag, Prüfwert, Schlüssel und Wege. Es kennt keinen Weg im Code: Welchen Weg ein Eingang, eine Komponente oder ein Eintrag des Adressbuchs verwendet, steht in der Betriebskonfiguration (Abschnitt 21) und wird über den Namen geladen (Abschnitt 7).
 
-Das Relay öffnet keinen Port und hat keine Web-API (die Web-API folgt mit Paket `wp05`). Es ist ein Prozess; zwei Prozesse auf derselben Datenbank sind nicht vorgesehen (Abschnitt 28, Grenzen).
+Das Relay öffnet keinen Port und hat keine Web-API (die Web-API folgt mit Paket `wp05`). Die Prüfkomponente `probe` liegt im selben Paket (Abschnitt 31), ist aber eine Komponente von pipwerk relay wie jede andere und kein Teil des Relays: Sie hat Adresse, Schlüssel und Startkonfiguration für sich und spricht nur über ihren Anschluss mit dem Relay. Es ist ein Prozess; zwei Prozesse auf derselben Datenbank sind nicht vorgesehen (Abschnitt 28, Grenzen).
 
 | Modul | Aufgabe |
 |---|---|
 | `cli` | die Befehle (Abschnitt 27), Exitcodes |
-| `startup` | die Startkonfiguration `pipwerk-relay.ini` (Abschnitt 20) |
+| `startup` | die Startkonfiguration `pipwerk-relay.ini` (Abschnitt 20); Suche der Datei und Lesen einer INI-Datei (`resolve_config_path`, `parse_ini_file`), auch für die Startkonfiguration der Prüfkomponente |
 | `operating` | die Modelle der Betriebskonfiguration, ihre Prüfung und die Voreinstellungen (Abschnitt 21) |
 | `configuration` | `config load` und `config show`: `load_configuration`, `show_configuration` |
 | `runtime` | `build_runtime`: lädt die Wege und die Schlüssel einer Betriebskonfiguration |
 | `relay` | `Relay`: eine Runde der Arbeit (`cycle`) mit Lesen, Prüfen, Speichern, Weitergeben und Aufräumen (Abschnitte 23 bis 26) |
 | `store`, `tables`, `database`, `migrations` | der Speicher: Warteschlange, gesehene Übergaben, Betriebskonfiguration (Abschnitt 22) |
 | `attachments` | das Verzeichnis der Anlagen (Abschnitt 22) |
-| `service` | die Schleife `run_until_stopped` und das Protokoll |
+| `service` | die Schleife `run_until_stopped`, das Protokoll und `stop_on_signals` (Beenden mit Strg+C und `SIGTERM`, vom Relay und von `probe listen` verwendet) |
+| `probe` | die Prüfkomponente: Startkonfiguration, `probe listen`, `probe send` (Abschnitt 31) |
 | `schemas` | erzeugt `relay-config.schema.json` aus dem Modell |
 | `errors` | `RelayError` und seine Unterklassen: `StartupConfigError`, `ConfigRejected`, `NotConfigured`, `SchemaOutdated`, `AttachmentLost` |
 
@@ -425,7 +447,7 @@ Die Startkonfiguration ist eine INI-Datei `pipwerk-relay.ini` (req-system-016, r
 | `[log]` | `level` (Voreinstellung `INFO`) | `DEBUG`, `INFO`, `WARNING` oder `ERROR`. |
 | `[log]` | `file` | Protokolldatei (wird angehängt); ohne Angabe schreibt das Relay das Protokoll auf die Standardfehlerausgabe. |
 
-Unbekannte Abschnitte und Einträge werden abgewiesen; ein Fehler nennt den Abschnitt oder den Eintrag, bei einem Syntaxfehler die Zeilennummer, nie den Wert (die Zeile kann die URL mit Kennwort enthalten). Ein Prozentzeichen ist ein gewöhnliches Zeichen. Die Betriebskonfiguration gehört nicht in diese Datei. Die Datei mit den eigenen Werten gehört nicht in ein Repository (`.gitignore` der Komponente); versioniert ist nur `pipwerk-relay.example.ini`.
+Unbekannte Abschnitte und Einträge werden abgewiesen; ein Fehler nennt den Abschnitt oder den Eintrag, bei einem Syntaxfehler die Zeilennummer, nie den Wert (die Zeile kann die URL mit Kennwort enthalten). Ein Prozentzeichen ist ein gewöhnliches Zeichen. Die Betriebskonfiguration gehört nicht in diese Datei. Die Datei mit den eigenen Werten gehört nicht in ein Repository (`.gitignore` der Komponente); versioniert ist nur `pipwerk-relay.example.ini`. Die Prüfkomponente (Abschnitt 31) liest diese Datei nicht; sie hat die Startkonfiguration `pipwerk-relay-probe.ini` (Beispiel `pipwerk-relay-probe.example.ini`).
 
 **Rechte vor dem Start (Spezifikation 4.5, Abschnitt 7).** `pipwerk-relay run` ruft vor allem anderen `SecretsDirectory.check()` der Bibliothek auf (Abschnitt 6): Verzeichnis und jede Datei darin gehören dem Benutzer des Relays und sind für andere nicht zugänglich (Linux: `0700` und `0600` oder `0400`; Windows: Zugriffsliste, Abschnitt 6). Sonst startet das Relay nicht, es führt keine Runde aus und endet mit Exitcode 1. Beim Laden der Schlüssel (`config load`, Start) prüft die Bibliothek dieselben Rechte noch einmal je Datei.
 
@@ -558,8 +580,10 @@ Die Frist muss länger sein als der längste Schreibvorgang einer Übergabe und 
 | `config show` | gibt die Betriebskonfiguration in Gebrauch als JSON aus |
 | `queue` | listet die Nachrichten der Warteschlange mit Stand, ohne Inhalt: `seq`, Nachrichten-ID, Art, Absender, Adressat, Stand (`new`: noch kein Versuch der Übergabe, `retrying`: mindestens ein Versuch ist gescheitert), Zahl der Versuche, Zeitpunkt der Annahme, Zeitpunkt des nächsten Versuchs und Name des letzten Fehlers; darunter die Zahl der Nachrichten und die Größe der Anlagen |
 | `run` | prüft die Rechte des Verzeichnisses für Geheimnisse, legt das Verzeichnis der Anlagen an, richtet das Protokoll ein, lädt die Betriebskonfiguration und arbeitet in Runden mit `periods.read_interval_seconds` Pause, bis es mit `SIGINT` (Strg+C), `SIGTERM` oder unter Windows `SIGBREAK` beendet wird; das Ende lässt die laufende Runde fertig werden (Exitcode 0) |
+| `probe listen -c <Pfad> -o <Verzeichnis>` | die Prüfkomponente empfängt, bis sie beendet wird, und schreibt jede Nachricht mit ihren Anlagen in das Verzeichnis (Abschnitt 31); `-c` ist ihre eigene Startkonfiguration `pipwerk-relay-probe.ini`, nicht die des Relays |
+| `probe send -c <Pfad> --address <Adresse> --text <Text> [--file <Datei> …] [--receipt] [--wait <Sekunden>]` | die Prüfkomponente sendet eine Nachricht `probe.message` und zeigt, was zurückkommt (Abschnitt 31) |
 
-Ohne geladene Betriebskonfiguration (`NotConfigured`) oder mit einer, die sich nicht aufbauen lässt, startet `run` nicht. Eine Runde, die an einem Fehler der Datenbank oder des Dateisystems scheitert, vermerkt den Namen des Fehlers im Protokoll, und die nächste Runde versucht es noch einmal. `probe listen|send` folgt in Auftrag 04.
+Ohne geladene Betriebskonfiguration (`NotConfigured`) oder mit einer, die sich nicht aufbauen lässt, startet `run` nicht. Eine Runde, die an einem Fehler der Datenbank oder des Dateisystems scheitert, vermerkt den Namen des Fehlers im Protokoll, und die nächste Runde versucht es noch einmal. `probe` liest nicht `pipwerk-relay.ini`: Wer `-c` vor `probe` angibt, bekommt Exitcode 2 mit dem Hinweis, `-c` hinter die Aktion zu setzen.
 
 ## 28. Sicherheit des Relays
 
@@ -614,17 +638,139 @@ Die Tests bauen Relays mit der echten Bibliothek und echten Anschlüssen (`Conne
 | `test_startup.py` | Startkonfiguration und ihr Beispiel |
 | `test_commands.py` | die Befehle, Exitcodes, Rechte vor dem Start, Lauf bis zum Beenden, kein Port |
 | `test_documentation.py` | die Dokumentation nennt Felder, Befehle, Tabellen, Werte und Gründe |
+| `test_probe.py` | die Prüfkomponente (Abschnitt 31): Startkonfiguration und ihr Beispiel, `listen` (Dateien unverändert, eine Zeile je Nachricht, Wiederholung, Schreibfehler), `send` (Bestätigung, Meldung mit Grund, ausgebliebene Bestätigung, Übergabe scheitert, Datei zu groß), der Aufruf an der Befehlszeile mit Exitcodes und `listen` als Prozess |
+| `test_disturbances.py` | die Störungen 1 bis 7 mit zwei Relays, gemeinsamem Verzeichnis und Prüfkomponente (Abschnitt 33) |
+| `test_testenv.py` | das Skript `scripts/testenv` (gültig, ausführbar, ohne feste Ports, Pfade und Namen, Ablehnung ungültiger Aufrufe vor jeder Änderung, jede Störung benannt, Dokumentation) und die Nachbildung von `MetaTrader5` |
 
-## 31. Bekannte Grenzen dieses Stands
+Die Hilfen der Tests liegen in `tests/support.py` (Welt mit mehreren Relays; ein Relay kann ein zweites Verzeichnis im gemeinsamen Verzeichnis haben), `tests/probe_bench.py` (zwei Relays mit gemeinsamem Verzeichnis und je einer Prüfkomponente, die Schritte der Prüfkomponente bewegen die Uhr und arbeiten eine Runde) und `tests/crash.py` (hartes Ende des Relays an einem Schritt, auch von `test_recovery.py` verwendet).
 
-- Die Prüfkomponente (`probe`) und die Testumgebung folgen in Auftrag 04, der Abruf in den Aufträgen 05 und 06.
-- Der Nachweis auf einem Netzlaufwerk (SMB, NFS) gehört zur Testumgebung des Pakets (Abschnitt 9, letzter Absatz); die Tests dieses Abschnitts laufen auf einem lokalen Dateisystem.
-- Die Anwenderdokumentation (`docs/user/pipwerk-relay.md`) schreibt Auftrag 04.
+## 31. Prüfkomponente (`probe`)
+
+Die Prüfkomponente (Spezifikation 8, „Prüfkomponente“; Modul `probe`) ist eine laufende Komponente von pipwerk relay, mit der sich die Grundmechanik ohne den Abruf und ohne MetaTrader 5 nachweisen lässt. Sie hat wie jede Komponente eine Adresse, einen Schlüssel der Verbindung mit ihrem Relay und eine Startkonfiguration. `probe listen` und `probe send` sind zwei Befehle desselben Programms; jede Prüfkomponente läuft mit eigener Adresse (ein `send` und ein `listen` verwenden nie dieselbe Adresse und dieselbe Datenbank, weil sie sonst einander den Eingang leer lesen).
+
+**Startkonfiguration.** `pipwerk-relay-probe.ini` (Beispiel `pipwerk-relay-probe.example.ini`), mit `-c <Pfad>` hinter der Aktion oder in den Suchorten wie bei der Startkonfiguration des Relays (Abschnitt 20, mit dem Dateinamen der Prüfkomponente). Sie hat die Abschnitte `[relay]` und `[relay.way]` in der Form, die jede Komponente verwendet (Abschnitt 11.1; dieselben Vorworte `target.` und `inbox.` wie `pipwerk-fetch-mt5`, Spezifikation 6.1) und liest sie mit `read_connection_settings` und `open_connector` der Bibliothek. Ein anderer Abschnitt wird abgewiesen („unknown section“); die Schreibweise der Einträge von `[relay.way]` bleibt erhalten. Fehler der Datei oder der Verbindung (`StartupConfigError`, `ConnectionSettingsError`) enden mit Exitcode 2, ohne etwas zu senden; der Text nennt den Eintrag oder die Datei, nie den Wert und nie den Schlüssel.
+
+**Exitcodes.** 0 erledigt (`send`: die Bestätigung ist angekommen, oder es wurde keine verlangt und es kam keine Meldung); 1 die Nachricht wurde nicht zugestellt (Meldung des Relays), nicht bestätigt (Frist abgelaufen) oder ließ sich nicht an das Relay übergeben; 2 ungültiger Aufruf oder ungültige Startkonfiguration. Hinweise für den Anwender stehen auf der Standardausgabe, Fehler und Meldungen mit Exitcode 1 auf der Standardfehlerausgabe, englisch wie die übrigen Texte des Relays.
+
+### 31.1 `probe listen`
+
+`probe listen -c <Pfad> -o <Verzeichnis>`: öffnet den Anschluss, legt das Verzeichnis an, schreibt `pipwerk-relay probe listen: address <Adresse>, writing to <Verzeichnis> (stop with Ctrl+C).` und liest den Eingang im Abstand von `poll_interval_seconds`, bis es mit Strg+C oder `SIGTERM` (unter Windows `SIGBREAK`) beendet wird (`pipwerk-relay probe listen: stopped.`, Exitcode 0). Für jede Nachricht, die der Anschluss übergibt (nach Prüfung von Prüfwert, Empfänger, Anlagen und Inhalt, Abschnitt 11), gilt:
+
+- Die Nachricht steht in einem Verzeichnis `<Verzeichnis>/<Nachrichten-ID>/`: `message.json` ist die Nachricht (JSON der Bibliothek), `files/<Name>` sind ihre Anlagen, Byte für Byte. Das Verzeichnis erscheint vollständig oder gar nicht (es entsteht unter dem Namen `<ID>.<Zufall>.part` und wird umbenannt); Namen der Anlagen sind durch die Regeln der Nachricht (Abschnitt 4) nie ein Pfad.
+- Eine Zeile auf der Standardausgabe: `Message <ID> (<Art>) from <Absender>: <n> attachments (<Namen>), stored in <Pfad>`; für `relay.undeliverable` beginnt sie mit `Notice`. Die Zeile ist Ausgabe für den Anwender, nicht das Protokoll.
+- `probe.message` und jede andere Art werden gleich behandelt: Die Prüfkomponente deutet den Inhalt nicht.
+- Kommt dieselbe Nachricht noch einmal (das Ende vor dem Vermerk „gesehen“, Abschnitt 11), ist ihr Verzeichnis schon da und bleibt unverändert; die Zeile erscheint trotzdem. Scheitert das Schreiben (volle Platte), bleibt kein `.part`-Verzeichnis zurück, `store` löst die Ausnahme aus, der Umschlag bleibt im Eingang, und der nächste Durchlauf versucht es noch einmal (Abschnitt 11, Punkt 5).
+- Eine Empfangsbestätigung schickt der Anschluss, wenn der Absender eine verlangt hat (Abschnitt 12), erst nachdem das Verzeichnis geschrieben ist.
+- Beim Start entfernt `listen` die unfertigen Verzeichnisse `*.part`, die ein hartes Ende einer früheren Arbeit hinterlassen hat (`remove_leftovers`); ihre Nachrichten liegen noch im Eingang und kommen noch einmal.
+
+Das Protokoll der Bibliothek (`logging`, Stufe `WARNING` und höher) geht auf die Standardfehlerausgabe: verworfene Umschläge mit Grund, Fehler beim Speichern.
+
+### 31.2 `probe send`
+
+`probe send -c <Pfad> --address <Adresse> --text <Text> [--file <Datei> …] [--receipt] [--wait <Sekunden>]`:
+
+| Angabe | Bedeutung |
+|---|---|
+| `--address` | Adresse des Empfängers `<Komponente>.<Netz>.<Relay>` (Pflicht) |
+| `--text` | der Text der Nachricht, 1 bis 1000 Zeichen (Pflicht) |
+| `--file` | eine Datei als Anlage, mehrmals möglich; der Name der Anlage ist der Dateiname (Regeln der Anlagen, Abschnitt 4: 1 bis 128 Zeichen aus Buchstaben, Ziffern und `. _ # + -`, kein Punkt am Anfang, keine zwei gleichen Namen) |
+| `--receipt` | verlangt die Empfangsbestätigung (Abschnitt 12) |
+| `--wait` | mit `--receipt` die Frist der Bestätigung, sonst die Zeit, in der auf eine Meldung gewartet wird; 1 bis 604800 Sekunden, Voreinstellung 30 |
+
+Zuerst prüft `send` den Aufruf (Adresse, Text, Frist, Dateien lesbar und mit zulässigem Namen) und die Startkonfiguration, dann sendet es eine Nachricht der Art `probe.message` mit Priorität `normal` (Zeile `Sent message <ID> to <Adresse> with <n> attachments[, receipt wanted within <s> seconds].`). Danach liest es den eigenen Eingang im Abstand von `poll_interval_seconds` und endet mit einem von vier Ergebnissen:
+
+| Ergebnis | Anzeige | Exitcode |
+|---|---|---|
+| Die Bestätigung ist angekommen | `Receipt: message <ID> was stored by <Adresse>.` | 0 |
+| Eine Meldung `relay.undeliverable` zur Nachricht (req-relay-008) | `Notice from <Relay>: message <ID> is undeliverable (<Grund>): <fester Text>` | 1 |
+| Die Frist der Bestätigung ist ohne Bestätigung abgelaufen (Abschnitt 12) | `No receipt: message <ID> to <Adresse> was not confirmed within <s> seconds.` | 1 |
+| Ohne `--receipt` kam in der Wartezeit keine Meldung | `No notice came back within <s> seconds for message <ID>.` | 0 |
+
+Eine Meldung beendet das Warten auf die Bestätigung (Abschnitt 12); es folgt keine zweite Anzeige. Eine späte Bestätigung nach der Frist erscheint nur im Protokoll des Anschlusses (`receipt dropped`), `send` ist dann schon beendet. Ließ sich die Nachricht nicht an das Relay übergeben (der Weg zum Relay ist nicht erreichbar oder die Anlage ist für ihn zu groß), steht `pipwerk-relay probe: the message could not be handed to the relay: <Fehler>.` auf der Standardfehlerausgabe (Exitcode 1); es wartet dann nichts. Nachrichten anderer Art oder anderen Bezugs, die im Eingang liegen, zeigt `send` mit `Received <Art> <ID> from <Absender>.` an. Die Warnungen der Bibliothek zeigt `send` nicht (Stufe `ERROR`), weil es dasselbe selbst sagt. Eigene Uhren (`Timing`) ersetzen in den Tests die Systemuhr, damit eine Frist von Minuten in einem Test vergeht, ohne zu warten.
+
+## 32. Testumgebung
+
+`components/pipwerk-relay/scripts/testenv` (Aufbau und Aufruf wie das Skript der Komponente `pipwerk-replay`) richtet auf einem Rechner ohne weiteres Zutun eine laufende Umgebung ein, in der Tester und QA die Durchgänge und die Störungen durchführen (Spezifikation 8, „Testumgebung“, Durchgang 1):
+
+```
+testenv [--directory <Verzeichnis>] start --network <Name> --relay-a <Name> --relay-b <Name> --broker <Name>
+        [--delivery-deadline <Sekunden>] [--limit-bytes <Bytes>]
+        [--listen-name <Name>] [--send-name <Name>] [--fetch-name <Name>] [--request-name <Name>]
+testenv [--directory <Verzeichnis>] stop
+testenv [--directory <Verzeichnis>] status
+testenv [--directory <Verzeichnis>] send <a|b> <Angaben von „probe send“>
+testenv [--directory <Verzeichnis>] request <Angaben von „pipwerk-fetch-mt5 request“>
+testenv [--directory <Verzeichnis>] queue <a|b>
+testenv [--directory <Verzeichnis>] fault <1 bis 7> [<Aktion>]
+```
+
+**Aufbau.** Das Skript leitet das Arbeitsverzeichnis aus seinem Pfad ab und lässt sich aus jedem Verzeichnis aufrufen. Es startet nur aus genau einem Commit: Das Git-Arbeitsverzeichnis muss frei von nicht übernommenen Änderungen und von neuen Dateien sein, die nicht ignoriert werden (wie bei `pipwerk-replay`); vorher wird nichts installiert oder gestartet. Es enthält keine festen Ports, Pfade oder Namen: Netz, Relays, Handelsserver und die Namen der vier Rollen kommen aus Parametern (die Rollen heißen ohne Angabe `listen`, `send`, `fetch` und `request`), das Verzeichnis der Umgebung aus `--directory` oder, ohne Angabe, `components/pipwerk-relay/.testenv/` (von Git ignoriert). Es gibt keine Ports, weil die Teile über Verzeichnisse sprechen; `status` nennt stattdessen die Verzeichnisse.
+
+```
+<Verzeichnis>/
+  state                      Zustand der Umgebung (Namen, Prozessnummern)
+  shared/                    das gemeinsame Verzeichnis zwischen den Relays (Ersatz für das Netzlaufwerk)
+    in-<Relay a>/            Eingang des Relays a für Umschläge des Relays b
+    in-<Relay b>/
+  side-a/, side-b/           je ein Relay
+    relay.ini, relay.db, relay.log, operating.json, secrets/, attachments/
+    in/                      Eingang für die Komponenten dieses Relays (ein Verzeichnis zwischen Komponente und Relay)
+    to-<Rolle>/              Eingang der Komponente (dorthin legt das Relay für sie ab)
+    received/                die Nachrichten der lauschenden Prüfkomponente (Abschnitt 31.1)
+    <Rolle>/                 je Komponente: Startkonfiguration, secrets/ mit dem Schlüssel, state/, Protokoll
+```
+
+**Was gestartet wird.** Die Relays a und b (`pipwerk-relay run`) mit Betriebskonfiguration, Schlüsseln der Komponenten und einem Schlüssel für die Verbindung der Relays (`pipwerk-relay key new`, die Kopie liegt im Verzeichnis für Geheimnisse der anderen Seite; alle Verzeichnisse für Geheimnisse haben die Rechte `0700`); je eine lauschende Prüfkomponente (`probe listen`) auf beiden Seiten; die Komponente `fetch` (`pipwerk-fetch-mt5 serve`) auf Seite b mit der Nachbildung von `MetaTrader5` aus `scripts/replica/MetaTrader5.py` (Handelsserver wie mit `--broker` gegeben, Zeitzone der Serverzeit UTC; Symbole `EURUSD`, `GBPUSD`, `USDJPY`; Kerzen auf allen Stufen der Zeiteinheit, ein Tick alle zehn Sekunden; die Daten sind erfunden und nur für den Transport gedacht); bei Bedarf die Aufrufe `send` (`probe send` der sendenden Prüfkomponente der Seite) und `request` (`pipwerk-fetch-mt5 request` auf Seite a). Die Relays tauschen über zwei Eingänge: `in/` für die eigenen Komponenten und `shared/in-<Relay>/` für das andere Relay. Die Fristen sind kurz eingestellt (Lesen alle Sekunde, Wiederholung nach 2 bis 10 Sekunden, Schonfrist für Anlagen 10 Sekunden); `--delivery-deadline` (Voreinstellung 120 Sekunden) ist die Frist, nach der ein Relay eine Nachricht als unzustellbar meldet (Spezifikation 4.1 Schritt 7), `--limit-bytes` (Voreinstellung 4194304) die größte Anlage auf dem Weg zwischen den Relays (`max_attachment_bytes` im Adressbuch).
+
+**Befehle.** `testenv stop` beendet, was das Skript gestartet hat (Prüfung an der Prozessnummer und der Startkonfiguration des Prozesses, dann `SIGTERM`, nach 10 Sekunden `SIGKILL`), und entfernt das Verzeichnis. `testenv status` meldet, ob jeder Prozess läuft und ob das gemeinsame Verzeichnis verbunden ist, und nennt alle Verzeichnisse und Adressen; Exitcode 1, wenn etwas nicht läuft. `testenv queue` ruft `pipwerk-relay queue` des Relays auf, `testenv send` das `probe send` der sendenden Prüfkomponente einer Seite und `testenv request` das `pipwerk-fetch-mt5 request` auf Seite a.
+
+**Störungen.** `testenv fault <Nummer>` ohne Aktion beschreibt die Aktionen. Jede Störung hat eine Aktion, die sie herbeiführt, und eine, die sie behebt:
+
+| Störung (Spezifikation 8) | herbeiführen | beheben |
+|---|---|---|
+| 1 Relay des Empfängers beendet | `fault 1 on` beendet das Relay b | `fault 1 off` startet es |
+| 2 gemeinsames Verzeichnis nicht erreichbar | `fault 2 on` benennt `shared/` um (das Verzeichnis ist weg wie ein getrenntes Netzlaufwerk) | `fault 2 off` benennt zurück |
+| 3 Relay hart beendet | `fault 3 on [a\|b]` (`kill -9`) | `fault 3 off [a\|b]` startet es |
+| 4 Umschlag oder Anlage verändert, falscher Schlüssel | `fault 4 envelope` und `fault 4 attachment` verändern, was im Eingang des Relays b wartet (Relay b zuvor beenden); `fault 4 key` sendet mit einem Schlüssel, der nicht der der Verbindung ist | `fault 4 off` startet das Relay b, das verwirft, was nicht stimmt |
+| 5 derselbe Umschlag noch einmal | `fault 5 save [component\|relay]` kopiert den wartenden Umschlag mit seinen Anlagen, `fault 5 on [component\|relay]` legt ihn noch einmal ab (in den Eingang der lauschenden Prüfkomponente b beziehungsweise des Relays b) | `fault 5 off` entfernt die Kopie |
+| 6 Adressat oder Relay unbekannt, Schleife, zu groß | `fault 6 unknown-recipient`, `unknown-relay`, `loop` (beide Relays sind einander Standard-Relay, eine Nachricht an ein Relay, das es nicht gibt, danach wird die Konfiguration zurückgesetzt) und `too-large` (eine Datei von `--limit-bytes` plus 1 Byte); jede sendet und zeigt die Meldung | `fault 6 off` setzt die Betriebskonfiguration zurück (nach einem abgebrochenen `loop`) |
+| 7 empfangende Komponente läuft nicht | `fault 7 on` beendet die lauschende Prüfkomponente b | `fault 7 off` startet sie |
+
+Die Aktionen verwenden den Befehl `send`, die Prozesse und die Verzeichnisse der Umgebung; die Anwenderdokumentation beschreibt sie Schritt für Schritt mit dem, was der Anwender sieht.
+
+**Abnahme auf einem Rechner.** `testenv start`, dann `testenv send a --address <Adresse von listen auf b> --text hallo --file <Datei> --receipt` zeigt `Receipt: …`; die Datei liegt unverändert in `side-b/received/<ID>/files/` (Prüfung mit `cmp`). Mit `testenv request` holt das Anfrage-Programm Dateien von `serve` mit der Nachbildung (Hinweis: die Aufträge 05 und 06 prüfen den Abruf selbst).
+
+**Annahmen.** Die Umgebung läuft unter Linux (Skript für `sh`) und braucht `git`, `uv` und `python3`. Das gemeinsame Verzeichnis liegt auf demselben Rechner; sein Verhalten als Netzlaufwerk (SMB, NFS; Abschnitt 9) bildet nur das Verschwinden des Verzeichnisses nach (Störung 2). Matrix, SFTP und der Weg für Dateien gehören zu den Durchgängen 2 bis 4 und zu späteren Aufträgen.
+
+## 33. Tests der Störungen
+
+`tests/test_disturbances.py` bringt jede Störung der Spezifikation (Abschnitt 8) mit zwei echten Relays (`Relay`, `RelayStore`, Wege `files`), dem gemeinsamen Verzeichnis `shared/` und der Prüfkomponente hervor (`tests/probe_bench.py`: das `send_and_watch` der Prüfkomponente wartet, jede Pause bewegt die Uhr des Tests und lässt die Relays und lauschenden Prüfkomponenten eine Runde arbeiten) und prüft das erwartete Ergebnis:
+
+| Störung | Test | erwartetes Ergebnis |
+|---|---|---|
+| 1 Relay des Empfängers beendet | `test_1_the_message_waits_in_the_common_directory_and_is_delivered_after_the_start`, `test_1_without_the_start_the_receipt_does_not_come` | Die Nachricht wartet im Eingang des Relays b im gemeinsamen Verzeichnis (das Relay a hat sie übergeben, seine Warteschlange ist leer) und wird nach dem Start zugestellt; die Bestätigung kommt. Ohne Start bleibt die Bestätigung aus: `No receipt` |
+| 2 Verzeichnis nicht erreichbar | `test_2_the_queue_shows_the_message_waiting_…`, `test_2_with_a_short_period_the_sender_gets_relay_unreachable`, `test_2_the_components_go_on_reading_…` | `pipwerk-relay queue` zeigt die Nachricht wartend (`retrying`, `WayUnavailableError`); das Protokoll nennt den Fehler (`inbox shared is not available`, `not handed over`), die Pausen wachsen; nach dem Wiederverbinden wird zugestellt. Mit kurzer Frist endet es mit `relay_unreachable` beim Absender, später wird nichts mehr zugestellt. Nachrichten innerhalb eines Relays brauchen das Verzeichnis nicht |
+| 3 Relay hart beendet | `test_3_a_relay_ended_hard_at_any_step_…` (vor und nach jedem Schritt des Relays, der etwas verändert, das Relay a oder b), `test_3_relays_as_processes_ended_hard_in_turn_…` (`SIGKILL` an zwei Relay-Prozesse und Prüfkomponente als Prozess, 100 Nachrichten mit Anlagen und Bestätigung) | In jedem Fall kommt die Nachricht mit ihrer Datei genau einmal an, die Bestätigung kommt zurück, Warteschlangen und Eingänge sind leer, Reste verschwinden nach der Frist; im Prozesstest hat jede der 100 Nachrichten genau ein Verzeichnis, jede Bestätigung ist da, keine Meldung. Die Störung während einer Lieferung des Abrufs prüft `pipwerk-fetch-mt5` (`tests/test_relay_abruf.py`) |
+| 4 Umschlag oder Anlage verändert, falscher Schlüssel | `test_4_a_changed_envelope_or_file_…` (Umschlag, Anlage), `test_4_an_envelope_with_the_wrong_key_…` | Verworfen (`bad_mac`, nach der Schonfrist `attachment_hash`), Vermerk im Protokoll ohne Inhalt (weder Text der Nachricht noch Inhalt der Datei), keine Meldung an den Absender; die verlangte Bestätigung bleibt aus und wird nach der Frist gemeldet; das Verzeichnis ist danach leer |
+| 5 derselbe Umschlag noch einmal | `test_5_the_relay_drops_an_envelope_it_has_seen_…`, `test_5_the_component_gets_the_message_once_…` | Im Eingang des Relays: Wiederholung (`repetition message=`), nicht noch einmal zugestellt. Im Eingang der Komponente: nicht zweimal übergeben, die Bestätigung wird erneut geschickt und vom Absender als verspätet verworfen (`receipt dropped`) |
+| 6 unbekannt, Schleife, zu groß | `test_6_…` | `unknown_recipient`, `unknown_relay`, `loop`, `too_large` mit der festen Meldung beim Absender; eine Datei unter der Grenze geht durch |
+| 7 Komponente läuft nicht | `test_7_the_sender_reports_the_missing_receipt_…` | Nach der Frist meldet der Absender die ausgebliebene Bestätigung; nach dem Start der Komponente wird zugestellt, die späte Bestätigung steht nur im Protokoll |
+
+Dazu `test_without_a_disturbance_…` (ungestörter Durchgang in beide Richtungen). Der Test mit Prozessen beginnt mit 100 Nachrichten, die schon vor dem Start der Relays im Eingang liegen, beendet erst das Relay b, sobald die erste Nachricht angekommen ist, dann das Relay a nach der dreißigsten, und startet beide neu. Die Tests laufen auf einem lokalen Dateisystem.
+
+## 34. Bekannte Grenzen dieses Stands
+
+- Der Abruf (`serve`, `request`) ist in `pipwerk-fetch-mt5` umgesetzt (Auftrag 05), sein Test über zwei echte Relays und die Störung 3 während einer Lieferung folgen mit Auftrag 06; `testenv` richtet `serve` mit der Nachbildung von `MetaTrader5` und `request` schon ein.
+- Der Nachweis auf einem Netzlaufwerk (SMB, NFS) gehört zur Abnahme (Abschnitt 9, letzter Absatz); die Tests und die Testumgebung laufen auf einem lokalen Dateisystem. Störung 2 bildet das Verschwinden des Netzlaufwerks nach, nicht den Zwischenspeicher von SMB.
+- Die Prüfkomponente, ihre Startkonfiguration und `testenv` sind unter Windows nicht ausgeführt (Skripte für `sh`; die Prüfkomponente ist Python und sollte laufen, die Rechteprüfung der Schlüsseldatei ist wie beim Relay nicht ausgeführt, Abschnitt 28).
+- Ein Umschlag, der die Grenzen des Eingangs übersteigt (`max_envelope_bytes` oder ein Platz für Anlagen, der nicht reicht), wird ohne Meldung verworfen. Das ist eine technische Entscheidung des Entwicklungsleiters (zu Hinweis H1 des Testberichts zu Auftrag 03): Spezifikation 4.1 Schritt 1 schickt für einen Umschlag, der die Prüfung am Eingang nicht besteht, keine Meldung. Die Anwenderdokumentation nennt es unter dem Verhalten bei Störungen.
+- Matrix, SFTP, der Weg für Dateien (Anlagen über einen eigenen Weg), die Web-API und die Durchgänge 2 bis 4 gehören zu späteren Aufträgen und Paketen.
 
 ## Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-24 | Auftrag 04: Prüfkomponente `probe listen` und `probe send` (Abschnitt 31), Testumgebung `scripts/testenv` mit Nachbildung von `MetaTrader5` (Abschnitt 32), Tests der Störungen 1 bis 7 (Abschnitt 33), bekannte Grenzen jetzt Abschnitt 34 (darin der Umschlag, der die Grenzen des Eingangs übersteigt). Bibliothek: Modul `connection` mit dem Lesen von `[relay]` und `[relay.way]` und dem Öffnen des Anschlusses (Abschnitt 11.1), aus `pipwerk-fetch-mt5` übernommen. |
 | 2026-10-24 | Auftrag 03: Teil B (Abschnitte 18 bis 31) mit dem Relay: Aufbau, Einrichtung, Startkonfiguration, Betriebskonfiguration, Speicher, Weg einer Nachricht, Wiederanlauf, Begrenzungen, Schonfrist und Aufräumen, Befehle, Sicherheit, Abhängigkeiten, Prüfskript und Tests. Teil A: `Way.clean_up` (Abschnitte 7, 9), `migrate_scripts` und `alembic_config` (Abschnitt 13). |
 | 2026-10-24 | Auftrag 02: Anschluss einer Komponente (Abschnitt 11), Empfangsbestätigung (12), Datenbank des Anschlusses mit Migration (13), Inhalte der Nachrichtenarten `relay.receipt`, `relay.undeliverable`, `probe.message` (10), Regel zu `receipt` in der Nachricht (4), Ablehnungsgrund `bad_content` (5), neue Abhängigkeiten SQLAlchemy und Alembic (14), Schemas und Beispiele (15), Tests (17). Abschnitte 10 bis 13 der Fassung von Auftrag 01 tragen jetzt die Nummern 14 bis 17. |
 | 2026-10-24 | Erstfassung (Vorhaben `relay`, Paket `wp01`, Auftrag 01): Bibliothek `relay-core` mit Adresse, Nachricht, Umschlag, Schlüssel, Schnittstelle „Weg“, Verzeichnis-Weg. |

@@ -10,6 +10,8 @@ import re
 from pathlib import Path
 
 import pytest
+from pipwerk_relaycore import DEFAULT_POLL_INTERVAL_SECONDS
+from pipwerk_relaycore.connection import RELAY_OPTIONS
 from relay_support import RETRIEVAL, Network, files_way
 from test_cli import archive, config_file, no_sockets  # noqa: F401 - fixture
 
@@ -17,7 +19,6 @@ from pipwerk_fetch_mt5.cli import main
 from pipwerk_fetch_mt5.config import (
     _ALLOWED_OPTIONS,
     CONFIG_FILE_NAME,
-    DEFAULT_POLL_INTERVAL_SECONDS,
     StartupConfigError,
     load_relay_settings,
     load_startup_config,
@@ -203,6 +204,12 @@ def test_the_example_with_the_section_switched_on_is_valid(tmp_path: Path) -> No
     assert set(settings.target) == {"directory"}
     assert set(settings.inbox) == {"directory"}
     assert load_startup_config(path).server_time_zone == "Europe/Athens"
+
+
+def test_the_entries_the_call_on_the_command_line_accepts_are_those_of_the_library() -> None:
+    # config.py must not load the library for the call on the command line, so it names the
+    # entries itself; the two lists must not drift apart.
+    assert _ALLOWED_OPTIONS["relay"] == RELAY_OPTIONS
 
 
 def test_the_example_names_every_entry_of_the_section() -> None:

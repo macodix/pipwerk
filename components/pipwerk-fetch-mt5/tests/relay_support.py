@@ -23,6 +23,7 @@ from typing import Any
 
 from pipwerk_relaycore import (
     ConnectionKey,
+    ConnectionSettings,
     Connector,
     Envelope,
     Message,
@@ -32,7 +33,7 @@ from pipwerk_relaycore import (
 )
 from support import ArchiveMt5Module, make_config
 
-from pipwerk_fetch_mt5.config import RelaySettings, StartupConfig, load_relay_settings
+from pipwerk_fetch_mt5.config import StartupConfig, load_relay_settings
 from pipwerk_fetch_mt5.mt5_gateway import Mt5Gateway
 from pipwerk_fetch_mt5.relay.commands import RelayHooks
 from pipwerk_fetch_mt5.relay.connection import open_connector
@@ -148,10 +149,10 @@ class Network:
         )  # fmt: skip
         return moved
 
-    def ask_settings(self) -> RelaySettings:
+    def ask_settings(self) -> ConnectionSettings:
         return load_relay_settings(self.ask_ini)
 
-    def fetch_settings(self) -> RelaySettings:
+    def fetch_settings(self) -> ConnectionSettings:
         return load_relay_settings(self.fetch_ini)
 
     def put_into_inbox_of_ask(self, message: Message) -> None:
