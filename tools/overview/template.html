@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stand der Vorhaben</title>
+<style>
+/* Vorlage der Übersicht. Aufbau und Bedienung nach dem bestätigten Oberflächenentwurf.
+   Die optische Gestaltung folgt in einem nachfolgenden Auftrag.
+   Platzhalter: ZEIT und INHALT (in doppelten geschweiften Klammern). */
+:root{
+  --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#5d6c64; --line:#d5ddd8;
+  --grau-bg:#eceeed; --grau-rand:#8d9a94;
+  --gelb-bg:#fdf1c4; --gelb-rand:#b8901a;
+  --gruen-bg:#dcefe6; --gruen-rand:#1f6f5f;
+  --blau:#1c4f9c; --blau-bg:#e6eefb;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.4}
+.seite{max-width:1500px;margin:0 auto;padding:20px 24px 40px}
+h1{margin:0;font-size:32px;font-weight:600;line-height:1.15}
+h2{margin:0 0 12px;font-size:24px;font-weight:600;line-height:1.2}
+h2 small{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:1px}
+p{margin:0}
+.kopf{display:flex;flex-direction:column;gap:4px;padding-bottom:12px}
+.zeit{color:var(--text)}
+.legende{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 0 14px;font-size:14px;color:var(--text)}
+.legende span{display:inline-flex;align-items:center;gap:7px}
+.punkt{display:inline-block;width:18px;height:18px;border-radius:5px;border:2px solid}
+.punkt.s-grau{background:var(--grau-bg);border-color:var(--grau-rand)}
+.punkt.s-gelb{background:var(--gelb-bg);border-color:var(--gelb-rand)}
+.punkt.s-gruen{background:var(--gruen-bg);border-color:var(--gruen-rand)}
+.punkt.wartet{background:var(--card);border:4px solid var(--blau)}
+nav.pfad{padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:20px}
+nav.pfad ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+nav.pfad li{display:inline-flex;gap:8px;align-items:center}
+nav.pfad li+li::before{content:"\203A";color:var(--muted)}
+nav.pfad a{color:var(--blau);text-decoration:underline;text-underline-offset:3px;font-weight:500}
+nav.pfad [aria-current]{font-weight:600}
+a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+h2:focus{outline:none}
+
+.kaesten{display:grid;gap:16px;align-items:stretch;list-style:none;margin:0;padding:0}
+.kaesten>li{display:flex;min-width:0}
+.ebene1{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.ebene2{grid-template-columns:repeat(6,minmax(0,1fr))}
+.ebene3{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+@media (max-width:1099px){.ebene2{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:519px){.ebene2{grid-template-columns:minmax(0,1fr)} .ebene1,.ebene3{grid-template-columns:minmax(0,1fr)} .seite{padding:14px 16px 32px} h1{font-size:26px}}
+main>section+section{margin-top:32px}
+
+.kasten{flex:1;display:flex;flex-direction:column;gap:7px;padding:16px 16px 14px;border:2px solid;border-radius:12px;color:var(--ink);text-decoration:none;min-width:0;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto}
+.kasten.s-grau{background:var(--grau-bg);border-color:var(--grau-rand)}
+.kasten.s-gelb{background:var(--gelb-bg);border-color:var(--gelb-rand)}
+.kasten.s-gruen{background:var(--gruen-bg);border-color:var(--gruen-rand)}
+.kasten.wartet{border:5px solid var(--blau);padding:13px 13px 11px}
+.kasten .kenn{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text);font-weight:600}
+.kasten .name{font-size:20px;font-weight:600;line-height:1.2}
+.kasten .zeile{font-size:15px;color:var(--text);line-height:1.35}
+.kasten .zeile b{color:var(--ink);font-weight:600}
+.kasten .stand{font-size:14px;font-weight:700;color:var(--ink)}
+.kasten .warte{font-size:14px;color:var(--ink);font-style:italic}
+.kasten .oeffnen{margin-top:auto;padding-top:6px;font-size:14px;font-weight:600;color:var(--ink)}
+a.kasten{cursor:pointer}
+a.kasten:hover{box-shadow:0 3px 10px rgba(27,42,36,.22)}
+a.kasten .oeffnen::after{content:" \203A"}
+.marke{hyphens:none;-webkit-hyphens:none;align-self:flex-start;background:var(--blau);color:#fff;font-weight:700;font-size:14px;line-height:1.3;padding:5px 10px;border-radius:6px}
+.marke::before{content:"\25B6\00a0"}
+</style>
+</head>
+<body>
+<div class="seite">
+<header class="kopf">
+  <h1>Stand der Vorhaben</h1>
+  <p class="zeit">erzeugt am {{ZEIT}}</p>
+</header>
+<div class="legende" role="group" aria-label="Legende">
+  <span><i class="punkt s-grau"></i>grau: nicht begonnen</span>
+  <span><i class="punkt s-gelb"></i>gelb: begonnen</span>
+  <span><i class="punkt s-gruen"></i>grün: erledigt</span>
+  <span><i class="punkt wartet"></i>blauer Rahmen: wartet auf Sie</span>
+</div>
+<nav class="pfad" aria-label="Ebenen"><ol id="pfad"></ol></nav>
+<main id="inhalt">
+{{INHALT}}
+</main>
+</div>
+<script>
+(function () {
+  'use strict';
+  /* Ohne Skript stehen alle Ebenen untereinander und die Zeitpunkte in UTC.
+     Mit Skript zeigt die Seite die Ebene des Ankers (#, #<vorhaben>, #<vorhaben>/<nr>)
+     und schreibt die Zeitpunkte in Ortszeit aus. */
+  var abschnitte = Array.prototype.slice.call(document.querySelectorAll('main > section'));
+  var erster = true;
+
+  function ortszeit() {
+    Array.prototype.forEach.call(document.querySelectorAll('time.zeitpunkt'), function (t) {
+      var d = new Date(t.getAttribute('datetime'));
+      if (isNaN(d.getTime())) { return; }
+      t.textContent = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+        ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+    });
+  }
+
+  function suche(id) {
+    for (var i = 0; i < abschnitte.length; i++) { if (abschnitte[i].id === id) { return abschnitte[i]; } }
+    return null;
+  }
+
+  function pfad(teile) {
+    var liste = document.getElementById('pfad');
+    liste.textContent = '';
+    teile.forEach(function (t, i) {
+      var li = document.createElement('li');
+      var knoten;
+      if (i < teile.length - 1) {
+        knoten = document.createElement('a');
+        knoten.setAttribute('href', '#' + t.ziel);
+      } else {
+        knoten = document.createElement('span');
+        knoten.setAttribute('aria-current', 'page');
+      }
+      knoten.textContent = t.text;
+      li.appendChild(knoten);
+      liste.appendChild(li);
+    });
+  }
+
+  function anzeigen() {
+    var anker = decodeURIComponent(location.hash.replace(/^#/, ''));
+    var ziel = (anker === '') ? suche('ebene-alle') : suche(anker);
+    if (!ziel) { ziel = suche('ebene-alle'); }
+    abschnitte.forEach(function (a) { a.hidden = (a !== ziel); });
+    var ebene = ziel.getAttribute('data-ebene');
+    var teile = [{ text: 'Alle Vorhaben', ziel: '' }];
+    if (ebene === '2') {
+      teile.push({ text: ziel.getAttribute('data-name') });
+    } else if (ebene === '3') {
+      teile.push({ text: ziel.getAttribute('data-vorhaben-name'), ziel: ziel.getAttribute('data-vorhaben') });
+      teile.push({ text: ziel.getAttribute('data-name') });
+    } else {
+      teile = [{ text: 'Alle Vorhaben' }];
+    }
+    pfad(teile);
+    if (!erster) { ziel.querySelector('h2').focus({ preventScroll: true }); }
+    erster = false;
+    window.scrollTo(0, 0);
+  }
+
+  ortszeit();
+  window.addEventListener('hashchange', anzeigen);
+  anzeigen();
+})();
+</script>
+</body>
+</html>
