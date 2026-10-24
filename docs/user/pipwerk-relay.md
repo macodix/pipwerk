@@ -251,6 +251,8 @@ testenv send a --address listen.netz.relay-b --text hallo --file bericht.txt --r
 
 *Beheben:* Starten Sie das Relay `relay-b` wieder (`testenv fault 1 off`). Wenige Sekunden später steht im ersten Fenster `Receipt: message … was stored by listen.netz.relay-b.`, und im Ordner `side-b/received` liegt die Nachricht mit der Datei, unverändert. Ist Ihre Frist kürzer als die Zeit, in der das Relay steht, erscheint `No receipt: …` (Exitcode 1); die Nachricht wird nach dem Start trotzdem zugestellt.
 
+*Mit dem Abruf:* Beenden Sie das Relay `relay-b` (`testenv fault 1 on`) und rufen Sie `testenv request --address fetch.netz.relay-b --broker Testbroker-1 --from 2026-01-05 --to 2026-01-06 -u H1 --ticks -o daten EURUSD` auf. `request` zeigt nichts und wartet (bis zu 30 Minuten). Starten Sie das Relay (`testenv fault 1 off`): Die Anfrage kommt an, `serve` antwortet, und `request` schreibt die Dateien und endet mit Exitcode 0.
+
 ### Störung 2: Das gemeinsame Verzeichnis ist nicht erreichbar (Netzlaufwerk getrennt)
 
 Das Relay kann die Nachricht nicht abgeben. Sie wartet in seiner Warteschlange. Das Relay wiederholt die Übergabe in wachsenden Abständen. Relays und Komponenten laufen weiter, notieren den Fehler im Protokoll und lesen im nächsten Abstand wieder. Ist das Laufwerk wieder da, wird zugestellt. Dauert es länger als die Frist des Relays (Voreinstellung 24 Stunden; in der Testumgebung `--delivery-deadline`, Voreinstellung 120 Sekunden), meldet das Relay dem Absender `relay_unreachable`.
@@ -264,6 +266,8 @@ testenv send a --address listen.netz.relay-b --text hallo --receipt --wait 300
 *Sie sehen:* In einem zweiten Fenster zeigt `testenv queue a` (in der Testumgebung; sonst `pipwerk-relay queue`) die Nachricht wartend: `state` ist `retrying`, `attempts` wächst, `last error` ist `WayUnavailableError`. Das Protokoll von `relay-a` enthält Zeilen wie `message=… not handed over (WayUnavailableError); attempt 1, next in 2 s` mit immer längeren Pausen, bei `relay-b` `inbox shared is not available`. Das Programm im ersten Fenster wartet. `testenv status` zeigt `directory in common: disconnected`.
 
 *Beheben:* Verbinden Sie das Laufwerk wieder (`testenv fault 2 off`). Beim nächsten Versuch wird die Nachricht abgegeben; das erste Fenster zeigt `Receipt: …`. Geht die Frist des Relays vorher zu Ende, meldet das Programm stattdessen `Notice from relay.netz.relay-a: message … is undeliverable (relay_unreachable): The next relay could not be reached in time.`; die Nachricht wird danach nicht mehr zugestellt, und Sie senden noch einmal.
+
+*Mit dem Abruf:* Trennen Sie das Laufwerk (`testenv fault 2 on`) und rufen Sie `testenv request …` wie bei Störung 1 auf. `testenv queue a` zeigt die Anfrage wartend (`fetch.request`, `retrying`, `WayUnavailableError`). Verbinden Sie das Laufwerk wieder (`testenv fault 2 off`): Die Anfrage geht durch, und `request` schreibt die Dateien. Dauert die Trennung länger als die Frist des Relays, endet `request` mit `Fehler: Die Anfrage ließ sich nicht zustellen: … (relay_unreachable)` und Exitcode 1.
 
 ### Störung 3: Ein Relay wird hart beendet (Absturz, Stromausfall)
 
@@ -297,6 +301,8 @@ Verändern Sie dann den Umschlag (`testenv fault 4 envelope`) oder die Datei (`t
 
 *Beheben:* Starten Sie das Relay `relay-b` (`testenv fault 4 off`). Es verwirft den Umschlag; im Protokoll von `relay-b` steht `envelope dropped inbox=shared token=… reason=bad_mac` (Umschlag verändert) beziehungsweise `reason=attachment_hash` (Datei verändert; das Relay gibt einer Datei, die später fertig werden könnte, eine Schonfrist, in der Testumgebung 10 Sekunden), bei einem falschen Schlüssel im Protokoll von `relay-a` `envelope dropped inbox=components … reason=bad_mac`. Der Eingang ist danach leer, `side-b/received` enthält nichts, und die Prüfkomponente meldet bei `fault 4 key` nach ihrer Frist `No receipt: …`.
 
+*Mit dem Abruf:* Beenden Sie das Relay `relay-b` (`testenv fault 1 on`), rufen Sie `testenv request … --wait 1` auf und verändern Sie den wartenden Umschlag der Anfrage (`testenv fault 4 envelope`). Starten Sie das Relay (`testenv fault 4 off`). Es verwirft die Anfrage (`reason=bad_mac` im Protokoll von `relay-b`), `serve` bekommt sie nie, und `request` endet nach der Wartezeit mit `Fehler: Nach 1 Minuten ist kein Ergebnis der Anfrage eingetroffen.` und Exitcode 1. Rufen Sie danach `request` noch einmal auf; die zweite Anfrage geht durch.
+
 ### Störung 5: Derselbe Umschlag kommt noch einmal an
 
 Dieselbe Nachricht wird nicht zweimal zugestellt. Das Relay und die Komponente erkennen den Umschlag an der Nachrichtennummer, verwerfen ihn und quittieren ihn. Kommt er bei der Komponente noch einmal an, schickt sie die Empfangsbestätigung erneut, falls der Absender eine verlangt hat, weil die erste verloren gegangen sein kann; der Absender verwirft die zweite.
@@ -321,6 +327,8 @@ Das Relay meldet dem Absender den Grund (Abschnitt 7). Jeden Fall führen Sie mi
 | Nachricht zu groß | `testenv fault 6 too-large` | `Notice from relay.netz.relay-a: message … is undeliverable (too_large): The message or an attachment is too large for a way.` |
 
 Alle vier Befehle enden mit Exitcode 1. `unknown-recipient` ändert nichts; `loop` stellt die beiden Relays dazu kurz als Standard-Relay ein und danach wieder zurück (`testenv fault 6 off` stellt es zurück, wenn der Befehl unterbrochen wurde); `too-large` erzeugt eine Datei, die um ein Byte größer ist als die Grenze zwischen den Relays (`--limit-bytes` beim Start, Voreinstellung 4194304 Byte), und sendet sie.
+
+*Mit dem Abruf:* Die Fälle erreichen Sie mit der Adresse bei `request`. Ein unbekannter Name (`testenv request --address nobody.netz.relay-b …`) ergibt `Fehler: Die Anfrage ließ sich nicht zustellen: … (unknown_recipient).`, ein unbekanntes Relay (`--address fetch.netz.relay-zz`) `… (unknown_relay).`, jeweils mit Exitcode 1. Ein anderer Broker (`--broker Anderer`) wird von `serve` abgelehnt: `Fehler: Die Anfrage wurde nicht ausgeführt: Die Anfrage nennt einen anderen Broker …`, Exitcode 1. `loop` und `too_large` erreicht die Anfrage selbst nicht (sie ist klein und die Adresse ist gültig); die Prüfung mit `testenv fault 6 loop` und `too-large` gilt für alle Nachrichten, auch die des Abrufs.
 
 ### Störung 7: Die empfangende Komponente läuft nicht
 
@@ -389,7 +397,9 @@ Die Datei liegt unverändert in `…/.testenv/side-b/received/9681e59d-592c-41a0
 scripts/testenv request --address fetch.netz.relay-b --broker Testbroker-1 --from 2026-01-05 --to 2026-01-06 -u H1 --ticks -o daten EURUSD
 ```
 
-Die Angaben von `request` sind die des Abschnitts „Abruf mit serve und request“.
+Die Angaben von `request` sind die des Abschnitts „Abruf mit serve und request“. Es erscheint für jede Datei eine Zeile `Geschrieben: …` und zuletzt `3 Dateien geschrieben nach daten.` (Exitcode 0). Die Dateien lassen sich mit pipwerk replay beziehungsweise `pipwerk-marketdata` importieren.
+
+**Durchgang 1.** Alle Strecken laufen über Ordner. Der Durchgang besteht aus: `testenv start`; einer Nachricht mit Datei und Bestätigung (`testenv send`, oben); dem Abruf (`testenv request`); danach den Störungen 1 bis 7 (Abschnitt 9), jede mit der Prüfkomponente und, wo dort beschrieben, mit dem Abruf. Erwartet ist jedes Mal: Es geht nichts verloren, nichts kommt zweimal an, und jede Meldung nennt ihren Grund.
 
 **Weitere Befehle**
 
