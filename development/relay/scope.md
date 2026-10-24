@@ -49,3 +49,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Plan geprüft und bestanden in [plan-1.md](reviews/plan-1.md). Präsentation [plan-1.html](presentations/plan-1.html) zur Bestätigung durch den Auftraggeber.
 
 2026-10-24: Abstimmung der Präsentation [plan-1.html](presentations/plan-1.html): Das erste Paket prüft die Grundmechanik des Relays auf Funktion und Robustheit nur mit dem einfachsten Übertragungsweg, lokalen Verzeichnissen. SFTP, Matrix und weitere Wege kommen danach als eigene Pakete hinzu. Festlegung des Auftraggebers. Spezifikation Abschnitt 8 und Plan mit `revise` anpassen.
+
+2026-10-24: Plan nach dem Einwand geprüft und bestanden in [plan-2.md](reviews/plan-2.md). Präsentation [plan-2.html](presentations/plan-2.html) zur Bestätigung durch den Auftraggeber.
