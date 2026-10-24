@@ -1,0 +1,10 @@
+# Python
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# The filled-in startup configuration names the database and the directories of one
+# machine (the versioned example is pipwerk-relay.example.ini)
+pipwerk-relay.ini

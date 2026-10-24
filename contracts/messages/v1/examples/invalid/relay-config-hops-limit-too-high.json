@@ -1,0 +1,7 @@
+{
+  "network": "net1",
+  "name": "relay1",
+  "limits": {
+    "max_hops": 64
+  }
+}

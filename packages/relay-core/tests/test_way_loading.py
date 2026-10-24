@@ -2,6 +2,7 @@
 
 import importlib.metadata
 from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any, ClassVar
 
 import pytest
@@ -75,6 +76,11 @@ def test_the_loaded_test_way_hands_over_reads_and_acknowledges() -> None:
     reader.acknowledge(item.token)
     reader.acknowledge(item.token)
     assert reader.read() == []
+
+
+def test_a_way_that_does_not_know_clean_up_removes_nothing() -> None:
+    way = load_way("memory", {"box": "inbox-3"})
+    assert way.clean_up(timedelta(0), datetime.now(UTC)) == 0
 
 
 def test_the_own_settings_of_the_test_way_can_make_it_refuse() -> None:

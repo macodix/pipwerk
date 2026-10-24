@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AddressBookEntry": {
+      "additionalProperties": false,
+      "description": "A relay that this relay knows (specification 4.3).",
+      "properties": {
+        "network": {
+          "description": "pipwerk network of the other relay.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+          "title": "Network",
+          "type": "string"
+        },
+        "relay": {
+          "description": "Name of the other relay.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+          "title": "Relay",
+          "type": "string"
+        },
+        "way": {
+          "description": "Name of the way.",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+          "title": "Way",
+          "type": "string"
+        },
+        "settings": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Own settings of the way. Any fields: the way checks them itself and rejects unknown entries.",
+          "title": "Settings",
+          "type": "object"
+        },
+        "key_file": {
+          "description": "File name of the key of the connection in the directory for secrets.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "title": "Key File",
+          "type": "string"
+        },
+        "standard": {
+          "default": false,
+          "description": "Whether this is the standard relay (at most one entry).",
+          "title": "Standard",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "network",
+        "relay",
+        "way",
+        "key_file"
+      ],
+      "title": "AddressBookEntry",
+      "type": "object"
+    },
+    "ComponentConfig": {
+      "additionalProperties": false,
+      "description": "A component that is connected to the relay (specification 4.2).",
+      "properties": {
+        "name": {
+          "description": "Name of the component; the first part of its address.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "way": {
+          "description": "Name of the way.",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+          "title": "Way",
+          "type": "string"
+        },
+        "settings": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Own settings of the way. Any fields: the way checks them itself and rejects unknown entries.",
+          "title": "Settings",
+          "type": "object"
+        },
+        "key_file": {
+          "description": "File name of the key of the connection in the directory for secrets.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "title": "Key File",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "way",
+        "key_file"
+      ],
+      "title": "ComponentConfig",
+      "type": "object"
+    },
+    "InputConfig": {
+      "additionalProperties": false,
+      "description": "An inbox of the relay: where it reads the envelopes sent to it.",
+      "properties": {
+        "name": {
+          "description": "Name of the inbox; it appears in the log.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "way": {
+          "description": "Name of the way.",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+          "title": "Way",
+          "type": "string"
+        },
+        "settings": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Own settings of the way. Any fields: the way checks them itself and rejects unknown entries.",
+          "title": "Settings",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "way"
+      ],
+      "title": "InputConfig",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Limits": {
+      "additionalProperties": false,
+      "description": "Limits against overload (specification 4.5).",
+      "properties": {
+        "max_hops": {
+          "default": 8,
+          "description": "A message whose list of relays has this length is undeliverable (loop).",
+          "maximum": 63,
+          "minimum": 1,
+          "title": "Max Hops",
+          "type": "integer"
+        },
+        "read_batch": {
+          "default": 100,
+          "description": "Envelopes read from an inbox in one step.",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Read Batch",
+          "type": "integer"
+        },
+        "max_queue_messages": {
+          "default": 10000,
+          "description": "Messages in the queue; at this number the relay accepts nothing more.",
+          "minimum": 1,
+          "title": "Max Queue Messages",
+          "type": "integer"
+        },
+        "max_attachment_storage_bytes": {
+          "default": 10737418240,
+          "description": "Space for the attachments of the queue; when it would be exceeded the relay accepts nothing more.",
+          "minimum": 1,
+          "title": "Max Attachment Storage Bytes",
+          "type": "integer"
+        }
+      },
+      "title": "Limits",
+      "type": "object"
+    },
+    "Periods": {
+      "additionalProperties": false,
+      "description": "Periods and intervals, in seconds.",
+      "properties": {
+        "read_interval_seconds": {
+          "default": 5,
+          "description": "Pause between two rounds of reading and delivering.",
+          "exclusiveMinimum": 0,
+          "title": "Read Interval Seconds",
+          "type": "number"
+        },
+        "retry_first_seconds": {
+          "default": 10,
+          "description": "Pause before the second attempt to deliver.",
+          "exclusiveMinimum": 0,
+          "title": "Retry First Seconds",
+          "type": "number"
+        },
+        "retry_max_seconds": {
+          "default": 900,
+          "description": "Longest pause between two attempts; it doubles up to this.",
+          "exclusiveMinimum": 0,
+          "title": "Retry Max Seconds",
+          "type": "number"
+        },
+        "delivery_deadline_seconds": {
+          "default": 86400,
+          "description": "Time after which a message that cannot be handed over is undeliverable.",
+          "exclusiveMinimum": 0,
+          "title": "Delivery Deadline Seconds",
+          "type": "number"
+        },
+        "seen_for_seconds": {
+          "default": 604800,
+          "description": "How long a handover counts as seen (repetitions).",
+          "exclusiveMinimum": 0,
+          "title": "Seen For Seconds",
+          "type": "number"
+        },
+        "attachment_grace_seconds": {
+          "default": 300,
+          "description": "Time an envelope with a missing or wrong attachment is kept before it is dropped.",
+          "exclusiveMinimum": 0,
+          "title": "Attachment Grace Seconds",
+          "type": "number"
+        },
+        "leftover_after_seconds": {
+          "default": 3600,
+          "description": "Age after which unfinished files and attachments without envelope are removed.",
+          "exclusiveMinimum": 0,
+          "title": "Leftover After Seconds",
+          "type": "number"
+        },
+        "cleanup_interval_seconds": {
+          "default": 600,
+          "description": "Pause between two rounds of cleaning up.",
+          "exclusiveMinimum": 0,
+          "title": "Cleanup Interval Seconds",
+          "type": "number"
+        }
+      },
+      "title": "Periods",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The operating configuration of one relay.",
+  "properties": {
+    "network": {
+      "description": "Name of the pipwerk network of this relay.",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+      "title": "Network",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of this relay in its network.",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+      "title": "Name",
+      "type": "string"
+    },
+    "inputs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InputConfig"
+      },
+      "title": "Inputs",
+      "type": "array"
+    },
+    "components": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ComponentConfig"
+      },
+      "title": "Components",
+      "type": "array"
+    },
+    "address_book": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AddressBookEntry"
+      },
+      "title": "Address Book",
+      "type": "array"
+    },
+    "periods": {
+      "$ref": "#/$defs/Periods"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits"
+    }
+  },
+  "required": [
+    "network",
+    "name"
+  ],
+  "title": "RelayConfig",
+  "type": "object"
+}

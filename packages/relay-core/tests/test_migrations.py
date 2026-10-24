@@ -7,7 +7,8 @@ import sqlalchemy as sa
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 
-from pipwerk_relaycore import DatabaseMigrationError, migrate_database
+from pipwerk_relaycore import DatabaseMigrationError, migrate_database, migrate_scripts
+from pipwerk_relaycore.migrate import MIGRATIONS_DIRECTORY
 from pipwerk_relaycore.tables import VERSION_TABLE, metadata
 
 OWN_TABLES = {"relaycore_seen", "relaycore_waiting", VERSION_TABLE}
@@ -82,6 +83,20 @@ def test_a_database_of_a_newer_version_is_refused_and_left_alone(tmp_path: Path)
     with engine.connect() as connection:
         version = connection.execute(sa.text(f"SELECT version_num FROM {VERSION_TABLE}"))  # noqa: S608
         assert version.scalar() == "9999"
+
+
+def test_migrate_scripts_runs_the_migrations_of_a_directory_and_names_the_subject(
+    tmp_path: Path,
+) -> None:
+    engine = make_engine(tmp_path)
+    migrate_scripts(engine, MIGRATIONS_DIRECTORY, "relay")
+    assert set(sa.inspect(engine).get_table_names()) == OWN_TABLES
+    (tmp_path / "other").mkdir()
+    other = make_engine(tmp_path / "other")
+    with other.begin() as connection:
+        connection.execute(sa.text("CREATE TABLE relaycore_waiting (message_id TEXT)"))
+    with pytest.raises(DatabaseMigrationError, match="relay schema failed"):
+        migrate_scripts(other, MIGRATIONS_DIRECTORY, "relay")
 
 
 def test_a_failed_migration_is_rolled_back(tmp_path: Path) -> None:

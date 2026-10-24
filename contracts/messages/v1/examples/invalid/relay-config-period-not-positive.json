@@ -1,0 +1,7 @@
+{
+  "network": "net1",
+  "name": "relay1",
+  "periods": {
+    "delivery_deadline_seconds": 0
+  }
+}

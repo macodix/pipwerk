@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import threading
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -495,3 +496,73 @@ def test_a_directory_without_rights_is_a_repeatable_error(inbox: Path) -> None:
 def test_the_error_of_an_unreachable_directory_is_not_a_refusal(tmp_path: Path) -> None:
     assert issubclass(WayUnavailableError, WayError)
     assert not issubclass(WayUnavailableError, WayTooLargeError)
+
+
+# Cleaning up leftovers -------------------------------------------------------------------------
+
+
+def age(path: Path, seconds: float) -> None:
+    """Make a file look as if it was changed ``seconds`` ago."""
+    moment = datetime.now(UTC).timestamp() - seconds
+    os.utime(path, (moment, moment))
+
+
+def test_clean_up_removes_old_unfinished_files_and_attachments_without_an_envelope(
+    inbox: Path,
+) -> None:
+    way = make_way(inbox)
+    complete = send(way, [("a.csv", b"one")])
+    lonely_id = uuid4()
+    unfinished = [
+        inbox / f"{lonely_id}.json.0123456789abcdef.part",
+        inbox / f"{lonely_id}.0.att.0123456789abcdef.part",
+    ]
+    lonely_attachment = inbox / f"{lonely_id}.0.att"
+    for path in (*unfinished, lonely_attachment):
+        path.write_bytes(b"x")
+        age(path, 7200)
+    removed = way.clean_up(timedelta(hours=1), datetime.now(UTC))
+    assert removed == 3
+    assert names(inbox) == {f"{complete.id}.json", f"{complete.id}.0.att"}
+
+
+def test_clean_up_keeps_what_is_not_old_enough_and_what_belongs_to_an_envelope(
+    inbox: Path,
+) -> None:
+    way = make_way(inbox)
+    message = send(way, [("a.csv", b"one")])
+    for path in inbox.iterdir():
+        age(path, 7200)  # an old attachment with its envelope stays
+    young = inbox / f"{uuid4()}.0.att"
+    young.write_bytes(b"x")
+    unfinished = inbox / f"{uuid4()}.json.0123456789abcdef.part"
+    unfinished.write_bytes(b"x")
+    assert way.clean_up(timedelta(hours=1), datetime.now(UTC)) == 0
+    assert names(inbox) == {
+        f"{message.id}.json",
+        f"{message.id}.0.att",
+        young.name,
+        unfinished.name,
+    }
+
+
+def test_clean_up_touches_only_files_of_the_way(inbox: Path) -> None:
+    way = make_way(inbox)
+    foreign = [
+        inbox / "notes.txt",
+        inbox / "x.part",
+        inbox / f"{uuid4()}.json.part",
+        inbox / f"{str(uuid4()).upper()}.0.att",
+    ]
+    for path in foreign:
+        path.write_bytes(b"x")
+        age(path, 7200)
+    (inbox / "folder.0.att").mkdir()
+    assert way.clean_up(timedelta(hours=1), datetime.now(UTC)) == 0
+    assert len(names(inbox)) == len(foreign) + 1
+
+
+def test_clean_up_of_an_unreachable_directory_is_a_repeatable_error(tmp_path: Path) -> None:
+    way = make_way(tmp_path / "gone")
+    with pytest.raises(WayUnavailableError):
+        way.clean_up(timedelta(hours=1), datetime.now(UTC))

@@ -1,0 +1,93 @@
+#!/bin/sh
+# Check script of the component pipwerk-relay.
+#
+# Runs the automatic checks of the component on the working directory this
+# script belongs to and ends with exit code 0 only if all of them pass:
+#
+#   check [--with-audit]
+#
+# Checks: uv sync --frozen, pytest, ruff check, ruff format --check, mypy.
+# --with-audit adds pip-audit for the locked packages.
+#
+# The working directory is derived from the path of this script. The script
+# can be called from any directory. It contains no ports, paths or machine
+# names. The library packages/relay-core has a check script of its own
+# (packages/relay-core/scripts/check).
+#
+# Documentation: docs/technical/pipwerk-relay.md, section "Prüfskript des Relays".
+
+set -u
+
+PROG=check
+
+die() {
+    printf '%s: %s\n' "$PROG" "$*" >&2
+    exit 2
+}
+
+with_audit=0
+while [ $# -gt 0 ]; do
+    case $1 in
+    --with-audit) with_audit=1 ;;
+    *) die "unknown parameter: $1 (usage: $PROG [--with-audit])" ;;
+    esac
+    shift
+done
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    die "cannot determine the directory of the script"
+component_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    die "cannot determine the directory of the component"
+
+command -v uv >/dev/null 2>&1 || die "required program not found: uv"
+
+passed=''
+failed=''
+
+# step <name> <command...>: runs one check and records the result.
+step() {
+    step_name=$1
+    shift
+    printf '\n%s: === %s ===\n' "$PROG" "$step_name"
+    if "$@"; then
+        printf '%s: passed: %s\n' "$PROG" "$step_name"
+        passed="$passed
+  $step_name"
+    else
+        printf '%s: FAILED: %s\n' "$PROG" "$step_name" >&2
+        failed="$failed
+  $step_name"
+    fi
+}
+
+in_component() {
+    uv --directory "$component_dir" "$@"
+}
+
+# pip_audit: checks the packages locked in uv.lock for known vulnerabilities.
+pip_audit() {
+    audit_requirements=$(mktemp) || return 1
+    audit_status=0
+    in_component export --frozen --no-hashes --no-emit-project --no-emit-package pipwerk-relaycore \
+        -o "$audit_requirements" &&
+        uvx pip-audit -r "$audit_requirements" --no-deps --disable-pip || audit_status=1
+    rm -f "$audit_requirements"
+    return "$audit_status"
+}
+
+step "uv sync --frozen" in_component sync --frozen
+step "pytest" in_component run --frozen pytest
+step "ruff check" in_component run --frozen ruff check
+step "ruff format --check" in_component run --frozen ruff format --check
+step "mypy" in_component run --frozen mypy
+if [ "$with_audit" = 1 ]; then
+    step "pip-audit" pip_audit
+fi
+
+printf '\n%s: passed:%s\n' "$PROG" "${passed:-
+  none}"
+if [ -n "$failed" ]; then
+    printf '%s: failed:%s\n' "$PROG" "$failed" >&2
+    exit 1
+fi
+printf '%s: all checks passed\n' "$PROG"
