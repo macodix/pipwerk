@@ -3,7 +3,7 @@
 import codecs
 
 from pipwerk_marketdata.errors import ImportFileError
-from pipwerk_marketdata.limits import ImportLimits
+from pipwerk_marketdata.limits import ImportLimits, format_size
 from pipwerk_marketdata.records import FileErrorCode
 
 
@@ -15,7 +15,8 @@ def decode_text(data: bytes, limits: ImportLimits) -> str:
     """
     if len(data) > limits.max_bytes:
         raise ImportFileError(
-            FileErrorCode.TOO_LARGE, f"The file is larger than {limits.max_bytes} bytes."
+            FileErrorCode.TOO_LARGE,
+            f"The file is larger than the limit of {format_size(limits.max_bytes)} per file.",
         )
     if data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
         encoding = "utf-16"

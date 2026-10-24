@@ -10,14 +10,14 @@ language is a component-wide, backend-authoritative setting that is never stored
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
-from pipwerk_marketdata import MarketDataStore
+from pipwerk_marketdata import CompletenessRules, MarketDataStore
 from pydantic import BaseModel, ConfigDict
 
 from pipwerk_replay.accounts import AccountService
@@ -29,6 +29,7 @@ from pipwerk_replay.config import (
 )
 from pipwerk_replay.docs_page import install_docs
 from pipwerk_replay.host_check import HostCheckMiddleware, build_allowed_hosts
+from pipwerk_replay.import_processes import ImportProcesses
 from pipwerk_replay.marketdata_examples import keep_nulls_in_examples
 from pipwerk_replay.marketdata_service import MarketDataService
 from pipwerk_replay.revision import (
@@ -66,6 +67,7 @@ def create_app(
     marketdata: MarketDataSettings | None = None,
     revision_lookup: RevisionLookup = lookup_git_revision,
     commit_date_lookup: CommitDateLookup = lookup_git_commit_date,
+    import_clock: Callable[[], float] | None = None,
 ) -> FastAPI:
     """Create the pipwerk replay HTTP application.
 
@@ -88,9 +90,10 @@ def create_app(
     answered with HTTP 400.
 
     ``max_body_bytes`` is the largest request body below ``/api/v1/`` and ``/api/replay/``
-    (default 2 MiB); the request of an import has the limit of ``marketdata`` (the total size
-    of the files plus the envelope). ``revision_lookup`` and ``commit_date_lookup`` determine
-    the revision (tests).
+    (default 2 MiB); the request of a file of an import has the limit of ``marketdata`` (the
+    size of one file plus the envelope of the form). ``revision_lookup`` and
+    ``commit_date_lookup`` determine the revision (tests). ``import_clock`` is the clock of the
+    idle time of the import processes (seconds; tests); default is the monotonic clock.
     """
     if database_url is None:
         startup_config = load_startup_config()
@@ -116,8 +119,17 @@ def create_app(
     if account_service.ensure_default_account():
         logger.info("The default test account was created.")
 
-    store = MarketDataStore(marketdata_engine, max_page_size=resolved_marketdata.max_listed_items)
-    marketdata_service = MarketDataService(store, resolved_marketdata, settings_service)
+    store = MarketDataStore(
+        marketdata_engine,
+        max_page_size=resolved_marketdata.max_listed_items,
+        rules=CompletenessRules(no_trading_days=resolved_marketdata.no_trading_days),
+    )
+    processes = (
+        ImportProcesses(resolved_marketdata.import_idle_timeout_seconds)
+        if import_clock is None
+        else ImportProcesses(resolved_marketdata.import_idle_timeout_seconds, import_clock)
+    )
+    marketdata_service = MarketDataService(store, resolved_marketdata, settings_service, processes)
     revision = determine_revision(revision_lookup, commit_date_lookup)
 
     # One schema per model for requests and responses together.

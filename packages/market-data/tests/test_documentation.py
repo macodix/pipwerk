@@ -4,7 +4,14 @@ import re
 
 import pytest
 
-from pipwerk_marketdata import BatchErrorCode, FileErrorCode, ImportLimits, RejectReason
+from pipwerk_marketdata import (
+    BatchErrorCode,
+    DeletionErrorCode,
+    DeletionKind,
+    FileErrorCode,
+    ImportLimits,
+    RejectReason,
+)
 from pipwerk_marketdata.limits import DEFAULT_MAX_PAGE_SIZE, MAX_INTEGER_VALUE
 from pipwerk_marketdata.records import CompletenessRules
 from pipwerk_marketdata.tables import metadata
@@ -66,18 +73,52 @@ def test_default_limits_are_documented() -> None:
     assert f"{limits.max_bytes:,}".replace(",", " ") in DOCUMENT
     assert f"{limits.max_rows:,}".replace(",", " ") in DOCUMENT
     assert str(limits.max_reported_rejections) in DOCUMENT
-    assert str(limits.max_files) in DOCUMENT
-    assert f"{limits.max_batch_bytes:,}".replace(",", " ") in DOCUMENT
     assert f"{DEFAULT_MAX_PAGE_SIZE:,}".replace(",", " ") in DOCUMENT
     assert f"{MAX_INTEGER_VALUE:,}".replace(",", " ") in DOCUMENT
+
+
+def test_there_is_no_limit_for_the_files_of_a_process_in_the_documentation() -> None:
+    # The names are joined from their words, so that a search for the removed names finds none.
+    for words in (
+        ["max", "files"],
+        ["max", "batch", "bytes"],
+        ["too", "many", "files"],
+        ["batch", "too", "large"],
+    ):
+        assert "_".join(words) not in DOCUMENT, words
 
 
 def test_default_thresholds_are_documented() -> None:
     rules = CompletenessRules()
     assert str(rules.weekend_start_minute) in DOCUMENT
     assert str(rules.weekend_end_minute) in DOCUMENT
-    assert f"| {rules.tolerated_missing_candles} |" in DOCUMENT
-    assert str(rules.tick_max_silence_seconds) in DOCUMENT
+    assert "`no_trading_days`" in DOCUMENT
+    assert f"`no_trading_day_boundary_minute` {rules.no_trading_day_boundary_minute}" in DOCUMENT
+
+
+@pytest.mark.parametrize("code", list(DeletionErrorCode))
+def test_every_reason_for_a_refused_deletion_is_described(code: DeletionErrorCode) -> None:
+    assert f"`{code.value}`" in DOCUMENT
+
+
+@pytest.mark.parametrize("kind", list(DeletionKind))
+def test_every_kind_of_deletion_is_described(kind: DeletionKind) -> None:
+    assert f"`{kind.value}`" in DOCUMENT
+
+
+def test_the_interface_of_deleting_is_described() -> None:
+    for name in (
+        "plan_delete_series",
+        "delete_series",
+        "plan_delete_period",
+        "delete_period",
+        "plan_delete_contract",
+        "delete_contract",
+        "plan_delete_broker",
+        "delete_broker",
+        "DeletionError",
+    ):
+        assert f"`{name}" in DOCUMENT
 
 
 def test_every_module_is_listed() -> None:

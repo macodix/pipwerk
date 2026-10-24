@@ -3,7 +3,7 @@
 Messages are fixed or built from names of fields, never from file content.
 """
 
-from pipwerk_marketdata.records import BatchErrorCode, FileErrorCode
+from pipwerk_marketdata.records import BatchErrorCode, DeletionErrorCode, FileErrorCode
 
 
 class ImportBatchError(Exception):
@@ -19,6 +19,15 @@ class ImportFileError(Exception):
     """The whole file is refused. Nothing was changed in the data store."""
 
     def __init__(self, code: FileErrorCode, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class DeletionError(Exception):
+    """A deletion is refused (unknown broker, instrument, series or period). Nothing was changed."""
+
+    def __init__(self, code: DeletionErrorCode, message: str) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
