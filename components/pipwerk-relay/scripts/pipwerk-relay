@@ -2,6 +2,11 @@
 # Call of pipwerk-relay (Linux).
 #
 #   pipwerk-relay [-c <PATH>] run | config load <FILE> | config show | key new <FILE> | queue | migrate
+#   pipwerk-relay probe listen -c <PATH> -o <DIRECTORY>
+#   pipwerk-relay probe send -c <PATH> --address <ADDRESS> --text <TEXT> [--file <FILE>]
+#
+# The probe has a startup configuration of its own (pipwerk-relay-probe.ini), given with -c
+# after the action.
 #
 # Runs the program from the environment that install has created. All parameters go to the
 # program; "pipwerk-relay --help" lists them. Without -c the program searches

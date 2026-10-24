@@ -48,7 +48,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+if TYPE_CHECKING:
+    from pipwerk_relaycore.connection import ConnectionSettings
 
 #: File name of the startup configuration at every searched location.
 CONFIG_FILE_NAME = "pipwerk-fetch-mt5.ini"
@@ -71,6 +75,8 @@ BROKER_NAME_PATTERN = re.compile(r"\S(?:[^\x00-\x1f\x7f]*\S)?")
 _ALLOWED_OPTIONS: dict[str, frozenset[str]] = {
     "broker": frozenset({"server_time_zone", "max_rows_per_file", "max_reads_per_file"}),
     "metatrader5": frozenset({"path", "login", "password", "server", "timeout_ms"}),
+    # The same entries as ``RELAY_OPTIONS`` of the library of pipwerk relay, which this module
+    # must not load for the call on the command line; a test compares the two.
     "relay": frozenset(
         {
             "address",
@@ -87,13 +93,6 @@ _ALLOWED_OPTIONS: dict[str, frozenset[str]] = {
 #: which only the way knows and checks (specification relay 3.4).
 _FREE_SECTIONS = frozenset({"symbols", "relay.way"})
 
-#: ``[relay]`` entries that must be given.
-_RELAY_REQUIRED = ("address", "way", "secrets_directory", "key_file", "database")
-DEFAULT_POLL_INTERVAL_SECONDS = 2
-MAX_POLL_INTERVAL_SECONDS = 3600
-TARGET_PREFIX = "target."
-INBOX_PREFIX = "inbox."
-
 
 class StartupConfigError(Exception):
     """Raised when no valid startup configuration is available."""
@@ -108,27 +107,6 @@ class MetaTraderSettings:
     password: str | None = field(default=None, repr=False)
     server: str | None = None
     timeout_ms: int = DEFAULT_TIMEOUT_MS
-
-
-@dataclass(frozen=True)
-class RelaySettings:
-    """The connection of the component to its relay, as the file states it.
-
-    The values are text as they stand in the file. The library of pipwerk relay checks them
-    (address, key, way) when ``serve`` or ``request`` opens the connection; this module does
-    not load the library. ``target`` and ``inbox`` are the own settings of the way, passed on
-    unchanged.
-    """
-
-    address: str
-    way: str
-    secrets_directory: Path
-    key_file: str
-    database: Path
-    target: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
-    inbox: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
-    relay_link: str | None = None
-    poll_interval_seconds: int = DEFAULT_POLL_INTERVAL_SECONDS
 
 
 @dataclass(frozen=True)
@@ -331,61 +309,19 @@ def _metatrader(parser: configparser.ConfigParser, path: Path) -> MetaTraderSett
     )
 
 
-def _way_settings(parser: configparser.ConfigParser, path: Path) -> tuple[dict[str, str], ...]:
-    """The own settings of the way for the target and for the inbox, passed on unchanged."""
-    target: dict[str, str] = {}
-    inbox: dict[str, str] = {}
-    if parser.has_section("relay.way"):
-        for entry, value in parser.items("relay.way"):
-            for prefix, settings in ((TARGET_PREFIX, target), (INBOX_PREFIX, inbox)):
-                if entry.startswith(prefix) and len(entry) > len(prefix):
-                    settings[entry[len(prefix) :]] = value.strip()
-                    break
-            else:
-                raise StartupConfigError(
-                    f"Startup configuration {path}: [relay.way] entry {entry!r} must begin with "
-                    f"{TARGET_PREFIX!r} or {INBOX_PREFIX!r}."
-                )
-    return target, inbox
+def _relay(parser: configparser.ConfigParser, path: Path) -> ConnectionSettings | None:
+    """The sections ``[relay]`` and ``[relay.way]``, read and checked by the library of pipwerk
+    relay (the same form in every component); ``None`` if the file has no ``[relay]``.
 
+    The library is loaded here, when ``serve`` or ``request`` read the section, and nowhere
+    else in this module: the call on the command line does not load it.
+    """
+    from pipwerk_relaycore.connection import ConnectionSettingsError, read_connection_settings
 
-def _relay(parser: configparser.ConfigParser, path: Path) -> RelaySettings | None:
-    """The section ``[relay]``; ``None`` if the file has none. ``[relay.way]`` without
-    ``[relay]`` is an error."""
-    if not parser.has_section("relay"):
-        if parser.has_section("relay.way"):
-            raise StartupConfigError(
-                f"Startup configuration {path} has [relay.way] without [relay]."
-            )
-        return None
-    values: dict[str, str] = {}
-    for option in _RELAY_REQUIRED:
-        text = _text(parser, "relay", option)
-        if text is None:
-            raise StartupConfigError(
-                f"Startup configuration {path} is missing the entry {option} in section [relay]."
-            )
-        values[option] = text
-    target, inbox = _way_settings(parser, path)
-    return RelaySettings(
-        address=values["address"],
-        way=values["way"],
-        secrets_directory=Path(values["secrets_directory"]),
-        key_file=values["key_file"],
-        database=Path(values["database"]),
-        target=MappingProxyType(target),
-        inbox=MappingProxyType(inbox),
-        relay_link=_text(parser, "relay", "relay_link"),
-        poll_interval_seconds=_integer(
-            parser,
-            path,
-            "relay",
-            "poll_interval_seconds",
-            DEFAULT_POLL_INTERVAL_SECONDS,
-            1,
-            MAX_POLL_INTERVAL_SECONDS,
-        ),
-    )
+    try:
+        return read_connection_settings(parser, f"Startup configuration {path}")
+    except ConnectionSettingsError as error:
+        raise StartupConfigError(str(error)) from None
 
 
 def _read(explicit_path: str | Path | None) -> tuple[Path, configparser.ConfigParser]:
@@ -426,7 +362,7 @@ def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfi
     )
 
 
-def load_relay_settings(explicit_path: str | Path | None = None) -> RelaySettings:
+def load_relay_settings(explicit_path: str | Path | None = None) -> ConnectionSettings:
     """Load and check the startup configuration for ``request``.
 
     ``request`` does not read MetaTrader 5, so ``server_time_zone`` is not required (a given one

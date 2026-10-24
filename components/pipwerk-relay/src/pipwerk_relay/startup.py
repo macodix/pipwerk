@@ -81,19 +81,21 @@ def _env_base(name: str) -> Path | None:
     return path if path.is_absolute() else None
 
 
-def _locations(entries: list[tuple[Path | None, tuple[str, ...]]]) -> list[Path]:
-    return [base.joinpath(*parts, CONFIG_FILE_NAME) for base, parts in entries if base is not None]
+def _locations(entries: list[tuple[Path | None, tuple[str, ...]]], file_name: str) -> list[Path]:
+    return [base.joinpath(*parts, file_name) for base, parts in entries if base is not None]
 
 
-def default_search_locations() -> list[Path]:
-    """The automatic search locations in priority order (req-system-017)."""
+def default_search_locations(file_name: str = CONFIG_FILE_NAME) -> list[Path]:
+    """The automatic search locations of the file ``file_name`` in priority order
+    (req-system-017)."""
     if os.name == "nt":
         return _locations(
             [
                 (_env_base("USERPROFILE"), ("pipwerk", "etc")),
                 (_env_base("APPDATA"), ("pipwerk",)),
                 (_env_base("PROGRAMDATA"), ("pipwerk",)),
-            ]
+            ],
+            file_name,
         )
     home = _env_base("HOME")
     return _locations(
@@ -101,31 +103,47 @@ def default_search_locations() -> list[Path]:
             (home, ("pipwerk", "etc")),
             (home, (".config", "pipwerk")),
             (_POSIX_SYSTEM_DIR, ()),
-        ]
+        ],
+        file_name,
     )
 
 
-def resolve_config_path(explicit_path: str | Path | None) -> Path:
-    """The startup configuration to use: ``-c <PATH>`` first, then the search locations."""
+def resolve_config_path(
+    explicit_path: str | Path | None,
+    file_name: str = CONFIG_FILE_NAME,
+    purpose: str = "pipwerk-relay",
+) -> Path:
+    """The startup configuration to use: ``-c <PATH>`` first, then the search locations.
+
+    ``file_name`` and ``purpose`` (the program that cannot start) are those of the relay unless
+    another program of this package, the probe, reads a startup configuration of its own.
+    """
     if explicit_path is not None:
         path = Path(explicit_path)
         if not path.is_file():
             raise StartupConfigError(f"Startup configuration not found: {path}")
         return path
-    locations = default_search_locations()
+    locations = default_search_locations(file_name)
     for candidate in locations:
         if candidate.is_file():
             return candidate
     searched = ", ".join(str(location) for location in locations)
     raise StartupConfigError(
-        "No startup configuration found. pipwerk-relay does not start without one. "
+        f"No startup configuration found. {purpose} does not start without one. "
         f"Searched: {searched or '(no search location available)'}. "
         "Provide a startup configuration file with -c <PATH>."
     )
 
 
-def _parse(path: Path) -> configparser.ConfigParser:
+def parse_ini_file(path: Path, *, keep_case: bool = False) -> configparser.ConfigParser:
+    """Read an INI file; an error names the file and the line, never the content.
+
+    ``keep_case`` keeps the case of the entries (the form of ``[relay.way]``, which the way
+    reads); the startup configuration of the relay reads them in lower case.
+    """
     parser = configparser.ConfigParser(interpolation=None)  # a value may contain %
+    if keep_case:
+        parser.optionxform = str  # type: ignore[assignment,method-assign]
     try:
         parser.read_string(path.read_text(encoding="utf-8"), source=path.name)
     except configparser.ParsingError as error:
@@ -179,7 +197,7 @@ def _required(parser: configparser.ConfigParser, path: Path, section: str, optio
 def load_startup_config(explicit_path: str | Path | None = None) -> StartupConfig:
     """Load and check the startup configuration (``-c <PATH>`` or the search locations)."""
     path = resolve_config_path(explicit_path)
-    parser = _parse(path)
+    parser = parse_ini_file(path)
     _check_names(parser, path)
     url_text = _required(parser, path, "database", "url")
     try:

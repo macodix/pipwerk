@@ -1,0 +1,864 @@
+#!/bin/sh
+# Test environment script of the component pipwerk relay.
+#
+# Starts two relays that exchange messages through a directory in common (the stand-in for the
+# network drive), a listening and a sending probe on each, the retrieval pipwerk-fetch-mt5 as
+# "serve" with a replica of MetaTrader 5 on the second relay and the requesting program on the
+# first relay, from exactly one commit of the working directory this script belongs to. It
+# reports its state, brings about the disturbances 1 to 7 of the specification (section 8) and
+# stops everything again:
+#
+#   testenv [--directory <dir>] start --network <name> --relay-a <name> --relay-b <name> \
+#       --broker <name> [--delivery-deadline <seconds>] [--limit-bytes <bytes>] \
+#       [--listen-name <name>] [--send-name <name>] [--fetch-name <name>] [--request-name <name>]
+#   testenv [--directory <dir>] stop
+#   testenv [--directory <dir>] status
+#   testenv [--directory <dir>] send <a|b> <parameters of "probe send">
+#   testenv [--directory <dir>] request <parameters of "pipwerk-fetch-mt5 request">
+#   testenv [--directory <dir>] queue <a|b>                (pipwerk-relay queue of a relay)
+#   testenv [--directory <dir>] fault <1..7> <action>      (testenv fault <n> shows the actions)
+#
+# The working directory is derived from the path of this script. The script can be called from
+# any directory. Names, directories and numbers come from parameters; the script contains no
+# fixed ports, paths or machine names. There are no ports: the relays, the probes and the
+# retrieval talk through directories, and the status reports the directories. The state, the
+# logs, the startup configurations, the keys and the databases of the test environment live in
+# the directory given with --directory, by default components/pipwerk-relay/.testenv (ignored by
+# Git). "stop" ends everything the script has started and removes the directory.
+#
+# The roles in the test environment have the names listen, send, fetch and request (the first
+# part of their addresses); --listen-name and the like change them. The side a is the first
+# relay, the side b the second: "serve" runs on b with the replica of MetaTrader 5 in
+# scripts/replica/ (the trade server is the one given with --broker, the time zone of its server
+# time is UTC), "request" runs on a. --delivery-deadline is the period in which a relay tries to
+# hand a message over before it reports it as undeliverable (default 120 seconds), --limit-bytes
+# the largest attachment on the way between the relays (default 4194304).
+#
+# Documentation: docs/technical/pipwerk-relay.md, section "Testumgebung".
+
+set -eu
+
+# A Git environment inherited from the caller must not redirect the checks.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
+PROG=testenv
+STARTUP_TIMEOUT=120
+STOP_TIMEOUT=10
+FAULT_WAIT=30
+
+die() {
+    printf '%s: %s\n' "$PROG" "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat >&2 <<EOF
+Usage:
+  $PROG [--directory <dir>] start --network <name> --relay-a <name> --relay-b <name> --broker <name>
+        [--delivery-deadline <seconds>] [--limit-bytes <bytes>] [--listen-name <name>]
+        [--send-name <name>] [--fetch-name <name>] [--request-name <name>]
+  $PROG [--directory <dir>] stop
+  $PROG [--directory <dir>] status
+  $PROG [--directory <dir>] send <a|b> <parameters of "pipwerk-relay probe send">
+  $PROG [--directory <dir>] request <parameters of "pipwerk-fetch-mt5 request">
+  $PROG [--directory <dir>] queue <a|b>
+  $PROG [--directory <dir>] fault <1..7> [<action>]
+EOF
+    exit 2
+}
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) ||
+    die "cannot determine the directory of the script"
+relay_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd -P) ||
+    die "cannot determine the directory of the component"
+fetch_dir=$(CDPATH='' cd -- "$relay_dir/../pipwerk-fetch-mt5" && pwd -P) ||
+    die "cannot find the component pipwerk-fetch-mt5"
+replica_dir="$script_dir/replica"
+env_dir="$relay_dir/.testenv"
+
+# --- global parameter ------------------------------------------------------------------------
+
+if [ $# -ge 1 ]; then
+    case $1 in
+    --directory | -d)
+        [ $# -ge 2 ] || die "missing value for $1"
+        case $2 in
+        /*) env_dir=$2 ;;
+        *) env_dir="$(pwd -P)/$2" ;;
+        esac
+        shift 2
+        ;;
+    esac
+fi
+state_file="$env_dir/state"
+
+# --- state -----------------------------------------------------------------------------------
+
+state_get() {
+    [ -f "$state_file" ] || return 0
+    sed -n "s/^$1=//p" "$state_file" | head -n 1
+}
+
+# state_set <key> <value>: the key has exactly one line afterwards.
+state_set() {
+    state_tmp="$state_file.new"
+    {
+        grep -v "^$1=" "$state_file" 2>/dev/null || true
+        printf '%s=%s\n' "$1" "$2"
+    } >"$state_tmp"
+    mv "$state_tmp" "$state_file"
+}
+
+# pid_matches <pid> <marker>: the process exists and its command line contains the marker
+# (protects against a reused process number).
+pid_matches() {
+    [ -n "$1" ] || return 1
+    kill -0 "$1" 2>/dev/null || return 1
+    pid_args=$(ps -o args= -p "$1" 2>/dev/null) || return 1
+    case $pid_args in
+    *"$2"*) return 0 ;;
+    esac
+    return 1
+}
+
+# stop_pid <pid> <marker>: ends the process if it is the recorded one.
+stop_pid() {
+    pid_matches "$1" "$2" || return 0
+    kill "$1" 2>/dev/null || true
+    stop_waited=0
+    while pid_matches "$1" "$2" && [ "$stop_waited" -lt "$STOP_TIMEOUT" ]; do
+        sleep 1
+        stop_waited=$((stop_waited + 1))
+    done
+    if pid_matches "$1" "$2"; then
+        kill -9 "$1" 2>/dev/null || true
+    fi
+}
+
+# kill_pid <pid> <marker>: ends the process at once, without a chance to finish anything.
+kill_pid() {
+    pid_matches "$1" "$2" || return 0
+    kill -9 "$1" 2>/dev/null || true
+    kill_waited=0
+    while pid_matches "$1" "$2" && [ "$kill_waited" -lt "$STOP_TIMEOUT" ]; do
+        sleep 1
+        kill_waited=$((kill_waited + 1))
+    done
+}
+
+# --- names and directories of a running test environment ---------------------------------------
+
+side_ok() {
+    case ${1:-} in
+    a | b) return 0 ;;
+    esac
+    die "the side must be a or b"
+}
+
+other_side() {
+    if [ "$1" = a ]; then printf 'b'; else printf 'a'; fi
+}
+
+side_dir() { printf '%s/side-%s' "$env_dir" "$1"; }
+component_dir() { printf '%s/%s' "$(side_dir "$1")" "$2"; }
+relay_of() { state_get "relay_$1"; }
+shared_dir() { printf '%s/shared' "$env_dir"; }
+shared_inbox() { printf '%s/in-%s' "$(shared_dir)" "$(relay_of "$1")"; }
+address_of() { printf '%s.%s.%s' "$2" "$(state_get network)" "$(relay_of "$1")"; }
+
+# The marker of a process: the startup configuration it was started with.
+relay_marker() { printf '%s/relay.ini' "$(side_dir "$1")"; }
+listen_marker() { printf '%s/probe.ini' "$(component_dir "$1" "$(state_get listen)")"; }
+fetch_marker() { printf '%s/fetch.ini' "$(component_dir b "$(state_get fetch)")"; }
+
+relay_running() { pid_matches "$(state_get "relay_pid_$1")" "$(relay_marker "$1")"; }
+listen_running() { pid_matches "$(state_get "listen_pid_$1")" "$(listen_marker "$1")"; }
+fetch_running() { pid_matches "$(state_get fetch_pid)" "$(fetch_marker)"; }
+
+relay_program() { printf '%s/.venv/bin/pipwerk-relay' "$relay_dir"; }
+fetch_program() { printf '%s/.venv/bin/pipwerk-fetch-mt5' "$fetch_dir"; }
+
+stop_processes() {
+    if [ -f "$state_file" ]; then
+        stop_pid "$(state_get fetch_pid)" "$(fetch_marker)"
+        for stop_side in a b; do
+            stop_pid "$(state_get "listen_pid_$stop_side")" "$(listen_marker "$stop_side")"
+            stop_pid "$(state_get "relay_pid_$stop_side")" "$(relay_marker "$stop_side")"
+        done
+    fi
+}
+
+# --- checks ----------------------------------------------------------------------------------
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "required program not found: $1"
+}
+
+# require_name <parameter> <value>
+require_name() {
+    case $2 in
+    '' | *[!A-Za-z0-9_-]* | [-_]*)
+        die "$1 must be a name of 1 to 63 letters, digits, - and _, starting with a letter or a digit"
+        ;;
+    esac
+    [ "${#2}" -le 63 ] || die "$1 must have at most 63 characters"
+}
+
+# require_number <parameter> <value> <lowest> <highest>
+require_number() {
+    case $2 in
+    '' | *[!0-9]* | ???????????*) die "$1 must be a whole number between $3 and $4" ;;
+    esac
+    { [ "$2" -ge "$3" ] && [ "$2" -le "$4" ]; } ||
+        die "$1 must be a whole number between $3 and $4"
+}
+
+require_running() {
+    [ -f "$state_file" ] || die "no test environment is running (start it with: $PROG start ...)"
+}
+
+# --- start -----------------------------------------------------------------------------------
+
+cleanup_needed=0
+
+on_exit() {
+    exit_code=$?
+    trap - EXIT
+    if [ "$cleanup_needed" = 1 ]; then
+        if [ "$exit_code" -ne 0 ]; then
+            for log in "$env_dir"/side-*/relay.log "$env_dir"/side-*/*/*.log; do
+                if [ -s "$log" ]; then
+                    printf '%s: last lines of %s:\n' "$PROG" "$log" >&2
+                    tail -n 10 "$log" >&2 || true
+                fi
+            done
+        fi
+        stop_processes
+        rm -rf "$env_dir"
+    fi
+    exit "$exit_code"
+}
+
+count_lines() { # <file> <pattern>
+    [ -f "$1" ] || {
+        printf '0'
+        return 0
+    }
+    grep -c -- "$2" "$1" || true
+}
+
+# await_line <file> <pattern> <count before> <running function> <side> <what>
+await_line() {
+    await_waited=0
+    while [ "$(count_lines "$1" "$2")" -le "$3" ]; do
+        "$4" "$5" || die "$6 exited during start"
+        [ "$await_waited" -lt "$STARTUP_TIMEOUT" ] ||
+            die "$6 did not report in $STARTUP_TIMEOUT seconds"
+        sleep 1
+        await_waited=$((await_waited + 1))
+    done
+}
+
+launch_relay() { # <side>
+    launch_dir=$(side_dir "$1")
+    launch_before=$(count_lines "$launch_dir/relay.log" "taken over")
+    nohup "$(relay_program)" -c "$(relay_marker "$1")" run \
+        >>"$launch_dir/relay.stdout" 2>&1 </dev/null &
+    state_set "relay_pid_$1" $!
+    await_line "$launch_dir/relay.log" "taken over" "$launch_before" relay_running "$1" \
+        "the relay $(relay_of "$1")"
+}
+
+launch_listen() { # <side>
+    launch_dir=$(component_dir "$1" "$(state_get listen)")
+    launch_before=$(count_lines "$launch_dir/listen.log" "listen: address")
+    PYTHONUNBUFFERED=1 nohup "$(relay_program)" probe listen -c "$(listen_marker "$1")" \
+        -o "$(side_dir "$1")/received" >>"$launch_dir/listen.log" 2>&1 </dev/null &
+    state_set "listen_pid_$1" $!
+    await_line "$launch_dir/listen.log" "listen: address" "$launch_before" listen_running "$1" \
+        "the listening probe of $(relay_of "$1")"
+}
+
+launch_fetch() {
+    launch_dir=$(component_dir b "$(state_get fetch)")
+    launch_before=$(count_lines "$launch_dir/serve.log" "wartet auf Anfragen")
+    (
+        PYTHONPATH="$replica_dir"
+        PYTHONUNBUFFERED=1
+        PIPWERK_TESTENV_BROKER=$(state_get broker)
+        export PYTHONPATH PYTHONUNBUFFERED PIPWERK_TESTENV_BROKER
+        exec nohup "$(fetch_program)" serve -c "$(fetch_marker)" \
+            >>"$launch_dir/serve.log" 2>&1 </dev/null
+    ) &
+    state_set fetch_pid $!
+    await_line "$launch_dir/serve.log" "wartet auf Anfragen" "$launch_before" \
+        fetch_running_side "" "serve"
+}
+
+fetch_running_side() { fetch_running; }
+
+# make_private <directory>: a directory only the user can use.
+make_private() {
+    mkdir -p "$1"
+    chmod 700 "$1"
+}
+
+# new_key <side> <key file>: a key in the directory for secrets of the relay.
+new_key() {
+    "$(relay_program)" -c "$(relay_marker "$1")" key new "$2" >/dev/null
+}
+
+# copy_key <from directory> <from file> <to directory> <to file>
+copy_key() {
+    (
+        umask 077
+        cp "$1/$2" "$3/$4"
+    )
+}
+
+# write_operating <side> <true|false>: the operating configuration of the relay of the side;
+# the second parameter says whether the other relay is the standard relay.
+write_operating() {
+    op_side=$1
+    op_other=$(other_side "$op_side")
+    op_dir=$(side_dir "$op_side")
+    op_listen=$(state_get listen)
+    op_send=$(state_get send)
+    if [ "$op_side" = a ]; then op_extra=$(state_get request); else op_extra=$(state_get fetch); fi
+    {
+        printf '{\n  "network": "%s",\n  "name": "%s",\n' "$(state_get network)" "$(relay_of "$op_side")"
+        printf '  "inputs": [\n'
+        printf '    {"name": "components", "way": "files", "settings": {"directory": "%s/in"}},\n' "$op_dir"
+        printf '    {"name": "shared", "way": "files", "settings": {"directory": "%s"}}\n' \
+            "$(shared_inbox "$op_side")"
+        printf '  ],\n  "components": [\n'
+        printf '    {"name": "%s", "way": "files", "settings": {"directory": "%s/to-%s"}, "key_file": "comp-%s"},\n' \
+            "$op_listen" "$op_dir" "$op_listen" "$op_listen"
+        printf '    {"name": "%s", "way": "files", "settings": {"directory": "%s/to-%s"}, "key_file": "comp-%s"},\n' \
+            "$op_send" "$op_dir" "$op_send" "$op_send"
+        printf '    {"name": "%s", "way": "files", "settings": {"directory": "%s/to-%s"}, "key_file": "comp-%s"}\n' \
+            "$op_extra" "$op_dir" "$op_extra" "$op_extra"
+        printf '  ],\n  "address_book": [\n'
+        printf '    {"network": "%s", "relay": "%s", "way": "files", ' "$(state_get network)" "$(relay_of "$op_other")"
+        printf '"settings": {"directory": "%s", "max_attachment_bytes": %s}, ' \
+            "$(shared_inbox "$op_other")" "$(state_get limit)"
+        printf '"key_file": "relay-%s", "standard": %s}\n' "$(relay_of "$op_other")" "$2"
+        printf '  ],\n  "periods": {"read_interval_seconds": 1, "retry_first_seconds": 2, '
+        printf '"retry_max_seconds": 10, "delivery_deadline_seconds": %s, ' "$(state_get deadline)"
+        printf '"attachment_grace_seconds": 10}\n}\n'
+    } >"$op_dir/operating.json"
+}
+
+load_operating() { # <side>
+    "$(relay_program)" -c "$(relay_marker "$1")" config load "$(side_dir "$1")/operating.json" >/dev/null
+}
+
+# write_component_ini <side> <role> <file name> <with broker: 0|1>: the startup configuration of
+# a component that talks to the relay of the side (section [broker] for "serve").
+write_component_ini() {
+    wc_dir=$(component_dir "$1" "$2")
+    {
+        if [ "$4" = 1 ]; then printf '[broker]\nserver_time_zone = UTC\n\n'; fi
+        printf '[relay]\naddress = %s\nway = files\n' "$(address_of "$1" "$2")"
+        printf 'secrets_directory = %s/secrets\nkey_file = link.key\n' "$wc_dir"
+        printf 'database = %s/state/connection.db\npoll_interval_seconds = 1\n\n' "$wc_dir"
+        printf '[relay.way]\ntarget.directory = %s/in\ninbox.directory = %s/to-%s\n' \
+            "$(side_dir "$1")" "$(side_dir "$1")" "$2"
+    } >"$wc_dir/$3"
+}
+
+cmd_start() {
+    network='' relay_a='' relay_b='' broker=''
+    deadline=120
+    limit=4194304
+    name_listen=listen
+    name_send=send
+    name_fetch=fetch
+    name_request=request
+    while [ $# -gt 0 ]; do
+        case $1 in
+        --network | --relay-a | --relay-b | --broker | --delivery-deadline | --limit-bytes | \
+            --listen-name | --send-name | --fetch-name | --request-name)
+            [ $# -ge 2 ] || die "missing value for $1"
+            case $1 in
+            --network) network=$2 ;;
+            --relay-a) relay_a=$2 ;;
+            --relay-b) relay_b=$2 ;;
+            --broker) broker=$2 ;;
+            --delivery-deadline) deadline=$2 ;;
+            --limit-bytes) limit=$2 ;;
+            --listen-name) name_listen=$2 ;;
+            --send-name) name_send=$2 ;;
+            --fetch-name) name_fetch=$2 ;;
+            --request-name) name_request=$2 ;;
+            esac
+            shift 2
+            ;;
+        *) die "unknown parameter: $1" ;;
+        esac
+    done
+    [ -n "$network" ] || die "missing parameter --network"
+    [ -n "$relay_a" ] || die "missing parameter --relay-a"
+    [ -n "$relay_b" ] || die "missing parameter --relay-b"
+    [ -n "$broker" ] || die "missing parameter --broker"
+    require_name --network "$network"
+    require_name --relay-a "$relay_a"
+    require_name --relay-b "$relay_b"
+    require_name --listen-name "$name_listen"
+    require_name --send-name "$name_send"
+    require_name --fetch-name "$name_fetch"
+    require_name --request-name "$name_request"
+    [ "$relay_a" != "$relay_b" ] || die "--relay-a and --relay-b must differ"
+    [ "$name_listen" != "$name_send" ] && [ "$name_listen" != "$name_fetch" ] &&
+        [ "$name_listen" != "$name_request" ] && [ "$name_send" != "$name_fetch" ] &&
+        [ "$name_send" != "$name_request" ] && [ "$name_fetch" != "$name_request" ] ||
+        die "the names of the four roles must differ"
+    [ "$name_listen" != relay ] && [ "$name_send" != relay ] && [ "$name_fetch" != relay ] &&
+        [ "$name_request" != relay ] || die "the name relay is reserved for the relays"
+    require_number --delivery-deadline "$deadline" 5 604800
+    require_number --limit-bytes "$limit" 1000 1073741824
+    case $broker in
+    *[![:print:]]*) die "--broker must be a name of printable characters" ;;
+    esac
+    case $env_dir in
+    *%* | *'"'* | *'\'* | *'
+'*) die "the path of the directory must not contain %, a quotation mark, a backslash or a line break" ;;
+    esac
+
+    # The working directory must be a Git working directory and the whole repository must be free
+    # of uncommitted changes and of new files that are not ignored. Nothing is installed, built or
+    # started before.
+    require_command git
+    repo_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null) ||
+        die "$script_dir is not in a Git working directory; the test environment starts only from exactly one commit"
+    changes=$(git -C "$repo_root" status --porcelain 2>&1) ||
+        die "cannot determine the state of the Git working directory"
+    if [ -n "$changes" ]; then
+        printf '%s: the working directory has uncommitted changes or new files that are not ignored; the test environment starts only from exactly one commit.\n' "$PROG" >&2
+        printf '%s\n' "$changes" | head -n 20 >&2
+        exit 1
+    fi
+    require_command python3
+    require_command uv
+
+    if [ -f "$state_file" ]; then
+        if relay_running a || relay_running b || listen_running a || listen_running b ||
+            fetch_running; then
+            die "a test environment is already running (see: $PROG status)"
+        fi
+        rm -rf "$env_dir"
+    fi
+    [ ! -e "$env_dir" ] || die "the directory $env_dir exists and is not a test environment"
+
+    trap on_exit EXIT
+    trap 'exit 130' INT TERM HUP
+    mkdir -p "$env_dir"
+    chmod 700 "$env_dir"
+    cleanup_needed=1
+    : >"$state_file"
+    state_set network "$network"
+    state_set relay_a "$relay_a"
+    state_set relay_b "$relay_b"
+    state_set broker "$broker"
+    state_set deadline "$deadline"
+    state_set limit "$limit"
+    state_set listen "$name_listen"
+    state_set send "$name_send"
+    state_set fetch "$name_fetch"
+    state_set request "$name_request"
+
+    printf '%s: installing the dependencies\n' "$PROG"
+    uv --directory "$relay_dir" sync --frozen
+    uv --directory "$fetch_dir" sync --frozen
+
+    # Directories, startup configurations and keys.
+    mkdir -p "$(shared_dir)"
+    for side in a b; do
+        dir=$(side_dir "$side")
+        make_private "$dir/secrets"
+        mkdir -p "$dir/attachments" "$dir/in" "$dir/received" "$(shared_inbox "$side")"
+        printf '[database]\nurl = sqlite:///%s/relay.db\n[storage]\nattachments_directory = %s/attachments\n' \
+            "$dir" "$dir" >"$dir/relay.ini"
+        printf '[secrets]\ndirectory = %s/secrets\n[log]\nlevel = INFO\nfile = %s/relay.log\n' \
+            "$dir" "$dir" >>"$dir/relay.ini"
+        "$(relay_program)" -c "$(relay_marker "$side")" migrate >/dev/null
+        if [ "$side" = a ]; then role_extra=$name_request; else role_extra=$name_fetch; fi
+        for role in "$name_listen" "$name_send" "$role_extra"; do
+            make_private "$(component_dir "$side" "$role")/secrets"
+            mkdir -p "$(component_dir "$side" "$role")/state" "$dir/to-$role"
+            new_key "$side" "comp-$role"
+            copy_key "$dir/secrets" "comp-$role" "$(component_dir "$side" "$role")/secrets" link.key
+        done
+    done
+    new_key a "relay-$relay_b"
+    copy_key "$(side_dir a)/secrets" "relay-$relay_b" "$(side_dir b)/secrets" "relay-$relay_a"
+    # The sending probe with a key that is not the one of the connection (disturbance 4).
+    forger=$(component_dir a "$name_send")-forger
+    make_private "$forger/secrets"
+    mkdir -p "$forger/state"
+    new_key a forger-key
+    mv "$(side_dir a)/secrets/forger-key" "$forger/secrets/link.key"
+    write_component_ini a "$name_send" probe.ini 0
+    sed "s|$(component_dir a "$name_send")|$forger|g" "$(component_dir a "$name_send")/probe.ini" >"$forger/probe.ini"
+    for side in a b; do
+        write_component_ini "$side" "$name_listen" probe.ini 0
+        write_component_ini "$side" "$name_send" probe.ini 0
+    done
+    write_component_ini a "$name_request" fetch.ini 0
+    write_component_ini b "$name_fetch" fetch.ini 1
+    for side in a b; do
+        write_operating "$side" false
+        load_operating "$side"
+    done
+
+    for side in a b; do launch_relay "$side"; done
+    for side in a b; do launch_listen "$side"; done
+    launch_fetch
+
+    cleanup_needed=0
+    trap - EXIT INT TERM HUP
+    printf '%s: the test environment is running.\n' "$PROG"
+    print_summary
+}
+
+print_summary() {
+    printf '  directory:               %s\n' "$env_dir"
+    printf '  directory in common:     %s (the stand-in for the network drive)\n' "$(shared_dir)"
+    for side in a b; do
+        printf '  relay %s:                 %s, directory %s\n' "$side" "$(relay_of "$side")" "$(side_dir "$side")"
+        printf '    log:                   %s/relay.log\n' "$(side_dir "$side")"
+        printf '    listening probe:       %s, writes into %s/received\n' \
+            "$(address_of "$side" "$(state_get listen)")" "$(side_dir "$side")"
+        printf '    sending probe:         %s (testenv send %s ...)\n' \
+            "$(address_of "$side" "$(state_get send)")" "$side"
+    done
+    printf '  serve (replica of MetaTrader 5): %s, trade server "%s"\n' \
+        "$(address_of b "$(state_get fetch)")" "$(state_get broker)"
+    printf '  request:                 %s (testenv request ...)\n' "$(address_of a "$(state_get request)")"
+}
+
+# --- stop and status -------------------------------------------------------------------------
+
+cmd_stop() {
+    [ $# -eq 0 ] || usage
+    if [ ! -d "$env_dir" ]; then
+        printf '%s: no test environment is running\n' "$PROG"
+        return 0
+    fi
+    [ -f "$state_file" ] || die "the directory $env_dir is not a test environment"
+    stop_processes
+    rm -rf "$env_dir"
+    printf '%s: test environment stopped\n' "$PROG"
+}
+
+report_process() { # <label> <running: 0|1>
+    if [ "$2" = 1 ]; then printf '  %-24s running\n' "$1"; else printf '  %-24s not running\n' "$1"; fi
+}
+
+cmd_status() {
+    [ $# -eq 0 ] || usage
+    if [ ! -f "$state_file" ]; then
+        printf '%s: not running\n' "$PROG"
+        return 1
+    fi
+    complete=1
+    printf '%s: test environment in %s\n' "$PROG" "$env_dir"
+    if [ -d "$(shared_dir)" ]; then
+        printf '  directory in common:     %s (connected)\n' "$(shared_dir)"
+    else
+        printf '  directory in common:     disconnected (testenv fault 2 off connects it)\n'
+    fi
+    for side in a b; do
+        if relay_running "$side"; then running=1; else running=0; complete=0; fi
+        report_process "relay $side ($(relay_of "$side"))" "$running"
+        if listen_running "$side"; then running=1; else running=0; complete=0; fi
+        report_process "listening probe $side" "$running"
+    done
+    if fetch_running; then running=1; else running=0; complete=0; fi
+    report_process "serve (b)" "$running"
+    print_summary
+    [ "$complete" = 1 ] || return 1
+}
+
+# --- probe and request -----------------------------------------------------------------------
+
+cmd_send() {
+    [ $# -ge 1 ] || usage
+    require_running
+    side_ok "$1"
+    send_side=$1
+    shift
+    "$(relay_program)" probe send -c "$(component_dir "$send_side" "$(state_get send)")/probe.ini" "$@"
+}
+
+cmd_request() {
+    require_running
+    "$(fetch_program)" request -c "$(component_dir a "$(state_get request)")/fetch.ini" "$@"
+}
+
+# queue <a|b>: the messages that wait in the queue of a relay ("pipwerk-relay queue").
+cmd_queue() {
+    [ $# -eq 1 ] || usage
+    require_running
+    side_ok "$1"
+    "$(relay_program)" -c "$(relay_marker "$1")" queue
+}
+
+# --- disturbances ----------------------------------------------------------------------------
+
+fault_usage() {
+    case $1 in
+    1)
+        cat <<EOF
+Disturbance 1: the relay of the recipient is ended.
+  testenv fault 1 on     ends the relay b (messages for b wait in its inbox in the common directory)
+  testenv fault 1 off    starts the relay b again (it delivers what waits)
+Try: testenv fault 1 on, then testenv send a --address <listening probe b> --text hello --receipt
+     --wait 300, then testenv fault 1 off in a second terminal.
+EOF
+        ;;
+    2)
+        cat <<EOF
+Disturbance 2: the directory in common cannot be reached (network drive disconnected).
+  testenv fault 2 on     disconnects the common directory
+  testenv fault 2 off    connects it again
+While it is disconnected, testenv queue a shows the message waiting (state retrying), and the
+logs of the relays name the error. Try: testenv fault 2 on, testenv send a --address <listening
+probe b> --text hello --receipt --wait 300 in a second terminal, testenv queue a, then
+testenv fault 2 off. With a short --delivery-deadline at the start, the sender gets
+relay_unreachable instead.
+EOF
+        ;;
+    3)
+        cat <<EOF
+Disturbance 3: a relay is ended hard while it works.
+  testenv fault 3 on [a|b]     ends the relay at once (kill -9), default b
+  testenv fault 3 off [a|b]    starts it again
+EOF
+        ;;
+    4)
+        cat <<EOF
+Disturbance 4: an envelope or a file is changed, or an envelope has the wrong key.
+  testenv fault 4 envelope     changes the waiting envelope in the inbox of the relay b
+  testenv fault 4 attachment   changes the file that waits there
+  testenv fault 4 key          sends a message with a key that is not the one of the connection
+  testenv fault 4 off          starts the relay b if it is not running (it drops what is wrong)
+For envelope and attachment end the relay b first (testenv fault 1 on) and send a message with a
+file, so that something waits.
+EOF
+        ;;
+    5)
+        cat <<EOF
+Disturbance 5: the same envelope comes once more.
+  testenv fault 5 save [relay|component]    copies the waiting envelope and its files (default
+                                            component: in the inbox of the listening probe b;
+                                            relay: in the inbox of the relay b)
+  testenv fault 5 on [relay|component]     puts the copy there again
+  testenv fault 5 off                      removes the copy
+Try: testenv fault 7 on (the listening probe b does not run), send a message with --receipt,
+testenv fault 5 save, testenv fault 7 off, then testenv fault 5 on.
+EOF
+        ;;
+    6)
+        cat <<EOF
+Disturbance 6: recipient or relay unknown, a loop, a message that is too large.
+  testenv fault 6 unknown-recipient   sends to a component the relay b does not know
+  testenv fault 6 unknown-relay       sends to a relay that does not exist
+  testenv fault 6 loop                lets the two relays be each other's standard relay for one
+                                      message to a relay that does not exist
+  testenv fault 6 too-large           sends a file larger than the limit between the relays
+  testenv fault 6 off                 puts the configuration back (after an interrupted loop)
+EOF
+        ;;
+    7)
+        cat <<EOF
+Disturbance 7: the receiving component does not run.
+  testenv fault 7 on     ends the listening probe b
+  testenv fault 7 off    starts it again (it receives what waits)
+EOF
+        ;;
+    *) die "the disturbances are numbered 1 to 7" ;;
+    esac
+}
+
+fault_send_probe() { # <address> <text> [more parameters]
+    fault_address=$1
+    fault_text=$2
+    shift 2
+    fault_code=0
+    cmd_send a --address "$fault_address" --text "$fault_text" --wait "$FAULT_WAIT" "$@" ||
+        fault_code=$?
+    return "$fault_code"
+}
+
+# fault_standard <true|false>: both relays name the other as the standard relay.
+fault_standard() {
+    for side in a b; do
+        write_operating "$side" "$1"
+        load_operating "$side"
+    done
+}
+
+# change_waiting <pattern> <kind>: changes one byte of the first waiting file.
+change_waiting() {
+    waiting_dir=$(shared_inbox b)
+    waiting_file=$(find "$waiting_dir" -maxdepth 1 -name "$1" | sort | head -n 1)
+    [ -n "$waiting_file" ] ||
+        die "nothing waits in the inbox of the relay b (end the relay b with: $PROG fault 1 on, and send a message with a file)"
+    python3 - "$waiting_file" "$2" <<'EOF'
+import json
+import sys
+
+path, kind = sys.argv[1], sys.argv[2]
+if kind == "envelope":
+    with open(path, encoding="utf-8") as stream:
+        document = json.load(stream)
+    body = document["body"]
+    start = body.find('"text":"') + 8
+    if start > 7:  # the first character of the text of the message
+        body = body[:start] + ("#" if body[start] != "#" else "%") + body[start + 1 :]
+    else:
+        body += " "
+    document["body"] = body
+    with open(path, "w", encoding="utf-8") as stream:
+        json.dump(document, stream)
+else:
+    with open(path, "rb") as stream:
+        data = bytearray(stream.read())
+    data[0] ^= 0xFF
+    with open(path, "wb") as stream:
+        stream.write(data)
+EOF
+    printf '%s: changed the %s that waits in the inbox of the relay %s\n' "$PROG" "$2" "$(relay_of b)"
+}
+
+cmd_fault() {
+    require_running
+    [ $# -ge 1 ] || usage
+    fault_number=$1
+    shift
+    fault_action=${1:-}
+    [ -n "$fault_action" ] && shift
+    if [ -z "$fault_action" ]; then
+        fault_usage "$fault_number"
+        return 0
+    fi
+    case $fault_number:$fault_action in
+    1:on)
+        stop_pid "$(state_get relay_pid_b)" "$(relay_marker b)"
+        printf '%s: the relay %s is ended\n' "$PROG" "$(relay_of b)"
+        ;;
+    1:off | 4:off)
+        relay_running b || launch_relay b
+        printf '%s: the relay %s runs\n' "$PROG" "$(relay_of b)"
+        ;;
+    2:on)
+        [ -d "$(shared_dir)" ] || die "the common directory is disconnected already"
+        mv "$(shared_dir)" "$(shared_dir).disconnected"
+        printf '%s: the common directory is disconnected\n' "$PROG"
+        ;;
+    2:off)
+        [ -d "$(shared_dir).disconnected" ] || die "the common directory is connected"
+        mv "$(shared_dir).disconnected" "$(shared_dir)"
+        printf '%s: the common directory is connected\n' "$PROG"
+        ;;
+    3:on)
+        side=${1:-b}
+        side_ok "$side"
+        kill_pid "$(state_get "relay_pid_$side")" "$(relay_marker "$side")"
+        printf '%s: the relay %s is ended hard\n' "$PROG" "$(relay_of "$side")"
+        ;;
+    3:off)
+        side=${1:-b}
+        side_ok "$side"
+        relay_running "$side" || launch_relay "$side"
+        printf '%s: the relay %s runs\n' "$PROG" "$(relay_of "$side")"
+        ;;
+    4:envelope) change_waiting '*.json' envelope ;;
+    4:attachment) change_waiting '*.att' attachment ;;
+    4:key)
+        fault_code=0
+        "$(relay_program)" probe send -c "$(component_dir a "$(state_get send)")-forger/probe.ini" \
+            --address "$(address_of b "$(state_get listen)")" --text "message with the wrong key" \
+            --receipt --wait "$FAULT_WAIT" || fault_code=$?
+        return "$fault_code"
+        ;;
+    5:save | 5:on)
+        where=${1:-component}
+        case $where in
+        component) place=$(side_dir b)/to-$(state_get listen) ;;
+        relay) place=$(shared_inbox b) ;;
+        *) die "the place is relay or component" ;;
+        esac
+        saved="$env_dir/saved-$where"
+        if [ "$fault_action" = save ]; then
+            rm -rf "$saved"
+            mkdir -p "$saved"
+            # the files of the message first, the envelope last
+            find "$place" -maxdepth 1 -name '*.att' -exec cp {} "$saved" \;
+            find "$place" -maxdepth 1 -name '*.json' -exec cp {} "$saved" \;
+            [ -n "$(ls -A "$saved")" ] || die "nothing waits in $where of the side b"
+            printf '%s: saved %s file(s)\n' "$PROG" "$(ls "$saved" | wc -l | tr -d ' ')"
+        else
+            [ -d "$saved" ] && [ -n "$(ls -A "$saved")" ] ||
+                die "nothing is saved (testenv fault 5 save $where)"
+            find "$saved" -maxdepth 1 -name '*.att' -exec cp {} "$place" \;
+            find "$saved" -maxdepth 1 -name '*.json' -exec cp {} "$place" \;
+            printf '%s: put the envelope there again\n' "$PROG"
+        fi
+        ;;
+    5:off) rm -rf "$env_dir"/saved-component "$env_dir"/saved-relay ;;
+    6:unknown-recipient)
+        fault_send_probe "nobody.$(state_get network).$(relay_of b)" "to a component that is not there"
+        ;;
+    6:unknown-relay)
+        fault_send_probe "nobody.$(state_get network).$(relay_of b)-unknown" "to a relay that is not there"
+        ;;
+    6:loop)
+        fault_standard true
+        # the relays take over the configuration at the next round
+        sleep 3
+        fault_code=0
+        fault_send_probe "nobody.$(state_get network).$(relay_of b)-unknown" "a message that goes round" ||
+            fault_code=$?
+        fault_standard false
+        return "$fault_code"
+        ;;
+    6:too-large)
+        large="$env_dir/too-large.bin"
+        head -c "$(($(state_get limit) + 1))" /dev/zero >"$large"
+        fault_code=0
+        fault_send_probe "$(address_of b "$(state_get listen)")" "a file that is too large" \
+            --file "$large" || fault_code=$?
+        rm -f "$large"
+        return "$fault_code"
+        ;;
+    6:off) fault_standard false ;;
+    7:on)
+        stop_pid "$(state_get listen_pid_b)" "$(listen_marker b)"
+        printf '%s: the listening probe %s is ended\n' "$PROG" "$(address_of b "$(state_get listen)")"
+        ;;
+    7:off)
+        listen_running b || launch_listen b
+        printf '%s: the listening probe %s runs\n' "$PROG" "$(address_of b "$(state_get listen)")"
+        ;;
+    *)
+        fault_usage "$fault_number" >&2
+        die "unknown action for the disturbance $fault_number: $fault_action"
+        ;;
+    esac
+}
+
+[ $# -ge 1 ] || usage
+command_name=$1
+shift
+case $command_name in
+start) cmd_start "$@" ;;
+stop) cmd_stop "$@" ;;
+status) cmd_status "$@" ;;
+send) cmd_send "$@" ;;
+request) cmd_request "$@" ;;
+queue) cmd_queue "$@" ;;
+fault) cmd_fault "$@" ;;
+*) usage ;;
+esac

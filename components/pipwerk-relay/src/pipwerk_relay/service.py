@@ -1,15 +1,46 @@
 """Running the relay until it is stopped, and the log of the process."""
 
 import logging
+import signal
 import threading
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from types import FrameType
 
 from pipwerk_relay.errors import ConfigRejected, NotConfigured
 from pipwerk_relay.relay import Relay
 
 LOGGER = logging.getLogger("pipwerk_relay.service")
 LOG_FORMAT = "%(asctime)sZ %(levelname)s %(name)s %(message)s"
+
+
+def _stop_signals() -> list[signal.Signals]:
+    names = ("SIGINT", "SIGTERM", "SIGBREAK")
+    return [getattr(signal, name) for name in names if hasattr(signal, name)]
+
+
+@contextmanager
+def stop_on_signals(stop: threading.Event) -> Iterator[None]:
+    """Set ``stop`` when the process is asked to end (Ctrl+C, ``SIGTERM``, on Windows
+    ``SIGBREAK``); the earlier handlers are back afterwards.
+
+    Handlers can only be installed in the main thread; in another thread nothing is changed.
+    """
+
+    def request_stop(_number: int, _frame: FrameType | None) -> None:
+        stop.set()
+
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = {number: signal.signal(number, request_stop) for number in _stop_signals()}
+    try:
+        yield
+    finally:
+        for number, old in previous.items():
+            signal.signal(number, old)
 
 
 def run_until_stopped(relay: Relay, stop: threading.Event) -> None:

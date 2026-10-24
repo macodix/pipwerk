@@ -63,6 +63,29 @@ def test_every_command_is_described_in_the_document_and_the_readme(command: str)
     assert command in README
 
 
+@pytest.mark.parametrize("command", ["probe listen", "probe send"])
+def test_the_commands_of_the_probe_are_described_in_the_document_and_the_readme(
+    command: str,
+) -> None:
+    assert f"| `{command}" in PART_B
+    assert command in README
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Receipt: message <ID> was stored by <Adresse>.",
+        "Notice from <Relay>: message <ID> is undeliverable (<Grund>): <fester Text>",
+        "No receipt: message <ID> to <Adresse> was not confirmed within <s> seconds.",
+        "No notice came back within <s> seconds for message <ID>.",
+        "pipwerk-relay probe listen: address",
+        "pipwerk-relay-probe.ini",
+    ],
+)
+def test_what_the_probe_shows_is_documented(text: str) -> None:
+    assert text in PART_B
+
+
 def test_every_entry_of_the_startup_configuration_is_described() -> None:
     for section, entries in ALLOWED_OPTIONS.items():
         for entry in entries:
@@ -113,6 +136,10 @@ def test_the_sections_of_part_b_are_there() -> None:
         "## 28. Sicherheit des Relays",
         "## 29. Abhängigkeiten des Relays",
         "## 30. Prüfskript des Relays und Tests",
+        "## 31. Prüfkomponente (`probe`)",
+        "## 32. Testumgebung",
+        "## 33. Tests der Störungen",
+        "## 34. Bekannte Grenzen dieses Stands",
     ):
         assert heading in DOCUMENT
 
@@ -132,6 +159,7 @@ def test_the_tests_are_listed() -> None:
 def test_the_terms_are_in_the_glossary() -> None:
     assert "| Warteschlange |" in GLOSSARY
     assert "| Eingang (Nachrichtensystem) |" in GLOSSARY
+    assert "| Prüfkomponente |" in GLOSSARY
 
 
 def test_the_contracts_describe_the_operating_configuration() -> None:

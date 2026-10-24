@@ -47,6 +47,8 @@ select = ["E", "W", "F", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
+# The replica of the package MetaTrader5 for the test environment has the name of the package
+"scripts/replica/MetaTrader5.py" = ["N999"]
 
 [tool.mypy]
 strict = true

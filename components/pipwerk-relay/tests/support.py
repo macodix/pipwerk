@@ -139,6 +139,9 @@ class Site:
         }
         self.limits: dict[str, Any] = dict(limits)
         self.input_settings: dict[str, Any] = {}
+        self.shared_inbox: Path | None = None
+        """A second inbox in the directory the relays share (a network drive), where other relays
+        put their envelopes. Without it the inbox ``in`` serves components and relays alike."""
         self.relay = self.new_relay()
         self.applied = 0
 
@@ -157,16 +160,25 @@ class Site:
         return self.root / f"out_{component}"
 
     def document(self) -> dict[str, Any]:
+        inputs = [
+            {
+                "name": "main",
+                "way": "files",
+                "settings": {"directory": str(self.inbox), **self.input_settings},
+            }
+        ]
+        if self.shared_inbox is not None:
+            inputs.append(
+                {
+                    "name": "shared",
+                    "way": "files",
+                    "settings": {"directory": str(self.shared_inbox), **self.input_settings},
+                }
+            )
         return {
             "network": self.network,
             "name": self.name,
-            "inputs": [
-                {
-                    "name": "main",
-                    "way": "files",
-                    "settings": {"directory": str(self.inbox), **self.input_settings},
-                }
-            ],
+            "inputs": inputs,
             "components": self.component_entries,
             "address_book": self.address_book,
             "periods": self.periods,
@@ -215,7 +227,7 @@ class Site:
                 "network": other.network,
                 "relay": other.name,
                 "way": "files",
-                "settings": {"directory": str(other.inbox), **settings},
+                "settings": {"directory": str(other.shared_inbox or other.inbox), **settings},
                 "key_file": key_file,
                 "standard": standard,
             }
@@ -239,6 +251,11 @@ class World:
         self.clock = Clock()
         self.sites: dict[str, Site] = {}
 
+    @property
+    def shared_directory(self) -> Path:
+        """The directory the relays share (the network drive)."""
+        return self.root / "shared"
+
     def site(
         self,
         name: str = "r1",
@@ -249,7 +266,10 @@ class World:
         read_batch: int | None = None,
         max_queue_messages: int | None = None,
         max_attachment_storage_bytes: int | None = None,
+        shared: bool = False,
     ) -> Site:
+        """A relay. With ``shared`` other relays put their envelopes into a directory of its own
+        under ``shared/`` (the stand-in for the network drive between the relays)."""
         chosen = {
             "max_hops": max_hops,
             "read_batch": read_batch,
@@ -257,6 +277,9 @@ class World:
             "max_attachment_storage_bytes": max_attachment_storage_bytes,
         }
         site = Site(self, name, network, {k: v for k, v in chosen.items() if v is not None})
+        if shared:
+            site.shared_inbox = self.shared_directory / f"in-{name}"
+            site.shared_inbox.mkdir(parents=True)
         self.sites[name] = site
         for component in components:
             site.add_component(component)

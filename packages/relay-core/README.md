@@ -12,6 +12,7 @@ Documentation: [docs/technical/pipwerk-relay.md](../../docs/technical/pipwerk-re
 - `SecretsDirectory(path)`: `check()`, `new_key(file)`, `load_key(file)`; keys are 32 bytes from the secure random source, the rights of directory and files are checked (only the owner).
 - `Way` (interface version 1): `send`, `read`, `acknowledge`; `load_way(name, settings)` loads the way with this name from the entry point group `pipwerk_relay.ways` and passes the block of its own settings on; the way checks it strictly (`WaySettingsError` names the entries, never the values).
 - The way `files` (`FilesWay`, name `files`): settings `directory`, `max_envelope_bytes`, `max_attachment_bytes`.
+- `read_connection_settings(parser, origin)` reads the sections `[relay]` and `[relay.way]` of a startup configuration in the form every component of pipwerk relay uses (`address`, `way`, `secrets_directory`, `key_file`, `database`, `relay_link`, `poll_interval_seconds`; the settings of the way as `target.<entry>` and `inbox.<entry>`); `open_connector(settings)` checks them and opens the `Connector`. Errors are `ConnectionSettingsError` and name the entry, never a value.
 - `pipwerk-relaycore-schemas <directory>` writes the JSON schemas; `--check` reports files that differ from the models.
 
 ## Check
