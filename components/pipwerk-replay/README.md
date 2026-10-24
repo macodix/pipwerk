@@ -36,6 +36,8 @@ The development server of Vite passes the requests under `/api` to the backend (
 
 The data stock lives in the same database unless `[marketdata] url` names another one. An import has no limit for the number or the total size of its files; the limits per file (size and number of rows), the days without trade and the time after which an import process ends by itself are entries of `[marketdata]` with defaults (see the example file). A startup configuration that still has the former section for a source is not wrong: the backend ignores it, like any entry it does not know.
 
+The settings for files (keep imported files, storage directory, import directory, export directory) are stored in the database, not in the startup configuration; without a stored value the default of the operating system applies (see `docs/technical/pipwerk-replay.md`, section 2.7a). The import can read files directly from the import directory; it never changes them.
+
 ## Checks
 
 ```sh

@@ -318,6 +318,15 @@ Löschen nach Spezifikation 5.5 und Abnahmebericht `wp02`, Versuch 2, M5. Es gib
 
 Die Bibliothek kennt weder den „Broker für Testläufe“ noch einen Import-Vorgang noch einen Backtest: Dass nicht gelöscht wird, solange etwas läuft, und das Zurücksetzen der Wahl des Brokers regelt pipwerk replay (`pipwerk-replay.md`).
 
+### 8.2 Platz der Datenbank
+
+Nach Spezifikation 5.6 gibt der Datenbestand den freien Platz nach dem Löschen (Abschnitt 8.1) und nach dem Ersetzen von Daten (Abschnitt 4) an das Dateisystem zurück; bei einer SQLite-Datei wird sie kleiner. Das Modul `pipwerk_marketdata.space` stellt zwei Funktionen bereit, `MarketDataStore` ruft die zweite nach dem Commit auf (bei einem Löschen nur mit Ausführung, bei einem Import nur, wenn er Daten ersetzt hat):
+
+- `enable_space_return(engine)` setzt `auto_vacuum` einer SQLite-Datei auf `INCREMENTAL`; eine Datei mit anderem Modus wird einmal mit `VACUUM` umgestellt (der Modus wirkt erst damit). Der Aufrufer ruft es einmal beim Start nach den Migrationen. Es gibt `True` zurück, wenn ein `VACUUM` nötig war.
+- `return_space(engine)` gibt die freien Seiten in Schritten zu 4096 Seiten frei (`PRAGMA incremental_vacuum`); jeder Schritt ist eine kurze Transaktion für sich. Ein Fehler wird ohne Pfad protokolliert und nicht weitergegeben: Die Änderung ist bereits bestätigt, der nächste Aufruf holt es nach.
+
+Beide tun nichts bei einer Datenbank, die keine SQLite-Datei ist (Speicher, Server). Begründung des Verfahrens (`incremental_vacuum` statt `VACUUM`): kurze Sperren statt einer langen, kein zweites Exemplar der Datei und kein freier Platz von der Größe der Datei nötig, gleichmäßige Arbeit je Löschung; nur die Umstellung einer alten Datei braucht einmal ein `VACUUM`. Tests: `packages/market-data/tests/test_space.py`.
+
 ## 9. Migrationen
 
 `migrate_database(engine)` bringt die Datenbank auf den neuesten Stand, ganz oder gar nicht, wie bei pipwerk Studio (`pipwerk-studio.md`, Abschnitt 2.2): eine Verbindung, eine Transaktion; bei SQLite mit `BEGIN IMMEDIATE`, weil der Treiber DDL sonst außerhalb der Transaktion bestätigt. Schlägt eine Migration fehl, wird zurückgerollt und `DatabaseMigrationError` gemeldet. Die Migrationen liegen im Paket (`pipwerk_marketdata.migrations`) und werden mit ihm ausgeliefert. Die Adresse der Datenbank kommt vom Aufrufer; es gibt keine Alembic-Konfigurationsdatei mit fester Adresse.
@@ -419,6 +428,7 @@ Rein technische Einzelheiten, die die Spezifikation offenlässt:
 | Datum | Änderung |
 |---|---|
 | 2026-10-21 | Erstfassung zu Auftrag 02 des Arbeitspakets `wp02` im Vorhaben `backtest`. |
+| 2026-10-24 | Auftrag 18: Platz der Datenbank nach Löschen und Ersetzen (Abschnitt 8.2, `space.py`). |
 | 2026-10-21 | Auftrag 08: Grenzen für Zeitpunkte (1970 bis vor 2100), Grund `time_out_of_range`, Vollständigkeit nur innerhalb der Grenzen. |
 | 2026-10-21 | Abschnitt „Prüfskript“ zu `packages/market-data/scripts/check` (Tester Funktion). |
 | 2026-10-23 | Auftrag 11 (Mängel M1, M3, M4 des Abnahmeberichts `wp02`): Import eines Vorgangs mit mehreren Dateien (4.5), Grenzen für Zahl und Gesamtgröße (4.4), Erkennung aus Dateinamen und Hinweise aus JSON (5.3, 5.4), Liste der Reihen, Einzelheiten und Broker (8), Entscheidungen (13). |
