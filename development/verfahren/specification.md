@@ -6,7 +6,7 @@
 - stand: 2026-10-24
 - name: Entwicklungsverfahren verbessern
 - grundlage: Festlegungen 1 bis 7 in [scope.md](scope.md), Nachprüfung [requirements-2.md](reviews/requirements-2.md) bestanden. Hinweise H1 bis H15 aus [requirements-1.md](reviews/requirements-1.md) und H18 bis H21 aus [requirements-2.md](reviews/requirements-2.md) sind hier entschieden (Abschnitt 9).
-- offen: Abschnitt 7.4 (Gestaltung der Übersicht) folgt nach Bestätigung des Oberflächenentwurfs ([questions/verfahren-01.md](questions/verfahren-01.md)). Prüfung durch die QA steht aus.
+- offen: Abschnitt 7.4 (Gestaltung der Übersicht) folgt nach Bestätigung des neuen Oberflächenentwurfs ([prototype/order-02.md](prototype/order-02.md)). Prüfung durch die QA steht aus.
 
 ## 1. Gegenstand
 
@@ -57,11 +57,13 @@ Das Vorhaben ändert das Entwicklungsverfahren, nicht pipwerk. Betroffen sind:
 
 ### 4.1 Wiedervorlage
 
-1. Die Wiedervorlage ist eine wiederkehrende, geplante Aufgabe im Chat des Projektleiters alle 20 Minuten. Der Chat richtet sie ein, sobald er für sein Vorhaben eine Meldung an Softwarearchitekt oder Entwicklungsleiter überträgt.
-2. Bei jeder Ausführung: `origin/main` lesen, in `development/messages/projectlead/` die Meldungen mit `ref` des eigenen Vorhabens oder seiner Pakete auswählen, die älteste zuerst bearbeiten. Meldungen anderer Vorhaben bleiben unberührt.
-3. Die Wiedervorlage endet, wenn das Vorhaben abgeschlossen ist: Alle Pakete stehen im Plan auf `done`, und für das Vorhaben liegt keine Meldung mehr vor.
-4. Übernahme durch einen neuen Chat: Der neue Chat schreibt die Datei `development/<vorhaben>/followup.md` mit dem Zeitpunkt der Übernahme in UTC und einer zufälligen Kennung des Chats, überträgt sie auf `main` und richtet seine Wiedervorlage ein. Findet ein Chat bei einer Ausführung dort eine andere Kennung als seine eigene, beendet er seine Wiedervorlage und bearbeitet nichts mehr. Die Datei enthält keine Namen von Rechnern oder Benutzern.
-5. Läuft die geplante Aufgabe in der Umgebung des Chats nach einer Frist von selbst aus, richtet der Chat sie bei jeder Ansprache durch den Auftraggeber neu ein. Welche Umgebung der Chat nutzt und ob sie wiederkehrende Aufgaben bietet, beantwortet der Projektleiter ([questions/verfahren-01.md](questions/verfahren-01.md), Frage 3).
+Der Chat des Projektleiters arbeitet in claude.ai in einem Projekt. Dort gibt es keine wiederkehrende Aufgabe, sondern eine einmalige Wiedervorlage zu einem festen Zeitpunkt, die den Chat weckt. Wiedervorlagen lassen sich auflisten und löschen, auch die eines anderen Chats desselben Kontos ([questions/verfahren-01.md](questions/verfahren-01.md), Frage 3).
+
+1. Sobald der Chat für sein Vorhaben eine Meldung an Softwarearchitekt oder Entwicklungsleiter überträgt, setzt er eine Wiedervorlage 20 Minuten später, falls nicht schon eine besteht. Ihr Text nennt die Kennung des Vorhabens.
+2. Bei jeder Wiedervorlage: `origin/main` lesen, in `development/messages/projectlead/` die Meldungen mit `ref` des eigenen Vorhabens oder seiner Pakete auswählen, die älteste zuerst bearbeiten. Meldungen anderer Vorhaben bleiben unberührt.
+3. Danach setzt der Chat die nächste Wiedervorlage 20 Minuten später, solange für sein Vorhaben eine Meldung in `development/messages/architect/` oder `development/messages/devlead/` liegt, also eine Antwortmeldung aussteht. Sonst setzt er keine. Eine Frist, nach der die Wiedervorlage ausläuft, gibt es nicht.
+4. Übernahme durch einen neuen Chat: Der neue Chat listet die Wiedervorlagen auf und löscht die mit der Kennung seines Vorhabens. Er schreibt die Datei `development/<vorhaben>/followup.md` mit dem Zeitpunkt der Übernahme in UTC und einer zufälligen Kennung des Chats, überträgt sie auf `main` und setzt seine Wiedervorlage nach Punkt 1. Findet ein Chat bei einer Wiedervorlage dort eine andere Kennung als seine eigene, setzt er keine weitere und bearbeitet nichts mehr. Die Datei sichert die Übernahme auch dann, wenn das Löschen nicht gelingt. Sie enthält keine Namen von Rechnern oder Benutzern.
+5. Setzen, Wecken und Löschen sind erprobt, die Übernahme durch einen neuen Chat nicht. Vor der Abnahme des Pakets, das 4.1 umsetzt, erprobt der Projektleiter sie einmal und vermerkt das Ergebnis im Abnahmebericht. Gelingt sie nicht, ist das ein Mangel des Pakets.
 
 ### 4.2 Bearbeitung durch den Projektleiter
 
@@ -127,6 +129,8 @@ Für jedes `ref` gilt die jüngste Meldung in der Geschichte von `development/me
 - Pakete stehen in der Reihenfolge des Plans. Ein Paket ohne Meldung hat die Phase „wartet“, mit den Paketen, von denen es laut Plan abhängt. Ein Paket mit `done` im Plan ist „fertig“.
 - „Wartet auf den Auftraggeber“ sind alle Einträge mit „bei wem: Auftraggeber“. Der Text sagt, was zu tun ist: `present` „Präsentation bestätigen“, `question` „Frage beantworten“, `acceptance` „Abnahme durchführen“.
 - Ein Vorhaben ohne `scope.md` oder ein `ref` ohne Vorhaben erscheint nicht.
+- „Projektleiter“ ist ein Wert für „bei wem“ wie die übrigen, ohne Hervorhebung ([questions/verfahren-01.md](questions/verfahren-01.md), Frage 2).
+- Farben des Stands (Festlegung 6): Ein Vorhaben ist grau ohne Meldung, grün, wenn alle Pakete fertig sind, sonst gelb. Eine Phase ist grün, wenn das Vorhaben beziehungsweise alle Pakete sie hinter sich haben, gelb, wenn das Vorhaben oder mindestens ein Paket in ihr ist, sonst grau. Ein Paket ist in einer der Phasen 4 bis 6 grau, solange es sie nicht erreicht hat, gelb, solange es in ihr ist, und grün danach.
 
 ### 7.3 Inhaltliche Grenzen
 
@@ -165,7 +169,7 @@ Folgt nach Bestätigung des Oberflächenentwurfs.
 | H11, H12 | E5, 7.2 |
 | H13 | 7.1 |
 | H14, H17 | 4.4 |
-| H20 | Sprachfehler in Festlegung 7, Sache des Projektleiters |
+| H20 | Festlegung 7, vom Projektleiter berichtigt |
 
 ## 10. Prüfung und Abnahme
 
@@ -178,3 +182,4 @@ Folgt nach Bestätigung des Oberflächenentwurfs.
 | Datum | Änderung |
 |---|---|
 | 2026-10-24 | Entwurf ohne Abschnitt 7.4. |
+| 2026-10-24 | Antworten aus [questions/verfahren-01.md](questions/verfahren-01.md) eingearbeitet: 4.1 Wiedervorlage als einmalige, immer neu gesetzte Wiedervorlage in claude.ai (Frage 3), 7.2 „Projektleiter“ ohne Hervorhebung (Frage 2) und Farben des Stands nach der neuen Festlegung 6 (Frage 1). H20 erledigt. |
