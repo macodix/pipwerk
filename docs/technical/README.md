@@ -23,3 +23,4 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 - [Gemeinsame Python-Bibliothek `pipwerk_domain` – technische Dokumentation](pipwerk-domain.md) – Typbeschreibungen, Objektmodell, Ausdrücke, Konsistenzprüfung, Dokumentformat und Schemata
 - [Bibliothek `pipwerk_marketdata` – technische Dokumentation](pipwerk-marketdata.md) – Datenbestand historischer Kursdaten, Import, Vollständigkeit und Lesen
+- [pipwerk relay – technische Dokumentation](pipwerk-relay.md) – Bibliothek `pipwerk_relaycore`: Adresse, Nachricht, Umschlag mit Prüfwert, Schlüssel der Verbindung, Schnittstelle „Weg“, Verzeichnis-Weg
