@@ -5,7 +5,7 @@
 - status: `draft`
 - stand: 2026-10-24
 - komponente: `pipwerk-fetch-mt5`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt; in Auftrag 16 (Abnahmebericht Versuch 2, M2) neuer Abschnitt 16 „Installierte Software und laufende Prozesse“, Abschnitt 10 Schritt 3 angepasst; Python auf `>=3.14,<3.15` festgelegt (`pyproject.toml`, `uv.lock` neu erzeugt, Entscheidung 14, Abschnitt 16.2)
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt; in Auftrag 16 (Abnahmebericht Versuch 2, M2) neuer Abschnitt 16 „Installierte Software und laufende Prozesse“, Abschnitt 10 Schritt 3 angepasst; Python auf `>=3.14,<3.15` festgelegt (`pyproject.toml`, `uv.lock` neu erzeugt, Entscheidung 14, Abschnitt 16.2); in Auftrag 19 (Abnahmekriterium 11, req-system-028) Zwischendateien auch bei Abbruch entfernt und die eines abgestürzten Aufrufs beim Start aufgeräumt (Abschnitt 4 „Aufräumen“, 3 Exitcode 130, Entscheidung 15)
 
 ## 1. Gegenstand
 
@@ -65,6 +65,7 @@ Ablauf und Ausgabe: Das Programm prüft zuerst alle Angaben und die Startkonfigu
 | 0 | alle Dateien geschrieben |
 | 1 | mindestens ein Teil ließ sich nicht holen; die übrigen Dateien sind geschrieben |
 | 2 | ungültiger Aufruf oder ungültige Startkonfiguration; nichts geholt, nichts geschrieben |
+| 130 | unterbrochen (Strg+C oder Signal zum Beenden); fertige Dateien bleiben, keine Zwischendatei bleibt (Abschnitt 4) |
 
 Ist MetaTrader 5 nicht erreichbar, versucht das Programm die übrigen Teile nicht mehr einzeln (jeder Versuch wartet bis zur Zeitgrenze `timeout_ms`), sondern nennt für sie denselben Grund.
 
@@ -80,7 +81,11 @@ Beispiele: `EURUSD_H1_20260101_20260201.json`, `EURUSD_TICKS_20260105T083000_202
 
 Eine bestehende Datei gleichen Namens wird ersetzt. Der Name entsteht nur aus geprüften Angaben (`files.file_name`): Die Bezeichnung muss `[A-Za-z0-9][A-Za-z0-9._#+-]{0,63}` entsprechen, enthält also weder Trennzeichen eines Pfads noch Leerzeichen noch Steuerzeichen und beginnt nicht mit einem Punkt; die Daten sind eine Zeiteinheit, `TICKS` oder `CONTRACT`; die Zeitpunkte kommen aus geprüften Datumsangaben. Das Symbol des Brokers aus der Zuordnungstabelle geht nur an MetaTrader 5 und nie in einen Namen. Eine Bezeichnung mit unzulässigen Zeichen weist das Programm vor allem anderen ab (Exitcode 2). Der Unterstrich ist als Zeichen der Bezeichnung zulässig; ein Leser des Namens trennt von rechts (`bis`, `von`, `Daten`, der Rest ist die Bezeichnung).
 
-**Schreiben** (`files.write_file`): Das Programm schreibt in eine temporäre Datei im Zielverzeichnis (`.<Zufall>.tmp`), leert die Puffer, synchronisiert sie und benennt die Datei dann um (`Path.replace`, unter Windows und Linux atomar auf demselben Laufwerk). So bleibt nie eine halbe Datei; scheitert das Schreiben, bleibt eine bestehende Datei gleichen Namens unverändert und die temporäre Datei wird entfernt (Grund `write_failed`). Dateien entstehen nur unmittelbar im Zielverzeichnis. Auf Linux hat eine geschriebene Datei die Rechte der temporären Datei (nur der Benutzer liest und schreibt).
+**Schreiben** (`files.write_file`): Das Programm schreibt in eine temporäre Datei im Zielverzeichnis (`.pipwerk-fetch-mt5-<8 Zeichen>.tmp`, die 8 Zeichen aus `a-z`, `0-9`, `_` vergibt `tempfile.mkstemp`), leert die Puffer, synchronisiert sie und benennt die Datei dann um (`Path.replace`, unter Windows und Linux atomar auf demselben Laufwerk). So bleibt nie eine halbe Datei; scheitert das Schreiben, bleibt eine bestehende Datei gleichen Namens unverändert und die temporäre Datei wird entfernt (Grund `write_failed`). Dateien entstehen nur unmittelbar im Zielverzeichnis.
+
+**Aufräumen (req-system-028, Auftrag 19).** Die temporäre Datei wird bei jedem Ende entfernt: nach Erfolg (durch das Umbenennen), bei einem Fehler und bei jeder Unterbrechung (`write_file` fängt auch `KeyboardInterrupt`, entfernt die Datei und gibt die Unterbrechung weiter). Strg+C und das Beenden durch ein Signal (`SIGTERM`, unter Linux auch `SIGHUP`, unter Windows `SIGBREAK`) beenden den Aufruf mit Exitcode 130 und der Meldung „Abgebrochen“ auf der Fehlerausgabe; die bis dahin fertigen Dateien bleiben, die unterbrochene Datei nicht, eine bestehende Datei gleichen Namens bleibt vollständig und unverändert. Der Aufruf setzt dafür zeitweise Behandlungen der genannten Signale (`cli._signals_as_interrupt`; nur im Hauptthread, danach stellt er die früheren wieder her). Nicht abfangbar sind ein hartes Beenden (`SIGKILL`, `taskkill /F`, Stromausfall) und Absturz des Prozesses; dann bleibt die temporäre Datei liegen. Beim Start entfernt jeder Aufruf nach der Prüfung des Aufrufs und vor dem ersten Zugriff auf MetaTrader 5 solche Dateien im Zielverzeichnis (`files.remove_stale_temporaries`): nur Dateien, deren ganzer Name dem Muster `.pipwerk-fetch-mt5-[a-z0-9_]{8}.tmp` entspricht, die unmittelbar im Zielverzeichnis liegen und gewöhnliche Dateien sind (kein Verweis, kein Verzeichnis). Fertige Dateien (`….json`) und alle anderen Dateien bleiben. Wurde etwas entfernt, steht auf der Ausgabe „Zwischendateien eines früheren Abbruchs entfernt: <Zahl>.“; gab es nichts, wird nichts gemeldet. Grenze: Laufen zwei Aufrufe gleichzeitig im selben Zielverzeichnis, kann der zweite die temporäre Datei des ersten entfernen (unter Linux; dann scheitert das Umbenennen des ersten mit `write_failed`; unter Windows scheitert das Entfernen einer offenen Datei und sie bleibt). Das ist nicht als Betrieb vorgesehen. Tests: `tests/test_files_cleanup.py`.
+
+Auf Linux hat eine geschriebene Datei die Rechte der temporären Datei (nur der Benutzer liest und schreibt).
 
 **Inhalt** (`models.py`; das JSON-Format des Imports, `contracts/market-data/v1/`; kompakt ohne Einrückung, UTF-8):
 
@@ -247,6 +252,7 @@ Die Tests (pytest, 1582 Fälle, davon 1542 bestanden; 40 überspringen sich selb
 | `test_cli.py` | der ganze Aufruf gegen `ArchiveMt5Module`: Dateinamen, Inhalt, Broker als Name des Handelsservers, Zielverzeichnis (angegeben, aktuelles, angelegt), Ersetzen bestehender Dateien, Zuordnungstabelle (auch ein Symbol mit Pfadzeichen), Zeitzone mit Sommer- und Winterzeit und zweite Stunde der doppelten Stunde, Teile mit Grund und Exitcode (Symbol unbekannt, keine Daten, Fehler von MetaTrader 5, Zeitraum zu groß, nicht erreichbar mit nur einem Versuch, Paket fehlt, unerwarteter Fehler), unzulässige Zeichen im Instrument, ungültiger Zeitraum, Zeiteinheit und Zielverzeichnis, ungültige Startkonfiguration, Hilfetext, **kein Socket geöffnet** (Fixture `no_sockets` für alle Aufrufe) |
 | `test_import.py` | **Nachweis der Importierbarkeit**: jede geschriebene Datei gegen das Schema unter `contracts/market-data/v1/` und ohne Änderung mit `pipwerk_marketdata` importiert (Kerzen, Ticks, Angaben zum Instrument, erneuter Import ersetzt, Zeitzone mit Sommerzeit) |
 | `test_files.py` | Dateinamen (Zeiteinheit, `TICKS`, `CONTRACT`, Zeitpunkte in UTC, unzulässige Bezeichnungen), atomares Schreiben, Ersetzen, Fehlschlag ohne halbe Datei, Verzeichnis statt Datei |
+| `test_files_cleanup.py` | Unterbrechung und Fehler beim Schreiben ohne Zwischendatei, bestehende Datei bleibt, Aufräumen alter Zwischendateien beim Start (nur das Muster, keine fremde Datei, kein Verweis), Strg+C und `SIGTERM` im ganzen Aufruf (Exitcode 130) |
 | `test_config.py` | jeder Eintrag, Pflichtangaben, ungültige Werte, unbekannte und entfallene Einträge, Suchorte und Reihenfolge (POSIX und Windows), kein Wert in Fehlermeldungen |
 | `test_timeconv.py` | Winter- und Sommerzeit, fehlende und doppelte Ortszeit am Wechsel (Europe/Athens, 2026), Millisekunden |
 | `test_service.py` | jede Art, Zeitzone mit Sommerzeitwechsel im Frühjahr und im Herbst (auch bei Beginn mitten in der doppelten Stunde), Grenzen, Aufteilung in Abrufe ohne Lücke und Überlappung, ausgelassene Zeilen, Zuordnungstabelle, Handelszeiten, `period`, Pip und Spread, Margin, Name des Brokers, jeder Fehlergrund des Dienstes |
@@ -277,6 +283,7 @@ Fest gelegt vom Entwickler, soweit die Spezifikation es offenlässt (Auftrag 13)
 12. Windows-Skript `scripts/fetch.cmd` ersetzt `scripts/start.cmd`; `scripts/install.cmd` bleibt unverändert.
 13. Die Nachbildung für Tests ist eine Nachbildung des Pakets `MetaTrader5` (`tests/support.py`) und liegt nur in den Tests; `fake_source.py` entfällt. Andere Komponenten, die `fake_source` verwendeten (pipwerk replay), brauchen es nicht mehr (Auftrag 12).
 14. Python ist auf 3.14 festgelegt: `requires-python = ">=3.14,<3.15"` (Auftrag 16, Entscheidung des Entwicklungsleiters). `MetaTrader5` 5.0.6231 hat nur ein Rad für Python 3.14 unter Windows; ohne Obergrenze könnte `uv` eine Version wählen, für die es kein Rad gibt. `install.cmd` und `fetch.cmd` bleiben unverändert. Beim nächsten Wechsel der Python-Version sind Obergrenze, `uv.lock` und ein neues Rad von `MetaTrader5` gemeinsam zu prüfen.
+15. Exitcode 130 bei Unterbrechung (Strg+C, Signal) und das Namensmuster `.pipwerk-fetch-mt5-<8 Zeichen>.tmp` der temporären Dateien (Auftrag 19, Entscheidung des Entwicklers). Das Muster ist enger als das frühere `.<Zufall>.tmp`, damit das Aufräumen nie eine fremde Datei trifft. Zwischendateien des früheren Musters (`.<Zufall>.tmp`) werden nicht entfernt, weil sie von fremden Dateien nicht zu unterscheiden sind.
 
 ## 15. Offene Punkte
 
@@ -351,7 +358,7 @@ Zum Bau der bearbeitbaren Installation der Komponente nutzt `uv` das Bauwerkzeug
 | Zwischenspeicher von `uv` (geladene Räder, Bau von `hatchling`) | Zwischenspeicher von `uv`, anzuzeigen mit `uv cache dir`; er dient allen Vorhaben, die `uv` nutzen | Dokumentation von `uv`, nicht ausgeführt |
 | Startkonfiguration | `pipwerk-fetch-mt5.ini`, Suchorte nach Abschnitt 5 (empfohlen `%USERPROFILE%\pipwerk\etc`); enthält, wenn eingetragen, das Kennwort im Klartext | Abschnitt 5 und 10 |
 | Dateien des Abrufs | das Verzeichnis nach `-o`, sonst das aktuelle Verzeichnis | Abschnitt 3 |
-| Temporäre Dateien beim Schreiben | `.<Zufall>.tmp` im Zielverzeichnis, nach dem Schreiben umbenannt oder entfernt | Abschnitt 4 |
+| Temporäre Dateien beim Schreiben | `.pipwerk-fetch-mt5-<Zufall>.tmp` im Zielverzeichnis, nach dem Schreiben umbenannt oder entfernt | Abschnitt 4 |
 
 Das Programm schreibt sonst nirgends hin: kein Protokoll in eine Datei (das Protokoll geht auf die Fehlerausgabe, Abschnitt 9), kein Zwischenspeicher eigener Art. Auf MetaTrader 5 wirkt es nur durch die Auswahl des Symbols im Marktfenster (Abschnitt 6).
 

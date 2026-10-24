@@ -11,8 +11,12 @@ symbol of the broker never enters a name. Files are created only directly in the
 directory.
 
 A file is written atomically (``write_file``): first into a temporary file in the same
-directory, then renamed. A file of the same name is replaced; if writing fails, no half file
-is left and an existing file stays as it was.
+directory, then renamed. A file of the same name is replaced; if writing fails or the call is
+interrupted (``KeyboardInterrupt``, a signal turned into one by the command line), no
+temporary file and no half file is left and an existing file stays as it was. The temporary
+file is named ``.pipwerk-fetch-mt5-<8 characters>.tmp`` (``TEMPORARY_PATTERN``); a call that was
+killed without a chance to clean up leaves such a file, and the next call removes it
+(``remove_stale_temporaries``): only files of exactly this pattern, never a finished file.
 """
 
 from __future__ import annotations
@@ -32,6 +36,11 @@ INSTRUMENT_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._#+-]{0,63}")
 #: The ``<data>`` part of a name: a time unit of MetaTrader 5 in upper case, ``TICKS``,
 #: ``CONTRACT``.
 DATA_PATTERN = re.compile(r"[A-Z][A-Z0-9]{1,7}")
+
+#: The name of a temporary file while a file is written (see ``write_file``).
+TEMPORARY_PREFIX = ".pipwerk-fetch-mt5-"
+TEMPORARY_SUFFIX = ".tmp"
+TEMPORARY_PATTERN = re.compile(r"\.pipwerk-fetch-mt5-[a-z0-9_]{8}\.tmp")
 
 _STAMP_PATTERN = re.compile(r"[0-9]{8}(?:T[0-9]{6})?")
 
@@ -67,7 +76,9 @@ def write_file(directory: Path, name: str, content: bytes) -> Path:
         raise ValueError("not a plain file name")
     target = directory / name
     try:
-        descriptor, temporary = tempfile.mkstemp(dir=directory, prefix=".", suffix=".tmp")
+        descriptor, temporary = tempfile.mkstemp(
+            dir=directory, prefix=TEMPORARY_PREFIX, suffix=TEMPORARY_SUFFIX
+        )
     except OSError:
         raise FetchError("write_failed") from None
     try:
@@ -76,8 +87,35 @@ def write_file(directory: Path, name: str, content: bytes) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         Path(temporary).replace(target)
-    except OSError:
+    except BaseException as error:  # also KeyboardInterrupt: no temporary file stays
         with contextlib.suppress(OSError):
             Path(temporary).unlink()
-        raise FetchError("write_failed") from None
+        if isinstance(error, OSError):
+            raise FetchError("write_failed") from None
+        raise
     return target
+
+
+def remove_stale_temporaries(directory: Path) -> int:
+    """Remove the temporary files an earlier call left behind in ``directory`` and return how
+    many were removed.
+
+    Only a regular file (not a link, not a directory) directly in ``directory`` whose whole
+    name matches ``TEMPORARY_PATTERN`` is removed. A finished file and any other file stay.
+    What cannot be removed or listed is left alone."""
+    removed = 0
+    try:
+        entries = list(directory.iterdir())
+    except OSError:
+        return 0
+    for entry in entries:
+        if TEMPORARY_PATTERN.fullmatch(entry.name) is None:
+            continue
+        try:
+            if entry.is_symlink() or not entry.is_file():
+                continue
+            entry.unlink()
+        except OSError:
+            continue
+        removed += 1
+    return removed
