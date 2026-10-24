@@ -45,7 +45,9 @@
     "host": "Das Backend hat die Anfrage abgewiesen, weil der Name der Adresse nicht erlaubt ist. Nächster Schritt: Öffnen Sie pipwerk replay unter 127.0.0.1 oder localhost oder tragen Sie den Namen in der Startkonfiguration ein.",
     "origin": "Das Backend hat die Anfrage abgewiesen, weil sie von einer Webseite mit anderer Adresse kommt. Nächster Schritt: Öffnen Sie pipwerk replay unter seiner eigenen Adresse und versuchen Sie es noch einmal.",
     "notFound": "Das Gesuchte gibt es nicht (mehr). Nächster Schritt: Laden Sie die Ansicht neu.",
-    "tooLarge": "Die Dateien sind zusammen größer als erlaubt. Nächster Schritt: Importieren Sie weniger Dateien auf einmal.",
+    "conflict": "Das Backend kann die Anfrage jetzt nicht ausführen, weil sie mit etwas kollidiert, das gerade läuft. Nächster Schritt: Versuchen Sie es in einem Moment noch einmal.",
+    "importRunning": "Es besteht ein Import-Vorgang. Solange er besteht, lässt sich nichts löschen. Nächster Schritt: Warten Sie, bis der Import beendet ist, oder brechen Sie ihn im Dialog „Datei importieren“ ab, und versuchen Sie es dann noch einmal. Ein Import-Vorgang, zu dem eine Zeit lang keine Datei kommt, endet von selbst.",
+    "tooLarge": "Das Backend hat die Anfrage wegen ihrer Größe abgewiesen. Nächster Schritt: Laden Sie die Seite neu und versuchen Sie es noch einmal.",
     "mediaType": "Das Backend nimmt diese Art von Anfrage nicht an. Nächster Schritt: Laden Sie die Seite neu und versuchen Sie es noch einmal.",
     "invalid": "Das Backend hält die Eingaben für ungültig. Nächster Schritt: Prüfen Sie die Eingaben.",
     "busy": "Das Backend ist gerade ausgelastet. Nächster Schritt: Versuchen Sie es in einem Moment noch einmal.",
@@ -110,6 +112,12 @@
     "importOpen": "Datei importieren …",
     "testBroker": "Broker für Testläufe",
     "testBrokerNone": "kein Broker",
+    "testBrokerNotChosen": "– keiner gewählt –",
+    "testBrokerApplies": "Es ist kein Broker gewählt. Ein Testlauf liest die Daten von {{broker}}, dem ersten Broker in alphabetischer Reihenfolge.",
+    "deleteOpen": "Löschen …",
+    "deleteContract": "Kontraktdaten löschen …",
+    "deleteBroker": "Alle Daten dieses Brokers löschen …",
+    "deleteBrokerSeveral": "Der Filter passt zu mehreren Brokern. Nächster Schritt: Geben Sie den Namen eines einzelnen Brokers ein, wenn Sie alle seine Daten löschen wollen.",
     "testBrokerError": "Der Broker für Testläufe konnte nicht gelesen oder gespeichert werden. {{reason}}",
     "seriesTitle": "Datenreihen",
     "loadError": "Der Datenbestand konnte nicht gelesen werden. {{reason}}",
@@ -135,6 +143,7 @@
     "detailsLoading": "Die Einzelheiten werden geladen …",
     "detailsError": "Die Einzelheiten konnten nicht gelesen werden. {{reason}}",
     "gapsTitle": "Lücken",
+    "gapsExplain": "Eine Lücke ist ein Zeitraum zwischen zwei importierten Zeiträumen dieser Reihe, in dem beim Broker gehandelt wurde. Wochenenden, Feiertage und andere Zeiten ohne Handel sind keine Lücken.",
     "noGaps": "Keine Lücken.",
     "gapsCut": "Gezeigt werden {{shown}} von {{total}} Lücken.",
     "contractTitle": "Kontraktdaten",
@@ -170,7 +179,10 @@
       "columnInstrument": "Das Instrument, zu dem die Daten gehören.",
       "columnData": "Was die Reihe enthält: Kerzen einer Zeiteinheit, Ticks oder Kontraktdaten.",
       "columnPeriod": "Vom ersten bis zum letzten Tag, für den Daten vorliegen (UTC).",
-      "columnGaps": "Wie viele Zeiträume innerhalb der Reihe ohne Daten sind, obwohl der Markt offen war.",
+      "columnGaps": "Wie viele Lücken die Reihe hat: Zeiträume zwischen importierten Zeiträumen, in denen gehandelt wurde und die ohne Daten sind. Wochenenden, Feiertage und andere Zeiten ohne Handel zählen nicht.",
+      "deleteOpen": "Löscht diese Reihe ganz oder einen Zeitraum davon. Vorher sehen Sie, was gelöscht würde, und bestätigen es.",
+      "deleteContract": "Löscht die Kontraktdaten dieses Instruments bei diesem Broker. Vorher sehen Sie, was gelöscht würde, und bestätigen es.",
+      "deleteBroker": "Löscht alle Reihen und alle Kontraktdaten des Brokers, nach dem die Tabelle gefiltert ist. Vorher sehen Sie, was gelöscht würde, und bestätigen es.",
       "tickSize": "Kleinste Kursänderung des Instruments.",
       "tickValue": "Wert einer Kursänderung um einen Tick bei einem Lot, in der angegebenen Währung.",
       "pip": "Ein Pip als Kursdifferenz. Puffer und Abstände der Strategien sind oft in Pips angegeben.",
@@ -187,10 +199,10 @@
   },
   "import": {
     "title": "Datei importieren",
-    "intro": "Wählen Sie eine oder mehrere Dateien im Format JSON oder CSV, zum Beispiel einen Export aus MetaTrader 5 oder die Dateien von pipwerk-fetch-mt5. pipwerk replay prüft sie und übernimmt die Daten. Vorhandene Daten desselben Zeitpunkts werden ersetzt.",
+    "intro": "Wählen Sie so viele Dateien im Format JSON oder CSV, wie Sie wollen, zum Beispiel Exporte aus MetaTrader 5 oder die Dateien von pipwerk-fetch-mt5, und klicken Sie einmal auf „Importieren“. pipwerk replay prüft die Dateien nacheinander und übernimmt die Daten. Vorhandene Daten desselben Zeitpunkts werden ersetzt.",
     "choose": "Dateien wählen …",
     "empty": "Noch keine Datei gewählt. Nächster Schritt: Wählen Sie Dateien im Format JSON oder CSV.",
-    "reading": "Die Dateien werden gelesen …",
+    "reading": "Die Dateien werden gelesen … ({{done}} von {{total}})",
     "readError": "Die Dateien konnten nicht gelesen werden. {{reason}}",
     "broker": "Broker",
     "timezone": "Zeitzone der CSV-Dateien",
@@ -207,13 +219,30 @@
     "nextFiles": "Nächster Schritt: Ergänzen Sie Instrument und Daten der markierten Dateien oder entfernen Sie die Dateien.",
     "nextTimezone": "Nächster Schritt: Geben Sie die Zeitzone der CSV-Dateien an, zum Beispiel Europe/Athens.",
     "nextRun": "Nächster Schritt: Klicken Sie auf „Importieren“.",
-    "nextAgain": "Nächster Schritt: Ergänzen Sie die abgelehnten Dateien und klicken Sie erneut auf „Importieren“, oder schließen Sie den Dialog.",
+    "nextAgain": "Nächster Schritt: Ergänzen Sie die abgelehnten Dateien und klicken Sie erneut auf „Importieren“; auch die nicht importierten Dateien werden dann nachgeholt. Oder schließen Sie den Dialog.",
     "run": "Importieren",
     "running": "Import läuft …",
     "close": "Schließen",
-    "importError": "Der Import ist fehlgeschlagen. {{reason}}",
+    "cancel": "Abbrechen",
+    "cancelling": "Wird abgebrochen …",
+    "cancelNote": "Der Import endet nach der Datei, die gerade übernommen wird. Die übrigen Dateien bleiben „nicht importiert“.",
+    "closeAsk": "Der Import läuft noch. Soll er abgebrochen werden? Dateien, die schon übernommen sind, bleiben übernommen.",
+    "keep": "Weiter importieren",
+    "abortClose": "Abbrechen und schließen",
+    "progress": "{{done}} von {{total}} Dateien erledigt.",
+    "status": {
+      "waiting": "wartet",
+      "importing": "wird importiert",
+      "taken": "übernommen",
+      "refused": "abgelehnt",
+      "skipped": "nicht importiert"
+    },
+    "skipped": "Diese Datei wurde nicht importiert. Nächster Schritt: Klicken Sie erneut auf „Importieren“, um sie nachzuholen.",
+    "processEnded": "Das Backend hat den Import-Vorgang beendet, weil zu lange keine Datei kam. Nächster Schritt: Klicken Sie erneut auf „Importieren“. Dateien, die schon übernommen sind, bleiben übernommen.",
+    "importError": "Der Import wurde unterbrochen. {{reason}}",
     "summary": "{{imported}} von {{total}} Dateien sind importiert.",
-    "summaryRefused": "{{imported}} von {{total}} Dateien sind importiert. Abgelehnt: {{refused}}.",
+    "summaryRefused": "Abgelehnt: {{count}}.",
+    "summarySkipped": "Nicht importiert: {{count}}.",
     "resultTaken": "{{accepted}} Zeilen übernommen, davon {{replaced}} als Ersatz. Zeitraum: {{period}} (UTC).",
     "resultContract": "Kontraktdaten übernommen.",
     "resultRefused": "Abgelehnt: {{reason}}",
@@ -225,12 +254,8 @@
       "broker": "Der Broker, zu dem alle Dateien gehören, bei MetaTrader 5 der Name des Handelsservers. Wählen Sie einen Namen aus dem Datenbestand oder geben Sie einen neuen ein. Nennen alle JSON-Dateien denselben Broker, ist er vorbelegt. Der Broker gilt auch für JSON-Dateien.",
       "timezone": "Die Zeitzone, in der MetaTrader 5 die Zeiten der CSV-Dateien schreibt (Zeit des Handelsservers), als Name, zum Beispiel Europe/Athens. Die Sommerzeit wird beachtet. pipwerk rechnet alle Zeiten in UTC um. Zeiten in JSON-Dateien sind UTC.",
       "instrument": "Das Instrument der Datei, zum Beispiel EURUSD. Vorbelegt aus dem Dateinamen, bei JSON aus dem Inhalt.",
-      "data": "Was die Datei enthält: Kerzen einer Zeiteinheit oder Ticks. Vorbelegt aus dem Dateinamen; bei JSON bestimmt der Inhalt die Daten."
-    },
-    "batchError": {
-      "no_files": "Es ist keine Datei gewählt. Nächster Schritt: Wählen Sie Dateien.",
-      "too_many_files": "Es sind zu viele Dateien auf einmal. Nächster Schritt: Importieren Sie weniger Dateien auf einmal, zum Beispiel in mehreren Durchgängen.",
-      "batch_too_large": "Die Dateien sind zusammen zu groß. Nächster Schritt: Importieren Sie weniger Dateien auf einmal."
+      "data": "Was die Datei enthält: Kerzen einer Zeiteinheit oder Ticks. Vorbelegt aus dem Dateinamen; bei JSON bestimmt der Inhalt die Daten.",
+      "cancel": "Beendet den Import nach der Datei, die gerade übernommen wird. Was schon übernommen ist, bleibt übernommen; die übrigen Dateien werden nicht importiert."
     },
     "reject": {
       "columns_mismatch": "Die Zeile hat zu wenige Spalten.",
@@ -252,8 +277,10 @@
       "unknown": "Grund unbekannt."
     },
     "fileError": {
-      "too_large": "Die Datei ist zu groß. Nächster Schritt: Teilen Sie sie in kleinere Dateien, zum Beispiel nach Zeiträumen.",
-      "too_many_rows": "Die Datei hat zu viele Zeilen. Nächster Schritt: Teilen Sie sie in mehrere Dateien.",
+      "too_large": "Die Datei ist größer als die Grenze von {{limit}} je Datei. Nächster Schritt: Teilen Sie sie in kleinere Dateien, zum Beispiel nach Zeiträumen, und importieren Sie diese.",
+      "too_large_unnamed": "Die Datei ist größer als die Grenze je Datei. Nächster Schritt: Teilen Sie sie in kleinere Dateien, zum Beispiel nach Zeiträumen, und importieren Sie diese.",
+      "too_many_rows": "Die Datei hat mehr Zeilen als die Grenze von {{limit}} Zeilen je Datei. Nächster Schritt: Teilen Sie sie in mehrere Dateien.",
+      "too_many_rows_unnamed": "Die Datei hat mehr Zeilen als die Grenze je Datei. Nächster Schritt: Teilen Sie sie in mehrere Dateien.",
       "not_decodable": "Der Text der Datei lässt sich nicht lesen. Nächster Schritt: Speichern Sie die Datei als UTF-8.",
       "json_invalid": "Die Datei ist kein gültiges JSON. Nächster Schritt: Prüfen Sie die Datei oder erzeugen Sie sie neu.",
       "document_invalid": "Der Aufbau der Datei entspricht nicht dem Format. Nächster Schritt: Erzeugen Sie die Datei mit pipwerk-fetch-mt5 neu.",
@@ -264,6 +291,75 @@
       "no_rows": "Die Datei enthält keine Zeilen. Nächster Schritt: Prüfen Sie, ob es die richtige Datei ist.",
       "store_failed": "Der Datenbestand konnte die Datei nicht aufnehmen. Nächster Schritt: Versuchen Sie es später noch einmal.",
       "unknown": "Die Datei wurde abgelehnt. Nächster Schritt: Prüfen Sie die Datei und importieren Sie sie erneut."
+    }
+  },
+  "delete": {
+    "chooseTitle": "Reihe löschen",
+    "chooseIntro": "Wählen Sie, was von dieser Reihe gelöscht werden soll. Danach sehen Sie, was genau gelöscht würde, und bestätigen es. Erst dann wird gelöscht.",
+    "scope": "Was gelöscht wird",
+    "scopeSeries": "Die ganze Reihe",
+    "scopePeriod": "Nur einen Zeitraum der Reihe",
+    "start": "Von (UTC)",
+    "end": "Bis (UTC)",
+    "periodHint": "Nächster Schritt: Geben Sie Beginn und Ende des Zeitraums an, auf die Minute, mit dem Beginn vor dem Ende und zwischen den Jahren 1970 und 2100.",
+    "next": "Weiter",
+    "close": "Schließen",
+    "checking": "Es wird geprüft, was gelöscht würde …",
+    "askError": "Es konnte nicht geprüft werden, was gelöscht würde. Es wurde nichts gelöscht. {{reason}}",
+    "deleteError": "Das Löschen ist fehlgeschlagen. {{reason}}",
+    "confirm": "Endgültig löschen",
+    "irreversible": "Das Löschen lässt sich nicht rückgängig machen.",
+    "seriesEnds": "Danach hat die Reihe keine Daten mehr und entfällt.",
+    "brokerGoes": "Danach hat der Broker {{broker}} keine Daten mehr und kommt im Datenbestand nicht mehr vor.",
+    "testBrokerReset": "{{broker}} ist als „Broker für Testläufe“ gewählt. Danach ist kein Broker gewählt.",
+    "doneNoTestBroker": "Es ist jetzt kein Broker für Testläufe gewählt.",
+    "tip": {
+      "start": "Der Beginn des Zeitraums in UTC, auf die Minute. Die Kerze oder der Tick zu dieser Minute wird mit gelöscht.",
+      "end": "Das Ende des Zeitraums in UTC, auf die Minute. Die Kerze oder der Tick zu dieser Minute bleibt erhalten."
+    },
+    "title": {
+      "series": "Reihe löschen?",
+      "period": "Zeitraum löschen?",
+      "contract": "Kontraktdaten löschen?",
+      "broker": "Alle Daten dieses Brokers löschen?"
+    },
+    "fact": {
+      "broker": "Broker",
+      "instrument": "Instrument",
+      "data": "Daten",
+      "period": "Zeitraum (UTC)"
+    },
+    "extent": {
+      "candles_one": "Gelöscht wird {{n}} Kerze.",
+      "candles_other": "Gelöscht werden {{n}} Kerzen.",
+      "ticks_one": "Gelöscht wird {{n}} Tick.",
+      "ticks_other": "Gelöscht werden {{n}} Ticks.",
+      "contract": "Gelöscht werden die Kontraktdaten von {{instrument}} bei diesem Broker.",
+      "broker": "Es werden gelöscht: {{series}} mit {{candles}} und {{ticks}} sowie die Kontraktdaten von {{instruments}}."
+    },
+    "count": {
+      "series_one": "{{n}} Reihe",
+      "series_other": "{{n}} Reihen",
+      "candles_one": "{{n}} Kerze",
+      "candles_other": "{{n}} Kerzen",
+      "ticks_one": "{{n}} Tick",
+      "ticks_other": "{{n}} Ticks",
+      "instruments_one": "{{n}} Instrument",
+      "instruments_other": "{{n}} Instrumenten"
+    },
+    "done": {
+      "series": "Gelöscht: {{data}} von {{instrument}} bei {{broker}}.",
+      "period": "Gelöscht: {{data}} von {{instrument}} bei {{broker}}, von {{start}} bis {{end}} (UTC).",
+      "contract": "Gelöscht: Kontraktdaten von {{instrument}} bei {{broker}}.",
+      "broker": "Gelöscht: alle Daten von {{broker}}."
+    },
+    "error": {
+      "broker_unknown": "Diesen Broker gibt es nicht (mehr). Nächster Schritt: Laden Sie die Ansicht neu.",
+      "instrument_unknown": "Dieses Instrument gibt es bei diesem Broker nicht (mehr). Nächster Schritt: Laden Sie die Ansicht neu.",
+      "series_unknown": "Diese Reihe gibt es nicht (mehr). Nächster Schritt: Laden Sie die Ansicht neu.",
+      "contract_unknown": "Für dieses Instrument gibt es bei diesem Broker keine Kontraktdaten (mehr). Nächster Schritt: Laden Sie die Ansicht neu.",
+      "period_invalid": "Der Zeitraum ist ungültig. Nächster Schritt: Geben Sie Beginn und Ende auf die Minute an, mit dem Beginn vor dem Ende.",
+      "period_empty": "Die Reihe hat in diesem Zeitraum keine Daten. Nächster Schritt: Wählen Sie einen Zeitraum, in dem die Reihe Daten hat."
     }
   }
 }

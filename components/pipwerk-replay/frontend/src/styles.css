@@ -255,8 +255,23 @@ ul.plain { list-style: none; margin: 0; padding: 0; display: flex; flex-directio
 .imp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .imp-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--panel-2); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .imp-item.needs { border-color: #e59a1c; background: #fffaf0; }
-.imp-item.failed { border-color: #f3b9b3; background: var(--bad-bg); }
-.imp-item.done { border-color: #b7e0c4; background: var(--ok-bg); }
+.imp-item.refused { border-color: #f3b9b3; background: var(--bad-bg); }
+.imp-item.taken { border-color: #b7e0c4; background: var(--ok-bg); }
+.imp-item.importing { border-color: var(--accent); background: #f5f9ff; }
+.imp-item.skipped { border-color: var(--line-strong); background: var(--panel-2); border-style: dashed; }
+.imp-status { margin-left: auto; font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--muted); }
+.imp-status-importing { color: var(--accent); }
+.imp-status-taken { color: var(--ok); }
+.imp-status-refused { color: var(--bad); }
+.imp-progress { margin: 0; font-weight: 600; font-size: 13px; }
+.close-ask { flex: 1 1 100%; margin: 0; font-weight: 600; text-align: left; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.delete-scope { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.delete-question { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.delete-question p { margin: 0; overflow-wrap: anywhere; }
+.delete-fact { display: contents; }
+.notice-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.broker-delete { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .imp-head { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-width: 0; }
 .imp-name { font-weight: 600; font-size: 13px; overflow-wrap: anywhere; min-width: 0; }
 .imp-result { font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; }
