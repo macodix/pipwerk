@@ -251,6 +251,8 @@ testenv send a --address listen.netz.relay-b --text hallo --file bericht.txt --r
 
 *Beheben:* Starten Sie das Relay `relay-b` wieder (`testenv fault 1 off`). Wenige Sekunden später steht im ersten Fenster `Receipt: message … was stored by listen.netz.relay-b.`, und im Ordner `side-b/received` liegt die Nachricht mit der Datei, unverändert. Ist Ihre Frist kürzer als die Zeit, in der das Relay steht, erscheint `No receipt: …` (Exitcode 1); die Nachricht wird nach dem Start trotzdem zugestellt.
 
+*Mit dem Abruf:* Beenden Sie das Relay `relay-b` (`testenv fault 1 on`) und rufen Sie `testenv request --address fetch.netz.relay-b --broker Testbroker-1 --from 2026-01-05 --to 2026-01-06 -u H1 --ticks -o daten EURUSD` auf. `request` zeigt nichts und wartet (bis zu 30 Minuten). Starten Sie das Relay (`testenv fault 1 off`): Die Anfrage kommt an, `serve` antwortet, und `request` schreibt die Dateien und endet mit Exitcode 0.
+
 ### Störung 2: Das gemeinsame Verzeichnis ist nicht erreichbar (Netzlaufwerk getrennt)
 
 Das Relay kann die Nachricht nicht abgeben. Sie wartet in seiner Warteschlange. Das Relay wiederholt die Übergabe in wachsenden Abständen. Relays und Komponenten laufen weiter, notieren den Fehler im Protokoll und lesen im nächsten Abstand wieder. Ist das Laufwerk wieder da, wird zugestellt. Dauert es länger als die Frist des Relays (Voreinstellung 24 Stunden; in der Testumgebung `--delivery-deadline`, Voreinstellung 120 Sekunden), meldet das Relay dem Absender `relay_unreachable`.
@@ -265,11 +267,21 @@ testenv send a --address listen.netz.relay-b --text hallo --receipt --wait 300
 
 *Beheben:* Verbinden Sie das Laufwerk wieder (`testenv fault 2 off`). Beim nächsten Versuch wird die Nachricht abgegeben; das erste Fenster zeigt `Receipt: …`. Geht die Frist des Relays vorher zu Ende, meldet das Programm stattdessen `Notice from relay.netz.relay-a: message … is undeliverable (relay_unreachable): The next relay could not be reached in time.`; die Nachricht wird danach nicht mehr zugestellt, und Sie senden noch einmal.
 
+*Mit dem Abruf:* Trennen Sie das Laufwerk (`testenv fault 2 on`) und rufen Sie `testenv request …` wie bei Störung 1 auf. `testenv queue a` zeigt die Anfrage wartend (`fetch.request`, `retrying`, `WayUnavailableError`). Verbinden Sie das Laufwerk wieder (`testenv fault 2 off`): Die Anfrage geht durch, und `request` schreibt die Dateien. Dauert die Trennung länger als die Frist des Relays, endet `request` mit `Fehler: Die Anfrage ließ sich nicht zustellen: … (relay_unreachable)` und Exitcode 1.
+
 ### Störung 3: Ein Relay wird hart beendet (Absturz, Stromausfall)
 
 Das Relay wird mitten in der Arbeit ohne Vorwarnung beendet. Nach dem Neustart fehlt keine Nachricht, und keine kommt zweimal an. Das Anfrage-Programm des Abrufs schreibt jede Datei einmal.
 
 *Herbeiführen:* Senden Sie mehrere Nachrichten hintereinander, zum Beispiel mit dem Abruf (Abschnitt „Abruf mit serve und request“) eine große Anfrage oder mit der Prüfkomponente mehrere Nachrichten mit Datei, und beenden Sie währenddessen ein Relay hart (im Betrieb: Rechner ausschalten oder den Prozess beenden; in der Testumgebung `testenv fault 3 on a` oder `testenv fault 3 on b`, das schickt dem Prozess `kill -9`).
+
+*Herbeiführen mitten in einer Lieferung des Abrufs:* Das Relay `relay-b` soll genau dann enden, wenn es eine Datei der Antwort von `serve` verarbeitet. Rufen Sie in einem ersten Fenster `testenv fault 3 delivery b` auf; der Befehl wartet und beendet das Relay in dem Augenblick, in dem die erste Datei der Antwort ankommt (`testenv: the relay relay-b is ended hard in the middle of a delivery`). Starten Sie im zweiten Fenster eine Anfrage, die mehrere Dateien ergibt:
+
+```
+testenv request --address fetch.netz.relay-b --broker Testbroker-1 --from 2026-01-05 --to 2026-01-06 -u M1,H1 --ticks -o daten EURUSD
+```
+
+*Sehen und beheben beim Abruf:* `request` wartet weiter (es zeigt nur die Dateien, die schon angekommen sind). Starten Sie im ersten Fenster das Relay wieder (`testenv fault 3 off b`). Die Antwort läuft zu Ende; `request` schreibt jede Datei einmal und endet mit Exitcode 0 (`N Dateien geschrieben nach daten.`). Die Dateien sind Byte für Byte die, die ohne Störung ankommen. Mit `testenv fault 3 delivery a` treffen Sie stattdessen das Relay `relay-a`, das die Dateien an `request` übergibt.
 
 *Sie sehen:* `testenv status` zeigt das Relay als `not running`. Nachrichten, die das Relay schon angenommen hatte, bleiben in seiner Warteschlange (`testenv queue a`), Umschläge, die es noch nicht gelesen hatte, liegen in seinem Eingang.
 
@@ -289,11 +301,15 @@ Verändern Sie dann den Umschlag (`testenv fault 4 envelope`) oder die Datei (`t
 
 *Beheben:* Starten Sie das Relay `relay-b` (`testenv fault 4 off`). Es verwirft den Umschlag; im Protokoll von `relay-b` steht `envelope dropped inbox=shared token=… reason=bad_mac` (Umschlag verändert) beziehungsweise `reason=attachment_hash` (Datei verändert; das Relay gibt einer Datei, die später fertig werden könnte, eine Schonfrist, in der Testumgebung 10 Sekunden), bei einem falschen Schlüssel im Protokoll von `relay-a` `envelope dropped inbox=components … reason=bad_mac`. Der Eingang ist danach leer, `side-b/received` enthält nichts, und die Prüfkomponente meldet bei `fault 4 key` nach ihrer Frist `No receipt: …`.
 
+*Mit dem Abruf:* Beenden Sie das Relay `relay-b` (`testenv fault 1 on`), rufen Sie `testenv request … --wait 1` auf und verändern Sie den wartenden Umschlag der Anfrage (`testenv fault 4 envelope`). Starten Sie das Relay (`testenv fault 4 off`). Es verwirft die Anfrage (`reason=bad_mac` im Protokoll von `relay-b`), `serve` bekommt sie nie, und `request` endet nach der Wartezeit mit `Fehler: Nach 1 Minuten ist kein Ergebnis der Anfrage eingetroffen.` und Exitcode 1. Rufen Sie danach `request` noch einmal auf; die zweite Anfrage geht durch.
+
 ### Störung 5: Derselbe Umschlag kommt noch einmal an
 
 Dieselbe Nachricht wird nicht zweimal zugestellt. Das Relay und die Komponente erkennen den Umschlag an der Nachrichtennummer, verwerfen ihn und quittieren ihn. Kommt er bei der Komponente noch einmal an, schickt sie die Empfangsbestätigung erneut, falls der Absender eine verlangt hat, weil die erste verloren gegangen sein kann; der Absender verwirft die zweite.
 
 *Herbeiführen:* Beenden Sie die lauschende Prüfkomponente auf `relay-b` (`testenv fault 7 on`), senden Sie eine Nachricht mit Datei und Bestätigungswunsch (`testenv send a --address listen.netz.relay-b --text hallo --file bericht.txt --receipt --wait 5`), kopieren Sie den wartenden Umschlag mit seiner Datei (`testenv fault 5 save`), starten Sie die Prüfkomponente wieder (`testenv fault 7 off`; sie speichert die Nachricht und bestätigt) und legen Sie den kopierten Umschlag noch einmal ab (`testenv fault 5 on`). Für das Relay statt der Komponente geben Sie bei beiden Befehlen `relay` an (`testenv fault 5 save relay` mit beendetem Relay `relay-b`, `testenv fault 5 on relay`).
+
+*Mit dem Abruf:* Beenden Sie `serve` (`testenv fault 7 on fetch`), starten Sie in einem zweiten Fenster `testenv request …` (Abschnitt 10), kopieren Sie die wartende Anfrage (`testenv fault 5 save fetch`), starten Sie `serve` wieder (`testenv fault 7 off fetch`; es beantwortet die Anfrage) und legen Sie die Kopie noch einmal ab (`testenv fault 5 on fetch`). `serve` beantwortet die Kopie nicht noch einmal: Der Umschlag ist eine Wiederholung, die Antwort kommt nur einmal. Die Dateien im Ordner von `request` sind dieselben wie ohne Störung.
 
 *Sie sehen:* Die lauschende Prüfkomponente zeigt die Nachricht nur einmal; in `side-b/received` liegt ein Ordner. Im Protokoll von `relay-b` steht die Bestätigung ein zweites Mal (`accepted … kind=relay.receipt` und `forwarded … kind=relay.receipt`): Die Komponente hat den Umschlag als Wiederholung erkannt, die Nachricht nicht noch einmal übernommen und nur die Bestätigung noch einmal geschickt. Das Relay `relay-a` leitet sie an `send.netz.relay-a` weiter, wo sie als verspätet verworfen wird. Legen Sie den Umschlag statt dessen in den Eingang des Relays (`relay`), erkennt das Relay `relay-b` die Wiederholung selbst: Im Protokoll steht `repetition message=…`, es wird nichts zugestellt und keine zweite Bestätigung geschickt.
 
@@ -312,6 +328,8 @@ Das Relay meldet dem Absender den Grund (Abschnitt 7). Jeden Fall führen Sie mi
 
 Alle vier Befehle enden mit Exitcode 1. `unknown-recipient` ändert nichts; `loop` stellt die beiden Relays dazu kurz als Standard-Relay ein und danach wieder zurück (`testenv fault 6 off` stellt es zurück, wenn der Befehl unterbrochen wurde); `too-large` erzeugt eine Datei, die um ein Byte größer ist als die Grenze zwischen den Relays (`--limit-bytes` beim Start, Voreinstellung 4194304 Byte), und sendet sie.
 
+*Mit dem Abruf:* Die Fälle erreichen Sie mit der Adresse bei `request`. Ein unbekannter Name (`testenv request --address nobody.netz.relay-b …`) ergibt `Fehler: Die Anfrage ließ sich nicht zustellen: … (unknown_recipient).`, ein unbekanntes Relay (`--address fetch.netz.relay-zz`) `… (unknown_relay).`, jeweils mit Exitcode 1. Ein anderer Broker (`--broker Anderer`) wird von `serve` abgelehnt: `Fehler: Die Anfrage wurde nicht ausgeführt: Die Anfrage nennt einen anderen Broker …`, Exitcode 1. `loop` und `too_large` erreicht die Anfrage selbst nicht (sie ist klein und die Adresse ist gültig); die Prüfung mit `testenv fault 6 loop` und `too-large` gilt für alle Nachrichten, auch die des Abrufs.
+
 ### Störung 7: Die empfangende Komponente läuft nicht
 
 Das Relay stellt die Nachricht in den Eingang der Komponente und hat damit seine Aufgabe erfüllt. Sie wartet dort. Der Absender bekommt keine Bestätigung. Nach der Frist meldet er, dass sie ausgeblieben ist. Startet die Komponente später, bekommt sie die Nachricht, bestätigt sie, und der Absender vermerkt die späte Bestätigung nur im Protokoll.
@@ -325,6 +343,8 @@ testenv send a --address listen.netz.relay-b --text hallo --file bericht.txt --r
 *Sie sehen:* Nach 10 Sekunden `No receipt: message … to listen.netz.relay-b was not confirmed within 10 seconds.` (Exitcode 1). Im Ordner `side-b/to-listen` liegt der Umschlag der Nachricht; `side-b/received` ist leer.
 
 *Beheben:* Starten Sie die Prüfkomponente (`testenv fault 7 off`). Sie speichert die Nachricht (eine Zeile `Message … from send.netz.relay-a: 1 attachments (bericht.txt), stored in …` in ihrer Ausgabe `side-b/listen/listen.log`), und der Ordner `side-b/received` enthält die Nachricht mit der Datei. Die Bestätigung kommt zum Absender zurück, wird aber nur im Protokoll vermerkt (`receipt dropped`).
+
+*Mit dem Abruf:* Beenden Sie `serve` (`testenv fault 7 on fetch`) und rufen Sie `testenv request … --wait 1` auf. Nach einer Minute endet `request` mit `Fehler: Nach 1 Minuten ist kein Ergebnis der Anfrage eingetroffen.` und Exitcode 1; die Anfrage wartet im Ordner `side-b/to-fetch`. Starten Sie `serve` (`testenv fault 7 off fetch`), beantwortet es sie; die späte Antwort verwirft der nächste Aufruf von `request`. Rufen Sie dann `testenv request …` noch einmal auf: Jetzt kommen die Dateien.
 
 ### Umschläge, die die Grenzen des Eingangs übersteigen
 
@@ -377,7 +397,9 @@ Die Datei liegt unverändert in `…/.testenv/side-b/received/9681e59d-592c-41a0
 scripts/testenv request --address fetch.netz.relay-b --broker Testbroker-1 --from 2026-01-05 --to 2026-01-06 -u H1 --ticks -o daten EURUSD
 ```
 
-Die Angaben von `request` sind die des Abschnitts „Abruf mit serve und request“.
+Die Angaben von `request` sind die des Abschnitts „Abruf mit serve und request“. Es erscheint für jede Datei eine Zeile `Geschrieben: …` und zuletzt `3 Dateien geschrieben nach daten.` (Exitcode 0). Die Dateien lassen sich mit pipwerk replay beziehungsweise `pipwerk-marketdata` importieren.
+
+**Durchgang 1.** Alle Strecken laufen über Ordner. Der Durchgang besteht aus: `testenv start`; einer Nachricht mit Datei und Bestätigung (`testenv send`, oben); dem Abruf (`testenv request`); danach den Störungen 1 bis 7 (Abschnitt 9), jede mit der Prüfkomponente und, wo dort beschrieben, mit dem Abruf. Erwartet ist jedes Mal: Es geht nichts verloren, nichts kommt zweimal an, und jede Meldung nennt ihren Grund.
 
 **Weitere Befehle**
 
@@ -393,6 +415,58 @@ Die Angaben von `request` sind die des Abschnitts „Abruf mit serve und request
 Mit `--directory <Ordner>` vor dem Befehl legen Sie den Ordner der Umgebung selbst fest (sonst `components/pipwerk-relay/.testenv`); geben Sie ihn dann bei jedem Befehl an. Mit `--delivery-deadline <Sekunden>` beim Start stellen Sie ein, wie lange ein Relay eine Übergabe versucht, bevor es die Nachricht als unzustellbar meldet (Voreinstellung 120), und mit `--limit-bytes` die größte Datei zwischen den Relays (Voreinstellung 4194304). Mit `--listen-name`, `--send-name`, `--fetch-name` und `--request-name` ändern Sie die ersten Teile der Adressen (`listen`, `send`, `fetch`, `request`).
 
 **Was geprüft ist.** Die Prüfkomponente, die Testumgebung und die Störungen 1 bis 7 sind auf einem Rechner mit Linux geprüft, mit Ordnern auf demselben Rechner. Ob sich ein echtes Netzlaufwerk (SMB, NFS) ebenso verhält, prüft der Auftraggeber in der Abnahme, ebenso den Betrieb unter Windows und mit zwei Rechnern.
+
+## Einrichtung auf den Rechnern des Auftraggebers
+
+Diese Anleitung richtet den Abruf auf zwei Rechnern ein, die ein Netzlaufwerk teilen. Die Namen sind Beispiele; Sie wählen eigene (Abschnitt „Begriffe“).
+
+| | Rechner 1 (MetaTrader 5, Windows) | Rechner 2 (will die Daten haben) |
+| --- | --- | --- |
+| Relay | `relay-mt5` | `relay-pc` |
+| Programm | `serve`, Adresse `fetch.netz1.relay-mt5` | `request`, Adresse `ask.netz1.relay-pc` |
+| Netzlaufwerk | `Z:` (Ordner `Z:\pipwerk-gemeinsam`) | unter Linux zum Beispiel `/mnt/pipwerk`, unter Windows ein Laufwerksbuchstabe |
+
+Beide Rechner haben dasselbe Netz (`netz1`). Alle Pfade unten schreiben Sie so, wie der jeweilige Rechner sie sieht.
+
+**1. Netzlaufwerk.** Binden Sie dasselbe Netzlaufwerk auf beiden Rechnern ein, mit denselben Rechten für Ihren Benutzer. Legen Sie darauf zwei Ordner an: `pipwerk-gemeinsam/in-relay-mt5` (Eingang von `relay-mt5`) und `pipwerk-gemeinsam/in-relay-pc` (Eingang von `relay-pc`). Die Datenbanken, die Schlüssel und das Protokoll liegen **nicht** auf dem Netzlaufwerk, sondern auf dem eigenen Laufwerk jedes Rechners (Abschnitt 4).
+
+**2. Programme einrichten.** Auf beiden Rechnern: `uv` und die Ordner `components\pipwerk-relay`, `components\pipwerk-fetch-mt5` und `packages\relay-core` (Abschnitt 1 und Abschnitt „Was Sie vorher brauchen“ beim Abruf). Auf Rechner 1 zusätzlich MetaTrader 5. Installieren Sie das Relay (`install.cmd` beziehungsweise `install`) und das Programm `pipwerk-fetch-mt5`.
+
+**3. Startkonfiguration und Datenbank des Relays.** Auf jedem Rechner legen Sie `pipwerk-relay.ini` an (Abschnitt 1) und rufen `pipwerk-relay migrate` auf.
+
+**4. Schlüssel.** Erzeugen Sie die Schlüssel dort, wo das Relay läuft, und kopieren Sie sie auf einem sicheren Weg:
+
+- Auf Rechner 1: `pipwerk-relay key new fetch.key` (Verbindung `serve` und `relay-mt5`; die Kopie gehört in `secrets_directory` von `serve`, auf demselben Rechner) und `pipwerk-relay key new relay-pc.key` (Verbindung der beiden Relays; die Kopie kommt in den Ordner für Schlüssel von Rechner 2).
+- Auf Rechner 2: `pipwerk-relay key new ask.key` (Verbindung `request` und `relay-pc`; die Kopie gehört in `secrets_directory` von `request`). Die Kopie von `relay-pc.key` aus Rechner 1 legen Sie hier als `relay-mt5.key` in den Ordner für Schlüssel des Relays ab.
+
+Die Schlüssel liegen nie auf dem Netzlaufwerk, und nur Ihr Benutzer darf sie lesen (Abschnitt 2).
+
+**5. Betriebskonfiguration.** Rechner 1 (`betrieb.json`, dann `pipwerk-relay config load betrieb.json`):
+
+```
+{
+  "network": "netz1", "name": "relay-mt5",
+  "inputs": [
+    {"name": "components", "way": "files", "settings": {"directory": "C:/pipwerk/relay/in"}},
+    {"name": "shared", "way": "files", "settings": {"directory": "Z:/pipwerk-gemeinsam/in-relay-mt5"}}
+  ],
+  "components": [
+    {"name": "fetch", "way": "files", "settings": {"directory": "C:/pipwerk/relay/an-fetch"}, "key_file": "fetch.key"}
+  ],
+  "address_book": [
+    {"network": "netz1", "relay": "relay-pc", "way": "files",
+     "settings": {"directory": "Z:/pipwerk-gemeinsam/in-relay-pc"}, "key_file": "relay-pc.key", "standard": false}
+  ]
+}
+```
+
+Rechner 2 hat dieselbe Form mit vertauschten Rollen: `"name": "relay-pc"`; Eingang `shared` im Ordner `in-relay-pc` (auf diesem Rechner sichtbar, zum Beispiel `/mnt/pipwerk/in-relay-pc`); die Komponente `ask` mit `key_file` `ask.key`; im Adressbuch `relay-mt5` mit dem Ordner `in-relay-mt5` und `key_file` `relay-mt5.key`. Mehr Einträge (Fristen, Grenzen) brauchen Sie nicht; die Voreinstellungen gelten.
+
+**6. Startkonfigurationen der Programme.** `serve` auf Rechner 1 (Beispiel im Abschnitt „`serve` einrichten und starten“) mit `address = fetch.netz1.relay-mt5`, `target.directory = C:\pipwerk\relay\in`, `inbox.directory = C:\pipwerk\relay\an-fetch` und `server_time_zone` im Abschnitt `[broker]`. `request` auf Rechner 2 mit `address = ask.netz1.relay-pc`, `target.directory` gleich dem Ordner des Eingangs `components` in der Betriebskonfiguration von `relay-pc` und `inbox.directory` gleich dem Ordner, den dort die Komponente `ask` nennt.
+
+**7. Starten.** Auf beiden Rechnern `pipwerk-relay run` (ein Fenster je Relay), dann auf Rechner 1 MetaTrader 5 und `serve`. Auf Rechner 2 rufen Sie `request` auf (Abschnitt „`request` einrichten und aufrufen“) mit `--address fetch.netz1.relay-mt5` und dem Namen Ihres Handelsservers bei `--broker`.
+
+**8. Prüfen.** Bevor Sie Kursdaten holen, prüfen Sie den Weg ohne MetaTrader 5 mit der Prüfkomponente (Abschnitt 6): `probe listen` auf Rechner 1 und `probe send … --receipt` von Rechner 2. Kommt `Receipt: …`, funktionieren Netzlaufwerk, Schlüssel und Adressbuch. Trennen Sie das Netzlaufwerk probeweise (Störung 2) und stecken Sie es wieder an: Die Nachricht muss danach ankommen.
 
 ## Abruf mit serve und request
 
@@ -426,7 +500,7 @@ Beide Befehle reden nur mit dem Relay ihres eigenen Rechners. Sie öffnen keinen
    database = C:\pipwerk\zustand\fetch.db
 
    [relay.way]
-   target.directory = C:\pipwerk\relay\von-fetch
+   target.directory = C:\pipwerk\relay\in
    inbox.directory = C:\pipwerk\relay\an-fetch
    ```
 
@@ -457,7 +531,7 @@ Beide Befehle reden nur mit dem Relay ihres eigenen Rechners. Sie öffnen keinen
    Lassen Sie das Fenster offen. Das Programm arbeitet, solange es läuft. Es beantwortet Anfragen nacheinander. Zu jeder Anfrage erscheint eine Zeile, zum Beispiel:
 
    ```
-   Anfrage von ask.netz2.relay-pc beantwortet: 4 Dateien gesendet, 0 Teile nicht geholt.
+   Anfrage von ask.netz1.relay-pc beantwortet: 4 Dateien gesendet, 0 Teile nicht geholt.
    ```
 
    Beenden Sie es mit Strg+C. Dann steht `pipwerk-fetch-mt5 serve: beendet.` im Fenster.
@@ -467,7 +541,7 @@ Beide Befehle reden nur mit dem Relay ihres eigenen Rechners. Sie öffnen keinen
 ### `request` einrichten und aufrufen (Rechner, der die Daten haben will)
 
 1. Richten Sie das Programm auf diesem Rechner ein wie in der Anleitung zu pipwerk replay, Abschnitt 9, Schritte 1 bis 3, mit dem Ordner `packages\relay-core` daneben. MetaTrader 5 brauchen Sie hier **nicht**. Unter Linux genügt `uv --directory components/pipwerk-fetch-mt5 sync --frozen`; `request` läuft unter Windows und Linux.
-2. Legen Sie die Startkonfiguration `pipwerk-fetch-mt5.ini` an, mit `[relay]` und `[relay.way]` für dieses Relay wie oben. Die Adresse ist hier die **eigene** Adresse dieses Rechners, zum Beispiel `ask.netz2.relay-pc`; die Antworten kommen an diese Adresse zurück. `server_time_zone` brauchen Sie hier nicht.
+2. Legen Sie die Startkonfiguration `pipwerk-fetch-mt5.ini` an, mit `[relay]` und `[relay.way]` für dieses Relay wie oben. Die Adresse ist hier die **eigene** Adresse dieses Rechners, zum Beispiel `ask.netz1.relay-pc`; die Antworten kommen an diese Adresse zurück. `server_time_zone` brauchen Sie hier nicht.
 3. Rufen Sie `request` auf. Beispiel: Kerzen H1 und D1 und die Ticks von EURUSD für den Januar 2026, in den Ordner `daten`:
 
    ```

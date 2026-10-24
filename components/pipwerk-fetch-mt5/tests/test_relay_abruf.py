@@ -1,8 +1,8 @@
 """The retrieval through pipwerk relay: ``serve`` and ``request`` (order 5, specification relay 6
 and 8, "Abruf").
 
-The relay is imitated by the steps of ``relay_support.Network`` (the real relay comes with order
-3; the tests across two real relays follow in order 6). ``MetaTrader5`` is the replica of the
+The relay is imitated by the steps of ``relay_support.Network`` (the tests across two real relays
+are in ``test_relay_two_relays.py``, order 6). ``MetaTrader5`` is the replica of the
 tests of the component (``support.ArchiveMt5Module``). No socket may be opened while a test runs
 (``no_sockets``): the connection to the relay is a directory.
 """

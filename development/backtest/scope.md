@@ -1,6 +1,6 @@
 # Vorhaben backtest
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien testen. Der Strategietester (Modul pipwerk replay) führt Strategien gegen historische Kursdaten aus, in zwei Betriebsarten: schrittweise zur Prüfung des Ablaufs und durchgehend über einen Testzeitraum mit Kontoentwicklung, Trades und Kennzahlen. Dazu gehören der Datenbestand historischer Kursdaten mit Beschaffung und Import sowie die Testkonten.
+Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien testen. Der Strategietester (Modul pipwerk replay) führt Strategien gegen historische Kursdaten aus, in zwei Betriebsarten: schrittweise zur Prüfung des Ablaufs und durchgehend über einen Testzeitraum mit Kontoentwicklung, Trades und Kennzahlen. Dazu gehören der Datenbestand historischer Kursdaten mit Abruf und Import sowie die Testkonten.
 
 Nachweis des Vorhabens sind die beiden Testfälle: Jeder muss sich im Einzelschritt-Test prüfen und im Backtest über den vorbelegten Testzeitraum testen lassen, ohne die Strategie dafür zu bearbeiten.
 
@@ -34,6 +34,7 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 
 - Strategietester: Anzeige der Unterschiede zwischen Fassungen einer Strategie (darf durch den Aufbau nicht ausgeschlossen werden).
 - Fachmodell: Die als offen gekennzeichneten Stellen zur Ausführung von Strategien (unter anderem freie Margin, req-fach-049) betreffen dieses Vorhaben unmittelbar. Die QA meldet sie als Lücke, soweit ein Testfall sie zum Testen braucht.
+- Abruf über pipwerk relay (req-test-003, req-system-027): Welchen Broker ein Testlauf verwendet und woher der Abruf das Symbol des Brokers zum Instrument erhält (Fachmodell req-fach-053). Befund B1 aus [relay/reviews/requirements-1.md](../relay/reviews/requirements-1.md), am 2026-10-23 vom Auftraggeber in dieses Vorhaben verwiesen. Offen.
 
 ## Stand
 
@@ -60,3 +61,5 @@ Als offen gekennzeichnet in den geltenden Dokumenten:
 2026-10-21: `wp02` zur Abnahme bereitgestellt. Auf Wunsch des Auftraggebers soll `wp01` nicht auf die Übernahme von `strategiedesign/wp02` warten, sondern auf dessen geprüftem Stand beginnen; Planänderung mit `plan` an den Softwarearchitekten.
 
 2026-10-23: Abnahme `wp02` Versuch 1 nicht bestanden ([Abnahmebericht](wp02/acceptance/1.md)). Geänderte Anforderungen req-system-026, req-system-027 und req-test-003, Prüfung durch die QA mit `check` angestoßen.
+
+2026-10-23: Abnahme `wp02` Versuch 2 nicht bestanden ([Abnahmebericht](wp02/acceptance/2.md)). Geänderte Anforderungen req-system-025 und req-system-026, Prüfung durch die QA mit `check` angestoßen.

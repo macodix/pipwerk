@@ -99,8 +99,8 @@ export function takenJson(name: string, result: Json = {}): Json {
 }
 
 /** The result for a file that is refused as a whole. */
-export function refusedJson(name: string, error: string): Json {
-  return { name, refused: true, result: null, error, message: 'x' };
+export function refusedJson(name: string, error: string, message = 'x'): Json {
+  return { name, refused: true, result: null, error, message };
 }
 
 /** What the preview says about a file (`FileHint` of the web API). */
@@ -116,7 +116,7 @@ export function hintJson(name: string, overrides: Json = {}): Json {
   };
 }
 
-/** What the form of an import or a preview contained, read from the recorded body. */
+/** What the form of the request of a file contained, read from the recorded body. */
 export type SentForm = {
   broker: string | null;
   timezone: string | null;
@@ -139,6 +139,30 @@ export function readForm(body: unknown): SentForm {
     data: form.getAll('data').map(String),
   };
 }
+
+/** What deleting would remove or removed (`DeletionResult` of the web API). */
+export function deletionJson(overrides: Json = {}): Json {
+  return {
+    kind: 'series',
+    deleted: false,
+    broker: 'Demo-Server',
+    instrument: 'EURUSD',
+    data: 'h1',
+    start: null,
+    end: null,
+    candle_count: 120,
+    tick_count: 0,
+    series_count: 1,
+    instrument_count: 0,
+    broker_removed: false,
+    test_run_broker_reset: false,
+    test_run_broker: { broker: 'Demo-Server', chosen: false },
+    ...overrides,
+  };
+}
+
+export const IMPORT_PROCESS_PATH = '/api/v1/market-data/import-processes';
+export const DELETIONS_PATH = '/api/v1/market-data/deletions';
 
 /**
  * A replacement of the backend for component tests: it answers `fetch` like the web API does
@@ -163,12 +187,20 @@ export class FakeBackend {
   revision: Json = { revision: null, commit: null, committed_at: null };
   /** What the preview says about a file by its name; a file without an entry is unknown. */
   hints: Record<string, Json> = {};
-  /** A special answer to the preview, instead of the hints. */
-  previewAnswer: (() => Response) | null = null;
-  /** The answer to an import, from the names of the files; replaced per test. */
-  importAnswer: (names: string[]) => Response = (names) =>
-    json(200, { files: names.map((name) => takenJson(name)), imported_count: names.length, refused_count: 0 });
+  /** A special answer to the preview of a file (by its name), instead of the hints. */
+  previewAnswer: ((name: string) => Response | Promise<Response>) | null = null;
+  /** The answer to the beginning of an import process. */
+  beginAnswer: () => Response = () => json(201, { id: 'process-1', idle_timeout_seconds: 300 });
+  /** The answer to the request of one file of a process, from its name; replaced per test. */
+  fileAnswer: (name: string, call: number) => Response | Promise<Response> = (name) => json(200, takenJson(name));
+  /** The answer to the end or the abort of a process. */
+  endAnswer: (how: 'finish' | 'abort') => Response = (how) =>
+    json(200, { id: 'process-1', state: how === 'finish' ? 'finished' : 'aborted', imported_count: 0, refused_count: 0 });
+  /** The answer to a deletion (`confirm` false or true) by kind and body; replaced per test. */
+  deletionAnswer: (kind: string, body: Json) => Response = (kind, body) =>
+    json(200, deletionJson({ kind, deleted: body.confirm === true }));
   calls: Call[] = [];
+  private fileCalls = 0;
   private counter = 0;
 
   install(): void {
@@ -192,10 +224,15 @@ export class FakeBackend {
       body = rawBody;
     }
     this.calls.push({ method, path: url.pathname, query: url.searchParams, contentType, body });
-    return Promise.resolve(this.route(method, url, body));
+    try {
+      return Promise.resolve(this.route(method, url, body));
+    } catch (error) {
+      // An answer that throws is a request that fails, as `fetch` does without a network.
+      return Promise.reject(error instanceof Error ? error : new TypeError('Failed to fetch'));
+    }
   }
 
-  private route(method: string, url: URL, body: unknown): Response {
+  private route(method: string, url: URL, body: unknown): Response | Promise<Response> {
     const path = url.pathname;
     if (path === '/api/health') {
       return this.healthy ? json(200, { status: 'ok' }) : json(503, { detail: 'down' });
@@ -255,11 +292,25 @@ export class FakeBackend {
     if (path === '/api/v1/market-data/brokers') {
       return json(200, { items: this.brokers });
     }
-    if (path === '/api/v1/market-data/imports/preview' && method === 'POST') {
-      return this.previewAnswer === null ? this.preview(body as FormData) : this.previewAnswer();
+    if (path === '/api/v1/market-data/import-preview' && method === 'POST') {
+      const name = readForm(body).files[0] ?? '';
+      return this.previewAnswer === null ? json(200, this.hints[name] ?? hintJson(name)) : this.previewAnswer(name);
     }
-    if (path === '/api/v1/market-data/imports' && method === 'POST') {
-      return this.importAnswer(readForm(body).files);
+    if (path === IMPORT_PROCESS_PATH && method === 'POST') {
+      return this.beginAnswer();
+    }
+    const processFiles = new RegExp(`^${IMPORT_PROCESS_PATH}/([^/]+)/files$`).exec(path);
+    if (processFiles !== null && method === 'POST') {
+      this.fileCalls += 1;
+      return this.fileAnswer(readForm(body).files[0] ?? '', this.fileCalls);
+    }
+    const processEnd = new RegExp(`^${IMPORT_PROCESS_PATH}/([^/]+)/(finish|abort)$`).exec(path);
+    if (processEnd !== null && method === 'POST') {
+      return this.endAnswer(processEnd[2] as 'finish' | 'abort');
+    }
+    const deletion = new RegExp(`^${DELETIONS_PATH}/(series|period|contract|broker)$`).exec(path);
+    if (deletion !== null && method === 'POST') {
+      return this.deletionAnswer(deletion[1] as string, body as Json);
     }
     return json(404, { detail: 'Not Found' });
   }
@@ -299,13 +350,5 @@ export class FakeBackend {
       gaps: this.gaps[`${String(broker)}|${String(instrument)}|${String(data)}`] ?? [],
       contract: this.contracts[`${String(broker)}|${String(instrument)}`] ?? null,
     });
-  }
-
-  private preview(form: FormData): Response {
-    const files = readForm(form).files.map((name) => this.hints[name] ?? hintJson(name));
-    const jsonBrokers = files.filter((hint) => hint.format === 'json').map((hint) => hint.broker);
-    const first = jsonBrokers[0];
-    const common = jsonBrokers.length > 0 && typeof first === 'string' && jsonBrokers.every((name) => name === first) ? first : null;
-    return json(200, { files, broker: common });
   }
 }

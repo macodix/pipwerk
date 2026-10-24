@@ -92,9 +92,10 @@ class MissingReason(StrEnum):
     """Why part of a period is missing."""
 
     NOT_COVERED = "not_covered"
-    """No import covers this part."""
+    """No import covers this part, and it lies before the first or after the last covered period
+    of the series."""
     GAP = "gap"
-    """Covered by an import, but without the candles or ticks the rules expect."""
+    """Between two covered periods of the series (two imports, or around a deleted period)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,28 +128,46 @@ class Completeness:
 
 
 @dataclass(frozen=True, slots=True)
+class CalendarDay:
+    """A day of the year without a year, for example 25 December (``month`` 12, ``day`` 25).
+
+    ``month`` is 1 to 12, ``day`` 1 to 31; 29 February is valid.
+    """
+
+    month: int
+    day: int
+
+    def __post_init__(self) -> None:
+        try:
+            datetime(2000, self.month, self.day)  # 2000 is a leap year
+        except ValueError:
+            raise ValueError("not a day of the year") from None
+
+
+@dataclass(frozen=True, slots=True)
 class CompletenessRules:
-    """Thresholds of the completeness check (defaults: see technical documentation)."""
+    """Rules of the completeness check (specification 5.2; defaults: see technical documentation).
+
+    The days without trade are a parameter of the caller; the library has no list of holidays.
+    """
 
     weekend_start_minute: int = 4 * 1440 + 22 * 60
     """Start of the weekend as minute of the week (Monday 00:00 UTC is 0): Friday 22:00."""
     weekend_end_minute: int = 6 * 1440 + 22 * 60
     """End of the weekend as minute of the week: Sunday 22:00."""
-    tolerated_missing_candles: int = 1
-    """Without trading hours: trading time of up to this many candles may be missing."""
-    tolerate_m1_in_hour: bool = True
-    """M1 candles missing within one clock hour that has candles are no gap."""
-    tick_max_silence_seconds: int = 3600
-    """Ticks: no tick for longer than this within the trading time is a gap."""
+    no_trading_days: tuple[CalendarDay, ...] = ()
+    """Days of the year without trade, every year (default none; pipwerk replay passes the days
+    of its startup configuration). A day reaches from ``no_trading_day_boundary_minute`` of the
+    previous day to ``no_trading_day_boundary_minute`` of the day itself (UTC)."""
+    no_trading_day_boundary_minute: int = 22 * 60
+    """Minute of the day (UTC) at which a day without trade begins and ends: 22:00."""
 
     def __post_init__(self) -> None:
         week = 7 * 1440
         if not 0 <= self.weekend_start_minute < self.weekend_end_minute <= week:
             raise ValueError("the weekend must lie within one week and end after it starts")
-        if self.tolerated_missing_candles < 0:
-            raise ValueError("tolerated_missing_candles must not be negative")
-        if self.tick_max_silence_seconds <= 0:
-            raise ValueError("tick_max_silence_seconds must be positive")
+        if not 0 <= self.no_trading_day_boundary_minute < 1440:
+            raise ValueError("the boundary of a day without trade must lie within one day")
 
 
 @dataclass(frozen=True, slots=True)
@@ -293,8 +312,6 @@ class BatchErrorCode(StrEnum):
     """Why a whole import process was refused. Nothing was read or changed."""
 
     NO_FILES = "no_files"
-    TOO_MANY_FILES = "too_many_files"
-    BATCH_TOO_LARGE = "batch_too_large"
 
 
 @dataclass(frozen=True, slots=True)
@@ -386,3 +403,60 @@ class SeriesDetails:
     row: SeriesRow
     gaps: tuple[MissingPart, ...]
     contract: InstrumentInfo | None
+
+
+class DeletionKind(StrEnum):
+    """What a deletion removes (specification 5.5)."""
+
+    SERIES = "series"
+    """A whole series: the candles of a time unit or the ticks of an instrument at a broker."""
+    PERIOD = "period"
+    """A period of a series (from, to, UTC, on the minute)."""
+    CONTRACT = "contract"
+    """The instrument data of an instrument at a broker."""
+    BROKER = "broker"
+    """All data of a broker: all its series and all its instrument data."""
+
+
+class DeletionErrorCode(StrEnum):
+    """Why a deletion is refused. Nothing was changed."""
+
+    BROKER_UNKNOWN = "broker_unknown"
+    """The broker does not occur in the data store."""
+    INSTRUMENT_UNKNOWN = "instrument_unknown"
+    """The broker has no series and no instrument data of this instrument."""
+    SERIES_UNKNOWN = "series_unknown"
+    """The instrument at this broker has no such series (time unit or ticks)."""
+    CONTRACT_UNKNOWN = "contract_unknown"
+    """The instrument at this broker has no instrument data."""
+    PERIOD_INVALID = "period_invalid"
+    """The period does not end after it starts, is not on the minute or lies outside the
+    supported times."""
+    PERIOD_EMPTY = "period_empty"
+    """The series has neither data nor a covered period in the period."""
+
+
+@dataclass(frozen=True, slots=True)
+class Deletion:
+    """What a deletion removes or, from a preview, would remove.
+
+    ``instrument`` and ``data`` are set for ``series`` and ``period`` (``data`` is a time unit
+    identifier or ``ticks``) and for ``contract`` (``instrument`` only); ``start`` and ``end``
+    (UTC) for ``period`` only. ``candle_count`` and ``tick_count`` count the candles and ticks
+    removed. ``series_count`` counts the series that no longer exist afterwards (a period
+    removes its series if no candle or tick is left). ``instrument_count`` counts the
+    instruments whose instrument data are removed. ``broker_removed`` tells whether the broker
+    no longer occurs in the data store afterwards.
+    """
+
+    kind: DeletionKind
+    broker: str
+    instrument: str | None
+    data: str | None
+    start: datetime | None
+    end: datetime | None
+    candle_count: int
+    tick_count: int
+    series_count: int
+    instrument_count: int
+    broker_removed: bool

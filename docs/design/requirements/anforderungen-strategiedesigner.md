@@ -327,7 +327,7 @@ Bei der Eingabe eines Ausdrucks zeigt der Designer nach einem Objektnamen und ei
 
 Objekte liefern Werte. Jede Eigenschaft eines Objekts auf der Zeichenfläche, zum Beispiel `Wert` eines EMA oder `Trendrichtung` des 1-2-3-Trends, ist ein Ausgang, den der Anwender per Linie mit einem Eingang eines anderen Elements verbindet, zum Beispiel mit einer Bedingung, einer Berechnung, „Order aufgeben“ oder dem Parameter eines anderen Objekts. Ein verbundener Eingang erscheint im Ausdruck des Elements unter seinem Namen. Datenverbindungen sind von Ablaufverbindungen sichtbar unterschieden: Ablaufverbindungen legen die Reihenfolge fest, Datenverbindungen den Weg eines Werts.
 
-Ausdrücke dürfen Eigenschaften weiterhin auch direkt über den Namen ansprechen (`ema20.Wert`); beide Wege führen zum selben Ergebnis. Wird ein Name nur im Ausdruck verwendet, zeigt die Zeichenfläche die Verwendung trotzdem als Datenverbindung an. Sie gilt als Verbindung nach req-ablauf-003. Der vorgesehene Weg ist, das Objekt zuerst auf die Zeichenfläche zu ziehen und dann zu verbinden.
+Ausdrücke dürfen Eigenschaften weiterhin auch direkt über den Namen ansprechen (`ema20.Wert`); beide Wege führen zum selben Ergebnis. Bausteine und Verbinden bieten an einer Stelle nur Instanzen an, die dort verwendbar sind (Fachmodell req-fach-055): Im Zweig „falsch“ einer Bedingung steht ein Indikator, der erst im Zweig „wahr“ ermittelt wird, nicht zur Wahl. Steht eine solche Instanz trotzdem in einem Ausdruck, meldet die Konsistenzprüfung einen Fehler. Wird ein Name nur im Ausdruck verwendet, zeigt die Zeichenfläche die Verwendung trotzdem als Datenverbindung an. Sie gilt als Verbindung nach req-ablauf-003. Der vorgesehene Weg ist, das Objekt zuerst auf die Zeichenfläche zu ziehen und dann zu verbinden.
 
 Die Beschriftung einer Datenverbindung nennt die übergebene Eigenschaft oder Methode. Bei jeder Verwendung wählt der Anwender in der Eigenschaftenansicht die Eigenschaft oder Methode und, wo der Objekttyp es vorsieht, den Schalter „Aktualisieren“: Die Instanz ermittelt ihre Werte neu, bevor sie sie übergibt (Fachmodell req-fach-055).
 
@@ -339,7 +339,7 @@ Der Anwender stellt Bedingungen und Berechnungen aus Bausteinen zusammen, ohne F
 
 ### req-ui-016 -- Bedienerführung
 
-Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. In der Oberfläche heißt er „Assistent“. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
+Die Bedienung erschließt sich ohne Handbuch. Jeder leere Zustand nennt den nächsten sinnvollen Schritt. Jedes Element der Elementbibliothek und jedes Feld der Eigenschaftenansicht hat eine kurze Erklärung in Händlersprache, die beim Zeigen erscheint, auch für Parameter wie „Anwenden auf“ eines EMA. Die Eigenschaftenansicht eines Objekts beschreibt jede Eigenschaft und Methode, die es liefert: was der Wert aussagt und wozu er dient, zum Beispiel beim EMA, was der gelieferte Wert ist und wofür man ihn in einer Strategie verwendet. Ein Ausgang zeigt den Namen der Eigenschaft, nicht nur ihren Datentyp wie „Zahl“. „Neue Strategie“ bietet einen geführten Aufbau an (Auslöser, Indikatoren, Bedingung, Order), der jederzeit verlassen werden kann. In der Oberfläche heißt er „Assistent“. Hinweise und Dialoge des Strategiedesigners, zum Beispiel „Keine Strategie geöffnet“ oder der Assistent, erscheinen in der Eigenschaftenansicht und nur dort, nicht zusätzlich auf der Zeichenfläche. Befunde nennen, wie man sie behebt, und führen per Klick zur Stelle.
 
 Namen vergibt der Anwender frei, mit Leerzeichen und Umlauten (zum Beispiel „Stop-Abstand“, „EMA 20“). Ein Objekt, ein Element und ein Strategieparameter haben genau einen Namen; eine getrennte Bezeichnung entfällt. Interne Kennungen bildet die Anwendung selbst und zeigt sie nicht.
 
@@ -350,6 +350,8 @@ Der Ablauf verläuft senkrecht von oben nach unten. Jedes Element hat seinen Ein
 Objekte ohne Ablaufverbindung (Indikatoren, Trends und die Objekte der Anwendung, die auf der Zeichenfläche liegen können, nach Fachmodell req-fach-051) liegen bei dem Element, das sie zuerst verwendet, und sind mit ihm verbunden (Fachmodell req-fach-055): bei senkrechtem Ablauf daneben, bei waagerechtem darüber oder darunter. Weitere Verwendungen zeigen ihre Datenverbindungen (req-ui-014), die sich ein- und ausblenden lassen. Einen eigenen Bereich der Zeichenfläche für Objekte gibt es nicht.
 
 Auch eine einfache Strategie bleibt auf einen Blick überschaubar: Zusammengehörige Schritte lassen sich zu einem benannten Abschnitt zusammenfassen und einklappen (req-ui-006), zum Beispiel „Einstieg“, „Order“, „Verwaltung“. Die Ausrichtung lässt sich zwischen senkrecht und waagerecht umschalten.
+
+Offen, Diskussionspunkt des Auftraggebers: Löschen einer Verbindung direkt auf der Zeichenfläche, zum Beispiel Linie anklicken und mit der Entf-Taste löschen. Bisher geht das über die Eigenschaftenansicht.
 
 ### req-ablauf-001 -- Arbeitsabläufe des Strategiedesigners
 
@@ -390,6 +392,7 @@ Die Konsistenzprüfung läuft beim Speichern einer Strategie oder einer Vorlage 
 - Element des Ablaufs ohne Verbindung (Fehler)
 - Instanz eines Indikators, eines Trends oder eines Objekts der Anwendung ohne Verbindung zu dem Element, das sie zuerst verwendet (Fehler, req-ablauf-003, Fachmodell req-fach-055)
 - Name einer Instanz, der in der Strategie mehr als einmal vergeben ist (Fehler, Fachmodell req-fach-055)
+- Instanz in einem Ausdruck an einer Stelle, an der sie nicht verwendbar ist (Fehler, Fachmodell req-fach-055, req-ui-014)
 - Datenverbindung zwischen unverträglichen Datentypen (Fehler)
 - Eingang ohne Wert (Fehler), ausgenommen optionale Parameter (req-param-006) und Parameter, deren Wert erst bei der Anwendung übergeben wird
 - Fehlerhafter Ausdruck, zum Beispiel Schreibfehler, unbekannte Funktion oder unbekannte Eigenschaft (Fehler)
@@ -525,3 +528,7 @@ Die folgenden Punkte sind noch nicht entschieden:
 | 2026-10-22 | req-ablauf-007: Instanz ohne Verbindung zum Element ihrer ersten Verwendung und doppelter Name einer Instanz sind Fehler, Ausnahme für Objekte auf der Zeichenfläche entfällt. Vom Projektleiter nach dem Prüfbericht der QA (`strategiedesign`, Durchlauf 13, B1 und H6), Folge der Festlegungen vom selben Tag. |
 | 2026-10-23 | req-ui-014: Verwendung nur im Ausdruck gilt als Verbindung, vorgesehener Weg ist das Ziehen auf die Zeichenfläche. req-ablauf-003: Namensvorschlag für Instanzen, die in einer eingefügten Vorlage enthalten sind. Festlegung des Auftraggebers im Chat am 2026-10-23 (Hinweise N1 und N3 aus `development/strategiedesign/reviews/requirements-14.md`). |
 | 2026-10-23 | req-ui-016: Der geführte Aufbau heißt in der Oberfläche „Assistent“. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-02). |
+| 2026-10-23 | req-ui-016: Hinweise und Dialoge des Strategiedesigners nur in der Eigenschaftenansicht. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
+| 2026-10-23 | req-ui-016: Beschreibung der gelieferten Eigenschaften und Methoden in der Eigenschaftenansicht eines Objekts, Ausgang mit Namen der Eigenschaft. req-ui-017: Löschen einer Verbindung auf der Zeichenfläche als offener Diskussionspunkt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Prototyp, Frage strategiedesign-03). |
+| 2026-10-23 | req-ui-014: Nur an der Stelle verwendbare Instanzen zur Wahl, sonst Fehler der Konsistenzprüfung. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 24). |
+| 2026-10-23 | req-ablauf-007: Instanz an einer Stelle, an der sie nicht verwendbar ist. Folge der Festlegung zu Punkt 24 der Abstimmung `specification-3.html`, Hinweis H1 in `development/strategiedesign/reviews/requirements-19.md`. |

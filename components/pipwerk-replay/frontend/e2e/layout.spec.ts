@@ -15,6 +15,7 @@ import {
   openApp,
   openImportDialog,
   seedStock,
+  slowDownFiles,
   test,
 } from './fixtures';
 
@@ -387,6 +388,97 @@ for (const { width, height } of WINDOW_SIZES) {
 
       await page.getByTestId('import-close').click();
       await expect(page.getByTestId('dialog-import')).toHaveCount(0);
+      await expectShell(page, width, height);
+    });
+
+    test('dialog "Datei importieren" during an import: state per file, progress, "Abbrechen" and the question when closing', async ({
+      page,
+    }) => {
+      await slowDownFiles(page, 4000);
+      await chooseView(page, 'data');
+      await openImportDialog(page);
+      const files = ['AAA', 'BBB', 'CCC', 'DDD'].map((instrument) =>
+        jsonFile(`${instrument}.json`, candlesDocument({ broker: 'Test-Broker', instrument, unit: 'h1', hours: [8, 9] })),
+      );
+      await chooseImportFiles(page, files);
+      await page.getByTestId('import-run').click();
+      await expect(importItem(page, 'AAA.json')).toHaveAttribute('data-state', 'importing');
+      await expect(importItem(page, 'DDD.json')).toHaveAttribute('data-state', 'waiting');
+
+      // Running: progress, the states, "Abbrechen" and "Schließen" are in the window.
+      await expect(page.getByTestId('import-progress')).toBeVisible();
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+      for (const id of ['import-cancel', 'import-close', 'import-run']) {
+        await page.getByTestId(id).scrollIntoViewIfNeeded();
+        await expect(page.getByTestId(id)).toBeInViewport();
+      }
+
+      // The question when closing replaces the buttons and lies in the window.
+      await page.getByTestId('import-close').click();
+      await expect(page.getByTestId('import-close-ask')).toBeVisible();
+      await expectDialog(page, 'dialog-import', width, height);
+      await expect(page.getByTestId('import-keep')).toBeInViewport();
+      await expect(page.getByTestId('import-abort-close')).toBeInViewport();
+      await page.getByTestId('import-keep').click();
+
+      // Cancelling: the other files are "nicht importiert", and everything is still reachable.
+      await page.getByTestId('import-cancel').click();
+      await expect(page.getByTestId('import-summary')).toBeVisible();
+      await expect(importItem(page, 'DDD.json')).toHaveAttribute('data-state', 'skipped');
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+      await page.getByTestId('import-close').click();
+      await expect(page.getByTestId('dialog-import')).toHaveCount(0);
+      await expectShell(page, width, height);
+    });
+
+    test('dialogs for deleting: choice, period, question, and the button for all data of a broker', async ({ page }) => {
+      await chooseView(page, 'data');
+
+      // All data of a broker: the button lies with the filters and over nothing.
+      await page.getByTestId('filter-broker').fill('Zweiter');
+      await expect(page.getByTestId('delete-broker-open')).toBeVisible();
+      await expectCards(page, 'data');
+      await expectNoInnerScroll(page, '[data-testid="data"] .tbl-wrap');
+      await page.getByTestId('delete-broker-open').click();
+      await expect(page.getByTestId('delete-question')).toBeVisible();
+      await expectDialog(page, 'dialog-delete', width, height);
+      await expectNoInnerScroll(page, '[data-testid="dialog-delete"] .modal-body');
+      await page.getByTestId('delete-cancel').click();
+      await expect(page.getByTestId('dialog-delete')).toHaveCount(0);
+      await page.getByTestId('filter-broker').fill('');
+
+      // A series: the choice, the period and the question.
+      await page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-data="h1"]').click();
+      await expect(page.getByTestId('detail-actions')).toBeVisible();
+      await expectCards(page, 'data');
+      const actions = await box(page, '[data-testid="detail-actions"]');
+      const gaps = await box(page, '[data-testid="detail-gaps"]');
+      expect(overlap(actions, gaps)).toBe(false);
+      await page.getByTestId('delete-open').click();
+      await expectDialog(page, 'dialog-delete', width, height);
+      await page.getByTestId('delete-scope-period').click();
+      await expectDialog(page, 'dialog-delete', width, height);
+      await expectNoInnerScroll(page, '[data-testid="dialog-delete"] .modal-body');
+      await page.getByTestId('delete-start').fill('2026-01-05T09:00');
+      await page.getByTestId('delete-end').fill('2026-01-05T11:00');
+      await page.getByTestId('delete-next').click();
+      await expect(page.getByTestId('delete-question')).toBeVisible();
+      await expectDialog(page, 'dialog-delete', width, height);
+      await expectNoInnerScroll(page, '[data-testid="dialog-delete"] .modal-body');
+      await expect(page.getByTestId('delete-confirm')).toBeInViewport();
+      // The explanation of a field is in the window.
+      await page.getByTestId('delete-cancel').click();
+      await page.getByTestId('delete-open').click();
+      await page.getByTestId('delete-scope-period').click();
+      await page.mouse.move(0, 0);
+      await page.getByTestId('field-delete-start').locator('.info').focus();
+      await expect(page.getByTestId('tooltip')).toBeVisible();
+      const tip = await box(page, '[data-testid="tooltip"]');
+      expect(inside(tip, { width, height })).toBe(true);
+      await page.getByTestId('field-delete-start').locator('.info').blur();
+      await page.getByTestId('delete-cancel').click();
       await expectShell(page, width, height);
     });
 

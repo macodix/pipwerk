@@ -1,11 +1,14 @@
-// Data stock of historical price data (specification 5.1, 5.3, 8.3): a bar with the import and the
-// broker for test runs, a compact table with one row per series (filtered and paged by the
-// backend), and the details of a row after a click: all gaps and the contract data.
+// Data stock of historical price data (specification 5.1, 5.3, 5.5, 8.3): a bar with the import and
+// the broker for test runs, a compact table with one row per series (filtered and paged by the
+// backend), and the details of a row after a click: all gaps, the contract data and the deletion
+// of the series, of a period and of the contract data. With a filter on one broker, all data of
+// the broker can be deleted.
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ALL_DATA_IDS, dataLabel } from './dataLabels';
+import { DeleteDialog, type DeleteTarget } from './DeleteDialog';
 import {
   PAGE_SIZE,
   TEST_RUN_BROKER_QUERY_KEY,
@@ -19,7 +22,7 @@ import { describeError } from './errors';
 import { formatDays, formatNumber, formatPeriod, formatMoment } from './format';
 import type { SupportedLanguage } from './i18n';
 import { ImportDialog } from './ImportDialog';
-import { updateTestRunBroker, type SeriesRow } from './marketDataApi';
+import { updateTestRunBroker, type DeletionResult, type SeriesRow } from './marketDataApi';
 import { Btn, Field, Icon, Select, TextInput } from './ui';
 import { useDebounced } from './useDebounced';
 
@@ -39,6 +42,8 @@ function sameRow(a: RowKey | null, b: RowKey): boolean {
 export function DataView() {
   const { t } = useTranslation();
   const [importOpen, setImportOpen] = useState(false);
+  // What the last deletion removed, said in a line under the bar.
+  const [deleted, setDeleted] = useState<DeletionResult | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
 
@@ -66,6 +71,7 @@ export function DataView() {
               testid="import-open"
               tip={t('data.tip.import')}
               onClick={() => {
+                setDeleted(null);
                 setImportOpen(true);
               }}
             >
@@ -73,8 +79,9 @@ export function DataView() {
             </Btn>
             <TestRunBrokerField />
           </div>
+          {deleted !== null && <DeletedNotice result={deleted} />}
         </section>
-        <StockCard />
+        <StockCard onDeleted={setDeleted} />
       </div>
       {importOpen && (
         <ImportDialog
@@ -94,14 +101,18 @@ function TestRunBrokerField() {
   const brokers = useBrokers();
   const current = useTestRunBroker();
   const mutation = useMutation({
-    mutationFn: (broker: string) => updateTestRunBroker(broker),
+    mutationFn: (broker: string | null) => updateTestRunBroker(broker),
     onSuccess: (stored) => {
       queryClient.setQueryData(TEST_RUN_BROKER_QUERY_KEY, stored);
     },
   });
-  const value = current.data?.broker ?? '';
+  const chosen = current.data?.chosen === true;
+  const applied = current.data?.broker ?? null;
+  // The select shows the user's choice. Without a choice it says so, and the line below it names
+  // the broker that applies then (the first one in alphabetical order, specification 5.1).
+  const value = chosen ? (applied ?? '') : '';
   const names = brokers.data ?? [];
-  // A broker that applies but is not in the list (the list is older) is still shown.
+  // A broker that is chosen but not in the list (the list is older) is still shown.
   const options = value !== '' && !names.includes(value) ? [...names, value] : names;
   const failure = brokers.error ?? current.error ?? mutation.error;
 
@@ -115,10 +126,10 @@ function TestRunBrokerField() {
             testid="select-test-broker"
             disabled={options.length === 0 || mutation.isPending}
             onChange={(next) => {
-              mutation.mutate(next);
+              mutation.mutate(next === '' ? null : next);
             }}
           >
-            {options.length === 0 && <option value="">{t('data.testBrokerNone')}</option>}
+            <option value="">{options.length === 0 ? t('data.testBrokerNone') : t('data.testBrokerNotChosen')}</option>
             {options.map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -127,6 +138,11 @@ function TestRunBrokerField() {
           </Select>
         )}
       </Field>
+      {!chosen && applied !== null && current.data !== undefined && (
+        <p className="muted" data-testid="test-broker-applies">
+          {t('data.testBrokerApplies', { broker: applied })}
+        </p>
+      )}
       {failure !== null && (
         <p className="error-note" role="alert" data-testid="test-broker-error">
           <Icon name="warn" size={14} />
@@ -137,7 +153,27 @@ function TestRunBrokerField() {
   );
 }
 
-function StockCard() {
+/** What a deletion has removed, in one line. */
+function DeletedNotice({ result }: { result: DeletionResult }) {
+  const { t, i18n } = useTranslation();
+  const language = languageOf(i18n.language);
+  const what = {
+    broker: result.broker,
+    instrument: result.instrument ?? '',
+    data: result.data === null ? '' : dataLabel(t, result.data),
+    start: result.start === null ? '' : formatMoment(result.start, language),
+    end: result.end === null ? '' : formatMoment(result.end, language),
+  };
+  return (
+    <p className="ok-note" role="status" data-testid="delete-notice">
+      <Icon name="check" size={16} />
+      {t(`delete.done.${result.kind}`, what)}
+      {result.testRunBrokerReset ? ` ${t('delete.doneNoTestBroker')}` : ''}
+    </p>
+  );
+}
+
+function StockCard({ onDeleted }: { onDeleted: (result: DeletionResult) => void }) {
   const { t, i18n } = useTranslation();
   const language = languageOf(i18n.language);
   const brokers = useBrokers();
@@ -146,6 +182,7 @@ function StockCard() {
   const [data, setData] = useState('');
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<RowKey | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const typed = useMemo(() => ({ broker: broker.trim(), instrument: instrument.trim(), data }), [broker, instrument, data]);
   const delayed = useDebounced(typed, FILTER_DELAY_MS);
@@ -154,6 +191,11 @@ function StockCard() {
     [delayed],
   );
   const filtered = filter.broker !== '' || filter.instrument !== '' || filter.data !== '';
+  // "Alle Daten dieses Brokers löschen" is offered when the filter names one broker of the stock.
+  const brokerMatches =
+    filter.broker === ''
+      ? []
+      : (brokers.data ?? []).filter((name) => name.toLowerCase().includes(filter.broker.toLowerCase()));
   const series = useSeries(filter, page);
   const result = series.data;
   const total = result?.total ?? 0;
@@ -176,6 +218,17 @@ function StockCard() {
 
   function toggle(row: SeriesRow): void {
     setSelected(sameRow(selected, row) ? null : { broker: row.broker, instrument: row.instrument, data: row.data });
+  }
+
+  /** The row that is open may be gone after a deletion; the details stay only if it is still there. */
+  function afterDeletion(result: DeletionResult): void {
+    const stays =
+      (result.kind === 'period' && result.seriesCount === 0) ||
+      (result.kind === 'contract' && selected !== null && selected.data !== 'contract');
+    if (!stays) {
+      setSelected(null);
+    }
+    onDeleted(result);
   }
 
   const empty = result !== undefined && total === 0 && !filtered;
@@ -232,6 +285,32 @@ function StockCard() {
               )}
             </Field>
           </div>
+          {brokerMatches.length > 0 && (
+            <div className="broker-delete" data-testid="broker-delete">
+              {brokerMatches.length === 1 ? (
+                <>
+                  <Btn
+                    kind="danger"
+                    icon="trash"
+                    testid="delete-broker-open"
+                    tip={t('data.tip.deleteBroker')}
+                    onClick={() => {
+                      setDeleteTarget({ kind: 'broker', broker: brokerMatches[0] as string });
+                    }}
+                  >
+                    {t('data.deleteBroker')}
+                  </Btn>
+                  <span className="muted" data-testid="delete-broker-name">
+                    {brokerMatches[0]}
+                  </span>
+                </>
+              ) : (
+                <p className="muted" data-testid="delete-broker-hint">
+                  {t('data.deleteBrokerSeveral')}
+                </p>
+              )}
+            </div>
+          )}
           <div className="tbl-wrap stock-table-wrap">
             <table className="tbl stock-table" data-testid="stock-table">
               <thead>
@@ -280,7 +359,7 @@ function StockCard() {
                       {open && (
                         <tr className="detail-row" data-testid="stock-detail-row">
                           <td colSpan={5}>
-                            <RowDetails row={row} language={language} />
+                            <RowDetails row={row} language={language} onDelete={setDeleteTarget} />
                           </td>
                         </tr>
                       )}
@@ -338,6 +417,15 @@ function StockCard() {
           <p className="muted">{t('data.timesUtc')}</p>
         </>
       )}
+      {deleteTarget !== null && (
+        <DeleteDialog
+          target={deleteTarget}
+          onClose={() => {
+            setDeleteTarget(null);
+          }}
+          onDeleted={afterDeletion}
+        />
+      )}
     </section>
   );
 }
@@ -348,7 +436,15 @@ function weekdayText(t: (key: string) => string, weekday: string): string {
 }
 
 /** The details of a row: all gaps with start and end, and the contract data of the instrument at this broker. */
-function RowDetails({ row, language }: { row: SeriesRow; language: SupportedLanguage }) {
+function RowDetails({
+  row,
+  language,
+  onDelete,
+}: {
+  row: SeriesRow;
+  language: SupportedLanguage;
+  onDelete: (target: DeleteTarget) => void;
+}) {
   const { t } = useTranslation();
   const details = useSeriesDetails(row);
   const info = details.data?.contract ?? null;
@@ -384,10 +480,45 @@ function RowDetails({ row, language }: { row: SeriesRow; language: SupportedLang
         </p>
       )}
       {details.data !== undefined && (
+        <div className="detail-actions" data-testid="detail-actions">
+          {row.data !== 'contract' && (
+            <Btn
+              kind="danger"
+              icon="trash"
+              small
+              testid="delete-open"
+              tip={t('data.tip.deleteOpen')}
+              onClick={() => {
+                onDelete({ kind: 'series', broker: row.broker, instrument: row.instrument, data: row.data });
+              }}
+            >
+              {t('data.deleteOpen')}
+            </Btn>
+          )}
+          {info !== null && (
+            <Btn
+              kind="danger"
+              icon="trash"
+              small
+              testid="delete-contract-open"
+              tip={t('data.tip.deleteContract')}
+              onClick={() => {
+                onDelete({ kind: 'contract', broker: row.broker, instrument: row.instrument });
+              }}
+            >
+              {t('data.deleteContract')}
+            </Btn>
+          )}
+        </div>
+      )}
+      {details.data !== undefined && (
         <div className="detail-cols">
           {row.data !== 'contract' && (
             <div data-testid="detail-gaps">
               <h3>{t('data.gapsTitle')}</h3>
+              <p className="muted" data-testid="gaps-explain">
+                {t('data.gapsExplain')}
+              </p>
               {details.data.gaps.length === 0 ? (
                 <p className="muted" data-testid="gaps-none">
                   {t('data.noGaps')}

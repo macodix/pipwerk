@@ -15,6 +15,7 @@ import {
   openImportDialog,
   runImport,
   seedStock,
+  slowDownFiles,
   test,
 } from './fixtures';
 
@@ -253,4 +254,86 @@ test('stores nothing in the browser', async ({ page }) => {
   }));
 
   expect(stored).toEqual({ local: 0, session: 0, cookies: '', databases: 0, caches: 0 });
+});
+
+/** Opens the questions of the four ways to delete one after the other and checks the text of each. */
+async function checkDeleteTexts(page: Page, otherLanguage: RegExp): Promise<void> {
+  const dialog = page.getByTestId('dialog-delete');
+  // A series and a period.
+  await page.locator('[data-testid="stock-row"][data-instrument="EURUSD"][data-data="h1"]').click();
+  await expect(page.getByTestId('contract-contractSize')).toBeVisible();
+  expect(await page.getByTestId('detail-actions').innerText()).not.toMatch(otherLanguage);
+  await page.getByTestId('delete-open').click();
+  expect(await dialog.innerText()).not.toMatch(otherLanguage);
+  await page.getByTestId('delete-scope-period').click();
+  await page.getByTestId('delete-start').fill('2026-01-05T09:00');
+  await page.getByTestId('delete-end').fill('2026-01-05T11:00');
+  await page.getByTestId('delete-next').click();
+  await expect(page.getByTestId('delete-question')).toBeVisible();
+  expect(await dialog.innerText()).not.toMatch(otherLanguage);
+  await page.getByTestId('delete-cancel').click();
+  // The error of a period without data.
+  await page.getByTestId('delete-open').click();
+  await page.getByTestId('delete-scope-period').click();
+  await page.getByTestId('delete-start').fill('2027-03-01T08:00');
+  await page.getByTestId('delete-end').fill('2027-03-01T09:00');
+  await page.getByTestId('delete-next').click();
+  await expect(page.getByTestId('delete-ask-error')).toBeVisible();
+  expect(await dialog.innerText()).not.toMatch(otherLanguage);
+  await page.getByTestId('delete-cancel').click();
+  // The contract data.
+  await page.getByTestId('delete-contract-open').click();
+  await expect(page.getByTestId('delete-question')).toBeVisible();
+  expect(await dialog.innerText()).not.toMatch(otherLanguage);
+  await page.getByTestId('delete-cancel').click();
+  // All data of a broker, which is the broker for test runs.
+  await page.getByTestId('select-test-broker').selectOption('Zweiter-Broker');
+  await page.getByTestId('filter-broker').fill('Zweiter');
+  await page.getByTestId('delete-broker-open').click();
+  await expect(page.getByTestId('delete-test-broker')).toBeVisible();
+  expect(await dialog.innerText()).not.toMatch(otherLanguage);
+  await page.getByTestId('delete-confirm').click();
+  await expect(page.getByTestId('delete-notice')).toBeVisible();
+  expect(await visibleText(page)).not.toMatch(otherLanguage);
+}
+
+test('shows no German text in the dialogs for deleting in the English interface', async ({ page, stack }) => {
+  await seedStock(stack.backendUrl);
+  await openApp(page);
+  await setLanguage(page, 'en');
+  await expect(page.getByTestId('stock-row')).toHaveCount(5);
+
+  await checkDeleteTexts(page, GERMAN);
+});
+
+test('shows no English text in the dialogs for deleting in the German interface', async ({ page, stack }) => {
+  await seedStock(stack.backendUrl);
+  await openApp(page);
+  await expect(page.getByTestId('stock-row')).toHaveCount(5);
+
+  await checkDeleteTexts(page, ENGLISH);
+});
+
+test('shows no German text in the dialog for a running import in the English interface', async ({ page }) => {
+  await openApp(page);
+  await setLanguage(page, 'en');
+  await slowDownFiles(page, 2500);
+  await openImportDialog(page);
+  await chooseImportFiles(page, [
+    jsonFile('a.json', candlesDocument({ broker: 'B', instrument: 'EURUSD', unit: 'h1', hours: [8] })),
+    jsonFile('b.json', candlesDocument({ broker: 'B', instrument: 'GBPUSD', unit: 'h1', hours: [8] })),
+    jsonFile('c.json', candlesDocument({ broker: 'B', instrument: 'USDJPY', unit: 'h1', hours: [8] })),
+  ]);
+
+  await page.getByTestId('import-run').click();
+
+  await expect(importItem(page, 'a.json')).toHaveAttribute('data-state', 'importing');
+  await expect(page.getByTestId('import-progress')).toHaveText('0 of 3 files done.');
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  await page.getByTestId('import-close').click();
+  await expect(page.getByTestId('import-close-ask')).toBeVisible();
+  expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
+  await page.getByTestId('import-abort-close').click();
+  await expect(page.getByTestId('dialog-import')).toHaveCount(0);
+  expect(await visibleText(page)).not.toMatch(GERMAN);
 });

@@ -20,9 +20,12 @@ req-system-018). It is an INI file:
   - ``url``: the database of the data stock; without it the database of ``[database]``
     (the data stock may share it, specification E4),
   - ``max_upload_bytes``, ``max_rows``, ``max_reported_rejections``: limits of an uploaded
-    file (defaults of ``pipwerk_marketdata``),
-  - ``max_files_per_import``, ``max_import_bytes``: limits of one import (number of files,
-    total size of the files),
+    file (defaults of ``pipwerk_marketdata``); there is no limit for the number of files or
+    the total size of an import (specification 5.3),
+  - ``import_idle_timeout_seconds``: an import process ends by itself when no request of it
+    arrives for this long (default 300 seconds, specification 5.5),
+  - ``no_trading_days``: the days of the year without trade, ``MM-DD`` separated by commas
+    (default ``12-25, 01-01``, specification 5.2); they are no gaps in the data stock,
   - ``max_concurrent_imports``, ``max_listed_items``, ``max_parts_per_request``: limits
     against overload (see ``MarketDataSettings``).
 
@@ -47,6 +50,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from pipwerk_marketdata import CalendarDay
 from pipwerk_marketdata import limits as marketdata_limits
 
 from pipwerk_replay.host_check import InvalidAllowedHostError, normalize_entry
@@ -70,15 +74,16 @@ MAX_MAX_UPLOAD_BYTES = 1024 * 1024 * 1024
 DEFAULT_MAX_ROWS_PER_FILE = marketdata_limits.DEFAULT_MAX_ROWS
 #: Number of rejected rows an answer lists: default of ``pipwerk_marketdata``.
 DEFAULT_MAX_REPORTED_REJECTIONS = marketdata_limits.DEFAULT_MAX_REPORTED_REJECTIONS
-#: Largest number of files of one import.
-DEFAULT_MAX_FILES_PER_IMPORT = 100
-MAX_MAX_FILES_PER_IMPORT = 1000
-#: Largest total size of the files of one import in bytes (256 MiB; at least the size of one file).
-DEFAULT_MAX_IMPORT_BYTES = 256 * 1024 * 1024
-MAX_MAX_IMPORT_BYTES = 4 * 1024 * 1024 * 1024
+#: Time after which an import process without a request ends by itself (5 minutes).
+DEFAULT_IMPORT_IDLE_TIMEOUT_SECONDS = 300
+MAX_IMPORT_IDLE_TIMEOUT_SECONDS = 24 * 60 * 60
+#: The days of the year without trade: 25 December and 1 January (specification 5.2).
+DEFAULT_NO_TRADING_DAYS = (CalendarDay(12, 25), CalendarDay(1, 1))
 DEFAULT_MAX_CONCURRENT_IMPORTS = 2
 DEFAULT_MAX_LISTED_ITEMS = 1000
 DEFAULT_MAX_PARTS_PER_REQUEST = 100
+
+_DAY_ENTRY = re.compile(r"([0-9]{2})-([0-9]{2})")
 
 
 @dataclass(frozen=True)
@@ -87,13 +92,14 @@ class MarketDataSettings:
 
     #: Database of the data stock; ``None``: the database of pipwerk replay.
     database_url: str | None = None
-    #: Largest size of one uploaded file in bytes.
+    #: Largest size of one uploaded file in bytes. The request of a file may be this size plus
+    #: the envelope of the form (``import_form.py``). There is no limit for the number of files
+    #: or the total size of an import (specification 5.3).
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
-    #: Largest number of files of one import (specification 5.3).
-    max_files_per_import: int = DEFAULT_MAX_FILES_PER_IMPORT
-    #: Largest total size of the files of one import in bytes; the limit of the request body
-    #: of an import is this size plus the envelope of the form (``marketdata_api.py``).
-    max_import_bytes: int = DEFAULT_MAX_IMPORT_BYTES
+    #: Seconds without a request after which an import process ends by itself (specification 5.5).
+    import_idle_timeout_seconds: int = DEFAULT_IMPORT_IDLE_TIMEOUT_SECONDS
+    #: The days of the year without trade; no gaps in the data stock (specification 5.2).
+    no_trading_days: tuple[CalendarDay, ...] = DEFAULT_NO_TRADING_DAYS
     #: Largest number of data rows or entries of an uploaded file, rejected ones included.
     max_rows: int = DEFAULT_MAX_ROWS_PER_FILE
     #: Number of rejected rows an answer lists (all are counted).
@@ -104,10 +110,6 @@ class MarketDataSettings:
     max_listed_items: int = DEFAULT_MAX_LISTED_ITEMS
     #: Largest number of parts in a request for completeness.
     max_parts_per_request: int = DEFAULT_MAX_PARTS_PER_REQUEST
-
-    def __post_init__(self) -> None:
-        if self.max_import_bytes < self.max_upload_bytes:
-            raise ValueError("max_import_bytes must not be smaller than max_upload_bytes")
 
 
 @dataclass(frozen=True)
@@ -247,6 +249,30 @@ def _optional_text(parser: configparser.ConfigParser, section: str, option: str)
     return parser.get(section, option).strip() or None
 
 
+def _no_trading_days(parser: configparser.ConfigParser, path: Path) -> tuple[CalendarDay, ...]:
+    """The days without trade of ``[marketdata] no_trading_days``: ``MM-DD`` separated by commas.
+    An empty value means no day at all; without the entry the default days apply."""
+    if not parser.has_option("marketdata", "no_trading_days"):
+        return DEFAULT_NO_TRADING_DAYS
+    days: list[CalendarDay] = []
+    for item in parser.get("marketdata", "no_trading_days").split(","):
+        text = item.strip()
+        if not text:
+            continue
+        match = _DAY_ENTRY.fullmatch(text)
+        try:
+            if match is None:
+                raise ValueError("not a day")
+            day = CalendarDay(int(match.group(1)), int(match.group(2)))
+        except ValueError:
+            raise StartupConfigError(
+                f"Startup configuration {path} has an invalid [marketdata] no_trading_days entry"
+            ) from None
+        if day not in days:
+            days.append(day)
+    return tuple(days)
+
+
 def _marketdata_settings(parser: configparser.ConfigParser, path: Path) -> MarketDataSettings:
     url = _optional_text(parser, "marketdata", "url")
     if parser.has_option("marketdata", "url") and url is None:
@@ -255,31 +281,19 @@ def _marketdata_settings(parser: configparser.ConfigParser, path: Path) -> Marke
     def number(option: str, default: int, bounds: tuple[int, int]) -> int:
         return _limited_integer(parser, "marketdata", option, default, bounds, path)
 
-    max_upload_bytes = number(
-        "max_upload_bytes",
-        DEFAULT_MAX_UPLOAD_BYTES,
-        (MIN_MAX_UPLOAD_BYTES, MAX_MAX_UPLOAD_BYTES),
-    )
-    # Without an entry the whole import may hold at least the largest single file.
-    max_import_bytes = number(
-        "max_import_bytes",
-        max(DEFAULT_MAX_IMPORT_BYTES, max_upload_bytes),
-        (MIN_MAX_UPLOAD_BYTES, MAX_MAX_IMPORT_BYTES),
-    )
-    if max_import_bytes < max_upload_bytes:
-        raise StartupConfigError(
-            f"Startup configuration {path} has an invalid [marketdata] max_import_bytes entry "
-            "(smaller than max_upload_bytes)"
-        )
     return MarketDataSettings(
         database_url=url,
-        max_upload_bytes=max_upload_bytes,
-        max_files_per_import=number(
-            "max_files_per_import",
-            DEFAULT_MAX_FILES_PER_IMPORT,
-            (1, MAX_MAX_FILES_PER_IMPORT),
+        max_upload_bytes=number(
+            "max_upload_bytes",
+            DEFAULT_MAX_UPLOAD_BYTES,
+            (MIN_MAX_UPLOAD_BYTES, MAX_MAX_UPLOAD_BYTES),
         ),
-        max_import_bytes=max_import_bytes,
+        import_idle_timeout_seconds=number(
+            "import_idle_timeout_seconds",
+            DEFAULT_IMPORT_IDLE_TIMEOUT_SECONDS,
+            (1, MAX_IMPORT_IDLE_TIMEOUT_SECONDS),
+        ),
+        no_trading_days=_no_trading_days(parser, path),
         max_rows=number("max_rows", DEFAULT_MAX_ROWS_PER_FILE, (1, 100_000_000)),
         max_reported_rejections=number(
             "max_reported_rejections", DEFAULT_MAX_REPORTED_REJECTIONS, (0, 1_000_000)

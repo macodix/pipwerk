@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an den Strategietester (Modul pipwerk replay) mit seinen Betriebsarten Einzelschritt-Test und Backtest, beide mit historischen Kursdaten
-- zuletzt aktualisiert: `2026-10-23`
+- zuletzt aktualisiert: `2026-10-24`
 - abgestimmt: Festlegungen des Auftraggebers im Chat am 19. bis 21. Oktober 2026. Prüfung durch die QA bestanden ([requirements-4.md](../../../development/backtest/reviews/requirements-4.md)), [Präsentation](../../../development/backtest/presentations/requirements-1.html) bestätigt vom Auftraggeber im Chat am 21. Oktober 2026.
 
 ## 1. Zweck und Abgrenzung
@@ -14,13 +14,13 @@ Dieses Dokument enthält die Anforderungen an den Strategietester, Produktname p
 - **Einzelschritt-Test:** Eine Strategie läuft an historischen Kursdaten Schritt für Schritt ab. Der Anwender sieht dabei Ablauf, Werte der Objekte und Chart und prüft so, ob die Strategie arbeitet wie gedacht.
 - **Backtest:** Eine Strategie läuft an historischen Kursdaten ohne Unterbrechung über einen Testzeitraum. Ergebnis sind Kontoentwicklung, Trades und Kennzahlen.
 
-Die historischen Kursdaten, ihre Beschaffung und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Der Strategietester ist eine Hauptkomponente nach Gesamtsystem req-system-001.
+Die historischen Kursdaten, ihr Abruf und ihr Import sind in `anforderungen-gesamtsystem.md`, Abschnitt 3, festgelegt. Wiederverwendbare Definitionen der Objekte stehen in `fachmodell.md`. Der Strategietester ist eine Hauptkomponente nach Gesamtsystem req-system-001.
 
 ## 2. Gemeinsame Anforderungen
 
 ### req-test-001 -- Testlauf
 
-Ein Testlauf wendet eine Strategie in einem Testzeitraum an und verwendet dafür ein Testkonto (req-test-005). Der Anwender wählt das Instrument der Anwendung (Fachmodell req-fach-053) und den Testzeitraum. Fehlende Kursdaten werden nach req-test-003 beschafft, in der Übergangslösung nach req-system-027 nicht. Instrumente des Testlaufs sind das Instrument der Anwendung und jedes weitere Instrument, das die Strategie verwendet, fest oder über einen Strategieparameter vom Objekttyp `Instrument`.
+Ein Testlauf wendet eine Strategie in einem Testzeitraum an und verwendet dafür ein Testkonto (req-test-005). Der Anwender wählt das Instrument der Anwendung (Fachmodell req-fach-053) und den Testzeitraum. Fehlende Kursdaten werden nach req-test-003 abgerufen, in der Übergangslösung nach req-system-027 nicht. Instrumente des Testlaufs sind das Instrument der Anwendung und jedes weitere Instrument, das die Strategie verwendet, fest oder über einen Strategieparameter vom Objekttyp `Instrument`.
 
 ### req-test-002 -- Testzeitraum
 
@@ -33,9 +33,9 @@ Jeder Testlauf hat einen Testzeitraum. Er ist vorbelegt und endet mit dem letzte
 
 Der Strategietester liest Kursdaten in beiden Betriebsarten nur aus dem Datenbestand historischer Kursdaten (Gesamtsystem req-system-025).
 
-Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch beschafft und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt. Bis pipwerk relay zur Verfügung steht, entfällt die automatische Beschaffung (Übergangslösung nach req-system-027).
+Vor dem Start eines Testlaufs wird geprüft, ob die Kursdaten für jedes Instrument des Testlaufs, jede in der Strategie verwendete Zeiteinheit und den Testzeitraum vollständig im Datenbestand liegen, ebenso die Angaben zu jedem Instrument des Testlaufs. Hat die Strategie oder eine Verwaltung einer Order den Auslöser `Tick`, gehören die Ticks der betroffenen Instrumente für den Testzeitraum zu den benötigten Kursdaten. pipwerk bildet keine Ticks aus Kerzen nach. Fehlende Daten werden automatisch abgerufen und importiert (Gesamtsystem req-system-027), auch wenn nur ein Teil des Zeitraums fehlt. Bis pipwerk relay zur Verfügung steht, entfällt der automatische Abruf (Übergangslösung nach req-system-027).
 
-Fehlen Daten oder sind sie lückenhaft, startet der Testlauf nicht. Eine Meldung nennt die fehlenden Daten. Nach einer automatischen Beschaffung nennt sie auch den Grund, warum sie nicht beschafft werden konnten.
+Fehlen Daten oder sind sie lückenhaft, startet der Testlauf nicht. Eine Meldung nennt die fehlenden Daten. Nach einem automatischen Abruf nennt sie auch den Grund, warum sie nicht abgerufen werden konnten.
 
 Zeiten, in denen beim Broker nicht gehandelt wird, zum Beispiel Wochenenden, Feiertage und Handelspausen, sind keine Lücken.
 
@@ -73,6 +73,12 @@ Was das Handelssystem mit einer Strategie ausführen kann, ist im Strategieteste
 ### req-test-007 -- Strategieparameter je Testlauf
 
 Beim Start eines Testlaufs sind die Strategieparameter mit den Werten aus der Strategie vorbelegt. Der Anwender kann sie für diesen Testlauf ändern. Die Strategie bleibt unverändert. Das gilt auch für Strategieparameter vom Objekttyp `Instrument`.
+
+### req-test-009 -- Einstellungsbereich
+
+pipwerk replay bietet einen Einstellungsbereich. Dort werden die Einstellungen angezeigt und geändert, die über die Oberfläche änderbar sind; sie liegen im Speicher der Komponente (Gesamtsystem req-system-016). Dazu gehören Voreinstellungen für Import und Export, zum Beispiel Importverzeichnis, Exportverzeichnis und ob importierte Dateien behalten werden, mit ihrem Ablageverzeichnis (Gesamtsystem req-system-028). Weitere Einstellungen kommen hinzu, wenn sie festgelegt werden.
+
+Offen: Aufbau und Gestaltung des Einstellungsbereichs. Sie werden für pipwerk übergreifend vom Auftraggeber geklärt und hier danach angeglichen (vergleiche Anforderungen an den Strategiedesigner req-ui-009).
 
 ## 3. Einzelschritt-Test
 
@@ -131,6 +137,7 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 ## 5. Noch offene Punkte
 
 1. Anzeige der Unterschiede zwischen Fassungen einer Strategie. Nicht Teil der Anforderungen, darf durch den Aufbau aber nicht ausgeschlossen werden.
+2. Aufbau und Gestaltung des Einstellungsbereichs (req-test-009), übergreifende Klärung durch den Auftraggeber.
 
 ## 6. Änderungsnachweis
 
@@ -150,3 +157,5 @@ Der Anwender sieht eine Liste der gespeicherten Backtests und kann zwei oder meh
 | 2026-10-21 | req-test-015: Eintreten des Auslösers „Manuell“ (bisher „Start von Hand“) im Testlauf, offener Punkt 2 erledigt. Entscheidung des Auftraggebers im Chat am 2026-10-21 (`backtest`, Frage backtest-01). |
 | 2026-10-23 | req-test-003: keine automatische Beschaffung bis pipwerk relay (Übergangslösung nach req-system-027). Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abnahme `backtest/wp02`). |
 | 2026-10-23 | req-test-001 und req-test-003 an die Übergangslösung angeglichen. Vom Projektleiter nach Prüfbericht der QA (`backtest`, Durchlauf 6, H1, H2). |
+| 2026-10-23 | Abschnitt 1, req-test-003: „Abruf“ statt „Beschaffung“, nur Bezeichnung. Entscheidung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `relay/presentations/specification-1.html`). |
+| 2026-10-24 | req-test-009 neu: Einstellungsbereich mit Voreinstellungen für Import und Export; Aufbau und Gestaltung offen (offener Punkt 2). Festlegung des Auftraggebers im Chat am 2026-10-24. |

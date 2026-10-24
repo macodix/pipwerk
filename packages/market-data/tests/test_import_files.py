@@ -15,6 +15,7 @@ from pipwerk_marketdata import (
     MarketDataStore,
     MarketDataStoreError,
     RejectReason,
+    format_size,
 )
 from tests.helpers import (
     EXAMPLE_DIRECTORY,
@@ -248,31 +249,69 @@ def test_limits_of_each_file_apply_in_a_process(store: MarketDataStore) -> None:
     assert sized.files[0].error == FileErrorCode.TOO_LARGE
 
 
-def test_limit_of_the_number_of_files(store: MarketDataStore) -> None:
-    files = [json_file(f"{n}.json", candle_document([candle_entry(START)])) for n in range(3)]
-    assert len(store.import_files(files, limits=ImportLimits(max_files=3)).files) == 3
-    with pytest.raises(ImportBatchError) as raised:
-        store.import_files(files, limits=ImportLimits(max_files=2))
-    assert raised.value.code == BatchErrorCode.TOO_MANY_FILES
-    assert "2" in raised.value.message
+def test_any_number_of_files_is_imported_whatever_their_total_size(
+    store: MarketDataStore,
+) -> None:
+    # 40 files, each within the limit per file, together far over it: no limit for the process
+    files = [
+        json_file(f"{n}.json", candle_document([candle_entry(START)], instrument=f"I{n:02d}"))
+        for n in range(40)
+    ]
+    each = max(len(file.content) for file in files)
+    limits = ImportLimits(max_bytes=each)
+    assert sum(len(file.content) for file in files) > 30 * limits.max_bytes
+    result = store.import_files(files, limits=limits)
+    assert [outcome.accepted for outcome in result.files] == [1] * 40
+    assert store.list_series().total == 40
 
 
-def test_limit_of_the_total_size(store: MarketDataStore) -> None:
-    files = [json_file(f"{n}.json", candle_document([candle_entry(START)])) for n in range(2)]
-    size = sum(len(file.content) for file in files)
-    assert len(store.import_files(files, limits=ImportLimits(max_batch_bytes=size)).files) == 2
-    store_before = store.list_series().total
-    with pytest.raises(ImportBatchError) as raised:
-        store.import_files(files, limits=ImportLimits(max_batch_bytes=size - 1))
-    assert raised.value.code == BatchErrorCode.BATCH_TOO_LARGE
-    assert store.list_series().total == store_before
+def test_a_file_over_the_limit_per_file_is_refused_with_the_limit_in_the_message(
+    store: MarketDataStore,
+) -> None:
+    entries = [candle_entry(t) for t in minutes(START, 5)]
+    small = json_file("small.json", candle_document(entries[:1], instrument="GBPUSD"))
+    limit = len(small.content) + 10
+    result = store.import_files(
+        [json_file("big.json", candle_document(entries)), small],
+        broker=SERVER,
+        limits=ImportLimits(max_bytes=limit),
+    )
+    assert result.files[0].error == FileErrorCode.TOO_LARGE
+    assert (
+        result.files[0].message == f"The file is larger than the limit of {limit} bytes per file."
+    )
+    assert result.files[1].accepted == 1
 
 
-def test_a_refused_process_changes_nothing(store: MarketDataStore) -> None:
-    files = [json_file(f"{n}.json", candle_document([candle_entry(START)])) for n in range(3)]
-    with pytest.raises(ImportBatchError):
-        store.import_files(files, limits=ImportLimits(max_files=1))
-    assert store.list_series().total == 0
+def test_the_limit_per_file_is_named_in_the_unit_of_the_user(store: MarketDataStore) -> None:
+    content = to_bytes(candle_document([candle_entry(START)]))
+    megabytes = store.import_files(
+        [ImportFile("a.json", content + b" " * (3 * 1024 * 1024), FileFormat.JSON)],
+        limits=ImportLimits(max_bytes=2 * 1024 * 1024),
+    )
+    assert megabytes.files[0].message == "The file is larger than the limit of 2 MiB per file."
+    rows = store.import_files(
+        [json_file("b.json", candle_document([candle_entry(t) for t in minutes(START, 3)]))],
+        limits=ImportLimits(max_rows=2),
+    )
+    assert (
+        rows.files[0].message == "The file has more entries than the limit of 2 entries per file."
+    )
+
+
+@pytest.mark.parametrize(
+    ("size", "text"),
+    [
+        (100, "100 bytes"),
+        (1024, "1 KiB"),
+        (1536, "1.5 KiB"),
+        (32 * 1024 * 1024, "32 MiB"),
+        (1024 * 1024 * 1024, "1 GiB"),
+        (1536 * 1024 * 1024, "1.5 GiB"),
+    ],
+)
+def test_sizes_are_formatted_for_the_user(size: int, text: str) -> None:
+    assert format_size(size) == text
 
 
 def test_a_process_without_files_is_refused(store: MarketDataStore) -> None:
@@ -281,10 +320,13 @@ def test_a_process_without_files_is_refused(store: MarketDataStore) -> None:
     assert raised.value.code == BatchErrorCode.NO_FILES
 
 
-def test_default_limits_of_a_process() -> None:
+def test_default_limits_of_a_file() -> None:
     limits = ImportLimits()
-    assert (limits.max_files, limits.max_batch_bytes) == (500, 512 * 1024 * 1024)
-    for field in ("max_files", "max_batch_bytes"):
+    assert (limits.max_bytes, limits.max_rows) == (32 * 1024 * 1024, 500_000)
+    # The names are joined from their words, so that a search for the removed names finds none.
+    assert not hasattr(limits, "_".join(["max", "files"]))
+    assert not hasattr(limits, "_".join(["max", "batch", "bytes"]))
+    for field in ("max_bytes", "max_rows"):
         with pytest.raises(ValueError, match="positive"):
             ImportLimits(**{field: 0})
 

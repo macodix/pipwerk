@@ -45,6 +45,7 @@ PROG=testenv
 STARTUP_TIMEOUT=120
 STOP_TIMEOUT=10
 FAULT_WAIT=30
+DELIVERY_WAIT=600
 
 die() {
     printf '%s: %s\n' "$PROG" "$*" >&2
@@ -634,6 +635,10 @@ EOF
 Disturbance 3: a relay is ended hard while it works.
   testenv fault 3 on [a|b]     ends the relay at once (kill -9), default b
   testenv fault 3 off [a|b]    starts it again
+  testenv fault 3 delivery [a|b]   waits until the relay handles a file of the retrieval and
+                                   ends it hard at that moment (default b)
+Try for the retrieval: testenv fault 3 delivery b in one terminal, testenv request ... in a second
+terminal, then testenv fault 3 off b in the first. The request goes on and writes every file once.
 EOF
         ;;
     4)
@@ -650,13 +655,16 @@ EOF
     5)
         cat <<EOF
 Disturbance 5: the same envelope comes once more.
-  testenv fault 5 save [relay|component]    copies the waiting envelope and its files (default
-                                            component: in the inbox of the listening probe b;
-                                            relay: in the inbox of the relay b)
-  testenv fault 5 on [relay|component]     puts the copy there again
+  testenv fault 5 save [relay|component|fetch]  copies the waiting envelope and its files
+                                            (default component: in the inbox of the listening
+                                            probe b; relay: in the inbox of the relay b; fetch:
+                                            in the inbox of serve)
+  testenv fault 5 on [relay|component|fetch]    puts the copy there again
   testenv fault 5 off                      removes the copy
 Try: testenv fault 7 on (the listening probe b does not run), send a message with --receipt,
 testenv fault 5 save, testenv fault 7 off, then testenv fault 5 on.
+With the retrieval: testenv fault 7 on fetch, testenv request ... in a second terminal,
+testenv fault 5 save fetch, testenv fault 7 off fetch, then testenv fault 5 on fetch.
 EOF
         ;;
     6)
@@ -673,8 +681,8 @@ EOF
     7)
         cat <<EOF
 Disturbance 7: the receiving component does not run.
-  testenv fault 7 on     ends the listening probe b
-  testenv fault 7 off    starts it again (it receives what waits)
+  testenv fault 7 on [listen|fetch]     ends the listening probe b (default) or serve
+  testenv fault 7 off [listen|fetch]    starts it again (it receives what waits)
 EOF
         ;;
     *) die "the disturbances are numbered 1 to 7" ;;
@@ -768,6 +776,25 @@ cmd_fault() {
         kill_pid "$(state_get "relay_pid_$side")" "$(relay_marker "$side")"
         printf '%s: the relay %s is ended hard\n' "$PROG" "$(relay_of "$side")"
         ;;
+    3:delivery)
+        # waits for the next message of a file of the retrieval at the relay and ends the relay
+        # hard at that moment, in the middle of a delivery of the retrieval
+        side=${1:-b}
+        side_ok "$side"
+        relay_running "$side" || die "the relay $(relay_of "$side") does not run"
+        delivery_log="$(side_dir "$side")/relay.log"
+        delivery_before=$(count_lines "$delivery_log" "accepted.*kind=fetch.file")
+        printf '%s: waiting for a delivery of the retrieval at the relay %s (start: testenv request ...)\n' \
+            "$PROG" "$(relay_of "$side")"
+        delivery_waited=0
+        while [ "$(count_lines "$delivery_log" "accepted.*kind=fetch.file")" -le "$delivery_before" ]; do
+            [ "$delivery_waited" -lt $((DELIVERY_WAIT * 100)) ] || die "no delivery of the retrieval in 10 minutes"
+            sleep 0.01
+            delivery_waited=$((delivery_waited + 1))
+        done
+        kill_pid "$(state_get "relay_pid_$side")" "$(relay_marker "$side")"
+        printf '%s: the relay %s is ended hard in the middle of a delivery\n' "$PROG" "$(relay_of "$side")"
+        ;;
     3:off)
         side=${1:-b}
         side_ok "$side"
@@ -788,7 +815,8 @@ cmd_fault() {
         case $where in
         component) place=$(side_dir b)/to-$(state_get listen) ;;
         relay) place=$(shared_inbox b) ;;
-        *) die "the place is relay or component" ;;
+        fetch) place=$(side_dir b)/to-$(state_get fetch) ;;
+        *) die "the place is relay, component or fetch" ;;
         esac
         saved="$env_dir/saved-$where"
         if [ "$fault_action" = save ]; then
@@ -807,7 +835,7 @@ cmd_fault() {
             printf '%s: put the envelope there again\n' "$PROG"
         fi
         ;;
-    5:off) rm -rf "$env_dir"/saved-component "$env_dir"/saved-relay ;;
+    5:off) rm -rf "$env_dir"/saved-component "$env_dir"/saved-relay "$env_dir"/saved-fetch ;;
     6:unknown-recipient)
         fault_send_probe "nobody.$(state_get network).$(relay_of b)" "to a component that is not there"
         ;;
@@ -834,13 +862,29 @@ cmd_fault() {
         return "$fault_code"
         ;;
     6:off) fault_standard false ;;
-    7:on)
-        stop_pid "$(state_get listen_pid_b)" "$(listen_marker b)"
-        printf '%s: the listening probe %s is ended\n' "$PROG" "$(address_of b "$(state_get listen)")"
-        ;;
-    7:off)
-        listen_running b || launch_listen b
-        printf '%s: the listening probe %s runs\n' "$PROG" "$(address_of b "$(state_get listen)")"
+    7:on | 7:off)
+        target=${1:-listen}
+        case $target in
+        listen)
+            if [ "$fault_action" = on ]; then
+                stop_pid "$(state_get listen_pid_b)" "$(listen_marker b)"
+                printf '%s: the listening probe %s is ended\n' "$PROG" "$(address_of b "$(state_get listen)")"
+            else
+                listen_running b || launch_listen b
+                printf '%s: the listening probe %s runs\n' "$PROG" "$(address_of b "$(state_get listen)")"
+            fi
+            ;;
+        fetch)
+            if [ "$fault_action" = on ]; then
+                stop_pid "$(state_get fetch_pid)" "$(fetch_marker)"
+                printf '%s: serve %s is ended\n' "$PROG" "$(address_of b "$(state_get fetch)")"
+            else
+                fetch_running || launch_fetch
+                printf '%s: serve %s runs\n' "$PROG" "$(address_of b "$(state_get fetch)")"
+            fi
+            ;;
+        *) die "the component is listen or fetch" ;;
+        esac
         ;;
     *)
         fault_usage "$fault_number" >&2

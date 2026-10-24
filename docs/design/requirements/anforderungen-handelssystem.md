@@ -4,7 +4,7 @@
 
 - status: `draft`
 - zweck: Anforderungen an Anwendung und Ausführung von Strategien auf konkreten Handelskonten
-- zuletzt aktualisiert: `2026-10-14`
+- zuletzt aktualisiert: `2026-10-23`
 
 ## 1. Zweck und Abgrenzung
 
@@ -18,15 +18,15 @@ Der `OrderManager`, die Entgegennahme der vom Element `Order aufgeben` übergebe
 
 Für die Kommunikation zwischen eigenständig arbeitenden Komponenten des Handelssystems wird ein gemeinsames fachliches Nachrichtensystem vorgesehen. Komponenten übergeben vollständig beschriebene Nachrichten an einen Übertragungsmechanismus und müssen Nachrichten von diesem empfangen können.
 
-Der Übertragungsmechanismus ist für Transport und Adressauflösung zuständig. Seine konkrete technische Ausgestaltung und Benennung sind noch nicht festgelegt. Insbesondere wird nicht vorausgesetzt, dass Sender und Empfänger im selben Prozess oder auf demselben Rechner laufen.
+Der Übertragungsmechanismus ist das Nachrichtensystem pipwerk relay nach den [Anforderungen an das Nachrichtensystem](anforderungen-nachrichtensystem.md). Er ist für den Transport zuständig. Insbesondere wird nicht vorausgesetzt, dass Sender und Empfänger im selben Prozess oder auf demselben Rechner laufen.
 
 ### req-grund-004 -- Allgemeines Nachrichtenformat
 
 Eine Nachricht besitzt mindestens folgende Eigenschaften:
 
 - `Nachrichten-ID` -- MUSS; vom Absender vergebene eindeutige Identifikation der einzelnen Nachricht.
-- `Absender` -- MUSS; fachlicher Absender der Nachricht.
-- `Adressat` -- MUSS; fachliches Ziel der Nachricht. Bei Nachrichten des `OrderManager` an die Kontoanbindung ist dies das betreffende `Konto`. Die Auflösung des fachlichen Adressaten auf den tatsächlichen Kommunikationsweg beziehungsweise die zuständige Komponente ist Aufgabe des Übertragungsmechanismus.
+- `Absender` -- MUSS; Adresse der sendenden laufenden Komponente (Nachrichtensystem req-relay-005).
+- `Adressat` -- MUSS; Adresse der empfangenden laufenden Komponente (Nachrichtensystem req-relay-005). Welche laufende Komponente zuständig ist, zum Beispiel für ein `Konto`, bestimmt der Absender aus seiner Konfiguration.
 - `Priorität` -- MUSS; bestimmt die relative Dringlichkeit der Nachricht. Konkrete Prioritätswerte und deren Wirkung sind noch nicht festgelegt.
 - `Nachrichtenart` -- MUSS; bezeichnet die vom Empfänger zu verarbeitende fachliche Funktion beziehungsweise den Zweck der Nachricht. Für einen ersten Prototyp kann die Nachrichtenart dem Namen der zugehörigen Empfangsfunktion entsprechen.
 - `Inhalt` -- MUSS; enthält die für die Nachrichtenart erforderlichen fachlichen Daten beziehungsweise Objekte.
@@ -91,7 +91,7 @@ Die technische Anbindung dieses Kontos wird vom fachlichen Ordermodell getrennt.
 
 Nach erfolgreicher Bestimmung und Prüfung wird eine freigegebene Order an den `OrderManager` übergeben.
 
-Der `OrderManager` übermittelt die Order über das `Nachrichtensystem` an das der Order zugeordnete `Konto`. Die Auflösung auf die zuständige Konto-Schnittstelle und den konkreten Kommunikationsweg erfolgt durch den Übertragungsmechanismus. Anschließend verwaltet der `OrderManager` den weiteren Lebenszyklus der Order.
+Der `OrderManager` übermittelt die Order über das `Nachrichtensystem` an das der Order zugeordnete `Konto`. Die Adresse der für das Konto zuständigen laufenden Komponente entnimmt der `OrderManager` seiner Konfiguration (req-grund-004). Anschließend verwaltet der `OrderManager` den weiteren Lebenszyklus der Order.
 
 Das Orderobjekt selbst muss die konkrete Konto- oder MT5-Anbindung nicht kennen.
 
@@ -125,3 +125,5 @@ Eine Order kann damit einen endgültigen Zustand erreichen, ohne jemals eine Pos
 | 2026-09-25 | Separates `Signal`-Objekt aus dem aktuellen Ablaufmodell entfernt; `OrderBuilder` wird bei entsprechendem Ergebnis der Strategieauswertung direkt aus dem Strategieablauf beauftragt. |
 | 2026-10-12 | Begriffe abgestimmt: Objekt, Element, Regelwerk, Eigenschaft, Parameter, Ergebnis. Mehrere Auslöser als Elemente zulässig. Element „Order aufgeben“, OrderBuilder offen. |
 | 2026-10-14 | Kennung req-fach-030 („Getrennte Zustände von Order und OrderManager“) in req-fach-050 umbenannt, weil req-fach-030 im Fachmodell für „Ordertypen und Kompatibilitätsliste der Anbindungen“ vergeben ist. Inhalt unverändert. |
+| 2026-10-23 | Adressat einer Nachricht ist die Adresse der empfangenden Instanz; die zuständige Instanz bestimmt der Absender aus seiner Konfiguration, nicht das Nachrichtensystem (req-grund-003, req-grund-004, Übermittlung der Order). Folge der Anforderungen an das Nachrichtensystem. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
+| 2026-10-23 | req-grund-004: Absender ist die Adresse der sendenden laufenden Komponente; „laufende Komponente“ statt „Instanz“. Entscheidung des Auftraggebers im Chat am 2026-10-23 (`relay`, B2). |

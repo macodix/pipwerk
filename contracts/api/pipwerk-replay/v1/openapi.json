@@ -3,7 +3,7 @@
   "info": {
     "title": "pipwerk replay",
     "version": "1.0.0",
-    "description": "Web API of pipwerk replay, version 1: the test accounts and the data stock of historical price data (list of series, details, brokers, import of several files, completeness). Data come into the data stock only through the import. The paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal endpoints below /api/replay/ (settings, revision) are not part of this description."
+    "description": "Web API of pipwerk replay, version 1: the test accounts and the data stock of historical price data (list of series, details, brokers, import processes with one request per file, deleting with a preview of what is deleted, completeness). Data come into the data stock only through the import. The paths below /api/v1/ are versioned; the technical endpoint /api/health and the internal endpoints below /api/replay/ (settings, revision) are not part of this description."
   },
   "paths": {
     "/api/v1/accounts": {
@@ -893,147 +893,43 @@
         }
       }
     },
-    "/api/v1/market-data/imports": {
+    "/api/v1/market-data/import-processes": {
       "post": {
         "tags": [
           "market-data"
         ],
-        "summary": "Import several files in one process",
-        "description": "Imports any number of files (at most ``max_files_per_import``, default 100; together at most ``max_import_bytes``, default 256 MiB; each at most ``max_upload_bytes``, default 32 MiB and ``max_rows`` rows, default 500 000). The body is a ``multipart/form-data`` form: ``broker`` once for all files (it also replaces the broker named in a JSON file), ``timezone`` once for all CSV files, and the parts ``file``; optionally ``instrument`` and ``data`` once per file in the order of the files (an empty value for none). JSON files (JSON format of ``contracts/market-data/v1/``, candles, ticks or instrument data) name instrument and data in their content; a given ``instrument`` replaces the one of the content, a given ``data`` must equal the one of the content. CSV files (export format of MetaTrader 5, candles or ticks) need ``instrument`` and ``data`` (a time unit or ``ticks``). Every file is taken over in a transaction of its own; rows of the same time replace those that exist; rows that fail the checks are rejected and named with a reason. A file that is refused as a whole (wrong format, nothing readable, unknown time zone, missing or unknown data) changes nothing and does not stop the others: the answer (HTTP 200) has a result per file, in the order of the files. HTTP 422 if the form is wrong or has no file, HTTP 413 if there are too many files or they are too large together, HTTP 403 if a web page of another origin sends the form (the header ``Origin`` is not the address of the backend).",
-        "operationId": "import_market_data_files",
+        "summary": "Begin an import process",
+        "description": "Begins an import process (specification 5.3 and 5.5). The client sends the files of the process one after the other, each in a request of its own to ``/market-data/import-processes/{id}/files``, and ends the process with ``finish`` or ``abort``. A process exists in the backend from its beginning to its end or abort, also between the requests of its files. It ends by itself when no request of it arrives for ``idle_timeout_seconds`` (``import_idle_timeout_seconds`` of the startup configuration, default 300); a later request of it is answered with HTTP 404. While a process exists, nothing can be deleted from the data stock (HTTP 409). There is no limit for the number of files of a process or their total size. The body is a JSON object without fields (``{}``).",
+        "operationId": "begin_market_data_import",
         "requestBody": {
-          "description": "The files and what is known about them.",
+          "description": "No fields: an empty JSON object.",
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "properties": {
-                  "file": {
-                    "items": {
-                      "type": "string",
-                      "format": "binary"
-                    },
-                    "type": "array",
-                    "description": "The files, one part each; the file name of the part names the file."
-                  },
-                  "instrument": {
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array",
-                    "description": "Optional: one value per file in the order of the files, an empty value for none. The instrument of the file at the same position."
-                  },
-                  "data": {
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array",
-                    "description": "Optional: one value per file in the order of the files, an empty value for none. The data of the file at the same position: a time unit (m1 to mn1), ticks or contract (a JSON file only)."
-                  },
-                  "broker": {
-                    "type": "string",
-                    "description": "The broker of all files of the import, also of JSON files."
-                  },
-                  "timezone": {
-                    "type": "string",
-                    "description": "IANA name of the time zone of the times in all CSV files, for example Europe/Athens; needed if there is a CSV file."
-                  }
-                },
+                "properties": {},
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "broker",
-                  "file"
-                ]
-              },
-              "examples": {
-                "form": {
-                  "summary": "The form, files shown by their names",
-                  "value": {
-                    "broker": "ExampleBroker-Live",
-                    "timezone": "Europe/Athens",
-                    "file": [
-                      "candles.json",
-                      "GBPUSD_H1_202301020000_202312292300.csv"
-                    ],
-                    "instrument": [
-                      "",
-                      "GBPUSD"
-                    ],
-                    "data": [
-                      "",
-                      "h1"
-                    ]
-                  }
-                }
+                "title": "EmptyBody",
+                "description": "A body without fields: an empty JSON object. The requests that begin or end an import\nprocess have no data, but, like every request that changes something, need a JSON body, so\nthat a web page of another origin cannot send them without a preflight request."
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "The result for every file.",
+          "201": {
+            "description": "The process was begun.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ImportOutcome"
+                  "$ref": "#/components/schemas/ImportProcess"
                 },
                 "examples": {
-                  "one_refused": {
-                    "summary": "Three files, one of them refused",
+                  "begun": {
+                    "summary": "A process",
                     "value": {
-                      "files": [
-                        {
-                          "name": "EURUSD_M1_202401021000_202401021004.json",
-                          "refused": false,
-                          "result": {
-                            "kind": "candles",
-                            "broker": "ExampleBroker-Live",
-                            "instrument": "EURUSD",
-                            "unit": "m1",
-                            "accepted": 4,
-                            "replaced": 0,
-                            "period_start": "2024-01-02T10:00:00Z",
-                            "period_end": "2024-01-02T10:04:00Z",
-                            "rejected": [
-                              {
-                                "row": 3,
-                                "reason": "high_below_open"
-                              }
-                            ],
-                            "rejected_count": 1
-                          },
-                          "error": null,
-                          "message": null
-                        },
-                        {
-                          "name": "EURUSD,TICKS.csv",
-                          "refused": false,
-                          "result": {
-                            "kind": "ticks",
-                            "broker": "ExampleBroker-Live",
-                            "instrument": "EURUSD",
-                            "unit": null,
-                            "accepted": 2,
-                            "replaced": 0,
-                            "period_start": "2024-01-02T08:00:00.250000Z",
-                            "period_end": "2024-01-02T08:00:01.500000Z",
-                            "rejected": [],
-                            "rejected_count": 0
-                          },
-                          "error": null,
-                          "message": null
-                        },
-                        {
-                          "name": "broken.json",
-                          "refused": true,
-                          "result": null,
-                          "error": "json_invalid",
-                          "message": "The file is not valid JSON."
-                        }
-                      ],
-                      "imported_count": 2,
-                      "refused_count": 1
+                      "id": "8b0b7a9e-5f0e-4c43-9a46-5d3f2e1c7a10",
+                      "idle_timeout_seconds": 300
                     }
                   }
                 }
@@ -1041,57 +937,142 @@
             }
           },
           "413": {
-            "description": "Too many files or too large together (``ImportRefused``), or the request body is larger than the limit (``ApiError``).",
+            "description": "The request body is larger than the limit.",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ImportRefused"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiError"
-                    }
-                  ],
-                  "title": "Response 413 Import Market Data Files"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-processes/{id}/files": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Import one file of an import process",
+        "description": "Imports one file of the process, in a transaction of its own (specification 5.3). The body is a ``multipart/form-data`` form with exactly one part ``file`` and: ``broker`` (the same for all files of the process; it also replaces the broker named in a JSON file), ``timezone`` (the same for all CSV files of the process), and optionally ``instrument`` and ``data``. JSON files (JSON format of ``contracts/market-data/v1/``, candles, ticks or instrument data) name instrument and data in their content; a given ``instrument`` replaces the one of the content, a given ``data`` must equal the one of the content. CSV files (export format of MetaTrader 5, candles or ticks) need ``instrument`` and ``data`` (a time unit or ``ticks``) and ``timezone``. Rows of the same time replace those that exist; rows that fail the checks are rejected and named with a reason; a CSV file covers whole days of its time zone. A file that is refused as a whole (wrong format, nothing readable, unknown time zone, missing or unknown data, larger than the limit per file or with more rows than the limit) changes nothing and does not stop the process: the answer (HTTP 200) has ``refused`` true and ``error`` and ``message``. The limit per file is ``max_upload_bytes`` (default 32 MiB) and ``max_rows`` rows (default 500 000); ``message`` names it in the unit of the user. A request whose body is larger than the file limit plus the envelope of the form is answered with HTTP 413 (``FileTooLarge``) before it is read; the client treats it as the refusal ``too_large`` of that file. Each request starts the idle time of the process again. HTTP 404 if the process does not exist (any more), HTTP 422 if the form is wrong or has no or more than one file, HTTP 403 if a web page of another origin sends the form (the header ``Origin`` is not the address of the backend), HTTP 429 if too many files are being imported at the same time.",
+        "operationId": "import_market_data_file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the import process (from its beginning).",
+              "title": "Id"
+            },
+            "description": "Identifier of the import process (from its beginning)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result for the file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileOutcome"
                 },
                 "examples": {
-                  "too_many_files": {
-                    "summary": "More files than allowed",
+                  "imported": {
+                    "summary": "A file that was taken over",
                     "value": {
-                      "detail": "The import is refused as a whole.",
-                      "code": "too_many_files",
-                      "message": "The process has more than 100 files."
+                      "name": "EURUSD_M1_202401021000_202401021004.json",
+                      "refused": false,
+                      "result": {
+                        "kind": "candles",
+                        "broker": "ExampleBroker-Live",
+                        "instrument": "EURUSD",
+                        "unit": "m1",
+                        "accepted": 4,
+                        "replaced": 0,
+                        "period_start": "2024-01-02T10:00:00Z",
+                        "period_end": "2024-01-02T10:04:00Z",
+                        "rejected": [
+                          {
+                            "row": 3,
+                            "reason": "high_below_open"
+                          }
+                        ],
+                        "rejected_count": 1
+                      },
+                      "error": null,
+                      "message": null
+                    }
+                  },
+                  "refused": {
+                    "summary": "A file that was refused",
+                    "value": {
+                      "name": "broken.json",
+                      "refused": true,
+                      "result": null,
+                      "error": "json_invalid",
+                      "message": "The file is not valid JSON."
                     }
                   }
                 }
               }
             }
           },
-          "422": {
-            "description": "No file (``ImportRefused``) or the form is wrong (``InvalidRequest``).",
+          "413": {
+            "description": "The body is larger than the limit per file plus the envelope of the form (``FileTooLarge``), or the request is not a file request (``ApiError``).",
             "content": {
               "application/json": {
+                "examples": {
+                  "too_large": {
+                    "summary": "A file over the limit",
+                    "value": {
+                      "detail": "The file is larger than the limit of 32 MiB per file.",
+                      "code": "too_large",
+                      "max_bytes": 33554432
+                    }
+                  }
+                },
                 "schema": {
                   "anyOf": [
                     {
-                      "$ref": "#/components/schemas/ImportRefused"
+                      "$ref": "#/components/schemas/FileTooLarge"
                     },
                     {
-                      "$ref": "#/components/schemas/InvalidRequest"
+                      "$ref": "#/components/schemas/ApiError"
                     }
                   ],
-                  "title": "Response 422 Import Market Data Files"
-                },
+                  "title": "Response 413 Import Market Data File"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The form is wrong (``InvalidRequest``).",
+            "content": {
+              "application/json": {
                 "examples": {
-                  "no_files": {
-                    "summary": "The form has no file",
-                    "value": {
-                      "detail": "The import is refused as a whole.",
-                      "code": "no_files",
-                      "message": "The process has no file."
-                    }
-                  },
                   "missing_broker": {
                     "summary": "The broker is missing",
                     "value": {
@@ -1106,6 +1087,447 @@
                       ]
                     }
                   }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request comes from a web page of another origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The import process does not exist. It has ended or its time has run out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many imports are running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "The file and what is known about it.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file, exactly one part; the file name of the part names the file."
+                  },
+                  "instrument": {
+                    "type": "string",
+                    "description": "Optional: the instrument of the file; an empty value says none."
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "Optional: the data of the file; an empty value says none. A time unit (m1 to mn1), ticks or contract (a JSON file only)."
+                  },
+                  "broker": {
+                    "type": "string",
+                    "description": "The broker of all files of the import process, also of JSON files."
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "description": "IANA name of the time zone of the times in all CSV files of the process, for example Europe/Athens; needed if the file is a CSV file."
+                  }
+                },
+                "required": [
+                  "broker",
+                  "file"
+                ],
+                "additionalProperties": false
+              },
+              "examples": {
+                "form": {
+                  "summary": "The form, the file shown by its name",
+                  "value": {
+                    "broker": "ExampleBroker-Live",
+                    "timezone": "Europe/Athens",
+                    "file": "GBPUSD_H1_202301020000_202312292300.csv",
+                    "instrument": "GBPUSD",
+                    "data": "h1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-processes/{id}/finish": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "End an import process",
+        "description": "Ends the process after its last file. The answer counts the files that were taken over and the files that were refused. The data stock can be deleted from again when no other process exists. The body is a JSON object without fields (``{}``). HTTP 404 if the process does not exist (any more).",
+        "operationId": "finish_market_data_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the import process (from its beginning).",
+              "title": "Id"
+            },
+            "description": "Identifier of the import process (from its beginning)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The process has ended.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProcessEnd"
+                },
+                "examples": {
+                  "finished": {
+                    "summary": "A process that was finished",
+                    "value": {
+                      "id": "8b0b7a9e-5f0e-4c43-9a46-5d3f2e1c7a10",
+                      "state": "finished",
+                      "imported_count": 11,
+                      "refused_count": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The import process does not exist. It has ended or its time has run out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "No fields: an empty JSON object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "description": "A body without fields: an empty JSON object. The requests that begin or end an import\nprocess have no data, but, like every request that changes something, need a JSON body, so\nthat a web page of another origin cannot send them without a preflight request.",
+                "properties": {},
+                "title": "EmptyBody",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-processes/{id}/abort": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Abort an import process",
+        "description": "Aborts the process: it ends, and the files that were taken over stay taken over (each was a transaction of its own). A file that is being imported at this moment is finished by its own request. Files that were not begun are not imported; the client names them 'not imported'. The body is a JSON object without fields (``{}``). HTTP 404 if the process does not exist (any more).",
+        "operationId": "abort_market_data_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the import process (from its beginning).",
+              "title": "Id"
+            },
+            "description": "Identifier of the import process (from its beginning)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The process has ended.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProcessEnd"
+                },
+                "examples": {
+                  "aborted": {
+                    "summary": "A process that was aborted",
+                    "value": {
+                      "id": "8b0b7a9e-5f0e-4c43-9a46-5d3f2e1c7a10",
+                      "state": "aborted",
+                      "imported_count": 4,
+                      "refused_count": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The import process does not exist. It has ended or its time has run out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "No fields: an empty JSON object.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "description": "A body without fields: an empty JSON object. The requests that begin or end an import\nprocess have no data, but, like every request that changes something, need a JSON body, so\nthat a web page of another origin cannot send them without a preflight request.",
+                "properties": {},
+                "title": "EmptyBody",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/import-preview": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Read what a file says about itself",
+        "description": "For the dialog of the import: tells for one file, without importing anything, its format (``json`` or ``csv``), and the broker, instrument and data it names. A JSON file names them in its content; a CSV file in its name, as far as the name follows ``<Instrument>_<Data>_<from>_<to>`` (the export of MetaTrader 5 and the files meant for the import, for example ``EURUSD_H1_202301020000_202312292300.csv``) or ``<Instrument>,<Data>`` (also with ``_`` or a space, for example ``EURUSD,H1.csv``), with ``<Data>`` a time unit, ``TICKS`` or ``CONTRACT``, without regard to case. The content of a CSV file is not read, so the client may send it empty. The dialog asks once per file and compares the brokers that JSON files name: if all name the same, it is the broker of the process. The form is that of the request of a file, with the part ``file`` only (exactly one); the limit per file and the answers 413 and 422 are those of the import of a file. No import process is needed.",
+        "operationId": "preview_market_data_import",
+        "requestBody": {
+          "description": "The file.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file, exactly one part; the file name of the part names the file."
+                  },
+                  "instrument": {
+                    "type": "string",
+                    "description": "Optional: the instrument of the file; an empty value says none."
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "Optional: the data of the file; an empty value says none. A time unit (m1 to mn1), ticks or contract (a JSON file only)."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "file"
+                ]
+              },
+              "examples": {
+                "form": {
+                  "summary": "The form, the file shown by its name",
+                  "value": {
+                    "file": "GBPUSD_H1_202301020000_202312292300.csv"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What the file says about itself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileHint"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "A JSON file",
+                    "value": {
+                      "name": "candles.json",
+                      "format": "json",
+                      "broker": "ExampleBroker-Live",
+                      "instrument": "EURUSD",
+                      "data": "m1",
+                      "error": null
+                    }
+                  },
+                  "csv": {
+                    "summary": "A CSV file with a known name",
+                    "value": {
+                      "name": "GBPUSD_H1_202301020000_202312292300.csv",
+                      "format": "csv",
+                      "broker": null,
+                      "instrument": "GBPUSD",
+                      "data": "h1",
+                      "error": null
+                    }
+                  },
+                  "unknown": {
+                    "summary": "A CSV file with an unknown name",
+                    "value": {
+                      "name": "notes.csv",
+                      "format": "csv",
+                      "broker": null,
+                      "instrument": null,
+                      "data": null,
+                      "error": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than the limit per file plus the envelope of the form (``FileTooLarge``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FileTooLarge"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  ],
+                  "title": "Response 413 Preview Market Data Import"
+                },
+                "examples": {
+                  "too_large": {
+                    "summary": "A file over the limit",
+                    "value": {
+                      "detail": "The file is larger than the limit of 32 MiB per file.",
+                      "code": "too_large",
+                      "max_bytes": 33554432
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The form is wrong (``InvalidRequest``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
                 }
               }
             }
@@ -1153,59 +1575,85 @@
         }
       }
     },
-    "/api/v1/market-data/imports/preview": {
+    "/api/v1/market-data/deletions/series": {
       "post": {
         "tags": [
           "market-data"
         ],
-        "summary": "Read what files say about themselves",
-        "description": "For the dialog of the import: tells for each file, without importing anything, its format (``json`` or ``csv``), and the broker, instrument and data it names. A JSON file names them in its content; a CSV file in its name, as far as the name follows ``<Instrument>_<Data>_<from>_<to>`` (the export of MetaTrader 5 and the files meant for the import, for example ``EURUSD_H1_202301020000_202312292300.csv``) or ``<Instrument>,<Data>`` (also with ``_`` or a space, for example ``EURUSD,H1.csv``), with ``<Data>`` a time unit, ``TICKS`` or ``CONTRACT``, without regard to case. The content of a CSV file is not read, so the client may send it empty. ``broker`` of the answer is the broker that all JSON files name (``null`` if there is none, or they name none or different ones). The form is that of the import, with the parts ``file`` only; the limits are those of the import.",
-        "operationId": "preview_market_data_import",
+        "summary": "Delete a whole series",
+        "description": "Deletes the candles of a time unit or the ticks of an instrument at a broker with their covered periods and trading hours (specification 5.5). With ``confirm`` false it only tells what would be deleted (broker, instrument, data, number of candles or ticks); with ``confirm`` true it deletes, in one transaction, and tells what was deleted. The deletion cannot be undone; the client asks the user first. Refused with HTTP 409 while an import process exists (the preview, too). If this removes the last data of the broker, the broker no longer occurs in the data stock, and if it was the broker for test runs, no broker is chosen afterwards (``test_run_broker_reset``). Saved backtests stay unchanged.",
+        "operationId": "delete_market_data_series",
         "requestBody": {
-          "description": "The files.",
+          "description": "The series, and whether to delete.",
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
                 "properties": {
-                  "file": {
-                    "items": {
-                      "type": "string",
-                      "format": "binary"
-                    },
-                    "type": "array",
-                    "description": "The files, one part each; the file name of the part names the file."
+                  "broker": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Broker"
                   },
                   "instrument": {
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array",
-                    "description": "Optional: one value per file in the order of the files, an empty value for none. The instrument of the file at the same position."
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Instrument"
                   },
                   "data": {
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array",
-                    "description": "Optional: one value per file in the order of the files, an empty value for none. The data of the file at the same position: a time unit (m1 to mn1), ticks or contract (a JSON file only)."
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "m1",
+                          "m2",
+                          "m3",
+                          "m4",
+                          "m5",
+                          "m6",
+                          "m10",
+                          "m12",
+                          "m15",
+                          "m20",
+                          "m30",
+                          "h1",
+                          "h2",
+                          "h3",
+                          "h4",
+                          "h6",
+                          "h8",
+                          "h12",
+                          "d1",
+                          "w1",
+                          "mn1"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "const": "ticks"
+                      }
+                    ],
+                    "title": "Data"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "title": "Confirm",
+                    "description": "``false``: only tell what would be deleted, nothing is changed. ``true``: delete, in one transaction, and tell what was deleted."
                   }
                 },
                 "additionalProperties": false,
                 "type": "object",
                 "required": [
-                  "file"
-                ]
-              },
-              "examples": {
-                "form": {
-                  "summary": "The form, files shown by their names",
-                  "value": {
-                    "file": [
-                      "candles.json",
-                      "GBPUSD_H1_202301020000_202312292300.csv"
-                    ]
-                  }
-                }
+                  "broker",
+                  "instrument",
+                  "data",
+                  "confirm"
+                ],
+                "title": "SeriesDeletionRequest",
+                "description": "Delete a whole series: the candles of a time unit or the ticks of an instrument at a\nbroker, with their covered periods."
               }
             }
           },
@@ -1213,43 +1661,94 @@
         },
         "responses": {
           "200": {
-            "description": "The hints, per file.",
+            "description": "What is deleted (``deleted`` true) or would be deleted (``deleted`` false, nothing was changed).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ImportPreview"
+                  "$ref": "#/components/schemas/DeletionResult"
                 },
                 "examples": {
-                  "hints": {
-                    "summary": "A JSON file, a CSV file with a known name, one with an unknown",
+                  "preview": {
+                    "summary": "What deleting a series would remove",
                     "value": {
-                      "files": [
-                        {
-                          "name": "candles.json",
-                          "format": "json",
-                          "broker": "ExampleBroker-Live",
-                          "instrument": "EURUSD",
-                          "data": "m1",
-                          "error": null
-                        },
-                        {
-                          "name": "GBPUSD_H1_202301020000_202312292300.csv",
-                          "format": "csv",
-                          "broker": null,
-                          "instrument": "GBPUSD",
-                          "data": "h1",
-                          "error": null
-                        },
-                        {
-                          "name": "notes.csv",
-                          "format": "csv",
-                          "broker": null,
-                          "instrument": null,
-                          "data": null,
-                          "error": null
-                        }
-                      ],
-                      "broker": "ExampleBroker-Live"
+                      "kind": "series",
+                      "deleted": false,
+                      "broker": "ExampleBroker-Live",
+                      "instrument": "EURUSD",
+                      "data": "m1",
+                      "start": null,
+                      "end": null,
+                      "candle_count": 360,
+                      "tick_count": 0,
+                      "series_count": 1,
+                      "instrument_count": 0,
+                      "broker_removed": false,
+                      "test_run_broker_reset": false,
+                      "test_run_broker": {
+                        "broker": "ExampleBroker-Live",
+                        "chosen": true
+                      }
+                    }
+                  },
+                  "deleted": {
+                    "summary": "A series that was deleted",
+                    "value": {
+                      "kind": "series",
+                      "deleted": true,
+                      "broker": "ExampleBroker-Live",
+                      "instrument": "EURUSD",
+                      "data": "m1",
+                      "start": null,
+                      "end": null,
+                      "candle_count": 360,
+                      "tick_count": 0,
+                      "series_count": 1,
+                      "instrument_count": 0,
+                      "broker_removed": false,
+                      "test_run_broker_reset": false,
+                      "test_run_broker": {
+                        "broker": "ExampleBroker-Live",
+                        "chosen": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The broker, the instrument, the series or the period is unknown: nothing was changed (``DeletionRefused``, ``code`` tells which).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionRefused"
+                },
+                "examples": {
+                  "unknown": {
+                    "summary": "An unknown broker",
+                    "value": {
+                      "detail": "The data cannot be deleted: the broker, the data or the period is unknown.",
+                      "code": "broker_unknown",
+                      "message": "The broker does not occur in the data store."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An import process exists: nothing was changed (``DeletionBlocked``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionBlocked"
+                },
+                "examples": {
+                  "running": {
+                    "summary": "An import process exists",
+                    "value": {
+                      "detail": "Data cannot be deleted while an import process exists. End it first.",
+                      "reason": "import_running"
                     }
                   }
                 }
@@ -1257,35 +1756,7 @@
             }
           },
           "413": {
-            "description": "Too many files (``ImportRefused``) or the request body is larger than the limit (``ApiError``).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ImportRefused"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ApiError"
-                    }
-                  ],
-                  "title": "Response 413 Preview Market Data Import"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The form is wrong (``InvalidRequest``).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InvalidRequest"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The request comes from a web page of another origin.",
+            "description": "The request body is larger than the limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1304,12 +1775,571 @@
               }
             }
           },
-          "429": {
-            "description": "Too many imports are running.",
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/deletions/period": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Delete a period of a series",
+        "description": "Deletes the candles or ticks from ``start`` (included) to ``end`` (excluded), UTC and on the minute, and takes the period out of the covered periods of the series (specification 5.5). A period inside the series becomes a gap if it contains trading time. A series without a candle or tick left no longer exists. With ``confirm`` false it only tells what would be deleted. HTTP 404 with the code ``period_empty`` if the series has neither data nor a covered period in the period. The other rules are those of the deletion of a series.",
+        "operationId": "delete_market_data_period",
+        "requestBody": {
+          "description": "The series, the period, and whether to delete.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "broker": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Broker"
+                  },
+                  "instrument": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Instrument"
+                  },
+                  "data": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "m1",
+                          "m2",
+                          "m3",
+                          "m4",
+                          "m5",
+                          "m6",
+                          "m10",
+                          "m12",
+                          "m15",
+                          "m20",
+                          "m30",
+                          "h1",
+                          "h2",
+                          "h3",
+                          "h4",
+                          "h6",
+                          "h8",
+                          "h12",
+                          "d1",
+                          "w1",
+                          "mn1"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "const": "ticks"
+                      }
+                    ],
+                    "title": "Data"
+                  },
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "title": "Start",
+                    "description": "Start of the period, included. ISO 8601 with time zone, on the minute."
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "title": "End",
+                    "description": "End of the period, excluded. ISO 8601 with time zone, on the minute."
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "title": "Confirm",
+                    "description": "``false``: only tell what would be deleted, nothing is changed. ``true``: delete, in one transaction, and tell what was deleted."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "broker",
+                  "instrument",
+                  "data",
+                  "start",
+                  "end",
+                  "confirm"
+                ],
+                "title": "PeriodDeletionRequest",
+                "description": "Delete a period of a series: the candles or ticks from ``start`` (included) to ``end``\n(excluded). The period is taken out of the covered periods of the series."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What is deleted (``deleted`` true) or would be deleted (``deleted`` false, nothing was changed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionResult"
+                },
+                "examples": {
+                  "deleted": {
+                    "summary": "A period that was deleted",
+                    "value": {
+                      "kind": "period",
+                      "deleted": true,
+                      "broker": "ExampleBroker-Live",
+                      "instrument": "EURUSD",
+                      "data": "m1",
+                      "start": "2024-01-02T11:00:00Z",
+                      "end": "2024-01-02T12:00:00Z",
+                      "candle_count": 60,
+                      "tick_count": 0,
+                      "series_count": 0,
+                      "instrument_count": 0,
+                      "broker_removed": false,
+                      "test_run_broker_reset": false,
+                      "test_run_broker": {
+                        "broker": "ExampleBroker-Live",
+                        "chosen": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The broker, the instrument, the series or the period is unknown: nothing was changed (``DeletionRefused``, ``code`` tells which).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionRefused"
+                },
+                "examples": {
+                  "unknown": {
+                    "summary": "An unknown broker",
+                    "value": {
+                      "detail": "The data cannot be deleted: the broker, the data or the period is unknown.",
+                      "code": "broker_unknown",
+                      "message": "The broker does not occur in the data store."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An import process exists: nothing was changed (``DeletionBlocked``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionBlocked"
+                },
+                "examples": {
+                  "running": {
+                    "summary": "An import process exists",
+                    "value": {
+                      "detail": "Data cannot be deleted while an import process exists. End it first.",
+                      "reason": "import_running"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/deletions/contract": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Delete the instrument data of an instrument",
+        "description": "Deletes all instrument data (contract size, tick value, swap, margin; every version) of an instrument at a broker (specification 5.5). They have no time and are deleted as a whole. With ``confirm`` false it only tells what would be deleted. The other rules are those of the deletion of a series.",
+        "operationId": "delete_market_data_contract",
+        "requestBody": {
+          "description": "The instrument, and whether to delete.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "broker": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Broker"
+                  },
+                  "instrument": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Instrument"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "title": "Confirm",
+                    "description": "``false``: only tell what would be deleted, nothing is changed. ``true``: delete, in one transaction, and tell what was deleted."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "broker",
+                  "instrument",
+                  "confirm"
+                ],
+                "title": "ContractDeletionRequest",
+                "description": "Delete all instrument data of an instrument at a broker."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What is deleted (``deleted`` true) or would be deleted (``deleted`` false, nothing was changed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionResult"
+                },
+                "examples": {
+                  "deleted": {
+                    "summary": "Instrument data that were deleted",
+                    "value": {
+                      "kind": "contract",
+                      "deleted": true,
+                      "broker": "ExampleBroker-Live",
+                      "instrument": "EURUSD",
+                      "data": null,
+                      "start": null,
+                      "end": null,
+                      "candle_count": 0,
+                      "tick_count": 0,
+                      "series_count": 0,
+                      "instrument_count": 1,
+                      "broker_removed": false,
+                      "test_run_broker_reset": false,
+                      "test_run_broker": {
+                        "broker": "ExampleBroker-Live",
+                        "chosen": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The broker, the instrument, the series or the period is unknown: nothing was changed (``DeletionRefused``, ``code`` tells which).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionRefused"
+                },
+                "examples": {
+                  "unknown": {
+                    "summary": "An unknown broker",
+                    "value": {
+                      "detail": "The data cannot be deleted: the broker, the data or the period is unknown.",
+                      "code": "broker_unknown",
+                      "message": "The broker does not occur in the data store."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An import process exists: nothing was changed (``DeletionBlocked``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionBlocked"
+                },
+                "examples": {
+                  "running": {
+                    "summary": "An import process exists",
+                    "value": {
+                      "detail": "Data cannot be deleted while an import process exists. End it first.",
+                      "reason": "import_running"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The stored value is invalid or the data store failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-data/deletions/broker": {
+      "post": {
+        "tags": [
+          "market-data"
+        ],
+        "summary": "Delete all data of a broker",
+        "description": "Deletes all series and all instrument data of a broker (specification 5.5). The broker no longer occurs in the data stock afterwards (``broker_removed``). If it was the broker for test runs, no broker is chosen afterwards (``test_run_broker_reset`` true; ``test_run_broker`` is then the first broker of the data stock, ``chosen`` false), and a later import of the same broker does not choose it again. With ``confirm`` false it only tells what would be deleted (number of series, candles, ticks, instruments). The other rules are those of the deletion of a series.",
+        "operationId": "delete_market_data_broker",
+        "requestBody": {
+          "description": "The broker, and whether to delete.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "broker": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^\\S(?:[^\\x00-\\x1f\\x7f]*\\S)?$",
+                    "title": "Broker"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "title": "Confirm",
+                    "description": "``false``: only tell what would be deleted, nothing is changed. ``true``: delete, in one transaction, and tell what was deleted."
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "broker",
+                  "confirm"
+                ],
+                "title": "BrokerDeletionRequest",
+                "description": "Delete all data of a broker: all its series and all its instrument data. The broker no\nlonger occurs in the data stock afterwards."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What is deleted (``deleted`` true) or would be deleted (``deleted`` false, nothing was changed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionResult"
+                },
+                "examples": {
+                  "preview": {
+                    "summary": "What deleting a broker would remove",
+                    "value": {
+                      "kind": "broker",
+                      "deleted": false,
+                      "broker": "ExampleBroker-Live",
+                      "instrument": null,
+                      "data": null,
+                      "start": null,
+                      "end": null,
+                      "candle_count": 1440,
+                      "tick_count": 52000,
+                      "series_count": 4,
+                      "instrument_count": 2,
+                      "broker_removed": true,
+                      "test_run_broker_reset": true,
+                      "test_run_broker": {
+                        "broker": "ExampleBroker-Live",
+                        "chosen": true
+                      }
+                    }
+                  },
+                  "deleted": {
+                    "summary": "A broker that was deleted",
+                    "value": {
+                      "kind": "broker",
+                      "deleted": true,
+                      "broker": "ExampleBroker-Live",
+                      "instrument": null,
+                      "data": null,
+                      "start": null,
+                      "end": null,
+                      "candle_count": 1440,
+                      "tick_count": 52000,
+                      "series_count": 4,
+                      "instrument_count": 2,
+                      "broker_removed": true,
+                      "test_run_broker_reset": true,
+                      "test_run_broker": {
+                        "broker": "Other-Server 2",
+                        "chosen": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The broker, the instrument, the series or the period is unknown: nothing was changed (``DeletionRefused``, ``code`` tells which).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionRefused"
+                },
+                "examples": {
+                  "unknown": {
+                    "summary": "An unknown broker",
+                    "value": {
+                      "detail": "The data cannot be deleted: the broker, the data or the period is unknown.",
+                      "code": "broker_unknown",
+                      "message": "The broker does not occur in the data store."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An import process exists: nothing was changed (``DeletionBlocked``).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionBlocked"
+                },
+                "examples": {
+                  "running": {
+                    "summary": "An import process exists",
+                    "value": {
+                      "detail": "Data cannot be deleted while an import process exists. End it first.",
+                      "reason": "import_running"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body has the wrong media type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request or the body does not fit the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequest"
                 }
               }
             }
@@ -1712,15 +2742,32 @@
         "title": "ApiError",
         "description": "Error body with a fixed text. It names no path, no exception text and no input."
       },
-      "BatchErrorCode": {
-        "type": "string",
-        "enum": [
-          "no_files",
-          "too_many_files",
-          "batch_too_large"
+      "BrokerForTestRuns": {
+        "properties": {
+          "broker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Broker"
+          },
+          "chosen": {
+            "type": "boolean",
+            "title": "Chosen"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "broker",
+          "chosen"
         ],
-        "title": "BatchErrorCode",
-        "description": "Why a whole import process was refused. Nothing was read or changed."
+        "title": "BrokerForTestRuns",
+        "description": "The broker for test runs: ``broker`` is the broker whose data a test run uses. It is the\nchosen broker if that occurs in the data stock (``chosen`` is ``true``), otherwise the first\nbroker of the data stock in alphabetical order (``chosen`` is ``false``); ``null`` only if\nthe data stock has no broker at all."
       },
       "Brokers": {
         "properties": {
@@ -1828,6 +2875,179 @@
         ],
         "title": "Completeness",
         "description": "The completeness of the needed parts at one broker, in the order of the request."
+      },
+      "DeletionBlocked": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "reason": {
+            "type": "string",
+            "const": "import_running",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "reason"
+        ],
+        "title": "DeletionBlocked",
+        "description": "Error body (HTTP 409) of a deletion that is refused because something is going on that\nneeds the data. ``reason`` is ``import_running`` while an import process exists. Nothing was\nchanged. Later versions add reasons (a running backtest, a step-by-step session)."
+      },
+      "DeletionErrorCode": {
+        "type": "string",
+        "enum": [
+          "broker_unknown",
+          "instrument_unknown",
+          "series_unknown",
+          "contract_unknown",
+          "period_invalid",
+          "period_empty"
+        ],
+        "title": "DeletionErrorCode",
+        "description": "Why a deletion is refused. Nothing was changed."
+      },
+      "DeletionRefused": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "code": {
+            "$ref": "#/components/schemas/DeletionErrorCode"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "code",
+          "message"
+        ],
+        "title": "DeletionRefused",
+        "description": "Error body (HTTP 404) of a deletion that is refused because the broker, the instrument,\nthe series or the period is unknown. Nothing was changed. ``code`` tells which; ``message``\nis a fixed text."
+      },
+      "DeletionResult": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "series",
+              "period",
+              "contract",
+              "broker"
+            ],
+            "title": "Kind"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "broker": {
+            "type": "string",
+            "title": "Broker"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrument"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "candle_count": {
+            "type": "integer",
+            "title": "Candle Count"
+          },
+          "tick_count": {
+            "type": "integer",
+            "title": "Tick Count"
+          },
+          "series_count": {
+            "type": "integer",
+            "title": "Series Count"
+          },
+          "instrument_count": {
+            "type": "integer",
+            "title": "Instrument Count"
+          },
+          "broker_removed": {
+            "type": "boolean",
+            "title": "Broker Removed"
+          },
+          "test_run_broker_reset": {
+            "type": "boolean",
+            "title": "Test Run Broker Reset"
+          },
+          "test_run_broker": {
+            "$ref": "#/components/schemas/BrokerForTestRuns"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "deleted",
+          "broker",
+          "instrument",
+          "data",
+          "start",
+          "end",
+          "candle_count",
+          "tick_count",
+          "series_count",
+          "instrument_count",
+          "broker_removed",
+          "test_run_broker_reset",
+          "test_run_broker"
+        ],
+        "title": "DeletionResult",
+        "description": "What a deletion removes (``deleted`` is ``false``, nothing was changed) or removed\n(``deleted`` is ``true``).\n\n``instrument`` and ``data`` are set for a series and a period (``data`` is a time unit or\n``ticks``) and for instrument data (``instrument`` only); ``start`` and ``end`` for a\nperiod. ``candle_count`` and ``tick_count`` count the candles and ticks that are or were\nremoved. ``series_count`` counts the series that no longer exist afterwards (a period\nremoves its series if no candle or tick is left). ``instrument_count`` counts the instruments\nwhose instrument data are or were removed. ``broker_removed`` tells whether the broker no\nlonger occurs in the data stock afterwards.\n\n``test_run_broker_reset`` is ``true`` if the broker is the one chosen for test runs and no\nlonger occurs afterwards: then no broker is chosen afterwards (specification 5.1), and a\nlater import of the same broker does not choose it again. ``test_run_broker`` is the broker\nfor test runs after the deletion (with ``deleted`` ``false`` the current one)."
       },
       "ErrorPlace": {
         "properties": {
@@ -2002,14 +3222,67 @@
         "title": "FileOutcome",
         "description": "The result for one file of an import, in the order of the files of the request.\n\nEither ``result`` is set (the file was taken over; single rows may be rejected, see\n``result``) or ``error`` and ``message`` (the whole file is refused and nothing of it was\nchanged). ``refused`` tells which. ``name`` is the name of the file without a directory.\n``message`` is a fixed text that names fields, never content of the file."
       },
-      "ImportOutcome": {
+      "FileTooLarge": {
         "properties": {
-          "files": {
-            "items": {
-              "$ref": "#/components/schemas/FileOutcome"
-            },
-            "type": "array",
-            "title": "Files"
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "code": {
+            "type": "string",
+            "const": "too_large",
+            "title": "Code"
+          },
+          "max_bytes": {
+            "type": "integer",
+            "title": "Max Bytes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "code",
+          "max_bytes"
+        ],
+        "title": "FileTooLarge",
+        "description": "Error body (HTTP 413) of the request of a file that is larger than the limit per file.\n``detail`` names the limit in the unit of the user, ``max_bytes`` is the limit in bytes\n(``max_upload_bytes`` of the startup configuration). The same reason as the code\n``too_large`` of a refused file."
+      },
+      "ImportProcess": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Identifier of the process; the path of its requests."
+          },
+          "idle_timeout_seconds": {
+            "type": "integer",
+            "title": "Idle Timeout Seconds",
+            "description": "The process ends by itself when no request of it arrives for this long."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "idle_timeout_seconds"
+        ],
+        "title": "ImportProcess",
+        "description": "An import process that was begun. It exists until it is ended or aborted, or until no\nrequest of it has arrived for ``idle_timeout_seconds``; then it ends by itself. While it\nexists, nothing can be deleted from the data stock."
+      },
+      "ImportProcessEnd": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "finished",
+              "aborted"
+            ],
+            "title": "State"
           },
           "imported_count": {
             "type": "integer",
@@ -2023,66 +3296,13 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "files",
+          "id",
+          "state",
           "imported_count",
           "refused_count"
         ],
-        "title": "ImportOutcome",
-        "description": "The result of an import of several files. A refused file does not stop the others.\n``imported_count`` counts the files that were taken over, ``refused_count`` those that\nwere refused."
-      },
-      "ImportPreview": {
-        "properties": {
-          "files": {
-            "items": {
-              "$ref": "#/components/schemas/FileHint"
-            },
-            "type": "array",
-            "title": "Files"
-          },
-          "broker": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Broker"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "files",
-          "broker"
-        ],
-        "title": "ImportPreview",
-        "description": "The hints for the dialog of an import, one per file in the order of the request.\n\n``broker`` is the broker that all JSON files name, ``null`` if there is no JSON file, one of\nthem names none or they name different ones."
-      },
-      "ImportRefused": {
-        "properties": {
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          },
-          "code": {
-            "$ref": "#/components/schemas/BatchErrorCode"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "detail",
-          "code",
-          "message"
-        ],
-        "title": "ImportRefused",
-        "description": "Error body for an import that is refused as a whole (nothing was read or changed): no\nfile (HTTP 422), more files than ``max_files_per_import`` or larger together than\n``max_import_bytes`` (HTTP 413). ``message`` is a fixed text."
+        "title": "ImportProcessEnd",
+        "description": "An import process that has ended. ``imported_count`` counts the files that were taken\nover, ``refused_count`` those that were refused, so far. Files that were taken over stay\ntaken over, also after an abort."
       },
       "ImportResult": {
         "properties": {

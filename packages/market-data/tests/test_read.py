@@ -121,10 +121,15 @@ def test_instrument_info_as_of_a_moment(store: MarketDataStore) -> None:
 
 
 def test_overview(store: MarketDataStore) -> None:
+    # two files with a hole between their periods: 10:50 to 11:10
     times = [
         t for t in minutes(START, 180) if not utc(2024, 1, 2, 10, 50) <= t < utc(2024, 1, 2, 11, 10)
     ]
-    store.import_json(to_bytes(candle_document([candle_entry(t) for t in times])))
+    for part in (
+        [t for t in times if t < utc(2024, 1, 2, 11)],
+        [t for t in times if t >= utc(2024, 1, 2, 11)],
+    ):
+        store.import_json(to_bytes(candle_document([candle_entry(t) for t in part])))
     document = json.loads((EXAMPLE_DIRECTORY / "instrument.json").read_text())
     store.import_json(to_bytes(document))
     overview = store.overview()
@@ -133,7 +138,10 @@ def test_overview(store: MarketDataStore) -> None:
     assert (series.broker, series.instrument, series.unit) == (BROKER, INSTRUMENT, "m1")
     assert series.count == len(times)
     assert (series.first, series.last) == (START, utc(2024, 1, 2, 12, 59))
-    assert [(c.start, c.end) for c in series.covered] == [(START, utc(2024, 1, 2, 13))]
+    assert [(c.start, c.end) for c in series.covered] == [
+        (START, utc(2024, 1, 2, 10, 50)),
+        (utc(2024, 1, 2, 11, 10), utc(2024, 1, 2, 13)),
+    ]
     assert [(m.start, m.end, m.reason) for m in series.missing] == [
         (utc(2024, 1, 2, 10, 50), utc(2024, 1, 2, 11, 10), MissingReason.GAP)
     ]

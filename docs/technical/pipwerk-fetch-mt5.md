@@ -5,8 +5,8 @@
 - status: `draft`
 - stand: 2026-10-24
 - komponente: `pipwerk-fetch-mt5`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt
-- vorhaben: `relay`, Arbeitspaket `wp01`, Auftrag 05 (Spezifikation relay: 3.5, 3.7, 6, 7, 8 „Abruf“; Abschnitte 16 bis 18 neu, Abschnitte 1, 2, 3, 5, 9, 10, 11, 12, 13, 14 und 15 ergänzt)
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt; in Auftrag 16 (Abnahmebericht Versuch 2, M2) neuer Abschnitt „Installierte Software und laufende Prozesse“ (in dieser Fassung Abschnitt 19, dort 19.1 bis 19.7), Abschnitt 10 Schritt 3 angepasst; Python auf `>=3.14,<3.15` festgelegt (`pyproject.toml`, `uv.lock` neu erzeugt, Entscheidung 14, Abschnitt 19.2)
+- vorhaben: `relay`, Arbeitspaket `wp01`, Auftrag 05 (Spezifikation relay: 3.5, 3.7, 6, 7, 8 „Abruf“; Abschnitte 16 bis 18 neu, Abschnitte 1, 2, 3, 5, 9, 10, 11, 12, 13, 14 und 15 ergänzt); Auftrag 06: Zusammenführung mit `backtest/wp02` (dessen Abschnitt 16 trägt hier die Nummer 19)
 
 ## 1. Gegenstand
 
@@ -190,7 +190,7 @@ Das Paket `MetaTrader5` läuft nur unter Windows und braucht ein installiertes M
 
 1. **uv installieren.** uv ist ein kleines Programm, das Python und die nötigen Pakete holt (https://docs.astral.sh/uv/). Es verändert das Python des Systems nicht. Nach der Installation ein neues Eingabeaufforderungsfenster öffnen.
 2. **Programm auf den Rechner legen.** Die Ordner `components\pipwerk-fetch-mt5` und `packages\relay-core` des Repositorys so kopieren, dass sie unter einem gemeinsamen Ordner liegen wie im Repository, zum Beispiel `C:\pipwerk\components\pipwerk-fetch-mt5` und `C:\pipwerk\packages\relay-core`. Der zweite Ordner ist die Bibliothek von pipwerk relay: `pyproject.toml` nennt sie als Pfadabhängigkeit (`../../packages/relay-core`), `install.cmd` braucht sie, auch wenn der Aufruf an der Befehlszeile sie nicht lädt.
-3. **Installieren.** Im Ordner `pipwerk-fetch-mt5` `scripts\install.cmd` ausführen (Doppelklick oder in der Eingabeaufforderung). Es lädt Python 3.14 und die Pakete, mit `MetaTrader5`, in den Unterordner `.venv`. Dafür ist einmal eine Internetverbindung nötig. Danach braucht das Programm kein Netz mehr.
+3. **Installieren.** Im Ordner `pipwerk-fetch-mt5` `scripts\install.cmd` ausführen (Doppelklick oder in der Eingabeaufforderung). Es richtet im Unterordner `.venv` eine eigene Umgebung ein und holt dafür bei Bedarf Python (genau 3.14.x) und die Pakete, mit `MetaTrader5`. Dafür ist eine Internetverbindung nötig. Was dabei auf den Rechner kommt, woher es stammt und wie es sich entfernen lässt, steht in Abschnitt 19.
 4. **Startkonfiguration anlegen.** Die Datei `pipwerk-fetch-mt5.example.ini` aus dem Ordner als `pipwerk-fetch-mt5.ini` in den Ordner `%USERPROFILE%\pipwerk\etc` kopieren (den Ordner anlegen, falls er fehlt; `%USERPROFILE%` ist der Ordner des angemeldeten Benutzers, zum Beispiel `C:\Users\Name`). In der Datei **`server_time_zone`** eintragen, die Zeitzone des Handelsservers Ihres Brokers (siehe unten). Wenn Ihr Broker ein Instrument anders nennt, als Sie es nennen wollen, im Abschnitt `[symbols]` eine Zeile `EURUSD = EURUSD.r` ergänzen. Mehr ist nicht nötig.
 
 **Die Zeitzone**
@@ -232,7 +232,7 @@ Grundlage: Spezifikation 5.4 und 11, `development-test-security-rules.md`, OWASP
 
 ## 12. Abhängigkeiten
 
-Alle direkten und indirekten Abhängigkeiten stehen in `uv.lock`. Laufzeit: `pipwerk-relaycore` (Pfadabhängigkeit `packages/relay-core`, Version 0.1.0 festgeschrieben; mit Auftrag 05; die Bibliothek von pipwerk relay für `serve` und `request`; sie bringt `sqlalchemy` 2.1.5, `alembic` 1.20.0 und deren Pakete mit, deren Lizenz, Pflege, Sicherheit und Kopplung `pipwerk-relay.md` Abschnitt 14 prüft), `pydantic` (genau die Version, die `pipwerk-marketdata` festlegt, damit die Dateien dieselbe Prüfung durchlaufen) und `tzdata` (nötig, weil Windows keine Zeitzonendatenbank hat, aus der `zoneinfo` lesen könnte). Das Öffnen des Anschlusses fängt Fehler von SQLAlchemy beim Öffnen der Datenbank selbst ab; das tut `pipwerk_relaycore.connection` (Abschnitt 16.2), dieses Programm nennt SQLAlchemy nicht. Optional, nur Windows: `MetaTrader5` (Extra `mt5`, Markierung `sys_platform == 'win32'`), das `numpy` mitbringt. Entwicklung und Tests: `pytest`, `ruff`, `mypy`, `jsonschema` und `types-jsonschema` (prüft die Dateien gegen die Schemata des Imports), `pipwerk-marketdata` (Pfadabhängigkeit `packages/market-data`, nur für Tests: die geschriebenen Dateien werden mit der Bibliothek importiert) und `sqlalchemy` (für die Datenbank dieser Tests).
+Alle direkten und indirekten Abhängigkeiten stehen in `uv.lock`. Laufzeit: `pipwerk-relaycore` (Pfadabhängigkeit `packages/relay-core`, Version 0.1.0 festgeschrieben; mit Auftrag 05; die Bibliothek von pipwerk relay für `serve` und `request`; sie bringt `sqlalchemy` 2.1.5, `alembic` 1.20.0 und deren Pakete mit, deren Lizenz, Pflege, Sicherheit und Kopplung `pipwerk-relay.md` Abschnitt 14 prüft), `pydantic` (genau die Version, die `pipwerk-marketdata` festlegt, damit die Dateien dieselbe Prüfung durchlaufen) und `tzdata` (nötig, weil Windows keine Zeitzonendatenbank hat, aus der `zoneinfo` lesen könnte). Das Öffnen des Anschlusses fängt Fehler von SQLAlchemy beim Öffnen der Datenbank selbst ab; das tut `pipwerk_relaycore.connection` (Abschnitt 16.2), dieses Programm nennt SQLAlchemy nicht. Optional, nur Windows: `MetaTrader5` (Extra `mt5`, Markierung `sys_platform == 'win32'`), das `numpy` mitbringt. Entwicklung und Tests: `pytest`, `ruff`, `mypy`, `jsonschema` und `types-jsonschema` (prüft die Dateien gegen die Schemata des Imports), `pipwerk-marketdata` (Pfadabhängigkeit `packages/market-data`, nur für Tests: die geschriebenen Dateien werden mit der Bibliothek importiert) und `sqlalchemy` (für die Datenbank dieser Tests) und `pipwerk-relay` (Pfadabhängigkeit `components/pipwerk-relay`, Version 0.1.0.dev0, nur für Tests, Auftrag 06: die zwei echten Relays der Tests von `serve` und `request`; Lizenz GPL-3.0 und Wartung wie das Repository, Abhängigkeiten dieselben wie die von `pipwerk-relaycore`, `pipwerk-relay.md` Abschnitt 14; das Paket ist keine Abhängigkeit des Programms).
 
 Entfallen sind `fastapi`, `uvicorn` und alles, was sie mitbrachten (`starlette`, `h11`, `httpx2` und weitere); `uv.lock` ist neu erzeugt.
 
@@ -268,6 +268,7 @@ Die Tests (pytest, 1748 Fälle, davon 1708 bestanden; 40 überspringen sich selb
 | `test_service_clock_change_hourly.py` | Kerzen M1, M30, H1, H4, D1 beim Zurückstellen der Uhr (Athen, London, New York, Lord Howe), jede Schnittlänge; die drei Fälle des Berichts (Athen H1) mit Prüfung der ausgelassenen Zeilen nach Grund, Zahl und Serverzeit; gleiche Serverzeit außerhalb der doppelten Stunde bleibt `duplicate_time`; Ticks mit gleicher Serverzeit; Ticks im dünnen Markt (Rest-Risiko, Abschnitt 7) |
 | `test_mt5_gateway.py` | Übersetzung zum Paket gegen eine Nachbildung des Moduls: Verbindung, Wiederverbindung, Trennen, Fehlercodes, Zeiten als Serverzeit, Ende ausgeschlossen, Tickflags, Margin; kein Import des Pakets beim Laden |
 | `test_relay_abruf.py` | **der Abruf über pipwerk relay** (Abschnitt 16), gegen die Nachbildung von `MetaTrader5` und die Schritte, die ein Relay nachbilden (`relay_support.py`): gültige Anfrage mit denselben Bytes der Dateien wie der Aufruf an der Befehlszeile und Import mit `pipwerk_marketdata`; Bezeichnung und Symbol, Tabelle `[symbols]` unbeachtet; Broker fremd; ungültige Anfrage in 16 Abwandlungen und mit jeweils fehlendem Feld; Teile mit Grund (gleiche Fehlerausgabe wie der Aufruf an der Befehlszeile), Symbol unbekannt, MetaTrader 5 nicht erreichbar; zwei Anfragen nacheinander; keine Nachricht mit `receipt`; Wartezeit, `relay.undeliverable`, Anfrage nicht übergeben; das Ergebnis vor der letzten Datei, eine Datei zweimal, fremde Antwort, ungültige Datei-Nachricht, Fehler beim Schreiben; hartes Ende von `serve` vor jeder der vier Nachrichten; Weg zum Relay nicht erreichbar; `serve` als Programm in einem Thread mit Beenden |
+| `test_relay_two_relays.py` | **der Abruf über zwei echte Relays** (Auftrag 06, `real_relays.py`): gültige Anfrage mit denselben Bytes wie der Aufruf an der Befehlszeile, Import mit `pipwerk_marketdata`, zwei Anfragen nacheinander; fremder Broker; ungültige Anfrage (vier Abwandlungen); Teile mit Grund; Anfrage an eine unbekannte Komponente (`unknown_recipient`) und an ein unbekanntes Relay (`unknown_relay`) mit Meldung und Exitcode 1; Störung 1 (Relay des Abrufs beendet, Start nach einigen Pausen); **Störung 3**: jedes der beiden Relays wird an jedem seiner Schritte vor und nach dem Schritt hart beendet, danach kommt jede Datei einmal an, mit denselben Bytes wie im Lauf ohne Störung, und kein Umschlag bleibt in den Verzeichnissen liegen |
 | `test_relay_config.py` | `[relay]` und `[relay.way]` lesen, jede Ablehnung, `request` ohne Zeitzone, das Beispiel, Start von `serve` und `request` mit ungültigen Angaben (Exitcode 2, nichts gesendet, kein Wert in Meldungen), Hilfetexte, Instrument mit dem Namen eines Befehls |
 | `test_relay_contents.py` | Modelle und Schemas der drei Nachrichtenarten: Schemadateien gleich dem Erzeugten, Beispiele gültig und ungültig für Schema und Modell gleich beurteilt, Regeln des Modells, Namen und Gründe gleich denen des Programms |
 | `test_relay_isolation.py` | der Aufruf an der Befehlszeile lädt `pipwerk_relaycore`, SQLAlchemy, Alembic und die Netzmodule nicht (eigener Prozess), kein Import der Bibliothek auf Modulebene (`config.py` lädt sie erst in `_relay`), die Abhängigkeit mit festgeschriebener Version, `request` ohne `Mt5Gateway` |
@@ -294,6 +295,7 @@ Fest gelegt vom Entwickler, soweit die Spezifikation es offenlässt (Auftrag 13)
 11. Ausgabe an den Anwender (Dateien, Fehler mit Grund, Zusammenfassung) deutsch, Hilfetext und Meldungen zu Aufruf und Startkonfiguration englisch wie bisher.
 12. Windows-Skript `scripts/fetch.cmd` ersetzt `scripts/start.cmd`; `scripts/install.cmd` bleibt unverändert.
 13. Die Nachbildung für Tests ist eine Nachbildung des Pakets `MetaTrader5` (`tests/support.py`) und liegt nur in den Tests; `fake_source.py` entfällt. Andere Komponenten, die `fake_source` verwendeten (pipwerk replay), brauchen es nicht mehr (Auftrag 12).
+14. Python ist auf 3.14 festgelegt: `requires-python = ">=3.14,<3.15"` (Auftrag 16, Entscheidung des Entwicklungsleiters). `MetaTrader5` 5.0.6231 hat nur ein Rad für Python 3.14 unter Windows; ohne Obergrenze könnte `uv` eine Version wählen, für die es kein Rad gibt. `install.cmd` und `fetch.cmd` bleiben unverändert. Beim nächsten Wechsel der Python-Version sind Obergrenze, `uv.lock` und ein neues Rad von `MetaTrader5` gemeinsam zu prüfen.
 
 Fest gelegt vom Entwickler, soweit die Spezifikation relay es offenlässt (Auftrag 05):
 
@@ -321,7 +323,7 @@ Fest gelegt vom Entwickler (Auftrag 04, Prüfkomponente von pipwerk relay):
 7. **Echtes MetaTrader 5.** Aufruf, Name des Handelsservers (`account_info().server`), Fehlercodes und Zeitzone sind nur gegen die Nachbildung geprüft; der Auftraggeber prüft sie in der Abnahme.
 8. **Windows.** Das Skript `fetch.cmd` und das atomare Umbenennen unter Windows sind auf dem Entwicklungsrechner (Linux) nicht ausgeführt; `Path.replace` ersetzt unter Windows eine bestehende Datei, scheitert aber, wenn eine andere Anwendung sie geöffnet hält (dann `write_failed`).
 9. Erledigt: pipwerk replay (Backend in Auftrag 12, Oberfläche und Anwenderdokumentation in Auftrag 14) und das Glossar verweisen nicht mehr auf die frühere Schnittstelle.
-10. **Abruf über pipwerk relay nur gegen Nachbildungen** (Auftrag 05). `serve` und `request` sind mit der Nachbildung von `MetaTrader5` und mit Schritten geprüft, die ein Relay nachbilden (`tests/relay_support.py`). Das echte Relay (Auftrag 03) und die Durchgänge über zwei Relays (Auftrag 06) sind nicht Teil dieses Auftrags. Unter Windows sind `serve` und `request` nicht ausgeführt; die Bibliothek prüft dort die Zugriffsrechte der Schlüsseldatei über Zugriffslisten (`pipwerk-relay.md` Abschnitt 6), auch das ist auf dem Entwicklungsrechner nicht ausgeführt.
+10. **Abruf über pipwerk relay nur gegen die Nachbildung von `MetaTrader5` und auf einem Rechner** (Aufträge 05 und 06). `serve` und `request` sind mit der Nachbildung von `MetaTrader5` geprüft: mit Schritten, die ein Relay nachbilden (`tests/relay_support.py`, Auftrag 05), mit zwei echten Relays (`tests/real_relays.py`, `tests/test_relay_two_relays.py`) und in der Testumgebung von pipwerk relay (`components/pipwerk-relay/scripts/testenv`, Abschnitt „Testumgebung“ in `pipwerk-relay.md`), alle mit Ordnern auf demselben Rechner (Auftrag 06). Ein Netzlaufwerk, zwei Rechner, echtes MetaTrader 5 und Windows prüft der Auftraggeber. Unter Windows sind `serve` und `request` nicht ausgeführt; die Bibliothek prüft dort die Zugriffsrechte der Schlüsseldatei über Zugriffslisten (`pipwerk-relay.md` Abschnitt 6), auch das ist auf dem Entwicklungsrechner nicht ausgeführt.
 11. **Wer anfragt, wird nicht geprüft.** `serve` beantwortet jede Anfrage, die das Relay zustellt. Wer an das Relay senden darf, bestimmt das Relay über die Schlüssel der Verbindungen (Spezifikation relay E5). Eine Liste erlaubter Absender hat `serve` nicht, weil weder die Anforderungen noch die Spezifikation sie verlangen.
 12. **Eine Anfrage je Adresse zur selben Zeit.** Zwei `request` mit derselben Adresse und derselben Datenbank lesen denselben Eingang; jeder verwirft die Antworten, die nicht zu seiner Anfrage gehören (Abschnitt 16.6). Zwei Anfragen gleichzeitig brauchen zwei Adressen.
 13. **Alembic ist nicht für mehrere Anschlüsse in einem Prozess gleichzeitig ausgelegt.** Zwei Anschlüsse, die im selben Prozess in verschiedenen Threads zugleich ihre Datenbank migrieren, können einander stören (der Test von `serve` öffnet sie deshalb nacheinander). Im Betrieb läuft jeder Anschluss in einem eigenen Prozess; die Beobachtung geht als Hinweis an die Bibliothek (`packages/relay-core`), die dieser Auftrag nicht ändert.
@@ -460,4 +462,110 @@ Abhängigkeiten (Regel 12): neu ist `pipwerk-relaycore` (eigenes Paket des Repos
 
 ## 18. Prüfung dieses Teils
 
-Die Tests von `serve` und `request` sind in Abschnitt 13 aufgeführt. Sie bilden das Relay mit `tests/relay_support.py` nach (`Network`: Verzeichnisse und Schlüssel der beiden Komponenten, zwei Schritte, die ein Relay nachbilden, und ein Verzeichnis zwischen den Relays; `ServeSide`: `serve` ohne seine Schleife, damit der Test bestimmt, wann etwas geschieht; `pump_hooks`: jede Pause von `request` ist eine Runde von Relay, Abruf und Relay, die Uhr ist nachgebildet). Eine Ausnahme ist der Test von `serve` als Programm: Er startet `main(["serve", …])` in einem Thread, bewegt die Umschläge mit einem eigenen Thread und beendet `serve` mit einem Ereignis. Die Ende-zu-Ende-Tests über zwei echte Relays folgen mit Auftrag 06.
+Die Tests von `serve` und `request` sind in Abschnitt 13 aufgeführt. Sie bilden das Relay mit `tests/relay_support.py` nach (`Network`: Verzeichnisse und Schlüssel der beiden Komponenten, zwei Schritte, die ein Relay nachbilden, und ein Verzeichnis zwischen den Relays; `ServeSide`: `serve` ohne seine Schleife, damit der Test bestimmt, wann etwas geschieht; `pump_hooks`: jede Pause von `request` ist eine Runde von Relay, Abruf und Relay, die Uhr ist nachgebildet). Eine Ausnahme ist der Test von `serve` als Programm: Er startet `main(["serve", …])` in einem Thread, bewegt die Umschläge mit einem eigenen Thread und beendet `serve` mit einem Ereignis. Die Ende-zu-Ende-Tests über zwei echte Relays (Auftrag 06) sind in `tests/test_relay_two_relays.py` mit `tests/real_relays.py`. `RealNetwork` hat dieselben Verzeichnisse und Schlüssel wie `Network`, aber statt der zwei Schritte arbeiten zwei echte Relays von `pipwerk_relay` (je mit Datenbank, Warteschlange, Verzeichnis der Anlagen und Betriebskonfiguration, `Site`); `RealNetwork.relay_step` lässt beide eine Runde arbeiten, `RealNetwork.hooks` bewegt mit jeder Pause von `request` die Uhr der Relays und lässt Relays und Abruf arbeiten. `CrashPlan` beendet ein Relay hart an einem seiner Schritte, die außerhalb des Prozesses etwas ändern (vor oder nach jedem Aufruf von `FilesWay.send`, `FilesWay.acknowledge`, `RelayStore.accept`, `RelayStore.replace`, `RelayStore.reschedule`, `AttachmentStore.write`, `AttachmentStore.remove`, wie in den Tests von pipwerk relay); ein neues `Relay` auf denselben Dateien ist der Neustart. `pipwerk-relay` ist dafür eine Abhängigkeit der Tests (Abschnitt 12). In der Testumgebung von pipwerk relay laufen `serve` und `request` mit zwei Relays als eigene Prozesse; dort führt der Anwender oder Tester Durchgang 1 und die Störungen 1 bis 7 aus (`docs/user/pipwerk-relay.md`, Abschnitt 10).
+
+## 19. Installierte Software und laufende Prozesse
+
+Dieser Abschnitt beschreibt, was `scripts/install.cmd` und `scripts/fetch.cmd` auf dem Rechner von MetaTrader 5 (Windows) einrichten und starten. Belege sind `scripts/install.cmd`, `scripts/fetch.cmd`, `pyproject.toml` und `uv.lock` der Komponente. Windows und MetaTrader 5 sind auf dem Entwicklungsrechner (Linux) nicht verfügbar: Alles, was `uv` auf Windows tut, ist aus den Skripten und der Sperrdatei abgeleitet und **nicht ausgeführt**; Angaben, die aus der Dokumentation von `uv` stammen und nicht aus der Komponente, sind so gekennzeichnet. Was gemessen wurde, steht in 19.5.
+
+### 19.1 Was die Skripte tun
+
+`install.cmd` enthält genau einen Befehl:
+
+```
+uv --project "%COMPONENT%" sync --frozen --extra mt5 --no-dev
+```
+
+`%COMPONENT%` ist der Ordner der Komponente (der Ordner über `scripts\`). `--frozen`: `uv` nimmt die Versionen aus `uv.lock` und löst nichts neu auf. `--extra mt5`: schließt `MetaTrader5` ein (Markierung `sys_platform == 'win32'`). `--no-dev`: lässt die Entwicklungswerkzeuge und die Tests aus. `fetch.cmd` enthält genau einen Befehl:
+
+```
+uv --project "%COMPONENT%" run --frozen --extra mt5 --no-dev pipwerk-fetch-mt5 %*
+```
+
+Es startet das Programm `pipwerk-fetch-mt5` (Startpunkt `pipwerk_fetch_mt5.cli:main` aus `[project.scripts]`) in der Umgebung der Komponente und reicht alle Angaben weiter. Beide Skripte enthalten außer diesem einen Befehl nur Kommentare, `setlocal`, das Setzen von `COMPONENT` und `exit /b %ERRORLEVEL%`; sie legen keinen Eintrag in der Registrierung, keinen Dienst, keine geplante Aufgabe, keinen Autostart an und ändern `PATH` nicht (Beleg: der Inhalt beider Skripte). Was `uv` mit dem Befehl selbst tut, steht in 19.2 bis 19.6. Dass das Python des Systems unverändert bleibt, sagt der Kommentar in `install.cmd` (Zeilen 6 und 7); `uv` legt die Umgebung `.venv` an und lädt Python nur in sein eigenes Verzeichnis.
+
+### 19.2 uv und Python
+
+**uv.** `uv` (https://docs.astral.sh/uv/) ist ein Programm der Firma Astral zur Verwaltung von Python, virtuellen Umgebungen und Paketen. Hier ersetzt es `pip` und `venv`: Es legt die Umgebung `.venv` an und installiert die Pakete aus `uv.lock`. Das Repository enthält `uv` nicht; der Anwender installiert es einmal selbst (Abschnitt 10, Schritt 1). Nach der Dokumentation von `uv` (nicht ausgeführt): Das Installationsprogramm für Windows lädt `uv.exe` (und `uvx.exe`) von astral.sh beziehungsweise GitHub in einen Ordner des Benutzers (Voreinstellung `%USERPROFILE%\.local\bin`) und trägt diesen Ordner in `PATH` des Benutzers ein; alternativ `winget install astral-sh.uv`. Es braucht keine Administratorrechte. Der Ort lässt sich mit `where uv` anzeigen.
+
+**Python.** Version: Die Komponente verlangt `requires-python = ">=3.14,<3.15"` (`pyproject.toml`; in `uv.lock` als `==3.14.*`), also Python 3.14 in einer beliebigen Unterversion (Entscheidung 14). Grund: Das einzige Rad von `MetaTrader5` in `uv.lock` ist `cp314-cp314-win_amd64`, also für Python 3.14 unter Windows mit 64 Bit, und es gibt keine Quelldatei. Ohne Obergrenze hätte `uv` ein Python 3.15 wählen können, für das es kein Rad gibt. `install.cmd` bleibt unverändert; die Auswahl ergibt sich aus `requires-python`. Wer Python lädt: Nach der Dokumentation von `uv` nimmt es zuerst ein Python, das auf dem Rechner liegt und `>=3.14,<3.15` erfüllt, und lädt sonst selbst ein Python (die Builds von `python-build-standalone`, von GitHub) in sein eigenes Verzeichnis. Wann: beim ersten `install.cmd`, nur wenn kein passendes Python da ist. Das Python des Systems verändert `uv` dabei nicht. Wie viele Byte das Python hat, ist nicht gemessen.
+
+### 19.3 Pakete (nach `uv.lock`)
+
+`uv.lock` führt 34 Einträge (`[[package]]`): 30 Pakete von https://pypi.org/simple, deren Dateien auf `files.pythonhosted.org` liegen (URLs in der Sperrdatei) mit SHA-256-Summe, die `uv` beim Laden prüft, sowie die Komponente selbst, `pipwerk-relaycore`, `pipwerk-marketdata` und `pipwerk-relay` als Pfadquellen (`source = { editable = … }`) aus dem Repository.
+
+**Installiert von `install.cmd`** (Windows, `--extra mt5 --no-dev`): die Komponente selbst, die Bibliothek `pipwerk-relaycore` und zwölf Pakete, die Größen sind die der Räder für Windows (`win_amd64`, Python 3.14) in `uv.lock`. Die Bibliothek von pipwerk relay und ihre Pakete (`sqlalchemy`, `alembic`, `mako`, `markupsafe`) kamen mit dem Abruf über pipwerk relay (Abschnitt 16) hinzu, weil `pipwerk-relaycore` eine Laufzeitabhängigkeit ist (`pyproject.toml`):
+
+| Paket | Version | Zweck | Größe (Byte) |
+| --- | --- | --- | --- |
+| `pipwerk-fetch-mt5` | 0.1.0.dev0 | das Programm selbst; wird als bearbeitbare Installation aus dem Ordner der Komponente eingerichtet (`source = { editable = "." }`) | – |
+| `pipwerk-relaycore` | 0.1.0 | die Bibliothek von pipwerk relay für `serve` und `request`; bearbeitbare Installation aus `packages\relay-core` (`source = { editable = "../../packages/relay-core" }`); der Aufruf an der Befehlszeile lädt sie nicht | – |
+| `sqlalchemy` | 2.1.5 | Datenbank des Anschlusses (Abhängigkeit von `pipwerk-relaycore`) | 2 436 983 |
+| `alembic` | 1.20.0 | Anlegen und Migrieren dieser Datenbank (Abhängigkeit von `pipwerk-relaycore`) | 268 719 |
+| `mako` | 1.4.3 | Vorlagen von `alembic` (Abhängigkeit von `alembic`) | 80 164 |
+| `markupsafe` | 3.0.4 | Abhängigkeit von `mako` | 14 501 |
+| `pydantic` | 2.13.5 | Modelle und Prüfung der Dateien und der Startkonfiguration; Version fest an `pipwerk-marketdata` gebunden (Abschnitt 12) | 472 589 |
+| `pydantic-core` | 2.46.5 | der in Rust geschriebene Kern von `pydantic` (Abhängigkeit von `pydantic`) | 2 042 648 |
+| `annotated-types` | 0.8.0 | Typangaben für Grenzen (Abhängigkeit von `pydantic`) | 13 427 |
+| `typing-extensions` | 4.16.0 | Typangaben neuerer Python-Versionen (Abhängigkeit von `pydantic`, `pydantic-core`, `typing-inspection`) | 45 571 |
+| `typing-inspection` | 0.4.4 | Hilfen zur Prüfung von Typangaben (Abhängigkeit von `pydantic`) | 14 750 |
+| `tzdata` | 2026.5 | Zeitzonendatenbank, weil Windows keine hat, aus der `zoneinfo` lesen kann (Abschnitt 12) | 347 996 |
+| `MetaTrader5` | 5.0.6231 | das Paket von MetaQuotes, das von Python aus mit dem lokalen Terminal MetaTrader 5 spricht; nur Windows, nur im Extra `mt5` | 49 531 |
+| `numpy` | 2.5.4 | Abhängigkeit von `MetaTrader5` (dessen Funktionen liefern Felder von `numpy`) | 12 703 552 |
+
+Zusammen sind das 18 490 431 Byte (rund 18,5 MB) Räder, ohne Python und ohne `uv` (die Summe der Größen der Tabelle). Die Räder von `pydantic`, `annotated-types`, `typing-extensions`, `typing-inspection`, `tzdata`, `alembic` und `mako` laufen auf jeder Plattform (`py3-none-any` oder `py2.py3-none-any`); `pydantic-core`, `numpy`, `MetaTrader5`, `sqlalchemy` und `markupsafe` sind für die Plattform gebaut.
+
+Zum Bau der bearbeitbaren Installation der Komponente nutzt `uv` das Bauwerkzeug `hatchling` in der Version 1.32.4 (`[build-system]` in `pyproject.toml`). Es steht nicht in `uv.lock`; nach der Dokumentation von `uv` wird es für den Bau in eine eigene, kurzlebige Umgebung geladen, mit seinen eigenen Abhängigkeiten, die hier nicht geprüft sind.
+
+**In `uv.lock`, aber nicht von `install.cmd` installiert** (nur Entwicklung und Tests auf Linux, `uv sync --frozen` ohne `--no-dev`; Zweck allgemein bekannt, nicht aus der Sperrdatei): `pipwerk-marketdata` 0.1.0 (Bibliothek des Imports, für den Test der Importierbarkeit), `pipwerk-relay` 0.1.0.dev0 (die Relays der Tests von `serve` und `request`, Pfadquelle `../pipwerk-relay`), `jsonschema` 4.26.0, `jsonschema-specifications` 2025.9.1, `referencing` 0.37.0, `rpds-py` 2026.9.1, `attrs` 26.1.0 und `types-jsonschema` 4.26.0.20261006 (Prüfung der Dateien gegen die Schemata), `pytest` 9.1.1, `iniconfig` 2.3.1, `packaging` 26.3, `pluggy` 1.7.0, `pygments` 2.21.0 und `colorama` 0.4.6 (Tests; `colorama` nur unter Windows, `pytest` verlangt es dort), `ruff` 0.17.1 (Stil), `mypy` 2.4.0, `mypy-extensions` 1.1.0, `pathspec` 1.1.1, `librt` 0.16.0 und `ast-serialize` 0.13.1 (Typprüfung). Zusammen mit den vierzehn Einträgen oben sind das alle 34.
+
+### 19.4 Ablageorte
+
+| Was | Wo | Beleg |
+| --- | --- | --- |
+| Programm (Quelltext, Skripte, Beispiel der Startkonfiguration) | der Ordner, in den der Anwender `components\pipwerk-fetch-mt5` kopiert hat (Beispiel `C:\pipwerk\components\pipwerk-fetch-mt5`); daneben `packages\relay-core` | Abschnitt 10, Schritt 2; `%COMPONENT%` in den Skripten |
+| Virtuelle Umgebung mit den Paketen aus 19.3 | Unterordner `.venv` dieses Ordners | Kommentar in `install.cmd`, Zeilen 4 und 5 |
+| `uv` selbst | Ordner des Installationsprogramms von `uv`, anzuzeigen mit `where uv` | Dokumentation von `uv`, nicht ausgeführt |
+| Python, das `uv` geladen hat | Verzeichnis von `uv` für Python, anzuzeigen mit `uv python dir` | Dokumentation von `uv`, nicht ausgeführt |
+| Zwischenspeicher von `uv` (geladene Räder, Bau von `hatchling`) | Zwischenspeicher von `uv`, anzuzeigen mit `uv cache dir`; er dient allen Vorhaben, die `uv` nutzen | Dokumentation von `uv`, nicht ausgeführt |
+| Startkonfiguration | `pipwerk-fetch-mt5.ini`, Suchorte nach Abschnitt 5 (empfohlen `%USERPROFILE%\pipwerk\etc`); enthält, wenn eingetragen, das Kennwort im Klartext | Abschnitt 5 und 10 |
+| Dateien des Abrufs | das Verzeichnis nach `-o`, sonst das aktuelle Verzeichnis | Abschnitt 3 |
+| Temporäre Dateien beim Schreiben | `.<Zufall>.tmp` im Zielverzeichnis, nach dem Schreiben umbenannt oder entfernt | Abschnitt 4 |
+
+Das Programm schreibt sonst nirgends hin: kein Protokoll in eine Datei (das Protokoll geht auf die Fehlerausgabe, Abschnitt 9), kein Zwischenspeicher eigener Art. Auf MetaTrader 5 wirkt es nur durch die Auswahl des Symbols im Marktfenster (Abschnitt 6).
+
+### 19.5 Zeitpunkt und Dauer
+
+| Vorgang | Wann | Dauer |
+| --- | --- | --- |
+| `uv` installieren | einmal je Rechner | nicht gemessen (Windows) |
+| `install.cmd` | einmal je Ordner des Programms; wieder nach Löschen von `.venv` oder nach einer neuen Fassung der Komponente | nicht gemessen; hängt von der Internetverbindung und davon ab, ob `uv` ein Python laden muss. Laden: die Räder in 19.3 mit 15,7 MB, dazu gegebenenfalls Python und `hatchling` |
+| `fetch.cmd` | bei jedem Abruf | Anlauf von `uv run` und des Programms: **0,25 s** gemessen auf dem Entwicklungsrechner (Linux, `uv` 0.5.9, vorhandene Umgebung, ein Aufruf von `pipwerk-fetch-mt5 --help`, `time` des Aufrufs, ohne `MetaTrader5`). Auf Windows nicht gemessen. Die Dauer des Abrufs selbst hängt von Zeitraum, Zahl der Instrumente und Ticks und von MetaTrader 5 ab und ist nicht gemessen |
+
+Prozesse eines Abrufs: `fetch.cmd` läuft in der Eingabeaufforderung (`cmd.exe`) und startet `uv`, das das Programm als Python-Prozess startet (aus den Skripten abgeleitet, nicht ausgeführt). Das Programm ist ein einziger Prozess ohne Threads (Abschnitt 2); er endet nach der Arbeit (Exitcode, Abschnitt 3) und gibt den Exitcode an `fetch.cmd` zurück (`exit /b %ERRORLEVEL%`). Nach dem Abruf läuft nichts weiter: kein Dienst, kein Hintergrundprogramm. MetaTrader 5 startet der Anwender selbst; das Programm trennt am Ende die Verbindung, das Terminal läuft weiter (Abschnitt 2). Ob das Paket `MetaTrader5` ein nicht laufendes Terminal von sich aus startet, ist nicht geprüft.
+
+### 19.6 Netzzugriffe
+
+| Wann | Wohin | Wozu |
+| --- | --- | --- |
+| `uv` installieren (einmal) | astral.sh und GitHub, bei `winget` die Quelle von `winget` | `uv` laden (Dokumentation von `uv`, nicht ausgeführt) |
+| `install.cmd`, wenn kein Python 3.14.x vorliegt | GitHub (Builds von `python-build-standalone`) | Python laden (Dokumentation von `uv`, nicht ausgeführt) |
+| `install.cmd` | `pypi.org` (Index) und `files.pythonhosted.org` (Räder) | die Pakete aus 19.3 laden; die Adressen stehen in `uv.lock`; `uv` prüft die SHA-256-Summen |
+| `install.cmd`, Bau der Komponente | `pypi.org` und `files.pythonhosted.org` | `hatchling` laden, soweit es nicht im Zwischenspeicher liegt (aus `[build-system]` abgeleitet) |
+| `fetch.cmd` | in der Regel keiner | `--frozen` löst nichts auf und fragt den Index nicht. Stimmt die Umgebung `.venv` mit `uv.lock` überein, lädt `uv` nichts. Fehlt `.venv` oder ist sie unvollständig, richtet `uv run` sie wie `install.cmd` ein und braucht dann das Netz (Dokumentation von `uv`, nicht ausgeführt) |
+
+Das Programm selbst verbindet sich mit keinem Server im Netz. Es hat keinen Server und öffnet keinen Port (Abschnitt 11); die Tests sichern zu, dass beim Aufruf kein Socket geöffnet und kein Name aufgelöst wird (`tests/test_cli.py`, Fixture `no_sockets`), und kein Modul in `src/` importiert `socket`, `http`, `ssl`, `asyncio`, `urllib` oder `requests` (geprüft mit Suche im Quelltext). Es verbindet sich nur über das Paket `MetaTrader5` mit dem Terminal auf demselben Rechner. Was das Terminal selbst im Netz tut (Verbindung zum Handelsserver des Brokers), gehört zu MetaTrader 5 und nicht zu diesem Programm.
+
+### 19.7 Entfernen
+
+Alle Schritte sind aus den Skripten und der Dokumentation von `uv` abgeleitet und nicht ausgeführt. Jeder Schritt ist einzeln möglich; die Reihenfolge ist so gewählt, dass `uv` zuletzt entfernt wird.
+
+1. **Dateien des Abrufs.** Die Dateien im Zielverzeichnis sind Daten des Anwenders. Sie bleiben, bis er sie löscht; ihr Entfernen entfernt nichts an der Installation.
+2. **Startkonfiguration.** `pipwerk-fetch-mt5.ini` löschen (sie kann das Kennwort enthalten); den Ordner `%USERPROFILE%\pipwerk\etc` löschen, wenn er leer und sonst unbenutzt ist.
+3. **Programm und Umgebung.** Den Ordner des Programms löschen (er enthält `.venv` mit allen Paketen aus 19.3). Soll nur die Umgebung weg, genügt es, den Unterordner `.venv` zu löschen; `install.cmd` legt sie neu an.
+4. **Zwischenspeicher von `uv`.** `uv cache clean` leert ihn; er gehört allen Vorhaben, die `uv` nutzen. Sein Ort steht in `uv cache dir`.
+5. **Python von `uv`.** `uv python list --only-installed` zeigt die geladenen Versionen, `uv python uninstall <Version>` entfernt eine. Nur nötig, wenn `uv` das Python selbst geladen hat; ein Python, das der Anwender selbst installiert hat, bleibt unberührt.
+6. **uv.** Wurde `uv` mit `winget` installiert: `winget uninstall astral-sh.uv`. Sonst `uv.exe` und `uvx.exe` im Ordner von `where uv` löschen (und die Ordner aus `uv python dir`, `uv cache dir` und `uv tool dir`, falls noch vorhanden; `uv tool dir` benutzt dieses Programm nicht) und den Eintrag des Installationsordners in `PATH` des Benutzers entfernen, sofern das Installationsprogramm ihn gesetzt hat.
+7. **MetaTrader 5.** Bleibt unverändert. Nur das im Marktfenster ausgewählte Symbol (Abschnitt 6) bleibt dort stehen; der Anwender nimmt es bei Bedarf selbst heraus.
+
+Die Windows-Anwenderschritte (Einrichten und Aufrufen) beschreibt die Anwenderdokumentation `docs/user/pipwerk-replay.md`; dieser Abschnitt ist die technische Beschreibung dessen, was dabei geschieht, und kein Ersatz für ihre Schritte.

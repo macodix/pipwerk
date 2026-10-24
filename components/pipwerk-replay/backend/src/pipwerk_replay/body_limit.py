@@ -14,18 +14,31 @@ parsed:
 
 It applies to all requests below a path prefix. The limit is a setting of the
 backend (``max_body_bytes`` in the startup configuration, ``config.py``). A path can have its
-own limit (``overrides``, exact path): the upload of a file for the data stock is larger than
-a JSON body (``max_upload_bytes``).
+own limit: ``overrides`` (exact path) or ``rules`` (a pattern for the whole path, for a path
+with an identifier in it). A rule can also name its own answer for a body that is too large.
+The upload of a file for the data stock is larger than a JSON body (``max_upload_bytes``).
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import re
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 BODY_TOO_LARGE_TEXT = "The request body is larger than the limit."
+
+
+@dataclass(frozen=True, slots=True)
+class PathRule:
+    """The limit of the paths that match ``pattern`` (the whole path) and, if given, the answer
+    to a body above it (otherwise HTTP 413 with the usual text)."""
+
+    pattern: re.Pattern[str]
+    limit: int
+    reject: Callable[[], Response] | None = None
 
 
 class BodyLimitMiddleware:
@@ -38,11 +51,13 @@ class BodyLimitMiddleware:
         limit: int,
         prefix: str,
         overrides: Mapping[str, int] | None = None,
+        rules: Sequence[PathRule] = (),
     ) -> None:
         self._app = app
         self._limit = limit
         self._prefix = prefix.rstrip("/")
         self._overrides = dict(overrides or {})
+        self._rules = tuple(rules)
 
     def _applies(self, scope: Scope) -> bool:
         if scope["type"] != "http":
@@ -58,18 +73,36 @@ class BodyLimitMiddleware:
                 return int(text) if text.isascii() and text.isdigit() else None
         return None
 
-    async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
-        response = JSONResponse(status_code=413, content={"detail": BODY_TOO_LARGE_TEXT})
+    def _limit_of(self, path: str) -> tuple[int, Callable[[], Response] | None]:
+        if path in self._overrides:
+            return self._overrides[path], None
+        for rule in self._rules:
+            if rule.pattern.fullmatch(path):
+                return rule.limit, rule.reject
+        return self._limit, None
+
+    async def _reject(
+        self,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        answer: Callable[[], Response] | None,
+    ) -> None:
+        response = (
+            answer()
+            if answer is not None
+            else JSONResponse(status_code=413, content={"detail": BODY_TOO_LARGE_TEXT})
+        )
         await response(scope, receive, send)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if not self._applies(scope):
             await self._app(scope, receive, send)
             return
-        limit = self._overrides.get(scope["path"], self._limit)
+        limit, answer = self._limit_of(scope["path"])
         declared = self._declared_size(scope)
         if declared is not None and declared > limit:
-            await self._reject(scope, receive, send)
+            await self._reject(scope, receive, send, answer)
             return
         chunks: list[bytes] = []
         size = 0
@@ -81,7 +114,7 @@ class BodyLimitMiddleware:
             body: bytes = message.get("body", b"")
             size += len(body)
             if size > limit:
-                await self._reject(scope, receive, send)
+                await self._reject(scope, receive, send, answer)
                 return
             chunks.append(body)
             more = bool(message.get("more_body", False))

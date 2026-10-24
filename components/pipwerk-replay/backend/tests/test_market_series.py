@@ -56,10 +56,11 @@ def import_candles(
 
 
 def import_gappy(client: TestClient) -> None:
-    """M1 candles at 10:00, 12:00, 14:00 and 16:00 inside the period 10:00 to 16:01: three gaps."""
-    entries = [candle_entry(FIRST_MINUTE + timedelta(hours=2 * index)) for index in range(4)]
-    period = {"start": "2024-01-02T10:00:00Z", "end": "2024-01-02T16:01:00Z"}
-    import_json_file(client, candles_document(entries, period=period))
+    """Four files with one M1 candle each, at 10:00, 12:00, 14:00 and 16:00: three gaps between
+    their covered periods."""
+    for index in range(4):
+        entry = candle_entry(FIRST_MINUTE + timedelta(hours=2 * index))
+        import_json_file(client, candles_document([entry]))
 
 
 def rows(client: TestClient, **params: Any) -> list[tuple[str, str, str]]:

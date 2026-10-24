@@ -1,6 +1,7 @@
-// Data stock of historical price data: `/api/v1/market-data/` (specification 5.1, 5.3, 8.3) and the
-// broker for test runs `/api/replay/settings/test-run-broker`.
+// Data stock of historical price data: `/api/v1/market-data/` (specification 5.1, 5.3, 5.5, 8.3) and
+// the broker for test runs `/api/replay/settings/test-run-broker`.
 import {
+  ApiError,
   asRecord,
   bool,
   list,
@@ -78,6 +79,11 @@ export async function fetchSeries(
 
 // --- details of a row -----------------------------------------------------------------
 
+/**
+ * A gap: a time between two covered periods of the series in which trade was possible. Weekends,
+ * holidays and other times without trade are no gaps (specification 5.2); the backend does not
+ * list them.
+ */
 export type Gap = { start: string; end: string; reason: 'not_covered' | 'gap' };
 
 /** The contract data of an instrument at a broker. */
@@ -164,7 +170,7 @@ export async function fetchBrokers(signal?: AbortSignal): Promise<string[]> {
 /** The broker whose data a test run uses; `chosen` tells whether it is the user's choice. */
 export type TestRunBroker = { broker: string | null; chosen: boolean };
 
-function parseTestRunBroker(value: unknown): TestRunBroker {
+export function parseTestRunBroker(value: unknown): TestRunBroker {
   const record = asRecord(value, 'broker for test runs');
   return { broker: strOrNull(record, 'broker'), chosen: bool(record, 'chosen') };
 }
@@ -181,6 +187,29 @@ export async function updateTestRunBroker(broker: string | null): Promise<TestRu
 
 // --- import ---------------------------------------------------------------------------
 
+/**
+ * The limit per file as a text of the backend names it: the size (`32 MiB`) or the number of rows
+ * (`500000`). The backend names it in the unit of the user (`The file is larger than the limit of
+ * 32 MiB per file.`); the interface shows the same value in its own sentence.
+ */
+export type FileLimit = { kind: 'size' | 'rows'; text: string };
+
+/** The limit per file that a text of the backend names, or `null` if the text names none. */
+export function limitFromMessage(message: string | null): FileLimit | null {
+  if (message === null) {
+    return null;
+  }
+  const size = /limit of (\d+(?:\.\d+)?) (bytes|KiB|MiB|GiB) per file/.exec(message);
+  if (size?.[1] !== undefined && size[2] !== undefined) {
+    return { kind: 'size', text: `${size[1]} ${size[2]}` };
+  }
+  const rows = /limit of (\d+) (?:rows|entries) per file/.exec(message);
+  if (rows?.[1] !== undefined) {
+    return { kind: 'rows', text: rows[1] };
+  }
+  return null;
+}
+
 /** What the backend recognises about a file without importing it (`FileHint`). */
 export type FileHint = {
   name: string;
@@ -191,6 +220,8 @@ export type FileHint = {
   data: string | null;
   /** The code of the problem if a JSON file cannot be read. */
   error: string | null;
+  /** The limit per file if the file is above it and the backend said so (HTTP 413). */
+  limit: FileLimit | null;
 };
 
 function parseHint(value: unknown): FileHint {
@@ -206,33 +237,61 @@ function parseHint(value: unknown): FileHint {
     instrument: strOrNull(record, 'instrument'),
     data: strOrNull(record, 'data'),
     error: strOrNull(record, 'error'),
+    limit: null,
   };
 }
 
-/** The file part of a form. */
-function appendFile(form: FormData, file: Blob, name: string): void {
+/** The form of the request of one file: the part `file`, named like the file. */
+function fileForm(file: Blob, name: string): FormData {
+  const form = new FormData();
   form.append('file', file, name);
+  return form;
 }
 
 /**
- * Asks the backend what the files say about themselves. The content of a CSV file is not read, so
- * it is not sent (an empty part with the name of the file); a JSON file is sent as it is.
+ * The limit that the answer 413 of a file above the limit per file names (`FileTooLarge`): `null`
+ * if the answer names none, `undefined` if the error is not that answer.
  */
-export async function previewImport(files: File[], signal?: AbortSignal): Promise<FileHint[]> {
-  const form = new FormData();
-  for (const file of files) {
-    const isJson = file.name.toLowerCase().endsWith('.json');
-    appendFile(form, isJson ? file : new Blob([]), file.name);
+function fileTooLarge(error: unknown): FileLimit | null | undefined {
+  if (!(error instanceof ApiError) || error.status !== 413) {
+    return undefined;
   }
-  const record = asRecord(
-    await request(`${BASE}/imports/preview`, { method: 'POST', form, signal }),
-    'preview of an import',
-  );
-  const hints = list(record, 'files', parseHint);
-  if (hints.length !== files.length) {
-    throw new UnexpectedAnswerError('number of hints');
+  const body: unknown = error.body;
+  if (typeof body !== 'object' || body === null) {
+    return undefined;
   }
-  return hints;
+  const record = body as Record<string, unknown>;
+  if (record.code !== 'too_large') {
+    return undefined;
+  }
+  return limitFromMessage(typeof record.detail === 'string' ? record.detail : null);
+}
+
+/**
+ * Asks the backend what a file says about itself (one request per file). The content of a CSV file
+ * is not read, so it is not sent (an empty part with the name of the file); a JSON file is sent as
+ * it is. A file above the limit per file (HTTP 413) gets a hint with the error `too_large`.
+ */
+export async function previewFile(file: File, signal?: AbortSignal): Promise<FileHint> {
+  const isJson = file.name.toLowerCase().endsWith('.json');
+  const form = fileForm(isJson ? file : new Blob([]), file.name);
+  try {
+    return parseHint(await request(`${BASE}/import-preview`, { method: 'POST', form, signal }));
+  } catch (error) {
+    const limit = fileTooLarge(error);
+    if (limit === undefined) {
+      throw error;
+    }
+    return {
+      name: file.name,
+      format: isJson ? 'json' : 'csv',
+      broker: null,
+      instrument: null,
+      data: null,
+      error: 'too_large',
+      limit,
+    };
+  }
 }
 
 export type RejectedRow = { row: number; reason: string };
@@ -280,9 +339,9 @@ export type FileOutcome = {
   result: ImportResult | null;
   /** The code of the reason a whole file is refused (`FileErrorCode`). */
   error: string | null;
+  /** The limit per file if that is the reason (named in the text of the backend). */
+  limit: FileLimit | null;
 };
-
-export type ImportOutcome = { files: FileOutcome[]; importedCount: number; refusedCount: number };
 
 function parseOutcome(value: unknown): FileOutcome {
   const record = asRecord(value, 'result for a file');
@@ -293,50 +352,167 @@ function parseOutcome(value: unknown): FileOutcome {
     refused,
     result: result === null || result === undefined ? null : parseImportResult(result),
     error: strOrNull(record, 'error'),
+    limit: limitFromMessage(record.message === undefined ? null : strOrNull(record, 'message')),
   };
+}
+
+// --- import process -------------------------------------------------------------------
+
+/** An import process that was begun: its identifier and the time after which it ends by itself. */
+export type ImportProcess = { id: string; idleTimeoutSeconds: number };
+
+export async function beginImportProcess(signal?: AbortSignal): Promise<ImportProcess> {
+  const record = asRecord(
+    await request(`${BASE}/import-processes`, { method: 'POST', json: {}, signal }),
+    'import process',
+  );
+  return { id: str(record, 'id'), idleTimeoutSeconds: num(record, 'idle_timeout_seconds') };
 }
 
 /** A file of an import with what the user says about it (empty: nothing). */
 export type ImportFile = { file: File; instrument: string; data: string };
 
 /**
- * Imports all files in one process. `broker` counts for all files; `timezone` for all CSV files
- * and is sent only if it is given. `instrument` and `data` are sent for every file, in the order
- * of the files, an empty value for none.
+ * Imports one file in the process. `broker` counts for all files of the process; `timezone` is
+ * sent only if it is given (CSV files). `instrument` and `data` are sent as typed, empty for none.
+ * A file above the limit per file (HTTP 413) is the same as a file the import refuses for that
+ * reason: the answer is a refused file with the limit.
  */
-export async function importFiles(
+export async function importProcessFile(
+  processId: string,
   broker: string,
   timezone: string,
-  files: ImportFile[],
+  item: ImportFile,
   signal?: AbortSignal,
-): Promise<ImportOutcome> {
-  const form = new FormData();
+): Promise<FileOutcome> {
+  const form = fileForm(item.file, item.file.name);
   form.append('broker', broker);
   if (timezone !== '') {
     form.append('timezone', timezone);
   }
-  for (const item of files) {
-    appendFile(form, item.file, item.file.name);
+  form.append('instrument', item.instrument);
+  form.append('data', item.data);
+  try {
+    return parseOutcome(
+      await request(`${BASE}/import-processes/${encodeURIComponent(processId)}/files`, {
+        method: 'POST',
+        form,
+        signal,
+      }),
+    );
+  } catch (error) {
+    const limit = fileTooLarge(error);
+    if (limit === undefined) {
+      throw error;
+    }
+    return { name: item.file.name, refused: true, result: null, error: 'too_large', limit };
   }
-  for (const item of files) {
-    form.append('instrument', item.instrument);
-  }
-  for (const item of files) {
-    form.append('data', item.data);
-  }
+}
+
+export type ImportProcessEnd = {
+  id: string;
+  state: 'finished' | 'aborted';
+  importedCount: number;
+  refusedCount: number;
+};
+
+async function endImportProcess(
+  processId: string,
+  how: 'finish' | 'abort',
+  signal?: AbortSignal,
+): Promise<ImportProcessEnd> {
   const record = asRecord(
-    await request(`${BASE}/imports`, { method: 'POST', form, signal }),
-    'result of an import',
+    await request(`${BASE}/import-processes/${encodeURIComponent(processId)}/${how}`, {
+      method: 'POST',
+      json: {},
+      signal,
+    }),
+    'end of an import process',
   );
-  const outcome: ImportOutcome = {
-    files: list(record, 'files', parseOutcome),
+  const state = str(record, 'state');
+  if (state !== 'finished' && state !== 'aborted') {
+    throw new UnexpectedAnswerError('state of an import process');
+  }
+  return {
+    id: str(record, 'id'),
+    state,
     importedCount: num(record, 'imported_count'),
     refusedCount: num(record, 'refused_count'),
   };
-  if (outcome.files.length !== files.length) {
-    throw new UnexpectedAnswerError('number of results');
+}
+
+export function finishImportProcess(processId: string, signal?: AbortSignal): Promise<ImportProcessEnd> {
+  return endImportProcess(processId, 'finish', signal);
+}
+
+export function abortImportProcess(processId: string, signal?: AbortSignal): Promise<ImportProcessEnd> {
+  return endImportProcess(processId, 'abort', signal);
+}
+
+// --- deleting -------------------------------------------------------------------------
+
+/** What to delete (specification 5.5). The interface asks first (`confirm` false), then deletes. */
+export type DeletionRequest =
+  | { kind: 'series'; broker: string; instrument: string; data: string }
+  | { kind: 'period'; broker: string; instrument: string; data: string; start: string; end: string }
+  | { kind: 'contract'; broker: string; instrument: string }
+  | { kind: 'broker'; broker: string };
+
+/** What a deletion removes (`deleted` true) or would remove (`deleted` false). */
+export type DeletionResult = {
+  kind: DeletionRequest['kind'];
+  deleted: boolean;
+  broker: string;
+  instrument: string | null;
+  data: string | null;
+  start: string | null;
+  end: string | null;
+  candleCount: number;
+  tickCount: number;
+  seriesCount: number;
+  instrumentCount: number;
+  brokerRemoved: boolean;
+  testRunBrokerReset: boolean;
+  testRunBroker: TestRunBroker;
+};
+
+function parseDeletion(value: unknown): DeletionResult {
+  const record = asRecord(value, 'result of a deletion');
+  const kind = str(record, 'kind');
+  if (kind !== 'series' && kind !== 'period' && kind !== 'contract' && kind !== 'broker') {
+    throw new UnexpectedAnswerError('kind of a deletion');
   }
-  return outcome;
+  return {
+    kind,
+    deleted: bool(record, 'deleted'),
+    broker: str(record, 'broker'),
+    instrument: strOrNull(record, 'instrument'),
+    data: strOrNull(record, 'data'),
+    start: strOrNull(record, 'start'),
+    end: strOrNull(record, 'end'),
+    candleCount: num(record, 'candle_count'),
+    tickCount: num(record, 'tick_count'),
+    seriesCount: num(record, 'series_count'),
+    instrumentCount: num(record, 'instrument_count'),
+    brokerRemoved: bool(record, 'broker_removed'),
+    testRunBrokerReset: bool(record, 'test_run_broker_reset'),
+    testRunBroker: parseTestRunBroker(record.test_run_broker),
+  };
+}
+
+/**
+ * Asks what a deletion would remove (`confirm` false, nothing changes) or deletes (`confirm`
+ * true). The interface deletes only after the user confirmed what the first answer named.
+ */
+export async function deleteData(
+  what: DeletionRequest,
+  confirm: boolean,
+  signal?: AbortSignal,
+): Promise<DeletionResult> {
+  const { kind, ...fields } = what;
+  return parseDeletion(
+    await request(`${BASE}/deletions/${kind}`, { method: 'POST', json: { ...fields, confirm }, signal }),
+  );
 }
 
 /** The rule for the name of a broker or an instrument (`names.py` of the backend). */

@@ -2,7 +2,10 @@
 // interface shows its own texts in the chosen language, each with the next step.
 import type { TFunction } from 'i18next';
 
+import { formatNumber } from './format';
 import { ApiError } from './http';
+import type { SupportedLanguage } from './i18n';
+import type { FileLimit } from './marketDataApi';
 
 /** The codes of a whole file that is refused (`FileErrorCode` of the data stock). */
 export const FILE_ERROR_CODES = [
@@ -19,10 +22,17 @@ export const FILE_ERROR_CODES = [
   'store_failed',
 ] as const;
 
-/** The codes of an import that is refused as a whole (`BatchErrorCode`). */
-export const BATCH_ERROR_CODES = ['no_files', 'too_many_files', 'batch_too_large'] as const;
+/** The reasons for refusing a deletion (`DeletionErrorCode` of the web API, HTTP 404). */
+export const DELETION_ERROR_CODES = [
+  'broker_unknown',
+  'instrument_unknown',
+  'series_unknown',
+  'contract_unknown',
+  'period_invalid',
+  'period_empty',
+] as const;
 
-/** The reasons for a rejected row (`RejectReason` of the data stock). */
+/** The reasons for rejecting a row (`RejectReason` of the data stock). */
 export const REJECT_REASONS = [
   'columns_mismatch',
   'entry_invalid',
@@ -50,8 +60,31 @@ export function rejectReasonText(t: TFunction, reason: string): string {
   return isOneOf(REJECT_REASONS, reason) ? t(`import.reject.${reason}`) : t('import.reject.unknown');
 }
 
-export function fileErrorText(t: TFunction, code: unknown): string {
-  return isOneOf(FILE_ERROR_CODES, code) ? t(`import.fileError.${code}`) : t('import.fileError.unknown');
+/** The limit per file as the user reads it: `32 MiB` (German: `1,5 GiB`) or `500.000`. */
+export function limitText(limit: FileLimit, language: SupportedLanguage): string {
+  if (limit.kind === 'rows') {
+    return formatNumber(Number(limit.text), language, 0);
+  }
+  return language === 'de' ? limit.text.replace('.', ',') : limit.text;
+}
+
+/**
+ * The text for the reason a whole file is refused. A file above the limit per file names the
+ * limit, if the backend said it.
+ */
+export function fileErrorText(
+  t: TFunction,
+  code: unknown,
+  limit: FileLimit | null = null,
+  language: SupportedLanguage = 'de',
+): string {
+  if (!isOneOf(FILE_ERROR_CODES, code)) {
+    return t('import.fileError.unknown');
+  }
+  if ((code === 'too_large' || code === 'too_many_rows') && limit !== null) {
+    return t(`import.fileError.${code}`, { limit: limitText(limit, language) });
+  }
+  return t(`import.fileError.${code}`, { context: 'unnamed' });
 }
 
 /** The text for any error of a request, by what the backend and the network tell. */
@@ -60,9 +93,12 @@ export function describeError(t: TFunction, error: unknown): string {
     const body: unknown = error.body;
     const record =
       typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
-    // An import that is refused as a whole names the reason in `code`.
-    if ((error.status === 413 || error.status === 422) && isOneOf(BATCH_ERROR_CODES, record.code)) {
-      return t(`import.batchError.${record.code}`);
+    // A deletion that is refused names the reason in `code` (404) or `reason` (409).
+    if (error.status === 409 && record.reason === 'import_running') {
+      return t('errors.importRunning');
+    }
+    if (error.status === 404 && isOneOf(DELETION_ERROR_CODES, record.code)) {
+      return t(`delete.error.${record.code}`);
     }
     switch (error.status) {
       case 400:
@@ -71,6 +107,8 @@ export function describeError(t: TFunction, error: unknown): string {
         return t('errors.origin');
       case 404:
         return t('errors.notFound');
+      case 409:
+        return t('errors.conflict');
       case 413:
         return t('errors.tooLarge');
       case 415:

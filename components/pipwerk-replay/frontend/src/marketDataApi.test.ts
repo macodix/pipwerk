@@ -2,19 +2,27 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ApiError, UnexpectedAnswerError } from './http';
 import {
+  abortImportProcess,
+  beginImportProcess,
+  deleteData,
   fetchBrokers,
   fetchSeries,
   fetchSeriesDetails,
   fetchTestRunBroker,
-  importFiles,
+  finishImportProcess,
+  importProcessFile,
   isTimeUnit,
   isValidName,
-  previewImport,
+  limitFromMessage,
+  previewFile,
   updateTestRunBroker,
 } from './marketDataApi';
 import {
+  DELETIONS_PATH,
   FakeBackend,
+  IMPORT_PROCESS_PATH,
   INSTRUMENT_JSON,
+  deletionJson,
   hintJson,
   json,
   readForm,
@@ -136,96 +144,229 @@ describe('brokers and the broker for test runs', () => {
   });
 });
 
-describe('preview', () => {
-  it('sends a JSON file as it is and a CSV file without content, in the order of the files', async () => {
+describe('preview of a file', () => {
+  it('sends a JSON file as it is', async () => {
     backend.hints['b.json'] = hintJson('b.json', { broker: 'X', instrument: 'EURUSD', data: 'h1' });
-    const csv = new File(['a,b,c\n1,2,3\n'], 'EURUSD_H1.csv');
-    const jsonFile = new File(['{"a": 1}'], 'b.json');
 
-    const hints = await previewImport([csv, jsonFile]);
+    const hint = await previewFile(new File(['{"a": 1}'], 'b.json'));
 
-    const form = backend.callsTo('POST', '/api/v1/market-data/imports/preview')[0]?.body as FormData;
-    const parts = form.getAll('file') as File[];
-    expect(parts.map((part) => part.name)).toEqual(['EURUSD_H1.csv', 'b.json']);
-    expect(parts[0]?.size).toBe(0);
-    expect(parts[1]?.size).toBe(8);
-    expect(hints[1]).toMatchObject({ format: 'json', broker: 'X', instrument: 'EURUSD', data: 'h1', error: null });
-    expect(hints[0]).toMatchObject({ format: 'csv', instrument: null, data: null });
+    const call = backend.callsTo('POST', '/api/v1/market-data/import-preview')[0];
+    const parts = (call?.body as FormData).getAll('file') as File[];
+    expect(parts.map((part) => [part.name, part.size])).toEqual([['b.json', 8]]);
+    expect(hint).toMatchObject({ format: 'json', broker: 'X', instrument: 'EURUSD', data: 'h1', error: null, limit: null });
   });
 
-  it('refuses an answer with another number of hints', async () => {
-    backend.previewAnswer = () => json(200, { files: [], broker: null });
+  it('sends a CSV file without its content', async () => {
+    const hint = await previewFile(new File(['a,b,c\n1,2,3\n'], 'EURUSD_H1.csv'));
 
-    await expect(previewImport([new File(['x'], 'a.csv')])).rejects.toBeInstanceOf(UnexpectedAnswerError);
+    const parts = (backend.calls.at(-1)?.body as FormData).getAll('file') as File[];
+    expect(parts.map((part) => [part.name, part.size])).toEqual([['EURUSD_H1.csv', 0]]);
+    expect(hint).toMatchObject({ format: 'csv', instrument: null, data: null });
+  });
+
+  it('makes a hint with the limit of a file that is above the limit per file (HTTP 413)', async () => {
+    backend.previewAnswer = () =>
+      json(413, { detail: 'The file is larger than the limit of 32 MiB per file.', code: 'too_large', max_bytes: 33554432 });
+
+    const hint = await previewFile(new File(['{'], 'big.json'));
+
+    expect(hint).toMatchObject({ name: 'big.json', format: 'json', error: 'too_large', limit: { kind: 'size', text: '32 MiB' } });
+  });
+
+  it('passes on any other error', async () => {
+    backend.previewAnswer = () => json(413, { detail: 'The request body is larger than the limit.' });
+
+    await expect(previewFile(new File(['x'], 'a.csv'))).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('refuses an answer of another form', async () => {
+    backend.previewAnswer = () => json(200, { name: 'a.csv', format: 'xml' });
+
+    await expect(previewFile(new File(['x'], 'a.csv'))).rejects.toBeInstanceOf(UnexpectedAnswerError);
   });
 });
 
-describe('import', () => {
-  it('sends one form with the broker, the time zone, the files and instrument and data per file', async () => {
-    const files = [
-      { file: new File(['x'], 'a.json'), instrument: '', data: 'm1' },
-      { file: new File(['y'], 'EURUSD_H1.csv'), instrument: 'EURUSD', data: 'h1' },
-    ];
+describe('limit named by the backend', () => {
+  it.each([
+    ['The file is larger than the limit of 32 MiB per file.', { kind: 'size', text: '32 MiB' }],
+    ['The file is larger than the limit of 1.5 GiB per file.', { kind: 'size', text: '1.5 GiB' }],
+    ['The file is larger than the limit of 100 bytes per file.', { kind: 'size', text: '100 bytes' }],
+    ['The file has more rows than the limit of 500000 rows per file.', { kind: 'rows', text: '500000' }],
+    ['The file has more entries than the limit of 7 entries per file.', { kind: 'rows', text: '7' }],
+    ['The file is not valid JSON.', null],
+  ])('reads %j', (message, expected) => {
+    expect(limitFromMessage(message)).toEqual(expected);
+  });
 
-    const outcome = await importFiles('Demo & Server', 'Europe/Athens', files);
+  it('knows no limit without a text', () => {
+    expect(limitFromMessage(null)).toBeNull();
+  });
+});
 
-    const call = backend.callsTo('POST', '/api/v1/market-data/imports')[0];
+describe('import process', () => {
+  const fileOf = (name: string, instrument = '', data = '') => ({ file: new File(['x'], name), instrument, data });
+
+  it('begins a process with an empty JSON body and reads its identifier and time limit', async () => {
+    const process = await beginImportProcess();
+
+    const call = backend.callsTo('POST', IMPORT_PROCESS_PATH)[0];
+    expect(call?.body).toEqual({});
+    expect(call?.contentType).toBe('application/json');
+    expect(process).toEqual({ id: 'process-1', idleTimeoutSeconds: 300 });
+  });
+
+  it('sends one file in one form with the broker, the time zone, instrument and data', async () => {
+    const outcome = await importProcessFile('process-1', 'Demo & Server', 'Europe/Athens', fileOf('EURUSD_H1.csv', 'EURUSD', 'h1'));
+
+    const call = backend.callsTo('POST', `${IMPORT_PROCESS_PATH}/process-1/files`)[0];
     expect(call?.contentType).toBeNull();
     expect(readForm(call?.body)).toEqual({
       broker: 'Demo & Server',
       timezone: 'Europe/Athens',
-      files: ['a.json', 'EURUSD_H1.csv'],
-      instrument: ['', 'EURUSD'],
-      data: ['m1', 'h1'],
+      files: ['EURUSD_H1.csv'],
+      instrument: ['EURUSD'],
+      data: ['h1'],
     });
-    expect(outcome).toMatchObject({ importedCount: 2, refusedCount: 0 });
-    expect(outcome.files[1]?.result).toMatchObject({ kind: 'candles', accepted: 3, rejectedCount: 0 });
+    expect(outcome).toMatchObject({ name: 'EURUSD_H1.csv', refused: false, error: null, limit: null });
+    expect(outcome.result).toMatchObject({ kind: 'candles', accepted: 3, rejectedCount: 0 });
   });
 
-  it('sends no time zone if none is given', async () => {
-    await importFiles('B', '', [{ file: new File(['x'], 'a.json'), instrument: '', data: '' }]);
+  it('sends no time zone if none is given and puts the identifier in the path as text', async () => {
+    await importProcessFile('a b/c', 'B', '', fileOf('a.json'));
 
-    expect(readForm(backend.calls.at(-1)?.body).timezone).toBeNull();
+    const call = backend.calls.at(-1);
+    expect(call?.path).toBe('/api/v1/market-data/import-processes/a%20b%2Fc/files');
+    expect(readForm(call?.body).timezone).toBeNull();
   });
 
-  it('reads a result per file with a refused file beside a taken one', async () => {
-    backend.importAnswer = () =>
-      json(200, {
-        files: [takenJson('a.json', { rejected: [{ row: 3, reason: 'high_below_open' }], rejected_count: 1 }), refusedJson('b.json', 'json_invalid')],
-        imported_count: 1,
-        refused_count: 1,
-      });
+  it('reads the rejected rows of a taken file and the reason of a refused one', async () => {
+    backend.fileAnswer = (name) =>
+      name === 'a.json'
+        ? json(200, takenJson('a.json', { rejected: [{ row: 3, reason: 'high_below_open' }], rejected_count: 1 }))
+        : json(200, refusedJson(name, 'json_invalid', 'The file is not valid JSON.'));
 
-    const outcome = await importFiles('B', '', [
-      { file: new File(['x'], 'a.json'), instrument: '', data: '' },
-      { file: new File(['x'], 'b.json'), instrument: '', data: '' },
+    const taken = await importProcessFile('p', 'B', '', fileOf('a.json'));
+    const refused = await importProcessFile('p', 'B', '', fileOf('b.json'));
+
+    expect(taken.result?.rejected).toEqual([{ row: 3, reason: 'high_below_open' }]);
+    expect(refused).toMatchObject({ refused: true, result: null, error: 'json_invalid', limit: null });
+  });
+
+  it('reads the limit per file from the text of a refused file', async () => {
+    backend.fileAnswer = (name) =>
+      json(200, refusedJson(name, 'too_large', 'The file is larger than the limit of 32 MiB per file.'));
+
+    const refused = await importProcessFile('p', 'B', '', fileOf('big.csv'));
+
+    expect(refused).toMatchObject({ refused: true, error: 'too_large', limit: { kind: 'size', text: '32 MiB' } });
+  });
+
+  it('treats the answer 413 of a file above the limit like a refused file with that limit', async () => {
+    backend.fileAnswer = () =>
+      json(413, { detail: 'The file is larger than the limit of 32 MiB per file.', code: 'too_large', max_bytes: 33554432 });
+
+    const refused = await importProcessFile('p', 'B', '', fileOf('big.json'));
+
+    expect(refused).toEqual({ name: 'big.json', refused: true, result: null, error: 'too_large', limit: { kind: 'size', text: '32 MiB' } });
+  });
+
+  it('passes on any other error, among them the end of the process', async () => {
+    backend.fileAnswer = () => json(404, { detail: 'The import process does not exist. It has ended or its time has run out.' });
+
+    const error = await importProcessFile('p', 'B', '', fileOf('a.json')).catch((e: unknown) => e);
+
+    expect((error as ApiError).status).toBe(404);
+  });
+
+  it('finishes and aborts a process', async () => {
+    expect((await finishImportProcess('p')).state).toBe('finished');
+    expect((await abortImportProcess('p')).state).toBe('aborted');
+
+    expect(backend.callsTo('POST', `${IMPORT_PROCESS_PATH}/p/finish`)[0]?.body).toEqual({});
+    expect(backend.callsTo('POST', `${IMPORT_PROCESS_PATH}/p/abort`)[0]?.body).toEqual({});
+  });
+
+  it('refuses an answer of another form and a result of another kind', async () => {
+    backend.beginAnswer = () => json(201, { id: 5 });
+    await expect(beginImportProcess()).rejects.toBeInstanceOf(UnexpectedAnswerError);
+
+    backend.endAnswer = () => json(200, { id: 'p', state: 'running', imported_count: 0, refused_count: 0 });
+    await expect(finishImportProcess('p')).rejects.toBeInstanceOf(UnexpectedAnswerError);
+
+    backend.fileAnswer = () => json(200, takenJson('a.json', { kind: 'other' }));
+    await expect(importProcessFile('p', 'B', '', fileOf('a.json'))).rejects.toBeInstanceOf(UnexpectedAnswerError);
+  });
+});
+
+describe('deleting', () => {
+  const series = { kind: 'series', broker: 'B', instrument: 'EURUSD', data: 'h1' } as const;
+
+  it.each([
+    [series, 'series', { broker: 'B', instrument: 'EURUSD', data: 'h1' }],
+    [
+      { kind: 'period', broker: 'B', instrument: 'EURUSD', data: 'm1', start: '2026-01-05T08:00:00Z', end: '2026-01-05T09:00:00Z' },
+      'period',
+      { broker: 'B', instrument: 'EURUSD', data: 'm1', start: '2026-01-05T08:00:00Z', end: '2026-01-05T09:00:00Z' },
+    ],
+    [{ kind: 'contract', broker: 'B', instrument: 'EURUSD' }, 'contract', { broker: 'B', instrument: 'EURUSD' }],
+    [{ kind: 'broker', broker: 'B' }, 'broker', { broker: 'B' }],
+  ] as const)('sends %j to the endpoint of its kind with the fields and `confirm`', async (what, kind, fields) => {
+    await deleteData(what, false);
+    await deleteData(what, true);
+
+    const calls = backend.callsTo('POST', `${DELETIONS_PATH}/${kind}`);
+    expect(calls.map((call) => call.body)).toEqual([
+      { ...fields, confirm: false },
+      { ...fields, confirm: true },
     ]);
-
-    expect(outcome.files[0]?.result?.rejected).toEqual([{ row: 3, reason: 'high_below_open' }]);
-    expect(outcome.files[1]).toMatchObject({ refused: true, result: null, error: 'json_invalid' });
   });
 
-  it('turns an import that is refused as a whole into an ApiError with the body', async () => {
-    backend.importAnswer = () => json(413, { detail: 'The import is refused as a whole.', code: 'too_many_files', message: 'm' });
+  it('reads what would be deleted and what the deletion did to the broker for test runs', async () => {
+    backend.deletionAnswer = () =>
+      json(
+        200,
+        deletionJson({
+          kind: 'broker',
+          instrument: null,
+          data: null,
+          candle_count: 12,
+          tick_count: 3,
+          series_count: 2,
+          instrument_count: 1,
+          broker_removed: true,
+          test_run_broker_reset: true,
+          test_run_broker: { broker: 'A', chosen: false },
+        }),
+      );
 
-    const error = await importFiles('B', '', [{ file: new File(['x'], 'a.json'), instrument: '', data: '' }]).catch(
-      (e: unknown) => e,
-    );
+    const result = await deleteData({ kind: 'broker', broker: 'Demo-Server' }, false);
 
+    expect(result).toEqual({
+      kind: 'broker',
+      deleted: false,
+      broker: 'Demo-Server',
+      instrument: null,
+      data: null,
+      start: null,
+      end: null,
+      candleCount: 12,
+      tickCount: 3,
+      seriesCount: 2,
+      instrumentCount: 1,
+      brokerRemoved: true,
+      testRunBrokerReset: true,
+      testRunBroker: { broker: 'A', chosen: false },
+    });
+  });
+
+  it('passes on the reason of a refusal and refuses an answer of another form', async () => {
+    backend.deletionAnswer = () => json(409, { detail: 'x', reason: 'import_running' });
+    const error = await deleteData(series, true).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
-    expect((error as ApiError).status).toBe(413);
-    expect((error as ApiError).body).toMatchObject({ code: 'too_many_files' });
-  });
+    expect((error as ApiError).body).toMatchObject({ reason: 'import_running' });
 
-  it('refuses an answer with another number of results and a result of another kind', async () => {
-    backend.importAnswer = () => json(200, { files: [], imported_count: 0, refused_count: 0 });
-    const one = [{ file: new File(['x'], 'a.json'), instrument: '', data: '' }];
-
-    await expect(importFiles('B', '', one)).rejects.toBeInstanceOf(UnexpectedAnswerError);
-
-    backend.importAnswer = () =>
-      json(200, { files: [takenJson('a.json', { kind: 'other' })], imported_count: 1, refused_count: 0 });
-    await expect(importFiles('B', '', one)).rejects.toBeInstanceOf(UnexpectedAnswerError);
+    backend.deletionAnswer = () => json(200, deletionJson({ kind: 'other' }));
+    await expect(deleteData(series, false)).rejects.toBeInstanceOf(UnexpectedAnswerError);
   });
 });
 

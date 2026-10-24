@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>strategiedesign Spezifikation 3</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentationen zuvor. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:100px 128px;display:flex;flex-direction:column;gap:36px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:62px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:30px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:26px;line-height:1.42;color:var(--text)}
+code{font-size:.92em;background:#eef2ef;padding:1px 6px;border-radius:5px}
+.note{font-size:23px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:30px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 32px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 14px;font-size:29px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:12px 20px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:24px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:24px 32px;font-size:28px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:112px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:26px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+.layer{display:grid;grid-template-columns:1fr;gap:16px}
+.layer > div{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:18px 28px;display:flex;gap:28px;align-items:baseline}
+.layer b{font-size:28px;min-width:420px;color:var(--green)}
+.layer span{font-size:24px;color:var(--text);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben strategiedesign · Phase 2 Konzeption</p>
+<div class="col" style="flex:0;gap:32px">
+<h1>Spezifikation des Strategiedesigners: Objekte an der Stelle ihrer Verwendung</h1>
+<p style="font-size:36px;width:1560px">Deine Festlegungen aus der Abnahme von wp02 und aus dem Test vom 22. und 23. Oktober sind in Anforderungen, Fachmodell und Spezifikation eingearbeitet. Die Qualitätssicherung (QA) hat die Spezifikation geprüft, Ergebnis: bestanden. Diese Präsentation zeigt die Punkte, die du bestätigst, und die Punkte, die du in der Abnahme in pipwerk Studio prüfst.</p>
+</div>
+<p style="font-size:26px;color:var(--coveraccent)">23. Oktober 2026 · Projektleiter an Martin · Grundlage: <code>development/strategiedesign/specification.md</code></p>
+<p class="num">1 / 7</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Wo wir stehen</h2>
+<div class="chain">
+<div class="node">Phase 1<small>Anforderungen: deine Dokumente</small></div><span class="arrow">→</span>
+<div class="node" style="border-width:4px">Phase 2<small>Spezifikation</small></div><span class="arrow">→</span>
+<div class="node">Phase 3<small>Plan der Arbeitspakete</small></div><span class="arrow">→</span>
+<div class="node">Phase 4<small>Umsetzung in pipwerk Studio</small></div><span class="arrow">→</span>
+<div class="node">Phase 5<small>Abnahme: du probierst aus</small></div>
+</div>
+<div class="row">
+<div class="card col"><h3>Deine Dokumente</h3><p>Die QA hat die geänderten Stellen in Anforderungen, Fachmodell und Glossar geprüft. Ergebnis: <b>bestanden</b>. Beide Testfälle lassen sich vollständig gestalten, speichern und laden.</p></div>
+<div class="card col"><h3>Spezifikation</h3><p>Die QA hat die Spezifikation in zwei Durchläufen geprüft. Ergebnis: <b>bestanden</b>. Sie braucht keine Entscheidung, um umgesetzt zu werden.</p></div>
+<div class="card col"><h3>Umsetzung</h3><p>Die Änderungen werden direkt in pipwerk Studio umgesetzt. Du prüfst sie in der Testumgebung. Einen Prototyp gibt es dafür nicht.</p></div>
+</div>
+<p class="num">2 / 7</p></section></div>
+<div class="frame"><section class="slide">
+<h2>pipwerk Studio nach deinen Festlegungen</h2>
+<div class="grid2">
+<div class="card"><h3>Objekte bei ihrer ersten Verwendung</h3><p>Ein Indikator, Trend, Konto, Instrument, Kerze oder Tick liegt neben dem Element, das ihn zuerst verwendet, und ist mit ihm verbunden. Seine Werte werden ermittelt, wenn der Ablauf dieses Element erreicht. Steht sein Name nur in einem Ausdruck, wird die Verbindung trotzdem eingezeichnet.</p></div>
+<div class="card"><h3>Beschriftete Linien</h3><p>Jede Linie nennt den übergebenen Wert, zum Beispiel „Wert“ oder „Wert vor 3 Kerzen“. Bei jeder Verwendung wählst du in der Eigenschaftenansicht Eigenschaft oder Methode und, wo möglich, „Aktualisieren“: Das Objekt ermittelt seine Werte dann neu, bevor es sie übergibt.</p></div>
+<div class="card"><h3>Eindeutige Namen</h3><p>Jeder Name kommt in einer Strategie nur einmal vor, auch bei Regeln, Regelwerken und Objekten innerhalb eines Trends oder Regelwerks. Beim Einfügen einer Vorlage schlägt pipwerk Studio für die enthaltenen Objekte Namen vor, zum Beispiel „Trend H1 EMA 20“. Ist der Name vergeben, wird eine Zahl angehängt.</p></div>
+<div class="card"><h3>Hinweise und Beschreibungen</h3><p>Hinweise, der Assistent und kurze Meldungen stehen nur in der Eigenschaftenansicht. Die Eigenschaftenansicht eines Objekts beschreibt jeden Wert, den es liefert: was er aussagt und wozu er dient. Verbindungen löschst du über die Eigenschaftenansicht des verwendenden Elements.</p></div>
+</div>
+<p class="num">3 / 7</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Vorläufig, du prüfst es in der Abnahme</h2>
+<table>
+<tr><th style="width:110px">Punkt</th><th style="width:380px">Thema</th><th>Lösung in der Spezifikation</th></tr>
+<tr><td>21</td><td>Ort der Fenster</td><td>„Öffnen“, „Einstellungen“, „Über pipwerk Studio“, die Rückfragen vor dem Schließen und Löschen und Fehlermeldungen wie „Speichern fehlgeschlagen“ erscheinen als Fenster über der Oberfläche. Sie verlangen eine Antwort, bevor es weitergeht.</td></tr>
+<tr><td>22</td><td>Lage der Objekte</td><td>Jedes Objekt liegt beim Element seiner ersten Verwendung. Ein Objekt, das noch kein Element verwendet, liegt dort, wo du es abgelegt hast. Der Umschalter „Weitere Verwendungen“ steht beim Start auf „Auswahl“: Gestrichelte Linien erscheinen nur für das gewählte Element.</td></tr>
+</table>
+<p class="note">Ein Einwand dazu kommt als Mangel in den Abnahmebericht und wird direkt in pipwerk Studio behoben.</p>
+<p class="num">4 / 7</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Vorschläge zu offenen Punkten deiner Dokumente</h2>
+<table>
+<tr><th style="width:110px">Punkt</th><th style="width:380px">Thema</th><th>Vorschlag</th></tr>
+<tr><td>23</td><td>Methoden und Aktualisieren</td><td>EMA und ATR haben die Methode „Wert vor … Kerzen“. Alle mitgelieferten Indikatoren und Trends sowie Konto, Instrument, Kerze und Tick lassen sich aktualisieren. Eine eigene Vorlage übernimmt das von ihrem Typ.</td></tr>
+<tr><td>24</td><td>Stand eines Objekts</td><td>Verwendet ein Element ein Objekt auf einem Weg, der nicht über dessen erste Verwendung führt, meldet die Konsistenzprüfung einen Fehler. Die Verwaltung einer Order mit eigenen Auslösern läuft später als der Hauptablauf, zum Beispiel bei jedem Tick. Ein EMA aus dem Hauptablauf zeigt dort den Wert vom Aufgeben der Order. Den aktuellen Wert liefert er mit „Aktualisieren“.</td></tr>
+<tr><td>25</td><td>Gruppen der Elementbibliothek</td><td>Ablaufsteuerung, Berechnung, Indikatoren, Trends, Marktdaten, Konto, Aktionen, Regeln und Regelwerke.</td></tr>
+</table>
+<p class="num">5 / 7</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Testfälle mit „Aktualisieren“ in der Verwaltung</h2>
+<div class="row">
+<div class="card col"><h3>str-01 Scalping Punkt-2-Ausbruch</h3><p>Die Verwaltung der Stop-Order läuft bei jedem Tick und bei jedem Kerzenschluss. Sie löscht die Order, wenn der Kurs das letzte Tief beziehungsweise Hoch durchbricht, und zieht den Stop-Loss nach. Dafür verwendet sie den ZigZag der Handelszeiteinheit mit „Aktualisieren“. Ohne „Aktualisieren“ sähe sie nur die Wendepunkte vom Aufgeben der Order.</p></div>
+<div class="card col"><h3>str-03 EMA-Trendfolge</h3><p>Die Verwaltung der Position läuft bei jedem Kerzenschluss. Sie schließt die Position, wenn EMA 20 und EMA 50 gegen die Position kreuzen, und zieht sonst den Stop-Loss mit dem ATR nach. Dafür verwendet sie EMA 20, EMA 50 und ATR 14 mit „Aktualisieren“.</p></div>
+</div>
+<p class="note">Beide Testfälle lassen sich vollständig aus Bausteinen bilden, ohne einen Ausdruck als Text einzugeben.</p>
+<p class="num">6 / 7</p></section></div>
+<div class="frame"><section class="slide">
+<h2>Bestätigung</h2>
+<div class="row">
+<div class="card col ask"><h3>Zu bestätigen</h3><p>Punkte 23 bis 25 und die Verwendung von „Aktualisieren“ in den Testfällen. Punkte 21 und 22 bleiben vorläufig bis zur Abnahme. Danach erstellt der Softwarearchitekt den Plan der Arbeitspakete.</p></div>
+</div>
+<p class="rule">Vermerk der Bestätigung: Abstimmung mit dem Auftraggeber im Chat am 2026-10-23. Punkt 23 geändert: Aktualisieren wie vorgeschlagen, die mitgelieferten Objekttypen haben vorerst keine Methoden; „vorheriger Wert von“ deckt den Wert vor n Kerzen ab. Punkt 24 geändert: An einer Stelle, die eine Auswertung nicht ausschließlich über die erste Verwendung einer Instanz erreicht, bieten Bausteine und Verbinden die Instanz nicht an, dort ist es eine andere Instanz mit eigenem Namen; steht sie trotzdem in einem Ausdruck, meldet die Konsistenzprüfung einen Fehler. Stand der Instanz in der Verwaltung und „Aktualisieren“ in den Testfällen bestätigt. Punkt 25 vorerst bestätigt. Punkte 21 und 22 vorläufig bis zur Abnahme. Eingetragen im Fachmodell (req-fach-055) und in den Anforderungen (req-ui-014).</p>
+<p class="num">7 / 7</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>

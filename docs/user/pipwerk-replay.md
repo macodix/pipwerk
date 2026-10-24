@@ -3,9 +3,9 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-23
+- stand: 2026-10-24
 - komponente: `pipwerk-replay`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Aufträge 05 und 14
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Aufträge 05, 14 und 17
 
 ## 1. Wozu pipwerk replay dient
 
@@ -14,7 +14,7 @@ pipwerk replay ist der Strategietester von Pipwerk. Er führt Handelsstrategien 
 Der derzeitige Stand von pipwerk replay kann zwei Dinge:
 
 1. **Testkonten** anlegen, ändern, speichern und löschen (Abschnitt 6).
-2. Den **Datenbestand** ansehen und füllen (Abschnitte 7 und 8): Sie sehen, welche Kursdaten vorliegen und wo Lücken sind. Sie importieren Dateien, zum Beispiel einen Export aus MetaTrader 5 oder die Dateien von `pipwerk-fetch-mt5`, beliebig viele auf einmal. Sie wählen den Broker, dessen Daten ein Testlauf verwendet.
+2. Den **Datenbestand** ansehen und füllen (Abschnitte 7 und 8): Sie sehen, welche Kursdaten vorliegen und wo Lücken sind. Sie importieren Dateien, zum Beispiel einen Export aus MetaTrader 5 oder die Dateien von `pipwerk-fetch-mt5`, beliebig viele auf einmal. Sie löschen Daten, die Sie nicht mehr brauchen. Sie wählen den Broker, dessen Daten ein Testlauf verwendet.
 
 **pipwerk replay beschafft bis pipwerk relay nichts.** Es holt keine Kursdaten aus MetaTrader 5 und von keiner anderen Stelle, weder von Hand noch automatisch. Kursdaten kommen nur durch den Import in den Datenbestand. Sie holen sie mit dem Programm `pipwerk-fetch-mt5` auf dem Rechner, auf dem MetaTrader 5 läuft (Abschnitt 9), und importieren die Dateien, die es schreibt. Das ist eine Übergangslösung, bis pipwerk relay den Austausch übernimmt.
 
@@ -129,7 +129,7 @@ Gibt es kein Testkonto, steht in der Liste: „Es gibt kein Testkonto. Nächster
 **Die Leiste.** Sie hat zwei Bedienelemente:
 
 - **„Datei importieren …“** öffnet den Dialog, in dem Sie Dateien importieren (Abschnitt 8).
-- **„Broker für Testläufe“** ist ein Auswahlfeld. Der Broker ist die Bezeichnung der Stelle, von der die Kursdaten stammen, bei MetaTrader 5 der Name des Handelsservers. Ein Testlauf liest die Kursdaten dieses Brokers. Das Feld bietet nur Broker an, deren Daten im Datenbestand vorkommen. Die Wahl gilt sofort und bleibt gespeichert. Haben Sie keinen gewählt, oder kommt der gewählte Broker nicht mehr vor, gilt der erste Broker des Datenbestands in alphabetischer Reihenfolge, und das Feld zeigt ihn. Solange der Datenbestand leer ist, steht dort „kein Broker“. In der Vorbereitung eines Testlaufs lässt sich der Broker für diesen Testlauf ändern (kommt mit dem Testlauf).
+- **„Broker für Testläufe“** ist ein Auswahlfeld. Der Broker ist die Bezeichnung der Stelle, von der die Kursdaten stammen, bei MetaTrader 5 der Name des Handelsservers. Ein Testlauf liest die Kursdaten dieses Brokers. Das Feld bietet nur Broker an, deren Daten im Datenbestand vorkommen. Die Wahl gilt sofort und bleibt gespeichert. Haben Sie keinen gewählt, steht im Feld „– keiner gewählt –“, und ein Satz darunter nennt den Broker, der dann gilt: der erste Broker des Datenbestands in alphabetischer Reihenfolge. Mit „– keiner gewählt –“ nehmen Sie eine Wahl auch zurück. Löschen Sie alle Daten des gewählten Brokers (Abschnitt 8), ist danach keiner gewählt; auch ein späterer Import desselben Brokers wählt ihn nicht wieder. Solange der Datenbestand leer ist, steht dort „kein Broker“. In der Vorbereitung eines Testlaufs lässt sich der Broker für diesen Testlauf ändern (kommt mit dem Testlauf).
 
 **Die Tabelle.** Sie zeigt eine Zeile je Datenreihe. Die Spalten:
 
@@ -147,10 +147,13 @@ Alle Zeiten stehen in UTC (siehe Glossar). Der Zeitraum nennt Tage im Format TT.
 
 **Einzelheiten einer Reihe.** Ein Klick auf eine Zeile (oder die Eingabetaste, wenn die Zeile den Fokus hat) zeigt darunter die Einzelheiten; ein weiterer Klick schließt sie. Sie zeigen:
 
+- **Schaltflächen zum Löschen:** „Löschen …“ (nicht bei einer Zeile „Kontraktdaten“) und „Kontraktdaten löschen …“ (nur wenn es Kontraktdaten gibt). Sie sind in Abschnitt 8 beschrieben.
 - **Lücken:** alle Lücken der Reihe mit Beginn und Ende (UTC), oder „Keine Lücken.“ Bei Reihen mit sehr vielen Lücken zeigt die Liste nicht alle; ein Satz nennt, wie viele gezeigt werden.
 - **Kontraktdaten:** die Angaben zum Instrument bei diesem Broker, die ein Testlauf braucht: Tickgröße, Tickwert mit Währung, Pip, Punkt, Spread (als Kursunterschied), Mindestvolumen, Volumenschritt, Kontraktgröße, Swap für Kauf und Verkauf, den Wochentag des dreifachen Swaps, die Margin je Lot („–“, wenn der Broker keine nennt) und den Zeitpunkt, zu dem der Broker die Angaben geliefert hat. Fehlen die Kontraktdaten bei diesem Broker, steht dort: „Für dieses Instrument liegen bei diesem Broker keine Kontraktdaten vor. Ein Testlauf mit diesem Instrument startet dann nicht.“ und der Weg, sie zu holen und zu importieren. Die Kontraktdaten belegen später die Angaben zum Instrument im Testlauf vor.
 
-Eine **Lücke** ist ein Zeitraum, in dem eine Reihe Daten haben müsste, aber keine hat. Eine Lücke ist nicht, was nie geladen wurde: Zeiträume, die gar nicht abgedeckt sind, zeigt die Tabelle einfach nicht als Zeitraum. Ob ein Loch eine Lücke ist, richtet sich nach den Handelszeiten, die die Quelle der Daten liefert. Fehlen sie (bei Dateien aus MetaTrader 5 ist das so), gilt: Bei Kerzen liegt mehr als die doppelte Dauer der Zeiteinheit zwischen zwei Kerzen (bei H1 also mehr als zwei Stunden), und das Loch liegt nicht ganz im Wochenende (Freitag 22:00 bis Sonntag 22:00 UTC). Bei M1 sind einzelne fehlende Kerzen innerhalb einer Stunde, in der es Kerzen gibt, keine Lücke, weil Broker in ruhigen Minuten oft keine liefern. Bei Ticks ist eine Pause von mehr als einer Stunde außerhalb des Wochenendes eine Lücke. Eine Lücke reicht vom ersten bis zum letzten Handelszeitpunkt des Lochs. Ein Testlauf braucht lückenlose Daten; Lücken füllen Sie, indem Sie die Daten für den fehlenden Zeitraum holen und importieren.
+**Was eine Lücke ist.** Jede importierte Datei deckt einen Zeitraum ab: bei einer JSON-Datei den Zeitraum, den die Datei selbst nennt, bei einer CSV-Datei die ganzen Tage vom ersten bis zum letzten Eintrag (in der Zeitzone, die Sie beim Import angegeben haben). Innerhalb eines abgedeckten Zeitraums gibt es keine Lücke: Was die Datei für ihren Zeitraum liefert, gilt als vollständig, auch wenn darin Zeiten ohne Kerzen oder Ticks liegen. Eine **Lücke** ist ein Zeitraum zwischen zwei abgedeckten Zeiträumen derselben Reihe, in dem beim Broker gehandelt wurde. Das ist zum Beispiel ein Handelstag, dessen Datei Sie nicht importiert haben, oder ein Zeitraum, den Sie gelöscht haben.
+
+**Keine Lücken sind Zeiten ohne Handel:** Wochenenden (Freitag 22:00 bis Sonntag 22:00 UTC), Feiertage und andere Tage ohne Handel. Weder MetaTrader 5 noch seine Dateien nennen die Feiertage. Deshalb steht in der Startkonfiguration von pipwerk replay die Liste „Tage ohne Handel“ (`no_trading_days` im Abschnitt `[marketdata]`, Tage im Format `MM-TT` wie `12-25`). Vorbelegt sind der 25. Dezember und der 1. Januar. Ein solcher Tag reicht, wie das Wochenende, von 22:00 UTC des Vortags bis 22:00 UTC. Weitere Tage trägt der Betreiber in die Liste ein. Der frühe Handelsschluss am 24. und 31. Dezember am Ende einer Datei ist keine Lücke, weil die Datei den ganzen Tag abdeckt. Der Rand eines Wochenendes oder Feiertags kann bei einem Handelsserver in einer anderen Zeitzone als UTC+2 oder mit Sommerzeit eine Lücke von bis zu einigen Stunden zeigen; Sie erkennen sie an ihrer Lage am Wochenende oder Feiertag. Fehlt in einer Datei selbst ein Zeitraum, weil der Broker für ihn keine Daten hat, erkennt pipwerk replay das nicht als Lücke. Ein Testlauf braucht Daten für seinen ganzen Testzeitraum, außer in Zeiten ohne Handel; echte Lücken füllen Sie, indem Sie die Daten für den fehlenden Zeitraum holen und importieren.
 
 ## 8. Dateien importieren
 
@@ -172,14 +175,28 @@ Der Import liest Dateien, prüft sie und übernimmt die Daten in den Datenbestan
 3. **Broker** (Pflicht): Geben Sie den Broker ein, zu dem alle Dateien gehören, oder wählen Sie einen Namen aus dem Datenbestand; ein neuer Name ist möglich. Nennen alle JSON-Dateien denselben Broker, ist er schon eingetragen; nennen sie verschiedene, ist das Feld leer. Der Broker gilt für alle Dateien, auch für JSON-Dateien, die einen anderen nennen.
 4. **Zeitzone der CSV-Dateien** (Pflicht, nur sichtbar, wenn eine CSV-Datei in der Liste steht): siehe oben.
 5. **Instrument und Daten je Datei:** Die Liste füllt sie vor. Bei JSON stehen sie im Inhalt der Datei; die Daten lassen sich dort nicht ändern, das Instrument schon. Bei CSV liest pipwerk replay sie aus dem Dateinamen. Erkannt werden `<Instrument>_<Daten>_<von>_<bis>` (der Name aus MetaTrader 5 und von Dateien, die für den Import gedacht sind, zum Beispiel `EURUSD_H1_202301020000_202312292300.csv`) und `<Instrument>,<Daten>` (auch mit `_` oder Leerzeichen statt Komma, zum Beispiel `EURUSD,H1.csv`). `<Daten>` ist eine Zeiteinheit (`M1` bis `MN1`) oder `TICKS`, groß oder klein geschrieben. Jede Angabe lässt sich ändern: Instrument als Text, Daten (bei CSV) als Auswahl. Erkennt pipwerk replay etwas nicht, ist die Datei markiert („Instrument oder Daten nicht erkannt. Ergänzen Sie die Angabe oder entfernen Sie die Datei.“). „Entfernen“ nimmt eine Datei aus der Liste.
-6. Solange etwas fehlt, ist „Importieren“ gesperrt, und ein Satz unter der Liste nennt den nächsten Schritt. Sind alle Angaben da, klicken Sie auf „Importieren“.
+6. Solange etwas fehlt, ist „Importieren“ gesperrt, und ein Satz unter der Liste nennt den nächsten Schritt. Sind alle Angaben da, klicken Sie **einmal** auf „Importieren“. pipwerk replay importiert dann alle Dateien der Liste nacheinander.
 
-**Ergebnis je Datei.** Nach dem Klick zeigt die Liste für jede Datei, was geschehen ist, und darunter, wie viele Dateien importiert sind:
+**Es gibt keine Grenze für die Zahl der Dateien und keine für ihre Gesamtgröße.** Begrenzt ist nur eine einzelne Datei: Voreingestellt sind höchstens 32 MiB und 500 000 Zeilen je Datei (`max_upload_bytes` und `max_rows` im Abschnitt `[marketdata]` der Startkonfiguration). Eine größere Datei wird abgelehnt, und die Meldung nennt die Grenze. Die übrigen Dateien werden trotzdem importiert.
+
+**Stand und Abbrechen.** Während des Imports zeigt der Dialog, wie viele Dateien erledigt sind („3 von 12 Dateien erledigt.“), und neben jeder Datei ihren Stand:
+
+| Stand | Bedeutung |
+| --- | --- |
+| wartet | Die Datei ist noch nicht an der Reihe. |
+| wird importiert | Die Datei wird gerade geprüft und übernommen. |
+| übernommen | Die Datei ist im Datenbestand. |
+| abgelehnt | pipwerk replay hat die Datei nicht übernommen; der Grund steht bei der Datei. |
+| nicht importiert | Die Datei wurde nicht begonnen, weil Sie abgebrochen haben oder der Import unterbrochen wurde. |
+
+„Abbrechen“ beendet den Import nach der Datei, die gerade übernommen wird. Was schon übernommen ist, bleibt übernommen; die übrigen Dateien stehen als „nicht importiert“ in der Liste. Klicken Sie danach erneut auf „Importieren“, werden genau diese Dateien nachgeholt. Klicken Sie auf „Schließen“ oder drücken Sie die Escape-Taste, während der Import läuft, fragt der Dialog, ob der Import abgebrochen werden soll; „Weiter importieren“ lässt ihn laufen. Verlassen Sie die Ansicht, während der Import läuft, endet er ebenfalls nach der laufenden Datei. Ist das Netz oder der Hintergrunddienst nicht erreichbar, oder hat der Hintergrunddienst den Vorgang beendet, weil zu lange keine Datei kam, nennt eine Meldung den nächsten Schritt: Die Datei, bei der es scheiterte, steht als „abgelehnt“, die übrigen als „nicht importiert“.
+
+**Ergebnis je Datei.** Die Liste zeigt für jede Datei, was geschehen ist, und darunter, wie viele Dateien importiert sind (und wie viele abgelehnt oder nicht importiert sind):
 
 - Eine übernommene Datei zeigt: wie viele Zeilen übernommen wurden und wie viele davon vorhandene Zeilen desselben Zeitpunkts ersetzt haben, den Zeitraum der übernommenen Zeilen (UTC) und die Zahl der abgelehnten Zeilen mit je Zeile der Nummer und dem Grund. Bei einer CSV-Datei ist die Kopfzeile die Zeile 1. Bei einer JSON-Datei ist es die Stelle des Eintrags. Genannt werden höchstens die ersten 1000 abgelehnten Zeilen; gezählt werden alle. Eine Datei mit Kontraktdaten zeigt „Kontraktdaten übernommen.“
 - Eine abgelehnte Datei zeigt „Abgelehnt:“ mit dem Grund und dem nächsten Schritt. Sie hindert die übrigen nicht: Alle anderen Dateien sind übernommen. Ändern Sie die abgelehnte Datei in der Liste (zum Beispiel Instrument, Daten, Zeitzone) oder korrigieren Sie die Datei, und klicken Sie erneut auf „Importieren“. Es werden nur die Dateien erneut gesendet, die noch nicht übernommen sind.
 
-Die Tabelle hinter dem Dialog zeigt die neuen Reihen sofort, der neue Broker steht im Auswahlfeld „Broker für Testläufe“. „Schließen“ schließt den Dialog; die Liste ist dann leer.
+Die Tabelle hinter dem Dialog zeigt die neuen Reihen, sobald der Import endet; der neue Broker steht im Auswahlfeld „Broker für Testläufe“. „Schließen“ schließt den Dialog; die Liste ist dann leer.
 
 Der Import prüft: Format, Zeitordnung (jede Zeit nach der vorigen, keine doppelte), Kurse größer als 0, bei Kerzen Hoch nicht unter Eröffnung, Tief und Schluss, Tief nicht über Eröffnung und Schluss. Eine fehlerhafte Zeile lehnt er ab; die übrigen übernimmt er. Zeilen mit demselben Zeitpunkt wie vorhandene Daten ersetzen diese. Ein erneuter Import derselben Datei ersetzt also alle ihre Zeilen und verändert sonst nichts. Wird eine ganze Datei abgelehnt, ändert sich ihretwegen nichts im Datenbestand.
 
@@ -187,7 +204,7 @@ Der Import prüft: Format, Zeitordnung (jede Zeit nach der vorigen, keine doppel
 
 | Meldung | Was Sie tun |
 | --- | --- |
-| „Die Datei ist zu groß.“ / „Die Datei hat zu viele Zeilen.“ | Teilen Sie die Datei, zum Beispiel nach Zeiträumen. Voreingestellt sind höchstens 32 MiB und 500 000 Zeilen je Datei. |
+| „Die Datei ist größer als die Grenze von … je Datei.“ / „Die Datei hat mehr Zeilen als die Grenze von … Zeilen je Datei.“ | Teilen Sie die Datei, zum Beispiel nach Zeiträumen. Voreingestellt sind höchstens 32 MiB und 500 000 Zeilen je Datei. |
 | „Der Text der Datei lässt sich nicht lesen.“ | Speichern Sie die Datei als UTF-8. |
 | „Die Datei ist kein gültiges JSON.“ / „Der Aufbau der Datei entspricht nicht dem Format.“ | Prüfen Sie die Datei oder erzeugen Sie sie mit `pipwerk-fetch-mt5` neu. |
 | „Die Kopfzeile der CSV-Datei passt nicht.“ | Exportieren Sie die Datei erneut aus MetaTrader 5; es müssen Datum, Uhrzeit, Open, High, Low und Close (Kerzen) beziehungsweise Bid und Ask (Ticks) vorkommen. |
@@ -196,28 +213,53 @@ Der Import prüft: Format, Zeitordnung (jede Zeit nach der vorigen, keine doppel
 | „Der Zeitraum der Datei ist ungültig.“ / „Die Datei enthält keine Zeilen.“ | Prüfen Sie die Zeiten in der Datei und ob es die richtige Datei ist. |
 | „Der Datenbestand konnte die Datei nicht aufnehmen.“ | Versuchen Sie es später noch einmal; bleibt der Fehler, prüfen Sie die Meldungen des Hintergrunddienstes. |
 
-**Meldungen zum ganzen Vorgang.** Sie erscheinen unter der Liste; die Dateien bleiben stehen.
+**Meldungen, wenn der Import unterbrochen wird.** Sie erscheinen unter der Liste mit „Der Import wurde unterbrochen.“; die Dateien bleiben stehen. Bereits übernommene Dateien bleiben übernommen, die übrigen können Sie mit „Importieren“ nachholen.
 
 | Meldung | Was Sie tun |
 | --- | --- |
-| „Es sind zu viele Dateien auf einmal.“ / „Die Dateien sind zusammen zu groß.“ / „Die Dateien sind zusammen größer als erlaubt.“ | Importieren Sie weniger Dateien auf einmal. Voreingestellt sind höchstens 100 Dateien und zusammen 256 MiB je Vorgang. |
+| „Das Backend hat den Import-Vorgang beendet, weil zu lange keine Datei kam.“ | Klicken Sie erneut auf „Importieren“. |
 | „Das Backend hat die Anfrage abgewiesen, weil sie von einer Webseite mit anderer Adresse kommt.“ | Öffnen Sie pipwerk replay unter seiner eigenen Adresse (der Adresse aus Abschnitt 2) und versuchen Sie es noch einmal. |
 | „Das Backend hat die Anfrage abgewiesen, weil der Name der Adresse nicht erlaubt ist.“ | Öffnen Sie pipwerk replay unter `127.0.0.1` oder `localhost`, oder starten Sie die Testumgebung mit `--host`. |
-| „Das Backend ist gerade ausgelastet.“ | Zu viele Importe laufen gleichzeitig. Versuchen Sie es in einem Moment noch einmal. |
+| „Das Backend ist gerade ausgelastet.“ | Das Backend übernimmt gerade andere Dateien, zum Beispiel für ein zweites Fenster. pipwerk replay sendet eine Datei dann selbst später noch einmal; erscheint die Meldung trotzdem, versuchen Sie es in einem Moment noch einmal. |
 | „Das Backend ist nicht erreichbar.“ | Prüfen Sie, ob pipwerk replay läuft (Fußzeile), und versuchen Sie es noch einmal. |
 | „Der Datenbestand konnte nicht gelesen oder geändert werden.“ | Ein technischer Fehler in der Datenbank. Versuchen Sie es noch einmal; bleibt der Fehler, prüfen Sie die Meldungen des Hintergrunddienstes. |
 
 Die gewählten Dateien werden geprüft und nie ausgeführt.
 
+### Daten löschen
+
+Löschen ist nur über die Ansicht „Datenbestand“ möglich. Jedes Löschen fragt zuerst nach: pipwerk replay fragt den Hintergrunddienst, was gelöscht würde, und nennt es in einer Rückfrage mit Broker, Instrument, Daten, Zeitraum und der Zahl der Kerzen oder Ticks beziehungsweise der Reihen. Die Rückfrage sagt immer: „Das Löschen lässt sich nicht rückgängig machen.“ Gelöscht wird erst, wenn Sie „Endgültig löschen“ klicken. „Abbrechen“ lässt alles, wie es ist. Danach zeigt eine Zeile unter der Leiste, was gelöscht wurde, und Tabelle, Einzelheiten und Auswahl der Broker sind aktualisiert.
+
+Es gibt vier Formen:
+
+1. **Eine ganze Reihe löschen.** Klicken Sie auf die Zeile der Reihe, dann in den Einzelheiten auf „Löschen …“, wählen Sie „Die ganze Reihe“ und „Weiter“.
+2. **Einen Zeitraum einer Reihe löschen.** Ebenso, aber wählen Sie „Nur einen Zeitraum der Reihe“ und geben Sie „Von“ und „Bis“ in UTC auf die Minute an. Die Kerzen oder Ticks ab „Von“ bis vor „Bis“ werden gelöscht. Beginn und Ende müssen zwischen den Jahren 1970 und 2100 liegen, der Beginn vor dem Ende. Der gelöschte Zeitraum zählt danach als nicht abgedeckt und ist eine Lücke in der Reihe, außer er liegt ganz in einer Zeit ohne Handel (Abschnitt 7). Bleiben in der Reihe keine Daten, verschwindet sie.
+3. **Die Kontraktdaten eines Instruments löschen.** Klicken Sie in den Einzelheiten einer Zeile auf „Kontraktdaten löschen …“. Die Kontraktdaten eines Instruments bei einem Broker lassen sich nur ganz löschen. Die Schaltfläche gibt es nur, wenn es Kontraktdaten gibt.
+4. **Alle Daten eines Brokers löschen.** Filtern Sie die Tabelle nach dem Broker (Feld „Broker“ über der Tabelle). Passt der Filter zu genau einem Broker, erscheint „Alle Daten dieses Brokers löschen …“ mit dem Namen des Brokers. Passt er zu mehreren, bittet ein Satz um den Namen eines einzelnen Brokers. Gelöscht werden alle Reihen und alle Kontraktdaten des Brokers.
+
+**Ein Broker ergibt sich aus seinen Daten.** pipwerk replay führt keine Liste von Brokern. Ein Broker kommt vor, solange es Daten von ihm gibt, und verschwindet mit seinen letzten Daten, auch wenn Sie nur einzelne Reihen, Zeiträume oder Kontraktdaten gelöscht haben. Die Rückfrage sagt, wenn das die letzten Daten eines Brokers sind.
+
+**Der „Broker für Testläufe“ beim Löschen.** War der Broker, dessen Daten verschwinden, als „Broker für Testläufe“ gewählt, ist danach keiner gewählt. Die Rückfrage sagt das vorher, das Auswahlfeld zeigt danach „– keiner gewählt –“, und ein Satz nennt den Broker, der dann gilt (der erste in alphabetischer Reihenfolge). Auch ein späterer Import desselben Brokers wählt ihn nicht wieder; wählen Sie ihn selbst.
+
+**Während eines Imports lässt sich nichts löschen.** Solange ein Import läuft, lehnt pipwerk replay das Löschen mit der Meldung „Es besteht ein Import-Vorgang. Solange er besteht, lässt sich nichts löschen.“ ab und ändert nichts. Warten Sie, bis der Import beendet ist, oder brechen Sie ihn im Dialog „Datei importieren“ ab. Ein Import, zu dem eine Zeit lang (voreingestellt 5 Minuten) keine Datei kommt, endet von selbst.
+
+Gespeicherte Backtests (kommen später) und Testkonten ändert das Löschen nicht. Ist die Reihe oder der Broker nicht mehr da (zum Beispiel weil Sie in einem zweiten Fenster gelöscht haben), nennt die Rückfrage den Grund und den nächsten Schritt.
+
 ## 9. Kursdaten mit pipwerk-fetch-mt5 holen
 
 `pipwerk-fetch-mt5` ist ein kleines Programm für den Rechner, auf dem MetaTrader 5 läuft. Sie rufen es dort in der Eingabeaufforderung auf. Es liest Kerzen, Ticks und die Kontraktdaten eines Instruments aus MetaTrader 5 und schreibt sie als Dateien in einen Ordner. Diese Dateien importieren Sie in pipwerk replay (Abschnitt 8). Das Programm läuft nur, wenn Sie es aufrufen, und endet von selbst. Es öffnet keinen Port, hat keinen Server und braucht keine Verbindung zu pipwerk replay und keinen Schlüssel. Es handelt nie: Es liest nur und schreibt nur in den Ordner, den Sie angeben. Das beschreibt der Aufruf an der Befehlszeile in diesem Abschnitt. Dasselbe Programm kann auch über pipwerk relay arbeiten: `serve` beantwortet dann Anfragen, `request` schickt sie von einem anderen Rechner aus. Das steht im Abschnitt „Abruf mit serve und request“ der Anleitung zu pipwerk relay.
 
-**Voraussetzungen.** Ein Windows-Rechner, auf dem MetaTrader 5 installiert ist, am Konto des Brokers angemeldet. Das Programm `uv` (https://docs.astral.sh/uv/), das Python bei Bedarf selbst lädt; es verändert das Python Ihres Systems nicht. Einen Zugang zum Internet für die Installation (danach braucht das Programm kein Netz). Die Dateien der Ordner `components\pipwerk-fetch-mt5` und `packages\relay-core` aus dem Repository auf dem Rechner. Der Algo-Handel muss in MetaTrader 5 nicht eingeschaltet sein.
+**Voraussetzungen.** Ein Windows-Rechner, auf dem MetaTrader 5 installiert ist, am Konto des Brokers angemeldet. Das Programm `uv` (siehe Schritt 1 unten). Einen Zugang zum Internet für die Installation (danach braucht das Programm kein Netz). Die Dateien der Ordner `components\pipwerk-fetch-mt5` und `packages\relay-core` aus dem Repository auf dem Rechner. Der Algo-Handel muss in MetaTrader 5 nicht eingeschaltet sein.
 
 **Einmal einrichten.**
 
-1. **uv installieren** und danach ein neues Eingabeaufforderungsfenster öffnen.
+1. **uv installieren.** `uv` ist ein kostenloses Programm, das die Programmteile von `pipwerk-fetch-mt5` einrichtet und startet; Sie brauchen es nur für diese Einrichtung und den Aufruf. Öffnen Sie unter Windows eine Eingabeaufforderung oder PowerShell und führen Sie aus:
+
+   ```
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   Öffnen Sie danach ein neues Eingabeaufforderungsfenster und prüfen Sie die Installation mit `uv --version`. Erscheint eine Versionsnummer, ist `uv` bereit. Erscheint stattdessen eine Meldung, der Befehl sei unbekannt, haben Sie das Fenster nicht neu geöffnet oder die Installation ist fehlgeschlagen; wiederholen Sie dann den Befehl. Die Anleitung des Herstellers: https://docs.astral.sh/uv/getting-started/installation/.
 2. **Programm auf den Rechner legen:** Kopieren Sie die beiden Ordner `components\pipwerk-fetch-mt5` und `packages\relay-core` an einen beliebigen Ort, so dass sie unter demselben Ordner liegen wie im Repository, zum Beispiel `C:\pipwerk\components\pipwerk-fetch-mt5` und `C:\pipwerk\packages\relay-core`. Der zweite Ordner gehört zu pipwerk relay; der Aufruf an der Befehlszeile braucht ihn nicht, die Installation aber.
 3. **Installieren:** Führen Sie im Ordner `pipwerk-fetch-mt5` `scripts\install.cmd` aus (Doppelklick oder in der Eingabeaufforderung). Es lädt Python und die nötigen Pakete in den Unterordner `.venv`.
 4. **Startkonfiguration anlegen:** Kopieren Sie die Datei `pipwerk-fetch-mt5.example.ini` aus dem Ordner als `pipwerk-fetch-mt5.ini` in den Ordner `%USERPROFILE%\pipwerk\etc` (legen Sie den Ordner an, falls er fehlt; `%USERPROFILE%` ist der Ordner des angemeldeten Benutzers, zum Beispiel `C:\Users\Name`). Tragen Sie in der Datei ein:
@@ -257,7 +299,7 @@ Die gewählten Dateien werden geprüft und nie ausgeführt.
 
 **Grenzen eines Aufrufs.** Eine Datei hat höchstens 200 000 Zeilen, und das Programm liest höchstens 500 Abschnitte aus MetaTrader 5 je Datei (Kerzen: 10 000 je Abschnitt, Ticks: 6 Stunden je Abschnitt, also etwa 125 Tage Ticks). Für einen größeren Zeitraum meldet es „Zeitraum zu groß“. Holen Sie solche Zeiträume in mehreren Aufrufen. Die Grenzen lassen sich in der Startkonfiguration des Programms ändern; die Grenzen von pipwerk replay beim Import (Abschnitt 8) müssen dazu passen.
 
-**Handelszeiten.** MetaTrader 5 liefert über das Programm keine Handelszeiten. Der Datenbestand verwendet dann die Ersatzregel für Lücken (Abschnitt 7).
+**Handelszeiten.** MetaTrader 5 liefert über das Programm keine Handelszeiten. Der Datenbestand wendet dann für Zeiten ohne Handel das Wochenende und die Tage ohne Handel an (Abschnitt 7).
 
 **Meldungen und was Sie tun.** Ein Teil, der sich nicht holen lässt, steht mit Instrument, Art, Zeitraum und Grund auf der Fehlerausgabe; die übrigen Dateien werden geschrieben. Das Programm endet dann mit einem Fehlercode ungleich 0.
 
@@ -279,6 +321,7 @@ Fehler im Aufruf oder in der Startkonfiguration erscheinen als `pipwerk-fetch-mt
 - Es gibt noch keinen Testlauf: weder Einzelschritt-Test noch Backtest, und keine gespeicherten Backtests. Sie folgen in späteren Arbeitspaketen. Mit dem Testlauf gilt: Fehlen vor dem Start Daten, startet der Testlauf nicht und nennt die fehlenden Teile; er beschafft sie nicht.
 - pipwerk replay beschafft keine Daten. Bis pipwerk relay den Austausch übernimmt, holen Sie Daten mit `pipwerk-fetch-mt5` und importieren die Dateien.
 - Die Filter der Tabelle suchen einen Teil des Namens; ein Teil der Kennung der Daten wie `h1` trifft auch `h12`.
+- Eine einzelne Datei ist beim Import begrenzt (voreingestellt 32 MiB und 500 000 Zeilen); sehr große Tick-Dateien aus MetaTrader 5 lassen sich deshalb noch nicht importieren. Teilen Sie sie, zum Beispiel nach Zeiträumen.
 - Die Liste der Lücken in den Einzelheiten ist bei sehr vielen Lücken gekürzt. Bei sehr großen Reihen (viele Millionen Ticks) dauert das Lesen der Tabelle länger.
 - Mit `--host` kann jeder im Netz pipwerk replay benutzen; es gibt keine Anmeldung (Abschnitt 2).
 - pipwerk replay besitzt noch kein Installationspaket für Anwender.
@@ -313,7 +356,9 @@ Fehler im Aufruf oder in der Startkonfiguration erscheinen als `pipwerk-fetch-mt
 | Import | Die Übernahme von Dateien im Format JSON oder CSV in den Datenbestand, beliebig viele in einem Vorgang. |
 | pipwerk-fetch-mt5 | Das Programm, das Sie auf dem Rechner von MetaTrader 5 aufrufen und das Kerzen, Ticks und Kontraktdaten als Dateien für den Import schreibt. |
 | pipwerk relay | Die spätere Komponente, die den Austausch von Kursdaten übernimmt. Bis dahin beschafft pipwerk replay nichts. |
-| Lücke | Ein Zeitraum in einer Reihe, in dem Daten fehlen, obwohl gehandelt wurde. |
+| Lücke | Ein Zeitraum zwischen zwei importierten Zeiträumen einer Reihe, in dem gehandelt wurde und Daten fehlen. Wochenenden, Feiertage und andere Zeiten ohne Handel sind keine Lücken. |
+| Tage ohne Handel | Die Liste von Tagen im Jahr, an denen nicht gehandelt wird (Startkonfiguration, vorbelegt mit 25. Dezember und 1. Januar). Sie zählen wie das Wochenende als Zeit ohne Handel. |
+| Import-Vorgang | Der Import aller Dateien, die Sie mit einem Klick auf „Importieren“ starten. Er endet nach der letzten Datei, durch „Abbrechen“ oder von selbst, wenn zu lange keine Datei kommt. |
 | UTC | Die Weltzeit, auf die pipwerk alle Zeiten umrechnet. |
 | Zeitzone (IANA-Name) | Der Name einer Zeitzone mit ihren Regeln für die Sommerzeit, zum Beispiel `Europe/Athens`. |
 | Serverzeit | Die Zeit des Handelsservers eines Brokers, in der MetaTrader 5 Kurse liefert. |
