@@ -67,6 +67,15 @@ export function jsonFile(name: string, document: unknown): NamedFile {
   return { name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document), 'utf-8') };
 }
 
+/** A CSV file (export format of MetaTrader 5) with hourly candles H1 on `day` (`YYYY-MM-DD`). */
+export function dayCsv(day: string, hours: number[]): string {
+  const rows = hours.map((hour) => {
+    const o = 1.1 + hour / 1000;
+    return [day.replaceAll('-', '.'), `${String(hour).padStart(2, '0')}:00:00`, o.toFixed(5), (o + 0.0005).toFixed(5), (o - 0.0005).toFixed(5), (o + 0.0002).toFixed(5), '100', '0', '12'];
+  });
+  return mt5Candles(rows);
+}
+
 /** A CSV file in the export format of MetaTrader 5 (tab, headers in angle brackets). */
 export function mt5Candles(rows: string[][]): string {
   const header = ['<DATE>', '<TIME>', '<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<TICKVOL>', '<VOL>', '<SPREAD>'];
@@ -74,14 +83,23 @@ export function mt5Candles(rows: string[][]): string {
 }
 
 /** An hourly candle on 2026-01-05 (a Monday) at `hour`, as a row of the export of MetaTrader 5. */
-export function hourly(hour: number, base = 1.1): string[] {
+export function hourly(hour: number, base = 1.1, date = '2026.01.05'): string[] {
   const time = `${String(hour).padStart(2, '0')}:00:00`;
   const o = base + hour / 1000;
-  return ['2026.01.05', time, o.toFixed(5), (o + 0.0005).toFixed(5), (o - 0.0005).toFixed(5), (o + 0.0002).toFixed(5), '100', '0', '12'];
+  return [date, time, o.toFixed(5), (o + 0.0005).toFixed(5), (o - 0.0005).toFixed(5), (o + 0.0002).toFixed(5), '100', '0', '12'];
 }
 
-/** Candles H1 of 2026-01-05 from 08:00 to 12:00 and from 17:00 to 20:00: nine rows with one gap. */
+/**
+ * Candles H1 of 2026-01-05 from 08:00 to 12:00 and from 17:00 to 20:00: nine rows. The file
+ * covers the whole day (specification 5.2), so the hours without candles in it are no gap.
+ */
 export const GAPPY_CSV = mt5Candles([8, 9, 10, 11, 12, 17, 18, 19, 20].map((hour) => hourly(hour)));
+
+/**
+ * Candles H1 of Wednesday 2026-01-07: together with `GAPPY_CSV` in one series, Tuesday 2026-01-06
+ * lies between two covered periods and is a gap.
+ */
+export const WEDNESDAY_CSV = mt5Candles([8, 9, 10, 11, 12].map((hour) => hourly(hour, 1.1, '2026.01.07')));
 
 /** The same candles with a faulty row: the high (1.0) is below the low. */
 export const FAULTY_CSV = mt5Candles(
@@ -153,9 +171,31 @@ export function ticksDocument(options: { broker: string; instrument: string }): 
   };
 }
 
+/** Begins an import process through the web API and returns its identifier. */
+export async function beginProcess(backendUrl: string): Promise<string> {
+  const response = await fetch(`${backendUrl}/api/v1/market-data/import-processes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  expect(response.status).toBe(201);
+  return ((await response.json()) as { id: string }).id;
+}
+
+/** Ends (`finish`) or aborts an import process through the web API. */
+export async function endProcess(backendUrl: string, id: string, how: 'finish' | 'abort'): Promise<void> {
+  const response = await fetch(`${backendUrl}/api/v1/market-data/import-processes/${id}/${how}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  expect(response.status).toBe(200);
+}
+
 /**
- * Puts files into the data stock through the web API of the backend, for tests that need a filled
- * data stock and are not about the import. `instrument` and `data` per file are for CSV files.
+ * Puts files into the data stock through the web API of the backend (one import process, one
+ * request per file), for tests that need a filled data stock and are not about the import.
+ * `instrument` and `data` per file are for CSV files.
  */
 export async function seedFiles(
   backendUrl: string,
@@ -163,32 +203,60 @@ export async function seedFiles(
   files: { file: NamedFile; instrument?: string; data?: string }[],
   timezone = 'UTC',
 ): Promise<void> {
-  const form = new FormData();
-  form.append('broker', broker);
-  form.append('timezone', timezone);
-  for (const { file } of files) {
+  const id = await beginProcess(backendUrl);
+  for (const { file, instrument, data } of files) {
+    const form = new FormData();
+    form.append('broker', broker);
+    form.append('timezone', timezone);
     form.append('file', new Blob([new Uint8Array(file.buffer)], { type: file.mimeType }), file.name);
-  }
-  for (const { instrument } of files) {
     form.append('instrument', instrument ?? '');
-  }
-  for (const { data } of files) {
     form.append('data', data ?? '');
+    const response = await fetch(`${backendUrl}/api/v1/market-data/import-processes/${id}/files`, {
+      method: 'POST',
+      body: form,
+    });
+    expect(response.status).toBe(200);
+    const outcome = (await response.json()) as { refused: boolean };
+    expect(outcome.refused, file.name).toBe(false);
   }
-  const response = await fetch(`${backendUrl}/api/v1/market-data/imports`, { method: 'POST', body: form });
-  expect(response.status).toBe(200);
-  const outcome = (await response.json()) as { refused_count: number };
-  expect(outcome.refused_count).toBe(0);
+  await endProcess(backendUrl, id, 'finish');
 }
 
 /**
- * A data stock with a series with a gap and contract data (`EURUSD`), ticks, candles without
+ * Candles M1 on 2026-01-05 from 00:00, `count` of them, in the JSON format of the import. A
+ * candle is about 100 bytes, so `count` sets the size of the file.
+ */
+export function minuteCandles(options: { broker: string; instrument: string; count: number }): unknown {
+  const start = Date.UTC(2026, 0, 5, 0, 0);
+  return {
+    version: 1,
+    kind: 'candles',
+    broker: options.broker,
+    instrument: options.instrument,
+    time_unit: 'm1',
+    candles: Array.from({ length: options.count }, (_, index) => {
+      const price = 1.1 + (index % 100) / 10000;
+      return {
+        time: new Date(start + index * 60_000).toISOString().replace('.000Z', 'Z'),
+        open: Number(price.toFixed(5)),
+        high: Number((price + 0.0005).toFixed(5)),
+        low: Number((price - 0.0005).toFixed(5)),
+        close: Number((price + 0.0002).toFixed(5)),
+        volume: 100,
+      };
+    }),
+  };
+}
+
+/**
+ * A data stock with a series with a gap (Tuesday between two files) and contract data (`EURUSD`), ticks, candles without
  * contract data (`GBPUSD`) at one broker, and at a second broker candles and contract data only
  * (`GBPUSD`, which makes a row of contract data): five rows.
  */
 export async function seedStock(backendUrl: string): Promise<void> {
   await seedFiles(backendUrl, 'Test-Broker', [
     { file: csvFile('EURUSD_H1_202601050000_202601052300.csv', GAPPY_CSV), instrument: 'EURUSD', data: 'h1' },
+    { file: csvFile('EURUSD_H1_202601070000_202601072300.csv', WEDNESDAY_CSV), instrument: 'EURUSD', data: 'h1' },
     { file: jsonFile('EURUSD_CONTRACT.json', contractDocument({ broker: 'x', instrument: 'EURUSD' })) },
     { file: jsonFile('EURUSD_TICKS.json', ticksDocument({ broker: 'x', instrument: 'EURUSD' })) },
     { file: jsonFile('GBPUSD_H4.json', candlesDocument({ broker: 'x', instrument: 'GBPUSD', unit: 'h4', hours: [8, 12, 16] })) },
@@ -249,4 +317,23 @@ export async function fillImportBasics(page: Page, options: { broker?: string; t
 export async function runImport(page: Page): Promise<void> {
   await page.getByTestId('import-run').click();
   await expect(page.getByTestId('import-summary').or(page.getByTestId('import-error'))).toBeVisible();
+}
+
+/**
+ * Holds every request of a file of an import process back for `ms` milliseconds before it goes on
+ * to the real backend. The backend is not replaced; the requests only take longer, so that the
+ * running import can be seen and cancelled.
+ */
+export async function slowDownFiles(page: Page, ms: number): Promise<void> {
+  await page.route('**/api/v1/market-data/import-processes/*/files', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    await route.continue();
+  });
+}
+
+/** The rows of the data stock as the web API lists them (for checks behind the page). */
+export async function seriesOf(backendUrl: string, query = ''): Promise<{ total: number; items: Record<string, unknown>[] }> {
+  const response = await fetch(`${backendUrl}/api/v1/market-data/series?limit=100${query}`);
+  expect(response.status).toBe(200);
+  return (await response.json()) as { total: number; items: Record<string, unknown>[] };
 }

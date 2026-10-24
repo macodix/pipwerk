@@ -34,7 +34,7 @@ npm run dev
 
 The development server of Vite passes the requests under `/api` to the backend (`PIPWERK_REPLAY_BACKEND_URL`, default `http://127.0.0.1:8000`). The web API is described at `http://127.0.0.1:8000/docs`. pipwerk replay does not start without a valid INI startup configuration that defines the database connection; there is no implicit replacement database.
 
-The data stock lives in the same database unless `[marketdata] url` names another one. The limits of an import (number of files, size of a file and of all files together, number of rows) are entries of `[marketdata]` with defaults (see the example file). A startup configuration that still has the former section for a source is not wrong: the backend ignores it, like any entry it does not know.
+The data stock lives in the same database unless `[marketdata] url` names another one. An import has no limit for the number or the total size of its files; the limits per file (size and number of rows), the days without trade and the time after which an import process ends by itself are entries of `[marketdata]` with defaults (see the example file). A startup configuration that still has the former section for a source is not wrong: the backend ignores it, like any entry it does not know.
 
 ## Checks
 
