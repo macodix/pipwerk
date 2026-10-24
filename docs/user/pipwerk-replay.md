@@ -5,16 +5,17 @@
 - status: `draft`
 - stand: 2026-10-24
 - komponente: `pipwerk-replay`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Aufträge 05, 14 und 17
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Aufträge 05, 14, 17 und 20
 
 ## 1. Wozu pipwerk replay dient
 
 pipwerk replay ist der Strategietester von Pipwerk. Er führt Handelsstrategien gegen historische Kursdaten aus. Er liest die Kursdaten nur aus einem eigenen Bestand, dem Datenbestand historischer Kursdaten. Außerdem verwaltet er die Testkonten. Ein Testkonto ist ein Satz von Kontowerten, mit dem später ein Testlauf rechnet.
 
-Der derzeitige Stand von pipwerk replay kann zwei Dinge:
+Der derzeitige Stand von pipwerk replay kann drei Dinge:
 
 1. **Testkonten** anlegen, ändern, speichern und löschen (Abschnitt 6).
-2. Den **Datenbestand** ansehen und füllen (Abschnitte 7 und 8): Sie sehen, welche Kursdaten vorliegen und wo Lücken sind. Sie importieren Dateien, zum Beispiel einen Export aus MetaTrader 5 oder die Dateien von `pipwerk-fetch-mt5`, beliebig viele auf einmal. Sie löschen Daten, die Sie nicht mehr brauchen. Sie wählen den Broker, dessen Daten ein Testlauf verwendet.
+2. Den **Datenbestand** ansehen und füllen (Abschnitte 7 und 8): Sie sehen, welche Kursdaten vorliegen und wo Lücken sind. Sie importieren Dateien, zum Beispiel einen Export aus MetaTrader 5 oder die Dateien von `pipwerk-fetch-mt5`, beliebig viele auf einmal: von Ihrem Rechner hochgeladen oder aus dem Importverzeichnis gewählt, auch beides zusammen. Sie löschen Daten, die Sie nicht mehr brauchen. Sie wählen den Broker, dessen Daten ein Testlauf verwendet.
+3. Die **Einstellungen** für Dateien ändern (Abschnitt 8, Unterabschnitt „Einstellungen“): ob importierte Dateien behalten werden, und die Verzeichnisse für Ablage, Import und Export.
 
 **pipwerk replay beschafft bis pipwerk relay nichts.** Es holt keine Kursdaten aus MetaTrader 5 und von keiner anderen Stelle, weder von Hand noch automatisch. Kursdaten kommen nur durch den Import in den Datenbestand. Sie holen sie mit dem Programm `pipwerk-fetch-mt5` auf dem Rechner, auf dem MetaTrader 5 läuft (Abschnitt 9), und importieren die Dateien, die es schreibt. Das ist eine Übergangslösung, bis pipwerk relay den Austausch übernimmt.
 
@@ -33,7 +34,7 @@ Die Testumgebung wird mit dem Testumgebungsskript `components/pipwerk-replay/scr
 1. Starten: `components/pipwerk-replay/scripts/testenv start --frontend-port <Port der Oberfläche> --backend-port <Port des Hintergrunddienstes>`. Beide Ports wählen Sie selbst. Sie müssen frei sein und sich unterscheiden. Der Start dauert, weil das Skript die Programmteile installiert und die Oberfläche baut. Er endet erst, wenn pipwerk replay antwortet.
 2. Öffnen: Rufen Sie im Webbrowser die Adresse auf, die das Skript am Ende des Starts nennt (Meldung „pipwerk replay is running: …“). Ohne `--host` ist das `http://127.0.0.1:<Port der Oberfläche>/`.
 3. Abfragen: `components/pipwerk-replay/scripts/testenv status` nennt, ob die Testumgebung läuft, und die Adressen von Oberfläche und Hintergrunddienst.
-4. Beenden: `components/pipwerk-replay/scripts/testenv stop` beendet pipwerk replay und entfernt die Dateien der Testumgebung, auch ihre Datenbank. Damit gehen die Testkonten, der Datenbestand, der gewählte Broker für Testläufe und die gespeicherte Sprache verloren. Nach einem erneuten Start ist wieder Deutsch eingestellt, der Datenbestand ist leer und es gibt nur das Standard-Testkonto.
+4. Beenden: `components/pipwerk-replay/scripts/testenv stop` beendet pipwerk replay und entfernt die Dateien der Testumgebung, auch ihre Datenbank. Damit gehen die Testkonten, der Datenbestand, der gewählte Broker für Testläufe, die Einstellungen und die gespeicherte Sprache verloren. Nach einem erneuten Start ist wieder Deutsch eingestellt, der Datenbestand ist leer, die Einstellungen haben ihre Standardwerte und es gibt nur das Standard-Testkonto. Dateien, die pipwerk replay in einem Ablageverzeichnis behalten hat, entfernt es nie, auch `testenv stop` nicht.
 
 Der Datenbestand beginnt in der Testumgebung leer. Füllen Sie ihn durch den Import (Abschnitt 8).
 
@@ -49,7 +50,7 @@ Im Entwicklungsbetrieb starten Sie den Hintergrunddienst und die Oberfläche von
 
 Die Oberfläche besteht aus drei Bereichen.
 
-Oben steht die **Kopfzeile**. Sie zeigt links den Namen „pipwerk replay“, daneben das Menü mit den Einträgen „Datenbestand“ und „Testkonten“, rechts die Schaltfläche „Über pipwerk replay“ (Abschnitt 4) und die Wahl der Sprache (Abschnitt 5). In schmalen Fenstern (unter 700 Pixel Breite) ersetzt die Schaltfläche „Menü“ die Einträge; sie öffnet eine Liste mit denselben Einträgen. Die Liste schließt sich nach der Wahl, mit der Escape-Taste und mit einem Klick daneben. In schmalen Fenstern trägt die Schaltfläche „Über pipwerk replay“ nur das Symbol.
+Oben steht die **Kopfzeile**. Sie zeigt links den Namen „pipwerk replay“, daneben das Menü mit den Einträgen „Datenbestand“, „Testkonten“ und „Einstellungen“, rechts die Schaltfläche „Über pipwerk replay“ (Abschnitt 4) und die Wahl der Sprache (Abschnitt 5). In schmalen Fenstern (unter 700 Pixel Breite) ersetzt die Schaltfläche „Menü“ die Einträge; sie öffnet eine Liste mit denselben Einträgen. Die Liste schließt sich nach der Wahl, mit der Escape-Taste und mit einem Klick daneben. In schmalen Fenstern trägt die Schaltfläche „Über pipwerk replay“ nur das Symbol.
 
 In der Mitte steht die gewählte **Ansicht**. Beim Öffnen ist das der Datenbestand. Ist eine Ansicht höher als das Fenster, wird sie in der Mitte gescrollt; Kopfzeile und Fußzeile bleiben stehen.
 
@@ -157,7 +158,7 @@ Alle Zeiten stehen in UTC (siehe Glossar). Der Zeitraum nennt Tage im Format TT.
 
 ## 8. Dateien importieren
 
-Der Import liest Dateien, prüft sie und übernimmt die Daten in den Datenbestand. Eine Datei enthält genau eine Reihe (Kerzen einer Zeiteinheit oder Ticks eines Instruments bei einem Broker) oder die Kontraktdaten eines Instruments. Sie importieren beliebig viele Dateien in einem Vorgang, JSON und CSV gemischt.
+Der Import liest Dateien, prüft sie und übernimmt die Daten in den Datenbestand. Eine Datei enthält genau eine Reihe (Kerzen einer Zeiteinheit oder Ticks eines Instruments bei einem Broker) oder die Kontraktdaten eines Instruments. Sie importieren beliebig viele Dateien in einem Vorgang, JSON und CSV gemischt. Die Dateien kommen auf zwei Wegen in den Vorgang, auch zusammen: Sie **laden** sie von Ihrem Rechner **hoch**, oder Sie **wählen** sie im **Importverzeichnis**. Das Importverzeichnis ist ein Verzeichnis auf dem Rechner, auf dem der Hintergrunddienst läuft; Sie stellen es unter „Einstellungen“ ein (siehe unten). Dateien im Importverzeichnis liest pipwerk replay nur: Es ändert, verschiebt, entfernt oder kopiert sie nie, auch nicht nach dem Import. Ihre Pflege ist Ihre Sache.
 
 **Dateiformate.**
 
@@ -171,11 +172,38 @@ Der Import liest Dateien, prüft sie und übernimmt die Daten in den Datenbestan
 **So importieren Sie.**
 
 1. Klicken Sie in der Leiste auf „Datei importieren …“. Der Dialog „Datei importieren“ öffnet sich.
-2. Klicken Sie auf „Dateien wählen …“ und wählen Sie eine oder mehrere Dateien (Endung `.json` oder `.csv`). Sie können noch einmal wählen, um weitere Dateien hinzuzufügen. Die Dateien erscheinen in einer Liste, mit Namen, Format und Größe.
+2. Bringen Sie die Dateien in die Liste. Dafür gibt es zwei Knöpfe, die Sie beliebig oft und abwechselnd benutzen können:
+   - „Dateien hochladen …“ öffnet die Dateiauswahl Ihres Browsers. Wählen Sie eine oder mehrere Dateien von Ihrem Rechner (Endung `.json` oder `.csv`).
+   - „Aus dem Importverzeichnis wählen …“ zeigt die Dateien des Importverzeichnisses (siehe unten, „Aus dem Importverzeichnis wählen“).
+
+   Die Dateien erscheinen in einer Liste, mit Namen, Format und Größe. Eine Datei aus dem Importverzeichnis trägt als Namen ihren Pfad im Importverzeichnis (zum Beispiel `2026/EURUSD_H1.csv`) und den Zusatz „Importverzeichnis“.
 3. **Broker** (Pflicht): Geben Sie den Broker ein, zu dem alle Dateien gehören, oder wählen Sie einen Namen aus dem Datenbestand; ein neuer Name ist möglich. Nennen alle JSON-Dateien denselben Broker, ist er schon eingetragen; nennen sie verschiedene, ist das Feld leer. Der Broker gilt für alle Dateien, auch für JSON-Dateien, die einen anderen nennen.
 4. **Zeitzone der CSV-Dateien** (Pflicht, nur sichtbar, wenn eine CSV-Datei in der Liste steht): siehe oben.
 5. **Instrument und Daten je Datei:** Die Liste füllt sie vor. Bei JSON stehen sie im Inhalt der Datei; die Daten lassen sich dort nicht ändern, das Instrument schon. Bei CSV liest pipwerk replay sie aus dem Dateinamen. Erkannt werden `<Instrument>_<Daten>_<von>_<bis>` (der Name aus MetaTrader 5 und von Dateien, die für den Import gedacht sind, zum Beispiel `EURUSD_H1_202301020000_202312292300.csv`) und `<Instrument>,<Daten>` (auch mit `_` oder Leerzeichen statt Komma, zum Beispiel `EURUSD,H1.csv`). `<Daten>` ist eine Zeiteinheit (`M1` bis `MN1`) oder `TICKS`, groß oder klein geschrieben. Jede Angabe lässt sich ändern: Instrument als Text, Daten (bei CSV) als Auswahl. Erkennt pipwerk replay etwas nicht, ist die Datei markiert („Instrument oder Daten nicht erkannt. Ergänzen Sie die Angabe oder entfernen Sie die Datei.“). „Entfernen“ nimmt eine Datei aus der Liste.
-6. Solange etwas fehlt, ist „Importieren“ gesperrt, und ein Satz unter der Liste nennt den nächsten Schritt. Sind alle Angaben da, klicken Sie **einmal** auf „Importieren“. pipwerk replay importiert dann alle Dateien der Liste nacheinander.
+6. **Dateien behalten** (freiwillig): Das Kästchen gilt einmal für alle hochgeladenen Dateien dieses Vorgangs (siehe unten, „Dateien behalten“).
+7. Solange etwas fehlt, ist „Importieren“ gesperrt, und ein Satz unter der Liste nennt den nächsten Schritt. Sind alle Angaben da, klicken Sie **einmal** auf „Importieren“. pipwerk replay importiert dann alle Dateien der Liste nacheinander, hochgeladene und aus dem Importverzeichnis gewählte in der Reihenfolge der Liste, in einem Vorgang.
+
+**Aus dem Importverzeichnis wählen.** Ein Klick auf „Aus dem Importverzeichnis wählen …“ ersetzt die Liste im Dialog durch die Auswahl. Oben steht der Pfad des Importverzeichnisses. Darunter zeigt die Auswahl die Unterverzeichnisse zuerst, dann die Dateien, mit Name, Größe und der Zeit der letzten Änderung (UTC). Lange Verzeichnisse zeigt sie seitenweise („Zurück“, „Weiter“). Zwischendateien, die pipwerk replay selbst anlegt, erscheinen nicht.
+
+- Ein Klick auf den Namen eines **Unterverzeichnisses** öffnet es. Der Weg über der Liste zeigt, wo Sie sind; mit „Eine Ebene höher“ oder einem Klick auf einen Namen im Weg gehen Sie zurück, höchstens bis zum Importverzeichnis. Über das Importverzeichnis hinaus kommen Sie nicht.
+- Setzen Sie bei einer **Datei** das Häkchen. Sie wählen beliebig viele Dateien, auch aus verschiedenen Verzeichnissen; die Häkchen bleiben beim Wechsel des Verzeichnisses stehen. „Alle Dateien dieser Seite wählen“ setzt die Häkchen einer ganzen Seite. Eine Datei, die schon in der Liste des Dialogs steht, ist als „schon in der Liste“ gesperrt.
+- „N Dateien übernehmen“ legt die gewählten Dateien in die Liste des Dialogs. „Zurück zum Dialog“ verwirft die Wahl.
+
+Für jede Datei fragt pipwerk replay das Backend, was die Datei über sich sagt: Instrument und Daten entnimmt es dem Namen (CSV) beziehungsweise dem Inhalt (JSON), wie bei hochgeladenen Dateien (Schritte 3 bis 5 gelten unverändert; Broker und Zeitzone gelten für alle Dateien des Vorgangs). Importiert wird die Datei erst mit „Importieren“, und zwar dort, wo sie liegt, ohne Kopie.
+
+Ist das Importverzeichnis **leer**, nennt die Auswahl es mit seinem Pfad und den nächsten Schritt: Dateien dort ablegen oder unter „Einstellungen“ ein anderes Importverzeichnis wählen. Ist es **nicht gesetzt oder nicht lesbar**, steht das mit dem Pfad ebenso da. Die Schaltfläche „Zu den Einstellungen“ schließt den Dialog und öffnet die Ansicht „Einstellungen“; die Liste des Dialogs geht dabei verloren.
+
+Wird eine gewählte Datei bis zum Import entfernt oder lässt sie sich nicht lesen, steht sie nach dem Import als „abgelehnt“ in der Liste, mit dem Grund; die übrigen Dateien werden trotzdem importiert. Die Datei im Importverzeichnis bleibt, wie sie ist.
+
+**Dateien behalten.** Das Kästchen „Dateien behalten“ im Dialog gilt einmal für den ganzen Vorgang und nur für **hochgeladene** Dateien.
+
+- Angekreuzt legt pipwerk replay jede hochgeladene Datei unverändert im **Ablageverzeichnis** ab, mit dem Namen der Datei, auch eine Datei, die der Import ablehnt. Bricht der Vorgang ab, liegen dort die Dateien, die bis dahin übertragen waren. Eine Datei gleichen Namens im Ablageverzeichnis wird ohne Rückfrage ersetzt. Nach dem Import steht bei der Datei „Die Datei ist im Ablageverzeichnis behalten.“
+- Nicht angekreuzt bleibt von der hochgeladenen Datei nichts zurück außer den Daten im Datenbestand.
+- Dateien aus dem Importverzeichnis bleiben dort und werden **nicht** ins Ablageverzeichnis kopiert, auch nicht mit dem Kreuz. Nach dem Import steht bei ihnen „Die Datei liegt unverändert im Importverzeichnis.“
+- **Vorbelegung:** Beim Öffnen des Dialogs steht das Kästchen so, wie es die Einstellung „Importierte Dateien behalten“ vorgibt (Unterabschnitt „Einstellungen“); ist nichts gespeichert, ist es nicht angekreuzt. Sie ändern es für einen Vorgang, ohne die Einstellung zu ändern. Beim nächsten Öffnen gilt wieder die Einstellung.
+- Die Erklärung am Kästchen (Maus auf die Bezeichnung oder Tastatur auf das Symbol „i“) nennt das Ablageverzeichnis.
+- **Pflege:** Behaltene Dateien entfernt pipwerk replay nie. Aufräumen, Sichern und Löschen im Ablageverzeichnis sind Ihre Sache. Ein Wechsel des Ablageverzeichnisses verschiebt keine Dateien.
+- Kann eine Datei nicht behalten werden (es ist kein Ablageverzeichnis bestimmt, oder das Backend kann dort nicht schreiben), wird sie **nicht importiert** und steht als „abgelehnt“ in der Liste, mit dem Grund und dem Weg: unter „Einstellungen“ das Ablageverzeichnis prüfen oder das Kreuz wegnehmen. Die übrigen Dateien des Vorgangs werden trotzdem importiert.
 
 **Es gibt keine Grenze für die Zahl der Dateien und keine für ihre Gesamtgröße.** Begrenzt ist nur eine einzelne Datei: Voreingestellt sind höchstens 32 MiB und 500 000 Zeilen je Datei (`max_upload_bytes` und `max_rows` im Abschnitt `[marketdata]` der Startkonfiguration). Eine größere Datei wird abgelehnt, und die Meldung nennt die Grenze. Die übrigen Dateien werden trotzdem importiert.
 
@@ -212,6 +240,11 @@ Der Import prüft: Format, Zeitordnung (jede Zeit nach der vorigen, keine doppel
 | „Die Zeitzone ist unbekannt.“ | Geben Sie einen Namen nach IANA an, zum Beispiel `Europe/Athens`. |
 | „Der Zeitraum der Datei ist ungültig.“ / „Die Datei enthält keine Zeilen.“ | Prüfen Sie die Zeiten in der Datei und ob es die richtige Datei ist. |
 | „Der Datenbestand konnte die Datei nicht aufnehmen.“ | Versuchen Sie es später noch einmal; bleibt der Fehler, prüfen Sie die Meldungen des Hintergrunddienstes. |
+| „Die Datei lässt sich im Importverzeichnis nicht lesen.“ | Prüfen Sie die Rechte der Datei für den Benutzer, unter dem der Hintergrunddienst läuft. |
+| „Die Datei gibt es im Importverzeichnis nicht (mehr).“ | Die Datei wurde entfernt oder umbenannt. Entfernen Sie sie aus der Liste oder wählen Sie sie erneut. |
+| „Der Pfad der Datei ist im Importverzeichnis nicht erlaubt oder zeigt nicht auf eine Datei.“ | Entfernen Sie die Datei aus der Liste und wählen Sie sie erneut im Importverzeichnis. |
+| „Das Importverzeichnis ist nicht gesetzt oder lässt sich nicht lesen.“ | Prüfen Sie es unter „Einstellungen“ und importieren Sie die Datei erneut. |
+| „Die Datei konnte nicht behalten werden, weil kein Ablageverzeichnis bestimmt ist.“ / „Die Datei konnte nicht im Ablageverzeichnis abgelegt werden.“ | Die Datei wurde nicht importiert. Prüfen Sie unter „Einstellungen“ das Ablageverzeichnis (vorhanden, beschreibbar, Platz) oder nehmen Sie das Kreuz bei „Dateien behalten“ weg, und importieren Sie die Datei erneut. |
 
 **Meldungen, wenn der Import unterbrochen wird.** Sie erscheinen unter der Liste mit „Der Import wurde unterbrochen.“; die Dateien bleiben stehen. Bereits übernommene Dateien bleiben übernommen, die übrigen können Sie mit „Importieren“ nachholen.
 
@@ -244,6 +277,33 @@ Es gibt vier Formen:
 **Während eines Imports lässt sich nichts löschen.** Solange ein Import läuft, lehnt pipwerk replay das Löschen mit der Meldung „Es besteht ein Import-Vorgang. Solange er besteht, lässt sich nichts löschen.“ ab und ändert nichts. Warten Sie, bis der Import beendet ist, oder brechen Sie ihn im Dialog „Datei importieren“ ab. Ein Import, zu dem eine Zeit lang (voreingestellt 5 Minuten) keine Datei kommt, endet von selbst.
 
 Gespeicherte Backtests (kommen später) und Testkonten ändert das Löschen nicht. Ist die Reihe oder der Broker nicht mehr da (zum Beispiel weil Sie in einem zweiten Fenster gelöscht haben), nennt die Rückfrage den Grund und den nächsten Schritt.
+
+### Einstellungen
+
+Öffnen Sie im Menü „Einstellungen“. Die Ansicht zeigt vier Einstellungen. Die Verzeichnisse liegen auf dem Rechner, auf dem der Hintergrunddienst läuft (nicht auf dem Rechner Ihres Browsers, wenn beide verschieden sind). Alle vier werden zusammen gespeichert und im Hintergrunddienst abgelegt, nicht im Browser. Jede Einstellung hat eine Erklärung, die erscheint, wenn Sie mit der Maus auf der Bezeichnung oder dem Symbol „i“ verweilen oder das Symbol mit der Tastatur erreichen. Die Sprache wählen Sie in der Kopfzeile, den Broker für Testläufe in der Ansicht „Datenbestand“.
+
+| Einstellung | Bedeutung | Standard |
+| --- | --- | --- |
+| Importierte Dateien behalten | Die Vorbelegung des Kästchens „Dateien behalten“ im Dialog „Datei importieren“. | nicht angekreuzt |
+| Ablageverzeichnis | Das Verzeichnis, in dem hochgeladene Dateien bleiben, wenn „Dateien behalten“ gilt. Ein Wechsel verschiebt keine Dateien: Was im bisherigen Verzeichnis liegt, bleibt dort. | ein Verzeichnis `storage` im Datenverzeichnis von pipwerk replay (je nach Betriebssystem, siehe unten) |
+| Importverzeichnis | Das Verzeichnis, aus dem Sie im Dialog „Datei importieren“ Dateien wählen, auch aus Unterverzeichnissen. pipwerk replay liest dort nur. Es ist kein Startverzeichnis der Dateiauswahl Ihres Browsers. | ein Verzeichnis `import` im Datenverzeichnis |
+| Exportverzeichnis | Der voreingestellte Ablageort künftiger Exporte. pipwerk replay exportiert noch nichts; die Einstellung wird gespeichert und angezeigt und wirkt mit dem ersten Export. | ein Verzeichnis `export` im Datenverzeichnis |
+
+**Standard.** Ist nichts gespeichert, zeigt das Feld den Pfad des Standards, und „Es gilt der Standard des Betriebssystems.“ steht darunter. Das Datenverzeichnis ist unter Linux und macOS `/var/lib/pipwerk/replay` (bei einer systemweiten Startkonfiguration) beziehungsweise `.local/share/pipwerk/replay` in Ihrem Benutzerverzeichnis, unter Windows `%PROGRAMDATA%\pipwerk\replay` beziehungsweise `%LOCALAPPDATA%\pipwerk\replay`. Lässt sich der Standard auf dem Rechner nicht bestimmen, bleibt das Feld leer und ein Satz bittet um einen Pfad. Einen gespeicherten Pfad kennzeichnet „Gespeicherter Pfad.“ Leeren Sie ein Feld und speichern Sie, gilt wieder der Standard.
+
+**Speichern.** Ändern Sie, was Sie wollen, und klicken Sie auf „Speichern“. Solange etwas ungespeichert ist, steht „Ungespeicherte Änderungen.“ da; „Änderungen verwerfen“ stellt die gespeicherten Werte wieder her. Nach dem Speichern steht „Die Einstellungen sind gespeichert.“ Beim erneuten Öffnen der Ansicht, nach dem Neuladen der Seite und nach einem Neustart von pipwerk replay zeigt sie die gespeicherten Werte.
+
+**Pfade.** Geben Sie jeden Pfad vollständig an: unter Linux und macOS beginnt er mit `/`, unter Windows mit dem Laufwerk, zum Beispiel `C:\Daten\ablage`. **Ein relativer Pfad wird abgelehnt**, zum Beispiel `daten/ablage`. Beim Speichern prüft der Hintergrunddienst jedes Verzeichnis: Es muss bestehen oder sich anlegen lassen (auch die Verzeichnisse darüber), das Ablage- und das Exportverzeichnis müssen beschreibbar sein, das Importverzeichnis lesbar. Ist ein Pfad abgelehnt, wird **nichts** gespeichert; die Meldung steht unter dem Feld, Ihre Eingabe bleibt stehen, und ein Satz über dem Knopf sagt, dass nichts gespeichert wurde. Ändern Sie den Pfad und speichern Sie noch einmal. Die Gründe:
+
+| Meldung | Was Sie tun |
+| --- | --- |
+| „Der Pfad ist nicht vollständig.“ | Geben Sie den ganzen Pfad an (siehe oben). |
+| „Unter diesem Pfad liegt kein Verzeichnis, sondern etwas anderes.“ | Geben Sie ein Verzeichnis an, keine Datei. |
+| „Das Verzeichnis gibt es nicht, und das Backend konnte es nicht anlegen.“ | Prüfen Sie den Pfad und die Rechte des Benutzers, unter dem der Hintergrunddienst läuft. |
+| „Das Backend darf in dieses Verzeichnis nicht schreiben.“ | Wählen Sie ein anderes Verzeichnis oder ändern Sie die Rechte. |
+| „Das Backend darf dieses Verzeichnis nicht lesen.“ | Wählen Sie ein anderes Verzeichnis oder ändern Sie die Rechte. |
+
+Ein Verzeichnis, das beim Speichern fehlt, legt der Hintergrunddienst an.
 
 ## 9. Kursdaten mit pipwerk-fetch-mt5 holen
 
@@ -287,7 +347,7 @@ Gespeicherte Backtests (kommen später) und Testkonten ändert das Löschen nich
 
    Die Kontraktdaten jedes Instruments schreibt das Programm immer mit, denn ohne sie startet kein Testlauf.
 3. Das Programm schreibt eine Zeile je Datei und nennt Teile, die sich nicht holen ließen, mit dem Grund. Es endet mit der Zusammenfassung.
-4. Bringen Sie die Dateien auf den Rechner von pipwerk replay und importieren Sie sie dort (Abschnitt 8): Wählen Sie im Dialog „Datei importieren“ alle Dateien auf einmal.
+4. Bringen Sie die Dateien auf den Rechner von pipwerk replay und importieren Sie sie dort (Abschnitt 8): Legen Sie sie im Importverzeichnis ab und wählen Sie sie im Dialog „Datei importieren“ mit „Aus dem Importverzeichnis wählen …“, oder laden Sie sie dort mit „Dateien hochladen …“ hoch. Alle Dateien lassen sich auf einmal importieren. Ist der Ordner `daten` auf dem Rechner des Hintergrunddienstes erreichbar, können Sie ihn unter „Einstellungen“ als Importverzeichnis eintragen.
 
 **Die Dateien.** Je Reihe und je Instrument eine Datei im JSON-Format des Imports. Der Name lautet `<Instrument>_<Daten>_<von>_<bis>.json`. `<Daten>` ist die Zeiteinheit (`M1`, `H1` …), `TICKS` oder `CONTRACT` (die Kontraktdaten). Beispiele: `EURUSD_H1_20260101_20260201.json`, `EURUSD_CONTRACT_20260101_20260201.json`. Als Broker steht in jeder Datei der Name des Handelsservers, an dem MetaTrader 5 angemeldet ist; im Dialog des Imports können Sie ihn überschreiben. Eine Datei gleichen Namens im Ordner wird ersetzt.
 
@@ -326,6 +386,8 @@ Fehler im Aufruf oder in der Startkonfiguration erscheinen als `pipwerk-fetch-mt
 - Mit `--host` kann jeder im Netz pipwerk replay benutzen; es gibt keine Anmeldung (Abschnitt 2).
 - pipwerk replay besitzt noch kein Installationspaket für Anwender.
 - In der Testumgebung geht mit `testenv stop` alles verloren: Testkonten, Datenbestand, gewählter Broker und Sprache (Abschnitt 2).
+- Das Exportverzeichnis (Abschnitt 8, „Einstellungen“) wird gespeichert, aber noch nicht benutzt: pipwerk replay exportiert noch nichts.
+- Das Importverzeichnis ist ein Verzeichnis auf dem Rechner des Hintergrunddienstes. Läuft der Browser auf einem anderen Rechner, sehen Sie in der Auswahl die Dateien des Rechners des Hintergrunddienstes, nicht die Ihres Browser-Rechners; diese laden Sie hoch.
 - Weitere Sprachen als Deutsch und Englisch sind nicht verfügbar.
 - Die Seite `/docs` des Hintergrunddienstes lädt ihre Darstellung aus dem Internet; ohne Internet bleibt sie leer, die Funktionen laufen trotzdem.
 - `pipwerk-fetch-mt5` ist hier nur mit einer Nachbildung von MetaTrader 5 geprüft; die Prüfung gegen eine echte Installation und unter Windows macht der Auftraggeber in der Abnahme.
@@ -354,6 +416,10 @@ Fehler im Aufruf oder in der Startkonfiguration erscheinen als `pipwerk-fetch-mt
 | Broker für Testläufe | Der Broker, dessen Daten ein Testlauf verwendet. Sie wählen ihn in der Leiste des Datenbestands. |
 | Handelsserver | Der Server des Brokers, an dem MetaTrader 5 angemeldet ist. Sein Name ist der Broker. |
 | Import | Die Übernahme von Dateien im Format JSON oder CSV in den Datenbestand, beliebig viele in einem Vorgang. |
+| Importverzeichnis | Ein Verzeichnis auf dem Rechner des Hintergrunddienstes, aus dem der Import Dateien direkt liest, auch aus Unterverzeichnissen. pipwerk replay ändert, verschiebt, entfernt und kopiert dort nichts. Einstellung unter „Einstellungen“. |
+| Ablageverzeichnis | Das Verzeichnis, in dem hochgeladene Dateien bleiben, wenn „Dateien behalten“ gilt. Einstellung unter „Einstellungen“. |
+| Exportverzeichnis | Der voreingestellte Ablageort künftiger Exporte. Einstellung unter „Einstellungen“; wirkt mit dem ersten Export. |
+| Dateien behalten | Das Kästchen im Dialog „Datei importieren“: Hochgeladene Dateien bleiben unverändert im Ablageverzeichnis. Vorbelegt durch die Einstellung „Importierte Dateien behalten“. |
 | pipwerk-fetch-mt5 | Das Programm, das Sie auf dem Rechner von MetaTrader 5 aufrufen und das Kerzen, Ticks und Kontraktdaten als Dateien für den Import schreibt. |
 | pipwerk relay | Die spätere Komponente, die den Austausch von Kursdaten übernimmt. Bis dahin beschafft pipwerk replay nichts. |
 | Lücke | Ein Zeitraum zwischen zwei importierten Zeiträumen einer Reihe, in dem gehandelt wurde und Daten fehlen. Wochenenden, Feiertage und andere Zeiten ohne Handel sind keine Lücken. |
