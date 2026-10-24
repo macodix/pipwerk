@@ -3,9 +3,9 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-23
+- stand: 2026-10-24
 - komponente: `pipwerk-fetch-mt5`
-- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt
+- vorhaben: `backtest`, Arbeitspaket `wp02`, Auftrag 13 (Spezifikation: E5, 5.1, 5.4, 10, 11, 12; Abnahmebericht M4; req-system-027); in Auftrag 14 nur Abschnitte 12, 13 und 15 (Prüfskript und Abhängigkeiten) nachgeführt; in Auftrag 16 (Abnahmebericht Versuch 2, M2) neuer Abschnitt 16 „Installierte Software und laufende Prozesse“, Abschnitt 10 Schritt 3 und Abschnitt 15 Punkt 10 angepasst
 
 ## 1. Gegenstand
 
@@ -178,7 +178,7 @@ Das Paket `MetaTrader5` läuft nur unter Windows und braucht ein installiertes M
 
 1. **uv installieren.** uv ist ein kleines Programm, das Python und die nötigen Pakete holt (https://docs.astral.sh/uv/). Es verändert das Python des Systems nicht. Nach der Installation ein neues Eingabeaufforderungsfenster öffnen.
 2. **Programm auf den Rechner legen.** Den Ordner `components\pipwerk-fetch-mt5` des Repositorys an einen beliebigen Ort kopieren, zum Beispiel `C:\pipwerk\pipwerk-fetch-mt5`.
-3. **Installieren.** In diesem Ordner `scripts\install.cmd` ausführen (Doppelklick oder in der Eingabeaufforderung). Es lädt Python 3.14 und die Pakete, mit `MetaTrader5`, in den Unterordner `.venv`. Dafür ist einmal eine Internetverbindung nötig. Danach braucht das Programm kein Netz mehr.
+3. **Installieren.** In diesem Ordner `scripts\install.cmd` ausführen (Doppelklick oder in der Eingabeaufforderung). Es richtet im Unterordner `.venv` eine eigene Umgebung ein und holt dafür bei Bedarf Python (mindestens 3.14) und die Pakete, mit `MetaTrader5`. Dafür ist eine Internetverbindung nötig. Was dabei auf den Rechner kommt, woher es stammt und wie es sich entfernen lässt, steht in Abschnitt 16.
 4. **Startkonfiguration anlegen.** Die Datei `pipwerk-fetch-mt5.example.ini` aus dem Ordner als `pipwerk-fetch-mt5.ini` in den Ordner `%USERPROFILE%\pipwerk\etc` kopieren (den Ordner anlegen, falls er fehlt; `%USERPROFILE%` ist der Ordner des angemeldeten Benutzers, zum Beispiel `C:\Users\Name`). In der Datei **`server_time_zone`** eintragen, die Zeitzone des Handelsservers Ihres Brokers (siehe unten). Wenn Ihr Broker ein Instrument anders nennt, als Sie es nennen wollen, im Abschnitt `[symbols]` eine Zeile `EURUSD = EURUSD.r` ergänzen. Mehr ist nicht nötig.
 
 **Die Zeitzone**
@@ -288,3 +288,105 @@ Fest gelegt vom Entwickler, soweit die Spezifikation es offenlässt (Auftrag 13)
 7. **Echtes MetaTrader 5.** Aufruf, Name des Handelsservers (`account_info().server`), Fehlercodes und Zeitzone sind nur gegen die Nachbildung geprüft; der Auftraggeber prüft sie in der Abnahme.
 8. **Windows.** Das Skript `fetch.cmd` und das atomare Umbenennen unter Windows sind auf dem Entwicklungsrechner (Linux) nicht ausgeführt; `Path.replace` ersetzt unter Windows eine bestehende Datei, scheitert aber, wenn eine andere Anwendung sie geöffnet hält (dann `write_failed`).
 9. Erledigt: pipwerk replay (Backend in Auftrag 12, Oberfläche und Anwenderdokumentation in Auftrag 14) und das Glossar verweisen nicht mehr auf die frühere Schnittstelle.
+10. **Python-Version nicht festgelegt.** Weder `pyproject.toml` (`requires-python = ">=3.14"`, keine Obergrenze) noch eine Datei `.python-version` noch `install.cmd` legen die Python-Version fest. `MetaTrader5` 5.0.6231 hat in `uv.lock` genau ein Rad (`cp314-cp314-win_amd64`) und keine Quelldatei. Wählt `uv` eine andere Version als 3.14 (zum Beispiel 3.15, wenn diese auf dem Rechner liegt oder die neueste ist), gibt es für `MetaTrader5` kein passendes Rad, und `install.cmd` scheitert aus dieser Ableitung (Abschnitt 16.2). Nicht auf Windows ausgeführt. Eine Festlegung (Obergrenze `<3.15` oder `.python-version`) braucht eine Entscheidung des Entwicklungsleiters.
+
+## 16. Installierte Software und laufende Prozesse
+
+Dieser Abschnitt beschreibt, was `scripts/install.cmd` und `scripts/fetch.cmd` auf dem Rechner von MetaTrader 5 (Windows) einrichten und starten. Belege sind `scripts/install.cmd`, `scripts/fetch.cmd`, `pyproject.toml` und `uv.lock` der Komponente. Windows und MetaTrader 5 sind auf dem Entwicklungsrechner (Linux) nicht verfügbar: Alles, was `uv` auf Windows tut, ist aus den Skripten und der Sperrdatei abgeleitet und **nicht ausgeführt**; Angaben, die aus der Dokumentation von `uv` stammen und nicht aus der Komponente, sind so gekennzeichnet. Was gemessen wurde, steht in 16.5.
+
+### 16.1 Was die Skripte tun
+
+`install.cmd` enthält genau einen Befehl:
+
+```
+uv --project "%COMPONENT%" sync --frozen --extra mt5 --no-dev
+```
+
+`%COMPONENT%` ist der Ordner der Komponente (der Ordner über `scripts\`). `--frozen`: `uv` nimmt die Versionen aus `uv.lock` und löst nichts neu auf. `--extra mt5`: schließt `MetaTrader5` ein (Markierung `sys_platform == 'win32'`). `--no-dev`: lässt die Entwicklungswerkzeuge und die Tests aus. `fetch.cmd` enthält genau einen Befehl:
+
+```
+uv --project "%COMPONENT%" run --frozen --extra mt5 --no-dev pipwerk-fetch-mt5 %*
+```
+
+Es startet das Programm `pipwerk-fetch-mt5` (Startpunkt `pipwerk_fetch_mt5.cli:main` aus `[project.scripts]`) in der Umgebung der Komponente und reicht alle Angaben weiter. Beide Skripte ändern nichts anderes: kein Eintrag in der Registrierung, kein Dienst, keine geplante Aufgabe, kein Autostart, keine Änderung von `PATH`, nichts am Python des Systems (Kommentar in `install.cmd`, Zeilen 4 bis 6).
+
+### 16.2 uv und Python
+
+**uv.** `uv` (https://docs.astral.sh/uv/) ist ein Programm der Firma Astral zur Verwaltung von Python, virtuellen Umgebungen und Paketen. Hier ersetzt es `pip` und `venv`: Es legt die Umgebung `.venv` an und installiert die Pakete aus `uv.lock`. Das Repository enthält `uv` nicht; der Anwender installiert es einmal selbst (Abschnitt 10, Schritt 1). Nach der Dokumentation von `uv` (nicht ausgeführt): Das Installationsprogramm für Windows lädt `uv.exe` (und `uvx.exe`) von astral.sh beziehungsweise GitHub in einen Ordner des Benutzers (Voreinstellung `%USERPROFILE%\.local\bin`) und trägt diesen Ordner in `PATH` des Benutzers ein; alternativ `winget install astral-sh.uv`. Es braucht keine Administratorrechte. Der Ort lässt sich mit `where uv` anzeigen.
+
+**Python.** Version: Die Komponente verlangt `requires-python = ">=3.14"` (`pyproject.toml`; `uv.lock`, Zeile 2). Eine Obergrenze und eine feste Version gibt es nicht (offener Punkt 10). Das einzige Rad von `MetaTrader5` in `uv.lock` ist `cp314-cp314-win_amd64`, also für Python 3.14 unter Windows mit 64 Bit; `numpy` und `pydantic-core` haben dort Räder für 3.14 und 3.15. Wer Python lädt: Nach der Dokumentation von `uv` nimmt es zuerst ein Python, das auf dem Rechner liegt und `>=3.14` erfüllt, und lädt sonst selbst ein Python (die Builds von `python-build-standalone`, von GitHub) in sein eigenes Verzeichnis. Wann: beim ersten `install.cmd`, nur wenn kein passendes Python da ist. Das Python des Systems verändert `uv` dabei nicht. Wie viele Byte das Python hat, ist nicht gemessen.
+
+### 16.3 Pakete (nach `uv.lock`)
+
+`uv.lock` führt 32 Pakete (Einträge `[[package]]`), alle von https://pypi.org/simple; die Dateien liegen auf `files.pythonhosted.org` (URLs in der Sperrdatei) mit SHA-256-Summe, die `uv` beim Laden prüft. Die Pfadabhängigkeit `pipwerk-marketdata` und die Komponente selbst liegen im Repository.
+
+**Installiert von `install.cmd`** (Windows, `--extra mt5 --no-dev`): die Komponente selbst und acht Pakete, die Größen sind die der Räder für Windows (`win_amd64`, Python 3.14) in `uv.lock`:
+
+| Paket | Version | Zweck | Größe (Byte) |
+| --- | --- | --- | --- |
+| `pipwerk-fetch-mt5` | 0.1.0.dev0 | das Programm selbst; wird als bearbeitbare Installation aus dem Ordner der Komponente eingerichtet (`source = { editable = "." }`) | – |
+| `pydantic` | 2.13.5 | Modelle und Prüfung der Dateien und der Startkonfiguration; Version fest an `pipwerk-marketdata` gebunden (Abschnitt 12) | 472 589 |
+| `pydantic-core` | 2.46.5 | der in Rust geschriebene Kern von `pydantic` (Abhängigkeit von `pydantic`) | 2 042 648 |
+| `annotated-types` | 0.8.0 | Typangaben für Grenzen (Abhängigkeit von `pydantic`) | 13 427 |
+| `typing-extensions` | 4.16.0 | Typangaben neuerer Python-Versionen (Abhängigkeit von `pydantic`, `pydantic-core`, `typing-inspection`) | 45 571 |
+| `typing-inspection` | 0.4.4 | Hilfen zur Prüfung von Typangaben (Abhängigkeit von `pydantic`) | 14 750 |
+| `tzdata` | 2026.5 | Zeitzonendatenbank, weil Windows keine hat, aus der `zoneinfo` lesen kann (Abschnitt 12) | 347 996 |
+| `MetaTrader5` | 5.0.6231 | das Paket von MetaQuotes, das von Python aus mit dem lokalen Terminal MetaTrader 5 spricht; nur Windows, nur im Extra `mt5` | 49 531 |
+| `numpy` | 2.5.4 | Abhängigkeit von `MetaTrader5` (dessen Funktionen liefern Felder von `numpy`) | 12 703 552 |
+
+Zusammen sind das 15 690 064 Byte (rund 15,7 MB) Räder, ohne Python und ohne `uv`. Die Räder von `pydantic`, `annotated-types`, `typing-extensions`, `typing-inspection` und `tzdata` laufen auf jeder Plattform (`py3-none-any` oder `py2.py3-none-any`); `pydantic-core`, `numpy` und `MetaTrader5` sind für die Plattform gebaut.
+
+Zum Bau der bearbeitbaren Installation der Komponente nutzt `uv` das Bauwerkzeug `hatchling` in der Version 1.32.4 (`[build-system]` in `pyproject.toml`). Es steht nicht in `uv.lock`; nach der Dokumentation von `uv` wird es für den Bau in eine eigene, kurzlebige Umgebung geladen, mit seinen eigenen Abhängigkeiten, die hier nicht geprüft sind.
+
+**In `uv.lock`, aber nicht von `install.cmd` installiert** (nur Entwicklung und Tests auf Linux, `uv sync --frozen` ohne `--no-dev`; Zweck allgemein bekannt, nicht aus der Sperrdatei): `pipwerk-marketdata` 0.1.0 (Bibliothek des Imports, für den Test der Importierbarkeit), `alembic` 1.20.1 und `sqlalchemy` 2.1.6 (Datenbank dieser Tests), `mako` 1.4.3 und `markupsafe` 3.0.4 (Abhängigkeiten von `alembic`), `jsonschema` 4.26.0, `jsonschema-specifications` 2025.9.1, `referencing` 0.37.0, `rpds-py` 2026.9.1, `attrs` 26.1.0 und `types-jsonschema` 4.26.0.20261006 (Prüfung der Dateien gegen die Schemata), `pytest` 9.1.1, `iniconfig` 2.3.1, `packaging` 26.3, `pluggy` 1.7.0, `pygments` 2.21.0 und `colorama` 0.4.6 (Tests; `colorama` nur unter Windows, `pytest` verlangt es dort), `ruff` 0.17.1 (Stil), `mypy` 2.4.0, `mypy-extensions` 1.1.0, `pathspec` 1.1.1, `librt` 0.16.0 und `ast-serialize` 0.13.1 (Typprüfung). Zusammen mit den neun Einträgen oben sind das alle 32.
+
+### 16.4 Ablageorte
+
+| Was | Wo | Beleg |
+| --- | --- | --- |
+| Programm (Quelltext, Skripte, Beispiel der Startkonfiguration) | der Ordner, in den der Anwender `components\pipwerk-fetch-mt5` kopiert hat (Beispiel `C:\pipwerk\pipwerk-fetch-mt5`) | Abschnitt 10, Schritt 2; `%COMPONENT%` in den Skripten |
+| Virtuelle Umgebung mit den Paketen aus 16.3 | Unterordner `.venv` dieses Ordners | Kommentar in `install.cmd`, Zeilen 4 und 5 |
+| `uv` selbst | Ordner des Installationsprogramms von `uv`, anzuzeigen mit `where uv` | Dokumentation von `uv`, nicht ausgeführt |
+| Python, das `uv` geladen hat | Verzeichnis von `uv` für Python, anzuzeigen mit `uv python dir` | Dokumentation von `uv`, nicht ausgeführt |
+| Zwischenspeicher von `uv` (geladene Räder, Bau von `hatchling`) | Zwischenspeicher von `uv`, anzuzeigen mit `uv cache dir`; er dient allen Vorhaben, die `uv` nutzen | Dokumentation von `uv`, nicht ausgeführt |
+| Startkonfiguration | `pipwerk-fetch-mt5.ini`, Suchorte nach Abschnitt 5 (empfohlen `%USERPROFILE%\pipwerk\etc`); enthält, wenn eingetragen, das Kennwort im Klartext | Abschnitt 5 und 10 |
+| Dateien des Abrufs | das Verzeichnis nach `-o`, sonst das aktuelle Verzeichnis | Abschnitt 3 |
+| Temporäre Dateien beim Schreiben | `.<Zufall>.tmp` im Zielverzeichnis, nach dem Schreiben umbenannt oder entfernt | Abschnitt 4 |
+
+Das Programm schreibt sonst nirgends hin: kein Protokoll in eine Datei (das Protokoll geht auf die Fehlerausgabe, Abschnitt 9), kein Zwischenspeicher eigener Art. Auf MetaTrader 5 wirkt es nur durch die Auswahl des Symbols im Marktfenster (Abschnitt 6).
+
+### 16.5 Zeitpunkt und Dauer
+
+| Vorgang | Wann | Dauer |
+| --- | --- | --- |
+| `uv` installieren | einmal je Rechner | nicht gemessen (Windows) |
+| `install.cmd` | einmal je Ordner des Programms; wieder nach Löschen von `.venv` oder nach einer neuen Fassung der Komponente | nicht gemessen; hängt von der Internetverbindung und davon ab, ob `uv` ein Python laden muss. Laden: die Räder in 16.3 mit 15,7 MB, dazu gegebenenfalls Python und `hatchling` |
+| `fetch.cmd` | bei jedem Abruf | Anlauf von `uv run` und des Programms: **0,25 s** gemessen auf dem Entwicklungsrechner (Linux, `uv` 0.5.9, vorhandene Umgebung, ein Aufruf von `pipwerk-fetch-mt5 --help`, `time` des Aufrufs, ohne `MetaTrader5`). Auf Windows nicht gemessen. Die Dauer des Abrufs selbst hängt von Zeitraum, Zahl der Instrumente und Ticks und von MetaTrader 5 ab und ist nicht gemessen |
+
+Prozesse eines Abrufs: `fetch.cmd` läuft in der Eingabeaufforderung (`cmd.exe`) und startet `uv`, das das Programm als Python-Prozess startet (aus den Skripten abgeleitet, nicht ausgeführt). Das Programm ist ein einziger Prozess ohne Threads (Abschnitt 2); er endet nach der Arbeit (Exitcode, Abschnitt 3) und gibt den Exitcode an `fetch.cmd` zurück (`exit /b %ERRORLEVEL%`). Nach dem Abruf läuft nichts weiter: kein Dienst, kein Hintergrundprogramm. MetaTrader 5 startet der Anwender selbst; das Programm trennt am Ende die Verbindung, das Terminal läuft weiter (Abschnitt 2). Ob das Paket `MetaTrader5` ein nicht laufendes Terminal von sich aus startet, ist nicht geprüft.
+
+### 16.6 Netzzugriffe
+
+| Wann | Wohin | Wozu |
+| --- | --- | --- |
+| `uv` installieren (einmal) | astral.sh und GitHub, bei `winget` die Quelle von `winget` | `uv` laden (Dokumentation von `uv`, nicht ausgeführt) |
+| `install.cmd`, wenn kein Python ≥ 3.14 vorliegt | GitHub (Builds von `python-build-standalone`) | Python laden (Dokumentation von `uv`, nicht ausgeführt) |
+| `install.cmd` | `pypi.org` (Index) und `files.pythonhosted.org` (Räder) | die Pakete aus 16.3 laden; die Adressen stehen in `uv.lock`; `uv` prüft die SHA-256-Summen |
+| `install.cmd`, Bau der Komponente | `pypi.org` und `files.pythonhosted.org` | `hatchling` laden, soweit es nicht im Zwischenspeicher liegt (aus `[build-system]` abgeleitet) |
+| `fetch.cmd` | in der Regel keiner | `--frozen` löst nichts auf und fragt den Index nicht. Stimmt die Umgebung `.venv` mit `uv.lock` überein, lädt `uv` nichts. Fehlt `.venv` oder ist sie unvollständig, richtet `uv run` sie wie `install.cmd` ein und braucht dann das Netz (Dokumentation von `uv`, nicht ausgeführt) |
+
+Das Programm selbst verbindet sich mit keinem Server im Netz. Es hat keinen Server und öffnet keinen Port (Abschnitt 11); die Tests sichern zu, dass beim Aufruf kein Socket geöffnet und kein Name aufgelöst wird (`tests/test_cli.py`, Fixture `no_sockets`), und kein Modul in `src/` importiert `socket`, `http`, `ssl`, `asyncio`, `urllib` oder `requests` (geprüft mit Suche im Quelltext). Es verbindet sich nur über das Paket `MetaTrader5` mit dem Terminal auf demselben Rechner. Was das Terminal selbst im Netz tut (Verbindung zum Handelsserver des Brokers), gehört zu MetaTrader 5 und nicht zu diesem Programm.
+
+### 16.7 Entfernen
+
+Alle Schritte sind aus den Skripten und der Dokumentation von `uv` abgeleitet und nicht ausgeführt. Jeder Schritt ist einzeln möglich; die Reihenfolge ist so gewählt, dass `uv` zuletzt entfernt wird.
+
+1. **Dateien des Abrufs.** Die Dateien im Zielverzeichnis sind Daten des Anwenders. Sie bleiben, bis er sie löscht; ihr Entfernen entfernt nichts an der Installation.
+2. **Startkonfiguration.** `pipwerk-fetch-mt5.ini` löschen (sie kann das Kennwort enthalten); den Ordner `%USERPROFILE%\pipwerk\etc` löschen, wenn er leer und sonst unbenutzt ist.
+3. **Programm und Umgebung.** Den Ordner des Programms löschen (er enthält `.venv` mit allen Paketen aus 16.3). Soll nur die Umgebung weg, genügt es, den Unterordner `.venv` zu löschen; `install.cmd` legt sie neu an.
+4. **Zwischenspeicher von `uv`.** `uv cache clean` leert ihn; er gehört allen Vorhaben, die `uv` nutzen. Sein Ort steht in `uv cache dir`.
+5. **Python von `uv`.** `uv python list --only-installed` zeigt die geladenen Versionen, `uv python uninstall <Version>` entfernt eine. Nur nötig, wenn `uv` das Python selbst geladen hat; ein Python, das der Anwender selbst installiert hat, bleibt unberührt.
+6. **uv.** Wurde `uv` mit `winget` installiert: `winget uninstall astral-sh.uv`. Sonst `uv.exe` und `uvx.exe` im Ordner von `where uv` löschen (und die Ordner aus `uv python dir`, `uv cache dir` und `uv tool dir`, falls noch vorhanden; `uv tool dir` benutzt dieses Programm nicht) und den Eintrag des Installationsordners in `PATH` des Benutzers entfernen, sofern das Installationsprogramm ihn gesetzt hat.
+7. **MetaTrader 5.** Bleibt unverändert. Nur das im Marktfenster ausgewählte Symbol (Abschnitt 6) bleibt dort stehen; der Anwender nimmt es bei Bedarf selbst heraus.
+
+Die Windows-Anwenderschritte (Einrichten und Aufrufen) beschreibt die Anwenderdokumentation `docs/user/pipwerk-replay.md`; dieser Abschnitt ist die technische Beschreibung dessen, was dabei geschieht, und kein Ersatz für ihre Schritte.
