@@ -38,3 +38,5 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
 2026-10-24: Frage 2 aus verfahren-01 beantwortet: „Projektleiter“ als Bearbeiter in der Übersicht, ohne Hervorhebung. Alle Fragen beantwortet, Meldung `answer`.
 
 2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-02](questions/verfahren-02.md)) vom Auftraggeber im Chat bestätigt. Meldung `answer`.
+
+2026-10-24: Befund des Projektleiters zu Festlegung 2: Eine Wiedervorlage wurde laut Liste der Wiedervorlagen um 06:19 UTC ausgelöst und als zugestellt geführt, im Chat aber erst um 07:09 UTC mit der nächsten Nachricht des Auftraggebers verarbeitet. Die Wiedervorlagen davor kamen pünktlich an. Die Ursache ist unbekannt. Die Spezifikation muss für Festlegung 2 einen Weg vorsehen, der auch dann trägt.
