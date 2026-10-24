@@ -40,6 +40,7 @@ Das Vorhaben ändert das Entwicklungsverfahren, nicht pipwerk. Betroffen sind:
 2. Bei einem Abbruch beendet es die tmux-Sitzung, falls sie noch besteht, erhöht den Zähler und setzt die Sitzung mit `--resume <kennung>` im selben Arbeitsverzeichnis fort. Der Startauftrag der Fortsetzung lautet sinngemäß: Die Sitzung wurde abgebrochen; prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist. Lässt sich die Sitzung nicht fortsetzen, startet es sie mit dem ursprünglichen Startauftrag neu; das zählt als derselbe Abbruch.
 3. Nach dem dritten Abbruch derselben Meldung setzt es nicht fort und schreibt `failed` an den Projektleiter wie bisher. Die Meldung nennt im Text die Zahl der Abbrüche und die Art des letzten Abbruchs.
 4. Eine Meldung mit ungültigem `ref` führt sofort zu `failed`, ohne Fortsetzung.
+5. Sitzungen von Tester und QA (`startrole`): Endet das Programm ohne Bericht, setzt das Skript die Sitzung ebenso mit `--resume` fort, höchstens zweimal. Danach endet es mit Fehler, und die steuernde Rolle behandelt das wie bisher.
 
 ### 3.3 Pause wegen der Nutzungsgrenze
 
@@ -61,13 +62,13 @@ Der Chat des Projektleiters arbeitet in claude.ai in einem Projekt. Dort gibt es
 
 1. Sobald der Chat für sein Vorhaben eine Meldung an Softwarearchitekt oder Entwicklungsleiter überträgt, setzt er eine Wiedervorlage 20 Minuten später, falls nicht schon eine besteht. Ihr Text nennt die Kennung des Vorhabens.
 2. Bei jeder Wiedervorlage: `origin/main` lesen, in `development/messages/projectlead/` die Meldungen mit `ref` des eigenen Vorhabens oder seiner Pakete auswählen, die älteste zuerst bearbeiten. Meldungen anderer Vorhaben bleiben unberührt.
-3. Der Chat setzt die nächste Wiedervorlage 20 Minuten später (Zeitpunkt nach Punkt 6), solange für sein Vorhaben eine Meldung in `development/messages/architect/` oder `development/messages/devlead/` liegt, also eine Antwortmeldung aussteht. Sonst setzt er keine. Eine Frist, nach der die Wiedervorlage ausläuft, gibt es nicht.
-4. Übernahme durch einen neuen Chat: Der neue Chat listet die Wiedervorlagen auf und löscht die mit der Kennung seines Vorhabens. Er schreibt die Datei `development/<vorhaben>/followup.md` mit dem Zeitpunkt der Übernahme in UTC und einer zufälligen Kennung des Chats, überträgt sie auf `main` und setzt seine Wiedervorlage nach Punkt 1. Findet ein Chat bei einer Wiedervorlage dort eine andere Kennung als seine eigene, setzt er keine weitere und bearbeitet nichts mehr. Die Datei sichert die Übernahme auch dann, wenn das Löschen nicht gelingt. Sie enthält keine Namen von Rechnern oder Benutzern.
+3. Der Chat setzt die nächste Wiedervorlage 20 Minuten später (Zeitpunkt nach Punkt 6), solange nach seiner Bearbeitung für sein Vorhaben eine Meldung in `development/messages/architect/` oder `development/messages/devlead/` liegt, also eine Antwortmeldung aussteht. Sonst setzt er keine. Eine Frist, nach der die Wiedervorlage ausläuft, gibt es nicht.
+4. Übernahme durch einen neuen Chat: Der neue Chat listet die Wiedervorlagen auf und löscht die mit der Kennung seines Vorhabens. Er schreibt die Datei `development/<vorhaben>/followup.md` mit dem Zeitpunkt der Übernahme in UTC und einer zufälligen Kennung des Chats, überträgt sie auf `main` und setzt seine Wiedervorlage nach Punkt 1. Findet ein Chat bei einer Aktivierung (Wiedervorlage oder Nachricht des Auftraggebers) dort eine andere Kennung als seine eigene, setzt er keine weitere und bearbeitet nichts mehr. Die Datei sichert die Übernahme auch dann, wenn das Löschen nicht gelingt. Sie enthält keine Namen von Rechnern oder Benutzern.
 5. Setzen, Wecken und Löschen sind erprobt, die Übernahme durch einen neuen Chat nicht. Vor der Abnahme des Pakets, das 4.1 umsetzt, erprobt der Projektleiter sie einmal und vermerkt das Ergebnis im Abnahmebericht. Gelingt sie nicht, ist das ein Mangel des Pakets.
 6. Verspätete Wiedervorlage: Am 24. Oktober 2026 wurde eine Wiedervorlage als zugestellt geführt, im Chat aber erst 50 Minuten später mit der nächsten Nachricht des Auftraggebers verarbeitet; die Ursache ist unbekannt (`scope.md`, Stand). Damit eine solche Wiedervorlage den Ablauf nicht anhält:
    - Der Chat prüft den Eingang bei jeder Aktivierung zuerst, durch eine Wiedervorlage ebenso wie durch eine Nachricht des Auftraggebers.
-   - Er setzt die nächste Wiedervorlage zu Beginn der Bearbeitung, nicht am Ende, und hält zusätzlich eine zweite 40 Minuten später als Rückfall. Bei jeder Aktivierung löscht er beide und setzt sie neu. Bleibt eine Wiedervorlage aus, weckt ihn die zweite.
-   - Eine Meldung, die beim Projektleiter liegt, zeigt die Übersicht mit „bei wem: Projektleiter“ und „seit“ (7.2). Eine Verzögerung ist dort für den Auftraggeber sichtbar, ohne Benachrichtigung.
+   - Er setzt die nächste Wiedervorlage zu Beginn der Bearbeitung, nicht am Ende, und hält zusätzlich eine zweite 40 Minuten später als Rückfall. Bei jeder Aktivierung löscht er beide und setzt sie neu. Bleibt eine Wiedervorlage aus, weckt ihn die zweite. Steht am Ende der Bearbeitung keine Antwortmeldung mehr aus (Punkt 3), löscht er beide.
+   - Eine Meldung, die noch im Eingang des Projektleiters liegt, zeigt die Übersicht mit „bei wem: Projektleiter“ und „seit“ (7.2). Eine Verzögerung ist dort für den Auftraggeber sichtbar, ohne Benachrichtigung.
    - Ob die zweite Wiedervorlage in dem beobachteten Fall geholfen hätte, ist ungeprüft. Der Projektleiter vermerkt im Abnahmebericht des Pakets, das 4.1 umsetzt, jede Wiedervorlage, die nicht pünktlich verarbeitet wurde, mit beiden Zeitpunkten. Bleibt danach eine Meldung ohne Nachricht des Auftraggebers länger als 40 Minuten unbearbeitet, ist das ein Mangel des Pakets.
 
 ### 4.2 Bearbeitung durch den Projektleiter
@@ -77,28 +78,30 @@ Der Chat des Projektleiters arbeitet in claude.ai in einem Projekt. Dort gibt es
 
 ### 4.3 Eingang (Festlegung 3)
 
-1. Bearbeitet ist eine Meldung, wenn der Projektleiter ihre Folgehandlung auf `main` übertragen hat: Antwortmeldung, Eintrag in einem Dokument oder Nachricht an den Auftraggeber. Er entfernt sie im selben Commit.
+1. Bearbeitet ist eine Meldung, wenn der Projektleiter ihre Folgehandlung erledigt hat: Antwortmeldung oder Eintrag in einem Dokument, im selben Commit wie das Entfernen. Legt er dem Auftraggeber etwas vor (`present`, `question` mit Fragen an den Auftraggeber, `acceptance`, `review` mit Befunden der Gruppe „Entscheidung des Auftraggebers“), entfernt er die Meldung mit einem Commit auf `main`, sobald er vorlegt. Die Übersicht erkennt daran, dass die Sache jetzt beim Auftraggeber liegt (7.2).
 2. Überholt ist eine Meldung, wenn nach ihr eine Meldung mit demselben `ref` an den Projektleiter vorliegt, die denselben Anlass erledigt, zum Beispiel ein neuer Prüfbericht zu demselben Dokument. Der Projektleiter des Vorhabens entfernt sie zusammen mit der späteren. Meldungen anderer Vorhaben entfernt er nie (H9).
 
 ### 4.4 Trennung der Vorhaben (Festlegung 7)
 
-1. Eine Kollision ist eine Behinderung der Arbeit eines Vorhabens durch ein anderes: zum Beispiel gleichzeitige Änderungen an denselben Dateien, belegte Ports einer Testumgebung, eine Sitzung, die auf dieselbe Ressource wartet.
-2. Kollisionen erkennen Softwarearchitekt und Entwicklungsleiter in ihrer Sitzung und lösen sie in ihrer Zuständigkeit (warten, auf neuen Stand setzen, abweichende Ports). Können sie das nicht, nennen sie die Kollision mit dem beteiligten Vorhaben in einer Frage (`question`). Eine eigene Meldungsart gibt es nicht (H14).
-3. Der Projektleiter prüft eine solche Frage gegen die drei Bedingungen der Festlegung 7. Nur wenn alle drei zugleich erfüllt sind, legt er sie dem Auftraggeber vor. Sonst antwortet er selbst mit `answer`, zum Beispiel mit der Anweisung, zu warten, und sieht bei jeder Wiedervorlage nach.
+1. Ein Chat des Projektleiters bearbeitet nur sein eigenes Vorhaben. Er startet, wiederholt oder repariert nichts für ein anderes Vorhaben, auch nicht bei scheinbar stehengebliebener Arbeit: keine Meldung mit fremdem `ref` schreiben, entfernen oder ändern, keine Dokumente eines fremden Vorhabens ändern, keine Anweisung in `transfer/` für ein fremdes Vorhaben.
+2. Eine Kollision ist eine Behinderung der Arbeit eines Vorhabens durch ein anderes: zum Beispiel gleichzeitige Änderungen an denselben Dateien, belegte Ports einer Testumgebung, eine Sitzung, die auf dieselbe Ressource wartet.
+3. Kollisionen erkennen Softwarearchitekt und Entwicklungsleiter in ihrer Sitzung und lösen sie in ihrer Zuständigkeit (warten, auf neuen Stand setzen, abweichende Ports). Können sie das nicht, nennen sie die Kollision mit dem beteiligten Vorhaben in einer Frage (`question`). Eine eigene Meldungsart gibt es nicht (H14). Der Projektleiter behält Kollisionen so im Blick, ohne selbst in das andere Vorhaben einzugreifen (Punkt 1).
+4. Der Projektleiter prüft eine solche Frage gegen die drei Bedingungen der Festlegung 7: Die Kollision blockiert die Arbeit vollständig, sie betrifft das Verhalten von pipwerk für den Anwender, und Entwicklungsleiter oder Softwarearchitekt können sie nicht selbst lösen. Nur wenn alle drei zugleich erfüllt sind, legt er sie dem Auftraggeber vor. Sonst antwortet er selbst mit `answer`, zum Beispiel mit der Anweisung, zu warten, und sieht bei jeder Wiedervorlage nach.
 
 ## 5. Namen (Festlegung 4)
 
 1. Der Name eines Vorhabens steht in `scope.md` in der Zeile `Name: …` unter der Überschrift. Der Name eines Pakets steht im Plan in der Überschrift des Pakets: `## wp01 – <Name>`.
-2. Namen sind deutsch, höchstens 40 Zeichen lang und innerhalb ihrer Ebene eindeutig. Kennungen bleiben unverändert.
-3. Ein Paket, das durch `amend` entsteht, benennt der Softwarearchitekt in der Planänderung. Der Auftraggeber bestätigt den Namen mit der Präsentation dazu.
-4. Bestehende Vorhaben und Pakete ohne Namen erhalten ihn bei der nächsten Arbeit daran: Vorhaben durch den Projektleiter mit dem Auftraggeber, Pakete durch den Softwarearchitekten bei der nächsten Planänderung. Bis dahin zeigt die Übersicht die Kennung (H10).
-5. Präsentationen, Anleitungen zur Abnahme und alle Nachrichten an den Auftraggeber nennen Namen von Vorhaben, Paketen und Phasen. Kennungen stehen dort höchstens in Klammern dahinter.
+2. Den Namen eines neuen Vorhabens legt der Projektleiter beim Anlegen mit dem Auftraggeber fest. Der Softwarearchitekt benennt jedes Paket im Plan; der Auftraggeber bestätigt die Namen mit der Präsentation des Plans. Kennungen bleiben unverändert.
+3. Die Phasen heißen fest: 1 Anforderung, 2 Konzeption, 3 Planung, 4 Umsetzung, 5 Abnahme, 6 Integration.
+4. Ein Paket, das durch `amend` entsteht, benennt der Softwarearchitekt in der Planänderung. Der Auftraggeber bestätigt den Namen mit der Präsentation dazu.
+5. Bestehende Vorhaben und Pakete ohne Namen erhalten ihn bei der nächsten Arbeit daran: Vorhaben durch den Projektleiter mit dem Auftraggeber, Pakete durch den Softwarearchitekten bei der nächsten Planänderung. Bis dahin zeigt die Übersicht die Kennung (H10).
+6. Präsentationen, Anleitungen zur Abnahme und alle Nachrichten an den Auftraggeber nennen Namen von Vorhaben, Paketen und Phasen. Kennungen stehen dort höchstens in Klammern dahinter.
 
 ## 6. Prototypen (Festlegung 5)
 
 1. Begriffe: „Machbarkeitstest“ ersetzt „Probeumsetzung“ und Prototypen zur Klärung der Umsetzbarkeit. „Oberflächenentwurf“ ersetzt „klickbarer Prototyp“, in allen Verfahrensdokumenten und im Glossar (H4).
 2. Eine **Ansicht** ist eine Seite oder ein eigenständiger Dialog einer Oberfläche mit eigenem Bedienablauf. Reiter, Zustände und Teilbereiche einer Seite gehören zu ihrer Ansicht (H18).
-3. **Umgesetzt** ist eine Ansicht, sobald sie dem Auftraggeber in einer Testumgebung zur Abnahme übergeben wurde (Meldung `acceptance` für das Paket, das sie enthält) oder in `main` übernommen ist. Ab dann gilt jeder Wunsch dazu als Änderung am bestehenden System (H19).
+3. **Umgesetzt** ist eine Ansicht, sobald sie sich in einer Testumgebung öffnen und bedienen lässt (Festlegung 5), also sobald der Entwicklungsleiter eine Testumgebung mit dem Paket, das sie enthält, bereitgestellt hat, oder sie in `main` übernommen ist. Ab dann gilt jeder Wunsch dazu als Änderung am bestehenden System (H19).
 4. Den Machbarkeitstest beauftragt der Softwarearchitekt allein, in Phase 2 und bei `amend`.
 5. Ausnahme Oberflächenentwurf für eine umgesetzte Ansicht: Projektleiter, Softwarearchitekt oder Entwicklungsleiter schlagen ihn vor, der Entwicklungsleiter über `amend` an den Softwarearchitekten. Der Vorschlag geht als Frage über den Projektleiter an den Auftraggeber (H15).
 6. Phase 3, Abnahmekriterium zur Bedienbarkeit: Maßstab ist der bestätigte Oberflächenentwurf, bei einer umgesetzten Ansicht die Spezifikation.
@@ -109,7 +112,7 @@ Der Chat des Projektleiters arbeitet in claude.ai in einem Projekt. Dort gibt es
 
 - Datei `development/overview.html` auf `main`, eine einzige HTML-Datei ohne externe Dateien.
 - Skript `tools/overview/generate.py`, Python 3 ohne fremde Pakete, mit Unit-Tests. Aufruf mit dem Wurzelverzeichnis eines Repositorys mit vollständiger Geschichte und dem Pfad der Ausgabedatei. Es liest nur und schreibt nur die Ausgabedatei.
-- Workflow `.github/workflows/overview.yml`: Auslöser Push auf `main` mit Änderungen unter `development/` außer `development/overview.html`, zusätzlich von Hand. Runner von GitHub, nicht der selbst betriebene. Rechte `contents: write`, keine anderen. Keine Auslöser für Pull Requests. Ein neuer Lauf bricht einen laufenden ab. Ändert sich die Datei, schreibt der Workflow sie mit einem Commit auf `main`; wird der Push abgelehnt, holt er den neuen Stand, erzeugt neu und versucht es bis zu dreimal.
+- Workflow `.github/workflows/overview.yml`: Auslöser Push auf `main` mit Änderungen unter `development/` außer `development/overview.html`, zusätzlich von Hand. Runner von GitHub, nicht der selbst betriebene. Rechte `contents: write`, keine anderen. Keine Auslöser für Pull Requests. Ein neuer Lauf bricht einen laufenden ab. Ändert sich die Datei, schreibt der Workflow sie mit einem Commit auf `main`; wird der Push abgelehnt, holt er den neuen Stand, erzeugt neu und versucht es bis zu dreimal. Der Checkout holt die vollständige Geschichte. Ob `main` den Push des Workflows zulässt, ist ungeprüft; das Paket weist es zuerst nach, sonst `amend`.
 - Der feste Link folgt dem offenen Punkt zu den Präsentationen in `scope.md`. Der Pfad der Datei ändert sich nicht.
 
 ### 7.2 Stand eines Vorhabens und eines Pakets
@@ -118,34 +121,36 @@ Für jedes `ref` gilt die jüngste Meldung in der Geschichte von `development/me
 
 | jüngste Meldung | Phase | bei wem |
 |---|---|---|
-| `check`, `review` | Anforderung | `check`: Softwarearchitekt; `review`: Projektleiter |
-| `specify`; `revise`, `present` zur Spezifikation | Konzeption | `specify`, `revise`: Softwarearchitekt; `present`: Auftraggeber |
-| `plan`; `revise`, `present` zum Plan | Planung | `plan`, `revise`: Softwarearchitekt; `present`: Auftraggeber |
+| `check`, `review` | Anforderung | `check`: Softwarearchitekt; `review`: Projektleiter* |
+| `specify`; `revise`, `present` zur Spezifikation | Konzeption | `specify`, `revise`: Softwarearchitekt; `present`: Projektleiter* |
+| `plan`; `revise`, `present` zum Plan | Planung | `plan`, `revise`: Softwarearchitekt; `present`: Projektleiter* |
 | `implement`, `fix`, `amended`, `answer` an den Entwicklungsleiter | Umsetzung | Team |
-| `amend`, `answer` an den Softwarearchitekten | wie die vorige Meldung | Softwarearchitekt |
-| `question` | wie die vorige Meldung | Auftraggeber |
-| `acceptance` | Abnahme | Auftraggeber |
+| `amend`, `answer` an den Softwarearchitekten | wie die Bezugsmeldung | Softwarearchitekt |
+| `question` | wie die Bezugsmeldung | Projektleiter* |
+| `acceptance` | Abnahme | Projektleiter* |
 | `integrate` | Integration | Team |
 | `integrated` | fertig | – |
-| `failed` | wie die vorige Meldung | Projektleiter |
+| `failed` | wie die Bezugsmeldung | Projektleiter |
 
+- \* Solange die Meldung noch im Eingang des Projektleiters liegt, ist sie beim Projektleiter. Hat er sie entfernt und gibt es keine jüngere Meldung desselben `ref`, hat er sie dem Auftraggeber vorgelegt (4.3 Punkt 1): „bei wem“ ist dann „Auftraggeber“. Hat er eine Meldung selbst erledigt, liegt seine Antwortmeldung im selben Commit und ist die jüngste.
+- Bezugsmeldung ist die jüngste ältere Meldung desselben `ref`, deren Aufgabe in der Tabelle eine Phase hat. Gibt es keine, gilt die Phase des Vorhabens.
 - Ob `revise` und `present` zur Spezifikation oder zum Plan gehören, ergibt das Feld `document`.
 - Die Phase des Vorhabens ist die seiner jüngsten Meldung mit `ref` des Vorhabens, nach der ersten Meldung `implement` „Umsetzung“, bis alle Pakete fertig sind.
 - Pakete stehen in der Reihenfolge des Plans. Ein Paket ohne Meldung hat die Phase „wartet“, mit den Paketen, von denen es laut Plan abhängt. Ein Paket mit `done` im Plan ist „fertig“.
-- „Wartet auf den Auftraggeber“ sind alle Einträge mit „bei wem: Auftraggeber“. Der Text sagt, was zu tun ist: `present` „Präsentation bestätigen“, `question` „Frage beantworten“, `acceptance` „Abnahme durchführen“.
+- „Wartet auf den Auftraggeber“ sind alle Einträge mit „bei wem: Auftraggeber“. Der Text sagt, was zu tun ist: `present` und `review` „Präsentation bestätigen“, `question` „Frage beantworten“, `acceptance` „Abnahme durchführen“.
 - Ein Vorhaben ohne `scope.md` oder ein `ref` ohne Vorhaben erscheint nicht.
 - „Projektleiter“ ist ein Wert für „bei wem“ wie die übrigen, ohne Hervorhebung ([questions/verfahren-01.md](questions/verfahren-01.md), Frage 2).
 - Farben des Stands (Festlegung 6): Ein Vorhaben ist grau ohne Meldung, grün, wenn alle Pakete fertig sind, sonst gelb. Eine Phase ist grün, wenn das Vorhaben beziehungsweise alle Pakete sie hinter sich haben, gelb, wenn das Vorhaben oder mindestens ein Paket in ihr ist, sonst grau. Ein Paket ist in einer der Phasen 4 bis 6 grau, solange es sie nicht erreicht hat, gelb, solange es in ihr ist, und grün danach.
 
 ### 7.3 Inhaltliche Grenzen
 
-Die Seite enthält Namen, Kennungen, Phasen, Rollen und Zeitpunkte, keine Namen von Rechnern oder Benutzern, keine Pfade, keine Ports und keine Links. Der Inhalt von Meldungstexten erscheint nicht. Ein Test prüft die erzeugte Seite gegen eine Liste verbotener Muster (absolute Pfade, Portangaben, Adressen).
+Die Seite enthält Namen, Kennungen, Phasen, Rollen und Zeitpunkte, keine Namen von Rechnern oder Benutzern, keine Pfade, keine Ports und keine Links auf Ziele außerhalb der Seite; Verweise auf Anker der Seite selbst (7.4) sind erlaubt. Der Inhalt von Meldungstexten erscheint nicht. Ein Test prüft die erzeugte Seite gegen eine Liste verbotener Muster (absolute Pfade, Portangaben, Adressen außerhalb der Seite).
 
 ### 7.4 Gestaltung
 
 Vorlage ist der vom Auftraggeber in Aufbau und Bedienung bestätigte Oberflächenentwurf [prototype/uebersicht-prototyp.html](prototype/uebersicht-prototyp.html) (Commit `f2e178dfcc3e8d1b69ae8fcc649001a1f0216be7`, [questions/verfahren-02.md](questions/verfahren-02.md)). Aufbau und Bedienung übernimmt die echte Seite unverändert. Die optische Gestaltung darf ansprechender werden, innerhalb der Punkte unten.
 
-1. Ebenen: erste Ebene je Vorhaben ein Kästchen, zweite die sechs Phasen des Vorhabens, dritte die Pakete der Phase. Eine weitere Ebene gibt es nicht (E5). Die Ebene steht im Anker der Adresse (`#`, `#<vorhaben>`, `#<vorhaben>/<nr>`). Oben eine Pfadleiste zurück, die Zurück-Taste des Browsers führt eine Ebene zurück. Kästchen, die weiterführen, sind Verweise und mit der Tastatur erreichbar.
+1. Ebenen: erste Ebene je Vorhaben ein Kästchen, zweite die sechs Phasen des Vorhabens, dritte die Pakete der Phase. Eine weitere Ebene gibt es nicht: Festlegung 6 lässt sie „bei Bedarf“ zu, unter einem Paket gibt es auf `main` aber nichts weiter Aufzuteilendes, Aufträge liegen auf dem Arbeitszweig (E5). Die Ebene steht im Anker der Adresse (`#`, `#<vorhaben>`, `#<vorhaben>/<nr>`). Oben eine Pfadleiste zurück, die Zurück-Taste des Browsers führt eine Ebene zurück. Kästchen, die weiterführen, sind Verweise und mit der Tastatur erreichbar.
 2. Stand: grau nicht begonnen, gelb begonnen, grün erledigt, nach 7.2. In jedem Kästchen zusätzlich als Wort mit Zeichen („Nicht begonnen“, „Begonnen“, „Erledigt“). Eine Legende erklärt Farben und Hervorhebung.
 3. Hervorhebung: Was auf den Auftraggeber wartet, hat auf allen drei Ebenen einen kräftigen blauen Rahmen und die Marke „Wartet auf Sie: <Handlung>“ (7.2), am Vorhaben, an der Phase, in der der Eintrag liegt, und am Paket oder Schritt. Ein Paket behält die Marke in jeder Phasenansicht. Blau unterscheidet sich von den drei Farben des Stands.
 4. Kästchen der ersten Ebene: Name, Kennung klein, Stand, Phase, bei wem, seit wann. Bei Vorhaben mit Paketen sind „bei wem“ die Stellen aller Pakete in Arbeit (weder fertig noch wartend) ohne Doppelte, „seit“ die jüngste Meldung dieser Pakete. Vorhaben in der Reihenfolge ihrer ersten Meldung, nicht begonnene danach, abgeschlossene zuletzt.
@@ -167,7 +172,7 @@ Vorlage ist der vom Auftraggeber in Aufbau und Bedienung bestätigte Oberfläche
 | Entwicklungsverfahren, Meldungen | 4.3, `failed` erst nach dem dritten Abbruch |
 | Entwicklungsverfahren, Entwicklungsverzeichnis, agentrun, Herzschlag, Start von Tester und QA | Abschnitte 3 und E1 bis E3 |
 | Entwicklungsverfahren, Runner | unverändert; neuer Abschnitt „Übersicht“ nach 7.1 |
-| Briefing Projektleiter | Wiedervorlage, Bearbeitung nach 4.2, Eingang nach 4.3, Trennung der Vorhaben nach 4.4, Namen nach 5.5; die Regeln „je Aufgabe ein eigener Chat“ und „bei `failed` Auftraggeber informieren“ werden daran angeglichen (H2, H6) |
+| Briefing Projektleiter | Wiedervorlage, Bearbeitung nach 4.2, Eingang nach 4.3, Trennung der Vorhaben nach 4.4, Namen nach 5.2 und 5.6; die Regeln „je Aufgabe ein eigener Chat“ und „bei `failed` Auftraggeber informieren“ werden daran angeglichen (H2, H6) |
 | Briefing Softwarearchitekt | Oberflächenentwurf und Machbarkeitstest, Paketnamen, Kollisionen |
 | Briefing Entwicklungsleiter | Vorschlag eines Oberflächenentwurfs über `amend`, Kollisionen |
 | Glossar | Begriffe aus Abschnitt 6 |
@@ -200,3 +205,4 @@ Vorlage ist der vom Auftraggeber in Aufbau und Bedienung bestätigte Oberfläche
 | 2026-10-24 | Entwurf ohne Abschnitt 7.4. |
 | 2026-10-24 | Antworten aus [questions/verfahren-01.md](questions/verfahren-01.md) eingearbeitet: 4.1 Wiedervorlage als einmalige, immer neu gesetzte Wiedervorlage in claude.ai (Frage 3), 7.2 „Projektleiter“ ohne Hervorhebung (Frage 2) und Farben des Stands nach der neuen Festlegung 6 (Frage 1). H20 erledigt. |
 | 2026-10-24 | 7.4 nach dem bestätigten Oberflächenentwurf ([questions/verfahren-02.md](questions/verfahren-02.md)). 4.1 Punkt 6 nach dem Befund zur verspäteten Wiedervorlage in `scope.md`. |
+| 2026-10-24 | Befunde aus [reviews/specification-1.md](reviews/specification-1.md): B1 4.4 Punkt 1 und drei Bedingungen; B2 5.2 und 5.3; B3 6.3 nach Festlegung 5; B4 7.2 Meldungen an den Projektleiter erst nach Vorlage beim Auftraggeber, 4.3 Punkt 1. Hinweise: H2 7.4.1, H3 Einschränkung der Namen entfernt, H4 7.3, H5 3.2 Punkt 5, H6 4.1 Punkte 3 und 6, H7 4.1 Punkt 4, H8 Bezugsmeldung in 7.2, H9 7.1. H1 bleibt als Restrisiko, in 4.1 Punkt 6 benannt. |
