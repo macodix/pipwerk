@@ -9,9 +9,78 @@
     "label": "Menü",
     "data": "Datenbestand",
     "accounts": "Testkonten",
+    "settings": "Einstellungen",
     "tip": {
       "data": "Welche historischen Kursdaten vorliegen; Dateien importieren und den Broker für Testläufe wählen.",
-      "accounts": "Testkonten anlegen, bearbeiten, speichern und löschen."
+      "accounts": "Testkonten anlegen, bearbeiten, speichern und löschen.",
+      "settings": "Einstellen, ob importierte Dateien behalten werden, und die Verzeichnisse für Ablage, Import und Export."
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "intro": "Hier stellen Sie ein, wie pipwerk replay mit Dateien umgeht. Die Verzeichnisse liegen auf dem Rechner, auf dem das Backend läuft; geben Sie den vollständigen Pfad an. Die Sprache wählen Sie in der Kopfzeile, den Broker für Testläufe im Datenbestand.",
+    "keep": "Importierte Dateien behalten",
+    "keepNote": "Voreinstellung für das Kästchen „Dateien behalten“ im Dialog „Datei importieren“.",
+    "storage": "Ablageverzeichnis",
+    "import": "Importverzeichnis",
+    "export": "Exportverzeichnis",
+    "note": {
+      "storage": "Hier liegen behaltene Dateien.",
+      "import": "Aus diesem Verzeichnis wählen Sie beim Import Dateien.",
+      "export": "Hier landen künftige Exporte. Die Einstellung wirkt mit dem ersten Export."
+    },
+    "isDefault": "Es gilt der Standard des Betriebssystems.",
+    "isStored": "Gespeicherter Pfad.",
+    "defaultUnknown": "Für den Standard lässt sich auf dem Rechner des Backends kein Pfad bestimmen. Nächster Schritt: Geben Sie einen Pfad an.",
+    "save": "Speichern",
+    "discard": "Änderungen verwerfen",
+    "unsaved": "Ungespeicherte Änderungen.",
+    "saved": "Die Einstellungen sind gespeichert.",
+    "loadError": "Die Einstellungen konnten nicht gelesen werden. {{reason}}",
+    "saveError": "Die Einstellungen konnten nicht gespeichert werden. {{reason}}",
+    "refused": "Die Einstellungen wurden nicht gespeichert. Nächster Schritt: Ändern Sie die markierten Verzeichnisse und speichern Sie noch einmal.",
+    "tip": {
+      "keep": "Voreinstellung für das Kästchen „Dateien behalten“ im Dialog „Datei importieren“. Ist die Einstellung angekreuzt, ist auch das Kästchen dort von Anfang an angekreuzt, und hochgeladene Dateien bleiben unverändert im Ablageverzeichnis; sonst bleibt vom Import nur, was im Datenbestand steht. Im Dialog ändern Sie es für jeden Import.",
+      "storage": "Das Verzeichnis auf dem Rechner des Backends, in dem hochgeladene Dateien bleiben, wenn „Dateien behalten“ gilt. Vollständiger Pfad. Ein leeres Feld gilt als Standard des Betriebssystems. Ein Wechsel verschiebt keine Dateien: Was im bisherigen Verzeichnis liegt, bleibt dort. pipwerk replay entfernt behaltene Dateien nie.",
+      "import": "Das Verzeichnis auf dem Rechner des Backends, aus dem Sie im Dialog „Datei importieren“ Dateien wählen, auch aus Unterverzeichnissen. Vollständiger Pfad. Ein leeres Feld gilt als Standard des Betriebssystems. pipwerk replay liest dort nur: Es ändert, verschiebt, entfernt oder kopiert nichts.",
+      "export": "Der voreingestellte Ablageort künftiger Exporte, ein Verzeichnis auf dem Rechner des Backends. Vollständiger Pfad. Ein leeres Feld gilt als Standard des Betriebssystems. pipwerk replay exportiert noch nichts; die Einstellung wird gespeichert und wirkt mit dem ersten Export."
+    },
+    "reason": {
+      "not_absolute": "Der Pfad ist nicht vollständig. Nächster Schritt: Geben Sie den ganzen Pfad an, unter Linux und macOS mit „/“ am Anfang, unter Windows mit dem Laufwerk, zum Beispiel C:\\Daten.",
+      "not_a_directory": "Unter diesem Pfad liegt kein Verzeichnis, sondern etwas anderes. Nächster Schritt: Geben Sie ein Verzeichnis an.",
+      "cannot_be_created": "Das Verzeichnis gibt es nicht, und das Backend konnte es nicht anlegen. Nächster Schritt: Prüfen Sie den Pfad und die Rechte des Benutzers, unter dem das Backend läuft.",
+      "not_writable": "Das Backend darf in dieses Verzeichnis nicht schreiben. Nächster Schritt: Wählen Sie ein anderes Verzeichnis oder ändern Sie die Rechte des Benutzers, unter dem das Backend läuft.",
+      "not_readable": "Das Backend darf dieses Verzeichnis nicht lesen. Nächster Schritt: Wählen Sie ein anderes Verzeichnis oder ändern Sie die Rechte des Benutzers, unter dem das Backend läuft."
+    }
+  },
+  "picker": {
+    "title": "Aus dem Importverzeichnis wählen",
+    "directory": "Importverzeichnis: {{directory}}",
+    "directoryUnknown": "Es ist kein Importverzeichnis bestimmt.",
+    "where": "Ort im Importverzeichnis",
+    "root": "Importverzeichnis",
+    "up": "Eine Ebene höher",
+    "directoryKind": "Verzeichnis",
+    "inList": "schon in der Liste",
+    "count": "{{from}}–{{to}} von {{total}} Einträgen",
+    "selectPage": "Alle Dateien dieser Seite wählen",
+    "unselectPage": "Wahl der Dateien dieser Seite aufheben",
+    "cancel": "Zurück zum Dialog",
+    "confirm_one": "{{count}} Datei übernehmen",
+    "confirm_other": "{{count}} Dateien übernehmen",
+    "settings": "Zu den Einstellungen",
+    "toRoot": "Zum Importverzeichnis",
+    "emptyRoot": "Das Importverzeichnis {{directory}} enthält keine Dateien und keine Unterverzeichnisse. Nächster Schritt: Legen Sie dort Dateien ab oder wählen Sie unter „Einstellungen“ ein anderes Importverzeichnis.",
+    "emptyRootUnknown": "Es ist kein Importverzeichnis bestimmt. Nächster Schritt: Wählen Sie unter „Einstellungen“ ein Importverzeichnis.",
+    "emptySub": "Dieses Verzeichnis ist leer. Nächster Schritt: Gehen Sie eine Ebene höher oder öffnen Sie ein anderes Verzeichnis.",
+    "unavailable": "Das Importverzeichnis {{directory}} ist nicht gesetzt oder lässt sich nicht lesen. Nächster Schritt: Prüfen Sie es unter „Einstellungen“.",
+    "unavailableUnknown": "Das Importverzeichnis ist nicht gesetzt oder lässt sich nicht lesen. Nächster Schritt: Prüfen Sie es unter „Einstellungen“.",
+    "gone": "Dieses Verzeichnis gibt es nicht (mehr). Nächster Schritt: Gehen Sie zum Importverzeichnis zurück.",
+    "loadError": "Das Verzeichnis konnte nicht gelesen werden. {{reason}}",
+    "tip": {
+      "up": "Geht in das übergeordnete Verzeichnis, höchstens bis zum Importverzeichnis.",
+      "selectPage": "Wählt alle Dateien auf dieser Seite, die noch nicht in der Liste des Dialogs stehen.",
+      "settings": "Schließt diesen Dialog und öffnet die Ansicht „Einstellungen“. Die Liste des Dialogs geht dabei verloren."
     }
   },
   "about": {
@@ -199,9 +268,14 @@
   },
   "import": {
     "title": "Datei importieren",
-    "intro": "Wählen Sie so viele Dateien im Format JSON oder CSV, wie Sie wollen, zum Beispiel Exporte aus MetaTrader 5 oder die Dateien von pipwerk-fetch-mt5, und klicken Sie einmal auf „Importieren“. pipwerk replay prüft die Dateien nacheinander und übernimmt die Daten. Vorhandene Daten desselben Zeitpunkts werden ersetzt.",
-    "choose": "Dateien wählen …",
-    "empty": "Noch keine Datei gewählt. Nächster Schritt: Wählen Sie Dateien im Format JSON oder CSV.",
+    "intro": "Wählen Sie so viele Dateien im Format JSON oder CSV, wie Sie wollen, zum Beispiel Exporte aus MetaTrader 5 oder die Dateien von pipwerk-fetch-mt5: Sie laden sie hoch oder wählen sie im Importverzeichnis, auch beides zusammen. Klicken Sie dann einmal auf „Importieren“. pipwerk replay prüft die Dateien nacheinander und übernimmt die Daten. Vorhandene Daten desselben Zeitpunkts werden ersetzt.",
+    "choose": "Dateien hochladen …",
+    "chooseDirectory": "Aus dem Importverzeichnis wählen …",
+    "keepFiles": "Dateien behalten",
+    "fromDirectory": "Importverzeichnis",
+    "kept": "Die Datei ist im Ablageverzeichnis behalten.",
+    "stays": "Die Datei liegt unverändert im Importverzeichnis.",
+    "empty": "Noch keine Datei gewählt. Nächster Schritt: Laden Sie Dateien im Format JSON oder CSV hoch oder wählen Sie Dateien im Importverzeichnis.",
     "reading": "Die Dateien werden gelesen … ({{done}} von {{total}})",
     "readError": "Die Dateien konnten nicht gelesen werden. {{reason}}",
     "broker": "Broker",
@@ -249,8 +323,18 @@
     "rejectedCount": "{{count}} Zeilen abgelehnt:",
     "rejectedRow": "Zeile {{row}}: {{reason}}",
     "rejectedMore": "und {{count}} weitere",
+    "fileRequest": {
+      "keep_no_directory": "Die Datei konnte nicht behalten werden, weil kein Ablageverzeichnis bestimmt ist. Sie wurde nicht importiert. Nächster Schritt: Tragen Sie unter „Einstellungen“ ein Ablageverzeichnis ein oder nehmen Sie das Kreuz bei „Dateien behalten“ weg, und importieren Sie die Datei erneut.",
+      "keep_failed": "Die Datei konnte nicht im Ablageverzeichnis abgelegt werden. Sie wurde nicht importiert. Nächster Schritt: Prüfen Sie unter „Einstellungen“, ob das Ablageverzeichnis beschreibbar ist und Platz hat, oder nehmen Sie das Kreuz bei „Dateien behalten“ weg, und importieren Sie die Datei erneut.",
+      "not_found": "Die Datei gibt es im Importverzeichnis nicht (mehr). Nächster Schritt: Entfernen Sie sie aus der Liste oder wählen Sie die Datei im Importverzeichnis erneut.",
+      "path_refused": "Der Pfad der Datei ist im Importverzeichnis nicht erlaubt oder zeigt nicht auf eine Datei. Nächster Schritt: Entfernen Sie sie aus der Liste und wählen Sie die Datei im Importverzeichnis erneut.",
+      "import_directory_unavailable": "Das Importverzeichnis ist nicht gesetzt oder lässt sich nicht lesen. Nächster Schritt: Prüfen Sie es unter „Einstellungen“ und importieren Sie die Datei erneut."
+    },
     "tip": {
-      "choose": "Wählt eine oder mehrere Dateien von Ihrer Festplatte, JSON und CSV gemischt. Die Dateien werden geprüft und nie ausgeführt.",
+      "choose": "Lädt eine oder mehrere Dateien von Ihrer Festplatte hoch, JSON und CSV gemischt. Die Dateien werden geprüft und nie ausgeführt.",
+      "chooseDirectory": "Zeigt die Dateien im Importverzeichnis auf dem Rechner des Backends, auch in Unterverzeichnissen. Die Dateien dort bleiben unverändert: pipwerk replay liest sie nur.",
+      "keep": "Legt jede hochgeladene Datei unverändert im Ablageverzeichnis {{directory}} ab, auch eine abgelehnte. Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert. pipwerk replay entfernt behaltene Dateien nie; eine Datei gleichen Namens wird ersetzt. Vorbelegt ist das Kästchen mit der Einstellung „Importierte Dateien behalten“.",
+      "keepNoDirectory": "Legt jede hochgeladene Datei unverändert im Ablageverzeichnis ab, auch eine abgelehnte. Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert. pipwerk replay entfernt behaltene Dateien nie; eine Datei gleichen Namens wird ersetzt. Das Ablageverzeichnis stellen Sie unter „Einstellungen“ ein. Vorbelegt ist das Kästchen mit der Einstellung „Importierte Dateien behalten“.",
       "broker": "Der Broker, zu dem alle Dateien gehören, bei MetaTrader 5 der Name des Handelsservers. Wählen Sie einen Namen aus dem Datenbestand oder geben Sie einen neuen ein. Nennen alle JSON-Dateien denselben Broker, ist er vorbelegt. Der Broker gilt auch für JSON-Dateien.",
       "timezone": "Die Zeitzone, in der MetaTrader 5 die Zeiten der CSV-Dateien schreibt (Zeit des Handelsservers), als Name, zum Beispiel Europe/Athens. Die Sommerzeit wird beachtet. pipwerk rechnet alle Zeiten in UTC um. Zeiten in JSON-Dateien sind UTC.",
       "instrument": "Das Instrument der Datei, zum Beispiel EURUSD. Vorbelegt aus dem Dateinamen, bei JSON aus dem Inhalt.",
@@ -290,6 +374,7 @@
       "period_invalid": "Der Zeitraum der Datei ist ungültig. Nächster Schritt: Prüfen Sie die Zeiten in der Datei.",
       "no_rows": "Die Datei enthält keine Zeilen. Nächster Schritt: Prüfen Sie, ob es die richtige Datei ist.",
       "store_failed": "Der Datenbestand konnte die Datei nicht aufnehmen. Nächster Schritt: Versuchen Sie es später noch einmal.",
+      "not_readable": "Die Datei lässt sich im Importverzeichnis nicht lesen. Nächster Schritt: Prüfen Sie die Rechte der Datei für den Benutzer, unter dem das Backend läuft.",
       "unknown": "Die Datei wurde abgelehnt. Nächster Schritt: Prüfen Sie die Datei und importieren Sie sie erneut."
     }
   },

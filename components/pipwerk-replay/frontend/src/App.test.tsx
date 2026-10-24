@@ -13,12 +13,12 @@ beforeEach(() => {
 });
 
 describe('App, header and menu', () => {
-  it('has the entries Datenbestand and Testkonten and no entry of a later work package', async () => {
+  it('has the entries Datenbestand, Testkonten and Einstellungen and no entry of a later work package', async () => {
     renderWithProviders(<App />);
 
     const nav = screen.getByRole('navigation', { name: 'Menü' });
     const entries = within(nav).getAllByRole('button');
-    expect(entries.map((entry) => entry.textContent)).toEqual(['Datenbestand', 'Testkonten']);
+    expect(entries.map((entry) => entry.textContent)).toEqual(['Datenbestand', 'Testkonten', 'Einstellungen']);
     expect(screen.queryByText('Testlauf')).not.toBeInTheDocument();
     expect(screen.queryByText('Gespeicherte Backtests')).not.toBeInTheDocument();
     expect(screen.queryByText('Einzelschritt-Test')).not.toBeInTheDocument();
@@ -41,6 +41,11 @@ describe('App, header and menu', () => {
     expect(screen.getByTestId('menu-accounts')).toHaveAttribute('aria-current', 'page');
     expect(screen.getByTestId('app')).toHaveAttribute('data-view', 'accounts');
 
+    await user.click(screen.getByTestId('menu-settings'));
+    expect(await screen.findByTestId('settings')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-settings')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByTestId('app')).toHaveAttribute('data-view', 'settings');
+
     await user.click(screen.getByTestId('menu-data'));
     expect(await screen.findByTestId('data')).toBeInTheDocument();
   });
@@ -52,7 +57,11 @@ describe('App, header and menu', () => {
 
     await user.click(screen.getByTestId('menu-toggle'));
     const pop = screen.getByTestId('menu-pop');
-    expect(within(pop).getAllByRole('button').map((entry) => entry.textContent)).toEqual(['Datenbestand', 'Testkonten']);
+    expect(within(pop).getAllByRole('button').map((entry) => entry.textContent)).toEqual([
+      'Datenbestand',
+      'Testkonten',
+      'Einstellungen',
+    ]);
     await user.click(within(pop).getByTestId('cmenu-accounts'));
     expect(screen.queryByTestId('menu-pop')).not.toBeInTheDocument();
     expect(await screen.findByTestId('accounts')).toBeInTheDocument();

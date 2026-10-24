@@ -94,13 +94,29 @@ export function importResultJson(overrides: Json = {}): Json {
 }
 
 /** The result for a file that is taken over (`FileOutcome` of the web API). */
-export function takenJson(name: string, result: Json = {}): Json {
-  return { name, refused: false, result: importResultJson(result), error: null, message: null };
+export function takenJson(name: string, result: Json = {}, kept = false): Json {
+  return { name, refused: false, result: importResultJson(result), error: null, message: null, kept };
 }
 
 /** The result for a file that is refused as a whole. */
-export function refusedJson(name: string, error: string, message = 'x'): Json {
-  return { name, refused: true, result: null, error, message };
+export function refusedJson(name: string, error: string, message = 'x', kept = false): Json {
+  return { name, refused: true, result: null, error, message, kept };
+}
+
+/** One entry of the listing of the import directory (`ImportDirectoryEntry`). */
+export function entryJson(name: string, kind: 'file' | 'directory' = 'file', size = 1024): Json {
+  return { name, kind, size: kind === 'file' ? size : null, modified_at: '2026-01-05T08:15:00Z' };
+}
+
+/** The settings for files (`GET /api/replay/settings/files`). */
+export function fileSettingsJson(overrides: Json = {}): Json {
+  return {
+    keep_imported_files: false,
+    storage_directory: { path: '/data/storage', is_default: true },
+    import_directory: { path: '/data/import', is_default: true },
+    export_directory: { path: '/data/export', is_default: true },
+    ...overrides,
+  };
 }
 
 /** What the preview says about a file (`FileHint` of the web API). */
@@ -120,6 +136,7 @@ export function hintJson(name: string, overrides: Json = {}): Json {
 export type SentForm = {
   broker: string | null;
   timezone: string | null;
+  keep: string | null;
   files: string[];
   instrument: string[];
   data: string[];
@@ -134,6 +151,7 @@ export function readForm(body: unknown): SentForm {
   return {
     broker: text('broker'),
     timezone: text('timezone'),
+    keep: text('keep'),
     files: form.getAll('file').map((file) => (file as File).name),
     instrument: form.getAll('instrument').map(String),
     data: form.getAll('data').map(String),
@@ -193,6 +211,26 @@ export class FakeBackend {
   beginAnswer: () => Response = () => json(201, { id: 'process-1', idle_timeout_seconds: 300 });
   /** The answer to the request of one file of a process, from its name; replaced per test. */
   fileAnswer: (name: string, call: number) => Response | Promise<Response> = (name) => json(200, takenJson(name));
+  /** The settings for files as the backend holds them (`GET /api/replay/settings/files`). */
+  fileSettings: Json = fileSettingsJson();
+  /** A special answer to reading the settings for files (an error), instead of the settings. */
+  fileSettingsAnswer: (() => Response | Promise<Response>) | null = null;
+  /** A special answer to the preview of a file of the import directory, instead of the hints. */
+  directoryPreviewAnswer: ((path: string) => Response) | null = null;
+  /**
+   * The refusal of `PUT /api/replay/settings/files`: the reason per field (`storage_directory`
+   * ...), or `null` to accept. A refusal changes nothing, as in the backend.
+   */
+  fileSettingsRefusal: Record<string, string> | null = null;
+  /** The listing of the import directory: the entries of each directory by its relative path. */
+  directories: Record<string, Json[]> | null = { '': [] };
+  /** A special answer to the listing (an error), by its relative path, instead of `directories`. */
+  directoryAnswer: ((path: string) => Response) | null = null;
+  /** What the preview says about a file of the import directory by its path; unknown: by name. */
+  directoryHints: Record<string, Json> = {};
+  /** The answer to the request of one file of the import directory, from its path. */
+  directoryFileAnswer: (path: string, call: number) => Response | Promise<Response> = (path) =>
+    json(200, takenJson(path.split('/').pop() ?? path));
   /** The answer to the end or the abort of a process. */
   endAnswer: (how: 'finish' | 'abort') => Response = (how) =>
     json(200, { id: 'process-1', state: how === 'finish' ? 'finished' : 'aborted', imported_count: 0, refused_count: 0 });
@@ -201,6 +239,7 @@ export class FakeBackend {
     json(200, deletionJson({ kind, deleted: body.confirm === true }));
   calls: Call[] = [];
   private fileCalls = 0;
+  private directoryFileCalls = 0;
   private counter = 0;
 
   install(): void {
@@ -245,6 +284,25 @@ export class FakeBackend {
         this.language = (body as { language: SupportedLanguage }).language;
       }
       return json(200, { language: this.language });
+    }
+    if (path === '/api/replay/settings/files') {
+      return this.files(method, body);
+    }
+    if (path === '/api/v1/market-data/import-directory' && method === 'GET') {
+      return this.listing(url.searchParams);
+    }
+    if (path === '/api/v1/market-data/import-directory/preview' && method === 'POST') {
+      const requested = (body as { path: string }).path;
+      if (this.directoryPreviewAnswer !== null) {
+        return this.directoryPreviewAnswer(requested);
+      }
+      const name = requested.split('/').pop() ?? requested;
+      return json(200, this.directoryHints[requested] ?? this.hints[name] ?? hintJson(name));
+    }
+    const directoryFiles = new RegExp(`^${IMPORT_PROCESS_PATH}/([^/]+)/directory-files$`).exec(path);
+    if (directoryFiles !== null && method === 'POST') {
+      this.directoryFileCalls += 1;
+      return this.directoryFileAnswer((body as { path: string }).path, this.directoryFileCalls);
     }
     if (path === '/api/replay/settings/test-run-broker') {
       if (method === 'PUT') {
@@ -313,6 +371,50 @@ export class FakeBackend {
       return this.deletionAnswer(deletion[1] as string, body as Json);
     }
     return json(404, { detail: 'Not Found' });
+  }
+
+  private files(method: string, body: unknown): Response | Promise<Response> {
+    if (method === 'PUT') {
+      const wanted = body as Json;
+      if (this.fileSettingsRefusal !== null) {
+        return json(422, {
+          detail: 'A directory cannot be used. Nothing was saved.',
+          errors: Object.entries(this.fileSettingsRefusal).map(([field, type]) => ({ location: [field], type })),
+        });
+      }
+      const directory = (field: string): Json => {
+        const value = wanted[field];
+        return typeof value === 'string'
+          ? { path: value, is_default: false }
+          : { path: this.defaultOf(field), is_default: true };
+      };
+      this.fileSettings = {
+        keep_imported_files: wanted.keep_imported_files,
+        storage_directory: directory('storage_directory'),
+        import_directory: directory('import_directory'),
+        export_directory: directory('export_directory'),
+      };
+    }
+    return this.fileSettingsAnswer === null ? json(200, this.fileSettings) : this.fileSettingsAnswer();
+  }
+
+  /** The default of a directory setting (the same paths as `fileSettingsJson`). */
+  private defaultOf(field: string): string {
+    return field === 'storage_directory' ? '/data/storage' : field === 'import_directory' ? '/data/import' : '/data/export';
+  }
+
+  private listing(query: URLSearchParams): Response {
+    const path = query.get('path') ?? '';
+    if (this.directoryAnswer !== null) {
+      return this.directoryAnswer(path);
+    }
+    const entries = this.directories?.[path];
+    if (entries === undefined) {
+      return json(404, { detail: 'There is no such file or directory in the import directory.' });
+    }
+    const offset = Number(query.get('offset') ?? 0);
+    const limit = Number(query.get('limit') ?? 1000);
+    return json(200, { items: entries.slice(offset, offset + limit), total: entries.length, offset, limit });
   }
 
   /** The broker that applies: the choice if it occurs in the data stock, else the first one. */

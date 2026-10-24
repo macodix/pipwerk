@@ -39,7 +39,7 @@ function sameRow(a: RowKey | null, b: RowKey): boolean {
   return a !== null && a.broker === b.broker && a.instrument === b.instrument && a.data === b.data;
 }
 
-export function DataView() {
+export function DataView({ onOpenSettings }: { onOpenSettings?: () => void } = {}) {
   const { t } = useTranslation();
   const [importOpen, setImportOpen] = useState(false);
   // What the last deletion removed, said in a line under the bar.
@@ -85,6 +85,7 @@ export function DataView() {
       </div>
       {importOpen && (
         <ImportDialog
+          onOpenSettings={onOpenSettings}
           onClose={() => {
             setImportOpen(false);
           }}

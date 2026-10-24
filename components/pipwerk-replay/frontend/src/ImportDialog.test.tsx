@@ -103,7 +103,9 @@ describe('ImportDialog, choosing files', () => {
 
     expect(dialog).toHaveAttribute('open');
     expect(within(dialog).getByRole('heading', { name: 'Datei importieren' })).toBeInTheDocument();
-    expect(screen.getByTestId('import-empty')).toHaveTextContent('Nächster Schritt: Wählen Sie Dateien im Format JSON oder CSV.');
+    expect(screen.getByTestId('import-empty')).toHaveTextContent(
+      'Nächster Schritt: Laden Sie Dateien im Format JSON oder CSV hoch oder wählen Sie Dateien im Importverzeichnis.',
+    );
     expect(screen.getByTestId('import-run')).toBeDisabled();
     expect(screen.queryByTestId('field-import-timezone')).not.toBeInTheDocument();
     expect(screen.queryByTestId('import-cancel')).not.toBeInTheDocument();
@@ -121,7 +123,7 @@ describe('ImportDialog, choosing files', () => {
 
     const intro = screen.getByText(/Wählen Sie so viele Dateien/);
 
-    expect(intro).toHaveTextContent('klicken Sie einmal auf „Importieren“');
+    expect(intro).toHaveTextContent('Klicken Sie dann einmal auf „Importieren“');
     expect(intro.textContent ?? '').not.toMatch(TOTAL_LIMIT_TEXT);
   });
 
@@ -345,7 +347,9 @@ describe('ImportDialog, choosing files', () => {
     await user.click(await screen.findByTestId('import-open'));
 
     expect(screen.getByRole('heading', { name: 'Import files' })).toBeInTheDocument();
-    expect(screen.getByTestId('import-empty')).toHaveTextContent('Next step: choose files in JSON or CSV format.');
+    expect(screen.getByTestId('import-empty')).toHaveTextContent(
+      'Next step: upload files in JSON or CSV format or choose files in the import directory.',
+    );
 
     await user.upload(screen.getByTestId('import-files'), new File(['x'], 'a.csv'));
     await screen.findByTestId('import-item');
@@ -381,6 +385,7 @@ describe('ImportDialog, one import process for any number of files', () => {
     expect(readForm(calls[0]?.body)).toEqual({
       broker: 'Neuer-Server',
       timezone: 'Europe/Athens',
+      keep: 'false',
       files: ['f01.csv'],
       instrument: ['F01'],
       data: ['h1'],

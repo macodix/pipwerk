@@ -20,6 +20,7 @@ export const FILE_ERROR_CODES = [
   'period_invalid',
   'no_rows',
   'store_failed',
+  'not_readable',
 ] as const;
 
 /** The reasons for refusing a deletion (`DeletionErrorCode` of the web API, HTTP 404). */

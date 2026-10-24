@@ -1,7 +1,11 @@
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { Page } from '@playwright/test';
 
 import {
   FAULTY_CSV,
+  putFileSettings,
   GAPPY_CSV,
   WINDOW_SIZES,
   chooseImportFiles,
@@ -480,6 +484,91 @@ for (const { width, height } of WINDOW_SIZES) {
       await page.getByTestId('field-delete-start').locator('.info').blur();
       await page.getByTestId('delete-cancel').click();
       await expectShell(page, width, height);
+    });
+
+    test('settings: the four settings, a refusal at a field, and the end of the view can be reached', async ({ page }) => {
+      await chooseView(page, 'settings');
+      await expect(page.getByTestId('settings-form')).toBeVisible();
+
+      await expectShell(page, width, height);
+      await expectCards(page, 'settings');
+      await expectNoInnerScroll(page, '[data-testid="settings"] .card-box');
+      // The fields lie below each other without overlap, each control inside the card.
+      const ids = ['field-settings-keep', 'field-settings-storage', 'field-settings-import', 'field-settings-export'];
+      const boxes: Box[] = [];
+      for (const id of ids) {
+        await page.getByTestId(id).scrollIntoViewIfNeeded();
+        boxes.push(await page.getByTestId(id).evaluate((element) => {
+          const area = element.closest('.page-scroll') as HTMLElement;
+          const r = element.getBoundingClientRect();
+          const a = area.getBoundingClientRect();
+          return { left: r.left - a.left, top: r.top - a.top + area.scrollTop, right: r.right - a.left, bottom: r.bottom - a.top + area.scrollTop, width: r.width, height: r.height };
+        }));
+      }
+      for (let i = 0; i < boxes.length; i += 1) {
+        for (let j = i + 1; j < boxes.length; j += 1) {
+          expect(overlap(boxes[i] as Box, boxes[j] as Box), `fields ${ids[i] ?? ''} / ${ids[j] ?? ''}`).toBe(false);
+        }
+      }
+
+      // With a refusal (message under the field and the general message) it still fits.
+      await page.getByTestId('settings-import').fill('relative');
+      await page.getByTestId('settings-save').click();
+      await expect(page.getByTestId('settings-import-error')).toBeVisible();
+      await expect(page.getByTestId('settings-refused')).toBeVisible();
+      await expectShell(page, width, height);
+      await expectCards(page, 'settings');
+      await expectNoInnerScroll(page, '[data-testid="settings"] .card-box');
+      await page.getByTestId('settings-save').scrollIntoViewIfNeeded();
+      await expect(page.getByTestId('settings-save')).toBeInViewport();
+    });
+
+    test('dialog "Datei importieren" with the choice in the import directory and the tick "Dateien behalten"', async ({ page, stack }) => {
+      const imports = stack.makeDirectory('import');
+      stack.makeDirectory('import', 'a-subdirectory-with-a-fairly-long-name-to-test-the-wrapping');
+      for (let index = 0; index < 12; index += 1) {
+        writeFileSync(join(imports, `EURUSD_H1_2026010${String(index % 10)}${String(index)}_long_name_for_the_wrapping_of_a_file_name.csv`), 'x');
+      }
+      await putFileSettings(stack.backendUrl, { import: imports, storage: stack.makeDirectory('storage') });
+      await chooseView(page, 'data');
+      await openImportDialog(page);
+
+      // The dialog with the tick and the two ways to put files in.
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+      for (const id of ['import-choose', 'import-choose-directory', 'import-keep-files']) {
+        await page.getByTestId(id).scrollIntoViewIfNeeded();
+        await expect(page.getByTestId(id)).toBeInViewport();
+      }
+
+      // The choice: breadcrumbs, the list with sizes and times, the pager, the buttons of the foot.
+      await page.getByTestId('import-choose-directory').click();
+      await expect(page.getByTestId('picker-list')).toBeVisible();
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
+      await expectNoInnerScroll(page, '[data-testid="picker-list"]');
+      const rows = page.locator('[data-testid="picker-list"] > li');
+      const rowBoxes = await rows.evaluateAll((elements) =>
+        elements.map((element) => {
+          const body = element.closest('.modal-body') as HTMLElement;
+          const r = element.getBoundingClientRect();
+          const b = body.getBoundingClientRect();
+          return { left: r.left - b.left, top: r.top - b.top + body.scrollTop, right: r.right - b.left, bottom: r.bottom - b.top + body.scrollTop, width: r.width, height: r.height };
+        }),
+      );
+      expect(rowBoxes.length).toBe(13);
+      for (let i = 0; i + 1 < rowBoxes.length; i += 1) {
+        expect(overlap(rowBoxes[i] as Box, rowBoxes[i + 1] as Box), `rows ${String(i)} and ${String(i + 1)}`).toBe(false);
+      }
+      await page.getByTestId('picker-select-page').click();
+      await expect(page.getByTestId('picker-confirm')).toContainText('12 Dateien übernehmen');
+      await expectDialog(page, 'dialog-import', width, height);
+
+      // Back in the dialog with the files in the list.
+      await page.getByTestId('picker-confirm').click();
+      await expect(page.getByTestId('import-item')).toHaveCount(12);
+      await expectDialog(page, 'dialog-import', width, height);
+      await expectImportDialog(page, width, height);
     });
 
     test('test accounts: list, form and dialog', async ({ page }) => {

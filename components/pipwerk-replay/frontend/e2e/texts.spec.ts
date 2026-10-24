@@ -1,6 +1,17 @@
-import { ACQUISITION_IN_BUILD, REMOVED_HEADINGS, TOTAL_LIMIT_NAMES, TOTAL_LIMIT_TEXT } from '../checks/forbiddenTexts';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
+  ACQUISITION_IN_BUILD,
+  AREA_DIRECTIONS,
+  REMOVED_HEADINGS,
+  TOTAL_LIMIT_NAMES,
+  TOTAL_LIMIT_TEXT,
+} from '../checks/forbiddenTexts';
+
+import {
+  openPickerDirectory,
+  putFileSettings,
   chooseImportFiles,
   chooseView,
   expect,
@@ -63,6 +74,52 @@ test('no text of the dialog for importing, with files, a refusal and a cancelled
   await page.getByTestId('import-run').click();
   await expect(page.getByTestId('import-summary')).toContainText('Abgelehnt: 1');
   expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(TOTAL_LIMIT_TEXT);
+});
+
+test('the settings, the choice in the import directory and the refusals speak of no limit for the files together, no area below or above, no acquisition', async ({
+  page,
+  stack,
+}) => {
+  const imports = stack.makeDirectory('import');
+  stack.makeDirectory('import', 'empty');
+  writeFileSync(join(imports, 'EURUSD_H1_202601050000_202601052300.csv'), 'x');
+  await putFileSettings(stack.backendUrl, { import: imports, storage: stack.makeDirectory('storage') });
+  const screens: string[] = [];
+  const read = async (): Promise<void> => {
+    screens.push(await page.evaluate(() => document.body.innerText));
+    const dialog = page.getByTestId('dialog-import');
+    if ((await dialog.count()) > 0) {
+      screens.push(await dialog.innerText());
+    }
+  };
+  for (const language of ['de', 'en'] as const) {
+    await openApp(page);
+    await page.getByTestId(`lang-${language}`).click();
+    await chooseView(page, 'settings');
+    await read();
+    await page.getByTestId('settings-import').fill('relative');
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('settings-import-error')).toBeVisible();
+    await read();
+    await page.getByTestId('settings-discard').click();
+    await chooseView(page, 'data');
+    await openImportDialog(page);
+    await read();
+    await page.getByTestId('import-choose-directory').click();
+    await expect(page.getByTestId('picker-list')).toBeVisible();
+    await read();
+    await openPickerDirectory(page, 'empty');
+    await expect(page.getByTestId('picker-empty')).toBeVisible();
+    await read();
+    await page.getByTestId('picker-cancel').click();
+    await page.getByTestId('import-close').click();
+  }
+  for (const text of screens) {
+    expect(text).not.toMatch(TOTAL_LIMIT_TEXT);
+    expect(text).not.toMatch(AREA_DIRECTIONS);
+    expect(text).not.toMatch(/beschaff|acquisition/i);
+  }
+  expect(screens.length).toBeGreaterThan(8);
 });
 
 test('no screen of the data stock has the removed headings or a text about an area below or above', async ({ page, stack }) => {

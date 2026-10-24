@@ -9,9 +9,78 @@
     "label": "Menu",
     "data": "Data stock",
     "accounts": "Test accounts",
+    "settings": "Settings",
     "tip": {
       "data": "Which historical price data is available; import files and choose the broker for test runs.",
-      "accounts": "Create, edit, save and delete test accounts."
+      "accounts": "Create, edit, save and delete test accounts.",
+      "settings": "Set whether imported files are kept, and the directories for storage, import and export."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "intro": "Here you set how pipwerk replay handles files. The directories are on the computer the backend runs on; give the full path. You choose the language in the header and the broker for test runs in the data stock.",
+    "keep": "Keep imported files",
+    "keepNote": "Preset for the box \"Keep files\" in the dialog \"Import file\".",
+    "storage": "Storage directory",
+    "import": "Import directory",
+    "export": "Export directory",
+    "note": {
+      "storage": "Kept files are stored here.",
+      "import": "You choose files from this directory when you import.",
+      "export": "Future exports are put here. The setting takes effect with the first export."
+    },
+    "isDefault": "The default of the operating system applies.",
+    "isStored": "Stored path.",
+    "defaultUnknown": "No path can be determined for the default on the computer of the backend. Next step: give a path.",
+    "save": "Save",
+    "discard": "Discard changes",
+    "unsaved": "Unsaved changes.",
+    "saved": "The settings are saved.",
+    "loadError": "The settings could not be read. {{reason}}",
+    "saveError": "The settings could not be saved. {{reason}}",
+    "refused": "The settings were not saved. Next step: change the marked directories and save again.",
+    "tip": {
+      "keep": "Preset for the box \"Keep files\" in the dialog \"Import file\". If it is ticked here, the box there is ticked from the start, and uploaded files stay in the storage directory unchanged; otherwise only what is in the data stock remains of an import. In the dialog you change it for each import.",
+      "storage": "The directory on the computer of the backend where uploaded files stay when \"Keep files\" applies. Full path. An empty field means the default of the operating system. A change does not move files: what is in the former directory stays there. pipwerk replay never removes kept files.",
+      "import": "The directory on the computer of the backend from which you choose files in the dialog \"Import file\", also from subdirectories. Full path. An empty field means the default of the operating system. pipwerk replay only reads there: it does not change, move, remove or copy anything.",
+      "export": "The preset place for future exports, a directory on the computer of the backend. Full path. An empty field means the default of the operating system. pipwerk replay does not export anything yet; the setting is saved and takes effect with the first export."
+    },
+    "reason": {
+      "not_absolute": "The path is not complete. Next step: give the whole path, on Linux and macOS starting with \"/\", on Windows with the drive, for example C:\\Data.",
+      "not_a_directory": "There is no directory at this path, but something else. Next step: give a directory.",
+      "cannot_be_created": "The directory does not exist, and the backend could not create it. Next step: check the path and the rights of the user the backend runs as.",
+      "not_writable": "The backend may not write to this directory. Next step: choose another directory or change the rights of the user the backend runs as.",
+      "not_readable": "The backend may not read this directory. Next step: choose another directory or change the rights of the user the backend runs as."
+    }
+  },
+  "picker": {
+    "title": "Choose from the import directory",
+    "directory": "Import directory: {{directory}}",
+    "directoryUnknown": "No import directory is set.",
+    "where": "Place in the import directory",
+    "root": "Import directory",
+    "up": "One level up",
+    "directoryKind": "Directory",
+    "inList": "already in the list",
+    "count": "{{from}}–{{to}} of {{total}} entries",
+    "selectPage": "Choose all files of this page",
+    "unselectPage": "Unchoose the files of this page",
+    "cancel": "Back to the dialog",
+    "confirm_one": "Take over {{count}} file",
+    "confirm_other": "Take over {{count}} files",
+    "settings": "Go to settings",
+    "toRoot": "To the import directory",
+    "emptyRoot": "The import directory {{directory}} contains no files and no subdirectories. Next step: put files there or choose another import directory under \"Settings\".",
+    "emptyRootUnknown": "No import directory is set. Next step: choose an import directory under \"Settings\".",
+    "emptySub": "This directory is empty. Next step: go one level up or open another directory.",
+    "unavailable": "The import directory {{directory}} is not set or cannot be read. Next step: check it under \"Settings\".",
+    "unavailableUnknown": "The import directory is not set or cannot be read. Next step: check it under \"Settings\".",
+    "gone": "This directory does not exist (any more). Next step: go back to the import directory.",
+    "loadError": "The directory could not be read. {{reason}}",
+    "tip": {
+      "up": "Goes to the parent directory, at most up to the import directory.",
+      "selectPage": "Chooses all files on this page that are not in the list of the dialog yet.",
+      "settings": "Closes this dialog and opens the view \"Settings\". The list of the dialog is lost."
     }
   },
   "about": {
@@ -199,9 +268,14 @@
   },
   "import": {
     "title": "Import files",
-    "intro": "Choose as many files in JSON or CSV format as you like, for example exports of MetaTrader 5 or the files of pipwerk-fetch-mt5, and click \"Import\" once. pipwerk replay checks the files one after the other and takes over the data. Existing data of the same moment is replaced.",
-    "choose": "Choose files …",
-    "empty": "No file chosen yet. Next step: choose files in JSON or CSV format.",
+    "intro": "Choose as many files in JSON or CSV format as you like, for example exports of MetaTrader 5 or the files of pipwerk-fetch-mt5: you upload them or choose them in the import directory, or both together. Then click \"Import\" once. pipwerk replay checks the files one after the other and takes over the data. Existing data of the same moment is replaced.",
+    "choose": "Upload files …",
+    "chooseDirectory": "Choose from the import directory …",
+    "keepFiles": "Keep files",
+    "fromDirectory": "import directory",
+    "kept": "The file is kept in the storage directory.",
+    "stays": "The file lies unchanged in the import directory.",
+    "empty": "No file chosen yet. Next step: upload files in JSON or CSV format or choose files in the import directory.",
     "reading": "The files are being read … ({{done}} of {{total}})",
     "readError": "The files could not be read. {{reason}}",
     "broker": "Broker",
@@ -249,8 +323,18 @@
     "rejectedCount": "{{count}} rows rejected:",
     "rejectedRow": "Row {{row}}: {{reason}}",
     "rejectedMore": "and {{count}} more",
+    "fileRequest": {
+      "keep_no_directory": "The file could not be kept because no storage directory is set. It was not imported. Next step: enter a storage directory under \"Settings\" or untick \"Keep files\", and import the file again.",
+      "keep_failed": "The file could not be put into the storage directory. It was not imported. Next step: check under \"Settings\" that the storage directory is writable and has space, or untick \"Keep files\", and import the file again.",
+      "not_found": "The file does not exist (any more) in the import directory. Next step: remove it from the list or choose the file in the import directory again.",
+      "path_refused": "The path of the file is not allowed in the import directory or does not point to a file. Next step: remove it from the list and choose the file in the import directory again.",
+      "import_directory_unavailable": "The import directory is not set or cannot be read. Next step: check it under \"Settings\" and import the file again."
+    },
     "tip": {
-      "choose": "Chooses one or more files from your hard disk, JSON and CSV mixed. The files are checked and never executed.",
+      "choose": "Uploads one or more files from your hard disk, JSON and CSV mixed. The files are checked and never executed.",
+      "chooseDirectory": "Shows the files in the import directory on the computer of the backend, also in subdirectories. The files there stay unchanged: pipwerk replay only reads them.",
+      "keep": "Puts every uploaded file unchanged into the storage directory {{directory}}, a refused one as well. Files from the import directory stay there and are not copied into the storage directory. pipwerk replay never removes kept files; a file of the same name is replaced. The box is preset with the setting \"Keep imported files\".",
+      "keepNoDirectory": "Puts every uploaded file unchanged into the storage directory, a refused one as well. Files from the import directory stay there and are not copied into the storage directory. pipwerk replay never removes kept files; a file of the same name is replaced. You set the storage directory under \"Settings\". The box is preset with the setting \"Keep imported files\".",
       "broker": "The broker all files belong to, for MetaTrader 5 the name of the trade server. Choose a name from the data stock or enter a new one. If all JSON files name the same broker, it is preset. The broker also counts for JSON files.",
       "timezone": "The time zone in which MetaTrader 5 writes the times of the CSV files (time of the trade server), as a name, for example Europe/Athens. Daylight saving time is taken into account. pipwerk converts all times to UTC. Times in JSON files are UTC.",
       "instrument": "The instrument of the file, for example EURUSD. Preset from the file name, for JSON from the content.",
@@ -290,6 +374,7 @@
       "period_invalid": "The period of the file is invalid. Next step: check the times in the file.",
       "no_rows": "The file contains no rows. Next step: check that it is the right file.",
       "store_failed": "The data stock could not take over the file. Next step: try again later.",
+      "not_readable": "The file cannot be read in the import directory. Next step: check the rights of the file for the user the backend runs as.",
       "unknown": "The file was refused. Next step: check the file and import it again."
     }
   },

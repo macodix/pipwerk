@@ -1,6 +1,12 @@
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { Locator, Page } from '@playwright/test';
 
+import type { Stack } from './stack';
 import {
+  openPickerDirectory,
+  putFileSettings,
   FAULTY_CSV,
   GAPPY_CSV,
   candlesDocument,
@@ -229,6 +235,82 @@ test('explains every field to the mouse and to the keyboard', async ({ page, sta
   await chooseView(page, 'accounts');
   await expect(page.getByTestId('account-name')).toBeVisible();
   await expectExplanations(page, page.getByTestId('accounts'), 5);
+});
+
+test('explains the four settings, the tick and the choice in the import directory to the mouse and to the keyboard', async ({
+  page,
+  stack,
+}) => {
+  const imports = stack.makeDirectory('import');
+  writeFileSync(join(imports, 'EURUSD_H1_202601050000_202601052300.csv'), 'x');
+  await putFileSettings(stack.backendUrl, { import: imports, storage: stack.makeDirectory('storage') });
+  await openApp(page);
+
+  await chooseView(page, 'settings');
+  await expect(page.getByTestId('settings-form')).toBeVisible();
+  await expectExplanations(page, page.getByTestId('settings'), 4);
+
+  await chooseView(page, 'data');
+  await openImportDialog(page);
+  await expectExplanations(page, page.getByTestId('dialog-import'), 2);
+  await page.getByTestId('import-choose-directory').click();
+  await expect(page.getByTestId('picker-list')).toBeVisible();
+  // The buttons of the choice explain themselves, too, above the dialog.
+  const up = page.getByTestId('picker-up');
+  await up.focus();
+  await expect(page.getByTestId('tooltip')).toHaveText('Geht in das übergeordnete Verzeichnis, höchstens bis zum Importverzeichnis.');
+  await expectOnTop(page.getByTestId('tooltip'));
+});
+
+async function checkSettingsTexts(page: Page, otherLanguage: RegExp): Promise<void> {
+  const chosen = (text: string) => {
+    expect(text).not.toMatch(otherLanguage);
+  };
+  await chooseView(page, 'settings');
+  await expect(page.getByTestId('settings-form')).toBeVisible();
+  chosen(await visibleText(page));
+  // A refusal with its reason and the general message.
+  await page.getByTestId('settings-import').fill('relative');
+  await page.getByTestId('settings-save').click();
+  await expect(page.getByTestId('settings-import-error')).toBeVisible();
+  chosen(await visibleText(page));
+  await page.getByTestId('settings-discard').click();
+  // The choice in the import directory: the list, an empty directory and the dialog with the tick.
+  await chooseView(page, 'data');
+  await openImportDialog(page);
+  chosen(await page.getByTestId('dialog-import').innerText());
+  await page.getByTestId('import-choose-directory').click();
+  await expect(page.getByTestId('picker-list')).toBeVisible();
+  chosen(await page.getByTestId('dialog-import').innerText());
+  await openPickerDirectory(page, 'empty');
+  await expect(page.getByTestId('picker-empty')).toBeVisible();
+  chosen(await page.getByTestId('dialog-import').innerText());
+}
+
+async function prepareImportDirectory(stack: Stack): Promise<void> {
+  const imports = stack.makeDirectory('import');
+  stack.makeDirectory('import', 'empty');
+  writeFileSync(join(imports, 'EURUSD_H1_202601050000_202601052300.csv'), 'x');
+  await putFileSettings(stack.backendUrl, { import: imports, storage: stack.makeDirectory('storage') });
+}
+
+test('shows no German text in the settings and the choice in the import directory in the English interface', async ({
+  page,
+  stack,
+}) => {
+  await prepareImportDirectory(stack);
+  await openApp(page);
+  await setLanguage(page, 'en');
+  await checkSettingsTexts(page, GERMAN);
+});
+
+test('shows no English text in the settings and the choice in the import directory in the German interface', async ({
+  page,
+  stack,
+}) => {
+  await prepareImportDirectory(stack);
+  await openApp(page);
+  await checkSettingsTexts(page, ENGLISH);
 });
 
 test('stores nothing in the browser', async ({ page }) => {
