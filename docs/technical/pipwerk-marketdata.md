@@ -3,13 +3,13 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-23
+- stand: 2026-10-24
 - komponente: `packages/market-data` (Python-Paket `pipwerk_marketdata`)
-- grundlage: [Spezifikation backtest](../../development/backtest/specification.md), E4 und Abschnitte 5.1 bis 5.3, 8.3 (Zeile „Datenbestand“), 10 (Datenbestand), 11; Abnahmebericht `wp02` M1, M3, M4; Anforderungen req-system-025 und req-system-026 in `docs/design/requirements/anforderungen-gesamtsystem.md`
+- grundlage: [Spezifikation backtest](../../development/backtest/specification.md), E4 und Abschnitte 5.1 bis 5.3, 5.5, 8.3 (Zeile „Datenbestand“), 10 (Datenbestand), 11; Abnahmebericht `wp02` M1, M3, M4, M5, M6; Anforderungen req-system-025 und req-system-026 in `docs/design/requirements/anforderungen-gesamtsystem.md`
 
 ## 1. Gegenstand
 
-Die Bibliothek ist der Datenbestand historischer Kursdaten von pipwerk. Sie speichert Kerzen, Ticks und Angaben zum Instrument in einer Datenbank, importiert Dateien (JSON und CSV), prüft die Vollständigkeit und liefert die Daten zum Lesen.
+Die Bibliothek ist der Datenbestand historischer Kursdaten von pipwerk. Sie speichert Kerzen, Ticks und Angaben zum Instrument in einer Datenbank, importiert Dateien (JSON und CSV), prüft die Vollständigkeit, löscht auf Verlangen Daten und liefert die Daten zum Lesen.
 
 Sie berechnet keine Kerzen aus Ticks und keine Ticks aus Kerzen (req-system-025). Sie kennt weder pipwerk replay noch eine Beschaffung. Die Beschaffung liefert Dateien im JSON-Format des Imports; woher die Daten stammen, ist für die Bibliothek ohne Bedeutung.
 
@@ -24,7 +24,8 @@ Abhängigkeiten: SQLAlchemy (Speicherung), Alembic (Migrationen), Pydantic (Prü
 | `filehints` | Instrument und Daten aus dem Dateinamen, Broker, Instrument und Daten aus dem Inhalt einer JSON-Datei, ohne Import |
 | `parsed`, `filetext` | gemeinsame Prüfungen, Zeitordnung, Entschlüsseln der Datei, Broker eines Vorgangs |
 | `documents` | die JSON-Formate als Pydantic-Modelle und ihre JSON-Schemas |
-| `completeness` | Lücken nach 5.2 als reine Funktionen |
+| `completeness` | Zeiten ohne Handel, Lücken und Fehlendes nach 5.2 als reine Funktionen |
+| `deletion` | Löschen nach 5.5 in der Transaktion, die `MarketDataStore` öffnet (Abschnitt 8.1) |
 | `tables`, `migrate`, `migrations/` | Tabellen und Alembic-Migrationen |
 | `records`, `limits`, `errors`, `timeunits` | Wertobjekte, Begrenzungen, Fehler, Zeiteinheiten |
 
@@ -46,6 +47,10 @@ Die Bibliothek erhält die Datenbank als SQLAlchemy-`Engine` vom Aufrufer. Sie �
 | `series_details(broker, instrument, data)` | `SeriesDetails` oder `None` (Abschnitt 8) |
 | `brokers()` | Broker des Datenbestands, sortiert (Abschnitt 8) |
 | `overview()` | `Overview` (bleibt vorerst, Abschnitt 8) |
+| `plan_delete_series(broker, instrument, data)`, `delete_series(…)` | `Deletion`: was eine ganze Reihe löscht, und das Löschen (Abschnitt 8.1) |
+| `plan_delete_period(broker, instrument, data, start, end)`, `delete_period(…)` | `Deletion` für einen Zeitraum einer Reihe |
+| `plan_delete_contract(broker, instrument)`, `delete_contract(…)` | `Deletion` für die Angaben zu einem Instrument |
+| `plan_delete_broker(broker)`, `delete_broker(…)` | `Deletion` für alle Daten eines Brokers |
 
 Freie Funktionen, die keine Datenbank brauchen:
 
@@ -78,7 +83,12 @@ Festlegungen:
 - Die Datenbank prüft zusätzlich: Kurse größer als null, Beziehungen zwischen Eröffnung, Hoch, Tief und Schluss, Beginn vor Ende bei Zeiträumen und Handelszeiten.
 - Der Primärschlüssel von Kerze und Tick ist Reihe und Zeitpunkt. Das Ersetzen desselben Zeitpunkts (5.3) löscht den vorhandenen Eintrag und fügt den neuen ein, in derselben Transaktion.
 - Angaben zum Instrument liegen je Broker, Instrument und Zeitpunkt der Beschaffung. `instrument_info` liefert die jüngsten Angaben, bei `as_of` die jüngsten, die nicht nach diesem Zeitpunkt beschafft wurden. Felder: Kontraktgröße, Währung des Tickwerts, Tickgröße, Tickwert, Punkt, Pip, Spread (als Kursdifferenz), Mindestvolumen, Volumenschritt, Swap long und short je Lot und Tag, Wochentag des dreifachen Swaps, Margin-Anforderung je Lot (leer, wenn nicht geliefert). Die Bezeichnung des Instruments ist sein Name in der Reihe.
-- Abgedeckte Zeiträume sind der Zeitraum, den die Datei nennt (`period`), sonst vom ersten Zeitpunkt bis zum Ende der letzten Kerze beziehungsweise bis eine Millisekunde nach dem letzten Tick. Zeiträume wachsen nur; sich berührende oder überlappende werden zu einem zusammengefasst.
+- Abgedeckte Zeiträume (Tabelle `marketdata_coverage`, je Reihe, die Grundlage der Lücken, Abschnitt 7) sind je importierter Datei:
+  - JSON mit `period`: der Zeitraum, den die Datei nennt,
+  - JSON ohne `period`: vom ersten Zeitpunkt bis zum Ende der letzten Kerze beziehungsweise bis eine Millisekunde nach dem letzten Tick,
+  - CSV: vom Beginn des Tages des ersten Eintrags bis zum Ende des Tages des letzten Eintrags, Tage in der beim Import angegebenen Zeitzone (Abschnitt 6). Das Ende der letzten Kerze zählt: Eine Kerze, die über das Ende ihres Eröffnungstages hinausreicht (Wochen- und Monatskerzen), verlängert den Zeitraum. Gibt es den Beginn des Tages in der Zeitzone nicht (die Uhr springt über Mitternacht), gilt der erste Zeitpunkt des Tages; kommt Mitternacht zweimal vor, der frühere.
+
+  Ein Import fügt seinen Zeitraum hinzu; sich berührende oder überlappende Zeiträume werden zu einem zusammengefasst. Löschen eines Zeitraums nimmt ihn heraus (Abschnitt 8.1). Das Speichermodell hält die abgedeckten Zeiträume damit schon seit der ersten Fassung; für den Auftrag 15 änderte sich nur ihr Inhalt für CSV und die Daten früherer Importe (Migration `0002`, Abschnitt 9).
 - Handelszeiten ersetzt jede Datei, die welche liefert, für ihre Reihe vollständig. Eine Datei ohne Handelszeiten lässt sie unverändert, eine leere Liste löscht sie.
 
 ## 4. Import
@@ -139,21 +149,21 @@ Die Bibliothek meldet `ImportFileError` mit `code` (`FileErrorCode`) und fester 
 
 ### 4.4 Begrenzungen gegen Überlast
 
-`ImportLimits`, Standardwerte gelten, wenn der Aufrufer keine übergibt:
+`ImportLimits` begrenzt eine einzelne Datei. Standardwerte gelten, wenn der Aufrufer keine übergibt:
 
 | Parameter | Standardwert |
 |---|---|
 | `max_bytes` | 33 554 432 (32 MiB) |
 | `max_rows` | 500 000 Zeilen oder Einträge, abgelehnte eingeschlossen |
 | `max_reported_rejections` | 1000 aufgelistete abgelehnte Zeilen; `rejected_count` zählt alle |
-| `max_files` | 500 Dateien je Vorgang (Abschnitt 4.5) |
-| `max_batch_bytes` | 536 870 912 (512 MiB) Gesamtgröße der Dateien eines Vorgangs |
+
+Für die Zahl der Dateien und die Gesamtgröße eines Vorgangs gibt es keine Grenze (Spezifikation 5.3, Abnahmebericht `wp02`, Versuch 2, M3). Eine Datei über der Grenze wird mit `too_large` beziehungsweise `too_many_rows` abgelehnt; die Meldung nennt die Grenze in der Einheit des Anwenders: `The file is larger than the limit of 32 MiB per file.` (Funktion `format_size`: Bytes, KiB, MiB oder GiB, höchstens eine Nachkommastelle) und `The file has more rows than the limit of 500000 rows per file.` (bei JSON `entries`). Die übrigen Dateien des Vorgangs sind davon nicht berührt.
 
 Obergrenze für Zahlen: `volume` und `spread` einer Kerze sind ganze Zahlen von 0 bis 2 147 483 647 (2^31 − 1, Konstante `MAX_INTEGER_VALUE` in `limits`), in JSON und in CSV gleich. Ein größerer Wert macht die Zeile zu einer abgelehnten Zeile (`value_invalid`). Grund: Die Spalte `spread` der Datenbank ist eine 32-Bit-Zahl; die Grenze sorgt dafür, dass jeder übernommene Wert in jeder Datenbank in die Spalte passt und nie eine Ausnahme beim Speichern entsteht. Das Schema nennt sie als `maximum`. Kurse und die Zahlen der Angaben zum Instrument sind Gleitkommazahlen: Nicht endliche Werte lehnt die Prüfung ab, jeder endliche Wert passt in die Spalte (geprüft bis 1,7 · 10^308) und braucht keine Obergrenze.
 
 Obergrenze und Untergrenze für Zeitpunkte: Zeitpunkte von Kerzen, Ticks und Angaben zum Instrument liegen ab 1970-01-01T00:00:00Z (`MIN_MOMENT` in `limits`, einschließlich) bis vor 2100-01-01T00:00:00Z (`MAX_MOMENT`, ausschließlich); ein Zeitraum (`period`) darf bis `MAX_MOMENT` reichen. In JSON und in CSV gilt dasselbe. Eine Kerze oder ein Tick außerhalb ist eine abgelehnte Zeile (`time_out_of_range`), die Folgezeilen bleiben erhalten. Ein Zeitraum außerhalb ist `period_invalid`, `acquired_at` außerhalb ist `document_invalid`. Bei CSV zählt der Zeitpunkt nach der Umrechnung nach UTC; eine Ortszeit mehr als einen Tag außerhalb der Grenzen wird vor der Umrechnung abgelehnt, damit die Umrechnung selbst nicht überläuft. Das Schema nennt die Grenzen in der Beschreibung der Zeitpunkte; das Muster erlaubt jedes vierstellige Jahr, die Prüfung der Grenzen gehört zum Import. Grund: Die Untergrenze ist der Beginn der Zeitzählung von MetaTrader 5 (Sekunden seit 1970); keine Quelle liefert frühere Zeiten. Die Obergrenze liegt weit über jeder Kursreihe. Beides stellt sicher, dass das Addieren der Dauer einer Zeiteinheit oder einer Millisekunde zu einem übernommenen Zeitpunkt nie den Bereich von `datetime` verlässt (Jahr 9999) und nie `OverflowError` entsteht. Das Ende einer Kerze, das hinter `MAX_MOMENT` läge, wird für abgedeckten Zeitraum und Zeitraumprüfung auf `MAX_MOMENT` begrenzt. `completeness` verlangt einen Zeitraum innerhalb der Grenzen (`ValueError` sonst), weil die Handelszeiten tageweise berechnet werden. Das Lesen (`read_candles`, `read_ticks`, `instrument_info`) rechnet nicht mit den Zeitpunkten und nimmt jeden Zeitpunkt mit Zeitzone an; ein Zeitpunkt, der nach der Umrechnung nach UTC außerhalb des Bereichs von `datetime` läge, gilt als dessen nächste Grenze und trifft keine Zeile.
 
-Grund der Begrenzungen von `ImportLimits`: Die Datei wird vollständig im Speicher geprüft, bevor die Transaktion beginnt. 500 000 Zeilen decken ein Jahr M1-Kerzen ab. Tickdaten sind viel umfangreicher; die Beschaffung teilt sie in mehrere Dateien (Zeiträume), jede mit eigener Begrenzung. Zusätzlich begrenzt `max_page_size` (Standard 10 000) die Zahl der Kerzen oder Ticks je Leseaufruf.
+Grund der Begrenzungen von `ImportLimits`: Die Datei wird vollständig im Speicher geprüft, bevor die Transaktion beginnt; deshalb ist die einzelne Datei begrenzt und nicht der Vorgang, denn die Dateien eines Vorgangs liegen nie gleichzeitig im Speicher. 500 000 Zeilen decken ein Jahr M1-Kerzen ab. Tickdaten sind viel umfangreicher; die Beschaffung teilt sie in mehrere Dateien (Zeiträume), jede mit eigener Begrenzung. Größere Dateien braucht ein anderes Speichermodell (Abnahmebericht `wp02`, Versuch 2, M4, zurückgestellt). Zusätzlich begrenzt `max_page_size` (Standard 10 000) die Zahl der Kerzen oder Ticks je Leseaufruf.
 
 ### 4.5 Vorgang mit mehreren Dateien
 
@@ -165,7 +175,8 @@ Grund der Begrenzungen von `ImportLimits`: Die Datei wird vollständig im Speich
 - `timezone` (IANA-Name, Abschnitt 6) gilt für alle CSV-Dateien. Fehlt sie oder ist sie unbekannt, wird jede CSV-Datei abgelehnt (`timezone_unknown`); JSON-Dateien bleiben unberührt.
 - Jede Datei läuft für sich: prüfen, dann in einer eigenen Transaktion übernehmen (Abschnitt 4.1). Reihenfolge wie übergeben; betrifft eine spätere Datei dieselben Zeitpunkte wie eine frühere, ersetzt sie diese (`replaced`).
 - Das Ergebnis `ImportBatchResult.files` hat je Datei ein `FileOutcome` in der übergebenen Reihenfolge: `name` (nur zurückgemeldet, nie als Pfad benutzt), bei Übernahme `result` (`ImportResult` mit übernommenen Zeilen, Zeitraum, abgelehnten Zeilen mit Grund), bei ganz abgelehnter Datei `error` (`FileErrorCode`) und `message`. `FileOutcome.refused` und `accepted` fassen das zusammen. Eine abgelehnte Datei hindert die übrigen nicht, auch nicht bei einem Fehler der Datenbank (`store_failed`, feste Meldung).
-- Vor dem Lesen jeder Datei prüft `import_files` den Vorgang: keine Dateien (`no_files`), mehr als `max_files` Dateien (`too_many_files`) oder Gesamtgröße über `max_batch_bytes` (`batch_too_large`) lehnt den ganzen Vorgang ab. Dann meldet die Bibliothek `ImportBatchError` mit `code` (`BatchErrorCode`) und fester Meldung, und es wird nichts gelesen oder verändert. Größe und Zeilenzahl je Datei prüft wie bisher der Import der Datei (`too_large`, `too_many_rows`), als Ablehnung dieser Datei.
+- Vor dem Lesen jeder Datei prüft `import_files`, ob es Dateien gibt: keine Dateien (`no_files`) lehnt den Aufruf ab. Dann meldet die Bibliothek `ImportBatchError` mit `code` (`BatchErrorCode`) und fester Meldung, und es wird nichts gelesen oder verändert. Weitere Gründe gibt es nicht: Zahl der Dateien und Gesamtgröße sind nicht begrenzt (Abschnitt 4.4). Größe und Zeilenzahl je Datei prüft der Import der Datei (`too_large`, `too_many_rows`), als Ablehnung dieser Datei.
+- pipwerk replay ruft `import_files` je Datei einzeln auf (eine Anfrage je Datei, Spezifikation 5.3); der Vorgang besteht dort zwischen den Aufrufen (`pipwerk-replay.md`).
 
 `import_json` und `import_csv` bleiben unverändert für den Import einer einzelnen Datei.
 
@@ -241,31 +252,28 @@ JSON-Dateien enthalten UTC und werden nicht umgerechnet.
 `completeness(broker, instrument, unit, start, end)` untersucht eine Reihe (`unit`: Zeiteinheit oder `ticks`) in `[start, end)`. Das Ergebnis (`Completeness`):
 
 - `present`: die vorhandenen Teile (Zeiträume),
-- `missing`: die fehlenden Teile, je mit Beginn, Ende und Grund (`not_covered`: kein Import deckt den Teil ab; `gap`: abgedeckt, aber ohne die erwarteten Kerzen oder Ticks),
+- `missing`: die fehlenden Teile, je mit Beginn, Ende und Grund (`not_covered`: kein Import deckt den Teil ab, und er liegt vor dem ersten oder nach dem letzten abgedeckten Zeitraum der Reihe; `gap`: Lücke zwischen zwei abgedeckten Zeiträumen der Reihe, auch um einen gelöschten Zeitraum),
 - `uses_trading_hours`: ob die gelieferten Handelszeiten galten oder die Ersatzregel.
 
 `present` und `missing` überlappen nicht und ergeben zusammen den gefragten Zeitraum. Zeiten, in denen nicht gehandelt wird, gehören zu `present`. pipwerk replay leitet „benötigt, vorhanden, fehlt“ je Teil daraus ab: benötigt ist `[start, end)`, vorhanden ist `present`, fehlt ist `missing` mit Grund.
 
-Regeln (Spezifikation 5.2). `CompletenessRules` legt die Schwellen fest; die Werte sind Standardwerte, die der Aufrufer ändern kann (`MarketDataStore(engine, rules=...)`):
+Regeln (Spezifikation 5.2, Abnahmebericht `wp02`, Versuch 2, M6). `CompletenessRules` legt die Werte fest; es sind Standardwerte, die der Aufrufer ändern kann (`MarketDataStore(engine, rules=...)`):
 
-| Schwelle | Standardwert |
+| Wert | Standardwert |
 |---|---|
 | Wochenende ohne Handelszeiten | Freitag 22:00 bis Sonntag 22:00 UTC (`weekend_start_minute` 7080, `weekend_end_minute` 9960, in Minuten ab Montag 00:00) |
-| tolerierte fehlende Kerzen ohne Handelszeiten (`tolerated_missing_candles`) | 1 |
-| fehlende M1-Kerzen innerhalb einer Stunde mit Kerzen (`tolerate_m1_in_hour`) | tolerieren |
-| größte Stille bei Ticks (`tick_max_silence_seconds`) | 3600 Sekunden |
+| Tage ohne Handel (`no_trading_days`) | keine; die Bibliothek hat keine Feiertagsliste. Der Aufrufer übergibt eine Liste von `CalendarDay(month, day)`, die jedes Jahr gilt; pipwerk replay übergibt die Liste seiner Startkonfiguration (vorbelegt mit 25. Dezember und 1. Januar). 29. Februar zählt nur in Schaltjahren |
+| Grenze eines Tages ohne Handel (`no_trading_day_boundary_minute` 1320) | 22:00 UTC: ein Tag reicht von 22:00 UTC des Vortags bis 22:00 UTC |
 
-1. Was kein Import abdeckt, fehlt (`not_covered`), soweit zu der Zeit gehandelt wird: nach den Handelszeiten, ohne sie außerhalb des Wochenendes.
-2. Innerhalb eines abgedeckten Teils entsteht ein Loch zwischen zwei Kerzen, am Anfang bis zur ersten und am Ende ab der letzten Kerze. Ein Loch ist eine Lücke (`gap`), wenn
-   - Handelszeiten vorliegen: es Handelszeit enthält. Auch eine einzelne fehlende Kerze ist dann eine Lücke.
-   - keine Handelszeiten vorliegen: seine Handelszeit (Loch ohne Wochenende) länger ist als die tolerierten Kerzen. Mit dem Standardwert liegt dann zwischen den Eröffnungszeitpunkten zweier Kerzen mehr als die doppelte Dauer der Zeiteinheit (Spezifikation 5.2). Eine fehlende Kerze ist keine Lücke.
+1. **Abgedeckte Zeiträume.** Was ein Import für seinen Zeitraum liefert, gilt als vollständig (Abschnitt 3: Zeiträume je Datei). Innerhalb eines abgedeckten Zeitraums gibt es keine Lücke; eine Zeit ohne Kerzen oder Ticks darin ist eine Zeit, in der beim Broker nicht gehandelt wurde. Ein früher Handelsschluss am letzten Tag einer CSV-Datei ist deshalb keine Lücke.
+2. **Zeit ohne Handel** ist das Wochenende, mit gelieferten Handelszeiten stattdessen jede Zeit außerhalb dieser Handelszeiten (Wochentag, Beginn und Ende in UTC), und in beiden Fällen jeder Tag ohne Handel.
+3. **Lücke** (`gap`) ist die Zeit zwischen zwei abgedeckten Zeiträumen derselben Reihe, soweit sie nicht ganz in einer Zeit ohne Handel liegt. Sie reicht vom ersten bis zum letzten Handelszeitpunkt dieser Zeit; ein Wochenende oder Tag ohne Handel darin gehört zur Lücke, wenn davor und danach Handelszeit liegt. Ein gelöschter Zeitraum (Abschnitt 8.1) ist nicht mehr abgedeckt und ist deshalb innerhalb der Reihe eine Lücke, außer er fällt ganz in eine Zeit ohne Handel.
+4. **Nicht abgedeckt** (`not_covered`) ist, was vor dem ersten und nach dem letzten abgedeckten Zeitraum der Reihe liegt, wieder nur, soweit zu der Zeit gehandelt wird; jedes Stück Handelszeit ist ein eigener fehlender Teil. Eine unbekannte Reihe ist ganz nicht abgedeckt.
+5. **Prüfung vor dem Testlauf** (Spezifikation 5.2, letzter Punkt): Für einen Testlauf fehlt ein Teil, wenn der Testzeitraum nicht ganz in abgedeckten Zeiträumen und Zeiten ohne Handel liegt. `completeness` liefert genau das: `missing` ist leer, wenn der Testzeitraum vollständig ist. Ein Testzeitraum, der an einem Tag ohne Handel beginnt, braucht für diesen Tag keine Daten. Dieselbe Regel gilt für die Zahl der Lücken in der Liste der Reihen und für ihre Einzelheiten.
 
-   Die Lücke reicht vom ersten bis zum letzten Handelszeitpunkt des Lochs. Ein Loch, das ganz in ein Wochenende oder in eine Handelspause fällt, ist keine Lücke.
-3. M1: Ein Loch zwischen zwei Kerzen, das ganz in einer vollen Stunde (UTC) liegt, in der davor oder danach eine Kerze liegt, ist keine Lücke. Am Rand des Zeitraums gilt das nicht. Eine ganz fehlende Stunde ist eine Lücke.
-4. Ticks: Handelszeit eines Lochs (nach Handelszeiten oder ohne Wochenende), die länger ist als die größte Stille, ist eine Lücke je zusammenhängendem Stück.
-5. Die Zeiteinheit Monat rechnet mit Kalendermonaten, die übrigen mit fester Dauer.
+Die Regeln lesen keine Kerzen oder Ticks; sie stützen sich auf die abgedeckten Zeiträume und die Handelszeiten der Reihe.
 
-Grenzen der Ersatzregel: Das Wochenende ist fest in UTC angesetzt. Schließt der Broker in der Sommerzeit schon um 21:00 UTC, liegt die Stunde Freitag 21:00 bis 22:00 zwischen der letzten Kerze und dem Wochenende. Bei Kerzen H1 oder größer ist diese Stunde noch tolerierte Zeit, bei kleineren Zeiteinheiten ist sie eine Lücke. Mit gelieferten Handelszeiten entfällt dieses Problem.
+Grenzen der Regeln (Spezifikation 5.2, Einschränkungen): Wochenende und Tage ohne Handel sind fest in UTC angesetzt; die Grenze 22:00 UTC entspricht Mitternacht eines Handelsservers mit UTC+2. Bei einem Handelsserver in anderer Zeitzone oder mit Sommerzeit kann am Rand eines solchen Zeitraums eine Lücke von bis zu einigen Stunden bleiben (der Datenbestand speichert die Zeitzone einer Reihe nicht). Fehlt in einer Datei selbst ein Zeitraum, erkennt der Datenbestand ihn nicht als Lücke. Mit gelieferten Handelszeiten entfällt das Problem am Wochenende.
 
 ## 8. Lesen
 
@@ -275,17 +283,53 @@ Grenzen der Ersatzregel: Das Wochenende ist fest in UTC angesetzt. Schließt der
   - Sortierung, fest und stabil: Broker, dann Instrument, jeweils alphabetisch ohne Unterscheidung von Groß- und Kleinschreibung (bei gleichem Text nach dem Text selbst), dann Daten in der Reihenfolge `m1` bis `mn1` (kurz nach lang), `ticks`, `contract`. Der erste Broker dieser Reihenfolge ist der erste Broker in alphabetischer Reihenfolge nach Spezifikation 5.1.
   - Seiten: `offset` (ab 0) und `limit` (höchstens `max_page_size`, sonst `ValueError`; ohne Angabe `max_page_size`). `total` zählt alle Zeilen, die zum Filter passen.
   - Kontraktdaten: Liegen für ein Instrument eines Brokers Angaben zum Instrument vor, aber keine Reihe, gibt es für dieses Paar eine Zeile mit Daten `contract`, ohne Zeitraum (`first`, `last` leer) und mit 0 Lücken (Spezifikation 8.3). Hat das Paar eine Reihe, gibt es keine eigene Zeile; seine Angaben zum Instrument zeigt `series_details`.
-  - Lücken: `gap_count` zählt die fehlenden Teile (`missing`) über den ganzen abgedeckten Bereich der Reihe nach den Regeln aus Abschnitt 7, also Lücken innerhalb abgedeckter Teile (`gap`) und Teile zwischen getrennt abgedeckten Zeiträumen (`not_covered`). Die Berechnung liest alle Zeitpunkte der Reihen der Seite und nur dieser.
-- `series_details(broker, instrument, data)` liefert die Einzelheiten einer Zeile (`SeriesDetails`): die Zeile selbst, alle fehlenden Teile (`gaps`, je mit Beginn, Ende und Grund; ihre Zahl ist `gap_count`) und die jüngsten Angaben zum Instrument bei diesem Broker (`contract`, `None`, wenn es keine gibt). Gibt es die Zeile in der Liste nicht, ist das Ergebnis `None`; für `contract` gibt es sie nur, wenn Angaben und keine Reihe vorliegen. Eine unbekannte Zeiteinheit ist ein `ValueError`.
+  - Lücken: `gap_count` zählt die Lücken (`gap`) über den ganzen abgedeckten Bereich der Reihe nach den Regeln aus Abschnitt 7, also die Zeiten zwischen abgedeckten Zeiträumen, die nicht ganz in eine Zeit ohne Handel fallen. Die Berechnung liest nur die abgedeckten Zeiträume der Reihen der Seite.
+- `series_details(broker, instrument, data)` liefert die Einzelheiten einer Zeile (`SeriesDetails`): die Zeile selbst, alle Lücken (`gaps`, je mit Beginn, Ende und Grund `gap`; ihre Zahl ist `gap_count`) und die jüngsten Angaben zum Instrument bei diesem Broker (`contract`, `None`, wenn es keine gibt). Gibt es die Zeile in der Liste nicht, ist das Ergebnis `None`; für `contract` gibt es sie nur, wenn Angaben und keine Reihe vorliegen. Eine unbekannte Zeiteinheit ist ein `ValueError`.
 - `brokers()` liefert die Broker, die im Datenbestand vorkommen (Reihen oder Angaben zum Instrument), in der Sortierung der Liste, ohne Wiederholung. Sie sind die Vorschläge für den Dialog und die Auswahl „Broker für Testläufe“ (Spezifikation 5.1).
-- `overview` bleibt vorerst: pipwerk replay stützt seine Web-API noch darauf, und die Bibliothek darf nicht brechen, solange eine Komponente sie braucht. Der Auftrag 12 stellt pipwerk replay auf `list_series`, `series_details` und `brokers` um; danach entfällt `overview` (mit `Overview`, `SeriesOverview`, `InstrumentOverview`). `overview` liefert je Reihe Broker, Instrument, Einheit, Anzahl, ersten und letzten Zeitpunkt, abgedeckte Zeiträume, fehlende Teile (über den ganzen abgedeckten Bereich, nach den Regeln aus Abschnitt 7) und ob Handelszeiten vorliegen, dazu je Broker und Instrument den Zeitpunkt der jüngsten Angaben zum Instrument. Die Berechnung liest alle Zeitpunkte der Reihen; sie ist für die Ansicht „Datenbestand“ gedacht, nicht für jeden Aufruf.
+- `overview` bleibt vorerst: pipwerk replay stützt seine Web-API noch darauf, und die Bibliothek darf nicht brechen, solange eine Komponente sie braucht. Der Auftrag 12 stellt pipwerk replay auf `list_series`, `series_details` und `brokers` um; danach entfällt `overview` (mit `Overview`, `SeriesOverview`, `InstrumentOverview`). `overview` liefert je Reihe Broker, Instrument, Einheit, Anzahl, ersten und letzten Zeitpunkt, abgedeckte Zeiträume, fehlende Teile (über den ganzen abgedeckten Bereich, nach den Regeln aus Abschnitt 7) und ob Handelszeiten vorliegen, dazu je Broker und Instrument den Zeitpunkt der jüngsten Angaben zum Instrument.
 - `instrument_info` liefert die Angaben zum Instrument (Abschnitt 3).
+
+### 8.1 Löschen
+
+Löschen nach Spezifikation 5.5 und Abnahmebericht `wp02`, Versuch 2, M5. Es gibt vier Arten (`DeletionKind`), je mit einer Funktion, die nur angibt, was gelöscht würde (`plan_delete_…`, ändert nichts), und der Funktion, die löscht (`delete_…`):
+
+| Art (`DeletionKind`) | Funktionen | Löscht |
+|---|---|---|
+| `series` | `plan_delete_series`, `delete_series` (Broker, Instrument, Daten) | die ganze Reihe: Kerzen einer Zeiteinheit oder Ticks mit ihren abgedeckten Zeiträumen und Handelszeiten |
+| `period` | `plan_delete_period`, `delete_period` (Broker, Instrument, Daten, `start`, `end`) | die Kerzen oder Ticks im Zeitraum von `start` (einschließlich) bis `end` (ausschließlich) und nimmt den Zeitraum aus den abgedeckten Zeiträumen (Abschnitt 7) |
+| `contract` | `plan_delete_contract`, `delete_contract` (Broker, Instrument) | alle Angaben zu diesem Instrument bei diesem Broker, alle Fassungen; sie haben keinen Zeitbezug und werden nur ganz gelöscht |
+| `broker` | `plan_delete_broker`, `delete_broker` (Broker) | alle Reihen und alle Angaben zu Instrumenten dieses Brokers |
+
+- `Daten` ist die Kennung einer Zeiteinheit (`m1` bis `mn1`) oder `ticks`. Namen werden genau (mit Groß- und Kleinschreibung) verglichen.
+- Der Zeitraum eines Zeitraums ist in UTC und auf die Minute genau (keine Sekunden, keine Teile von Sekunden); er endet nach seinem Beginn und liegt zwischen 1970-01-01T00:00:00Z und 2100-01-01T00:00:00Z. Ein Zeitpunkt ohne Zeitzone ist ein `ValueError`. Hat die Reihe im Zeitraum weder Kerzen oder Ticks noch einen abgedeckten Zeitraum, ist der Zeitraum leer (`period_empty`). Eine Kerze gehört zum Zeitraum, wenn ihr Eröffnungszeitpunkt darin liegt.
+- Eine Reihe ohne verbleibende Kerzen oder Ticks entfällt, mit ihren abgedeckten Zeiträumen und Handelszeiten (Löschen eines Zeitraums, der alle enthält). Ein Broker ergibt sich aus seinen Daten (Abschnitt 8, `brokers()`): Nach dem Löschen der letzten Reihe und der letzten Angaben zu Instrumenten kommt er nicht mehr vor.
+- Jede Funktion läuft in einer Transaktion; schlägt etwas fehl, ist nichts gelöscht (`MarketDataStoreError`). Die Tabellen werden einzeln geleert und nicht über `ON DELETE CASCADE`, weil SQLite Fremdschlüssel nur auf Wunsch prüft.
+- Das Ergebnis ist ein `Deletion`: `kind`, `broker`, `instrument`, `data`, `start`, `end` (je nach Art, sonst leer), `candle_count` und `tick_count` (gelöschte Kerzen beziehungsweise Ticks), `series_count` (Reihen, die danach nicht mehr vorkommen: bei `series` 1, bei `period` 1 genau dann, wenn keine Kerze oder kein Tick bleibt, sonst 0, bei `broker` alle), `instrument_count` (Instrumente, deren Angaben gelöscht werden) und `broker_removed` (der Broker kommt danach nicht mehr vor). `plan_delete_…` liefert dasselbe vor dem Löschen; `delete_…` liefert, was es gelöscht hat.
+- Eine unbekannte Angabe ist ein `DeletionError` mit `code` (`DeletionErrorCode`) und fester Meldung; es wird nichts verändert:
+
+| Code | Fall |
+|---|---|
+| `broker_unknown` | der Broker kommt im Datenbestand nicht vor |
+| `instrument_unknown` | der Broker hat weder eine Reihe noch Angaben zu diesem Instrument |
+| `series_unknown` | das Instrument hat bei diesem Broker diese Reihe nicht (unbekannte oder nicht vorhandene Zeiteinheit, `ticks` ohne Ticks, `contract`) |
+| `contract_unknown` | das Instrument hat bei diesem Broker keine Angaben |
+| `period_invalid` | der Zeitraum endet nicht nach seinem Beginn, liegt nicht auf der Minute oder außerhalb der unterstützten Zeiten |
+| `period_empty` | die Reihe hat im Zeitraum weder Daten noch einen abgedeckten Zeitraum |
+
+Die Bibliothek kennt weder den „Broker für Testläufe“ noch einen Import-Vorgang noch einen Backtest: Dass nicht gelöscht wird, solange etwas läuft, und das Zurücksetzen der Wahl des Brokers regelt pipwerk replay (`pipwerk-replay.md`).
 
 ## 9. Migrationen
 
 `migrate_database(engine)` bringt die Datenbank auf den neuesten Stand, ganz oder gar nicht, wie bei pipwerk Studio (`pipwerk-studio.md`, Abschnitt 2.2): eine Verbindung, eine Transaktion; bei SQLite mit `BEGIN IMMEDIATE`, weil der Treiber DDL sonst außerhalb der Transaktion bestätigt. Schlägt eine Migration fehl, wird zurückgerollt und `DatabaseMigrationError` gemeldet. Die Migrationen liegen im Paket (`pipwerk_marketdata.migrations`) und werden mit ihm ausgeliefert. Die Adresse der Datenbank kommt vom Aufrufer; es gibt keine Alembic-Konfigurationsdatei mit fester Adresse.
 
 Neben anderen Tabellen: Die Migrationen legen nur Tabellen `marketdata_*` an und führen ihren Stand in der eigenen Versionstabelle `marketdata_alembic_version`. Eine Versionstabelle `alembic_version` des Aufrufers bleibt unberührt. Ein Test vergleicht das migrierte Schema mit den Tabellendefinitionen in `tables.py`.
+
+Versionen:
+
+| Version | Inhalt |
+|---|---|
+| `0001` | Tabellen (Abschnitt 3) |
+| `0002` | Daten, kein neues Schema: Die abgedeckten Zeiträume von Reihen, die vorher importiert wurden, reichten vom ersten bis zum letzten Eintrag. Die Migration weitet jeden gespeicherten Zeitraum auf ganze Tage in UTC (Beginn auf den Beginn seines Tages, Ende auf den Beginn des folgenden Tages, wenn es nicht schon auf einer Tagesgrenze liegt, höchstens bis 2100-01-01T00:00:00Z) und fasst danach berührende oder überlappende Zeiträume zusammen. Die Zeitzone eines früheren Imports ist nicht gespeichert; UTC ist die Wahl, die ohne Annahme auskommt. Folge: Ein früher Handelsschluss am letzten Tag einer früheren CSV-Datei ist keine Lücke mehr (5.2). Zeiträume, die ein JSON mit `period` genau genannt hat, werden ebenfalls auf ganze Tage geweitet (die Datenbank unterscheidet sie nicht von denen einer CSV-Datei). Das Zurückstufen ändert nichts. |
 
 Zugriffe auf eine Reihe, die zugleich von zwei Prozessen angelegt wird, können mit einem Fehler der Datenbank enden; es wird nichts sichtbar (`MarketDataStoreError`).
 
@@ -300,9 +344,11 @@ Zugriffe auf eine Reihe, die zugleich von zwei Prozessen angelegt wird, können 
 ## 11. Grenzen und offene Punkte
 
 - Das Format der CSV-Dateien von MetaTrader 5 ist nicht an einer Quelle des Herstellers belegt (Abschnitt 5.2). Die Abnahme mit einer echten Exportdatei steht aus.
-- Löschen von Daten und Verkleinern abgedeckter Zeiträume bietet die Bibliothek nicht. Der Import ersetzt nur gleiche Zeitpunkte.
+- Der Import ersetzt nur gleiche Zeitpunkte; Daten löschen die Funktionen aus Abschnitt 8.1.
 - Preise sind Gleitkommazahlen; die Bibliothek rechnet nicht damit.
-- Ticks werden als Ganzes im Speicher geprüft; sehr große Tickdateien teilt die Beschaffung nach Zeiträumen.
+- Eine Datei wird als Ganzes im Speicher geprüft und ist darum je Datei begrenzt (Abschnitt 4.4); sehr große Tickdateien teilt die Beschaffung nach Zeiträumen. Größere Dateien sind zurückgestellt (M4).
+- Lücken innerhalb einer Datei erkennt der Datenbestand nicht (5.2): Was eine Datei für ihren Zeitraum liefert, gilt als vollständig. Wochenende und Tage ohne Handel stehen fest in UTC (Abschnitt 7, Grenzen).
+- Bewegliche Feiertage (zum Beispiel Karfreitag) kennt die Liste der Tage ohne Handel nicht: Sie nimmt Tage des Jahres, kein Datum mit Jahr (Spezifikation 5.2).
 
 ## 12. Tests
 
@@ -312,13 +358,14 @@ Zugriffe auf eine Reihe, die zugleich von zwei Prozessen angelegt wird, können 
 |---|---|
 | `test_import_json.py` | gültige Dateien, jeder Ablehnungsgrund bei JSON, jeder Dateifehler, Ersetzen, Fehler der Datenbank (nichts sichtbar), Begrenzungen, Handelszeiten, mehrere Reihen nebeneinander |
 | `test_import_csv.py` | beide Kerzenvarianten, Ticks, Kopfzeilen und Trennzeichen, Kodierungen, Zeitzonen mit Sommerzeitwechsel (doppelte und fehlende Ortszeit), jeder Ablehnungsgrund bei CSV, Begrenzungen |
-| `test_completeness.py` | Lücken nach den Regeln aus Abschnitt 7, Wochenenden, Handelspausen, M1, Ticks, Zeiteinheiten Woche und Monat, Schwellen |
+| `test_completeness.py` | Lücken nach Abschnitt 7: kein Loch innerhalb eines abgedeckten Zeitraums, Feiertage innerhalb eines Zeitraums, Wochenenden und Tage ohne Handel zwischen Zeiträumen, früher Handelsschluss am Ende einer CSV-Datei, 24./26. Dezember und 31. Dezember/2. Januar zwischen zwei CSV-Dateien, nicht importierter Handelstag, Prüfung mit Testzeitraum ab einem Tag ohne Handel, Handelszeiten, Zeitzone des Imports, die Funktionen und Werte der Regeln |
+| `test_delete.py` | Löschen einer Reihe, eines Zeitraums (Lücke danach, Rand, Zeit ohne Handel, ganze Reihe entfällt), der Angaben zum Instrument, eines Brokers; Vorabangabe ändert nichts; unbekannte Angaben mit Grund; eine Transaktion |
 | `test_read.py` | Seiten mit Fortsetzung, Obergrenze, Übersicht, Angaben zum Instrument |
-| `test_import_files.py` | Vorgang mit JSON und CSV gemischt, gemeinsamer Broker und gemeinsame Zeitzone, Broker ersetzt den der JSON-Datei (auch bei Angaben zum Instrument), abgelehnte Datei neben übernommenen, abgelehnte Zeilen je Datei, Ersetzen, fehlende Angaben bei CSV, Grenzen für Zahl und Gesamtgröße der Dateien, Fehler der Datenbank, Dateiname nie als Pfad |
+| `test_import_files.py` | Vorgang mit JSON und CSV gemischt, gemeinsamer Broker und gemeinsame Zeitzone, Broker ersetzt den der JSON-Datei (auch bei Angaben zum Instrument), abgelehnte Datei neben übernommenen, abgelehnte Zeilen je Datei, Ersetzen, fehlende Angaben bei CSV, viele Dateien ohne Grenze für Zahl und Gesamtgröße, Grenze je Datei mit Meldung in der Einheit des Anwenders, Fehler der Datenbank, Dateiname nie als Pfad |
 | `test_filehints.py` | alle Muster der Dateinamen, jede Zeiteinheit, Nichterkennung, Pfade im Namen, Hinweise aus dem Inhalt einer JSON-Datei und ihre Fehler |
 | `test_series_list.py` | Liste der Reihen mit Filter, Seiten, Sortierung und Zeile „Kontraktdaten“, Einzelheiten mit Lücken und Angaben zum Instrument, Broker |
 | `test_time_limits.py` | Zeitpunkte am Rand (Jahr 1, 1970, 2100, Jahr 9999) in JSON und CSV, Kerzen und Ticks, jede Zeiteinheit, Zeitraum, Angaben zum Instrument, Lesen, Vollständigkeit und Übersicht ohne `OverflowError` |
-| `test_migrations.py` | leere Datenbank, Wiederholung, fremde Tabellen und fremde Versionstabelle, Schema gleich Tabellendefinition, Rückrollen |
+| `test_migrations.py` | leere Datenbank, Wiederholung, fremde Tabellen und fremde Versionstabelle, Schema gleich Tabellendefinition, Rückrollen, Migration `0002` (ganze Tage, Zusammenfassen, Obergrenze, leere Datenbank) |
 | `test_contract.py` | Schemas gleich den Modellen, Beispiele gegen Schema und Import, Schema und Import stimmen bei Fehlern überein |
 | `test_documentation.py` | Gründe, Standardwerte, Tabellen und Schwellen stehen in diesem Dokument |
 
@@ -345,15 +392,21 @@ Rein technische Einzelheiten, die die Spezifikation offenlässt:
 | Zeitordnung gegen die letzte übernommene Zeile | eine abgelehnte Zeile soll die folgenden nicht mitreißen |
 | Zusätzliche Prüfung Hoch ≥ Tief, Hoch ≥ Schluss, Tief ≤ Eröffnung | Abschnitt 4.2 |
 | Tick mit leerem Geld oder Brief wird abgelehnt, nicht aus dem vorigen ergänzt | die Bibliothek erfindet keine Kurse |
-| Vollständigkeit: Lücke vom ersten bis zum letzten Handelszeitpunkt des Lochs | eine Lücke über ein Wochenende hinweg ergibt ein Stück statt vieler |
-| Größte Stille bei Ticks 1 Stunde | Ticks kommen unregelmäßig; die Spezifikation nennt für Ticks keine Regel; ein Wert, der in ruhigen Stunden keine Lücke meldet |
+| Vollständigkeit: Lücke vom ersten bis zum letzten Handelszeitpunkt der Zeit zwischen zwei abgedeckten Zeiträumen | eine Lücke über ein Wochenende hinweg ergibt ein Stück statt vieler |
+| Auftrag 15: keine Lücke innerhalb eines abgedeckten Zeitraums; die Schwellen für fehlende Kerzen, für M1 in der Stunde und für die Stille bei Ticks entfallen | Spezifikation 5.2 und M6: weder MetaTrader 5 noch sein Export liefern einen Kalender der Feiertage, ob in einer Zeit gehandelt wurde, weiß nur der Broker. Eine Schwelle hätte Feiertage und frühen Handelsschluss als Lücke gemeldet |
+| Tage ohne Handel als `CalendarDay(month, day)`, jedes Jahr, Parameter von `CompletenessRules`; Vorgabe der Bibliothek: keine | Spezifikation 5.2: „Liste von Kalendertagen in der Startkonfiguration“, vorbelegt mit 25. Dezember und 1. Januar; die Vorbelegung gehört in die Konfiguration von pipwerk replay, die Bibliothek hat keinen festen Wert. Ein Tag mit Jahr (bewegliche Feiertage) ist in der Spezifikation nicht vorgesehen |
+| Tage ohne Handel gelten auch, wenn die Quelle Handelszeiten liefert | ein Feiertag ohne Handel ist es unabhängig davon, wie die Quelle die Wochentage beschreibt; sonst hinge die Lücke vom Format der Datei ab |
+| CSV: Beginn des Tages in der Zeitzone des Imports bei Mitternacht, die es nicht gibt, der erste vorhandene Zeitpunkt des Tages | Zeitzonen mit Umstellung um Mitternacht; Spezifikation 5.1 regelt nur Zeilen |
+| Löschen: `plan_delete_…` und `delete_…` rechnen dieselbe Planung und unterscheiden sich nur im Ausführen | Die Vorabangabe kann nicht von dem abweichen, was gelöscht wird |
+| Löschen: Eine Reihe entfällt, wenn keine Kerze oder kein Tick bleibt, auch wenn abgedeckte Zeiträume blieben | Spezifikation 5.5: „Ohne verbleibende Daten entfällt die Reihe“ |
+| Löschen: Kerzen, die im Zeitraum eröffnen, gehören dazu | die Kerze ist durch ihren Eröffnungszeitpunkt bestimmt (Abschnitt 3) |
+| Migration `0002` weitet die gespeicherten Zeiträume auf ganze Tage in UTC | Auftrag 15: die Zeitzone früherer Importe ist nicht gespeichert; die Wahl braucht keine Annahme |
 | Keine Prüfung, ob Eröffnungszeitpunkte auf die Zeiteinheit fallen | die Serverzeit des Brokers fällt nach der Umrechnung nicht auf volle UTC-Grenzen, zum Beispiel bei H4 und D1 |
 | Zeitpunkte nur von 1970 bis vor 2100, sonst abgelehnte Zeile `time_out_of_range` | Abschnitt 4.4: keine Zeit am Rand von `datetime`, nie `OverflowError`; die Grenzen liegen außerhalb jeder Kursreihe |
 | Alembic-Versionstabelle `marketdata_alembic_version` | die Bibliothek darf neben Tabellen des Aufrufers laufen |
 | Auftrag 11: Vorgang als eigene Funktion `import_files`, die Einzelfunktionen bleiben | der Vorgang verwendet dieselben Prüfungen und denselben Schreibvorgang je Datei; die Einzelfunktionen sind der kleinere Aufruf |
 | Fehler der Datenbank bei einer Datei ist ein Ergebnis dieser Datei (`store_failed`), keine Ausnahme des Vorgangs | der Anwender sieht, welche Dateien übernommen sind; ohne das ginge das Ergebnis der bereits übernommenen Dateien verloren |
-| Zahl und Gesamtgröße lehnen den ganzen Vorgang ab (`ImportBatchError`), bevor eine Datei gelesen wird | Spezifikation 11: Begrenzung gegen Überlast; eine halbe Übernahme nach dem Zufall der Reihenfolge wäre für den Anwender nicht nachvollziehbar |
-| Vorgaben 500 Dateien und 512 MiB je Vorgang | ein Vorgang kann alle Dateien von `pipwerk-fetch-mt5` für einige Instrumente und alle Zeiteinheiten aufnehmen (je Instrument bis 23 Dateien); 512 MiB sind das Sechzehnfache einer Datei und halten den Speicher der Prüfung begrenzt. Parameter von `ImportLimits`, nicht fest |
+| Auftrag 15: keine Grenze für Zahl und Gesamtgröße der Dateien eines Vorgangs, kein Ersatz | Spezifikation 5.3, M3: eine Grenze je Anfrage ist eine technische Frage, der Anwender wählt beliebig viele Dateien. Die Dateien eines Vorgangs liegen nie gleichzeitig im Speicher, die Grenze je Datei genügt |
 | Bei JSON-Dateien ersetzt der Broker des Vorgangs die Angabe der Datei | Auftrag 11 und Spezifikation 5.3 (der angegebene Broker gilt auch für JSON-Dateien) |
 | Bei JSON-Dateien lässt sich das Instrument je Datei überschreiben, die Daten nicht (Entscheidung des Entwicklungsleiters zu Spezifikation 5.3, „je Datei änderbar“) | Das Instrument ist ein Name, den der Anwender ändern können muss, etwa bei anderer Bezeichnung beim Broker. Zeiteinheit, Ticks und Kontraktdaten bestimmen die Form des Inhalts; eine andere Angabe wäre ein Widerspruch zum Inhalt und ist darum eine abgelehnte Datei mit Grund (`series_invalid`), keine stille Umdeutung. Eine Angabe gleich dem Inhalt ist kein Widerspruch, damit die Oberfläche alle Felder vorbelegen darf |
 | Liste der Reihen filtert und sortiert im Speicher über alle (Broker, Instrument, Daten) der Datenbank, die Lücken nur für die Zeilen der Seite | die Zahl der Reihen ist klein (Broker mal Instrumente mal Zeiteinheiten); die Lücken sind die teure Berechnung. Sortierung nach Zeiteinheit (kurz nach lang) lässt sich in SQL nicht sinnvoll ausdrücken |
@@ -370,3 +423,4 @@ Rein technische Einzelheiten, die die Spezifikation offenlässt:
 | 2026-10-21 | Abschnitt „Prüfskript“ zu `packages/market-data/scripts/check` (Tester Funktion). |
 | 2026-10-23 | Auftrag 11 (Mängel M1, M3, M4 des Abnahmeberichts `wp02`): Import eines Vorgangs mit mehreren Dateien (4.5), Grenzen für Zahl und Gesamtgröße (4.4), Erkennung aus Dateinamen und Hinweise aus JSON (5.3, 5.4), Liste der Reihen, Einzelheiten und Broker (8), Entscheidungen (13). |
 | 2026-10-23 | Auftrag 11, Ergänzung: Instrument je Datei auch bei JSON überschreibbar, Daten bei JSON nicht (4.5, 13). |
+| 2026-10-24 | Auftrag 15 (Mängel M3, M5, M6 des Abnahmeberichts `wp02`, Versuch 2): Lücken nach Spezifikation 5.2 mit Tagen ohne Handel (3, 7, 13), CSV deckt ganze Tage der Zeitzone des Imports ab (3), Migration `0002` (9), Löschen nach 5.5 (8.1), Grenzen für Zahl und Gesamtgröße der Dateien eines Vorgangs entfallen, Meldung zur Grenze je Datei in der Einheit des Anwenders (4.4, 4.5). |

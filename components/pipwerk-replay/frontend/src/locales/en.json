@@ -45,7 +45,9 @@
     "host": "The backend refused the request because the name of the address is not allowed. Next step: open pipwerk replay at 127.0.0.1 or localhost, or enter the name in the startup configuration.",
     "origin": "The backend refused the request because it comes from a web page with another address. Next step: open pipwerk replay at its own address and try again.",
     "notFound": "What you are looking for does not exist (any more). Next step: reload the view.",
-    "tooLarge": "The files together are larger than allowed. Next step: import fewer files at once.",
+    "conflict": "The backend cannot carry out the request now because it collides with something that is running. Next step: try again in a moment.",
+    "importRunning": "An import process exists. While it exists, nothing can be deleted. Next step: wait until the import has ended, or cancel it in the dialog \"Import files\", and try again. An import process to which no file comes for some time ends by itself.",
+    "tooLarge": "The backend refused the request because of its size. Next step: reload the page and try again.",
     "mediaType": "The backend does not accept this kind of request. Next step: reload the page and try again.",
     "invalid": "The backend considers the input invalid. Next step: check the input.",
     "busy": "The backend is busy right now. Next step: try again in a moment.",
@@ -110,6 +112,12 @@
     "importOpen": "Import files …",
     "testBroker": "Broker for test runs",
     "testBrokerNone": "no broker",
+    "testBrokerNotChosen": "– none chosen –",
+    "testBrokerApplies": "No broker is chosen. A test run reads the data of {{broker}}, the first broker in alphabetical order.",
+    "deleteOpen": "Delete …",
+    "deleteContract": "Delete contract data …",
+    "deleteBroker": "Delete all data of this broker …",
+    "deleteBrokerSeveral": "The filter fits several brokers. Next step: enter the name of a single broker if you want to delete all its data.",
     "testBrokerError": "The broker for test runs could not be read or saved. {{reason}}",
     "seriesTitle": "Data series",
     "loadError": "The data stock could not be read. {{reason}}",
@@ -135,6 +143,7 @@
     "detailsLoading": "The details are loading …",
     "detailsError": "The details could not be read. {{reason}}",
     "gapsTitle": "Gaps",
+    "gapsExplain": "A gap is a period between two imported periods of this series in which the broker traded. Weekends, holidays and other times without trade are no gaps.",
     "noGaps": "No gaps.",
     "gapsCut": "Showing {{shown}} of {{total}} gaps.",
     "contractTitle": "Contract data",
@@ -170,7 +179,10 @@
       "columnInstrument": "The instrument the data belongs to.",
       "columnData": "What the series contains: candles of a time unit, ticks or contract data.",
       "columnPeriod": "From the first to the last day for which there is data (UTC).",
-      "columnGaps": "How many periods within the series have no data although the market was open.",
+      "columnGaps": "How many gaps the series has: periods between imported periods in which the broker traded and that have no data. Weekends, holidays and other times without trade do not count.",
+      "deleteOpen": "Deletes this series completely or a period of it. Before that you see what would be deleted and confirm it.",
+      "deleteContract": "Deletes the contract data of this instrument at this broker. Before that you see what would be deleted and confirm it.",
+      "deleteBroker": "Deletes all series and all contract data of the broker the table is filtered by. Before that you see what would be deleted and confirm it.",
       "tickSize": "Smallest price change of the instrument.",
       "tickValue": "Value of a price change by one tick for one lot, in the given currency.",
       "pip": "One pip as price difference. Buffers and distances of strategies are often given in pips.",
@@ -187,10 +199,10 @@
   },
   "import": {
     "title": "Import files",
-    "intro": "Choose one or more files in JSON or CSV format, for example an export of MetaTrader 5 or the files of pipwerk-fetch-mt5. pipwerk replay checks them and takes over the data. Existing data of the same moment is replaced.",
+    "intro": "Choose as many files in JSON or CSV format as you like, for example exports of MetaTrader 5 or the files of pipwerk-fetch-mt5, and click \"Import\" once. pipwerk replay checks the files one after the other and takes over the data. Existing data of the same moment is replaced.",
     "choose": "Choose files …",
     "empty": "No file chosen yet. Next step: choose files in JSON or CSV format.",
-    "reading": "The files are being read …",
+    "reading": "The files are being read … ({{done}} of {{total}})",
     "readError": "The files could not be read. {{reason}}",
     "broker": "Broker",
     "timezone": "Time zone of the CSV files",
@@ -207,13 +219,30 @@
     "nextFiles": "Next step: complete instrument and data of the marked files or remove the files.",
     "nextTimezone": "Next step: enter the time zone of the CSV files, for example Europe/Athens.",
     "nextRun": "Next step: click \"Import\".",
-    "nextAgain": "Next step: complete the refused files and click \"Import\" again, or close the dialog.",
+    "nextAgain": "Next step: complete the refused files and click \"Import\" again; the files that were not imported are then caught up, too. Or close the dialog.",
     "run": "Import",
     "running": "Import running …",
     "close": "Close",
-    "importError": "The import failed. {{reason}}",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling …",
+    "cancelNote": "The import ends after the file that is being taken over. The other files stay \"not imported\".",
+    "closeAsk": "The import is still running. Cancel it? Files that are already taken over stay taken over.",
+    "keep": "Keep importing",
+    "abortClose": "Cancel and close",
+    "progress": "{{done}} of {{total}} files done.",
+    "status": {
+      "waiting": "waiting",
+      "importing": "being imported",
+      "taken": "taken over",
+      "refused": "refused",
+      "skipped": "not imported"
+    },
+    "skipped": "This file was not imported. Next step: click \"Import\" again to catch it up.",
+    "processEnded": "The backend ended the import process because no file came for too long. Next step: click \"Import\" again. Files that are already taken over stay taken over.",
+    "importError": "The import was interrupted. {{reason}}",
     "summary": "{{imported}} of {{total}} files are imported.",
-    "summaryRefused": "{{imported}} of {{total}} files are imported. Refused: {{refused}}.",
+    "summaryRefused": "Refused: {{count}}.",
+    "summarySkipped": "Not imported: {{count}}.",
     "resultTaken": "{{accepted}} rows taken over, {{replaced}} of them as replacement. Period: {{period}} (UTC).",
     "resultContract": "Contract data taken over.",
     "resultRefused": "Refused: {{reason}}",
@@ -225,12 +254,8 @@
       "broker": "The broker all files belong to, for MetaTrader 5 the name of the trade server. Choose a name from the data stock or enter a new one. If all JSON files name the same broker, it is preset. The broker also counts for JSON files.",
       "timezone": "The time zone in which MetaTrader 5 writes the times of the CSV files (time of the trade server), as a name, for example Europe/Athens. Daylight saving time is taken into account. pipwerk converts all times to UTC. Times in JSON files are UTC.",
       "instrument": "The instrument of the file, for example EURUSD. Preset from the file name, for JSON from the content.",
-      "data": "What the file contains: candles of a time unit or ticks. Preset from the file name; for JSON the content determines the data."
-    },
-    "batchError": {
-      "no_files": "No file is chosen. Next step: choose files.",
-      "too_many_files": "There are too many files at once. Next step: import fewer files at once, for example in several rounds.",
-      "batch_too_large": "The files are too large together. Next step: import fewer files at once."
+      "data": "What the file contains: candles of a time unit or ticks. Preset from the file name; for JSON the content determines the data.",
+      "cancel": "Ends the import after the file that is being taken over. What is already taken over stays taken over; the other files are not imported."
     },
     "reject": {
       "columns_mismatch": "The row has too few columns.",
@@ -252,8 +277,10 @@
       "unknown": "Reason unknown."
     },
     "fileError": {
-      "too_large": "The file is too large. Next step: split it into smaller files, for example by periods.",
-      "too_many_rows": "The file has too many rows. Next step: split it into several files.",
+      "too_large": "The file is larger than the limit of {{limit}} per file. Next step: split it into smaller files, for example by periods, and import those.",
+      "too_large_unnamed": "The file is larger than the limit per file. Next step: split it into smaller files, for example by periods, and import those.",
+      "too_many_rows": "The file has more rows than the limit of {{limit}} rows per file. Next step: split it into several files.",
+      "too_many_rows_unnamed": "The file has more rows than the limit per file. Next step: split it into several files.",
       "not_decodable": "The text of the file cannot be read. Next step: save the file as UTF-8.",
       "json_invalid": "The file is not valid JSON. Next step: check the file or create it again.",
       "document_invalid": "The structure of the file does not match the format. Next step: create the file again with pipwerk-fetch-mt5.",
@@ -264,6 +291,75 @@
       "no_rows": "The file contains no rows. Next step: check that it is the right file.",
       "store_failed": "The data stock could not take over the file. Next step: try again later.",
       "unknown": "The file was refused. Next step: check the file and import it again."
+    }
+  },
+  "delete": {
+    "chooseTitle": "Delete series",
+    "chooseIntro": "Choose what to delete from this series. Then you see exactly what would be deleted and confirm it. Only then is anything deleted.",
+    "scope": "What is deleted",
+    "scopeSeries": "The whole series",
+    "scopePeriod": "Only a period of the series",
+    "start": "From (UTC)",
+    "end": "To (UTC)",
+    "periodHint": "Next step: enter the beginning and the end of the period, to the minute, with the beginning before the end and between the years 1970 and 2100.",
+    "next": "Continue",
+    "close": "Close",
+    "checking": "Checking what would be deleted …",
+    "askError": "It could not be checked what would be deleted. Nothing was deleted. {{reason}}",
+    "deleteError": "Deleting failed. {{reason}}",
+    "confirm": "Delete for good",
+    "irreversible": "Deleting cannot be undone.",
+    "seriesEnds": "Afterwards the series has no data left and is removed.",
+    "brokerGoes": "Afterwards the broker {{broker}} has no data left and no longer occurs in the data stock.",
+    "testBrokerReset": "{{broker}} is chosen as the \"Broker for test runs\". Afterwards no broker is chosen.",
+    "doneNoTestBroker": "No broker for test runs is chosen now.",
+    "tip": {
+      "start": "The beginning of the period in UTC, to the minute. The candle or tick of this minute is deleted, too.",
+      "end": "The end of the period in UTC, to the minute. The candle or tick of this minute stays."
+    },
+    "title": {
+      "series": "Delete series?",
+      "period": "Delete period?",
+      "contract": "Delete contract data?",
+      "broker": "Delete all data of this broker?"
+    },
+    "fact": {
+      "broker": "Broker",
+      "instrument": "Instrument",
+      "data": "Data",
+      "period": "Period (UTC)"
+    },
+    "extent": {
+      "candles_one": "{{n}} candle will be deleted.",
+      "candles_other": "{{n}} candles will be deleted.",
+      "ticks_one": "{{n}} tick will be deleted.",
+      "ticks_other": "{{n}} ticks will be deleted.",
+      "contract": "The contract data of {{instrument}} at this broker will be deleted.",
+      "broker": "{{series}} with {{candles}} and {{ticks}} will be deleted, and the contract data of {{instruments}}."
+    },
+    "count": {
+      "series_one": "{{n}} series",
+      "series_other": "{{n}} series",
+      "candles_one": "{{n}} candle",
+      "candles_other": "{{n}} candles",
+      "ticks_one": "{{n}} tick",
+      "ticks_other": "{{n}} ticks",
+      "instruments_one": "{{n}} instrument",
+      "instruments_other": "{{n}} instruments"
+    },
+    "done": {
+      "series": "Deleted: {{data}} of {{instrument}} at {{broker}}.",
+      "period": "Deleted: {{data}} of {{instrument}} at {{broker}}, from {{start}} to {{end}} (UTC).",
+      "contract": "Deleted: contract data of {{instrument}} at {{broker}}.",
+      "broker": "Deleted: all data of {{broker}}."
+    },
+    "error": {
+      "broker_unknown": "This broker does not exist (any more). Next step: reload the view.",
+      "instrument_unknown": "This instrument does not exist at this broker (any more). Next step: reload the view.",
+      "series_unknown": "This series does not exist (any more). Next step: reload the view.",
+      "contract_unknown": "There is no contract data for this instrument at this broker (any more). Next step: reload the view.",
+      "period_invalid": "The period is invalid. Next step: enter the beginning and the end to the minute, with the beginning before the end.",
+      "period_empty": "The series has no data in this period. Next step: choose a period in which the series has data."
     }
   }
 }

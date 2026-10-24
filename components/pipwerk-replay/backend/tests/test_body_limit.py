@@ -7,14 +7,18 @@ chunks. A last group tests the limit on the web API itself.
 """
 
 import asyncio
+import json
+import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from starlette.types import Message, Receive, Scope, Send
 
 from pipwerk_replay.app import create_app
-from pipwerk_replay.body_limit import BODY_TOO_LARGE_TEXT, BodyLimitMiddleware
+from pipwerk_replay.body_limit import BODY_TOO_LARGE_TEXT, BodyLimitMiddleware, PathRule
 
 LIMIT = 100
 
@@ -47,6 +51,7 @@ def run(
     declared: bytes | None,
     app: Recorder,
     overrides: dict[str, int] | None = None,
+    rules: Sequence[PathRule] = (),
 ) -> tuple[list[Message], int]:
     """Send the chunks; return the messages sent and the number of messages read."""
     headers = [] if declared is None else [(b"content-length", declared)]
@@ -68,7 +73,9 @@ def run(
     async def send(message: Message) -> None:
         sent.append(message)
 
-    middleware = BodyLimitMiddleware(app, limit=LIMIT, prefix="/api/v1", overrides=overrides)
+    middleware = BodyLimitMiddleware(
+        app, limit=LIMIT, prefix="/api/v1", overrides=overrides, rules=rules
+    )
     asyncio.run(middleware(scope(path, headers), receive, send))
     return sent, read
 
@@ -218,6 +225,50 @@ def test_a_path_with_its_own_limit_uses_it_in_both_directions() -> None:
     assert (
         status(run("/api/v1/upload/x", [b"a" * (LIMIT + 1)], None, Recorder(), overrides)[0]) == 413
     )
+
+
+def test_a_rule_gives_a_path_with_an_identifier_its_own_limit_and_its_own_answer() -> None:
+    rule = PathRule(
+        re.compile(r"/api/v1/process/[^/]+/files"),
+        3 * LIMIT,
+        lambda: JSONResponse(status_code=413, content={"code": "too_large"}),
+    )
+    path = "/api/v1/process/abc-123/files"
+
+    # within the limit of the rule, above the general one
+    app = Recorder()
+    sent, _ = run(path, [b"a" * (2 * LIMIT)], None, app, rules=[rule])
+    assert status(sent) == 200
+    assert app.body == b"a" * (2 * LIMIT)
+    # above it, counted or declared: the answer of the rule
+    sent, _ = run(path, [b"a" * (3 * LIMIT + 1)], None, Recorder(), rules=[rule])
+    assert (status(sent), json.loads(answer(sent))) == (413, {"code": "too_large"})
+    sent, read = run(path, [b"a"], str(3 * LIMIT + 1).encode(), Recorder(), rules=[rule])
+    assert (status(sent), json.loads(answer(sent))) == (413, {"code": "too_large"})
+    assert read == 0
+    # the rule is for the whole path: other paths keep the general limit and the usual answer
+    for other in ("/api/v1/process/abc/files/x", "/api/v1/process/abc", "/api/v1/process//files"):
+        sent, _ = run(other, [b"a" * (LIMIT + 1)], None, Recorder(), rules=[rule])
+        assert status(sent) == 413, other
+        assert json.loads(answer(sent)) == {"detail": BODY_TOO_LARGE_TEXT}, other
+
+
+def test_a_rule_without_an_answer_is_413_with_the_usual_text() -> None:
+    rule = PathRule(re.compile(r"/api/v1/up"), 10)
+
+    sent, _ = run("/api/v1/up", [b"a" * 11], None, Recorder(), rules=[rule])
+
+    assert status(sent) == 413
+    assert json.loads(answer(sent)) == {"detail": BODY_TOO_LARGE_TEXT}
+    assert status(run("/api/v1/up", [b"a" * 10], None, Recorder(), rules=[rule])[0]) == 200
+
+
+def test_an_exact_override_is_stronger_than_a_rule() -> None:
+    rule = PathRule(re.compile(r"/api/v1/.*"), 10)
+
+    sent, _ = run("/api/v1/x", [b"a" * 50], None, Recorder(), {"/api/v1/x": 60}, [rule])
+
+    assert status(sent) == 200
 
 
 def test_the_prefix_itself_and_everything_below_it_is_limited() -> None:

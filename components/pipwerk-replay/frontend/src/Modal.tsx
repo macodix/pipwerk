@@ -17,6 +17,11 @@ type ModalProps = {
    * the body, or (if absent) the first button of the footer.
    */
   initialFocus?: 'first-field' | 'first-button' | 'footer';
+  /**
+   * Set while the dialog must not close by itself (an import is running): Escape does not close
+   * it but calls this function, which asks the user.
+   */
+  onEscape?: () => void;
 };
 
 /**
@@ -26,7 +31,7 @@ type ModalProps = {
  * the dialog is open it therefore keeps the focus itself: Tab from the last and Shift+Tab
  * from the first element continue at the other end.
  */
-export function Modal({ open, onClose, title, icon, children, footer, testid, wide, initialFocus }: ModalProps) {
+export function Modal({ open, onClose, title, icon, children, footer, testid, wide, initialFocus, onEscape }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -94,7 +99,23 @@ export function Modal({ open, onClose, title, icon, children, footer, testid, wi
       ref={dialogRef}
       className={`modal${wide === true ? ' wide' : ''}`}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onCancel={(event) => {
+        if (onEscape !== undefined) {
+          event.preventDefault();
+          onEscape();
+        }
+      }}
+      onClose={() => {
+        // A browser can close the dialog although the cancel was prevented (a second Escape):
+        // while the dialog must stay, it is shown again.
+        const dialog = dialogRef.current;
+        if (onEscape !== undefined && open && dialog !== null && !dialog.open) {
+          dialog.showModal();
+          onEscape();
+          return;
+        }
+        onClose();
+      }}
       data-testid={testid}
     >
       <header className="modal-head">

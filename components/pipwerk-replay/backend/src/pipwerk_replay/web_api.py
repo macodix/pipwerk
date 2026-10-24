@@ -190,13 +190,12 @@ def install_api(
 ) -> None:
     """Add the public web API, the internal endpoints and the limits of the body size.
 
-    A body is at most ``max_body_bytes`` large; the request of an import (and of its preview)
-    is at most as large as the files of an import together (``max_import_bytes`` of the data
-    stock) plus the envelope of the form."""
+    A body is at most ``max_body_bytes`` large; the request of a file of an import (and of the
+    preview of a file) is at most as large as the file (``max_upload_bytes`` of the data stock)
+    plus the envelope of the form. A body above that is answered with the limit per file."""
     app.include_router(build_router(accounts))
     app.include_router(marketdata_api.build_router(marketdata))
     app.include_router(internal_api.build_router(settings, marketdata, revision))
-    upload_limit = marketdata_api.import_body_limit(marketdata)
     app.add_middleware(
         BodyLimitMiddleware,
         limit=max_body_bytes,
@@ -206,8 +205,5 @@ def install_api(
         BodyLimitMiddleware,
         limit=max_body_bytes,
         prefix=API_PREFIX,
-        overrides={
-            marketdata_api.IMPORT_PATH: upload_limit,
-            marketdata_api.PREVIEW_PATH: upload_limit,
-        },
+        rules=marketdata_api.file_path_rules(marketdata),
     )

@@ -1,25 +1,30 @@
 """pipwerk data store of historical price data.
 
 Public interface: ``MarketDataStore`` (import of files and processes, reading, list of series,
-completeness), ``recognize_filename`` and ``inspect_json`` (hints for the import dialog),
-``migrate_database`` (schema) and the value objects of ``pipwerk_marketdata.records``.
+completeness, deleting), ``recognize_filename`` and ``inspect_json`` (hints for the import
+dialog), ``migrate_database`` (schema) and the value objects of ``pipwerk_marketdata.records``.
 """
 
 from pipwerk_marketdata.errors import (
     DatabaseMigrationError,
+    DeletionError,
     ImportBatchError,
     ImportFileError,
     MarketDataStoreError,
 )
 from pipwerk_marketdata.filehints import inspect_json, recognize_filename
-from pipwerk_marketdata.limits import ImportLimits
+from pipwerk_marketdata.limits import ImportLimits, format_size
 from pipwerk_marketdata.migrate import migrate_database
 from pipwerk_marketdata.records import (
     BatchErrorCode,
+    CalendarDay,
     Candle,
     CandlePage,
     Completeness,
     CompletenessRules,
+    Deletion,
+    DeletionErrorCode,
+    DeletionKind,
     FileErrorCode,
     FileFormat,
     FileHints,
@@ -53,11 +58,16 @@ __all__ = [
     "TICKS",
     "TIME_UNITS",
     "BatchErrorCode",
+    "CalendarDay",
     "Candle",
     "CandlePage",
     "Completeness",
     "CompletenessRules",
     "DatabaseMigrationError",
+    "Deletion",
+    "DeletionError",
+    "DeletionErrorCode",
+    "DeletionKind",
     "FileErrorCode",
     "FileFormat",
     "FileHints",
@@ -88,6 +98,7 @@ __all__ = [
     "TimeUnit",
     "TradingSession",
     "Weekday",
+    "format_size",
     "inspect_json",
     "migrate_database",
     "recognize_filename",

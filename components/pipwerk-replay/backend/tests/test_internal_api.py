@@ -114,13 +114,15 @@ def test_a_chosen_broker_that_no_longer_occurs_falls_back_to_the_first_one(
             )
         connection.execute("DELETE FROM marketdata_series WHERE broker = 'Zeta'")
 
-    # "Zeta" is still stored, but it does not occur any more
+    # "Zeta" does not occur any more: the first broker applies and no broker is chosen
+    # (specification 5.1 and 5.5)
     assert client.get(URL).json() == {"broker": "Alpha", "chosen": False}
     engine = create_replay_engine(f"sqlite:///{tmp_path / 'replay.db'}")
-    assert SettingsService(create_session_factory(engine)).get_test_run_broker() == "Zeta"
-    # it applies again as soon as its data come back
+    assert SettingsService(create_session_factory(engine)).get_test_run_broker() is None
+    # a later import of the same broker does not choose it again
     fill(client, "Zeta")
-    assert client.get(URL).json() == {"broker": "Zeta", "chosen": True}
+    assert client.get(URL).json() == {"broker": "Alpha", "chosen": False}
+    assert client.put(URL, json={"broker": "Zeta"}).json() == {"broker": "Zeta", "chosen": True}
 
 
 def test_the_broker_for_test_runs_and_the_language_do_not_disturb_each_other(

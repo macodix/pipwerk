@@ -14,7 +14,7 @@ from pipwerk_marketdata import (
     CONTRACT,
     TICKS,
     TIME_UNITS,
-    BatchErrorCode,
+    DeletionErrorCode,
     FileErrorCode,
     MissingReason,
     RejectReason,
@@ -322,24 +322,43 @@ class FileOutcome(OutModel):
     message: str | None
 
 
-class ImportOutcome(OutModel):
-    """The result of an import of several files. A refused file does not stop the others.
-    ``imported_count`` counts the files that were taken over, ``refused_count`` those that
-    were refused."""
+class EmptyBody(ApiModel):
+    """A body without fields: an empty JSON object. The requests that begin or end an import
+    process have no data, but, like every request that changes something, need a JSON body, so
+    that a web page of another origin cannot send them without a preflight request."""
 
-    files: list[FileOutcome]
+
+class ImportProcess(OutModel):
+    """An import process that was begun. It exists until it is ended or aborted, or until no
+    request of it has arrived for ``idle_timeout_seconds``; then it ends by itself. While it
+    exists, nothing can be deleted from the data stock."""
+
+    id: str = Field(description="Identifier of the process; the path of its requests.")
+    idle_timeout_seconds: int = Field(
+        description="The process ends by itself when no request of it arrives for this long."
+    )
+
+
+class ImportProcessEnd(OutModel):
+    """An import process that has ended. ``imported_count`` counts the files that were taken
+    over, ``refused_count`` those that were refused, so far. Files that were taken over stay
+    taken over, also after an abort."""
+
+    id: str
+    state: Literal["finished", "aborted"]
     imported_count: int
     refused_count: int
 
 
-class ImportRefused(ApiModel):
-    """Error body for an import that is refused as a whole (nothing was read or changed): no
-    file (HTTP 422), more files than ``max_files_per_import`` or larger together than
-    ``max_import_bytes`` (HTTP 413). ``message`` is a fixed text."""
+class FileTooLarge(ApiModel):
+    """Error body (HTTP 413) of the request of a file that is larger than the limit per file.
+    ``detail`` names the limit in the unit of the user, ``max_bytes`` is the limit in bytes
+    (``max_upload_bytes`` of the startup configuration). The same reason as the code
+    ``too_large`` of a refused file."""
 
     detail: str
-    code: BatchErrorCode
-    message: str
+    code: Literal["too_large"]
+    max_bytes: int
 
 
 class FileHint(OutModel):
@@ -359,14 +378,127 @@ class FileHint(OutModel):
     error: FileErrorCode | None
 
 
-class ImportPreview(OutModel):
-    """The hints for the dialog of an import, one per file in the order of the request.
+# --- deleting ---------------------------------------------------------------------------------
 
-    ``broker`` is the broker that all JSON files name, ``null`` if there is no JSON file, one of
-    them names none or they name different ones."""
+#: The data of a series: a time unit (``m1`` to ``mn1``) or ``ticks``.
+SeriesData = TimeUnitName | Literal["ticks"]
 
-    files: list[FileHint]
+CONFIRM_DESCRIPTION = (
+    "``false``: only tell what would be deleted, nothing is changed. ``true``: delete, in one "
+    "transaction, and tell what was deleted."
+)
+
+
+class SeriesDeletionRequest(ApiModel):
+    """Delete a whole series: the candles of a time unit or the ticks of an instrument at a
+    broker, with their covered periods."""
+
+    broker: Name
+    instrument: Name
+    data: SeriesData
+    confirm: bool = Field(description=CONFIRM_DESCRIPTION)
+
+
+class PeriodDeletionRequest(ApiModel):
+    """Delete a period of a series: the candles or ticks from ``start`` (included) to ``end``
+    (excluded). The period is taken out of the covered periods of the series."""
+
+    broker: Name
+    instrument: Name
+    data: SeriesData
+    start: Moment = Field(
+        description="Start of the period, included. ISO 8601 with time zone, on the minute."
+    )
+    end: Moment = Field(
+        description="End of the period, excluded. ISO 8601 with time zone, on the minute."
+    )
+    confirm: bool = Field(description=CONFIRM_DESCRIPTION)
+
+    @model_validator(mode="after")
+    def _period(self) -> PeriodDeletionRequest:
+        _check_period(self.start, self.end)
+        for moment in (self.start, self.end):
+            if moment.second != 0 or moment.microsecond != 0:
+                raise ValueError("the period must begin and end on a minute")
+        return self
+
+
+class ContractDeletionRequest(ApiModel):
+    """Delete all instrument data of an instrument at a broker."""
+
+    broker: Name
+    instrument: Name
+    confirm: bool = Field(description=CONFIRM_DESCRIPTION)
+
+
+class BrokerDeletionRequest(ApiModel):
+    """Delete all data of a broker: all its series and all its instrument data. The broker no
+    longer occurs in the data stock afterwards."""
+
+    broker: Name
+    confirm: bool = Field(description=CONFIRM_DESCRIPTION)
+
+
+class BrokerForTestRuns(OutModel):
+    """The broker for test runs: ``broker`` is the broker whose data a test run uses. It is the
+    chosen broker if that occurs in the data stock (``chosen`` is ``true``), otherwise the first
+    broker of the data stock in alphabetical order (``chosen`` is ``false``); ``null`` only if
+    the data stock has no broker at all."""
+
     broker: str | None
+    chosen: bool
+
+
+class DeletionResult(OutModel):
+    """What a deletion removes (``deleted`` is ``false``, nothing was changed) or removed
+    (``deleted`` is ``true``).
+
+    ``instrument`` and ``data`` are set for a series and a period (``data`` is a time unit or
+    ``ticks``) and for instrument data (``instrument`` only); ``start`` and ``end`` for a
+    period. ``candle_count`` and ``tick_count`` count the candles and ticks that are or were
+    removed. ``series_count`` counts the series that no longer exist afterwards (a period
+    removes its series if no candle or tick is left). ``instrument_count`` counts the instruments
+    whose instrument data are or were removed. ``broker_removed`` tells whether the broker no
+    longer occurs in the data stock afterwards.
+
+    ``test_run_broker_reset`` is ``true`` if the broker is the one chosen for test runs and no
+    longer occurs afterwards: then no broker is chosen afterwards (specification 5.1), and a
+    later import of the same broker does not choose it again. ``test_run_broker`` is the broker
+    for test runs after the deletion (with ``deleted`` ``false`` the current one)."""
+
+    kind: Literal["series", "period", "contract", "broker"]
+    deleted: bool
+    broker: str
+    instrument: str | None
+    data: str | None
+    start: datetime | None
+    end: datetime | None
+    candle_count: int
+    tick_count: int
+    series_count: int
+    instrument_count: int
+    broker_removed: bool
+    test_run_broker_reset: bool
+    test_run_broker: BrokerForTestRuns
+
+
+class DeletionRefused(ApiModel):
+    """Error body (HTTP 404) of a deletion that is refused because the broker, the instrument,
+    the series or the period is unknown. Nothing was changed. ``code`` tells which; ``message``
+    is a fixed text."""
+
+    detail: str
+    code: DeletionErrorCode
+    message: str
+
+
+class DeletionBlocked(ApiModel):
+    """Error body (HTTP 409) of a deletion that is refused because something is going on that
+    needs the data. ``reason`` is ``import_running`` while an import process exists. Nothing was
+    changed. Later versions add reasons (a running backtest, a step-by-step session)."""
+
+    detail: str
+    reason: Literal["import_running"]
 
 
 # --- completeness -----------------------------------------------------------------------------

@@ -84,106 +84,148 @@ SERIES_DETAILS_WITHOUT_CONTRACT = {**SERIES_DETAILS, "gaps": [], "contract": Non
 
 BROKERS = {"items": ["ExampleBroker-Live", "Other-Server 2"]}
 
-IMPORT_OUTCOME = {
-    "files": [
-        {
-            "name": "EURUSD_M1_202401021000_202401021004.json",
-            "refused": False,
-            "result": {
-                "kind": "candles",
-                "broker": "ExampleBroker-Live",
-                "instrument": "EURUSD",
-                "unit": "m1",
-                "accepted": 4,
-                "replaced": 0,
-                "period_start": "2024-01-02T10:00:00Z",
-                "period_end": "2024-01-02T10:04:00Z",
-                "rejected": [{"row": 3, "reason": "high_below_open"}],
-                "rejected_count": 1,
-            },
-            "error": None,
-            "message": None,
-        },
-        {
-            "name": "EURUSD,TICKS.csv",
-            "refused": False,
-            "result": {
-                "kind": "ticks",
-                "broker": "ExampleBroker-Live",
-                "instrument": "EURUSD",
-                "unit": None,
-                "accepted": 2,
-                "replaced": 0,
-                "period_start": "2024-01-02T08:00:00.250000Z",
-                "period_end": "2024-01-02T08:00:01.500000Z",
-                "rejected": [],
-                "rejected_count": 0,
-            },
-            "error": None,
-            "message": None,
-        },
-        {
-            "name": "broken.json",
-            "refused": True,
-            "result": None,
-            "error": "json_invalid",
-            "message": "The file is not valid JSON.",
-        },
-    ],
-    "imported_count": 2,
+IMPORT_PROCESS = {"id": "8b0b7a9e-5f0e-4c43-9a46-5d3f2e1c7a10", "idle_timeout_seconds": 300}
+
+FILE_IMPORTED = {
+    "name": "EURUSD_M1_202401021000_202401021004.json",
+    "refused": False,
+    "result": {
+        "kind": "candles",
+        "broker": "ExampleBroker-Live",
+        "instrument": "EURUSD",
+        "unit": "m1",
+        "accepted": 4,
+        "replaced": 0,
+        "period_start": "2024-01-02T10:00:00Z",
+        "period_end": "2024-01-02T10:04:00Z",
+        "rejected": [{"row": 3, "reason": "high_below_open"}],
+        "rejected_count": 1,
+    },
+    "error": None,
+    "message": None,
+}
+FILE_REFUSED = {
+    "name": "broken.json",
+    "refused": True,
+    "result": None,
+    "error": "json_invalid",
+    "message": "The file is not valid JSON.",
+}
+FILE_TOO_LARGE = {
+    "detail": "The file is larger than the limit of 32 MiB per file.",
+    "code": "too_large",
+    "max_bytes": 33554432,
+}
+
+IMPORT_END = {
+    "id": "8b0b7a9e-5f0e-4c43-9a46-5d3f2e1c7a10",
+    "state": "finished",
+    "imported_count": 11,
     "refused_count": 1,
 }
+IMPORT_ABORT = {**IMPORT_END, "state": "aborted", "imported_count": 4, "refused_count": 0}
 
-IMPORT_REFUSED_TOO_MANY = {
-    "detail": "The import is refused as a whole.",
-    "code": "too_many_files",
-    "message": "The process has more than 100 files.",
-}
-IMPORT_REFUSED_NO_FILES = {
-    "detail": "The import is refused as a whole.",
-    "code": "no_files",
-    "message": "The process has no file.",
-}
-
-IMPORT_PREVIEW = {
-    "files": [
-        {
-            "name": "candles.json",
-            "format": "json",
-            "broker": "ExampleBroker-Live",
-            "instrument": "EURUSD",
-            "data": "m1",
-            "error": None,
-        },
-        {
-            "name": "GBPUSD_H1_202301020000_202312292300.csv",
-            "format": "csv",
-            "broker": None,
-            "instrument": "GBPUSD",
-            "data": "h1",
-            "error": None,
-        },
-        {
-            "name": "notes.csv",
-            "format": "csv",
-            "broker": None,
-            "instrument": None,
-            "data": None,
-            "error": None,
-        },
-    ],
+HINT_JSON = {
+    "name": "candles.json",
+    "format": "json",
     "broker": "ExampleBroker-Live",
+    "instrument": "EURUSD",
+    "data": "m1",
+    "error": None,
+}
+HINT_CSV = {
+    "name": "GBPUSD_H1_202301020000_202312292300.csv",
+    "format": "csv",
+    "broker": None,
+    "instrument": "GBPUSD",
+    "data": "h1",
+    "error": None,
+}
+HINT_UNKNOWN = {
+    "name": "notes.csv",
+    "format": "csv",
+    "broker": None,
+    "instrument": None,
+    "data": None,
+    "error": None,
 }
 
-#: The form of an import as the client sends it (the files are shown by their names).
+#: The form of the request of one file as the client sends it (the file is shown by its name).
 IMPORT_FORM = {
     FIELD_BROKER: "ExampleBroker-Live",
     FIELD_TIMEZONE: "Europe/Athens",
-    FIELD_FILE: ["candles.json", "GBPUSD_H1_202301020000_202312292300.csv"],
-    FIELD_INSTRUMENT: ["", "GBPUSD"],
-    FIELD_DATA: ["", "h1"],
+    FIELD_FILE: "GBPUSD_H1_202301020000_202312292300.csv",
+    FIELD_INSTRUMENT: "GBPUSD",
+    FIELD_DATA: "h1",
 }
-PREVIEW_FORM = {FIELD_FILE: ["candles.json", "GBPUSD_H1_202301020000_202312292300.csv"]}
+PREVIEW_FORM = {FIELD_FILE: "GBPUSD_H1_202301020000_202312292300.csv"}
+
+_TEST_RUN_BROKER = {"broker": "ExampleBroker-Live", "chosen": True}
+_NO_TEST_RUN_BROKER = {"broker": "Other-Server 2", "chosen": False}
+
+DELETION_SERIES_PREVIEW = {
+    "kind": "series",
+    "deleted": False,
+    "broker": "ExampleBroker-Live",
+    "instrument": "EURUSD",
+    "data": "m1",
+    "start": None,
+    "end": None,
+    "candle_count": 360,
+    "tick_count": 0,
+    "series_count": 1,
+    "instrument_count": 0,
+    "broker_removed": False,
+    "test_run_broker_reset": False,
+    "test_run_broker": _TEST_RUN_BROKER,
+}
+DELETION_SERIES = {**DELETION_SERIES_PREVIEW, "deleted": True}
+DELETION_PERIOD = {
+    **DELETION_SERIES_PREVIEW,
+    "kind": "period",
+    "deleted": True,
+    "start": "2024-01-02T11:00:00Z",
+    "end": "2024-01-02T12:00:00Z",
+    "candle_count": 60,
+    "series_count": 0,
+}
+DELETION_CONTRACT = {
+    **DELETION_SERIES_PREVIEW,
+    "kind": "contract",
+    "deleted": True,
+    "data": None,
+    "candle_count": 0,
+    "series_count": 0,
+    "instrument_count": 1,
+}
+DELETION_BROKER_PREVIEW = {
+    **DELETION_SERIES_PREVIEW,
+    "kind": "broker",
+    "instrument": None,
+    "data": None,
+    "candle_count": 1440,
+    "tick_count": 52000,
+    "series_count": 4,
+    "instrument_count": 2,
+    "broker_removed": True,
+    "test_run_broker_reset": True,
+    "test_run_broker": _TEST_RUN_BROKER,  # the current one: the preview changes nothing
+}
+DELETION_BROKER = {
+    **DELETION_BROKER_PREVIEW,
+    "deleted": True,
+    "test_run_broker": _NO_TEST_RUN_BROKER,  # none is chosen, the first broker applies
+}
+
+DELETION_REFUSED = {
+    "detail": "The data cannot be deleted: the broker, the data or the period is unknown.",
+    "code": "broker_unknown",
+    "message": "The broker does not occur in the data store.",
+}
+DELETION_BLOCKED = {
+    "detail": "Data cannot be deleted while an import process exists. End it first.",
+    "reason": "import_running",
+}
 
 
 #: FastAPI leaves every ``None`` out of the description (``exclude_none``), also in an example.

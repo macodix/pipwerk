@@ -13,6 +13,13 @@ import { fileURLToPath } from 'node:url';
 const backendProject = resolve(dirname(fileURLToPath(import.meta.url)), '../../backend');
 const STOP_TIMEOUT_MS = 10_000;
 
+/**
+ * The limit per file of the backend of the browser tests (`[marketdata] max_upload_bytes` of the
+ * startup configuration, 64 KiB instead of the default 32 MiB). The tests import files that are
+ * small but together far above it, and a file above it, without writing files of megabytes.
+ */
+export const E2E_MAX_UPLOAD_BYTES = 64 * 1024;
+
 function requiredPort(name: string): number {
   const value = Number(process.env[name]);
   if (!Number.isInteger(value) || value < 1 || value > 65535) {
@@ -102,10 +109,11 @@ export class Stack {
       return;
     }
     const configPath = join(this.dir, 'pipwerk-replay.ini');
-    writeFileSync(configPath, `[database]\nurl = sqlite:///${join(this.dir, 'replay.db')}\n`, {
-      encoding: 'utf-8',
-      mode: 0o600,
-    });
+    writeFileSync(
+      configPath,
+      `[database]\nurl = sqlite:///${join(this.dir, 'replay.db')}\n\n[marketdata]\nmax_upload_bytes = ${String(E2E_MAX_UPLOAD_BYTES)}\n`,
+      { encoding: 'utf-8', mode: 0o600 },
+    );
     this.backend = launch([
       'run', '--frozen', '--project', backendProject,
       'pipwerk-replay', '-c', configPath, '--host', '127.0.0.1', '--port', String(this.backendPort),

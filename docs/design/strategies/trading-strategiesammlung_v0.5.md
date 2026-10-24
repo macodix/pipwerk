@@ -807,6 +807,73 @@ Handelstag, Zeitfenster, Tages-Range, Range-Hoch, Range-Tief, eingefrorener Wert
 
 ---
 
+## 7.4 `str-09` – Intraday-Trendfolge mit Markttechnik
+
+### Herkunft
+
+Diese Strategie stammt aus einer Chat-Session vom 2026-10-24 (Claude Code) und ist im Projekt als `str-09-fachlich-intraday-trendfolge-markttechnik.md` dokumentiert. Sie kombiniert einen Top-Down-Ansatz mit markttechnischen Einstiegszonen und Candlestick-Triggern.
+
+### Grundidee
+
+Der Markt bildet im Intraday-Verlauf wiederkehrende Trendphasen mit messbaren Rückläufen. Die Strategie wartet an markttechnisch relevanten Zonen, bis eine Gegenbewegung abgeschlossen ist, und steigt erst nach Bestätigung durch ein Kerzenmuster ein. Gehandelt wird ausschließlich in Richtung des auf H4 und H1 bestimmten übergeordneten Trends.
+
+Die Einstiegszonen sind hierarchisch nach Priorität geordnet: S/R-Flip (sehr hoch), Swing-Low-Retest (sehr hoch), Trendlinien-Retest (hoch), Opening-Range-Grenze (hoch), gleitender Durchschnitt als Zusatzfilter (mittel). Eine Zone gilt als verbraucht, wenn sie mehr als zweimal getestet wurde.
+
+### Top-Down-Analyse
+
+| Zeiteinheit | Rolle |
+|---|---|
+| H4 | Marktkontext und Trendrichtung |
+| H1 | Trendbestätigung, Zonen markieren |
+| M15 | Einstiegszone und Trigger |
+| M5 | Trigger-Feintuning |
+
+### Einstiegssignal (Trigger)
+
+Kein Einstieg ohne einen der folgenden Trigger auf M5 oder M15:
+- Bullische Engulfing-Kerze an der Zone
+- Pin Bar (Hammer) mit langem unterem Docht an Support
+- Bruch des letzten kurzfristigen Swing-Highs nach Pullback (M5-Strukturbruch)
+- Klares bullisches Kerzenschluss über das S/R-Niveau
+
+### Trade-Management
+
+- Entry: Schluss der Trigger-Kerze
+- Stop-Loss: knapp unterhalb der Zone (min. 10–15 Punkte DAX / 10–15 Pips Forex)
+- TP1 (50 %): nächste markttechnische Zone; danach Stop auf Break-Even
+- TP2 (50 %): übernächste Zone oder Trailing-Stop
+- Mindest-R/R: 1:2
+
+### Risiko- und Filterregeln
+
+- Risiko je Trade: 1 % des Kontostands
+- Tages-Verlustlimit: 3 %
+- Maximale Trades/Tag: 3
+- Kein Trade in den ersten 30 Minuten nach Marktöffnung
+- Kein Trade innerhalb von 60 Minuten vor einem Nachrichtenereignis
+- Handelszeit: 09:30–17:30 Uhr MEZ
+
+### Für den Designer interessant
+
+Die Strategie erzwingt eine explizite Top-Down-Hierarchie: Eine Einstiegszone auf M15 ist nur gültig, wenn H1 und H4 dieselbe Richtung zeigen. Einstiegszonen besitzen eine Priorität und einen Verbrauchszustand. Ein Trigger ist eine Kerzenmusterklassifikation, die zusammen mit der Zonenbedingung das Setup bildet. Trade-Management enthält einen zustandsabhängigen Übergang: nach TP1-Erreichen ändert sich der Stop auf Break-Even.
+
+### Begriffskandidaten
+
+Intraday, Top-Down-Analyse, Zeiteinheitshierarchie, H4, H1, M15, M5, Trendrichtung, Higher High, Higher Low, Lower High, Lower Low, S/R-Flip, Swing-Low, Trendlinien-Retest, Opening Range, Einstiegszone, Priorität, Zonentest, Zonenverbrauch, Trigger, Engulfing, Pin Bar, Hammer, Strukturbruch, Break-Even, TP1, TP2, Teilausstieg, Trailing-Stop, Handelszeit, News-Sperrfrist, Tages-Verlustlimit.
+
+### Offene fachliche Fragen
+
+1. Gilt die Handelszeit-Regel (17:30 Uhr MEZ) auch für Forex-Paare ohne festes Börsenschluss?
+2. Wie wird nach teilweiser TP1-Ausführung verfahren, wenn der Markt sofort dreht, ohne TP2 zu erreichen?
+3. Ist der Trailing-Stop für TP2 als prozentualer Abstand oder als strukturbasierter Trailing (nächstes Swing-Low) definiert?
+
+### Quellen
+
+- Projekt-Testfall: `str-09-fachlich-intraday-trendfolge-markttechnik.md` (Chat-Session 2026-10-24, Claude Code).
+- Verwandte Einträge in dieser Sammlung: 7.1 Opening Range Breakout (Opening-Range-Grenze als Einstiegszone), 14.1–14.5 Markttechnik/Price Action (Swing-Punkte, Candlestick-Trigger).
+
+---
+
 ---
 
 # 8. Indikator- und Zustandsstrategien
