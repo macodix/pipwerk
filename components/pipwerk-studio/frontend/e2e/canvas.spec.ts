@@ -201,7 +201,19 @@ test('the lines of values can be shown for all, for the selection only, or not a
 
   const wires = page.getByTestId('wire');
   await expect(wires.first()).toBeAttached();
-  const all = await wires.count();
+  // the lines appear while the view is fitted: take the number only when it no longer changes
+  let all = -1;
+  await expect
+    .poll(
+      async () => {
+        const before = all;
+        all = await wires.count();
+        await page.waitForTimeout(400);
+        return all === before && all === (await wires.count());
+      },
+      { intervals: [100] },
+    )
+    .toBe(true);
   await page.getByTestId('wires-off').click();
   await expect(wires).toHaveCount(0);
   await page.getByTestId('wires-selection').click();
