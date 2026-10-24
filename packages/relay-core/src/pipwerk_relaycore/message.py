@@ -52,8 +52,30 @@ class Attachment(_Strict):
         return cls(name=name, size=len(content), sha256=hashlib.sha256(content).hexdigest())
 
 
+NOTICE_KINDS = ("relay.receipt", "relay.undeliverable")
+"""Kinds that never ask for a receipt (specification 3.7, "Ausnahmen")."""
+
+
 class Message(_Strict):
-    """A message with the fields of req-grund-004."""
+    """A message with the fields of req-grund-004.
+
+    A message of the kind ``relay.receipt`` or ``relay.undeliverable`` with ``receipt`` set is
+    invalid (specification 3.7): otherwise receipts of receipts would arise.
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {"kind": {"enum": list(NOTICE_KINDS)}},
+                        "required": ["kind"],
+                    },
+                    "then": {"properties": {"receipt": {"const": False}}},
+                }
+            ]
+        }
+    )
 
     id: UUID
     sender: Annotated[str, Field(pattern=ADDRESS_REGEX), AfterValidator(_address)]
@@ -71,6 +93,12 @@ class Message(_Strict):
         names = [attachment.name for attachment in self.attachments]
         if len(set(names)) != len(names):
             raise ValueError("the names of the attachments must differ")
+        return self
+
+    @model_validator(mode="after")
+    def _a_notice_asks_for_no_receipt(self) -> Self:
+        if self.receipt and self.kind in NOTICE_KINDS:
+            raise ValueError("a message of this kind asks for no receipt")
         return self
 
     @classmethod

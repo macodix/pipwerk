@@ -1,0 +1,6 @@
+{
+  "reason": "relay_unreachable",
+  "text": "The next relay could not be reached in time.",
+  "recipient": "app-b.net2.relay3",
+  "kind": "fetch.request"
+}

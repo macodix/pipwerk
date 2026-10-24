@@ -1,0 +1,6 @@
+{
+  "reason": "nobody_home",
+  "text": "Nobody is at home.",
+  "recipient": "app-b.net2.relay3",
+  "kind": "fetch.request"
+}

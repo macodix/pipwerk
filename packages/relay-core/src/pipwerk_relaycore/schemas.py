@@ -14,12 +14,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from pipwerk_relaycore.contents import CONTENT_MODELS
 from pipwerk_relaycore.envelope import Envelope, EnvelopeBody
 from pipwerk_relaycore.message import Message
 
 SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
-SCHEMA_NAMES = ("message", "envelope")
-"""The schemas by name; the file is ``<name>.schema.json``."""
+SCHEMA_NAMES = ("message", "envelope", *CONTENT_MODELS)
+"""The schemas by name; the file is ``<name>.schema.json``.
+
+Besides the message and the envelope there is one schema for the content of each kind of message
+that the library knows (``relay.receipt``, ``relay.undeliverable``, ``probe.message``)."""
 
 
 def schema_file_name(name: str) -> str:
@@ -42,6 +46,8 @@ def generate_schema(name: str) -> dict[str, Any]:
         definitions["Body"] = body
         schema["$defs"] = definitions
         return {"$schema": SCHEMA_DIALECT, **schema}
+    if name in CONTENT_MODELS:
+        return {"$schema": SCHEMA_DIALECT, **CONTENT_MODELS[name].model_json_schema()}
     raise KeyError(name)
 
 

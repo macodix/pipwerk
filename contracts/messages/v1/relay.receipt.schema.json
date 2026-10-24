@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Content of ``relay.receipt``: empty. The reference of the message names the confirmed one.",
+  "properties": {},
+  "title": "ReceiptContent",
+  "type": "object"
+}

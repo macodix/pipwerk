@@ -60,7 +60,31 @@
     "JsonValue": {},
     "Message": {
       "additionalProperties": false,
-      "description": "A message with the fields of req-grund-004.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "relay.receipt",
+                  "relay.undeliverable"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "receipt": {
+                "const": false
+              }
+            }
+          }
+        }
+      ],
+      "description": "A message with the fields of req-grund-004.\n\nA message of the kind ``relay.receipt`` or ``relay.undeliverable`` with ``receipt`` set is\ninvalid (specification 3.7): otherwise receipts of receipts would arise.",
       "properties": {
         "id": {
           "format": "uuid",

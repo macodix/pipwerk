@@ -1,0 +1,14 @@
+{
+  "id": "e2c97b15-6d48-4a3f-9b01-8c5d2f7a6e55",
+  "sender": "probe.net1.relay1",
+  "recipient": "probe.net1.relay2",
+  "priority": "normal",
+  "kind": "probe.message",
+  "content": {
+    "text": "hello from the probe"
+  },
+  "reference_id": null,
+  "created_at": "2026-10-24T12:00:00Z",
+  "attachments": [],
+  "receipt": true
+}
