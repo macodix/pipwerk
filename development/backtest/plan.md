@@ -6,7 +6,7 @@
 - stand: 2026-10-24
 - komponenten: `packages/domain-core`, `packages/market-data` (neu), `packages/ui-components`, `components/pipwerk-replay` (neu, bisher `components/pipwerk-backtest`), `components/pipwerk-fetch-mt5` (neu), `components/pipwerk-studio`, `contracts/`
 - grundlage: [specification.md](specification.md), bestätigt vom Auftraggeber im Chat am 2026-10-21 ([Präsentation](presentations/specification-1.html))
-- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung Beginn von `wp01`: Durchlauf 3 [plan-3.md](reviews/plan-3.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung nach der Abnahme von `wp02`: Durchlauf 4 [plan-4.md](reviews/plan-4.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung nach der Abnahme von `wp02`, Versuch 2: Durchlauf 5 [plan-5.md](reviews/plan-5.md) bestanden, Hinweise eingearbeitet; Kriterium 9 nach B1 aus `specification-4.md` nachgeprüft in [specification-5.md](reviews/specification-5.md), bestanden, Hinweise eingearbeitet
+- prüfung: Durchlauf 1 [plan-1.md](reviews/plan-1.md) nicht bestanden (B1), eingearbeitet; Durchlauf 2 [plan-2.md](reviews/plan-2.md), Nachprüfung, bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung Beginn von `wp01`: Durchlauf 3 [plan-3.md](reviews/plan-3.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung nach der Abnahme von `wp02`: Durchlauf 4 [plan-4.md](reviews/plan-4.md) bestanden, Hinweise ohne weitere Prüfung eingearbeitet; Änderung nach der Abnahme von `wp02`, Versuch 2: Durchlauf 5 [plan-5.md](reviews/plan-5.md) bestanden, Hinweise eingearbeitet; Kriterium 9 nach B1 aus `specification-4.md` nachgeprüft in [specification-5.md](reviews/specification-5.md), bestanden, Hinweise eingearbeitet; Änderung nach req-system-028: geprüft zusammen mit der Spezifikation in [specification-6.md](reviews/specification-6.md), bestanden; Änderung nach req-test-009: [specification-7.md](reviews/specification-7.md)
 
 ## Übersicht
 
@@ -93,7 +93,8 @@ pipwerk replay läuft als eigene Komponente. Der Anwender holt Kursdaten mit `pi
 - Web-API (Abschnitt 7) für Datenbestand, Testkonten und Einstellungen, darunter der Broker für Testläufe (5.1).
 - Oberfläche nach dem bestätigten Prototyp (8.1, 8.2): Kopfzeile mit Menü, „Über pipwerk replay“, Sprachwahl, Fußzeile mit Stand und Erreichbarkeit des Backends; Ansichten „Datenbestand“ mit Dialog „Datei importieren“ und „Testkonten“ (8.3); Fenstergrößen nach 8.4 Punkt 1 für diese Ansichten.
 - Sicherheit nach Abschnitt 11 für Import und `pipwerk-fetch-mt5`.
-- Speicherplatz nach 5.6 (req-system-028): Import ohne zurückbleibende Dateien, „Dateien behalten“ mit Ablageverzeichnis in der Startkonfiguration, Platz der Datenbank nach Löschen und Ersetzen zurückgeben, Zwischendateien von `pipwerk-fetch-mt5`.
+- Einstellungsbereich nach 5.7 (req-test-009): Menüpunkt „Einstellungen“ mit „Importierte Dateien behalten“ und „Ablageverzeichnis“.
+- Speicherplatz nach 5.6 (req-system-028): Import ohne zurückbleibende Dateien, „Dateien behalten“ mit Ablageverzeichnis, Platz der Datenbank nach Löschen und Ersetzen zurückgeben, Zwischendateien von `pipwerk-fetch-mt5`.
 - Tests nach Abschnitt 10, Punkte Datenbestand, Speicherplatz und Abruf; Backend, Oberfläche und Browsertests für dieses Paket.
 - Dokumentation (Abschnitt 12): `docs/technical/pipwerk-replay.md` für dieses Paket, `docs/technical/pipwerk-marketdata.md`, `docs/technical/pipwerk-fetch-mt5.md` nach M2, Beschreibungen unter `contracts/`; `docs/user/pipwerk-replay.md` zu Testkonten, Datenbestand, Import beliebig vieler Dateien, Lücken, Löschen, Einrichtung von `uv` nach M1, Einrichtung und Aufruf von `pipwerk-fetch-mt5` und Import seiner Dateien; Glossar: Testkonto, Datenbestand historischer Kursdaten, Abruf, Quelle.
 
@@ -105,7 +106,7 @@ pipwerk replay läuft als eigene Komponente. Der Anwender holt Kursdaten mit `pi
 
 ### Umgesetzte Teile der Spezifikation
 
-E3 bis E6 (E6 ohne Ergebnisse und gespeicherte Backtests), Abschnitt 5 (5.2 als Prüfung im Datenbestand, 5.4 ohne die Meldung beim Start eines Testlaufs, 5.5 ohne die Sperre während eines Testlaufs und ohne den Chart gespeicherter Backtests, 5.6 ohne den letzten Punkt), 6.2, Abschnitt 7 für die genannten Teile, 8.1 und 8.2 erster Punkt, 8.3 Kopfzeile ohne Betriebsart, Ansichten „Datenbestand“ und „Testkonten“, 8.4 Punkt 1 und Bedienerführung für diese Ansichten, Abschnitt 10 Punkte Datenbestand und Abruf, Abschnitt 11 für diese Teile, Abschnitt 12 wie im Umfang.
+E3 bis E6 (E6 ohne Ergebnisse und gespeicherte Backtests), Abschnitt 5 (5.2 als Prüfung im Datenbestand, 5.4 ohne die Meldung beim Start eines Testlaufs, 5.5 ohne die Sperre während eines Testlaufs und ohne den Chart gespeicherter Backtests, 5.6 ohne den letzten Punkt, 5.7), 6.2, Abschnitt 7 für die genannten Teile, 8.1 und 8.2 erster Punkt, 8.3 Kopfzeile ohne Betriebsart, Ansichten „Datenbestand“ und „Testkonten“, 8.4 Punkt 1 und Bedienerführung für diese Ansichten, Abschnitt 10 Punkte Datenbestand und Abruf, Abschnitt 11 für diese Teile, Abschnitt 12 wie im Umfang.
 
 ### Abhängigkeiten
 
@@ -126,7 +127,8 @@ Der Auftraggeber kann in der Testumgebung selbst prüfen:
 9. Weihnachten und Silvester/Neujahr erscheinen nicht als Lücken, weder innerhalb einer importierten CSV-Datei noch zwischen zwei Dateien, von denen eine am 24. Dezember endet und die andere am 26. Dezember beginnt, ebenso 31. Dezember und 2. Januar. Ein früher Handelsschluss am letzten Tag einer Datei ist keine Lücke. Ein nicht importierter Handelstag zwischen zwei Dateien erscheint als Lücke (M6).
 10. `docs/technical/pipwerk-fetch-mt5.md` nennt vollständig, was auf dem Rechner von MetaTrader 5 installiert wird und läuft, nach Spezifikation Abschnitt 12 (M2).
 11. Bricht er `pipwerk-fetch-mt5` während des Schreibens mit Strg+C ab, liegen im Zielverzeichnis danach nur vollständige Dateien und keine Zwischendateien (req-system-028).
-12. Im Dialog „Datei importieren“ ist „Dateien behalten“ nicht angekreuzt; die Erklärung beim Zeigen nennt das Ablageverzeichnis. Kreuzt er es an, liegen die übertragenen Dateien danach unverändert im Ablageverzeichnis; ohne Kreuz liegt dort keine Datei des Vorgangs. Die Anwenderdokumentation sagt, dass er behaltene Dateien selbst pflegt (req-system-028).
+12. Im Dialog „Datei importieren“ ist „Dateien behalten“ so vorbelegt wie „Importierte Dateien behalten“ in den Einstellungen, anfangs nicht angekreuzt; die Erklärung beim Zeigen nennt das Ablageverzeichnis. Kreuzt er es an, liegen die übertragenen Dateien danach unverändert im Ablageverzeichnis; ohne Kreuz liegt dort keine Datei des Vorgangs. Die Anwenderdokumentation sagt, dass er behaltene Dateien selbst pflegt (req-system-028).
+13. Unter „Einstellungen“ ändert er „Importierte Dateien behalten“ und das Ablageverzeichnis und speichert. Der nächste Import ist danach so vorbelegt und behält die Dateien im neuen Verzeichnis. Ein relativer Pfad wird mit Grund abgelehnt (req-test-009).
 
 Technische Nachweise im Prüfbericht der QA: Das Prüfskript endet mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 10 für Datenbestand, Speicherplatz und Abruf und die Browsertests. Positive Testberichte beider Tester liegen vor.
 
@@ -241,6 +243,7 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 5.1 bis 5.4 | `wp02`; Broker in der Vorbereitung eines Testlaufs (5.1) und Prüfung und Meldung beim Start eines Testlaufs (5.4, letzter Absatz) `wp03` |
 | 5.5 | `wp02`; Sperre während eines Backtests und Chart gespeicherter Backtests `wp03`, Sperre während einer Einzelschritt-Sitzung `wp04` |
 | 5.6 | `wp02`; letzter Punkt (Version 2 des Dateiformats) im Paket für große Dateien („Offen“) |
+| 5.7 | `wp02` |
 | 6.1, 6.4 | `wp03` |
 | 6.2 | `wp02` |
 | 6.3 | `wp04` |
@@ -285,4 +288,5 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von pipwerk replay
 | 2026-10-23 | Nach der Abnahme von `wp02`, Versuch 2 (Mängel M1, M2, M3, M5, M6), und der geänderten Spezifikation (5.1 bis 5.3, 5.5, 10 bis 13): `wp02` Ziel, Umfang, Nicht-Umfang, umgesetzte Teile, Abnahmekriterium 6 und neue Kriterien 7 bis 10; `wp03` und `wp04` Sperre des Löschens (Umfang, umgesetzte Teile, `wp03` Kriterium 7); Abdeckung 5.5 und 13; Abschnitt „Offen“ mit M4, vom Auftraggeber zurückgestellt. Prüfung bestanden in [plan-5.md](reviews/plan-5.md). |
 | 2026-10-23 | Hinweise aus [plan-5.md](reviews/plan-5.md) (bestanden) eingearbeitet: H1 `wp02` Kriterium 9 auch zwischen zwei Dateien, nach B1 aus `specification-4.md`; H2 Kriterium 8 gelöschter Zeitraum mit Handelszeit; H3 Kriterium 7 Grenze je Datei in der Anwenderdokumentation. |
 | 2026-10-23 | Hinweise aus [specification-5.md](reviews/specification-5.md) (Nachprüfung bestanden, auch Kriterium 9) ohne weitere Prüfung eingearbeitet: H1 Randtage in Kriterium 9; H3 Tage ohne Handel im Umfang von `wp02`, früher Handelsschluss in Kriterium 9. Den Schlüssel in der Startkonfiguration legt der Auftrag fest. |
-| 2026-10-24 | Nach req-system-028 mit Ergänzung vom selben Tag und Spezifikation 5.6: `wp02` Umfang (Speicherplatz mit „Dateien behalten“, Tests), Nicht-Umfang (Version 2 des Dateiformats), umgesetzte Teile, neue Kriterien 11 und 12, technische Nachweise; Abdeckung 5.6; „Offen“ mit Version 2 des Dateiformats und der geänderten Probeumsetzung `prototype/order-04.md`. Prüfung zusammen mit der Spezifikation in [specification-6.md](reviews/specification-6.md). |
+| 2026-10-24 | Nach req-system-028 mit Ergänzung vom selben Tag und Spezifikation 5.6: `wp02` Umfang (Speicherplatz mit „Dateien behalten“, Tests), Nicht-Umfang (Version 2 des Dateiformats), umgesetzte Teile, neue Kriterien 11 und 12, technische Nachweise; Abdeckung 5.6; „Offen“ mit Version 2 des Dateiformats und der geänderten Probeumsetzung `prototype/order-04.md`. Prüfung zusammen mit der Spezifikation in [specification-6.md](reviews/specification-6.md), bestanden. |
+| 2026-10-24 | Nach req-test-009 und Spezifikation 5.7: `wp02` Umfang (Einstellungsbereich), umgesetzte Teile, Kriterium 12 (Vorbelegung) und neues Kriterium 13; Abdeckung 5.7. Prüfung zusammen mit der Spezifikation in [specification-7.md](reviews/specification-7.md). |
