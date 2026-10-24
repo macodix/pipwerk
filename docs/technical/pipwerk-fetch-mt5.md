@@ -245,7 +245,7 @@ uv run --frozen mypy
 
 Das Prüfskript führt diese Prüfungen zusammen aus (Abschnitt „Prüfskript“ unten). Ein Test gegen ein echtes MetaTrader 5 gibt es nicht; ihn macht der Auftraggeber in der Abnahme.
 
-Die Tests (pytest, 1582 Fälle, davon 1542 bestanden; 40 überspringen sich selbst, Lord Howe mit H1 in der Tabelle der Einheiten, abgedeckt durch einen eigenen Test). Das Paket `MetaTrader5` ist in allen Tests eine Nachbildung (`tests/support.py`):
+Die Tests (pytest, 1593 Fälle, davon 1553 bestanden; 40 überspringen sich selbst, Lord Howe mit H1 in der Tabelle der Einheiten, abgedeckt durch einen eigenen Test). Das Paket `MetaTrader5` ist in allen Tests eine Nachbildung (`tests/support.py`):
 
 | Datei | Inhalt |
 | --- | --- |
