@@ -91,14 +91,18 @@ Die Bibliothek zeigt, was Sie in die Strategie einfügen können, in Gruppen:
 
 | Gruppe | Inhalt |
 | --- | --- |
-| Wann wird gerechnet | Auslöser, zum Beispiel „Kerzenschluss“ und „Tick“ |
-| Bedingungen und Aktionen | Schritte des Ablaufs, zum Beispiel „Bedingung“, „Berechnung“, „Order aufgeben“, „Position ändern“ |
-| Markt und Konto | Objekte der Anwendung: Konto, Instrument, Kerze, Tick |
-| Indikatoren | mitgelieferte und eigene Indikatoren, zum Beispiel „EMA“ und „ATR“, und „eigener Indikator“ |
+| Ablaufsteuerung | „Kerzenschluss“, „Tick“, „Manuell“, „Bedingung“ und „Verbindung“ |
+| Berechnung | „Berechnung“ |
+| Indikatoren | „EMA“, „ATR“, „ZigZag“ und „eigener Indikator“ |
 | Trends | „eigener Trend“ |
-| Regeln | Regeln und Regelwerke, zum Beispiel „Risiko je Trade“, und „eigene Regel“ |
+| Marktdaten | Instrument, Kerze und Tick |
+| Konto | Konto |
+| Aktionen | „Order aufgeben“, „Order ändern“, „Order löschen“, „Position ändern“, „Position schließen“ |
+| Regeln und Regelwerke | „Risiko je Trade“, „eigene Regel“ und „eigenes Regelwerk“ |
 
-Eine gespeicherte Vorlage trägt die Marke „eigene“. Das Suchfeld oben filtert die Einträge nach Namen und Erklärung. Zeigen Sie mit dem Mauszeiger auf einen Eintrag oder wählen Sie ihn mit der Tabulatortaste, erscheint seine Erklärung.
+„Tick“ steht zweimal: als Auslöser in der Ablaufsteuerung und als Objekt bei den Marktdaten. Eine Gruppe ohne Eintrag zeigt die Bibliothek nicht. „Verbindung“ legt kein Element an. Sie verbinden damit zwei Schritte ohne Ziehen: Wählen Sie den Schritt, von dem es weitergeht, dann „Verbindung“ und dann den nächsten Schritt. Die Aufforderung dazu steht in der Eigenschaftenansicht, mit „Abbrechen“.
+
+Eine gespeicherte Vorlage steht in der Gruppe ihres Objekttyps und trägt die Marke „eigene“. Das Suchfeld oben filtert die Einträge nach Namen und Erklärung. Zeigen Sie mit dem Mauszeiger auf einen Eintrag oder wählen Sie ihn mit der Tabulatortaste, erscheint seine Erklärung.
 
 Ein Klick auf einen Eintrag fügt das Element hinter dem gewählten Schritt ein und verbindet es mit dessen nächstem freien Ausgang. Ist nichts gewählt, liegt es frei auf der Zeichenfläche. Ist der Rahmen einer Verwaltung gewählt, gehört das Element zu dieser Verwaltung. Sie können einen Eintrag auch auf die Zeichenfläche, auf einen Schritt (dahinter) oder in einen Rahmen (in diese Verwaltung) ziehen. Eine Regel oder ein Regelwerk wird der Strategie zugeordnet, oder dem gewählten Element, wenn dieses Regeln zulässt (Abschnitt 6.6).
 
@@ -119,6 +123,8 @@ Ein rot umrandeter Schritt hat einen Fehler, ein orange umrandeter einen Hinweis
 ### 3.5 Eigenschaftenansicht
 
 Die Eigenschaftenansicht zeigt, was Sie auf der Zeichenfläche gewählt haben. Ein Klick auf eine freie Stelle der Zeichenfläche oder auf den Namen der Strategie zeigt die Strategie.
+
+**Hinweise und Meldungen stehen nur hier**, nie auf der Zeichenfläche. Ohne geöffnete Strategie steht hier „Keine Strategie geöffnet“ mit dem nächsten Schritt. Bei einer leeren Strategie steht oberhalb der Felder der Strategie ein Hinweis mit „Assistent starten“ (in einem schmalen Fenster auch mit „Elementbibliothek zeigen“). Ist der Rahmen einer Verwaltung ohne Schritte gewählt, steht der Hinweis dazu in der Ansicht des Rahmens. Kurze Meldungen („Das Element gehört jetzt zur Verwaltung dieser Order.“) stehen oben in dieser Ansicht und verschwinden nach einigen Sekunden. In einem Fenster unter 1100 Pixel Breite kann die Eigenschaftenansicht verdeckt sein, weil die Bibliothek oder die Zeichenfläche zu sehen ist. Wartet dann eine Meldung, ist der Reiter „Eigenschaften“ (unter 700 Pixel die Schaltfläche in der Leiste) markiert. Fenster wie „Öffnen“, „Einstellungen“, „Über pipwerk Studio“, die Rückfragen und Fehlermeldungen, die Sie bestätigen müssen, erscheinen über der Oberfläche und sperren sie, bis Sie antworten.
 
 - **Strategie:** Name, Beschreibung, „Regeln der Strategie“, die Befunde der Prüfung mit „Prüfen“.
 - **Schritt:** Name, die Einstellungen des Schritts (Abschnitt 6.4), bei „Order aufgeben“ die „Eigenschaften der Order“, „Liefert“ (was der Schritt für andere bereitstellt, zum Beispiel das Ergebnis einer Berechnung), „Eingänge“ (Werte von Objekten, die mit dem Schritt verbunden sind), „Regeln dieses Elements“, „Abschnitt“, „Gehört zu“ (Hauptablauf oder Verwaltung einer Order) und „Entfernen“.
@@ -255,12 +261,12 @@ Dieser Abschnitt beschreibt die Arbeitsabläufe der Reihe nach. Die Einstellunge
 
 ### 6.1 Eine Strategie anlegen
 
-„Neue Strategie“ in der Kopfzeile legt eine leere Strategie an. Hat die geöffnete Strategie ungespeicherte Änderungen, fragt pipwerk Studio vorher (Abschnitt 6.9). Danach zeigt die Eigenschaftenansicht den geführten Aufbau (Abschnitt 9). Wählen Sie „Ohne Assistent weiterarbeiten“, bleibt die Zeichenfläche leer; sie sagt, was der nächste Schritt ist: ein Auslöser aus der Gruppe „Wann wird gerechnet“ der Elementbibliothek. Den Namen der Strategie und ihre Beschreibung tragen Sie in der Eigenschaftenansicht der Strategie ein (Klick auf den Namen im Streifen der Strategieparameter). Eine neue Strategie heißt „Neue Strategie“, mit angehängter Zahl, wenn der Name schon vergeben ist. Gespeichert wird erst mit „Speichern“.
+„Neue Strategie“ in der Kopfzeile legt eine leere Strategie an. Hat die geöffnete Strategie ungespeicherte Änderungen, fragt pipwerk Studio vorher (Abschnitt 6.9). Danach zeigt die Eigenschaftenansicht den Assistenten, den geführten Aufbau (Abschnitt 9). Wählen Sie „Ohne Assistent weiterarbeiten“, bleibt die Zeichenfläche leer. Der nächste Schritt steht in der Eigenschaftenansicht der Strategie: ein Auslöser aus der Gruppe „Ablaufsteuerung“ der Elementbibliothek. Dort startet „Assistent starten“ den Assistenten von vorn. Den Namen der Strategie und ihre Beschreibung tragen Sie in der Eigenschaftenansicht der Strategie ein (Klick auf den Namen im Streifen der Strategieparameter). Eine neue Strategie heißt „Neue Strategie“, mit angehängter Zahl, wenn der Name schon vergeben ist. Gespeichert wird erst mit „Speichern“.
 
 ### 6.2 Elemente einfügen und verbinden
 
 1. Klicken Sie in der Elementbibliothek einen Eintrag an. Er wird hinter dem gewählten Schritt eingefügt und mit dessen nächstem freien Ausgang verbunden. Die Eigenschaftenansicht zeigt das neue Element, und Sie können es gleich benennen. Jedes Element bekommt einen Namen, zum Beispiel „Bedingung“, bei einem Namen, den es schon gibt, mit Zahl: „Bedingung 2“.
-2. Ein Schritt hat Ausgänge. Eine Bedingung hat „wahr“ und „falsch“; die ersten freien Ausgänge füllt das Einfügen der Reihe nach. Wollen Sie einen anderen Ausgang verbinden, klicken Sie den Ausgang an (ein Hinweis fordert Sie auf, den nächsten Schritt anzuklicken) und dann den Schritt, der folgen soll. Oder ziehen Sie vom Ausgang auf den Schritt.
+2. Ein Schritt hat Ausgänge. Eine Bedingung hat „wahr“ und „falsch“; die ersten freien Ausgänge füllt das Einfügen der Reihe nach. Wollen Sie einen anderen Ausgang verbinden, klicken Sie den Ausgang an (eine Meldung in der Eigenschaftenansicht fordert Sie auf, den nächsten Schritt zu wählen) und dann den Schritt, der folgen soll. Oder wählen Sie den Schritt, dann in der Elementbibliothek „Verbindung“ und dann den nächsten Schritt. Oder ziehen Sie vom Ausgang auf den Schritt.
 3. Ein Ausgang hat höchstens eine Verbindung. Verbinden Sie ihn neu, ersetzt die neue die alte. Eine Verbindung löschen Sie, indem Sie die Linie anklicken und dann das Kreuz an der Linie.
 4. Nicht erlaubt ist: ein Auslöser als Ziel (er hat keinen Eingang), ein Schritt mit sich selbst, ein Objekt im Ablauf und eine Verbindung zwischen dem Hauptablauf und der Verwaltung einer Order. pipwerk Studio sagt es mit einer kurzen Meldung.
 
@@ -483,7 +489,7 @@ Die Tabelle nennt die Texte, wie sie in der Oberfläche erscheinen. Drei Punkte 
 | --- | --- | --- | --- |
 | `trigger.unconnected` | Fehler | Der Auslöser ist mit keinem Element des Ablaufs verbunden. | Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn. |
 | `flow.not_reached` | Fehler | Kein Auslöser erreicht dieses Element des Ablaufs. | Verbinden Sie einen vorherigen Schritt oder einen Auslöser mit diesem Schritt oder entfernen Sie ihn. |
-| `flow.main_without_trigger` | Hinweis | Der Hauptablauf hat keinen Auslöser; die Strategie startet nie. | Legen Sie einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt. Eine neue, leere Strategie hat nur diesen Hinweis. |
+| `flow.main_without_trigger` | Hinweis | Hauptablauf ohne Auslöser: Die Strategie startet nie, auch wenn eine Verwaltung eigene Auslöser hat. | Legen Sie einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt. Eine neue, leere Strategie hat nur diesen Hinweis. |
 | `flow.unending_loop` | Fehler | Rückführung ohne Bedingung, die sie beendet (an … Elementen). | Legen Sie in die Rückführung eine Bedingung, von der ein Ausgang aus der Rückführung hinausführt. |
 | `flow.management_only` | Fehler | „…“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf. | Verschieben Sie den Schritt in die Verwaltung einer Order oder entfernen Sie ihn. |
 | `flow.no_order_reachable` | Hinweis | Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt. | Verbinden Sie den Ablauf mit einem Schritt, der eine Order aufgibt. Soll die Strategie keine Order aufgeben, lassen Sie den Hinweis stehen. |
@@ -494,9 +500,13 @@ Die Tabelle nennt die Texte, wie sie in der Oberfläche erscheinen. Drei Punkte 
 | `expression.empty` | Fehler | Der Ausdruck in … fehlt oder ist unvollständig. | Geben Sie den Ausdruck vollständig an: Füllen Sie jeden leeren Platz „Wert wählen …“. |
 | `expression.invalid` | Fehler | Der Ausdruck in … ist fehlerhaft: … | Korrigieren Sie den Ausdruck (Probleme siehe unten). Ein Klick auf „Zur Stelle“ führt zur Stelle im Ausdruck. |
 | `expression.order_outside_management` | Fehler | Der Ausdruck in … verwendet Order oder Position außerhalb einer Verwaltung. | Verwenden Sie Order und Position nur in der Verwaltung einer Order, in einer Regel der Strategie und in einer Regel von „Order aufgeben“. |
-| `data.unknown` | Fehler | Die Datenverbindung ist ungültig: …. | Wählen Sie ein Objekt und eine Eigenschaft, die es gibt, oder löschen Sie die Verbindung. Gründe: das Objekt gibt es nicht, das Objekt hat diese Eigenschaft nicht. |
+| `data.unknown` | Fehler | Die Datenverbindung ist ungültig: …. | Wählen Sie ein Objekt und eine Eigenschaft, die es gibt, oder löschen Sie die Verbindung. Gründe: das Objekt gibt es nicht, das Objekt hat diese Eigenschaft nicht, das Objekt hat diese Methode nicht, die Angaben passen nicht zur Methode. |
 | `data.type_mismatch` | Fehler | Der Datentyp des verbundenen Werts passt nicht: erwartet …, gefunden …. | Verbinden Sie einen Wert vom passenden Datentyp. |
-| `input.unused` | Hinweis | Der Eingang „…“ wird nicht verwendet. | Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie den Eingang. |
+| `input.unused` | Hinweis | Der Wert „…“ von „…“ ist mit diesem Element verbunden, wird aber nicht verwendet. | Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie die Verbindung. |
+| `input.refresh_not_allowed` | Fehler | Der Wert „…“ von „…“ soll bei diesem Element aktualisiert werden. Ein Objekt dieser Art kann seine Werte aber nicht neu ermitteln. | Schalten Sie „Aktualisieren“ für diesen Wert aus. Brauchen Sie aktuelle Werte, legen Sie ein weiteres Objekt mit eigenem Namen an und verwenden Sie dieses. |
+| `instance.not_usable` | Fehler | „…“ darf an diesem Element nicht verwendet werden. Das Objekt wird bei „…“ ermittelt, und nicht jeder Weg hierher führt dort vorbei. | Legen Sie ein weiteres Objekt mit eigenem Namen an und verwenden Sie dieses an diesem Element, oder verwenden Sie das Objekt nur an Elementen, die hinter seinem ersten Element liegen. |
+| `instance.unconnected` | Fehler | „…“ ist mit keinem Element verbunden. Es wird nirgends verwendet. | Verbinden Sie das Objekt mit dem Element, das seine Werte zuerst braucht, oder entfernen Sie es. |
+| `trigger.manual_in_management` | Fehler | Der Auslöser „…“ startet von Hand und steht in der Verwaltung einer Order. Dort wird er nie ausgelöst. | Entfernen Sie den Auslöser aus der Verwaltung und legen Sie dort einen anderen Auslöser an, oder legen Sie ihn in den Hauptablauf. |
 | `rule.result_mismatch` | Fehler | Das Ergebnis der Regel passt nicht zur bestimmten Eigenschaft „…“: …. | Ändern Sie den Ausdruck der Regel oder wählen Sie eine andere bestimmte Eigenschaft. Der Ausdruck muss einen Wert vom Datentyp der bestimmten Eigenschaft ergeben (bei einer nur prüfenden Regel „wahr“ oder „falsch“). |
 | `rule.order_in_indicator` | Fehler | Die Regel spricht Order oder Position an. In einem Indikator oder Trend ist das nicht erlaubt. | Entfernen Sie die Regel aus dem Indikator oder Trend und ordnen Sie sie der Strategie oder einem Element zu. |
 | `rule.invalid_type` | Fehler | In dieser Liste von Regeln steht ein Objekt vom Typ „…“, das dort nicht stehen darf. | Entfernen Sie das Objekt aus dieser Liste. |
@@ -542,7 +552,7 @@ Bezeichnungen in den Texten: Ein Ausdruck steht „in Parameter „…““, �
 
 ## 9. Mit dem geführten Aufbau eine erste Strategie anlegen
 
-„Neue Strategie“ bietet den geführten Aufbau an. Er führt in fünf Schritten zu einer ersten Strategie und legt dabei dieselben Elemente an, die Sie von Hand mit der Elementbibliothek einfügen. Der Aufbau erscheint in der Eigenschaftenansicht. Ganz oben nennt er den Schritt, an dem Sie sind („Assistent · Schritt 2 von 5“), und den Namen des Schritts. Darunter steht rechts „Ohne Assistent weiterarbeiten“. Dann folgt die Reihe der fünf Schritte: fünf kleine Kreise mit den Zahlen 1 bis 5 und dem Namen des Schritts daneben. Der Schritt, an dem Sie sind, ist blau und fett, die Kreise der Schritte davor sind grün. Passt die Reihe nicht in eine Zeile, geht sie in der nächsten weiter. Unter der Reihe steht ein kurzer Text, der den Schritt erklärt, und darunter die Felder des Schritts. Im Schritt „Auslöser“ sind die möglichen Auslöser Karten mit Symbol, Name und Erklärung; die gewählte Karte ist blau umrandet. Die Karten stehen in einem Raster: In einem schmalen Fenster stehen zwei Karten nebeneinander und die dritte darunter. Unten, getrennt durch eine Linie, stehen „Zurück“, „Überspringen“ und „Weiter“ (im letzten Schritt „Fertig“). „Zurück“ fehlt im ersten Schritt, „Überspringen“ im ersten und im letzten. „Weiter“ ist blau gefüllt.
+„Neue Strategie“ bietet den geführten Aufbau an. Er führt in fünf Schritten zu einer ersten Strategie und legt dabei dieselben Elemente an, die Sie von Hand mit der Elementbibliothek einfügen. Der Aufbau erscheint in der Eigenschaftenansicht, nirgends sonst; Elementbibliothek und Zeichenfläche bleiben dabei bedienbar (in einem Fenster unter 1100 Pixel Breite führt „Elementbibliothek zeigen“ zur Bibliothek). Ganz oben nennt er den Schritt, an dem Sie sind („Assistent · Schritt 2 von 5“), und den Namen des Schritts. Darunter steht rechts „Ohne Assistent weiterarbeiten“. Dann folgt die Reihe der fünf Schritte: fünf kleine Kreise mit den Zahlen 1 bis 5 und dem Namen des Schritts daneben. Der Schritt, an dem Sie sind, ist blau und fett, die Kreise der Schritte davor sind grün. Passt die Reihe nicht in eine Zeile, geht sie in der nächsten weiter. Unter der Reihe steht ein kurzer Text, der den Schritt erklärt, und darunter die Felder des Schritts. Im Schritt „Auslöser“ sind die möglichen Auslöser Karten mit Symbol, Name und Erklärung; die gewählte Karte ist blau umrandet. Die Karten stehen in einem Raster: In einem schmalen Fenster stehen zwei Karten nebeneinander und die dritte darunter. Unten, getrennt durch eine Linie, stehen „Zurück“, „Überspringen“ und „Weiter“ (im letzten Schritt „Fertig“). „Zurück“ fehlt im ersten Schritt, „Überspringen“ im ersten und im letzten. „Weiter“ ist blau gefüllt.
 
 1. **Name.** Name und Beschreibung der Strategie. Beides ändern Sie später jederzeit.
 2. **Auslöser.** Sie wählen, wann die Strategie rechnet, zum Beispiel bei jedem Schluss einer Kerze, und die Zeiteinheit. Ist „Als Strategieparameter anlegen“ eingeschaltet (empfohlen), legt der Aufbau die Zeiteinheit als Strategieparameter an; Sie ändern sie dann an einer Stelle. „Weiter“ legt den Auslöser an.
@@ -550,7 +560,7 @@ Bezeichnungen in den Texten: Ein Ausdruck steht „in Parameter „…““, �
 4. **Bedingung.** Wann soll gehandelt werden? Sie wählen zwei Werte der Indikatoren („Wert A“, „Wert B“) und den Vergleich: kreuzt, ist größer als, ist kleiner als. „Weiter“ legt eine Bedingung hinter dem Auslöser an, mit dem Ausdruck aus Bausteinen. Feinere Bedingungen bauen Sie später aus Bausteinen (Abschnitt 7.4). Brauchen Sie keine Bedingung oder noch keine zwei Werte, überspringen Sie den Schritt.
 5. **Order.** Sie wählen den Ordertyp und die Angaben, die der Ordertyp vom Anwender verlangt. Die Regel „Risiko je Trade“, die das Volumen bestimmt, ist angekreuzt, wenn sie zur Verfügung steht. „Fertig“ legt „Order aufgeben“ hinter der Bedingung an, ordnet die Regel der Strategie zu, zeigt das neue Element und startet die Prüfung. Die Meldung sagt: „Der Aufbau steht. Die Prüfung zeigt, was noch fehlt.“
 
-Mit „Zurück“ gehen Sie einen Schritt zurück und ändern ihn; was der Schritt angelegt hat, wird ersetzt, nicht verdoppelt. „Ohne Assistent weiterarbeiten“ (oben) beendet den Aufbau jederzeit: Was bis dahin angelegt wurde, bleibt, und Sie arbeiten von Hand weiter. Das gilt auch, wenn Sie ein Element auf der Zeichenfläche wählen oder einen Eintrag der Elementbibliothek einfügen. Gespeichert wird erst mit „Speichern“.
+Mit „Zurück“ gehen Sie einen Schritt zurück und ändern ihn; was der Schritt angelegt hat, wird ersetzt, nicht verdoppelt. „Ohne Assistent weiterarbeiten“ (oben) beendet den Aufbau jederzeit: Was bis dahin angelegt wurde, bleibt, und Sie arbeiten von Hand weiter. Wählen Sie dagegen währenddessen ein Element oder die Strategie auf der Zeichenfläche oder fügen Sie einen Eintrag der Elementbibliothek ein, wartet der Assistent: Die Eigenschaftenansicht zeigt Ihre Wahl, und darüber steht die Zeile „Assistent, Schritt 3 von 5“ mit „Assistent fortsetzen“. Ein Klick darauf führt Sie in den Schritt zurück, an dem Sie waren. Der Assistent legt Objekte an wie die Bedienung von Hand; ein eigener Bereich für sie entsteht nicht. Gespeichert wird erst mit „Speichern“.
 
 ## 10. Alles ohne Ziehen bedienen
 
@@ -598,7 +608,7 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | Vorlage | Ein wiederverwendbares Objekt, zum Beispiel eine Regel. Es wird einmal angelegt und gespeichert und lässt sich in Strategien verwenden. |
 | Instanz | Eine vollständige Kopie einer Vorlage innerhalb einer Strategie. Sie nennt ihre Vorlage in `origin`. Ändern oder Löschen der Vorlage ändert die Instanz nicht. |
 | Zeichenfläche | Der Bereich der Oberfläche in der Mitte, auf dem Sie die Elemente einer Strategie anordnen und verbinden. |
-| Elementbibliothek | Der Bereich der Oberfläche links mit den Einträgen, die Sie in die Strategie einfügen (anklicken oder auf die Zeichenfläche ziehen), in Gruppen: „Wann wird gerechnet“, „Bedingungen und Aktionen“, „Markt und Konto“, „Indikatoren“, „Trends“ und „Regeln“. |
+| Elementbibliothek | Der Bereich der Oberfläche links mit den Einträgen, die Sie in die Strategie einfügen (anklicken oder auf die Zeichenfläche ziehen), in Gruppen: „Ablaufsteuerung“, „Berechnung“, „Indikatoren“, „Trends“, „Marktdaten“, „Konto“, „Aktionen“ und „Regeln und Regelwerke“. |
 | Eigenschaftenansicht | Der Bereich der Oberfläche rechts, in dem Sie die Eigenschaften des gewählten Elements, Rahmens oder Abschnitts oder der Strategie sehen und ändern, mit Regeln, Eingängen und den Befunden der Prüfung. |
 | Element | Alles, was Sie auf die Zeichenfläche legen: ein Auslöser, ein Schritt des Ablaufs (zum Beispiel Bedingung, Berechnung, Order aufgeben) oder ein Objekt (zum Beispiel eine Instanz von EMA). |
 | Auslöser | Ein Element, das festlegt, bei welchem Ereignis die Strategie oder eine Verwaltung ausgewertet wird, zum Beispiel beim Schluss einer Kerze oder bei jedem Tick. Auslöser sind freiwillig. |
@@ -615,7 +625,7 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | Anzeigeform | Die Schreibweise eines Ausdrucks in der Formelansicht: mit den Namen, die Sie vergeben haben, und den Beschriftungen der gewählten Sprache. Gespeichert wird die Form mit Kennungen. |
 | Satz | Der Ausdruck als lesbarer Satz, zum Beispiel „EMA 20 kreuzt EMA 50 in beide Richtungen“. Er steht auf der Zeichenfläche und in der Eigenschaftenansicht. |
 | Kreuzung | Eine Bedingung: Ein Wert kreuzt einen anderen, nach oben, nach unten oder in beide Richtungen. |
-| Geführter Aufbau | Der Assistent, den „Neue Strategie“ anbietet: Er führt in fünf Schritten zu einer ersten Strategie (Abschnitt 9). |
+| Assistent | Der geführte Aufbau, den „Neue Strategie“ anbietet: Er führt in fünf Schritten zu einer ersten Strategie und steht in der Eigenschaftenansicht (Abschnitt 9). |
 | Regelwerk | Ein Objekt, das mehrere Regeln enthält und einen Ausdruck für das Gesamtergebnis haben kann. |
 | bestimmende Regel | Eine Regel, die eine Eigenschaft der Order bestimmt, zum Beispiel das Volumen. Eine Regel, die nichts bestimmt, prüft nur. |
 | Vergleich beim Prüfen | Bei einer bestimmenden Regel: wie der aktuelle Wert der Eigenschaft gegen das Ergebnis der Regel geprüft wird: höchstens, mindestens oder gleich. |
