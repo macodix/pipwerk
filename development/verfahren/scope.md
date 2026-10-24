@@ -20,7 +20,7 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
    - Klick auf ein Vorhaben zeigt seine sechs Phasen als Kästchen, gleich eingefärbt.
    - Klick auf eine Phase zeigt die Arbeitspakete dieser Phase als Kästchen, gleich eingefärbt. Bei Bedarf weiter aufgeteilt.
 
-   In zwei bis drei Klicks ist erkennbar, wo ein Vorhaben steht. Was auf den Auftraggeber wartet, ist hervorgehoben. Die Seite ist eine HTML-Datei im Repository, wird aus dem Stand im Repository erzeugt, nicht von Hand gepflegt, und bei jeder Änderung des Stands neu erzeugt. Der Auftraggeber öffnet sie über einen festen Link wie die Präsentationen. Kein eigener Dienst, kein Server. Sie enthält keine Namen von Rechnern oder Benutzern, keine Pfade und keine Ports.
+   In zwei bis drei Klicks ist erkennbar, wo ein Vorhaben steht und wer daran arbeitet: Team, Softwarearchitekt, Projektleiter oder Auftraggeber. Was auf den Auftraggeber wartet, ist hervorgehoben. Die Seite ist eine HTML-Datei im Repository, wird aus dem Stand im Repository erzeugt, nicht von Hand gepflegt, und bei jeder Änderung des Stands neu erzeugt. Der Auftraggeber öffnet sie über einen festen Link wie die Präsentationen. Kein eigener Dienst, kein Server. Sie enthält keine Namen von Rechnern oder Benutzern, keine Pfade und keine Ports.
 7. **Trennung der Vorhaben.** Ein Chat des Projektleiters bearbeitet nur sein eigenes Vorhaben. Er startet, wiederholt oder repariert nichts für ein anderes Vorhaben, auch nicht bei scheinbar stehengebliebener Arbeit. Kollisionen mit anderen Vorhaben behält er im Blick. Der Auftraggeber erfährt davon nur, wenn eine Kollision alle drei Bedingungen zugleich erfüllt: Sie blockiert die Arbeit vollständig, sie betrifft das Verhalten von pipwerk für den Anwender, und Entwicklungsleiter oder Softwarearchitekt können sie nicht selbst lösen.
 
 ## Offene Punkte des Auftraggebers
@@ -34,3 +34,5 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
 2026-10-24: Prüfung [requirements-1.md](reviews/requirements-1.md) nicht bestanden (B1). Entscheidung des Auftraggebers im Chat: B1 Maßstab für den Oberflächenentwurf ist die einzelne Ansicht, umgesetzt ist sie, sobald sie sich in der Testumgebung öffnen und bedienen lässt (Festlegung 5). H16 und H17 aus den Aussagen des Auftraggebers im Chat beantwortet und in Festlegung 1 und 7 eingearbeitet. Phase 2 erneut mit `specify` angestoßen.
 
 2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-01](questions/verfahren-01.md), Frage 1) vom Auftraggeber abgelehnt, weil er keine grafische Übersicht ist. Festlegung 6 um seine Vorgabe ergänzt: drei Ebenen aus Kästchen mit Farben für den Stand.
+
+2026-10-24: Frage 2 aus verfahren-01 beantwortet: „Projektleiter“ als Bearbeiter in der Übersicht, ohne Hervorhebung. Alle Fragen beantwortet, Meldung `answer`.

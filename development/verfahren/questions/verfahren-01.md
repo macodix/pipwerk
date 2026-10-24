@@ -49,6 +49,8 @@ Benötigte Entscheidung: Soll die Übersicht in diesen Fällen „Projektleiter�
 
 Vorschlag: Ja, „Projektleiter“ als vierter Wert, ohne Hervorhebung. Sonst müsste die Seite einen dieser Schritte einer Rolle zuschreiben, die gerade nicht daran arbeitet.
 
+**Antwort des Auftraggebers (2026-10-24):** Ja, wie Vorschlag.
+
 ### 3. Umgebung des Chats des Projektleiters (Frage an den Projektleiter)
 
 Sachverhalt: Die Wiedervorlage nach Festlegung 2 setzt voraus, dass der Chat des Projektleiters sich selbst alle 20 Minuten eine wiederkehrende Aufgabe stellen kann (Spezifikation Abschnitt 4.1). Ob seine Umgebung das bietet, ist von hier aus nicht prüfbar.
