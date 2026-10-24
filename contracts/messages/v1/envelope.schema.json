@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Link": {
+      "additionalProperties": false,
+      "description": "One connection: the sending side, the receiving side and the check value.",
+      "properties": {
+        "from": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}(\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62})?$",
+          "title": "From",
+          "type": "string"
+        },
+        "to": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}(\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62})?$",
+          "title": "To",
+          "type": "string"
+        },
+        "mac": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Mac",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "mac"
+      ],
+      "title": "Link",
+      "type": "object"
+    },
+    "Attachment": {
+      "additionalProperties": false,
+      "description": "A file that belongs to a message: name, size in bytes and SHA-256 (hexadecimal).",
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z0-9_#+-][A-Za-z0-9._#+-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "size",
+        "sha256"
+      ],
+      "title": "Attachment",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Message": {
+      "additionalProperties": false,
+      "description": "A message with the fields of req-grund-004.",
+      "properties": {
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "sender": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+          "title": "Sender",
+          "type": "string"
+        },
+        "recipient": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+          "title": "Recipient",
+          "type": "string"
+        },
+        "priority": {
+          "pattern": "^[a-z0-9_-]{1,32}$",
+          "title": "Priority",
+          "type": "string"
+        },
+        "kind": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "content": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Content",
+          "type": "object"
+        },
+        "reference_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Id"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "attachments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Attachment"
+          },
+          "maxItems": 256,
+          "title": "Attachments",
+          "type": "array"
+        },
+        "receipt": {
+          "default": false,
+          "title": "Receipt",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "sender",
+        "recipient",
+        "priority",
+        "kind",
+        "content",
+        "created_at"
+      ],
+      "title": "Message",
+      "type": "object"
+    },
+    "StoredAttachment": {
+      "additionalProperties": false,
+      "description": "An attachment that goes over a way for files: name, way for files and place.",
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z0-9_#+-][A-Za-z0-9._#+-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "way": {
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+          "title": "Way",
+          "type": "string"
+        },
+        "location": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Location",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "way",
+        "location"
+      ],
+      "title": "StoredAttachment",
+      "type": "object"
+    },
+    "Body": {
+      "additionalProperties": false,
+      "description": "The text in ``body``: the message, the relays it passed and the stored attachments.",
+      "properties": {
+        "message": {
+          "$ref": "#/$defs/Message"
+        },
+        "hops": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}\\.[A-Za-z0-9][A-Za-z0-9_-]{0,62}$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Hops",
+          "type": "array"
+        },
+        "stored": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/StoredAttachment"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Attachments that go over a way for files. Reserved: this version of the library passes the field on but rejects an envelope in which it is set.",
+          "title": "Stored"
+        }
+      },
+      "required": [
+        "message",
+        "hops"
+      ],
+      "title": "EnvelopeBody",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The envelope as it lies on a transmission way.",
+  "properties": {
+    "format": {
+      "const": "pipwerk-relay/1",
+      "title": "Format",
+      "type": "string"
+    },
+    "body": {
+      "description": "Text with the JSON of the body, as defined in '#/$defs/Body'. The check value is formed over this text, so the text is kept as it is.",
+      "title": "Body",
+      "type": "string"
+    },
+    "link": {
+      "$ref": "#/$defs/Link"
+    }
+  },
+  "required": [
+    "format",
+    "body",
+    "link"
+  ],
+  "title": "Envelope",
+  "type": "object"
+}

@@ -4,7 +4,7 @@
 
 - status: `accepted`
 - zweck: Verbindliche Begriffe für alle Dokumente, Aufträge und Abstimmungen mit dem Auftraggeber. Jeder hier fehlende Fachbegriff wird bei seiner Einführung in einem Dokument definiert und hier ergänzt.
-- stand: 2026-10-23
+- stand: 2026-10-24
 
 ## Regeln
 
@@ -94,6 +94,10 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Index | Ein Verzeichnis der gespeicherten Objekte mit Kennung, Name und Beschreibung, das sich aus den Dateien neu aufbauen lässt. In pipwerk Studio gibt es keinen Index und keine Tabelle dafür in der Datenbank (Entscheidung E5): Ein Index wäre nur eine zweite Fassung derselben Daten. Die Dateien im Objektverzeichnis sind die einzige Quelle, das Backend liest sie bei Bedarf. Wird das zu langsam, kann später ein Index ergänzt werden. |
 | Schnittstelle | Eine Stelle, an der Daten in ein Programm hinein- oder herauskommen: die Web-API, das Lesen und Schreiben von Dateien, das Lesen der Konfiguration. |
 | Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. Die öffentliche Web-API von pipwerk Studio liegt unter `/api/v1/` und ist unter `contracts/api/` beschrieben; die übrigen Endpunkte unter `/api/` sind interne Verbindungen der Komponente. |
+| Anlage | Eine Datei, die zu einer Nachricht von pipwerk relay gehört, zum Beispiel eine Datei einer Lieferung (req-relay-012). Die Nachricht nennt zu jeder Anlage den Namen, die Größe in Byte und den SHA-256 (eine Prüfsumme der Datei). Der Empfänger prüft Größe und SHA-256 und erkennt so eine veränderte Datei. Der Name einer Anlage wird nie als Pfad verwendet. |
+| Umschlag | Die Hülle, in der eine Nachricht von pipwerk relay auf einem Übertragungsweg liegt: die Nachricht, die Relays, über die sie lief, die beiden Seiten der Verbindung und der Prüfwert. Der Prüfwert (HMAC-SHA256 mit dem Schlüssel der Verbindung) zeigt dem Empfänger, ob der Umschlag und seine Anlagen verändert oder gefälscht wurden (req-relay-010). Das Format steht unter `contracts/messages/v1/`. |
+| Eingang (Nachrichtensystem) | Der Ort, an dem ein Relay oder eine Komponente die für sie bestimmten Umschläge eines Übertragungswegs findet, zum Beispiel ein Verzeichnis im Dateisystem. Nicht zu verwechseln mit dem Eingang eines Elements auf der Zeichenfläche (Eintrag „Eingang“ bei den fachlichen Begriffen). |
+| Schlüssel der Verbindung | Der geheime Schlüssel, den die zwei Seiten einer Verbindung gemeinsam haben, eine Komponente und ihr Relay oder zwei Relays. Mit ihm bildet die sendende Seite den Prüfwert eines Umschlags und die empfangende Seite prüft ihn (Spezifikation relay, E5). Jede Verbindung hat einen eigenen Schlüssel. Er liegt als Datei im Verzeichnis für Geheimnisse, das nur der Benutzer des Relays lesen darf, und kommt nie in Repository, Datenbank, Protokoll oder Fehlermeldung. |
 | Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Die QA prüft dort aus Kundensicht, der Auftraggeber erprobt dort und nimmt ab. |
 | Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt, Entwicklungsleiter und Team liegen. |
 | Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert in [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md#begriffe). |
@@ -120,6 +124,7 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 ## Änderungsnachweis
 | Datum | Änderung |
 | --- | --- |
+| 2026-10-24 | Vorhaben `relay`, Arbeitspaket `wp01`, Auftrag 01: Anlage, Umschlag, Eingang (Nachrichtensystem) und Schlüssel der Verbindung ergänzt (Spezifikation relay 3.2, 3.3, E5; req-relay-010, req-relay-012). |
 | 2026-10-23 | Vorhaben `backtest`, Arbeitspaket `wp02`, Auftrag 12: Beschaffung, Quelle und Standardquelle an 5.4 und 5.1 angepasst (pipwerk replay beschafft nichts, hat keine Quelle; „Standardquelle“ ist die frühere Bezeichnung); Broker für Testläufe ergänzt. Folgt aus dem Abnahmebericht `wp02`, Mangel M4 (`development/backtest/wp02/acceptance/1.md`), und req-system-027. |
 | 2026-10-23 | Namensraum: gemeinsamer Namensraum umfasst Regeln, Regelwerke und enthaltene Instanzen; kein Verdecken eines Namens der Strategie durch einen inneren; Namensvorschlag beim Einfügen. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-23 (Fachmodell req-fach-055, req-ablauf-003; Hinweis N3 in `development/strategiedesign/reviews/requirements-14.md`). Danach Parameter einer Regel und Namensraum einer Vorlage genannt (Hinweise N5 und N6 in `development/strategiedesign/reviews/requirements-15.md`, Spezifikation 3.3). |
 | 2026-10-22 | Namensraum, Datenverbindung, Ausgang, Ergebnis, Typbeschreibung an Methoden, Aktualisieren und gemeinsamen Namensraum der Instanzen angeglichen; Einträge „Methode“ und „Aktualisieren“ neu. Folgt aus den Festlegungen des Auftraggebers vom 2026-10-22 (Fachmodell req-fach-055, req-ui-014; Befund B2 in `development/strategiedesign/reviews/requirements-13.md`). |

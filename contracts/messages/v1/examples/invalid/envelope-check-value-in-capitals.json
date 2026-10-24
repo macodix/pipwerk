@@ -1,0 +1,9 @@
+{
+  "format": "pipwerk-relay/1",
+  "body": "{\"message\":{\"id\":\"5c1e5d52-7b0f-4c63-8a47-3d2f6a9b7e22\",\"sender\":\"app-b.net1.relay2\",\"recipient\":\"app-a.net1.relay1\",\"priority\":\"normal\",\"kind\":\"example.delivery\",\"content\":{\"files\":[\"data-1.csv\"]},\"reference_id\":\"0b0a6f3e-2f1d-4a58-9a52-6a6a1f1c2d11\",\"created_at\":\"2026-10-24T12:00:05Z\",\"attachments\":[{\"name\":\"data-1.csv\",\"size\":8,\"sha256\":\"492d5ea496056f1a6a6592241032fab764c321596317930b4fa0e1e8bc3b7470\"}],\"receipt\":true},\"hops\":[\"net1.relay2\"],\"stored\":null}",
+  "link": {
+    "from": "net1.relay2",
+    "to": "net1.relay1",
+    "mac": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  }
+}
