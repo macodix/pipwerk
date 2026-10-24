@@ -6,8 +6,9 @@ Aufruf::
     python3 generate.py <wurzelverzeichnis-des-repositorys> <ausgabedatei> [--ref main] [--now ZEIT]
 
 Das Skript liest nur (``git show``, ``git log``, ``git ls-tree``) und schreibt nur die
-Ausgabedatei. Quelle ist allein der Zweig ``main`` des übergebenen Repositorys: ``scope.md``,
-``plan.md`` und ``waiting.md`` jedes Vorhabens und die Geschichte von ``development/messages/``.
+Ausgabedatei. Quelle ist allein ``origin/main`` (sonst ``main``) des übergebenen Repositorys:
+``scope.md``, ``plan.md`` und ``waiting.md`` jedes Vorhabens und die Geschichte von
+``development/messages/``.
 Die Regeln stehen in Abschnitt 7 der Spezifikation des Vorhabens ``verfahren`` (7.2: Stand,
 7.3: Grenzen, 7.4: Gestaltung); ``README.md`` beschreibt Aufruf, Quellen und Tests.
 """
@@ -901,8 +902,23 @@ def render_html(overview: Overview, template: str) -> str:
 # --------------------------------------------------------------------------------------
 
 
-def generate(root: Path, output: Path, ref: str = "main", now: datetime | None = None) -> None:
-    source = Source(root, ref)
+def default_ref(root: Path) -> str:
+    """Zweig, aus dem ohne Angabe gelesen wird: ``origin/main``, sonst ``main``.
+
+    ``origin/main`` ist der veröffentlichte Stand; ein lokaler ``main`` kann hinter ihm zurück sein.
+    Nach dem Checkout von ``main`` im Workflow zeigen beide auf denselben Commit.
+    """
+    for candidate in ("origin/main", "main"):
+        try:
+            Source(root, candidate)
+        except GenerateError:
+            continue
+        return candidate
+    raise GenerateError("weder origin/main noch main sind im Repository vorhanden")
+
+
+def generate(root: Path, output: Path, ref: str | None = None, now: datetime | None = None) -> None:
+    source = Source(root, ref if ref is not None else default_ref(root))
     overview = build_overview(source, (now or datetime.now(UTC)).astimezone(UTC))
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     output.write_text(render_html(overview, template), encoding="utf-8", newline="\n")
@@ -912,7 +928,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Erzeugt die Übersicht der Vorhaben.")
     parser.add_argument("root", type=Path, help="Wurzelverzeichnis eines Repositorys")
     parser.add_argument("output", type=Path, help="Pfad der Ausgabedatei")
-    parser.add_argument("--ref", default="main", help="Zweig, aus dem gelesen wird (main)")
+    parser.add_argument(
+        "--ref", default=None, help="Zweig, aus dem gelesen wird (Vorgabe: origin/main, sonst main)"
+    )
     parser.add_argument("--now", help="Zeitpunkt der Erzeugung in UTC (nur für Tests)")
     args = parser.parse_args(argv)
     now = None

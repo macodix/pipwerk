@@ -18,8 +18,19 @@ python3 generate.py <wurzelverzeichnis> <ausgabedatei> [--ref main] [--now JJJJ-
   GitHub Actions der Checkout mit `fetch-depth: 0`).
 - `<ausgabedatei>`: Pfad der Datei, die geschrieben wird, im Repository
   `development/overview.html`. Das Skript schreibt nur diese Datei.
-- `--ref`: Zweig, aus dem gelesen wird. Vorgabe `main`; nur `main` ist Quelle der Übersicht
-  (Spezifikation E5). Die Angabe dient den Tests.
+- `--ref`: Zweig, aus dem gelesen wird. Ohne Angabe gilt `origin/main`, wenn es im Repository
+  besteht, sonst `main`; nur der Stand von `main` ist Quelle der Übersicht (Spezifikation E5).
+  Die Angabe dient den Tests und wird unverändert verwendet.
+
+### Entscheidung zum Zweig (Hinweis H2)
+
+Die Schnittstelle (Wurzelverzeichnis, Ausgabepfad) bleibt gleich; `--ref` ist nur der bisherige
+optionale Parameter. Ohne ihn liest das Skript `origin/main` und fällt auf `main` zurück
+(`default_ref`). Gründe: `origin/main` ist der veröffentlichte Stand, ein lokaler `main` kann in
+einem Arbeitsverzeichnis hinter ihm zurückliegen. Im Workflow zeigen nach dem Checkout von `main`
+mit `fetch-depth: 0` beide auf denselben Commit, das Ergebnis ist dort dasselbe. Ein Repository
+ohne `origin` (zum Beispiel die Test-Repositories) liest weiter `main`. Besteht keiner der beiden,
+endet das Skript mit einem Fehler.
 - `--now`: Zeitpunkt der Erzeugung in UTC statt der aktuellen Zeit, für reproduzierbare Ausgaben.
 
 Das Skript braucht Python 3 (getestet mit 3.14) und `git`, keine fremden Pakete. Es liest ausschließlich mit `git show`, `git log`, `git ls-tree` und `git cat-file`. Die
@@ -96,5 +107,10 @@ berühren kein anderes Repository. Sie decken ab: jede Zeile der Tabelle in 7.2 
 `waiting.md` mit Meldungen vor und nach der Vorlage (`test_waiting.py`), Pakete und Vorhaben mit
 Plan (`test_packages.py`), Vorhaben ohne Plan, ohne `scope.md`, Namen, Reihenfolge und Geschichte der
 Meldungen (`test_vorhaben.py`), die Grenzen nach 7.3 gegen eine Liste verbotener Muster
-(`test_limits.py`) und den Aufruf (`test_cli.py`). `ruff.toml` und `mypy.ini` enthalten die Regeln
+(`test_limits.py`) und den Aufruf (`test_cli.py`). `test_repository.py` ruft `generate.py` gegen das Arbeitsverzeichnis
+auf, in dem der Test liegt (Wurzel über den Ablageort), und prüft, dass die Seite das Vorhaben
+`verfahren` mit seinem Namen aus `scope.md` zeigt, 7.3 einhält und der Lauf nur die Ausgabedatei
+schreibt (Arbeitskopie, Zweige und `HEAD` unverändert). Stand, Phase und Farbe des Vorhabens prüft
+er nicht. Der Test überspringt sich mit Begründung, wenn weder `origin/main` noch `main` besteht,
+das Vorhaben dort fehlt oder der Klon flach ist. Dazu die Wahl des Zweigs ohne `--ref`. `ruff.toml` und `mypy.ini` enthalten die Regeln
 der Prüfwerkzeuge nach den Entwicklungs-, Test- und Sicherheitsregeln.
