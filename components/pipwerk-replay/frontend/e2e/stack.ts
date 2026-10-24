@@ -103,6 +103,18 @@ export class Stack {
     }
   }
 
+  /** The directory below which the tests make the directories for files (import, storage, export). */
+  get filesRoot(): string {
+    return join(this.dir, 'files');
+  }
+
+  /** Makes (if needed) a directory below `filesRoot` and returns its absolute path. */
+  makeDirectory(...parts: string[]): string {
+    const path = join(this.filesRoot, ...parts);
+    mkdirSync(path, { recursive: true });
+    return path;
+  }
+
   /** Writes the INI file and starts the backend. */
   async startBackend(): Promise<void> {
     if (this.backend !== null && this.backend.child.exitCode === null) {
@@ -135,6 +147,7 @@ export class Stack {
   /** A backend with an empty database (the state every test starts from). */
   async reset(): Promise<void> {
     await this.stopBackend();
+    rmSync(this.filesRoot, { recursive: true, force: true });
     for (const name of readdirSync(this.dir)) {
       if (name.startsWith('replay.db') || name.startsWith('pipwerk-replay.ini')) {
         rmSync(join(this.dir, name), { force: true });

@@ -274,7 +274,7 @@ export async function openApp(page: Page): Promise<void> {
   await expect(page.getByTestId('footer')).toContainText('Backend: verbunden');
 }
 
-export async function chooseView(page: Page, view: 'data' | 'accounts'): Promise<void> {
+export async function chooseView(page: Page, view: 'data' | 'accounts' | 'settings'): Promise<void> {
   const full = page.getByTestId(`menu-${view}`);
   if (await full.isVisible()) {
     await full.click();
@@ -336,4 +336,57 @@ export async function seriesOf(backendUrl: string, query = ''): Promise<{ total:
   const response = await fetch(`${backendUrl}/api/v1/market-data/series?limit=100${query}`);
   expect(response.status).toBe(200);
   return (await response.json()) as { total: number; items: Record<string, unknown>[] };
+}
+
+// --- settings for files and the import directory ------------------------------------------
+
+export type FileSettingsBody = {
+  keep_imported_files: boolean;
+  storage_directory: { path: string | null; is_default: boolean };
+  import_directory: { path: string | null; is_default: boolean };
+  export_directory: { path: string | null; is_default: boolean };
+};
+
+/** Sets the settings for files through the internal endpoint (not through the page). */
+export async function putFileSettings(
+  backendUrl: string,
+  settings: { keep?: boolean; storage?: string | null; import?: string | null; export?: string | null },
+): Promise<void> {
+  const response = await fetch(`${backendUrl}/api/replay/settings/files`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      keep_imported_files: settings.keep ?? false,
+      storage_directory: settings.storage ?? null,
+      import_directory: settings.import ?? null,
+      export_directory: settings.export ?? null,
+    }),
+  });
+  expect(response.status).toBe(200);
+}
+
+export async function getFileSettings(backendUrl: string): Promise<FileSettingsBody> {
+  const response = await fetch(`${backendUrl}/api/replay/settings/files`);
+  expect(response.status).toBe(200);
+  return (await response.json()) as FileSettingsBody;
+}
+
+/** Opens the choice in the import directory of the open dialog "Datei importieren". */
+export async function openPicker(page: Page): Promise<void> {
+  await page.getByTestId('import-choose-directory').click();
+  await expect(page.getByTestId('picker')).toBeVisible();
+  await expect(
+    page.getByTestId('picker-list').or(page.getByTestId('picker-empty')).or(page.getByTestId('picker-error')),
+  ).toBeVisible();
+}
+
+/** The entry (file) of the choice for a name. */
+export function pickerFile(page: Page, name: string) {
+  return page.locator(`[data-testid="picker-file"][data-name="${name}"]`);
+}
+
+/** Opens a subdirectory of the choice. */
+export async function openPickerDirectory(page: Page, name: string): Promise<void> {
+  await page.locator(`[data-testid="picker-dir"][data-name="${name}"] [data-testid="picker-open"]`).click();
+  await expect(page.getByTestId('picker-crumb').last()).toHaveText(name);
 }
