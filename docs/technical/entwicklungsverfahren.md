@@ -283,7 +283,7 @@ Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antw
 2. Legt er dem Auftraggeber etwas vor (`present`, `question` mit Fragen an den Auftraggeber, `acceptance`, `review` mit Befunden der Gruppe „Entscheidung des Auftraggebers“, die Präsentation eines Ergebnisses), trägt er im selben Commit in `development/<vorhaben>/waiting.md` eine Zeile ein: `ref`, Handlung und Zeitpunkt der Vorlage in UTC. Die Handlung ist bei `present`, `review` und einem Vorhaben ohne Plan „Präsentation bestätigen“, bei `question` „Frage beantworten“, bei `acceptance` „Abnahme durchführen“. Hat der Auftraggeber geantwortet, entfernt er die Zeile im selben Commit wie seine Folgemeldung. Die Datei ist die einzige Quelle der [Übersicht](#übersicht) dafür, was auf den Auftraggeber wartet. Sie enthält keine Namen von Rechnern oder Benutzern.
 3. Überholt ist eine Meldung, wenn nach ihr eine Meldung mit demselben `ref` an den Projektleiter vorliegt, die denselben Anlass erledigt, zum Beispiel ein neuer Prüfbericht zu demselben Dokument. Der Projektleiter des Vorhabens entfernt sie zusammen mit der späteren. Meldungen anderer Vorhaben entfernt er nie.
 
-Wie der Chat des Projektleiters den Eingang prüft, steht im [Briefing Projektleiter](agentenrollen-und-briefings.md#briefing-projektleiter).
+Wie der Chat des Projektleiters den Eingang prüft, steht im [Briefing Projektleiter](agentenrollen-und-briefings.md#briefing-projektleiter). Die erste Wiedervorlage liegt 20 Minuten, die zweite als Rückfall 40 Minuten nach der Aktivierung.
 
 ### Arbeiten auf main
 
@@ -546,6 +546,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-24 | Eingang des Projektleiters: Die zweite Wiedervorlage liegt 40 Minuten nach der Aktivierung, nicht 40 Minuten nach der ersten. Entscheidung des Entwicklungsleiters (Vorhaben `verfahren`, Auftrag 04). |
 | 2026-10-24 | Vorhaben `verfahren` (Festlegungen 1 bis 7 des Auftraggebers im Chat am 2026-10-24, Spezifikation `development/verfahren/specification.md`): Abbruch, Fortsetzung durch `agentrun` und `startrole`, Pause wegen der Nutzungsgrenze, `failed` erst nach dem dritten Abbruch; Quellen der Skripte unter `tools/devhost/` und Ermittlung des Entwicklungsverzeichnisses aus dem Ablageort; Testumgebung der Skripte; Wiedervorlage und Eingang des Projektleiters mit `waiting.md` und `followup.md`; Namen von Vorhaben, Paketen und Phasen; Machbarkeitstest und Oberflächenentwurf je Ansicht als einzige Begriffe für Prototypen; neuer Abschnitt „Übersicht“ mit `overview.html` und Workflow `overview.yml`. |
 | 2026-10-23 | Oberflächenentwurf nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Oberflächenentwurf direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | Phase 2: Mängel aus der Abnahme einer umgesetzten Oberfläche ohne neuen Oberflächenentwurf direkt in der Software beheben. Anlass: Abnahme `backtest/wp02`, Oberflächenentwurf der Ansicht „Datenbestand“. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
