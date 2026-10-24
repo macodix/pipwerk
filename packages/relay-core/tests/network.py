@@ -144,7 +144,7 @@ def forward(
             recipient=recipient,
             key=key,
         )
-        writing.send(envelope, item.attachments)
+        writing.send(envelope, item.load())
         reading.acknowledge(item.token)
         moved += 1
     return moved

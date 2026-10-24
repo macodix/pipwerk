@@ -56,6 +56,7 @@ from pipwerk_relaycore import (
     WayRefusedError,
     WayTooLargeError,
 )
+from pipwerk_relaycore.address import is_from_relay
 from pydantic import ValidationError
 
 from pipwerk_fetch_mt5.config import StartupConfig
@@ -73,6 +74,7 @@ from pipwerk_fetch_mt5.relay.contents import (
     RequestError,
     dump_content,
     load_content,
+    plain_text,
 )
 from pipwerk_fetch_mt5.service import FetchService
 
@@ -106,15 +108,15 @@ class RequestHandler(Handler):
         message = received.message
         if message.kind == KIND_REQUEST:
             self._answer(message)
-        elif message.kind == KIND_UNDELIVERABLE:
+        elif message.kind == KIND_UNDELIVERABLE and is_from_relay(message.sender):
             LOGGER.warning(
                 "an answer could not be delivered message=%s reason=%s",
                 message.reference_id,
-                message.content.get("reason"),
+                plain_text(message.content.get("reason")),
             )
             print(
                 f"Eine Antwort ließ sich nicht zustellen (Nachricht {message.reference_id}): "
-                f"{message.content.get('text')}",
+                f"{plain_text(message.content.get('text'))}",
                 file=self._out,
             )
         else:

@@ -41,6 +41,7 @@ from pipwerk_relaycore import (
     ReceivedMessage,
     WayError,
 )
+from pipwerk_relaycore.address import is_from_relay
 from pydantic import ValidationError
 
 from pipwerk_fetch_mt5.cli import OMISSION_TEXTS, kind_text, moment_text
@@ -55,6 +56,7 @@ from pipwerk_fetch_mt5.relay.contents import (
     dump_content,
     load_content,
     parse_moment,
+    plain_text,
 )
 
 LOGGER = logging.getLogger("pipwerk_fetch_mt5.relay.request")
@@ -97,9 +99,9 @@ class Delivery(Handler):
         if message.kind == KIND_UNDELIVERABLE:
             # The notice comes from a relay ("relay.<network>.<relay>", the name "relay" is
             # reserved for relays, specification relay 3.1), not from the retrieval.
-            if message.sender.split(".")[0] == "relay":
+            if is_from_relay(message.sender):
                 reason, text = message.content.get("reason"), message.content.get("text")
-                self.notice = (str(reason), str(text))
+                self.notice = (plain_text(reason), plain_text(text))
             return
         if message.sender != self._retrieval:
             LOGGER.warning(

@@ -296,11 +296,27 @@ def load_content[M: BaseModel](model: type[M], content: Mapping[str, JsonValue])
     return model.model_validate_json(json.dumps(dict(content), ensure_ascii=False))
 
 
+MAX_PLAIN_TEXT = 300
+"""The longest text of a message that is shown on the terminal."""
+
+
+def plain_text(value: object) -> str:
+    """A text from a message for the terminal: control characters replaced by ``?``, shortened.
+
+    The text of a notice comes from the network; escape sequences must not reach the terminal.
+    """
+    text = str(value)
+    return "".join(character if character.isprintable() else "?" for character in text)[
+        :MAX_PLAIN_TEXT
+    ]
+
+
 __all__ = [
     "CONTENT_MODELS",
     "KIND_FILE",
     "KIND_REQUEST",
     "KIND_RESULT",
+    "MAX_PLAIN_TEXT",
     "DataName",
     "FailedPart",
     "FetchFileContent",
@@ -315,4 +331,5 @@ __all__ = [
     "format_moment",
     "load_content",
     "parse_moment",
+    "plain_text",
 ]

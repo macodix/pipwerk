@@ -40,7 +40,7 @@ import sqlalchemy as sa
 from pydantic import JsonValue
 from sqlalchemy.engine import Engine
 
-from pipwerk_relaycore.address import Address, check_relay
+from pipwerk_relaycore.address import Address, check_relay, is_from_relay
 from pipwerk_relaycore.contents import KIND_RECEIPT, KIND_UNDELIVERABLE, is_valid_content
 from pipwerk_relaycore.envelope import Envelope, OpenedEnvelope, verify_attachments
 from pipwerk_relaycore.errors import (
@@ -49,6 +49,7 @@ from pipwerk_relaycore.errors import (
     WayError,
     WayUnavailableError,
 )
+from pipwerk_relaycore.grace import GraceClock
 from pipwerk_relaycore.keys import ConnectionKey
 from pipwerk_relaycore.loader import load_way
 from pipwerk_relaycore.message import Attachment, Message
@@ -244,6 +245,7 @@ class Connector:
         self._keys = {config.relay: config.key}
         self._target: Way[Any] = load_way(config.target.name, config.target.settings)
         self._inbox: Way[Any] = load_way(config.inbox.name, config.inbox.settings)
+        self._grace = GraceClock()
         self._engine = _create_engine(config.database)
         try:
             migrate_database(self._engine)
@@ -379,12 +381,24 @@ class Connector:
         return counts.result()
 
     def _process_faulty(self, item: FaultyEnvelope, now: datetime, counts: _Counts) -> None:
-        if item.reason in _ATTACHMENT_REASONS and now - item.modified_at < (
-            self._config.attachment_grace
+        self._reject(item.token, item.reason, item.modified_at, now, counts)
+
+    def _reject(
+        self,
+        token: str,
+        reason: RejectionReason,
+        arrived: datetime,
+        now: datetime,
+        counts: _Counts,
+    ) -> None:
+        """Drop an envelope; one with bad attachments is kept until the grace period is over."""
+        if reason in _ATTACHMENT_REASONS and not self._grace.over(
+            token, arrived, now, self._config.attachment_grace
         ):
             counts.postponed += 1  # may be a delay of the file system: read it again later
             return
-        self._drop(item.token, item.reason, counts)
+        self._grace.forget(token)
+        self._drop(token, reason, counts)
 
     def _process(
         self, item: ReceivedEnvelope, handler: Handler, now: datetime, counts: _Counts
@@ -392,21 +406,36 @@ class Connector:
         try:
             opened = self._check(item)
         except EnvelopeRejected as error:
+            self._grace.forget(item.token)
             self._drop(item.token, error.reason, counts)
             return
         message = opened.message
         not_before = now - self._config.seen_for
         if self._store.is_seen(message.id, not_before):
+            self._grace.forget(item.token)
             self._repeat(item.token, message, counts)
-        elif message.kind == KIND_RECEIPT:
+            return
+        # Only an envelope that has passed all checks gets its attachments read.
+        try:
+            contents = item.load()
+            verify_attachments(message, contents)
+        except EnvelopeRejected as error:
+            self._reject(item.token, error.reason, item.modified_at, now, counts)
+            return
+        except WayUnavailableError as error:
+            LOGGER.warning("the attachments cannot be read: %s", error)
+            counts.failed += 1
+            return
+        self._grace.forget(item.token)
+        if message.kind == KIND_RECEIPT:
             self._receive_receipt(item.token, message, handler, now, counts)
         else:
-            self._deliver(item, opened, handler, now, counts)
+            self._deliver(item.token, opened, contents, handler, now, counts)
 
     def _check(self, item: ReceivedEnvelope) -> OpenedEnvelope:
+        """The checks before anything is read: check value, recipient, size, schema."""
         opened = item.envelope.open(self._keys, recipient=self._config.component)
         message = opened.message
-        verify_attachments(message, item.attachments)
         if message.recipient != str(self._config.address):
             raise EnvelopeRejected(RejectionReason.WRONG_RECIPIENT)
         if not is_valid_content(message.kind, message.content):
@@ -429,15 +458,16 @@ class Connector:
 
     def _deliver(
         self,
-        item: ReceivedEnvelope,
+        token: str,
         opened: OpenedEnvelope,
+        contents: tuple[bytes, ...],
         handler: Handler,
         now: datetime,
         counts: _Counts,
     ) -> None:
         message = opened.message
         try:
-            handler.store(ReceivedMessage(message, opened.hops, item.attachments))
+            handler.store(ReceivedMessage(message, opened.hops, contents))
         except Exception as error:
             LOGGER.error(
                 "the component did not store message=%s kind=%s sender=%s (%s); "
@@ -451,6 +481,7 @@ class Connector:
             return
         if (
             message.kind == KIND_UNDELIVERABLE
+            and is_from_relay(message.sender)
             and message.reference_id is not None
             and self._store.remove_waiting(message.reference_id)
         ):
@@ -461,7 +492,7 @@ class Connector:
         if message.receipt and not self._send_receipt(message):
             counts.failed += 1
             return  # stays in the inbox; the next poll finds a repetition and sends it again
-        self._acknowledge(item.token)
+        self._acknowledge(token)
         counts.delivered += 1
         LOGGER.info(
             "delivered message=%s kind=%s sender=%s recipient=%s",

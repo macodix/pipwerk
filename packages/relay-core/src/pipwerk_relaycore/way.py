@@ -17,10 +17,11 @@ Calls:
     taken the envelope over completely. Raises ``WayUnavailableError`` (repeat later),
     ``WayTooLargeError`` or ``WayRefusedError``.
 ``read``
-    Read the envelopes that have arrived, each with its attachments. An envelope that cannot be
-    delivered whole (unreadable, attachment missing or not as declared) comes back as
-    ``FaultyEnvelope``, not as ``ReceivedEnvelope``. Dropping it is the step of the connection
-    of a component and of the relay (``acknowledge`` removes it from the inbox).
+    Read the envelopes that have arrived. An envelope that cannot be read (unreadable, too
+    large, not matching its name) comes back as ``FaultyEnvelope``. The attachments of an
+    envelope are not read before the caller has checked the envelope: ``ReceivedEnvelope.load``
+    reads them (see there). Dropping an envelope is the step of the connection of a component
+    and of the relay (``acknowledge`` removes it from the inbox).
 ``acknowledge``
     Tell the way that the envelope behind a token is stored (or dropped); the way removes it from
     the inbox. The call is repeatable.
@@ -29,7 +30,7 @@ Calls:
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Annotated, ClassVar, Self
@@ -58,12 +59,27 @@ class WaySettings(BaseModel):
 
 @dataclass(frozen=True, slots=True)
 class ReceivedEnvelope:
-    """An envelope with all its attachments, in the order of ``message.attachments``."""
+    """An envelope with its attachments, in the order of ``message.attachments``.
+
+    A way that reads attachments from a slow or large source passes ``loader`` and leaves
+    ``attachments`` empty. The caller then checks the envelope first (check value, connection,
+    size, schema) and only afterwards calls ``load``, which reads and returns the attachments.
+    ``load`` raises ``EnvelopeRejected`` (``attachment_missing``, ``attachment_size``,
+    ``too_large``) when they are not as declared, and ``WayUnavailableError`` when the source
+    cannot be reached. A way without ``loader`` has all attachments in ``attachments``.
+    """
 
     token: str
     envelope: Envelope
     attachments: tuple[bytes, ...]
     modified_at: datetime
+    loader: Callable[[], tuple[bytes, ...]] | None = None
+
+    def load(self) -> tuple[bytes, ...]:
+        """The attachments; reads them first if the way has not read them yet."""
+        if self.loader is None:
+            return self.attachments
+        return self.loader()
 
 
 @dataclass(frozen=True, slots=True)

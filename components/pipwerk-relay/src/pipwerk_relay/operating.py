@@ -13,7 +13,7 @@ Names of components and relays follow the rules of an address (specification 3.1
 import json
 from typing import Annotated, Self
 
-from pipwerk_relaycore.address import NAME_REGEX
+from pipwerk_relaycore.address import NAME_REGEX, RESERVED_COMPONENT_NAME
 from pipwerk_relaycore.envelope import WAY_NAME_REGEX
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, model_validator
 
@@ -21,7 +21,6 @@ from pipwerk_relay.errors import ConfigRejected
 
 NAME_PATTERN = rf"^{NAME_REGEX}$"
 KEY_FILE_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
-RESERVED_COMPONENT_NAME = "relay"
 MAX_CONFIG_BYTES = 1024 * 1024
 
 DEFAULT_MAX_HOPS = 8

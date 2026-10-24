@@ -209,6 +209,34 @@ def test_a_message_that_comes_a_second_time_is_not_written_again(bench: Bench) -
     assert len(bench.received(bench.second)) == 1
 
 
+@pytest.mark.parametrize(
+    ("name", "stored"),
+    [
+        ("data.bin", "data.bin"),
+        ("NUL", "NUL~"),
+        ("nul.txt", "nul.txt~"),
+        ("Com1", "Com1~"),
+        ("LPT9.tar.gz", "LPT9.tar.gz~"),
+        ("aux", "aux~"),
+        ("report.", "report.~"),
+        ("console.txt", "console.txt"),
+        ("COM10", "COM10"),
+    ],
+)
+def test_the_name_of_a_file_is_usable_on_windows(name: str, stored: str) -> None:
+    assert probe.safe_file_name(name) == stored
+
+
+def test_listen_stores_a_file_with_a_reserved_name_under_a_safe_name(bench: Bench) -> None:
+    outcome = bench.send(
+        bench.first, ADDRESS_SECOND, text="reserved", files=[("NUL", b"a"), ("end.", b"b")]
+    )
+    assert outcome.code == 0
+    (directory,) = bench.received(bench.second)
+    assert sorted(path.name for path in (directory / "files").iterdir()) == ["NUL~", "end.~"]
+    assert (directory / "files" / "NUL~").read_bytes() == b"a"
+
+
 def test_a_message_that_cannot_be_written_leaves_nothing_behind_and_stays_in_the_inbox(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ) -> None:
