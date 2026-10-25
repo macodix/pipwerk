@@ -25,3 +25,14 @@ Keine Einschränkung der Verzeichniswahl. Ablage- und Importverzeichnis dürfen 
 
 - Auftrag 21 (Playwright 1.64.1, Browsertests): Commit `7f388d4166325f4224c01c13ab969ad6e2248749`, Funktionstest bestanden (`tests/21-functiontest-1.md`), Prüfskript Exitcode 0, 127 von 127 Browsertests bestanden; zusammengeführt in den Arbeitszweig `backtest/wp02`.
 - Nach `amended` folgen: Auftrag Backend (eindeutiger Name) und Oberfläche (Texte), Funktionstest, Sicherheitstest, Testumgebung neu starten, QA, `acceptance`.
+
+## Ergebnis (Softwarearchitekt, 2026-10-25)
+
+Lücke geschlossen, rein technisch. Prüfung durch die QA bestanden in [specification-9.md](../reviews/specification-9.md). Maßgeblich ist die Spezifikation auf `main`; dort stehen die Einzelheiten.
+
+1. 5.6 „Dateien behalten“: Eine vorhandene Datei im Ablageverzeichnis wird nie ersetzt, gleich welcher Herkunft. Ist der Name vergeben (Datei, Verzeichnis oder Verweis), erhält die behaltene Datei vor der Endung die kleinste freie Nummer ab 2 in Klammern, etwa `EURUSD_M1 (2).csv`. Anlegen unter dem Namen nur, solange er frei ist, in einem Schritt ohne Ersetzen; sonst nächste Nummer. Höchstzahl der Versuche legt der Auftrag fest, danach wie ein Fehler beim Schreiben. Das Ergebnis je Datei nennt den Namen, unter dem sie behalten wurde (auch 5.3); der Dialog zeigt ihn, wenn er abweicht. Die Erklärung des Kästchens beim Zeigen nennt die Regel.
+2. 5.3 und 5.7: Ablage- und Importverzeichnis dürfen gleich sein oder ineinander liegen; keine Prüfung gegeneinander beim Speichern. Dateien im Importverzeichnis bleiben unverändert, eine behaltene Datei erscheint dort als zusätzliche Datei, Zwischendateien in keinem Verzeichnis der Liste.
+3. Tests (10), Sicherheit (11) und Anwenderdokumentation (12) sind ergänzt, darunter die vier Fälle aus „Benötigte Ergänzung“, Punkt 3.
+4. Plan: ohne Änderung. Kriterien 12 und 13 bleiben richtig; die neuen Fälle weisen die Tests nach Abschnitt 10 im Prüfskript nach.
+
+Das Feld `kept` der Web-API (bisher ja oder nein) braucht dafür den Namen; die Form legt der Auftrag fest.
