@@ -64,6 +64,7 @@ Bestätigungen des Auftraggebers erfolgen formlos im Chat. Der Projektleiter ver
 | Auftrag | Umsetzbare Einheit eines Arbeitspakets für genau einen Entwickler. |
 | Übergabedokument | Dokument, mit dem eine Rolle ihr Ergebnis an die nächste übergibt. Es ist so vollständig, dass die empfangende Rolle ohne Rückgriff auf Gespräche arbeiten kann. |
 | Meldung | Kurze Datei, die eine Aufgabe und den Pfad des zugehörigen Übergabedokuments nennt und damit die Arbeit der empfangenden Rolle anstößt. |
+| Release | Vom Auftraggeber freigegebene Version einer Komponente oder von pipwerk als Ganzes, die im produktiven Umfeld betrieben werden kann, ohne Gewähr. Ein Release gibt es, wenn der Auftraggeber es festlegt. Voraussetzung nach [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen). |
 | Durchlauf | Eine Runde einer Prüfschleife: Prüfung, Bericht und Korrektur. |
 
 ## Phasen
@@ -173,6 +174,8 @@ Prüfen:
 2. **Phase 1, beim Anlegen oder Erweitern von `scope.md`:** Der Projektleiter legt alle Einträge mit `dringend` und `erforderlich` der Bereiche vor, die das Vorhaben berührt, jeweils mit Vorschlag zum Mitnehmen. Mitgenommene Einträge schreibt er in das zuständige Dokument und setzt ihren Stand auf `übernommen`.
 3. **Phase 3, Planung:** Der Softwarearchitekt nennt im Plan Einträge mit `erforderlich`, deren Teil der Software ein Arbeitspaket ohnehin ändert und die nicht übernommen sind. Der Projektleiter legt sie mit dem Plan vor. Mitgenommene Einträge gehen über den Rückweg in Phase 1.
 4. **Kein laufendes Vorhaben:** Steht kein Vorhaben an, legt der Projektleiter die übrigen Einträge mit `erforderlich` vor, danach die mit `gewünscht`.
+
+**Release:** Vor einem Release müssen alle Einträge mit `dringend` und `erforderlich` der betroffenen Bereiche erledigt sein, bei einem Release von pipwerk als Ganzes alle. Einträge mit `offen` erhalten vorher eine Priorität. Der Projektleiter legt dem Auftraggeber vor einem Release die noch nicht erledigten Einträge vor.
 
 Während Phase 4 wird kein Eintrag in ein laufendes Arbeitspaket aufgenommen, außer über den Rückweg in Phase 1 bei `dringend`.
 
@@ -483,7 +486,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-25 | Abschnitt [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen): Liste je Bereich mit Prioritäten `dringend`, `erforderlich`, `gewünscht`, Eintragen durch alle Rollen, Prüfung beim Eintrag, in Phase 1, in Phase 3 und ohne laufendes Vorhaben. Festlegung des Auftraggebers im Chat am 2026-10-25. |
+| 2026-10-25 | Abschnitt [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen): Liste je Bereich mit Prioritäten `dringend`, `erforderlich`, `gewünscht`, Eintragen durch alle Rollen, Prüfung beim Eintrag, in Phase 1, in Phase 3 und ohne laufendes Vorhaben. Begriff Release und Voraussetzung eines Release. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-23 | Prototyp nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | Phase 2: Mängel aus der Abnahme einer umgesetzten Oberfläche ohne neuen Prototyp direkt in der Software beheben. Anlass: Abnahme `backtest/wp02`, Prototyp der Ansicht „Datenbestand“. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | Runner: Ein neuer Lauf bricht einen laufenden oder wartenden ab (`cancel-in-progress: true` in `.github/workflows/sync-repo.yml`), damit ein Lauf, den der Runner nicht annimmt, die folgenden nicht blockiert. |

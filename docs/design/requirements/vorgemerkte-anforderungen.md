@@ -22,7 +22,7 @@ Die Priorität legt der Auftraggeber fest.
 | Priorität | Umsetzung |
 |---|---|
 | `dringend` | sobald möglich |
-| `erforderlich` | sobald es sich anbietet, also wenn ohnehin an diesem Teil der Software gearbeitet wird, oder sobald möglich, spätestens vor dem nächsten Release |
+| `erforderlich` | sobald es sich anbietet, also wenn ohnehin an diesem Teil der Software gearbeitet wird, oder sobald möglich, spätestens vor dem nächsten Release der betroffenen Komponente oder von pipwerk als Ganzes |
 | `gewünscht` | sobald nichts anderes mehr ansteht oder der Auftraggeber es verlangt |
 | `offen` | Eintrag einer Rolle, Priorität vom Auftraggeber noch nicht festgelegt |
 
@@ -70,12 +70,10 @@ Einträge mit Stand `übernommen` oder `verworfen` bleiben stehen.
 | Nr. | Inhalt | Priorität | Herkunft | Stand |
 |---|---|---|---|---|
 
-## 5. Offene Punkte
+Was ein Release ist und was vor einem Release erledigt sein muss, regelt das [Entwicklungsverfahren](../../technical/entwicklungsverfahren.md#vorgemerkte-anforderungen).
 
-- Was ein Release ist und wann das nächste ansteht, ist nicht festgelegt. Bis dahin gilt für `erforderlich` nur „sobald es sich anbietet oder sobald möglich“. Offen.
-
-## 6. Änderungsnachweis
+## 5. Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
-| 2026-10-25 | Liste angelegt. Prioritäten `dringend`, `erforderlich`, `gewünscht` festgelegt vom Auftraggeber im Chat am 2026-10-25. |
+| 2026-10-25 | Liste angelegt. Prioritäten `dringend`, `erforderlich`, `gewünscht` festgelegt vom Auftraggeber im Chat am 2026-10-25. Release im Entwicklungsverfahren festgelegt, offener Punkt erledigt. |
