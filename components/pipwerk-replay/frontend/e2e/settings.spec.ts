@@ -66,6 +66,33 @@ test('shows the defaults, saves all four values and shows them again after a rel
   await expect(page.getByTestId('settings-keep')).toBeChecked();
 });
 
+test('saves the storage directory and the import directory as the same directory and one inside the other', async ({
+  page,
+  stack,
+}) => {
+  const shared = stack.makeDirectory('shared');
+  const inside = join(shared, 'inner');
+  await openApp(page);
+  await chooseView(page, 'settings');
+
+  await page.getByTestId('settings-storage').fill(shared);
+  await page.getByTestId('settings-import').fill(shared);
+  await page.getByTestId('settings-save').click();
+
+  await expect(page.getByTestId('settings-saved')).toBeVisible();
+  let stored = await getFileSettings(stack.backendUrl);
+  expect(stored.storage_directory).toEqual({ path: shared, is_default: false });
+  expect(stored.import_directory).toEqual({ path: shared, is_default: false });
+
+  await page.getByTestId('settings-import').fill(inside);
+  await page.getByTestId('settings-save').click();
+
+  await expect(page.getByTestId('settings-saved')).toBeVisible();
+  stored = await getFileSettings(stack.backendUrl);
+  expect(stored.storage_directory).toEqual({ path: shared, is_default: false });
+  expect(stored.import_directory).toEqual({ path: inside, is_default: false });
+});
+
 test('emptying a directory brings back the default', async ({ page, stack }) => {
   const storage = stack.makeDirectory('storage');
   await openApp(page);

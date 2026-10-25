@@ -775,17 +775,19 @@ function ImportItem({
           </b>
         </div>
       )}
-      {item.outcome !== null && <ItemResult outcome={item.outcome} language={language} fromDirectory={fromDirectory} />}
+      {item.outcome !== null && <ItemResult outcome={item.outcome} name={item.name} language={language} fromDirectory={fromDirectory} />}
     </li>
   );
 }
 
 function ItemResult({
   outcome,
+  name,
   language,
   fromDirectory,
 }: {
   outcome: FileOutcome;
+  name: string;
   language: SupportedLanguage;
   fromDirectory: boolean;
 }) {
@@ -794,8 +796,16 @@ function ItemResult({
   const result: ImportResult | null = outcome.result;
   // What became of the file itself: kept in the storage directory (uploaded, ticked), or left in
   // the import directory (never changed, moved, removed or copied).
+  // If the name under which it was kept differs from its own (the name was taken, a number was
+  // added), the text names it; the name is set as text.
   const fate = outcome.kept ? (
-    <span data-testid="import-kept">{t('import.kept')}</span>
+    outcome.keptAs !== null && outcome.keptAs !== name ? (
+      <span data-testid="import-kept" data-kept-as={outcome.keptAs}>
+        {t('import.keptAs', { name: outcome.keptAs })}
+      </span>
+    ) : (
+      <span data-testid="import-kept">{t('import.kept')}</span>
+    )
   ) : fromDirectory ? (
     <span data-testid="import-stays">{t('import.stays')}</span>
   ) : null;

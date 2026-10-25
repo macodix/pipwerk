@@ -177,6 +177,34 @@ describe('SettingsView, saving', () => {
     expect(screen.getByLabelText('Importverzeichnis')).toHaveValue('/data/import');
   });
 
+  it('sends storage and import directory as typed if they are the same or one lies in the other (no check in the view)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SettingsView />);
+    await shown();
+
+    await user.clear(screen.getByLabelText('Ablageverzeichnis'));
+    await user.type(screen.getByLabelText('Ablageverzeichnis'), '/srv/files');
+    await user.clear(screen.getByLabelText('Importverzeichnis'));
+    await user.type(screen.getByLabelText('Importverzeichnis'), '/srv/files');
+    expect(screen.getByTestId('settings-save')).toBeEnabled();
+    await user.click(screen.getByTestId('settings-save'));
+
+    await screen.findByTestId('settings-saved');
+    expect(puts()[0]?.body).toMatchObject({ storage_directory: '/srv/files', import_directory: '/srv/files' });
+    expect(screen.queryByTestId('settings-storage-error')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('settings-import-error')).not.toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Importverzeichnis'));
+    await user.type(screen.getByLabelText('Importverzeichnis'), '/srv/files/in');
+    await user.click(screen.getByTestId('settings-save'));
+
+    await waitFor(() => {
+      expect(puts()).toHaveLength(2);
+    });
+    expect(puts()[1]?.body).toMatchObject({ storage_directory: '/srv/files', import_directory: '/srv/files/in' });
+    expect(await screen.findByTestId('settings-saved')).toBeInTheDocument();
+  });
+
   it('saves only a changed tick', async () => {
     const user = userEvent.setup();
     renderWithProviders(<SettingsView />);

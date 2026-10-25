@@ -804,3 +804,176 @@ describe('Dateien behalten', () => {
     });
   });
 });
+
+describe('Name der behaltenen Datei', () => {
+  async function runWithAnswer(
+    answer: (name: string) => Response,
+    language: 'de' | 'en' = 'de',
+    files: string[] = ['a.csv'],
+  ): Promise<void> {
+    backend.fileSettings = fileSettingsJson({ keep_imported_files: true });
+    backend.fileAnswer = answer;
+    const user = userEvent.setup();
+    renderWithProviders(<DataView />, language);
+    await user.click(await screen.findByTestId('import-open'));
+    await screen.findByTestId('dialog-import');
+    for (const name of files) {
+      backend.hints[name] = hintJson(name, { instrument: 'EURUSD', data: 'h1' });
+    }
+    await user.upload(
+      screen.getByTestId('import-files'),
+      files.map((name) => new File(['x'], name)),
+    );
+    await waitFor(() => {
+      expect(screen.getAllByTestId('import-item')).toHaveLength(files.length);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('import-keep-files')).toBeChecked();
+    });
+    await fillBasics(user);
+    await user.click(screen.getByTestId('import-run'));
+    await waitFor(() => {
+      expect(screen.getByTestId('import-summary')).toBeInTheDocument();
+    });
+  }
+
+  it('names the name under which a taken file was kept if it differs, in German', async () => {
+    await runWithAnswer((name) => json(200, takenJson(name, {}, true, 'a (2).csv')));
+
+    const kept = within(item('a.csv')).getByTestId('import-kept');
+    expect(kept).toHaveTextContent('Die Datei ist im Ablageverzeichnis unter dem Namen a (2).csv behalten.');
+    expect(kept).toHaveAttribute('data-kept-as', 'a (2).csv');
+    expect(within(item('a.csv')).getByTestId('import-result')).toHaveAttribute('data-kept', 'true');
+  });
+
+  it('names it in English', async () => {
+    await runWithAnswer((name) => json(200, takenJson(name, {}, true, 'a (2).csv')), 'en');
+
+    expect(within(item('a.csv')).getByTestId('import-kept')).toHaveTextContent(
+      'The file is kept in the storage directory under the name a (2).csv.',
+    );
+  });
+
+  it('names it for a refused file that was kept', async () => {
+    await runWithAnswer((name) => json(200, refusedJson(name, 'json_invalid', 'The file is not valid JSON.', true, 'a (3).csv')));
+
+    expect(within(item('a.csv')).getByTestId('import-result')).toHaveAttribute('data-state', 'refused');
+    expect(within(item('a.csv')).getByTestId('import-kept')).toHaveTextContent('unter dem Namen a (3).csv behalten.');
+  });
+
+  it('keeps the plain sentence if the name is the same', async () => {
+    await runWithAnswer((name) => json(200, takenJson(name, {}, true, name)));
+
+    const kept = within(item('a.csv')).getByTestId('import-kept');
+    expect(kept).toHaveTextContent(/^Die Datei ist im Ablageverzeichnis behalten\.$/);
+    expect(kept).not.toHaveAttribute('data-kept-as');
+  });
+
+  it('says nothing of a name for a file that is not kept', async () => {
+    await runWithAnswer((name) => json(200, takenJson(name, {}, false)));
+
+    expect(screen.queryByTestId('import-kept')).not.toBeInTheDocument();
+    expect(within(item('a.csv')).getByTestId('import-result')).toHaveAttribute('data-kept', 'false');
+  });
+
+  it('says nothing of a name for a file of the import directory', async () => {
+    backend.fileSettings = fileSettingsJson({ keep_imported_files: true });
+    backend.directories = { '': [entryJson('EURUSD_H1.csv', 'file', 2048)] };
+    backend.hints['EURUSD_H1.csv'] = hintJson('EURUSD_H1.csv', { instrument: 'EURUSD', data: 'h1' });
+    const user = userEvent.setup();
+    await openDialog(user);
+    await openPicker(user);
+    await screen.findByTestId('picker-list');
+    await tick(user, 'EURUSD_H1.csv');
+    await user.click(screen.getByTestId('picker-confirm'));
+    await screen.findByTestId('import-item');
+    await fillBasics(user);
+    await user.click(screen.getByTestId('import-run'));
+    await waitFor(() => {
+      expect(screen.getByTestId('import-summary')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId('import-kept')).not.toBeInTheDocument();
+    expect(within(item('EURUSD_H1.csv')).getByTestId('import-stays')).toBeInTheDocument();
+  });
+
+  it('sets a name with special characters as text, never as HTML', async () => {
+    const odd = '<img src=x onerror=alert(1)> & "q" {{name}} (2).csv';
+    await runWithAnswer((name) => json(200, takenJson(name, {}, true, odd)));
+
+    const kept = within(item('a.csv')).getByTestId('import-kept');
+    expect(kept.textContent).toBe(`Die Datei ist im Ablageverzeichnis unter dem Namen ${odd} behalten.`);
+    expect(kept.querySelector('img')).toBeNull();
+    expect(kept).toHaveAttribute('data-kept-as', odd);
+  });
+
+  it('shows the name for each file of several', async () => {
+    await runWithAnswer(
+      (name) => json(200, takenJson(name, {}, true, name === 'b.csv' ? 'b (2).csv' : name)),
+      'de',
+      ['a.csv', 'b.csv'],
+    );
+
+    expect(within(item('a.csv')).getByTestId('import-kept')).toHaveTextContent(/^Die Datei ist im Ablageverzeichnis behalten\.$/);
+    expect(within(item('b.csv')).getByTestId('import-kept')).toHaveTextContent('unter dem Namen b (2).csv behalten.');
+  });
+});
+
+describe('Erklärung der Regel für behaltene Dateien', () => {
+  function tipOf(): string {
+    return screen.getByTestId('field-import-keep-files').querySelector('[data-tip]')?.getAttribute('data-tip') ?? '';
+  }
+
+  it('says in German that an existing file is never replaced and the kept file gets a number', async () => {
+    const user = userEvent.setup();
+    await openDialog(user);
+    await waitFor(() => {
+      expect(tipOf()).toContain('/data/storage');
+    });
+
+    expect(tipOf()).toContain('eine vorhandene Datei wird nie ersetzt');
+    expect(tipOf()).toContain('erhält die behaltene Datei eine Nummer im Namen, zum Beispiel EURUSD_M1 (2).csv');
+    expect(tipOf()).not.toContain('gleichen Namens wird ersetzt');
+  });
+
+  it('says it in German without a storage directory', async () => {
+    backend.fileSettings = fileSettingsJson({ storage_directory: { path: null, is_default: true } });
+    const user = userEvent.setup();
+    await openDialog(user);
+    await waitFor(() => {
+      expect(tipOf()).toContain('Das Ablageverzeichnis stellen Sie unter „Einstellungen“ ein.');
+    });
+
+    expect(tipOf()).toContain('eine vorhandene Datei wird nie ersetzt');
+    expect(tipOf()).toContain('Nummer im Namen, zum Beispiel EURUSD_M1 (2).csv');
+    expect(tipOf()).not.toContain('gleichen Namens wird ersetzt');
+  });
+
+  it('says it in English, with a storage directory', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DataView />, 'en');
+    await user.click(await screen.findByTestId('import-open'));
+    await screen.findByTestId('dialog-import');
+    await waitFor(() => {
+      expect(tipOf()).toContain('/data/storage');
+    });
+
+    expect(tipOf()).toContain('an existing file is never replaced');
+    expect(tipOf()).toContain('the kept file gets a number in its name, for example EURUSD_M1 (2).csv');
+    expect(tipOf()).not.toContain('is replaced');
+  });
+
+  it('says it in English without a storage directory', async () => {
+    backend.fileSettings = fileSettingsJson({ storage_directory: { path: null, is_default: true } });
+    const user = userEvent.setup();
+    renderWithProviders(<DataView />, 'en');
+    await user.click(await screen.findByTestId('import-open'));
+    await screen.findByTestId('dialog-import');
+    await waitFor(() => {
+      expect(tipOf()).toContain('You set the storage directory under "Settings".');
+    });
+
+    expect(tipOf()).toContain('an existing file is never replaced');
+    expect(tipOf()).toContain('a number in its name');
+  });
+});

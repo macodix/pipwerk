@@ -343,6 +343,8 @@ export type FileOutcome = {
   limit: FileLimit | null;
   /** The uploaded file was written to the storage directory ("Dateien behalten", 5.6). */
   kept: boolean;
+  /** The name (file name only) under which the file was kept; `null` if it was not kept. */
+  keptAs: string | null;
 };
 
 function parseOutcome(value: unknown): FileOutcome {
@@ -356,6 +358,7 @@ function parseOutcome(value: unknown): FileOutcome {
     error: strOrNull(record, 'error'),
     limit: limitFromMessage(record.message === undefined ? null : strOrNull(record, 'message')),
     kept: bool(record, 'kept'),
+    keptAs: strOrNull(record, 'kept_as'),
   };
 }
 
@@ -410,7 +413,7 @@ export async function importProcessFile(
     if (limit === undefined) {
       throw error;
     }
-    return { name: item.file.name, refused: true, result: null, error: 'too_large', limit, kept: false };
+    return { name: item.file.name, refused: true, result: null, error: 'too_large', limit, kept: false, keptAs: null };
   }
 }
 

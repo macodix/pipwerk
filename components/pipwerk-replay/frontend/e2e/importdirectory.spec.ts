@@ -185,6 +185,31 @@ test('"Dateien behalten" ticked puts every uploaded file, a refused one as well,
   expect(snapshot(imports)).toEqual(before);
 });
 
+test('"Dateien behalten" with a name that is taken names the kept file with its number and replaces nothing', async ({
+  page,
+  stack,
+}) => {
+  const storage = stack.makeDirectory('storage');
+  await putFileSettings(stack.backendUrl, { storage, keep: true });
+  writeFileSync(join(storage, CHF), 'older content');
+  const good = dayCsv('2026-01-07', [8, 9]);
+  await openData(page);
+  await openImportDialog(page);
+  await chooseImportFiles(page, [csvFile(CHF, good)]);
+  await fillImportBasics(page, { broker: 'B', timezone: 'UTC' });
+  await expect(page.getByTestId('import-keep-files')).toBeChecked();
+
+  await runImport(page);
+
+  const numbered = CHF.replace('.csv', ' (2).csv');
+  await expect(importItem(page, CHF)).toHaveAttribute('data-state', 'taken');
+  await expect(importItem(page, CHF).getByTestId('import-kept')).toContainText(
+    `Die Datei ist im Ablageverzeichnis unter dem Namen ${numbered} behalten.`,
+  );
+  expect(readFileSync(join(storage, CHF), 'utf-8')).toBe('older content');
+  expect(readFileSync(join(storage, numbered), 'utf-8')).toBe(good);
+});
+
 test('"Dateien behalten" not ticked leaves nothing in the storage directory', async ({ page, stack }) => {
   const storage = stack.makeDirectory('storage');
   await putFileSettings(stack.backendUrl, { storage });
@@ -260,6 +285,9 @@ test('the explanation of the tick names the storage directory and says that the 
   const tip = page.getByTestId('tooltip');
   await expect(tip).toContainText(storage);
   await expect(tip).toContainText('Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert.');
+  await expect(tip).toContainText('eine vorhandene Datei wird nie ersetzt');
+  await expect(tip).toContainText('erhält die behaltene Datei eine Nummer im Namen, zum Beispiel EURUSD_M1 (2).csv');
+  await expect(tip).not.toContainText('gleichen Namens wird ersetzt');
   // The explanation is shown over the dialog, not under it.
   const covered = await tip.evaluate((node) => {
     // The explanation lets mouse events pass; for the measurement it does not.
