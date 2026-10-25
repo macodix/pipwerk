@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Testattrappe für tmux: eine Sitzung ist eine Datei unter sessions/ neben ihr mit Arbeitsverzeichnis und Befehl.
+# Liegt daneben tmux.fail, schlägt new-session fehl.
+dir="$(dirname "$0")/sessions"
+mkdir -p "$dir"
+echo "$*" >>"$dir/.calls"
+cmd="$1"
+shift
+case "$cmd" in
+  has-session|kill-session)
+    target="${2#=}"
+    [[ -f "$dir/$target" ]] || exit 1
+    if [[ "$cmd" == kill-session ]]; then
+      rm "$dir/$target"
+    fi
+    exit 0 ;;
+  new-session)
+    # new-session kann den tmux-Server starten: offenen Deskriptor 8 (Sperre von agentrun) vermerken
+    if [[ -e /proc/$$/fd/8 ]]; then
+      echo "fd 8 offen" >>"$dir/.fds"
+    fi
+    if [[ -f "$dir/../tmux.fail" ]]; then
+      echo "server exited unexpectedly" >&2
+      exit 1
+    fi
+    name=""
+    cwd=""
+    while (( $# )); do
+      case "$1" in
+        -d) shift ;;
+        -s) name="$2"; shift 2 ;;
+        -c) cwd="$2"; shift 2 ;;
+        *) break ;;
+      esac
+    done
+    { echo "cwd=$cwd"; printf 'arg=%s\n' "$@"; } >"$dir/$name"
+    exit 0 ;;
+esac
+exit 0

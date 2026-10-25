@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# heartbeat – Hook von Claude Code für PreToolUse, PostToolUse und PostToolUseFailure.
+# Grundlage: docs/technical/entwicklungsverfahren.md, Abschnitt „Herzschlag“.
+#
+# Liest die Hook-Daten (JSON) von stdin. Liegt cwd unter work/<vorhaben>/<rolle>/ oder
+# work/<vorhaben>/<arbeitspaket>/<rolle>/, aktualisiert es run/<ref>.heartbeat (ref mit „-“ statt „/“).
+# Gibt nichts aus und endet immer mit 0.
+
+# Entwicklungsverzeichnis: das Verzeichnis über scripts/, in dem dieses Skript liegt
+ROOT="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)" 2>/dev/null
+ROLE='^(architect|architectmain|devlead|devleadmain|backend[0-9]*|frontend[0-9]*|functiontest|securitytest|qa)$'   # Rollennamen
+
+main() {
+  local cwd project part role
+  cwd="$(jq -r .cwd)"
+  if [[ "$cwd" != "$ROOT/work/"* ]]; then
+    return
+  fi
+  IFS=/ read -r project part role _ <<<"${cwd#"$ROOT/work/"}"
+  if [[ "$part" =~ $ROLE ]]; then
+    touch "$ROOT/run/$project.heartbeat"
+  elif [[ "$role" =~ $ROLE ]]; then
+    touch "$ROOT/run/$project-$part.heartbeat"
+  fi
+}
+
+main >/dev/null 2>&1
+exit 0

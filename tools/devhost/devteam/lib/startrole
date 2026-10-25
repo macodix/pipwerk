@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# startrole – gemeinsamer Teil der Startskripte für Tester und QA in bin/.
+# Grundlage: docs/technical/entwicklungsverfahren.md, Abschnitt „Start von Entwickler, Tester und QA“.
+#
+# Aufruf: startrole <rolle> <modell> <ref> <übergabedokument>
+# Legt work/<ref>/<rolle>/ an, falls es fehlt, und startet darin das Programm aus start.conf.
+# Endet mit dem Exitcode des Programms.
+
+# Entwicklungsverzeichnis: zwei Ebenen über devteam/lib/, in dem dieses Skript liegt
+ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd)"
+
+DEVTEAM="$ROOT/devteam"
+role="$1"
+model="$2"
+ref="$3"
+document="$4"
+dir="$ROOT/work/$ref/$role"
+prompt="Bearbeite das Übergabedokument $document. Bezug: $ref. Entwicklungsverzeichnis: $ROOT. Arbeitsverzeichnis: $dir."
+
+# setzt START_PROGRAM
+source "$DEVTEAM/start.conf"
+
+# Platzhalter in START_PROGRAM ersetzen
+cmd=()
+for a in "${START_PROGRAM[@]}"; do
+  a="${a//\{devteam\}/$DEVTEAM}"
+  a="${a//\{agent\}/$role}"
+  a="${a//\{model\}/$model}"
+  a="${a//\{prompt\}/$prompt}"
+  cmd+=("$a")
+done
+
+mkdir -p "$dir"
+cd "$dir" || exit 1
+exec "${cmd[@]}"

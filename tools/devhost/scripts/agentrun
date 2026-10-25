@@ -1,0 +1,259 @@
+#!/usr/bin/env bash
+# agentrun – startet und überwacht die Sitzungen von Softwarearchitekt und Entwicklungsleiter.
+# Grundlage: docs/technical/entwicklungsverfahren.md, Abschnitte „Meldungen“, „agentrun“ und „Herzschlag“.
+# Aufruf: agentrun, gestartet von pidcheck. Beenden: kill "$(cat run/agentrun.pid)".
+
+# Parameter: die Umgebung überschreibt die Standardwerte (so setzt die Testumgebung sie).
+# Die Installation setzt GITHUB_REPO und CLAUDE auf die Werte des Entwicklungsrechners (siehe README).
+ROOT="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"    # Entwicklungsverzeichnis: das Verzeichnis über scripts/, in dem dieses Skript liegt
+HEARTBEAT_TIMEOUT="${HEARTBEAT_TIMEOUT:-900}"    # Sekunden ohne Herzschlag bis zum Abbruch
+INTERVAL="${INTERVAL:-30}"                       # Sekunden, nach denen inotifywait spätestens zurückkehrt
+GITHUB_REPO="${GITHUB_REPO:-}"                   # Repository für Meldungen failed, <Eigentümer>/<Name>; die Installation setzt es
+CLAUDE="${CLAUDE:-claude}"                       # Programm der Sitzung; die Installation setzt den vollständigen Pfad
+
+MESSAGES_PATH=development/messages               # Meldungen, je Empfänger ein Verzeichnis
+OUTBOX_PATH=$MESSAGES_PATH/projectlead           # Meldungen an den Projektleiter
+ROLES=(architect devlead)                        # überwachte Empfänger, zugleich Rollennamen der Arbeitsverzeichnisse
+declare -A AGENT=([architect]=software-architect [devlead]=devlead)   # Agentendefinition je Rolle
+declare -A OTHER=([architect]=devlead [devlead]=architect)            # Verzeichnis der jeweils anderen Rolle
+MESSAGES="$ROOT/repo/$MESSAGES_PATH"
+OUTBOX="$ROOT/repo/$OUTBOX_PATH"
+RUN="$ROOT/run"
+WORK="$ROOT/work"
+DEVTEAM="$ROOT/devteam"
+STARTED="$RUN/agentrun.started"                  # Meldungen, die eine Sitzung gestartet haben, eine je Zeile
+
+shopt -s nullglob
+
+log() {
+  echo "$(date +%Y-%m-%dT%H:%M:%S) $*" >&2
+}
+
+# Wert eines Felds aus einer Zeile „- name: `wert`“: field DATEI NAME
+field() {
+  sed -n "s/^- $2: \`\(.*\)\`\$/\1/p" "$1" | head -n 1
+}
+
+# ref ist <vorhaben> oder <vorhaben>/<arbeitspaket>
+valid_ref() {
+  [[ "$1" =~ ^[a-z0-9]+(/wp[0-9][0-9])?$ ]]
+}
+
+# Name der tmux-Sitzung und der Dateien in run/: ref mit „-“ statt „/“
+key_of() {
+  echo "${1//\//-}"
+}
+
+# ---------------------------------------------------------------- Meldung failed
+
+# Meldung failed für später vormerken: queue_failed MELDUNG REF ROLLE GRUND
+queue_failed() {
+  printf '%s\n%s\n%s\n' "$2" "$MESSAGES_PATH/$3/$1" "$4" >"$RUN/$1.failed"
+}
+
+# Meldung failed über die GitHub-API direkt auf main anlegen: send_failed MELDUNG REF DOKUMENT GRUND
+send_failed() {
+  local msg="$1" ref="$2" document="$3" reason="$4"
+  local name content
+  name="$(date -u +%Y%m%d%H%M%S)-agentrun-01.md"
+  content="$(printf '# Meldung\n\n- from: `agentrun`\n- ref: `%s`\n- task: `failed`\n- document: `%s`\n\n%s\n' \
+    "$ref" "$document" "$reason" | base64 -w0)"
+  if gh api -X PUT "repos/$GITHUB_REPO/contents/$OUTBOX_PATH/$name" \
+       -f message="development: Meldung failed für $ref" -f content="$content" -f branch=main >/dev/null; then
+    log "$msg: Meldung failed als $OUTBOX_PATH/$name geschrieben"
+    return 0
+  fi
+  log "$msg: Meldung failed ließ sich nicht schreiben, neuer Versuch bei der nächsten Prüfung"
+  return 1
+}
+
+# Vorgemerkte Meldungen failed senden; run/<meldung>.failed: Zeile 1 ref, Zeile 2 Pfad der Meldung, danach Grund
+send_pending() {
+  local f msg ref document reason
+  for f in "$RUN"/*.failed; do
+    msg="$(basename "$f" .failed)"
+    ref="$(sed -n 1p "$f")"
+    document="$(sed -n 2p "$f")"
+    reason="$(tail -n +3 "$f")"
+    if send_failed "$msg" "$ref" "$document" "$reason"; then
+      rm "$f"
+    fi
+  done
+}
+
+# ---------------------------------------------------------------- Sitzungen
+# Zustand einer Sitzung: run/<key>.session mit Meldung, ref, Startzeit und Rolle,
+# run/<key>.known mit den Meldungen in projectlead/ und im Verzeichnis der anderen Rolle beim Start.
+# run/<key>.screen: Bildschirminhalt beim Beenden, bleibt liegen bis zum nächsten Beenden.
+
+# Meldungen in projectlead/ und im Verzeichnis der anderen Rolle, je Zeile <verzeichnis>/<datei>: answer_candidates ROLLE
+answer_candidates() {
+  local f
+  for f in "$OUTBOX"/*.md "$MESSAGES/${OTHER[$1]}"/*.md; do
+    echo "${f#"$MESSAGES/"}"
+  done
+}
+
+start_session() {
+  local msg="$1" ref="$2" role="$3"
+  local key dir out
+  key="$(key_of "$ref")"
+  dir="$WORK/$ref/$role"
+  mkdir -p "$dir"
+  answer_candidates "$role" >"$RUN/$key.known"
+  echo "$msg" >>"$STARTED"
+  # 8>&- : ein hier gestarteter tmux-Server erbt die Sperre von agentrun nicht
+  if ! out="$(tmux new-session -d -s "$key" -c "$dir" \
+        "$CLAUDE" --setting-sources project --permission-mode dontAsk \
+          --plugin-dir "$DEVTEAM" --settings "$DEVTEAM/settings.json" \
+          --agent "devteam:${AGENT[$role]}" \
+          "Bearbeite die Meldung $MESSAGES/$role/$msg. Entwicklungsverzeichnis: $ROOT." 2>&1 8>&-)"; then
+    rm "$RUN/$key.known"
+    queue_failed "$msg" "$ref" "$role" "Die Sitzung ließ sich nicht starten: $out"
+    log "$ref: Start fehlgeschlagen: $out"
+    return
+  fi
+  printf '%s\n%s\n%s\n%s\n' "$msg" "$ref" "$(date +%s)" "$role" >"$RUN/$key.session"
+  log "$ref: Sitzung $key ($role) gestartet für $msg"
+}
+
+# Leeres Verzeichnis entfernen, fehlendes oder volles stehen lassen
+remove_if_empty() {
+  if [[ -d "$1" && -z "$(ls -A "$1")" ]]; then
+    rmdir "$1"
+  fi
+}
+
+# Sitzung beenden; mit Grund wird eine Meldung failed vorgemerkt: end_session KEY [GRUND]
+end_session() {
+  local key="$1" reason="$2"
+  local msg ref role
+  msg="$(sed -n 1p "$RUN/$key.session")"
+  ref="$(sed -n 2p "$RUN/$key.session")"
+  role="$(sed -n 4p "$RUN/$key.session")"
+  tmux capture-pane -p -t "$key" -S -200 > "$ROOT/run/$key.screen" 2>&1
+  tmux kill-session -t "=$key" 2>/dev/null
+  if [[ -n "$reason" ]]; then
+    queue_failed "$msg" "$ref" "$role" "$reason"
+    log "$ref: Sitzung beendet: $reason"
+  else
+    log "$ref: Sitzung nach Antwortmeldung beendet"
+  fi
+  rm -f "$RUN/$key.session" "$RUN/$key.known" "$RUN/$key.heartbeat"
+  remove_if_empty "$WORK/$ref/$role"
+  remove_if_empty "$WORK/$ref"
+  remove_if_empty "$WORK/${ref%/*}"
+}
+
+# Liegt in projectlead/ oder im Verzeichnis der anderen Rolle eine neue Meldung der gestarteten Rolle
+# mit diesem ref? has_answer KEY REF ROLLE
+has_answer() {
+  local key="$1" ref="$2" role="$3"
+  local c f
+  while read -r c; do
+    if grep -qxF "$c" "$RUN/$key.known"; then
+      continue
+    fi
+    f="$MESSAGES/$c"
+    if [[ "$(field "$f" from)" == "$role" && "$(field "$f" ref)" == "$ref" ]]; then
+      return 0
+    fi
+  done < <(answer_candidates "$role")
+  return 1
+}
+
+# Sekunden seit dem späteren Zeitpunkt von Start und letztem Herzschlag: silence KEY
+silence() {
+  local key="$1"
+  local last
+  last="$(sed -n 3p "$RUN/$key.session")"
+  if [[ -e "$RUN/$key.heartbeat" && "$(stat -c %Y "$RUN/$key.heartbeat")" -gt "$last" ]]; then
+    last="$(stat -c %Y "$RUN/$key.heartbeat")"
+  fi
+  echo $(( $(date +%s) - last ))
+}
+
+check_session() {
+  local key="$1"
+  local ref role
+  ref="$(sed -n 2p "$RUN/$key.session")"
+  role="$(sed -n 4p "$RUN/$key.session")"
+  if has_answer "$key" "$ref" "$role"; then
+    end_session "$key" ""
+  elif ! tmux has-session -t "=$key" 2>/dev/null; then
+    end_session "$key" "Die Sitzung besteht nicht mehr, ohne dass eine Antwortmeldung vorliegt."
+  elif [[ "$(silence "$key")" -ge "$HEARTBEAT_TIMEOUT" ]]; then
+    end_session "$key" "Die Sitzung wurde beendet, weil $HEARTBEAT_TIMEOUT Sekunden lang kein Herzschlag kam."
+  fi
+}
+
+# ---------------------------------------------------------------- Bewertung
+
+evaluate() {
+  local f msg ref role
+  for f in "$RUN"/*.session; do
+    check_session "$(basename "$f" .session)"
+  done
+  for role in "${ROLES[@]}"; do
+    for f in "$MESSAGES/$role"/*.md; do
+      msg="$(basename "$f")"
+      if grep -qxF "$msg" "$STARTED"; then
+        continue
+      fi
+      ref="$(field "$f" ref)"
+      if ! valid_ref "$ref"; then
+        echo "$msg" >>"$STARTED"
+        queue_failed "$msg" "$ref" "$role" "Die Meldung enthält kein gültiges Feld ref; es wurde keine Sitzung gestartet."
+        log "$msg: ungültiges ref „$ref“"
+        continue
+      fi
+      # höchstens eine Sitzung je ref über beide Rollen; weitere Meldungen warten
+      if [[ -f "$RUN/$(key_of "$ref").session" ]]; then
+        continue
+      fi
+      start_session "$msg" "$ref" "$role"
+    done
+  done
+  send_pending
+}
+
+# ---------------------------------------------------------------- Hauptschleife
+
+waiter=""
+
+stop() {
+  if [[ -n "$waiter" ]]; then
+    kill "$waiter" 2>/dev/null
+  fi
+  rm -f "$RUN/agentrun.pid"
+  exit 0
+}
+
+main() {
+  exec 8>"$RUN/agentrun.lock"
+  if ! flock -n 8; then
+    log "agentrun läuft bereits"
+    exit 0
+  fi
+  echo "$$" >"$RUN/agentrun.pid"
+  touch "$STARTED"
+  trap stop TERM INT
+  log "agentrun gestartet, PID $$, überwacht $MESSAGES"
+  while true; do
+    evaluate
+    # Rückgabe 0: Änderung, 2: Zeitgrenze, 1: Fehler. Rekursiv über messages/, weil Git ein
+    # Empfängerverzeichnis ohne Datei entfernt und mit der nächsten Meldung neu anlegt.
+    inotifywait -q -r -t "$INTERVAL" -e create,close_write,moved_to,delete,moved_from \
+      "$MESSAGES" >/dev/null 8>&- &
+    waiter=$!
+    wait "$waiter"
+    if [[ $? -eq 1 ]]; then
+      log "inotifywait fehlgeschlagen, agentrun endet"
+      rm -f "$RUN/agentrun.pid"
+      exit 1
+    fi
+    waiter=""
+  done
+}
+
+main
