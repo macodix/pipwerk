@@ -23,6 +23,10 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
    In zwei bis drei Klicks ist erkennbar, wo ein Vorhaben steht und wer daran arbeitet: Team, Softwarearchitekt, Projektleiter oder Auftraggeber. Was auf den Auftraggeber wartet, ist hervorgehoben. Die Seite ist eine HTML-Datei im Repository, wird aus dem Stand im Repository erzeugt, nicht von Hand gepflegt, und bei jeder Änderung des Stands neu erzeugt. Der Auftraggeber öffnet sie über einen festen Link wie die Präsentationen. Kein eigener Dienst, kein Server. Sie enthält keine Namen von Rechnern oder Benutzern, keine Pfade und keine Ports.
 7. **Trennung der Vorhaben.** Ein Chat des Projektleiters bearbeitet nur sein eigenes Vorhaben. Er startet, wiederholt oder repariert nichts für ein anderes Vorhaben, auch nicht bei scheinbar stehengebliebener Arbeit. Kollisionen mit anderen Vorhaben behält er im Blick. Der Auftraggeber erfährt davon nur, wenn eine Kollision alle drei Bedingungen zugleich erfüllt: Sie blockiert die Arbeit vollständig, sie betrifft das Verhalten von pipwerk für den Anwender, und Entwicklungsleiter oder Softwarearchitekt können sie nicht selbst lösen.
 
+## Ablauf dieses Vorhabens
+
+Festlegung des Auftraggebers vom 24. Oktober 2026: Nach bestandener Prüfung der Spezifikation durch die QA wird sie ohne Präsentation, ohne Arbeitspaketplan und ohne Arbeitspakete direkt umgesetzt. Die QA prüft das Ergebnis. Der Auftraggeber bestätigt einmal am Ende anhand einer Präsentation des Ergebnisses.
+
 ## Offene Punkte des Auftraggebers
 
 - Präsentationen und Ablauf der Abnahme, wird gesondert geklärt.
@@ -36,3 +40,9 @@ Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfa
 2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-01](questions/verfahren-01.md), Frage 1) vom Auftraggeber abgelehnt, weil er keine grafische Übersicht ist. Festlegung 6 um seine Vorgabe ergänzt: drei Ebenen aus Kästchen mit Farben für den Stand.
 
 2026-10-24: Frage 2 aus verfahren-01 beantwortet: „Projektleiter“ als Bearbeiter in der Übersicht, ohne Hervorhebung. Alle Fragen beantwortet, Meldung `answer`.
+
+2026-10-24: Oberflächenentwurf der Übersicht ([verfahren-02](questions/verfahren-02.md)) vom Auftraggeber im Chat bestätigt. Meldung `answer`.
+
+2026-10-24: Befund des Projektleiters zu Festlegung 2: Eine Wiedervorlage wurde laut Liste der Wiedervorlagen um 06:19 UTC ausgelöst und als zugestellt geführt, im Chat aber erst um 07:09 UTC mit der nächsten Nachricht des Auftraggebers verarbeitet. Die Wiedervorlagen davor kamen pünktlich an. Die Ursache ist unbekannt. Die Spezifikation muss für Festlegung 2 einen Weg vorsehen, der auch dann trägt.
+
+2026-10-24: Spezifikation geprüft und bestanden ([specification-3.md](reviews/specification-3.md)). Nach verkürztem Ablauf ohne Präsentation Umsetzung mit `implement` an den Entwicklungsleiter angestoßen.
