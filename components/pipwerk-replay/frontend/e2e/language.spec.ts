@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { Locator, Page } from '@playwright/test';
@@ -97,7 +97,7 @@ test('shows no German text in the English interface', async ({ page, stack }) =>
 
   // The dialog: empty, with files that need an entry, with a result per file and rejected rows.
   await openImportDialog(page);
-  await expect(page.getByTestId('import-empty')).toContainText('Next step: choose files');
+  await expect(page.getByTestId('import-empty')).toContainText('Next step: upload files in JSON or CSV format or choose files in the import directory.');
   expect(await page.getByTestId('dialog-import').innerText()).not.toMatch(GERMAN);
   const faulty = csvFile('EURUSD_H1_202601050000_202601050300.csv', FAULTY_CSV);
   const unknown = csvFile('export.csv', GAPPY_CSV);
@@ -243,6 +243,9 @@ test('explains the four settings, the tick and the choice in the import director
 }) => {
   const imports = stack.makeDirectory('import');
   writeFileSync(join(imports, 'EURUSD_H1_202601050000_202601052300.csv'), 'x');
+  // A subdirectory: in the import directory itself the button "eine Ebene höher" is disabled and cannot have the focus.
+  mkdirSync(join(imports, 'below'));
+  writeFileSync(join(imports, 'below', 'EURUSD_H1_202601050000_202601052300.csv'), 'x');
   await putFileSettings(stack.backendUrl, { import: imports, storage: stack.makeDirectory('storage') });
   await openApp(page);
 
@@ -256,7 +259,12 @@ test('explains the four settings, the tick and the choice in the import director
   await page.getByTestId('import-choose-directory').click();
   await expect(page.getByTestId('picker-list')).toBeVisible();
   // The buttons of the choice explain themselves, too, above the dialog.
+  await page.getByTestId('picker-open').first().click();
   const up = page.getByTestId('picker-up');
+  await expect(up).toBeEnabled();
+  await expect(page.getByTestId('picker-crumb')).toHaveCount(2);
+  // The mouse stays where the entry was; a new element under it would end the explanation.
+  await page.mouse.move(0, 0);
   await up.focus();
   await expect(page.getByTestId('tooltip')).toHaveText('Geht in das übergeordnete Verzeichnis, höchstens bis zum Importverzeichnis.');
   await expectOnTop(page.getByTestId('tooltip'));
