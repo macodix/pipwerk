@@ -274,6 +274,7 @@
     "keepFiles": "Keep files",
     "fromDirectory": "import directory",
     "kept": "The file is kept in the storage directory.",
+    "keptAs": "The file is kept in the storage directory under the name {{name}}.",
     "stays": "The file lies unchanged in the import directory.",
     "empty": "No file chosen yet. Next step: upload files in JSON or CSV format or choose files in the import directory.",
     "reading": "The files are being read … ({{done}} of {{total}})",
@@ -333,8 +334,8 @@
     "tip": {
       "choose": "Uploads one or more files from your hard disk, JSON and CSV mixed. The files are checked and never executed.",
       "chooseDirectory": "Shows the files in the import directory on the computer of the backend, also in subdirectories. The files there stay unchanged: pipwerk replay only reads them.",
-      "keep": "Puts every uploaded file unchanged into the storage directory {{directory}}, a refused one as well. Files from the import directory stay there and are not copied into the storage directory. pipwerk replay never removes kept files; a file of the same name is replaced. The box is preset with the setting \"Keep imported files\".",
-      "keepNoDirectory": "Puts every uploaded file unchanged into the storage directory, a refused one as well. Files from the import directory stay there and are not copied into the storage directory. pipwerk replay never removes kept files; a file of the same name is replaced. You set the storage directory under \"Settings\". The box is preset with the setting \"Keep imported files\".",
+      "keep": "Puts every uploaded file unchanged into the storage directory {{directory}}, a refused one as well. Files from the import directory stay there and are not copied into the storage directory. pipwerk replay never removes kept files; an existing file is never replaced; if it has the same name, the kept file gets a number in its name, for example EURUSD_M1 (2).csv. The box is preset with the setting \"Keep imported files\".",
+      "keepNoDirectory": "Puts every uploaded file unchanged into the storage directory, a refused one as well. Files from the import directory stay there and are not copied into the storage directory. pipwerk replay never removes kept files; an existing file is never replaced; if it has the same name, the kept file gets a number in its name, for example EURUSD_M1 (2).csv. You set the storage directory under \"Settings\". The box is preset with the setting \"Keep imported files\".",
       "broker": "The broker all files belong to, for MetaTrader 5 the name of the trade server. Choose a name from the data stock or enter a new one. If all JSON files name the same broker, it is preset. The broker also counts for JSON files.",
       "timezone": "The time zone in which MetaTrader 5 writes the times of the CSV files (time of the trade server), as a name, for example Europe/Athens. Daylight saving time is taken into account. pipwerk converts all times to UTC. Times in JSON files are UTC.",
       "instrument": "The instrument of the file, for example EURUSD. Preset from the file name, for JSON from the content.",

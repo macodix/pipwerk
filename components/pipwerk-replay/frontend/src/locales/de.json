@@ -274,6 +274,7 @@
     "keepFiles": "Dateien behalten",
     "fromDirectory": "Importverzeichnis",
     "kept": "Die Datei ist im Ablageverzeichnis behalten.",
+    "keptAs": "Die Datei ist im Ablageverzeichnis unter dem Namen {{name}} behalten.",
     "stays": "Die Datei liegt unverändert im Importverzeichnis.",
     "empty": "Noch keine Datei gewählt. Nächster Schritt: Laden Sie Dateien im Format JSON oder CSV hoch oder wählen Sie Dateien im Importverzeichnis.",
     "reading": "Die Dateien werden gelesen … ({{done}} von {{total}})",
@@ -333,8 +334,8 @@
     "tip": {
       "choose": "Lädt eine oder mehrere Dateien von Ihrer Festplatte hoch, JSON und CSV gemischt. Die Dateien werden geprüft und nie ausgeführt.",
       "chooseDirectory": "Zeigt die Dateien im Importverzeichnis auf dem Rechner des Backends, auch in Unterverzeichnissen. Die Dateien dort bleiben unverändert: pipwerk replay liest sie nur.",
-      "keep": "Legt jede hochgeladene Datei unverändert im Ablageverzeichnis {{directory}} ab, auch eine abgelehnte. Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert. pipwerk replay entfernt behaltene Dateien nie; eine Datei gleichen Namens wird ersetzt. Vorbelegt ist das Kästchen mit der Einstellung „Importierte Dateien behalten“.",
-      "keepNoDirectory": "Legt jede hochgeladene Datei unverändert im Ablageverzeichnis ab, auch eine abgelehnte. Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert. pipwerk replay entfernt behaltene Dateien nie; eine Datei gleichen Namens wird ersetzt. Das Ablageverzeichnis stellen Sie unter „Einstellungen“ ein. Vorbelegt ist das Kästchen mit der Einstellung „Importierte Dateien behalten“.",
+      "keep": "Legt jede hochgeladene Datei unverändert im Ablageverzeichnis {{directory}} ab, auch eine abgelehnte. Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert. pipwerk replay entfernt behaltene Dateien nie; eine vorhandene Datei wird nie ersetzt; hat sie denselben Namen, erhält die behaltene Datei eine Nummer im Namen, zum Beispiel EURUSD_M1 (2).csv. Vorbelegt ist das Kästchen mit der Einstellung „Importierte Dateien behalten“.",
+      "keepNoDirectory": "Legt jede hochgeladene Datei unverändert im Ablageverzeichnis ab, auch eine abgelehnte. Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert. pipwerk replay entfernt behaltene Dateien nie; eine vorhandene Datei wird nie ersetzt; hat sie denselben Namen, erhält die behaltene Datei eine Nummer im Namen, zum Beispiel EURUSD_M1 (2).csv. Das Ablageverzeichnis stellen Sie unter „Einstellungen“ ein. Vorbelegt ist das Kästchen mit der Einstellung „Importierte Dateien behalten“.",
       "broker": "Der Broker, zu dem alle Dateien gehören, bei MetaTrader 5 der Name des Handelsservers. Wählen Sie einen Namen aus dem Datenbestand oder geben Sie einen neuen ein. Nennen alle JSON-Dateien denselben Broker, ist er vorbelegt. Der Broker gilt auch für JSON-Dateien.",
       "timezone": "Die Zeitzone, in der MetaTrader 5 die Zeiten der CSV-Dateien schreibt (Zeit des Handelsservers), als Name, zum Beispiel Europe/Athens. Die Sommerzeit wird beachtet. pipwerk rechnet alle Zeiten in UTC um. Zeiten in JSON-Dateien sind UTC.",
       "instrument": "Das Instrument der Datei, zum Beispiel EURUSD. Vorbelegt aus dem Dateinamen, bei JSON aus dem Inhalt.",

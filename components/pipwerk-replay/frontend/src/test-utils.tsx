@@ -94,13 +94,19 @@ export function importResultJson(overrides: Json = {}): Json {
 }
 
 /** The result for a file that is taken over (`FileOutcome` of the web API). */
-export function takenJson(name: string, result: Json = {}, kept = false): Json {
-  return { name, refused: false, result: importResultJson(result), error: null, message: null, kept };
+export function takenJson(name: string, result: Json = {}, kept = false, keptAs: string | null = kept ? name : null): Json {
+  return { name, refused: false, result: importResultJson(result), error: null, message: null, kept, kept_as: keptAs };
 }
 
 /** The result for a file that is refused as a whole. */
-export function refusedJson(name: string, error: string, message = 'x', kept = false): Json {
-  return { name, refused: true, result: null, error, message, kept };
+export function refusedJson(
+  name: string,
+  error: string,
+  message = 'x',
+  kept = false,
+  keptAs: string | null = kept ? name : null,
+): Json {
+  return { name, refused: true, result: null, error, message, kept, kept_as: keptAs };
 }
 
 /** One entry of the listing of the import directory (`ImportDirectoryEntry`). */

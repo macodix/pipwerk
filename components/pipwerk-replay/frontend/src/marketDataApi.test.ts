@@ -281,6 +281,7 @@ describe('import process', () => {
       error: 'too_large',
       limit: { kind: 'size', text: '32 MiB' },
       kept: false,
+      keptAs: null,
     });
   });
 
@@ -318,6 +319,31 @@ describe('import process', () => {
 
     expect(readForm(backend.calls.at(-1)?.body).keep).toBe('true');
     expect(outcome.kept).toBe(true);
+  });
+
+  it('reads `kept_as`: the name under which the file was kept, or null', async () => {
+    backend.fileAnswer = (name) => json(200, takenJson(name, {}, true, 'a (2).json'));
+    const renamed = await importProcessFile('p', 'B', '', fileOf('a.json'), true);
+    expect(renamed).toMatchObject({ kept: true, keptAs: 'a (2).json' });
+
+    backend.fileAnswer = (name) => json(200, refusedJson(name, 'json_invalid', 'x', true, 'a (3).json'));
+    expect(await importProcessFile('p', 'B', '', fileOf('a.json'), true)).toMatchObject({ refused: true, kept: true, keptAs: 'a (3).json' });
+
+    backend.fileAnswer = (name) => json(200, takenJson(name));
+    expect(await importProcessFile('p', 'B', '', fileOf('a.json'), false)).toMatchObject({ kept: false, keptAs: null });
+  });
+
+  it('reads `kept_as` null for a file of the import directory', async () => {
+    const outcome = await importProcessDirectoryFile('p', 'B', '', { path: 'a.csv', instrument: 'EURUSD', data: 'h1' });
+    expect(outcome).toMatchObject({ kept: false, keptAs: null });
+  });
+
+  it('refuses a result without `kept_as` and one with `kept_as` of another type', async () => {
+    backend.fileAnswer = (name) => json(200, { ...takenJson(name), kept_as: undefined });
+    await expect(importProcessFile('p', 'B', '', fileOf('a.json'), false)).rejects.toBeInstanceOf(UnexpectedAnswerError);
+
+    backend.fileAnswer = (name) => json(200, { ...takenJson(name), kept_as: 5 });
+    await expect(importProcessFile('p', 'B', '', fileOf('a.json'), false)).rejects.toBeInstanceOf(UnexpectedAnswerError);
   });
 
   it('refuses a result without `kept`', async () => {
