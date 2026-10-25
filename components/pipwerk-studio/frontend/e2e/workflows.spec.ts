@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-import { clickMenu, expect, library, newStrategy, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
+import { clickMenu, expect, expectSaved, library, newStrategy, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
 
 // Specification 5.5: the workflows save, check, close, new, open, delete and settings.
 
@@ -11,8 +11,7 @@ async function dialogButton(page: Page, name: string | RegExp) {
   return page.getByRole('dialog').getByRole('button', { name });
 }
 
-test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page, api }, testInfo) => {
-  void api;
+test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page }, testInfo) => {
   // The backend of the run is shared by all browsers: every browser saves a strategy with a name of its own.
   const name = `Meine erste Strategie ${testInfo.project.name}`;
   await openApp(page);
@@ -30,14 +29,13 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   await showArea(page, 'props');
   await page.getByTestId('strategy-name').fill(name);
   await clickMenu(page, 'save');
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
   await expect(page.getByTestId('findings-count')).toBeVisible();
   await clickMenu(page, 'open');
   await expect(page.getByRole('dialog').getByRole('button', { name, exact: true })).toBeVisible();
 });
 
-test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page, api }) => {
-  void api;
+test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page }) => {
   await openApp(page);
   await newStrategy(page);
   await library(page, 'Bedingung').click();
@@ -57,8 +55,7 @@ test('"Prüfen" shows the findings with the way to fix them, and a click leads t
   await expect(page.getByTestId('element-name')).toHaveValue('Bedingung');
 });
 
-test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page, api }, testInfo) => {
-  void api;
+test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page }, testInfo) => {
   const savedName = `Gespeicherter Name ${testInfo.project.name}`;
   await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
@@ -95,8 +92,7 @@ test('closing, a new strategy and opening ask what to do with unsaved changes: s
   await expect(page.getByRole('dialog').getByRole('button', { name: savedName, exact: true })).toBeVisible();
 });
 
-test('the list of strategies shows name, description and last change, and marks a file that cannot be read', async ({ page, api }) => {
-  void api;
+test('the list of strategies shows name, description and last change, and marks a file that cannot be read', async ({ page }) => {
   await openApp(page);
 
   await clickMenu(page, 'open');
@@ -107,16 +103,12 @@ test('the list of strategies shows name, description and last change, and marks 
   await expect(page.getByRole('dialog').getByText('nicht lesbar')).toHaveCount(1);
 });
 
-test('the open strategy is deleted after a question; it is gone from the list', async ({ page, api }) => {
+test('the open strategy is deleted after a question; it is gone from the list', async ({ page }) => {
   // The backend of the run is shared by all tests and all browsers: the test deletes a strategy of its own, not one
   // that other tests open.
   const doomed = { ...unknownTypeStrategy(), id: '0d5e1c2a-7b34-4f6a-9c18-2e4b6a8c0d13', name: 'Zum Löschen' };
-  if (api !== null) {
-    api.strategies.set(doomed.id as string, doomed);
-  } else {
-    const stored = await page.request.put(`/api/v1/strategies/${doomed.id as string}`, { data: doomed });
-    expect(stored.ok()).toBe(true);
-  }
+  const stored = await page.request.put(`/api/v1/strategies/${doomed.id as string}`, { data: doomed });
+  expect(stored.ok()).toBe(true);
   await openApp(page);
   await openStrategy(page, 'Zum Löschen');
 
@@ -135,8 +127,7 @@ test('the open strategy is deleted after a question; it is gone from the list', 
   await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge' })).toBeVisible();
 });
 
-test('the language of the interface is changed in the settings and stays after reloading', async ({ page, api }) => {
-  void api;
+test('the language of the interface is changed in the settings and stays after reloading', async ({ page }) => {
   await openApp(page);
   await clickMenu(page, 'settings');
   await page.getByRole('dialog').getByLabel('Sprache').selectOption('English');
@@ -157,8 +148,7 @@ test('the language of the interface is changed in the settings and stays after r
   await expect(page.getByTestId('param-strip')).toContainText('Strategieparameter');
 });
 
-test('the object directory is changed with the question "Dateien verschieben?", with and without moving', async ({ page, api }) => {
-  void api;
+test('the object directory is changed with the question "Dateien verschieben?", with and without moving', async ({ page }) => {
   await openApp(page);
   await clickMenu(page, 'settings');
   const dialog = page.getByRole('dialog');
@@ -209,8 +199,7 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
 });
 
-test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page, api }) => {
-  void api;
+test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page }) => {
   await openApp(page);
 
   await page.getByTestId('menu-about').click();

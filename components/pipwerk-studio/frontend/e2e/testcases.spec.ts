@@ -2,13 +2,12 @@ import type { Page } from '@playwright/test';
 
 import { add, addOwnRule, addRiskRule, bindExpr, bindFixed, bindParam, createParam, newStrategyFromScratch, refreshValue, select, setCalculation, setCondition, type C, type V } from './builder';
 import { canonical, namesOf, removeStored, storedStrategy, testCase } from './compare';
-import { clickMenu, expect, node, openApp, openStrategy, showArea, STUB, test } from './support';
+import { clickMenu, expect, expectSaved, node, openApp, openStrategy, showArea, test } from './support';
 
 // Specification 7 and the order 06: the test cases str-03 and str-01 are built only by operating the interface (no
 // expression is typed as text) and compared with the documents of `contracts/strategies/v2/testcases`. The steps are
-// described in `docs/technical/pipwerk-studio-testfaelle.md`.
-
-test.skip(STUB, 'The test cases are built against the real backend: it forms the expressions.');
+// described in `docs/technical/pipwerk-studio-testfaelle.md`. In both test cases the management uses objects of the
+// main flow with "Aktualisieren" (specification 3.3).
 
 // An action that finds nothing fails after ten seconds, with the step in the message, and not at the end of the test.
 test.use({ actionTimeout: 10_000 });
@@ -27,9 +26,13 @@ async function selectFrame(page: Page): Promise<void> {
   await page.locator('[data-testid="frame"] .frame-title').click();
 }
 
+/**
+ * Saves, compares the stored document with the test case, loads the page anew, opens the strategy, checks it, saves what
+ * was opened and compares again: the strategy that was opened is the one that was built.
+ */
 async function saveAndCompare(page: Page, name: string, id: 'str-01' | 'str-03'): Promise<void> {
   await clickMenu(page, 'save');
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
   const stored = await storedStrategy(page, name);
   expect(canonical(stored)).toEqual(canonical(testCase(id)));
   // the names are not part of the comparison, but the steps were named as the instructions say
@@ -40,10 +43,17 @@ async function saveAndCompare(page: Page, name: string, id: 'str-01' | 'str-03')
   await expect(page.getByTestId('app')).toBeVisible();
   await expect(page.getByTestId('lib-item').first()).toBeAttached({ timeout: 15_000 });
   await openStrategy(page, name);
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
   await clickMenu(page, 'check');
   await expect(page.getByTestId('findings-count')).toContainText('keine Befunde');
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
+
+  // what was opened is written again and equals the test case
+  await clickMenu(page, 'save');
+  await expectSaved(page);
+  const reopened = await storedStrategy(page, name);
+  expect(canonical(reopened)).toEqual(canonical(testCase(id)));
+  expect(namesOf(reopened)).toEqual(namesOf(testCase(id)));
 }
 
 // ---- str-03 ---------------------------------------------------------------------------------------------------------
@@ -122,6 +132,7 @@ async function buildStr03(page: Page, name: string): Promise<void> {
 
 for (const size of [
   { label: 'desktop', width: 1366, height: 768 },
+  // only clicks: the build does not drag anything
   { label: 'phone', width: 390, height: 844 },
 ]) {
   test(`str-03 EMA-Trendfolge is built by operating the interface (${size.label}, ${size.width} x ${size.height}) and equals the test case`, async ({ page }, testInfo) => {
@@ -139,10 +150,23 @@ for (const size of [
 
 // ---- str-01 ---------------------------------------------------------------------------------------------------------
 
-const TREND_UP: C = compare(pick('MT Signal › Trendrichtung'), '=', { choice: 'aufwärts' });
+const TREND_UP: C = compare(pick('Trend Signalzeiteinheit › Ergebnis'), '=', { text: 'aufwaerts' });
 const PIP = pick('Instrument › Pip');
 const SPREAD = pick('Instrument › Spread');
+const BUFFER_ENTRY = calc(pick('Entry-Puffer'), '*', PIP);
 const BUFFER_STOP = calc(pick('Stop-Puffer'), '*', PIP);
+
+/** The trend of a ZigZag: both the last high and the last low above (below) the ones before, otherwise "kein". */
+function trendOf(zigzag: string): V {
+  const higher = (kind: 'Hoch' | 'Tief', sign: '>' | '<'): C => compare(pick(`${zigzag} › Letztes ${kind}`), sign, pick(`${zigzag} › Vorletztes ${kind}`));
+  return {
+    iff: [
+      { and: [higher('Hoch', '>'), higher('Tief', '>')] },
+      { text: 'aufwaerts' },
+      { iff: [{ and: [higher('Hoch', '<'), higher('Tief', '<')] }, { text: 'abwaerts' }, { text: 'kein' }] },
+    ],
+  };
+}
 
 async function buildStr01(page: Page, name: string): Promise<void> {
   await newStrategyFromScratch(page, name);
@@ -151,34 +175,37 @@ async function buildStr01(page: Page, name: string): Promise<void> {
   await createParam(page, 'Entry-Puffer', 'number', '3');
   await createParam(page, 'Stop-Puffer', 'number', '3');
 
-  await add(page, '1-2-3-Trend (Markttechnik)', 'MT Signal');
+  await add(page, 'ZigZag', 'ZigZag Signal');
   await bindParam(page, 'zeiteinheit', 'Signalzeiteinheit');
-  await add(page, '1-2-3-Trend (Markttechnik)', 'MT Handel');
+  await add(page, 'ZigZag', 'ZigZag Handel');
   await bindParam(page, 'zeiteinheit', 'Handelszeiteinheit');
 
   // the main flow
   await add(page, 'Kerzenschluss');
   await bindParam(page, 'zeiteinheit', 'Handelszeiteinheit');
-  await add(page, 'Bedingung', 'Intakter Trend in der Bewegung');
-  await setCondition(page, { and: [{ truthy: pick('MT Signal › Trend intakt') }, compare(pick('MT Signal › Phase'), '=', { choice: 'Bewegung' })] });
-  await add(page, 'Bedingung', 'Handelszeiteinheit in Trendrichtung');
-  await setCondition(page, compare(pick('MT Handel › Trendrichtung'), '=', pick('MT Signal › Trendrichtung')));
+  await add(page, 'Berechnung', 'Trend Signalzeiteinheit');
+  await setCalculation(page, trendOf('ZigZag Signal'));
+  await add(page, 'Berechnung', 'Trend Handelszeiteinheit');
+  await setCalculation(page, trendOf('ZigZag Handel'));
+  await add(page, 'Bedingung', 'Trend in beiden Zeiteinheiten gleich');
+  await setCondition(page, {
+    and: [
+      compare(pick('Trend Signalzeiteinheit › Ergebnis'), '<>', { text: 'kein' }),
+      compare(pick('Trend Handelszeiteinheit › Ergebnis'), '=', pick('Trend Signalzeiteinheit › Ergebnis')),
+    ],
+  });
   await add(page, 'Bedingung', 'Keine Order und keine Position');
   await setCondition(page, compare(calc(pick('Strategie › wartende Orders'), '+', pick('Strategie › offene Positionen')), '=', { num: 0 }));
   await add(page, 'Berechnung', 'Einstieg');
   await setCalculation(page, {
-    iff: [
-      TREND_UP,
-      calc(calc(pick('MT Handel › Punkt 2'), '+', SPREAD), '+', calc(pick('Entry-Puffer'), '*', PIP)),
-      calc(pick('MT Handel › Punkt 2'), '-', calc(pick('Entry-Puffer'), '*', PIP)),
-    ],
+    iff: [TREND_UP, calc(calc(pick('ZigZag Handel › Letztes Hoch'), '+', SPREAD), '+', BUFFER_ENTRY), calc(pick('ZigZag Handel › Letztes Tief'), '-', BUFFER_ENTRY)],
   });
   await add(page, 'Berechnung', 'Stop-Loss');
   await setCalculation(page, {
     iff: [
       TREND_UP,
-      calc(pick('MT Handel › Punkt 1/3'), '-', BUFFER_STOP),
-      calc(calc(pick('MT Handel › Punkt 1/3'), '+', BUFFER_STOP), '+', SPREAD),
+      calc(pick('ZigZag Handel › Letztes Tief'), '-', BUFFER_STOP),
+      calc(calc(pick('ZigZag Handel › Letztes Hoch'), '+', BUFFER_STOP), '+', SPREAD),
     ],
   });
   await add(page, 'Berechnung', 'Take-Profit');
@@ -199,12 +226,13 @@ async function buildStr01(page: Page, name: string): Promise<void> {
   await bindExpr(page, 'take_profit', pick('Take-Profit › Ergebnis'));
   await bindFixed(page, 'gueltigkeit', 'bis_auf_widerruf');
   await addOwnRule(page, 'Mindestvolumen', compare(pick('Order › Volumen'), '>=', pick('Order › Instrument › Mindestvolumen')));
-  await addRiskRule(page, 'Risiko');
+  await addRiskRule(page, 'risiko');
 
-  // the management
+  // the management has its own triggers: the ZigZag of the trade time unit keeps the state it had when the order was
+  // placed, so the management has its values refreshed (specification 3.3)
   await selectFrame(page);
   await add(page, 'type:trigger.tick');
-  await add(page, 'Bedingung', 'Kurs durchbricht Punkt 1/3');
+  await add(page, 'Bedingung', 'Kurs durchbricht den Stop-Bezug');
   const orderBuys = compare(pick('Order › Richtung'), '=', { choice: 'buy' });
   await setCondition(page, {
     and: [
@@ -213,13 +241,14 @@ async function buildStr01(page: Page, name: string): Promise<void> {
         truthy: {
           iff: [
             orderBuys,
-            { cond: compare(pick('Tick › Geld'), '<', pick('MT Handel › Punkt 1/3')) },
-            { cond: compare(pick('Tick › Brief'), '>', pick('MT Handel › Punkt 1/3')) },
+            { cond: compare(pick('Tick › Geld'), '<', pick('ZigZag Handel › Letztes Tief')) },
+            { cond: compare(pick('Tick › Brief'), '>', pick('ZigZag Handel › Letztes Hoch')) },
           ],
         },
       },
     ],
   });
+  await refreshValue(page, 'ZigZag Handel', 2);
   await add(page, 'Order löschen');
   await add(page, 'Kerzenschluss');
   await bindParam(page, 'zeiteinheit', 'Handelszeiteinheit');
@@ -229,10 +258,11 @@ async function buildStr01(page: Page, name: string): Promise<void> {
   await setCalculation(page, {
     iff: [
       orderBuys,
-      calc(pick('MT Handel › Punkt 1/3'), '-', BUFFER_STOP),
-      calc(calc(pick('MT Handel › Punkt 1/3'), '+', BUFFER_STOP), '+', SPREAD),
+      calc(pick('ZigZag Handel › Letztes Tief'), '-', BUFFER_STOP),
+      calc(calc(pick('ZigZag Handel › Letztes Hoch'), '+', BUFFER_STOP), '+', SPREAD),
     ],
   });
+  await refreshValue(page, 'ZigZag Handel', 2);
   await add(page, 'Bedingung', 'Stop-Loss weicht ab');
   await setCondition(page, compare(pick('Neuer Stop-Loss › Ergebnis'), '<>', pick('Order › Stop-Loss')));
   await add(page, 'Berechnung', 'Neuer Take-Profit');

@@ -2,15 +2,19 @@ import { defineConfig, devices } from '@playwright/test';
 
 // The end-to-end tests start their own backend and frontend on separate ports,
 // so they do not interfere with a development instance.
-const backendPort = Number(process.env.PIPWERK_STUDIO_E2E_BACKEND_PORT ?? 18000);
-const frontendPort = Number(process.env.PIPWERK_STUDIO_E2E_FRONTEND_PORT ?? 15173);
+// The ports are required parameters; there are no default ports.
+function requiredPort(name: string): number {
+  const value = process.env[name];
+  if (!value || !/^[0-9]+$/.test(value) || Number(value) < 1 || Number(value) > 65535) {
+    throw new Error(`${name} is required: a port from 1 to 65535 for the end-to-end tests (the check script passes it).`);
+  }
+  return Number(value);
+}
+
+const backendPort = requiredPort('PIPWERK_STUDIO_E2E_BACKEND_PORT');
+const frontendPort = requiredPort('PIPWERK_STUDIO_E2E_FRONTEND_PORT');
 const backendUrl = `http://127.0.0.1:${backendPort}`;
 const frontendUrl = `http://127.0.0.1:${frontendPort}`;
-
-// With PIPWERK_STUDIO_E2E_STUB=1 the tests run without the backend: a fake backend in the browser answers the requests
-// of the interface (`src/testing/fakeApi.ts`). That is for the time until the backend of the branch speaks format 2.0;
-// the report of a run names the mode.
-const stub = process.env.PIPWERK_STUDIO_E2E_STUB === '1';
 
 export default defineConfig({
   testDir: './e2e',
@@ -30,17 +34,13 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: [
-    ...(stub
-      ? []
-      : [
-          {
-            command: `node e2e/start-backend.mjs ${backendPort}`,
-            // Lets the launcher remove its temporary database directory.
-            gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 10_000 },
-            url: `${backendUrl}/api/health`,
-            reuseExistingServer: false,
-          },
-        ]),
+    {
+      command: `node e2e/start-backend.mjs ${backendPort}`,
+      // Lets the launcher remove its temporary database directory.
+      gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 10_000 },
+      url: `${backendUrl}/api/health`,
+      reuseExistingServer: false,
+    },
     {
       // The tests run against the built user interface, as the test environment
       // delivers it: first the build into its own directory (a user interface in

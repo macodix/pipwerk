@@ -1,4 +1,4 @@
-import { boxOf, clickMenu, expect, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
+import { boxOf, card, clickMenu, expect, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
 import type { Page } from '@playwright/test';
 
 // Specification 5.1 and 5.3: the arrangement in the six window sizes with the open strategy "EMA-Trendfolge". In every size
@@ -73,8 +73,7 @@ async function inViewport(page: Page, testId: string): Promise<void> {
 }
 
 for (const size of SIZES) {
-  test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, api, errors }) => {
-    void api;
+  test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, errors }) => {
     await openApp(page, { width: size.width, height: size.height });
     await openStrategy(page, 'EMA-Trendfolge');
     await expect(page.getByTestId('status-pill')).toContainText('EMA-Trendfolge');
@@ -136,8 +135,7 @@ for (const size of SIZES) {
 
 // In the two sizes of a smartphone the menu and the dialogs are reachable and lie within the window (specification 5.1).
 for (const size of SIZES.filter((candidate) => candidate.width === 390 || candidate.width === 844)) {
-  test(`menu and dialogs in ${size.width} x ${size.height}`, async ({ page, api, errors }) => {
-    void api;
+  test(`menu and dialogs in ${size.width} x ${size.height}`, async ({ page, errors }) => {
     await openApp(page, { width: size.width, height: size.height });
     await openStrategy(page, 'EMA-Trendfolge');
 
@@ -172,6 +170,43 @@ for (const size of SIZES.filter((candidate) => candidate.width === 390 || candid
     await page.getByTestId('strategy-name').fill('EMA-Trendfolge geändert');
     await clickMenu(page, 'close');
     await withinWindow(null);
+    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
+
+    // the question before deleting
+    await clickMenu(page, 'delete');
+    await withinWindow(null);
+    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
+
+    // the question "Dateien verschieben?" in the settings
+    await clickMenu(page, 'settings');
+    await withinWindow(null);
+    await page.getByRole('dialog').getByLabel('Verzeichnis (absoluter Pfad)').fill('/pfad/gibt/es/nicht');
+    await page.getByRole('dialog').getByRole('button', { name: 'Verzeichnis ändern' }).click();
+    await expect(page.getByRole('dialog').getByText('Dateien verschieben?')).toBeVisible();
+    await withinWindow(null);
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Ja, Dateien verschieben' })).toBeInViewport();
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' })).toBeInViewport();
+    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).first().click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
+
+    // the question before removing an object that steps use
+    // in a window this low "show all" cannot show everything even at the smallest zoom, and the floating tools
+    // of the drawing area lie over the top of the content: the view is moved down by dragging the empty area,
+    // then the card is clicked like a user does (Playwright checks that nothing covers it)
+    await showArea(page, 'canvas');
+    await page.getByTestId('zoom-fit').click();
+    const pane = await boxOf(page.locator('.react-flow__pane'));
+    const edgeX = pane.x + pane.width - 6;
+    const startY = pane.y + pane.height / 2;
+    await page.mouse.move(edgeX, startY);
+    await page.mouse.down();
+    await page.mouse.move(edgeX, startY + 40, { steps: 5 });
+    await page.mouse.up();
+    await card(page, 'EMA20').click();
+    await showArea(page, 'props');
+    await expect(page.getByTestId('props-element')).toBeVisible();
+    await page.getByTestId('remove-element').click();
+    await withinWindow('remove-users');
     await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
 
     // about

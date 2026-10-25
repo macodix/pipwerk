@@ -3,8 +3,7 @@ import { expect, library, newStrategy, node, openApp, openStrategy, showArea, te
 // Specification 5.2: groups from the type descriptions in the order of the specification, search, explanation of every
 // entry when it is pointed at and when it has the keyboard focus.
 
-test('has the groups of the specification in their order, and the entries that the type descriptions assign to them', async ({ page, api }) => {
-  void api;
+test('has the groups of the specification in their order, and the entries that the type descriptions assign to them', async ({ page }) => {
   await openApp(page);
 
   const groups = page.getByTestId('lib-group');
@@ -30,8 +29,7 @@ test('has the groups of the specification in their order, and the entries that t
   await expect(page.getByTestId('library')).not.toContainText('Neues Objekt');
 });
 
-test('shows the explanation of an entry when it is pointed at and when it has the focus with the keyboard', async ({ page, api }) => {
-  void api;
+test('shows the explanation of an entry when it is pointed at and when it has the focus with the keyboard', async ({ page }) => {
   await openApp(page, { width: 1366, height: 768 });
 
   const first = library(page, 'Kerzenschluss');
@@ -49,8 +47,7 @@ test('shows the explanation of an entry when it is pointed at and when it has th
   await expect(page.getByTestId('tooltip')).toHaveText(other);
 });
 
-test('searches names and explanations, and shows what to do when nothing is found', async ({ page, api }) => {
-  void api;
+test('searches names and explanations, and shows what to do when nothing is found', async ({ page }) => {
   await openApp(page);
 
   await page.getByTestId('library-search').fill('indikator');
@@ -61,8 +58,7 @@ test('searches names and explanations, and shows what to do when nothing is foun
   await expect(page.getByTestId('library')).toContainText('Nichts gefunden');
 });
 
-test('does not insert without a strategy and says what to do', async ({ page, api }) => {
-  void api;
+test('does not insert without a strategy and says what to do', async ({ page }) => {
   await openApp(page);
   // the hint stands in the properties view and nowhere else (specification 5.5)
   await showArea(page, 'props');
@@ -76,8 +72,7 @@ test('does not insert without a strategy and says what to do', async ({ page, ap
   await expect(page.getByTestId('canvas')).not.toContainText('Öffnen Sie zuerst');
 });
 
-test('inserts a trigger and a step: the second is connected behind the first', async ({ page, api }) => {
-  void api;
+test('inserts a trigger and a step: the second is connected behind the first', async ({ page }) => {
   await openApp(page);
   await newStrategy(page);
 
@@ -94,8 +89,7 @@ test('inserts a trigger and a step: the second is connected behind the first', a
   await expect(page.getByTestId('field-zeiteinheit').getByLabel('Pflicht')).toBeVisible();
 });
 
-test('lets the user assign a strategy parameter to a field, creating it on the spot', async ({ page, api }) => {
-  void api;
+test('lets the user assign a strategy parameter to a field, creating it on the spot', async ({ page }) => {
   await openApp(page);
   await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
@@ -111,8 +105,7 @@ test('lets the user assign a strategy parameter to a field, creating it on the s
   await expect(node(page, 'Kerzenschluss')).toContainText('Meine Zeiteinheit');
 });
 
-test('lets the user change the order type: the new properties get their standard values', async ({ page, api }) => {
-  void api;
+test('lets the user change the order type: the new properties get their standard values', async ({ page }) => {
   await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   // "Order aufgeben" lies below the objects beside the earlier steps: the whole drawing is brought into the window

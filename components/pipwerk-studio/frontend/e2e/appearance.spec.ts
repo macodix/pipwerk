@@ -26,8 +26,7 @@ async function spaced(first: Locator, second: Locator, space: number): Promise<v
 }
 
 for (const size of SIZES) {
-  test(`the guided setup is designed in ${size.width} x ${size.height}`, async ({ page, api }) => {
-    void api;
+  test(`the guided setup is designed in ${size.width} x ${size.height}`, async ({ page }) => {
     await openApp(page, size);
     await clickMenu(page, 'new');
     await showArea(page, 'props');
@@ -89,8 +88,7 @@ for (const size of SIZES) {
   });
 }
 
-test('the delivered rule template appears in English in the library and in the rules of the strategy', async ({ page, api }) => {
-  void api;
+test('the delivered rule template appears in English in the library and in the rules of the strategy', async ({ page }) => {
   await openApp(page);
   await clickMenu(page, 'settings');
   await page.getByRole('dialog').getByLabel('Sprache').selectOption('English');

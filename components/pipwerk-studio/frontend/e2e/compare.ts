@@ -154,10 +154,15 @@ export function canonical(document: Json): Json {
           continue;
         }
         // `first_use` names the element of the first use of an instance: an identifier like the others
-        result[name] =
-          name === 'source' || name === 'target' || name === 'management_of' || name === 'flow' || name === 'first_use'
-            ? mapId(inner)
-            : copy(inner, name, value);
+        if (name === 'source' || name === 'target' || name === 'management_of' || name === 'flow' || name === 'first_use') {
+          result[name] = mapId(inner);
+        } else if (name === 'inputs' && Array.isArray(inner)) {
+          // the inputs of an element are a set: the order in which the values were chosen does not count, their content
+          // (the object, the property, the arguments and "Aktualisieren") does
+          result[name] = (copy(inner, name, value) as unknown[]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+        } else {
+          result[name] = copy(inner, name, value);
+        }
       }
       return result;
     }

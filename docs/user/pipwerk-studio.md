@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `draft`
-- stand: 2026-10-21
+- stand: 2026-10-25
 - komponente: `pipwerk-studio`
 
 ## 1. Wozu pipwerk Studio dient
@@ -438,9 +438,9 @@ Wo ein Ausdruck steht, zeigt die Eigenschaftenansicht oben den Satz, den der Aus
 6. „Parameter“ (in einer Regel: ihre eigenen Parameter),
 7. „Feste Werte und Rechnen“: „Zahl …“, „Text oder Auswahlwert …“, „wahr oder falsch …“, „Vorheriger Wert von …“, „Rechnung (plus, minus, mal, geteilt)“, „Wenn … dann … sonst …“, „Funktion (kleinster, größter, abgerundet …)“ und „Bedingung (wahr oder falsch) …“.
 
-Ein Wert wird in der Form *Objekt › Eigenschaft* gezeigt, zum Beispiel „EMA 20 › Wert“. Wählen Sie den Wert eines Objekts der Strategie, ist er danach ein Eingang des Elements; Sie müssen ihn nicht eigens verbinden. Verwendete noch kein Element das Objekt, wird dieses Element sein Element der ersten Verwendung (Abschnitt 6.3). Ein Eingang mit einer Methode entsteht, wenn alle Argumente feste Werte sind. Der Ausdruck steht oben als lesbarer Satz in der Eigenschaftenansicht und auf der Zeichenfläche. Alle Bedingungen und Berechnungen der Testfälle `str-01` und `str-03` lassen sich so aus Bausteinen bilden, ohne Text einzugeben.
+Ein Wert wird in der Form *Objekt › Eigenschaft* gezeigt, zum Beispiel „EMA 20 › Wert“. Wählen Sie den Wert eines Objekts der Strategie, ist er danach ein Eingang des Elements; Sie müssen ihn nicht eigens verbinden. Verwendete noch kein Element das Objekt, wird dieses Element sein Element der ersten Verwendung (Abschnitt 6.3). Ein Eingang mit einer Methode entsteht, wenn alle Argumente feste Werte sind. Der Ausdruck steht oben als lesbarer Satz in der Eigenschaftenansicht und auf der Zeichenfläche. Sie müssen keinen Text schreiben: Jede Bedingung und jede Berechnung lässt sich aus Bausteinen bilden.
 
-Die Rechnungen und Vergleiche stehen in Händlersprache: „ist größer als“, „kreuzt nach oben“, „und“, „oder“, „nicht“, „Vorheriger Wert von … vor … Kerzen“, die Rechnung „plus, minus, mal, geteilt“, die Fallunterscheidung „Wenn … dann … sonst …“ und die Funktionen (kleinster, größter, abgerundet …). Bei einem Text, dessen Wert aus einer Auswahl stammt (zum Beispiel die Richtung einer Order oder die Phase eines Trends), bietet pipwerk Studio die erlaubten Werte zur Wahl an. Ein Wert kann selbst eine Rechnung, eine Fallunterscheidung, eine Funktion oder eine Bedingung sein; die Bausteine klappen sich nach Bedarf auf.
+Die Rechnungen und Vergleiche stehen in Händlersprache: „ist größer als“, „kreuzt nach oben“, „und“, „oder“, „nicht“, „Vorheriger Wert von … vor … Kerzen“, die Rechnung „plus, minus, mal, geteilt“, die Fallunterscheidung „Wenn … dann … sonst …“ und die Funktionen (kleinster, größter, abgerundet …). Bei einem Text, dessen Wert aus einer Auswahl stammt (zum Beispiel die Richtung oder der Status einer Order), bietet pipwerk Studio die erlaubten Werte zur Wahl an. Ein Wert kann selbst eine Rechnung, eine Fallunterscheidung, eine Funktion oder eine Bedingung sein; die Bausteine klappen sich nach Bedarf auf.
 
 Eine **Bedingung** wählt oben ihre Art:
 
@@ -451,7 +451,7 @@ Eine **Bedingung** wählt oben ihre Art:
 | Alle gelten (und) | Mindestens zwei Bedingungen, alle müssen wahr sein. „Bedingung hinzufügen“ fügt eine hinzu; ab drei Bedingungen entfernt das Kreuz neben einer sie wieder. |
 | Eine gilt (oder) | Mehrere Bedingungen, mindestens eine muss wahr sein. |
 | Nicht | Kehrt eine Bedingung um. |
-| Wert ist wahr | Ein Wert, der wahr oder falsch ist, zum Beispiel „MT Signal › Trend intakt“ oder eine Fallunterscheidung, deren Zweige Bedingungen sind. |
+| Wert ist wahr | Ein Wert, der wahr oder falsch ist, zum Beispiel ein Strategieparameter vom Datentyp Wahrheitswert, eine Eigenschaft eines eigenen Indikators oder Trends mit diesem Datentyp oder eine Fallunterscheidung, deren Zweige Bedingungen sind. |
 
 Ein leerer Platz trägt „Wert wählen …“. Er macht den Ausdruck unvollständig; die Prüfung meldet das. Eine Kreuzung, die noch nicht vollständig ist, bleibt im Editor, wie Sie sie begonnen haben.
 
@@ -623,7 +623,7 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | Web-API | Die über HTTP erreichbare Schnittstelle von pipwerk Studio. Programme und die Seite `/docs` im Browser rufen ihre Endpunkte auf, um Strategien und Vorlagen zu speichern und zu prüfen. Jede Adresse darin heißt Endpunkt. |
 | Objektverzeichnis | Das Verzeichnis auf dem Rechner, in dem pipwerk Studio jede Strategie und jede Vorlage als eine Datei ablegt. Die Dateien sind die einzige Quelle der Strategien und Vorlagen. |
 | Vorlage | Ein wiederverwendbares Objekt, zum Beispiel eine Regel. Es wird einmal angelegt und gespeichert und lässt sich in Strategien verwenden. |
-| Instanz | Eine vollständige Kopie einer Vorlage innerhalb einer Strategie. Sie nennt ihre Vorlage in `origin`. Ändern oder Löschen der Vorlage ändert die Instanz nicht. |
+| Instanz | Das Objekt, das beim Einfügen eines Objekttyps (zum Beispiel EMA) oder einer Vorlage in eine Strategie entsteht, mit einem Namen, den Sie in der Strategie vergeben. Sie ist eine vollständige Kopie, gehört nur dieser Strategie und nennt ihre Herkunft. Ändern oder Löschen der Vorlage ändert die Instanz nicht. |
 | Zeichenfläche | Der Bereich der Oberfläche in der Mitte, auf dem Sie die Elemente einer Strategie anordnen und verbinden. |
 | Elementbibliothek | Der Bereich der Oberfläche links mit den Einträgen, die Sie in die Strategie einfügen (anklicken oder auf die Zeichenfläche ziehen), in Gruppen: „Ablaufsteuerung“, „Berechnung“, „Indikatoren“, „Trends“, „Marktdaten“, „Konto“, „Aktionen“ und „Regeln und Regelwerke“. |
 | Eigenschaftenansicht | Der Bereich der Oberfläche rechts, in dem Sie die Eigenschaften des gewählten Elements, Rahmens oder Abschnitts oder der Strategie sehen und ändern, mit Regeln, verwendeten Werten und den Befunden der Prüfung. |
@@ -658,6 +658,8 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | Regel | Eine Regel prüft oder bestimmt etwas, zum Beispiel das Volumen einer Order. Sie steht in der Eigenschaftenansicht der Strategie oder eines Elements und hat einen Ausdruck. |
 | Ausdruck | Ein kurzer Text in der Formelsprache OpenFormula, der einen Wert berechnet, zum Beispiel `ema20.wert > ema50.wert`. Abschnitt 7 beschreibt die Schreibweise. |
 | Kennung | Der Name, unter dem eine Eigenschaft, ein Parameter oder ein Wert im Dokument und in Ausdrücken steht, zum Beispiel `stop_loss`. Die Oberfläche zeigt dafür den Namen in der gewählten Sprache. |
+| Kennung im Ausdruck | Der Teil eines Namens, unter dem ein gespeicherter Ausdruck ein Objekt, eine Berechnung oder einen Strategieparameter anspricht, zum Beispiel `ema_20` für „EMA 20“. Sie entsteht beim Anlegen aus dem ersten Namen und ändert sich beim Umbenennen nicht. Die Oberfläche zeigt sie nicht, sondern die Anzeigeform. |
+| Abschnitt | Eine benannte Gruppe von Schritten eines Ablaufs (des Hauptablaufs oder einer Verwaltung), die sich auf der Zeichenfläche ein- und ausklappen lässt. Ein Schritt gehört höchstens zu einem Abschnitt. Ein Abschnitt ändert die Bedeutung der Strategie nicht (Abschnitt 6.2). |
 | Herkunft | Die Angabe, woraus eine Instanz entstanden ist, zum Beispiel „ema20, aus Objekttyp EMA“ oder „…, aus Vorlage Risiko je Trade“. |
 | nicht verfügbar | Der Wert eines Ausdrucks, der eine Eigenschaft anspricht, die das Objekt im Zusammenhang der Auswertung nicht hat, zum Beispiel `Order.limitpreis` bei einer Stop-Order. Jede Rechnung damit ergibt wieder „nicht verfügbar“. `ISNA` und `IFNA` fangen ihn ab (Abschnitt 7.5). |
 | leer | Der Wert einer Eigenschaft ohne Wert, zum Beispiel `vorletztes_hoch` eines ZigZag ohne zweites Hoch. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung. `ISBLANK` fragt danach (Abschnitt 7.5). Nicht zu verwechseln mit „nicht verfügbar“. |

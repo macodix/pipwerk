@@ -218,12 +218,18 @@ export async function bindExpr(page: Page, fieldId: string, v: V): Promise<void>
 }
 
 /**
- * Switches "Aktualisieren" on for the value of an object that the selected element uses (properties view, "Verwendete
+ * Switches "Aktualisieren" on for the values of an object that the selected element uses (properties view, "Verwendete
  * Werte"): the object works out its values again at this element before it passes them on.
  */
-export async function refreshValue(page: Page, object: string): Promise<void> {
+export async function refreshValue(page: Page, object: string, values = 1): Promise<void> {
   const group = props(page).getByTestId('used-group').filter({ has: page.getByRole('heading', { name: object, exact: true }) });
-  await group.getByRole('checkbox', { name: 'Aktualisieren' }).check();
+  // every value of the object that the element uses has its own switch: all of them are switched on, once the
+  // properties view lists them
+  const switches = group.getByRole('checkbox', { name: 'Aktualisieren' });
+  await expect(switches).toHaveCount(values);
+  for (const each of await switches.all()) {
+    await each.check();
+  }
 }
 
 /** Adds an own rule (condition) to the element that is selected, with its name and the condition. */
