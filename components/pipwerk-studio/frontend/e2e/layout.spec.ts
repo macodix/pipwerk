@@ -1,5 +1,4 @@
-import { select } from './builder';
-import { boxOf, clickMenu, expect, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
+import { boxOf, card, clickMenu, expect, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
 import type { Page } from '@playwright/test';
 
 // Specification 5.1 and 5.3: the arrangement in the six window sizes with the open strategy "EMA-Trendfolge". In every size
@@ -191,7 +190,12 @@ for (const size of SIZES.filter((candidate) => candidate.width === 390 || candid
     await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
 
     // the question before removing an object that steps use
-    await select(page, 'EMA20');
+    // in a window this low the tools of the drawing area lie over the card: the click is sent to the card itself
+    await showArea(page, 'canvas');
+    await page.getByTestId('zoom-fit').click();
+    await card(page, 'EMA20').dispatchEvent('click');
+    await showArea(page, 'props');
+    await expect(page.getByTestId('props-element')).toBeVisible();
     await page.getByTestId('remove-element').click();
     await withinWindow('remove-users');
     await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
