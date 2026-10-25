@@ -71,9 +71,11 @@ Einträge mit Stand `übernommen` oder `verworfen` bleiben stehen.
 
 | Nr. | Inhalt | Priorität | Herkunft | Stand |
 |---|---|---|---|---|
+| vm-001 | Der Softwarearchitekt arbeitet als Architekt statt nur als Übersetzer der Anforderungen: (1) Qualitätsanforderungen klären (Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten), (2) Aufbau entwerfen (Programme, Bausteine, Daten, Schnittstellen, Verteilung auf Rechner, je mit Aufgabe), (3) Technik auswählen mit Vergleich von mindestens zwei Wegen und Probeumsetzung im Zweifel, (4) jede Entscheidung mit verworfenen Alternativen und Grund festhalten, (5) in der Umsetzung je Arbeitspaket vor der Abnahme prüfen, ob sie seinem Entwurf entspricht, und über den Entwicklungsleiter eingreifen, (6) Installation, Einrichtung, Aktualisierung, Überwachung und Fehlersuche aus Sicht des Anwenders beschreiben. Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen `relay/wp01`, `backtest/wp02` und `strategiedesign/wp02` scheiterten an Aufbau, Installation, Einrichtung und Bedienung. | offen | 2026-10-25, Chat „Was macht der SA?“ | vorgemerkt |
 
 ## 5. Änderungsnachweis
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-25 | vm-001 Aufgaben des Softwarearchitekten, vom Auftraggeber im Chat bestätigt. |
 | 2026-10-25 | Liste angelegt. Prioritäten `dringend`, `erforderlich`, `gewünscht` festgelegt vom Auftraggeber im Chat am 2026-10-25. Release im Entwicklungsverfahren festgelegt, offener Punkt erledigt. |
