@@ -26,6 +26,8 @@ Die Priorität legt der Auftraggeber fest.
 | `gewünscht` | sobald nichts anderes mehr ansteht oder der Auftraggeber es verlangt |
 | `offen` | Eintrag einer Rolle, Priorität vom Auftraggeber noch nicht festgelegt |
 
+Was ein Release ist und was vor einem Release erledigt sein muss, regelt das [Entwicklungsverfahren](../../technical/entwicklungsverfahren.md#vorgemerkte-anforderungen).
+
 ## 3. Aufbau eines Eintrags
 
 | Spalte | Inhalt |
@@ -69,8 +71,6 @@ Einträge mit Stand `übernommen` oder `verworfen` bleiben stehen.
 
 | Nr. | Inhalt | Priorität | Herkunft | Stand |
 |---|---|---|---|---|
-
-Was ein Release ist und was vor einem Release erledigt sein muss, regelt das [Entwicklungsverfahren](../../technical/entwicklungsverfahren.md#vorgemerkte-anforderungen).
 
 ## 5. Änderungsnachweis
 
