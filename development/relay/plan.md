@@ -22,7 +22,7 @@
 
 Die Pakete folgen den Durchgängen des Nachweises (Spezifikation Abschnitt 8). `wp01` bis `wp05` liefern pipwerk relay und werden ohne MetaTrader 5 und ohne `pipwerk-fetch-mt5` abgenommen, mit den Prüfprogrammen (Mangel M6). `wp01` bringt Installation, Einrichtung nach dem Bedienablauf (Spezifikation 4.6) und die Grundmechanik mit dem einfachsten Übertragungsweg, Verzeichnissen im Dateisystem, zwischen den Rechnern über ein Netzlaufwerk: Durchgang 1 mit den Störungen. Jeder weitere Weg ist ein eigenes Paket: `wp02` SFTP (Durchgang 2), `wp03` Matrix (Durchgang 3), `wp04` die Wege für Dateien (Durchgang 4), `wp05` die Web-API mit dem Weg `http`. `wp06` schließt den Abruf an (Durchgang 5), `wp07` weist ihn über Matrix nach (Durchgang 6) und schließt damit den Nachweis laut `scope.md` ab. `wp02`, `wp03`, `wp05` und `wp06` brauchen nur `wp01` und laufen nebeneinander. Diese Pakete ändern zum Teil dieselben Dateien. Wer zuerst in `main` übernommen wird, entscheidet die Abnahme; vor der Übernahme eines weiteren führt der Entwicklungsleiter `origin/main` in dessen Arbeitszweig zusammen. Ändert das Code, prüfen Tester und QA erneut.
 
-Vor `wp02`, `wp03`, `wp04` und `wp05` ergänzt der Softwarearchitekt den Bedienablauf (Spezifikation 4.6) um die Fragen des jeweiligen Wegs; das Paket beginnt nach der Bestätigung durch den Auftraggeber.
+`wp01` beginnt erst, wenn der Auftraggeber den Bedienablauf der Einrichtung (Spezifikation 4.6) bestätigt hat, `wp06` erst nach Bestätigung von 4.7. Vor `wp02`, `wp03`, `wp04` und `wp05` ergänzt der Softwarearchitekt den Bedienablauf (Spezifikation 4.6) um die Fragen des jeweiligen Wegs; das Paket beginnt nach der Bestätigung durch den Auftraggeber.
 
 Abschnittsangaben beziehen sich auf die [Spezifikation](specification.md). Grenzwerte gegen Überlast, Pfade der Voreinstellungen, Ports der Testumgebung, Wortlaut der Ausgaben und die Einzelheiten der Tests legen die Aufträge fest.
 
@@ -50,11 +50,11 @@ Der Auftraggeber installiert pipwerk relay auf zwei Rechnern aus je einer Datei,
 
 ### Umgesetzte Teile der Spezifikation
 
-E1, E2 ohne Web-API, E4 bis E9 ohne Installationsdatei von `pipwerk-fetch-mt5`, 3.1 bis 3.3, 3.4 ohne Matrix und SFTP, 3.5, 3.7, 4.1 bis 4.6 ohne Wege für Dateien, Web-API und die Fragen anderer Wege, Abschnitt 5 ohne `openapi.json`, Wege für Dateien und Nachrichtenarten des Abrufs, Abschnitt 7 ohne SFTP, Matrix, Web-API und Wege für Dateien, Abschnitt 8 wie im Umfang, Abschnitt 9 wie im Umfang.
+E1 ohne die Programme des Abrufs, E2 ohne Web-API, E4 bis E9 ohne Installationsdatei von `pipwerk-fetch-mt5`, 3.1 bis 3.3, 3.4 ohne Matrix und SFTP, 3.5, 3.7, 4.1 bis 4.6 ohne Wege für Dateien, Web-API und die Fragen anderer Wege, Abschnitt 5 ohne `openapi.json`, Wege für Dateien und Nachrichtenarten des Abrufs, Abschnitt 7 ohne SFTP, Matrix, Web-API und Wege für Dateien, Abschnitt 8 wie im Umfang, Abschnitt 9 wie im Umfang.
 
 ### Abhängigkeiten
 
-Keine fachliche. Der Arbeitszweig `relay/wp01` besteht und wird überarbeitet. Er wurde vom von der QA geprüften Stand von `backtest/wp02` angelegt (Commit `d994dfaf02a49aa1ac0ea954c35e6ce64d8a0f2d`); in `main` übernommen wird er deshalb erst nach `backtest/wp02`. Was auf dem Arbeitszweig zum Abruf über pipwerk relay schon umgesetzt ist, gehört zu `wp06`; der Entwicklungsleiter nimmt es aus `wp01` heraus und führt es in `wp06` fort.
+Keine fachliche. Der Arbeitszweig `relay/wp01` besteht und wird überarbeitet. Er wurde vom von der QA geprüften Stand von `backtest/wp02` angelegt (Commit `d994dfaf02a49aa1ac0ea954c35e6ce64d8a0f2d`); in `main` übernommen wird er deshalb erst nach `backtest/wp02`. Was auf dem Arbeitszweig zum Abruf über pipwerk relay schon umgesetzt ist, gehört zu `wp06`; der Entwicklungsleiter sichert diesen Stand zu Beginn der Überarbeitung von `wp01` auf dem Arbeitszweig `relay/wp06`, nimmt es aus `wp01` heraus und führt es in `wp06` nach dem neuen Aufbau fort.
 
 ### Abnahmekriterien
 
@@ -66,9 +66,10 @@ Voraussetzung: zwei Rechner des Auftraggebers, darunter einer mit Windows, und e
 4. Durchgang 1: Eine Nachricht von `pipwerk-probe-send` mit Datei und Bestätigung kommt bei `pipwerk-probe-receive` auf dem anderen Rechner mit unveränderter Datei an; der Absender zeigt die Bestätigung an. Ohne verlangte Bestätigung kommt keine. `pipwerk-relay-status` zeigt beide Relays verbunden und die angeschlossenen Prüfprogramme.
 5. Störungen 1 bis 3 (Abschnitt 8): Relay des Empfängers angehalten, Netzlaufwerk getrennt, Relay während einer Folge von Nachrichten mit Dateien hart beendet. Danach fehlt keine Nachricht und keine Datei, und keine kommt doppelt an. `pipwerk-relay-status` zeigt die wartende Nachricht mit Stand, ohne Inhalt. Mit kurzer Frist endet eine Nachricht bei getrenntem Netzlaufwerk mit `relay_unreachable`; `pipwerk-probe-send` zeigt die Meldung an.
 6. Störungen 4 und 5: Ein im Netzlaufwerk veränderter Umschlag, eine veränderte Anlage oder ein Umschlag mit falscher Signatur wird verworfen und ohne Inhalt im Protokoll vermerkt; der Absender erhält keine Meldung und nach der Frist die Anzeige der ausgebliebenen Bestätigung. Ein noch einmal abgelegter Umschlag erreicht die Komponente nicht zweimal; war eine Bestätigung verlangt, wird sie erneut geschickt.
-7. Störungen 6 und 7: Unbekannte Komponente, unbekanntes Relay ohne Standard-Relay, Schleife über die zwei Relays und zu große Anlage enden je mit einer Meldung mit Grund, die `pipwerk-probe-send` anzeigt. Läuft `pipwerk-probe-receive` nicht, meldet der Absender nach der Frist die ausgebliebene Bestätigung, und nach seinem Start kommt die Nachricht an.
-8. Alle Ausgaben der Programme sind deutsch. Relays und Prüfprogramme öffnen keinen Port.
-9. Die Anwenderdokumentation beschreibt Installation, Einrichtung, Verbinden, spätere Änderungen, Status, Prüfprogramme, Meldungen, Empfangsbestätigung und das Verhalten bei Störungen verständlich und vollständig, auch wie der Anwender jede Störung nach Abschnitt 8 herbeiführt.
+7. Störungen 6 und 7: Unbekannte Komponente, unbekanntes Relay ohne Standard-Relay, Schleife über die zwei Relays und zu große Anlage enden je mit einer Meldung mit Grund, die `pipwerk-probe-send` anzeigt. Läuft `pipwerk-probe-receive` nicht, meldet der Absender nach der Frist die ausgebliebene Bestätigung, und nach seinem Start kommt die Nachricht an; die späte Bestätigung steht nur im Protokoll.
+8. Alle Ausgaben der Programme sind deutsch. Namen, die die Einrichtung vorschlägt, und Beispielnamen der Anwenderdokumentation bestehen nur aus Kleinbuchstaben und Ziffern. Relays und Prüfprogramme öffnen keinen Port.
+9. Aufbau (M5): Jedes Programm hat eine Aufgabe und ist nach ihr benannt (Spezifikation E1). `pipwerk-relay` hat keine Unterbefehle; Einrichtung, Schlüsselerzeugung, Statusanzeige und Prüfprogramme sind eigene Programme, die Prüfprogramme in einer eigenen Installationsdatei. Der Auftraggeber sieht das an den installierten Programmen und an der Hilfe von `pipwerk-relay`.
+10. Die Anwenderdokumentation beschreibt Installation, Einrichtung, Verbinden, spätere Änderungen, Status, Prüfprogramme, Meldungen, Empfangsbestätigung und das Verhalten bei Störungen verständlich und vollständig, auch wie der Anwender jede Störung nach Abschnitt 8 herbeiführt.
 
 Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, `pipwerk-relay` und `pipwerk-probe` enden mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 8 für dieses Paket. Die Installationsdateien lassen sich bauen und unter Linux installieren. Durchgang 1 und Störungen 1 bis 7 laufen in der Testumgebung mit dem erwarteten Ergebnis. Positive Testberichte beider Tester liegen vor.
 
@@ -216,7 +217,7 @@ E2 und E3 für die Web-API, 4.6 für die Web-API, Abschnitt 5 `openapi.json`, Ab
 
 Voraussetzung: die Einrichtung aus `wp01`.
 
-1. Der Auftraggeber schaltet mit `pipwerk-relay-setup` die Web-API des Relays auf einem Rechner ein und lässt ein Prüfprogramm über den Weg `http` senden und empfangen. Die Nachrichten kommen an wie in `wp01`.
+1. Der Auftraggeber schaltet mit `pipwerk-relay-setup` die Web-API des Relays auf einem Rechner ein und stellt ein Prüfprogramm auf den Weg `http` um, ohne Anleitung nach den Fragen der Einrichtung und dem bestätigten Bedienablauf, und lässt es senden und empfangen. Die Nachrichten kommen an wie in `wp01`.
 2. Ohne Einschalten öffnet das Relay keinen Port; eingeschaltet ohne Adresse ist die Web-API nur auf dem eigenen Rechner erreichbar.
 3. Die Anwenderdokumentation beschreibt Web-API und Weg `http` verständlich und vollständig.
 
@@ -230,11 +231,11 @@ Eine Anfrage vom zweiten Rechner erreicht über pipwerk relay den Abruf auf dem 
 
 ### Umfang
 
-- Abruf über pipwerk relay in `components/pipwerk-fetch-mt5`: Programme `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` (E1), Nachrichtenarten `fetch.request`, `fetch.file`, `fetch.result`, Abschnitt `[relay]` mit Voreinstellungen (6.1 bis 6.3), deutsche Ausgaben (E9).
+- Abruf über pipwerk relay in `components/pipwerk-fetch-mt5`: Programme `pipwerk-fetch-mt5-serve`, `pipwerk-fetch-request` und `pipwerk-fetch-mt5-setup` (E1) mit Bedienablauf 4.7, Nachrichtenarten `fetch.request`, `fetch.file`, `fetch.result`, Abschnitt `[relay]` mit Voreinstellungen (6.1 bis 6.3), deutsche Ausgaben (E9).
 - Installationsdatei von `pipwerk-fetch-mt5` nach E8, damit der Abruf ohne das Repository auf den Rechner von MetaTrader 5 kommt.
 - Schemas der Nachrichtenarten des Abrufs unter `contracts/messages/v1/` (Abschnitt 5).
 - Sicherheit nach Abschnitt 7 für den Abruf.
-- Tests nach Abschnitt 8: Abruf; Testumgebung um `serve` mit der Nachbildung von `MetaTrader5` erweitert, Durchgang 5.
+- Tests nach Abschnitt 8: Abruf, Einrichtung des Abrufs, und dass der Aufruf von `pipwerk-fetch-mt5` an der Befehlszeile `relay-core` nicht lädt (6.1); Testumgebung um `serve` mit der Nachbildung von `MetaTrader5` erweitert, Durchgang 5.
 - Dokumentation: `docs/technical/pipwerk-fetch-mt5.md` (`pipwerk-fetch-mt5-serve`, `pipwerk-fetch-request`, Abschnitt `[relay]`, Installationsdatei), `docs/user/pipwerk-relay.md` zum Abruf über pipwerk relay, Anwenderdokumentation von `pipwerk-fetch-mt5` zur Installation aus der Datei.
 
 ### Nicht-Umfang
@@ -244,7 +245,7 @@ Eine Anfrage vom zweiten Rechner erreicht über pipwerk relay den Abruf auf dem 
 
 ### Umgesetzte Teile der Spezifikation
 
-Abschnitt 1 Nachweis über Verzeichnisse, E8 für `pipwerk-fetch-mt5`, E9 für den Abruf, 6.1 bis 6.3 ohne `[relay.file_way]`, Abschnitt 5 Nachrichtenarten des Abrufs, Abschnitt 7 für den Abruf, Abschnitt 8 Abruf und Durchgang 5, Abschnitt 9 für den Abruf.
+Abschnitt 1 Nachweis über Verzeichnisse, E1 Programme des Abrufs, E8 für `pipwerk-fetch-mt5`, E9 für den Abruf, 4.7, 6.1 bis 6.3 ohne `[relay.file_way]`, Abschnitt 5 Nachrichtenarten des Abrufs, Abschnitt 7 für den Abruf, Abschnitt 8 Abruf und Durchgang 5, Abschnitt 9 für den Abruf.
 
 ### Abhängigkeiten
 
@@ -254,8 +255,8 @@ Abschnitt 1 Nachweis über Verzeichnisse, E8 für `pipwerk-fetch-mt5`, E9 für d
 
 Voraussetzung: die Einrichtung aus `wp01`, MetaTrader 5 auf dem Windows-Rechner, angemeldet am Konto eines Brokers.
 
-1. Der Auftraggeber installiert `pipwerk-fetch-mt5` auf beiden Rechnern nach der Anwenderdokumentation aus einer heruntergeladenen Datei, ohne das Repository, und startet `pipwerk-fetch-mt5-serve` auf dem Rechner von MetaTrader 5. Es ist ohne weitere Einrichtung mit dem Relay verbunden und zeigt seine Adresse.
-2. Durchgang 5: Eine Anfrage mit `pipwerk-fetch-request` mit Broker, Symbol, Zeiteinheiten, Ticks und Zeitraum liefert die Dateien ins Zielverzeichnis, mit einer deutschen Zeile je Datei und dem Ergebnis. Die Dateien lassen sich ohne Änderung in den Datenbestand von pipwerk replay importieren. Eine Anfrage mit einem anderen Broker als dem angemeldeten Handelsserver endet mit dem Grund `broker_mismatch`; eine Anfrage an eine unbekannte Komponente endet mit der Meldung und Exitcode 1.
+1. Der Auftraggeber installiert `pipwerk-fetch-mt5` auf beiden Rechnern nach der Anwenderdokumentation aus einer heruntergeladenen Datei, ohne das Repository, richtet den Abruf mit `pipwerk-fetch-mt5-setup` ein, ohne Anleitung nach den Fragen der Einrichtung und dem bestätigten Bedienablauf (Spezifikation 4.7), und legt dabei keine Datei von Hand an. `pipwerk-fetch-mt5-serve` ist ohne weitere Einrichtung mit dem Relay verbunden und zeigt seine Adresse.
+2. Durchgang 5: Eine Anfrage, die der Auftraggeber ohne Anleitung nach der Hilfe von `pipwerk-fetch-request` stellt, mit Broker, Symbol, Zeiteinheiten, Ticks und Zeitraum liefert die Dateien ins Zielverzeichnis, mit einer deutschen Zeile je Datei und dem Ergebnis. Die Dateien lassen sich ohne Änderung in den Datenbestand von pipwerk replay importieren. Eine Anfrage mit einem anderen Broker als dem angemeldeten Handelsserver endet mit dem Grund `broker_mismatch`; eine Anfrage an eine unbekannte Komponente endet mit der Meldung und Exitcode 1.
 3. Wird ein Relay während einer Lieferung hart beendet und neu gestartet, fehlt danach keine Datei, und keine kommt doppelt an.
 4. Der bisherige Aufruf von `pipwerk-fetch-mt5` an der Befehlszeile arbeitet wie vorher; `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` öffnen keinen Port.
 5. Die Anwenderdokumentation beschreibt Installation, `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` verständlich und vollständig.
@@ -290,7 +291,7 @@ Abschnitt 1 Nachweis über Matrix, 6.1 `[relay.file_way]`, Abschnitt 8 Durchgang
 
 Voraussetzung: die Einrichtung aus `wp04` und `wp06`.
 
-1. Der Auftraggeber stellt die Strecken von `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` nach der Anwenderdokumentation auf Matrix mit Weg für Dateien um.
+1. Der Auftraggeber stellt die Strecken von `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` mit `pipwerk-relay-setup` auf Matrix mit Weg für Dateien um, ohne Anleitung nach den Fragen der Einrichtung und dem bestätigten Bedienablauf für Matrix und Wege für Dateien.
 2. Durchgang 6: Eine Anfrage mit Ticks liefert alle Dateien ins Zielverzeichnis; Dateien über der Schwelle liegen unterwegs auf dem SFTP-Server, die übrigen erscheinen als Anlage im Chat. Die Dateien lassen sich in den Datenbestand von pipwerk replay importieren. Danach liegen keine Dateien der Anfrage mehr auf dem SFTP-Server.
 3. Die Anwenderdokumentation beschreibt die Umstellung verständlich und vollständig.
 
@@ -301,7 +302,7 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, 
 | Teil der Spezifikation | Paket |
 |---|---|
 | 1 Nachweis | `wp01` bis `wp05` (pipwerk relay), `wp06` (Abruf über Verzeichnisse), `wp07` (Abruf über Matrix) |
-| 2 E1, E4 bis E7, E9 | `wp01`; E9 für den Abruf `wp06` |
+| 2 E1, E4 bis E7, E9 | `wp01`; Programme des Abrufs (E1) und E9 für den Abruf `wp06` |
 | 2 E2 | `wp01` (Wege ohne Port), `wp05` (Web-API) |
 | 2 E3 | `wp05` |
 | 2 E8 | `wp01`; `pipwerk-fetch-mt5` `wp06` |
@@ -310,7 +311,8 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, 
 | 3.5, 3.7 | `wp01` |
 | 3.6 | `wp04` |
 | 4.1 bis 4.5 | `wp01`; Wege für Dateien `wp04`; Web-API `wp05` |
-| 4.6 | `wp01`; Fragen der Wege `wp02` bis `wp05` |
+| 4.6 | `wp01`; Fragen der Wege `wp02` bis `wp05`; Weg einer Komponente umstellen mit ihrem Schlüssel (E5) `wp03` (Matrix) und `wp05` (`http`) |
+| 4.7 | `wp06` |
 | 5 | `wp01`; Wege für Dateien `wp04`; `openapi.json` `wp05`; Nachrichtenarten des Abrufs `wp06` |
 | 6.1 bis 6.3 | `wp06`; `[relay.file_way]` `wp07` |
 | 7 | `wp01` bis `wp06` je nach Teil |
@@ -329,3 +331,4 @@ Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, 
 | 2026-10-24 | Nach dem Einwand des Auftraggebers zur Präsentation [plan-1.html](presentations/plan-1.html) (Festlegung in `scope.md`, Stand 2026-10-24): `wp01` weist die Grundmechanik nur mit Verzeichnissen im Dateisystem nach, zwischen den Rechnern über ein Netzlaufwerk, mit Abnahmekriterien zur Robustheit unter Störungen und zur Empfangsbestätigung über die Prüfkomponente (Spezifikation Abschnitt 8). SFTP neues Paket `wp02`; Matrix wird `wp03`, Wege für Dateien `wp04` nach `wp02` und `wp03`, Web-API `wp05`. Durchgänge nach der neuen Nummerierung der Spezifikation. Abnahmekriterium zur Robustheit auch in `wp02` und `wp03`. Prüfung bestanden in [plan-2.md](reviews/plan-2.md). |
 | 2026-10-24 | Hinweise aus [plan-2.md](reviews/plan-2.md) (bestanden) ohne weitere Prüfung eingearbeitet: H1 in `wp01` Kriterien 4 und 6 die anzeigende Komponente genannt; H2 falscher Schlüssel und erneute Bestätigung in Kriterium 5; H3 Herbeiführen der Störungen in der Anwenderdokumentation (Kriterium 8); H6 Prüfkomponente im Glossar. H4 und H5 betreffen die Spezifikation (dort eingearbeitet). |
 | 2026-10-25 | Überarbeitung nach der nicht bestandenen Abnahme von `wp01` ([Abnahmebericht](wp01/acceptance/1.md), Mängel M1 bis M7, Spezifikation Abschnitt 10): `wp01` liefert pipwerk relay allein mit Installationsdateien, Einrichtung nach dem Bedienablauf, getrennten Programmen und Prüfprogrammen und wird ohne MetaTrader 5 abgenommen, mit Kriterien zu Installation, Einrichtung ohne Handarbeit, Bedienbarkeit und deutschen Ausgaben; der Abruf über pipwerk relay ist neues Paket `wp06` (Durchgang 5), der Abruf über Matrix neues Paket `wp07` (Durchgang 6); `wp02` bis `wp05` werden mit den Prüfprogrammen abgenommen und beginnen nach Bestätigung des Bedienablaufs ihres Wegs. |
+| 2026-10-25 | Nach dem Prüfbericht [plan-3.md](reviews/plan-3.md): B1 Kriterien zur Bedienbarkeit ohne Anleitung in `wp05`, `wp06` und `wp07`; B2 Kriterien zu M5 (Aufbau, Kriterium 9) und zu den Namen aus M7 (Kriterium 8) in `wp01`. Hinweise: H1 Beginn von `wp01` und `wp06` nach Bestätigung des Bedienablaufs; H3 Sichern der Teile des Abrufs auf `relay/wp06`; H4 E1 in `wp01` ohne die Programme des Abrufs; H5 Test des Aufrufs an der Befehlszeile in `wp06`; H6 Umstellen einer Komponente in der Abdeckung; H7 späte Bestätigung im Protokoll (Kriterium 7). H2 ohne Änderung: Der Arbeitszweig enthält den Stand von `backtest/wp02`, deshalb bleibt die Reihenfolge der Übernahme. Einrichtung des Abrufs mit `pipwerk-fetch-mt5-setup` nach Spezifikation 4.7 (`wp06`). |
