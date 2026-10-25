@@ -436,6 +436,8 @@
     "descriptionPlaceholder": "Worum geht es in dieser Strategie?",
     "rulesOfStrategy": "Regeln der Strategie",
     "rulesOfStrategyHint": "Diese Regeln gelten für jede Order der Strategie.",
+    "applicationObjects": "Objekte der Anwendung",
+    "applicationObjectsHint": "Diese Objekte gibt es immer. Ausdrücke können ihre Werte verwenden.",
     "findings": "Befunde der Prüfung",
     "notChecked": "Noch nicht geprüft. „Prüfen“ sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.",
     "noFindings": "Keine Befunde. Die Strategie ist in sich stimmig.",

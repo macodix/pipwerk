@@ -436,6 +436,8 @@
     "descriptionPlaceholder": "What is this strategy about?",
     "rulesOfStrategy": "Rules of the strategy",
     "rulesOfStrategyHint": "These rules apply to every order of the strategy.",
+    "applicationObjects": "Objects of the application",
+    "applicationObjectsHint": "These objects always exist. Expressions can use their values.",
     "findings": "Check results",
     "notChecked": "Not checked yet. \"Check\" looks for problems such as missing connections or empty required entries.",
     "noFindings": "No findings. The strategy is consistent.",

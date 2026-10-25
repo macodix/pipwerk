@@ -15,6 +15,7 @@ import { contentKind } from '../model/objectContent';
 import { FieldRow, applies, specOfParameter, specOfProperty, type FieldSpec } from './fields';
 import { FindingsList } from './FindingsList';
 import { InstanceList, InstancePanel } from './Instances';
+import { SuppliedList } from './Supplied';
 import { FirstUse, UsedValues } from './UsedValues';
 
 /** The own parameters of an instance (from a template of the user) as entries that can be assigned. */
@@ -293,7 +294,6 @@ export function ElementView({ element }: { element: ElementDocument }) {
     }
   }
 
-  const methodOf = (id: string) => type.methods.find((candidate) => candidate.id === id);
   const originText = (() => {
     const origin = instance?.origin;
     if (!card || origin === undefined || origin === null) {
@@ -363,54 +363,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
           testid="sec-delivers"
           aside={<span className="muted">{t('properties.deliversHint')}</span>}
         >
-          <ul className="prop-list">
-            {supplied.map((property) => {
-              const users = used.get(property.id);
-              const method = property.method ? methodOf(property.id) : undefined;
-              return (
-                <li
-                  key={`${property.method ? 'm' : 'p'}:${property.id}`}
-                  className="prop-row"
-                  data-tip={property.explanation === '' ? undefined : property.explanation}
-                  data-testid="prop-row"
-                  data-kind={property.method ? 'method' : 'property'}
-                >
-                  <span className="prop-name">{property.label}</span>
-                  <span className="dtype-chip">
-                    {property.method ? `${t('properties.method')} · ` : ''}
-                    {t(`datatype.${property.datatype}`)}
-                  </span>
-                  {property.choices.length > 0 ? (
-                    <span className="prop-values" data-testid="prop-values">
-                      {property.choices.map((choice) => labelText(choice.label, language)).join(' · ')}
-                    </span>
-                  ) : null}
-                  {users !== undefined ? (
-                    <span className="prop-used">
-                      <Icon name="link" size={12} />
-                      {users.join(', ')}
-                    </span>
-                  ) : null}
-                  {property.explanation !== '' ? (
-                    <span className="prop-desc" data-testid="prop-desc">
-                      {property.explanation}
-                    </span>
-                  ) : null}
-                  {method !== undefined && method.arguments.length > 0 ? (
-                    <ul className="prop-args" data-testid="prop-args">
-                      {method.arguments.map((argument) => (
-                        <li key={argument.id}>
-                          <b>{labelText(argument.label, language)}</b>
-                          {argument.required ? '' : ` (${t('used.optional')})`}
-                          {labelText(argument.explanation, language) === '' ? '' : `: ${labelText(argument.explanation, language)}`}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
+          <SuppliedList rows={supplied} type={type} users={used} />
         </Section>
       ) : null}
 
