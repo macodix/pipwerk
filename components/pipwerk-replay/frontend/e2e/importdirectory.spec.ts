@@ -262,9 +262,14 @@ test('the explanation of the tick names the storage directory and says that the 
   await expect(tip).toContainText('Dateien aus dem Importverzeichnis bleiben dort und werden nicht ins Ablageverzeichnis kopiert.');
   // The explanation is shown over the dialog, not under it.
   const covered = await tip.evaluate((node) => {
-    const box = node.getBoundingClientRect();
+    // The explanation lets mouse events pass; for the measurement it does not.
+    const html = node as HTMLElement;
+    const before = html.style.pointerEvents;
+    html.style.pointerEvents = 'auto';
+    const box = html.getBoundingClientRect();
     const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-    return top === null || !node.contains(top);
+    html.style.pointerEvents = before;
+    return top === null || !html.contains(top);
   });
   expect(covered).toBe(false);
 });

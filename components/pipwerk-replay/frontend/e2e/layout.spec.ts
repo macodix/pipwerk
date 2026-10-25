@@ -131,8 +131,15 @@ async function expectCards(page: Page, view: string): Promise<void> {
       const r = element.getBoundingClientRect();
       return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
     });
-    expect(headingBox.top).toBeGreaterThanOrEqual(mainBox.top - 1);
-    expect(headingBox.bottom).toBeLessThanOrEqual(mainBox.bottom + 1);
+    if ((await headings.count()) > 0 || headingBox.height <= mainBox.bottom - mainBox.top) {
+      expect(headingBox.top).toBeGreaterThanOrEqual(mainBox.top - 1);
+      expect(headingBox.bottom).toBeLessThanOrEqual(mainBox.bottom + 1);
+    } else {
+      // A card without a heading that is taller than the main area is reached by scrolling on: part of
+      // it lies in the main area, its top and bottom need not.
+      expect(headingBox.top).toBeLessThan(mainBox.bottom);
+      expect(headingBox.bottom).toBeGreaterThan(mainBox.top);
+    }
     expect(headingBox.width).toBeGreaterThan(0);
     const cardBox = await card.evaluate((element) => {
       const r = element.getBoundingClientRect();
