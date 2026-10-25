@@ -60,38 +60,40 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <p class="label" style="color:var(--coveraccent)!important">Pipwerk · Entwicklungsverfahren</p>
 <div class="col" style="flex:0;gap:32px">
 <h1>Entwicklungsprozess</h1>
-<p style="font-size:38px;width:1450px">Sechs Phasen von der Anforderung bis zur Übernahme in <code>main</code>. Rollen, Eingaben, Ergebnisse, Übergaben und Abbruchbedingungen wie im Chat abgestimmt.</p>
+<p style="font-size:38px;width:1450px">Sechs Phasen von der Anforderung bis zur Übernahme in <code>main</code>. Rollen, Eingaben, Ergebnisse, Übergaben und Abbruchbedingungen. Stand des Entwicklungsverfahrens vom 25. Oktober 2026.</p>
 </div>
-<p style="font-size:26px;color:var(--coveraccent)">12. Oktober 2026 · Projektleiter an Martin · mit technischer Ausführung</p>
-<p class="num">1 / 14</p></section></div>
+<p style="font-size:26px;color:var(--coveraccent)">abgestimmt am 12. Oktober 2026, fortgeschrieben bis 25. Oktober 2026 · Projektleiter an Martin</p>
+<p class="num">1 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Rollen und Kommunikationsweg</h2>
 <div class="chain">
 <div class="node">Auftraggeber<small>Anwender</small></div><span class="arrow">⇄</span>
 <div class="node">Projektleiter<small>übersetzt, präsentiert</small></div><span class="arrow">⇄</span>
-<div class="node">Softwarearchitekt<small>Spezifikation, Plan, Steuerung</small></div><span class="arrow">⇄</span>
+<div class="node">Softwarearchitekt<small>Phasen 1 bis 3, Prüfung des Entwurfs</small></div><span class="arrow">⇄</span>
+<div class="node">Entwicklungsleiter<small>Phasen 4 bis 6</small></div><span class="arrow">⇄</span>
 <div class="node">Team<small>Entwickler, Tester, QA</small></div>
 </div>
 <div class="row">
 <div class="card col"><h3>Auftraggeber</h3><p>Beschreibt Arbeitsabläufe, Objekte und Regeln. Bestätigt Präsentationen formlos, erprobt und nimmt ab.</p></div>
 <div class="card col"><h3>Projektleiter</h3><p>Übersetzt in beide Richtungen und erstellt Präsentationen. Prüft nichts und entscheidet nichts Technisches.</p></div>
-<div class="card col"><h3>Softwarearchitekt</h3><p>Erstellt Spezifikation und Arbeitspaketplan, vergibt Aufträge an Entwickler, übernimmt abgenommene Pakete in <code>main</code>.</p></div>
+<div class="card col"><h3>Softwarearchitekt</h3><p>Entwirft die Software, erstellt Spezifikation und Plan, prüft jedes Paket vor der Abnahme gegen seinen Entwurf.</p></div>
+<div class="card col"><h3>Entwicklungsleiter</h3><p>Steuert das Team, stellt die Testumgebung bereit, übernimmt abgenommene Pakete in <code>main</code>.</p></div>
 <div class="card col"><h3>Team</h3><p>Entwickler setzen um. Tester prüfen technisch. QA prüft aus Kundensicht gegen die Anforderungen.</p></div>
 </div>
-<p class="note">Jede Rolle spricht nur mit ihren Nachbarn in dieser Kette. Das Team hat keinen direkten Kontakt zum Auftraggeber.</p>
-<p class="num">2 / 14</p></section></div>
+<p class="note">Jede Rolle spricht nur mit ihren Nachbarn. Das Team hat keinen direkten Kontakt zum Auftraggeber.</p>
+<p class="num">2 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Wer entscheidet was</h2>
 <div class="row">
 <div class="card col"><h3>Der Auftraggeber entscheidet den Inhalt von</h3>
 <ul><li>Anforderungsdokument: Arbeitsabläufe und Bedienablauf</li><li>Fachmodell: Objekte, ihre Eigenschaften und Regeln</li><li>Strategiebeschreibungen</li></ul></div>
-<div class="card col"><h3>Alles andere</h3><p>entscheiden Softwarearchitekt und Team in ihrer Zuständigkeit.</p></div>
+<div class="card col"><h3>Alles andere</h3><p>entscheiden Softwarearchitekt, Entwicklungsleiter und Team in ihrer Zuständigkeit. Rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend, in Phase 4 der Entwicklungsleiter.</p></div>
 </div>
-<p class="rule">Braucht die Umsetzung eine Aussage, die in eines dieser Dokumente gehört und dort fehlt, wird sie nicht selbst getroffen. Sie geht als Frage an den Auftraggeber.</p>
+<p class="rule">Braucht die Umsetzung eine Aussage, die in eines dieser Dokumente gehört und dort fehlt, wird sie nicht selbst getroffen. Sie geht als Frage an den Auftraggeber. Vorgelegt wird nur, was nur er entscheiden kann.</p>
 <p class="note">Bestätigungen des Auftraggebers erfolgen formlos im Chat und werden in der jeweiligen Präsentation vermerkt. Der Begriff „Fachlichkeit“ wird nicht mehr verwendet.</p>
-<p class="num">3 / 14</p></section></div>
+<p class="num">3 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Sechs Phasen</h2>
@@ -99,61 +101,76 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="step"><b>Phase 1</b><span>Anforderung</span><i>geprüfte Dokumente des Auftraggebers und Präsentation</i></div>
 <div class="step"><b>Phase 2</b><span>Konzeption</span><i>technische Spezifikation, bei Bedarf Prototypen</i></div>
 <div class="step"><b>Phase 3</b><span>Planung</span><i>Arbeitspaketplan</i></div>
-<div class="step"><b>Phase 4</b><span>Umsetzung</span><i>je Arbeitspaket: Aufträge, Code, Tests, QA</i></div>
+<div class="step"><b>Phase 4</b><span>Umsetzung</span><i>je Arbeitspaket: Aufträge, Code, Tests, QA, Prüfung des Entwurfs</i></div>
 <div class="step"><b>Phase 5</b><span>Abnahme</span><i>Erprobung durch den Auftraggeber</i></div>
 <div class="step"><b>Phase 6</b><span>Integration</span><i>Übernahme in <code>main</code></i></div>
 </div>
 <div class="row">
 <div class="card col"><h3>Rückwege</h3><ul><li>Fehlende oder geänderte Anforderung aus jeder Phase: zurück in Phase 1</li><li>Lücke in der Spezifikation: zurück in Phase 2</li><li>Mangel in der Abnahme: zurück in Phase 4</li><li>Änderung am Plan: wieder durch Phase 3</li></ul></div>
-<div class="card col"><h3>Reihenfolge der Arbeitspakete</h3><p>Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, abgenommen und übernommen sind. Pakete ohne offene Abhängigkeit können sofort und parallel beginnen.</p></div>
+<div class="card col"><h3>Reihenfolge der Arbeitspakete</h3><p>Ein Arbeitspaket beginnt, sobald die Pakete, von denen es laut Plan abhängt, die Prüfung der QA bestanden haben. Pakete ohne offene Abhängigkeit beginnen sofort und parallel.</p></div>
 </div>
-<p class="num">4 / 14</p></section></div>
+<p class="num">4 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Phase 1 · Anforderung</h2>
 <div class="phase">
-<div class="k">Rollen</div><div>Auftraggeber, Projektleiter, QA für die Prüfung</div>
+<div class="k">Rollen</div><div>Auftraggeber, Projektleiter, Softwarearchitekt und QA für die Prüfung</div>
 <div class="k">Eingabe</div><div>Vorhaben des Auftraggebers, Rückmeldungen aus allen späteren Phasen</div>
 <div class="k">Tätigkeit</div><div>Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleiter fragt nach und schreibt Anforderungsdokument, Fachmodell und Strategiebeschreibungen fort. Die QA prüft sie auf Widersprüche, Lücken und mehrdeutige Begriffe und darauf, ob sich die Testfälle damit vollständig abbilden lassen. Eindeutige Korrekturen macht der Projektleiter selbst. Danach erstellt er eine Präsentation der wichtigsten Aussagen. Was nur der Auftraggeber entscheiden kann, steht darin als Frage mit Vorschlag. Auftraggeber und Projektleiter stimmen die Präsentation ab.</div>
 <div class="k">Ergebnis</div><div>geprüfte und fortgeschriebene Dokumente des Auftraggebers, Prüfbericht der QA, abgestimmte Präsentation, alles im Repository, Bestätigung in der Präsentation vermerkt</div>
 <div class="k">Rückkopplung</div><div>Die Dokumente des Auftraggebers sind lebende Dokumente. Jede fehlende oder geänderte Anforderung aus späteren Phasen kommt hierher zurück und wird vor der Präsentation erneut geprüft.</div>
 </div>
-<p class="num">5 / 14</p></section></div>
+<p class="num">5 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Phase 2 · Konzeption</h2>
 <div class="phase">
 <div class="k">Rollen</div><div>Softwarearchitekt, Entwickler, QA, Projektleiter, Auftraggeber</div>
 <div class="k">Eingabe</div><div>abgestimmte Dokumente des Auftraggebers, Prüfbericht der QA aus Phase 1</div>
-<div class="k">Tätigkeit</div><div>Zuerst prüft die QA nach, ob die Befunde aus Phase 1 erledigt sind. Wenn nicht, geht es zurück in Phase 1. Dann erstellt der Softwarearchitekt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, etwa bei der Oberfläche, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Die QA prüft die Spezifikation gegen die Anforderungen. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.</div>
+<div class="k">Tätigkeit</div><div>Zuerst prüft die QA nach, ob die Befunde aus Phase 1 erledigt sind. Wenn nicht, geht es zurück in Phase 1. Dann erstellt der Softwarearchitekt die Spezifikation nach seinen Aufgaben als Architekt (Folie 7). Ist unklar, ob oder welcher Weg trägt, lässt er Probeumsetzungen bauen und messen. Für jede neue Ansicht ohne umgesetzte Fassung lässt er vorher einen klickbaren Prototyp bauen, den der Auftraggeber bestätigt. Die QA prüft die Spezifikation gegen die Anforderungen und gegen die Aufgaben des Architekten. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.</div>
 <div class="k">Ergebnis</div><div>bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung</div>
-<div class="k">Schleifen</div><div>QA und Softwarearchitekt höchstens drei Durchläufe, dann Eskalation. Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.</div>
+<div class="k">Schleifen</div><div>QA und Softwarearchitekt, solange die blockierenden Befunde weniger werden, sonst eine Ebene höher (Folie 13). Einwände des Auftraggebers führen zu einem neuen Durchlauf. Fehlende Anforderungen gehen in Phase 1.</div>
 </div>
-<p class="num">6 / 14</p></section></div>
+<p class="num">6 / 15</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Aufgaben des Softwarearchitekten</h2>
+<table>
+<tr><th style="width:420px">Aufgabe</th><th>Inhalt</th></tr>
+<tr><td><b>1 Qualitätsanforderungen klären</b></td><td>Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten, vor der Spezifikation</td></tr>
+<tr><td><b>2 Aufbau entwerfen</b></td><td>Programme, Bausteine, Daten, Schnittstellen, Verteilung auf Rechner, je mit Aufgabe. Jedes Programm hat genau eine Aufgabe.</td></tr>
+<tr><td><b>3 Technik auswählen</b></td><td>mindestens zwei Wege vergleichen, im Zweifel Probeumsetzung bauen und messen</td></tr>
+<tr><td><b>4 Entscheidungen festhalten</b></td><td>jede Entscheidung mit verworfenen Alternativen und Grund in der Spezifikation</td></tr>
+<tr><td><b>5 Umsetzung begleiten</b></td><td>in Phase 4 jedes Paket vor der Abnahme gegen den Entwurf prüfen, Abweichungen über den Entwicklungsleiter beheben lassen</td></tr>
+<tr><td><b>6 Vom Ende her denken</b></td><td>Installation, Einrichtung, Aktualisierung, Überwachung, Fehlersuche als Bedienabläufe aus Sicht des Anwenders, ohne vermeidbare Handarbeit</td></tr>
+</table>
+<p class="note">Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen scheiterten an Aufbau, Installation, Einrichtung und Bedienung. Festgelegt am 25. Oktober 2026.</p>
+<p class="num">7 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Phase 3 · Planung</h2>
 <div class="phase">
 <div class="k">Rollen</div><div>Softwarearchitekt erstellt den Plan · QA prüft ihn · Projektleiter präsentiert · Auftraggeber bestätigt</div>
 <div class="k">Eingabe</div><div>abgestimmte technische Spezifikation, Anforderungsdokument</div>
-<div class="k">Tätigkeit</div><div>Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete. Die QA prüft, ob jede Anforderung durch die Spezifikation und jeder Teil der Spezifikation durch ein Arbeitspaket abgedeckt ist, und schreibt einen Prüfbericht. Plan mit positivem Prüfbericht geht an den Projektleiter, der ihn präsentiert und abstimmt.</div>
+<div class="k">Tätigkeit</div><div>Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete und nennt die vorgemerkten Anforderungen mit Priorität „erforderlich“, deren Teil ein Paket ohnehin ändert. Die QA prüft, ob jede Anforderung durch die Spezifikation und jeder Teil der Spezifikation durch ein Arbeitspaket abgedeckt ist, und schreibt einen Prüfbericht. Plan mit positivem Prüfbericht geht an den Projektleiter, der ihn präsentiert und abstimmt.</div>
 <div class="k">Ergebnis</div><div>Arbeitspaketplan, positiver Prüfbericht, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository</div>
-<div class="k">Schleifen</div><div>Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, höchstens drei Durchläufe, dann Eskalation. Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.</div>
+<div class="k">Schleifen</div><div>Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, solange die blockierenden Befunde weniger werden. Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.</div>
 </div>
 <p class="rule">Ein Arbeitspaket endet mit einem Ergebnis, das der Auftraggeber selbst prüfen und abnehmen kann. Es enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der Spezifikation, Abhängigkeiten und Abnahmekriterien.</p>
-<p class="num">7 / 14</p></section></div>
+<p class="num">8 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Phase 4 · Umsetzung eines Arbeitspakets</h2>
 <table>
 <tr><th style="width:250px">Rolle</th><th>Eingabe</th><th>Ergebnis</th></tr>
-<tr><td><b>Softwarearchitekt</b></td><td>Arbeitspaket, Spezifikation</td><td>Aufträge mit Ziel, Umfang, technischen Abnahmekriterien und zuständigem Entwickler. Nach bestandenen Tests: Aufträge zusammengeführt, Testumgebung bereitgestellt.</td></tr>
+<tr><td><b>Entwicklungsleiter</b></td><td>Arbeitspaket, Spezifikation</td><td>Aufträge mit Ziel, Umfang, technischen Abnahmekriterien und zuständigem Entwickler. Nach bestandenen Tests: Aufträge zusammengeführt, Testumgebung bereitgestellt.</td></tr>
 <tr><td><b>Entwickler</b></td><td>ein Auftrag</td><td>Code, Unit-Tests (Tests einzelner Funktionen), technische Dokumentation und vorerst die Anwenderdokumentation, in eigenem Branch mit benanntem Commit</td></tr>
 <tr><td><b>Tester</b></td><td>Auftrag, Commit des Entwicklers, Regeln seines Prüfgebiets</td><td>Testbericht zu genau diesem Commit: Funktion, Grenzfälle und Grenzwerte, Codequalität, Sicherheitsregeln, technische Dokumentation</td></tr>
 <tr><td><b>QA</b></td><td>Arbeitspaket, Anforderungsdokument, laufende Testumgebung, Anwenderdokumentation</td><td>Prüfbericht aus Kundensicht: Anforderungen erfüllt, Software aus Kundensicht funktionsfähig, Anwenderdokumentation verständlich und vollständig</td></tr>
+<tr><td><b>Softwarearchitekt</b></td><td>Arbeitszweig mit positivem Prüfbericht der QA, laufende Testumgebung</td><td>Prüfbericht zum Entwurf: Programme, Bausteine, Daten, Schnittstellen, Technik, Installation und Einrichtung wie spezifiziert</td></tr>
 </table>
-<p class="note">Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit, positive Testberichte, positiver QA-Prüfbericht, laufende Testumgebung. Die QA prüft erst, wenn alle Aufträge des Pakets zusammengeführt sind.</p>
-<p class="num">8 / 14</p></section></div>
+<p class="note">Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit, positive Testberichte, positive Prüfberichte von QA und Softwarearchitekt, laufende Testumgebung. Tester Funktion prüft jeden Commit, Tester Sicherheit einmal je Paket.</p>
+<p class="num">9 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Phase 4 · Entwickler und Tester</h2>
@@ -162,10 +179,10 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="card col"><h3>Test-Gebiete</h3><ul><li>Funktionstest: erwartetes Verhalten, Grenzfälle, Grenzwerte, automatische Tests und ihre Auswertung</li><li>Code- und Dokumentationsprüfung: Programmierregeln, bewährte Verfahren, technische Dokumentation</li><li>Sicherheitsprüfung: Sicherheitsregeln nach BSI-Grundschutz und OWASP</li></ul></div>
 </div>
 <div class="row">
-<div class="card col"><h3>Anzahl</h3><p>Der Softwarearchitekt setzt so viele Entwickler ein, wie es Zeit bringt. Mehrere nur für voneinander unabhängige Teile, jeder mit eigenem Arbeitsbereich.</p></div>
+<div class="card col"><h3>Anzahl</h3><p>Der Entwicklungsleiter setzt so viele Entwickler ein, wie es Zeit bringt. Mehrere nur für voneinander unabhängige Teile, jeder mit eigenem Arbeitsbereich.</p></div>
 <div class="card col"><h3>Beginn mit vier Spezialisten</h3><p>Entwickler: einer für Python-Bibliothek, Backend, Datenbank und Ablage, einer für Oberfläche und Bedienbarkeit. Tester: einer für Funktion, Codequalität und Dokumentation, einer für Sicherheit. Jeder hat ein eigenes Briefing. Weitere werden abgetrennt, sobald ein Gebiet zu kurz kommt.</p></div>
 </div>
-<p class="num">9 / 14</p></section></div>
+<p class="num">10 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Phase 5 · Abnahme und Phase 6 · Integration</h2>
@@ -173,16 +190,16 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="card col"><h3>Phase 5 · Abnahme</h3><ul>
 <li>Projektleiter: übergibt die Testumgebung mit kurzer Anleitung, was neu ist und wie es ausprobiert wird.</li>
 <li>Auftraggeber: erprobt und nimmt formlos ab oder nennt Mängel.</li>
-<li>Projektleiter und Softwarearchitekt: klären jeden Mangel. Der Softwarearchitekt lässt ihn über sein Team in Phase 4 beheben.</li>
-<li>Abbruch: Nach drei erfolglosen Versuchen gilt der Mangel als nicht lösbar. Der Projektleiter legt vor, was geht und was nicht. Der Auftraggeber entscheidet.</li>
+<li>Projektleiter und Entwicklungsleiter: klären jeden Mangel. Der Entwicklungsleiter lässt ihn über sein Team in Phase 4 beheben.</li>
+<li>Abbruch: Kommt ein Mangel unverändert zurück oder sinkt die Zahl der Mängel nicht, gilt er als nicht lösbar. Der Projektleiter legt vor, was geht und was nicht. Der Auftraggeber entscheidet.</li>
 <li>Ergebnis: abgenommenes Arbeitspaket, Abnahme im Abnahmebericht vermerkt</li></ul></div>
 <div class="card col"><h3>Phase 6 · Integration</h3><ul>
-<li>Softwarearchitekt: übernimmt genau den abgenommenen Commit mit einem Merge-Commit in <code>main</code>.</li>
+<li>Entwicklungsleiter: übernimmt genau den abgenommenen Commit mit einem Merge-Commit in <code>main</code>.</li>
 <li>Er beendet die Testumgebung, entfernt Arbeitsbereiche und Branches des Pakets und trägt das Paket im Arbeitspaketplan als abgeschlossen ein.</li>
 <li>Ergebnis: Arbeitspaket in <code>main</code>, keine Reste aus der Umsetzung</li>
 <li>Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.</li></ul></div>
 </div>
-<p class="num">10 / 14</p></section></div>
+<p class="num">11 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Übergaben sind Dokumente</h2>
@@ -191,38 +208,40 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <tr><td>Auftraggeber, Projektleiter</td><td>Softwarearchitekt</td><td>Dokumente des Auftraggebers</td></tr>
 <tr><td>Softwarearchitekt</td><td>QA, Projektleiter</td><td>Spezifikation, Arbeitspaketplan</td></tr>
 <tr><td>QA</td><td>Softwarearchitekt</td><td>Prüfbericht</td></tr>
-<tr><td>Softwarearchitekt</td><td>Entwickler</td><td>Auftrag</td></tr>
+<tr><td>Entwicklungsleiter, Softwarearchitekt für Prototypen</td><td>Entwickler</td><td>Auftrag</td></tr>
 <tr><td>Entwickler</td><td>Tester</td><td>Code mit Commit, technische Dokumentation</td></tr>
-<tr><td>Tester</td><td>Entwickler, Softwarearchitekt</td><td>Testbericht</td></tr>
-<tr><td>Projektleiter</td><td>Softwarearchitekt</td><td>Abnahmebericht mit den Mängeln</td></tr>
+<tr><td>Tester, QA</td><td>Entwicklungsleiter</td><td>Testbericht, Prüfbericht in Phase 4</td></tr>
+<tr><td>Entwicklungsleiter</td><td>Softwarearchitekt</td><td>Lücke in Spezifikation oder Plan, Paket zur Prüfung des Entwurfs</td></tr>
+<tr><td>Softwarearchitekt</td><td>Entwicklungsleiter</td><td>Prüfbericht zum Entwurf</td></tr>
+<tr><td>Projektleiter</td><td>Entwicklungsleiter</td><td>Abnahmebericht mit den Mängeln</td></tr>
 </table>
 <p class="note">Jedes Übergabedokument ist so vollständig, dass die empfangende Rolle ohne Rückgriff auf Gespräche arbeiten kann. Ablage im Repository unter <code>development/</code>: je Vorhaben Spezifikation, Arbeitspaketplan, Prüfberichte und Präsentationen, darunter je Arbeitspaket Aufträge, Test-, Prüf- und Abnahmeberichte. Anforderungsdokumente, eines für das Gesamtsystem und je eines je Komponente, bleiben als lebende Dokumente unter <code>docs/design/requirements/</code>. Welche für ein Vorhaben gelten, steht in dessen <code>scope.md</code>, die der Projektleiter führt. Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.</p>
-<p class="num">11 / 14</p></section></div>
+<p class="num">12 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Schleifen und Eskalation</h2>
-<p class="rule">Jede Prüfschleife hat höchstens drei Durchläufe. Danach geht der Fall eine Ebene höher: Entwickler → Softwarearchitekt → Projektleiter → Auftraggeber.</p>
+<p class="rule">Eine Prüfschleife läuft, solange die blockierenden Befunde weniger werden. Kommt ein Befund unverändert wieder oder sinkt ihre Zahl nicht, geht der Fall eine Ebene höher: Entwickler → Entwicklungsleiter beziehungsweise Softwarearchitekt → Projektleiter → Auftraggeber. Ab dem dritten Durchlauf entscheidet der Softwarearchitekt rein technische Befunde zu Spezifikation und Plan selbst.</p>
 <table>
-<tr><th style="width:420px">Schleife</th><th>nach drei erfolglosen Durchläufen</th></tr>
-<tr><td>Tester und Entwickler</td><td>an den Softwarearchitekten, der die Aufträge anpasst. Nach drei weiteren an den Projektleiter.</td></tr>
-<tr><td>QA und Softwarearchitekt</td><td>an den Projektleiter. Er übersetzt den Streitpunkt verständlich und legt ihn dem Auftraggeber zur Entscheidung vor. Fehlt eine Anforderung, geht sie in Phase 1.</td></tr>
-<tr><td>Mangel in der Abnahme</td><td>Projektleiter und Softwarearchitekt erklären ihn als nicht lösbar. Der Auftraggeber entscheidet.</td></tr>
+<tr><th style="width:420px">Schleife ohne Fortschritt</th><th>weiter an</th></tr>
+<tr><td>Tester und Entwickler</td><td>Entwicklungsleiter, der die Aufträge anpasst oder rein technisch entscheidet, sonst Projektleiter</td></tr>
+<tr><td>QA und Softwarearchitekt, QA und Entwicklungsleiter</td><td>Projektleiter. Er übersetzt den Streitpunkt verständlich und legt ihn dem Auftraggeber zur Entscheidung vor. Fehlt eine Anforderung, geht sie in Phase 1.</td></tr>
+<tr><td>Mangel in der Abnahme</td><td>Projektleiter und Entwicklungsleiter erklären ihn als nicht lösbar. Der Auftraggeber entscheidet.</td></tr>
 <tr><td>Abstimmung mit dem Auftraggeber</td><td>endet mit seiner Bestätigung</td></tr>
 </table>
-<p class="num">12 / 14</p></section></div>
+<p class="num">13 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Technische Ausführung</h2>
 <table>
 <tr><th style="width:360px">Thema</th><th>Festlegung</th></tr>
-<tr><td>Start des Softwarearchitekten</td><td>Das Startprogramm <code>agentrun</code> erkennt eine neue Meldung an den Softwarearchitekten und startet je Arbeitspaket höchstens eine Sitzung mit dieser Meldung. Es überwacht sie mit dem Herzschlag, beendet sie nach seiner Antwortmeldung und meldet Absturz oder Stillstand dem Projektleiter.</td></tr>
-<tr><td>Start von Entwickler, Tester, QA</td><td>Der Softwarearchitekt startet sie mit dem Pfad ihres Übergabedokuments. Entwickler als Unteragenten seiner Sitzung. Tester und QA über ein Startskript je Rolle, dessen Programm einstellbar ist (Claude Code oder ein anderes Sprachmodell wie Codex). Keine Teamfunktion mit direkten Nachrichten.</td></tr>
-<tr><td>Weg der Dokumente</td><td>Alles im Repository, Dokumente in der festen Ablage unter <code>development/</code> (Folie 11). Zwischen Projektleiter und Softwarearchitekt auf <code>main</code>, angestoßen durch kurze Meldungen mit Aufgabe und Pfad in <code>development/messages/architect/</code> und <code>development/messages/projectlead/</code>. Innerhalb des Teams auf dem Arbeitszweig des Pakets, mit der Übernahme in <code>main</code>.</td></tr>
+<tr><td>Start von Softwarearchitekt und Entwicklungsleiter</td><td>Das Startprogramm <code>agentrun</code> erkennt eine neue Meldung an eine der beiden Rollen und startet je Arbeitspaket höchstens eine Sitzung mit dieser Meldung. Softwarearchitekt mit Opus, übrige Rollen mit Sonnet. Es überwacht sie mit dem Herzschlag, beendet sie nach seiner Antwortmeldung und meldet Absturz oder Stillstand dem Projektleiter.</td></tr>
+<tr><td>Start von Entwickler, Tester, QA</td><td>Der Entwicklungsleiter, für Prüfungen und Prototypen der Phasen 1 bis 3 der Softwarearchitekt, startet sie mit dem Pfad ihres Übergabedokuments. Entwickler als Unteragenten der Sitzung. Tester und QA über ein Startskript je Rolle, dessen Programm einstellbar ist (Claude Code oder ein anderes Sprachmodell wie Codex). Keine Teamfunktion mit direkten Nachrichten.</td></tr>
+<tr><td>Weg der Dokumente</td><td>Alles im Repository, Dokumente in der festen Ablage unter <code>development/</code> (Folie 12). Meldungen auf <code>main</code> mit Aufgabe und Pfad in <code>development/messages/architect/</code>, <code>devlead/</code> und <code>projectlead/</code>. Innerhalb des Teams auf dem Arbeitszweig des Pakets, mit der Übernahme in <code>main</code>.</td></tr>
 <tr><td>Wegfall</td><td>Auftragsverwaltung <code>ordermgr</code> mit Statusmodell, Hilfswerkzeug <code>pipwerk-dev</code> und <code>work-orders/</code> entfallen. Arbeitsverzeichnisse legen die Rollen mit Git selbst an.</td></tr>
 <tr><td>Skripte je Komponente</td><td>Im Verzeichnis der Komponente: Prüfskript vom Tester, Testumgebungsskript vom Entwickler. Ports und Datenbank als Parameter oder Konfiguration. Kein übergreifendes Skript.</td></tr>
 </table>
 <p class="note">Vor der Festlegung zu prüfen: ob der Herzschlag bei Unteragenten das Arbeitsverzeichnis des Arbeitspakets meldet. Vergleich Claude und Codex als Tester mit gezielt eingebauten Fehlern, sobald der erste Durchlauf steht.</p>
-<p class="num">13 / 14</p></section></div>
+<p class="num">14 / 15</p></section></div>
 
 <div class="frame"><section class="slide">
 <h2>Stand und nächste Schritte</h2>
@@ -230,18 +249,17 @@ th{background:#eef2ef;color:var(--ink);font-weight:600}
 <div class="card col"><h3>Abgestimmt im Chat am 12. Oktober 2026</h3><ul>
 <li>sechs Phasen mit Rollen, Eingaben, Ergebnissen und Rückwegen</li>
 <li>Entscheidungsrechte über die Dokumente des Auftraggebers</li>
-<li>Test und QA getrennt, Beginn mit zwei Entwicklern und zwei Testern</li>
-<li>Übergaben als Dokumente im Repository</li>
-<li>drei Durchläufe je Schleife, dann eine Ebene höher</li>
-<li>Prüfung der Dokumente des Auftraggebers durch die QA in Phase 1 vor der Präsentation, Liste je Vorhaben in <code>scope.md</code> (bestätigt am 14. Oktober 2026)</li>
-<li>technische Ausführung (Folie 13)</li></ul>
-<p class="note">Bestätigt durch den Auftraggeber im Chat am 12. Oktober 2026</p></div>
-<div class="card col"><h3 style="color:var(--amber)">Bewusst verschoben</h3><ul>
-<li>Entwicklungsverfahren und Rollenbriefings im Repository an diesen Stand anpassen</li>
-<li>Rolle für Anwenderdokumentation, nur falls die Dokumente der Entwickler nicht genügen</li>
-<li>Arbeitspaketplan für Schritt 1 nach der neuen Definition neu aufteilen, danach den wartenden ersten Auftrag anpassen</li></ul></div>
+<li>Test und QA getrennt, Übergaben als Dokumente im Repository</li>
+<li>technische Ausführung (Folie 14)</li></ul></div>
+<div class="card col"><h3>Fortgeschrieben bis 25. Oktober 2026</h3><ul>
+<li>Prüfung der Dokumente des Auftraggebers durch die QA in Phase 1 (14.10.)</li>
+<li>Grenze der Durchläufe nach Fortschritt statt fester Zahl (16.10.)</li>
+<li>rein technische Streitpunkte entscheiden Softwarearchitekt und Entwicklungsleiter (17.10., 18.10.)</li>
+<li>Rolle Entwicklungsleiter für die Phasen 4 bis 6 (21.10.)</li>
+<li>Aufgaben des Softwarearchitekten als Architekt, Prüfung des Entwurfs, ein Programm je Aufgabe (25.10.)</li></ul>
+<p class="note">Einzelheiten im Änderungsnachweis des Entwicklungsverfahrens</p></div>
 </div>
-<p class="num">14 / 14</p></section></div>
+<p class="num">15 / 15</p></section></div>
 
 </div>
 <script>

@@ -5,15 +5,16 @@
 - status: `draft`
 - stand: 2026-10-25
 - bereich: Entwicklungsprozess (keine Produktkomponente)
-- abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
+- abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026, seitdem fortgeschrieben nach dem Änderungsnachweis. Jede Änderung dieses Dokuments oder der [Agentenrollen und Briefings](agentenrollen-und-briefings.md) gleicht die Präsentation im selben Commit an.
 
 ## Kurzfassung
 
 Für die meisten Aufgaben genügt dieser Abschnitt. Die übrigen Abschnitte werden nur gelesen, wenn die Aufgabe sie betrifft.
 
-- Kette: Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt (Phasen 1 bis 3) beziehungsweise Entwicklungsleiter (Phasen 4 bis 6) ⇄ Team (Entwickler, Tester, QA). Jede Rolle spricht nur mit ihren Nachbarn. Softwarearchitekt und Entwicklungsleiter sprechen über `amend` und `amended` miteinander.
+- Kette: Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt (Phasen 1 bis 3) beziehungsweise Entwicklungsleiter (Phasen 4 bis 6) ⇄ Team (Entwickler, Tester, QA). Jede Rolle spricht nur mit ihren Nachbarn. Softwarearchitekt und Entwicklungsleiter sprechen über `amend`, `amended`, `conform` und `conformed` miteinander.
+- Der Softwarearchitekt entwirft die Software nach [Aufgaben des Softwarearchitekten](#aufgaben-des-softwarearchitekten) und prüft jedes Arbeitspaket vor der Abnahme gegen seinen Entwurf.
 - Der Auftraggeber entscheidet Anforderungsdokumente, Fachmodell und Strategiebeschreibungen. Alles andere entscheiden Softwarearchitekt, Entwicklungsleiter und Team.
-- Phasen: 1 Anforderung (QA prüft die Dokumente des Auftraggebers, Abstimmung), 2 Konzeption (Spezifikation, klickbarer Prototyp nur für Oberflächen ohne umgesetzte Fassung, Abstimmung), 3 Planung (Arbeitspakete, Abstimmung), 4 Umsetzung (Aufträge, Tester, QA), 5 Abnahme durch den Auftraggeber, 6 Integration in `main`.
+- Phasen: 1 Anforderung (QA prüft die Dokumente des Auftraggebers, Abstimmung), 2 Konzeption (Spezifikation, klickbarer Prototyp nur für Oberflächen ohne umgesetzte Fassung, Abstimmung), 3 Planung (Arbeitspakete, Abstimmung), 4 Umsetzung (Aufträge, Tester, QA, Prüfung des Entwurfs), 5 Abnahme durch den Auftraggeber, 6 Integration in `main`.
 - Rückwege: fehlende Anforderung → Phase 1, Lücke der Spezifikation → Phase 2, Mangel in der Abnahme → Phase 4, Planänderung → Phase 3.
 - Übergabe nur über Übergabedokumente und Meldungen unter `development/` auf `origin/main`.
 - Prüfungen: erster Durchlauf vollständig, danach nur Nachprüfung; nur blockierende Befunde verhindern das Bestehen; bestanden ist bestanden.
@@ -117,7 +118,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 Der Softwarearchitekt setzt nicht nur Anforderungen in Funktionen um. Er entwirft die Software:
 
 1. **Qualitätsanforderungen klären.** Vor der Spezifikation legt er fest, was neben der Funktion gilt: Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten. Was nur der Auftraggeber entscheiden kann, fragt er nach [Fragen an den Auftraggeber](#fragen-an-den-auftraggeber).
-2. **Aufbau entwerfen.** Er legt Programme, Bausteine, Daten, Schnittstellen und die Verteilung auf Rechner fest, jeweils mit ihrer Aufgabe.
+2. **Aufbau entwerfen.** Er legt Programme, Bausteine, Daten, Schnittstellen und die Verteilung auf Rechner fest, jeweils mit ihrer Aufgabe. Jedes Programm hat genau eine Aufgabe ([Entwicklungsregeln Abschnitt 5 Nr. 15](development-test-security-rules.md#5-entwicklungsregeln)).
 3. **Technik auswählen.** Für jede wesentliche Wahl, zum Beispiel Bibliothek, Datenbank, Übertragungsweg oder Speicherform, vergleicht er mindestens zwei Wege. Ist unklar, welcher Weg trägt, lässt er Probeumsetzungen bauen und messen, bevor er entscheidet.
 4. **Entscheidungen begründen und festhalten.** Jede Entscheidung steht in der Spezifikation mit den verworfenen Alternativen und dem Grund.
 5. **Umsetzung begleiten.** In Phase 4 prüft er jedes Arbeitspaket vor der Abnahme darauf, ob die Umsetzung seinem Entwurf entspricht, und lässt Abweichungen über den Entwicklungsleiter beheben ([Prüfung des Entwurfs](#phase-4--umsetzung-eines-arbeitspakets)).
@@ -503,6 +504,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-25 | Regel „ein Programm je Aufgabe“ (Entwicklungsregeln Abschnitt 5 Nr. 15) wieder in Kraft und in den Aufgaben des Softwarearchitekten verankert. Präsentation Entwicklungsprozess auf den Stand dieses Dokuments gebracht; künftig im selben Commit angeglichen. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-25 | Aufgaben des Softwarearchitekten als Architekt: Qualitätsanforderungen, Aufbau, Technikwahl mit Alternativen, begründete Entscheidungen, Prüfung des Entwurfs in Phase 4 (Meldungen `conform`, `conformed`), Bedienabläufe aus Sicht des Anwenders. QA prüft diese Ergebnisse in Phase 2. Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen `relay/wp01`, `backtest/wp02` und `strategiedesign/wp02` scheiterten an Aufbau, Installation, Einrichtung und Bedienung. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-25 | Abschnitt [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen): Liste je Bereich mit Prioritäten `dringend`, `erforderlich`, `gewünscht`, Eintragen durch alle Rollen, Prüfung beim Eintrag, in Phase 1, in Phase 3 und ohne laufendes Vorhaben. Begriff Release und Voraussetzung eines Release. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-23 | Prototyp nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |

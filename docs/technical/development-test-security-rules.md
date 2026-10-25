@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- stand: 2026-10-19
+- stand: 2026-10-25
 - geltungsbereich: gesamtes Pipwerk-Repository
 
 ## 1. Zweck und Grundsatz
@@ -98,6 +98,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 12. Neue Abhängigkeiten benötigen einen dokumentierten Zweck und eine Prüfung auf Lizenz, Wartungszustand, Sicherheitsrisiko und Kopplungswirkung.
 13. Python-Code folgt PEP 8, soweit keine begründete und dokumentierte Pipwerk-Regel abweicht. Typannotationen richten sich nach dem aktuellen Python-Typisierungssystem; PEP 484 bildet dafür eine grundlegende Referenz. Python-Paket- und Abhängigkeitsversionen verwenden PEP-440-konforme Versionsangaben.
 14. PEP-Regeln ergänzen die Pipwerk-Regeln. PEPs werden nicht als allgemeines IT-Sicherheitsregelwerk behandelt.
+15. Der modulare Aufbau gilt auf jeder Ebene, nicht nur zwischen den Modulen. Jedes Programm hat genau eine Aufgabe und ist nach ihr benannt. Dauernd laufender Betrieb, gelegentliche Verwaltung wie Einrichtung oder Schlüsselerzeugung und Werkzeuge für Tests sind getrennte Programme. Mehrzweckprogramme, die verschiedene Aufgaben über Unterbefehle bündeln, sind nicht zulässig.
 
 ## 6. Installation und Distribution
 
