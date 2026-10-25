@@ -175,7 +175,7 @@ Prüfen:
 3. **Phase 3, Planung:** Der Softwarearchitekt nennt im Plan Einträge mit `erforderlich`, deren Teil der Software ein Arbeitspaket ohnehin ändert und die nicht übernommen sind. Der Projektleiter legt sie mit dem Plan vor. Mitgenommene Einträge gehen über den Rückweg in Phase 1.
 4. **Kein laufendes Vorhaben:** Steht kein Vorhaben an, legt der Projektleiter die übrigen Einträge mit `erforderlich` vor, danach die mit `gewünscht`.
 
-**Release:** Vor einem Release müssen alle Einträge mit `dringend` und `erforderlich` der betroffenen Bereiche erledigt sein, bei einem Release von pipwerk als Ganzes alle. Einträge mit `offen` erhalten vorher eine Priorität. Der Projektleiter legt dem Auftraggeber vor einem Release die noch nicht erledigten Einträge vor.
+**Release:** Vor einem Release müssen alle Einträge mit `dringend` und `erforderlich` erledigt sein, die das Release betreffen. Einträge mit `offen` erhalten vorher eine Priorität. Der Projektleiter legt dem Auftraggeber vor einem Release die noch nicht erledigten Einträge vor.
 
 Während Phase 4 wird kein Eintrag in ein laufendes Arbeitspaket aufgenommen, außer über den Rückweg in Phase 1 bei `dringend`.
 
