@@ -106,11 +106,22 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Eingabe: abgestimmte Dokumente des Auftraggebers laut `scope.md`, Prüfbericht der QA aus Phase 1
 - Tätigkeit:
   1. Die QA prüft nach, ob die Befunde aus Phase 1 erledigt sind und ob die dafür geänderten Stellen neue Fehler enthalten. Ist die Nachprüfung nicht bestanden, geht der Prüfbericht über den Softwarearchitekten an den Projektleiter zurück in Phase 1.
-  2. Der Softwarearchitekt erstellt die technische Spezifikation. Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Für jede neue Benutzeroberfläche, von der es noch keine umgesetzte Fassung gibt, lässt er vor der Spezifikation der Oberfläche einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens ohne Anleitung durchspielen kann, in den Fenstergrößen nach req-system-024. Die Oberfläche wird erst spezifiziert und umgesetzt, wenn der Auftraggeber den Prototyp bestätigt hat. Änderungen an einer umgesetzten Oberfläche, auch neue oder geänderte Anforderungen und Mängel aus ihrer Abnahme, werden ohne Prototyp spezifiziert, direkt in der Software umgesetzt und in der Testumgebung abgenommen.
-  3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers.
+  2. Der Softwarearchitekt erstellt die technische Spezifikation nach seinen [Aufgaben als Architekt](#aufgaben-des-softwarearchitekten). Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Für jede neue Benutzeroberfläche, von der es noch keine umgesetzte Fassung gibt, lässt er vor der Spezifikation der Oberfläche einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens ohne Anleitung durchspielen kann, in den Fenstergrößen nach req-system-024. Die Oberfläche wird erst spezifiziert und umgesetzt, wenn der Auftraggeber den Prototyp bestätigt hat. Änderungen an einer umgesetzten Oberfläche, auch neue oder geänderte Anforderungen und Mängel aus ihrer Abnahme, werden ohne Prototyp spezifiziert, direkt in der Software umgesetzt und in der Testumgebung abgenommen.
+  3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers und prüft, ob sie die Ergebnisse der [Aufgaben des Softwarearchitekten](#aufgaben-des-softwarearchitekten) 1 bis 4 und 6 vollständig und schlüssig enthält. Fehlt eines oder ist eines nicht schlüssig, ist das ein blockierender Befund.
   4. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
 - Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
 - Schleifen: QA und Softwarearchitekt nach [Grenze der Durchläufe](#grenze-der-durchläufe). Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.
+
+### Aufgaben des Softwarearchitekten
+
+Der Softwarearchitekt setzt nicht nur Anforderungen in Funktionen um. Er entwirft die Software:
+
+1. **Qualitätsanforderungen klären.** Vor der Spezifikation legt er fest, was neben der Funktion gilt: Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten. Was nur der Auftraggeber entscheiden kann, fragt er nach [Fragen an den Auftraggeber](#fragen-an-den-auftraggeber).
+2. **Aufbau entwerfen.** Er legt Programme, Bausteine, Daten, Schnittstellen und die Verteilung auf Rechner fest, jeweils mit ihrer Aufgabe.
+3. **Technik auswählen.** Für jede wesentliche Wahl, zum Beispiel Bibliothek, Datenbank, Übertragungsweg oder Speicherform, vergleicht er mindestens zwei Wege. Ist unklar, welcher Weg trägt, lässt er Probeumsetzungen bauen und messen, bevor er entscheidet.
+4. **Entscheidungen begründen und festhalten.** Jede Entscheidung steht in der Spezifikation mit den verworfenen Alternativen und dem Grund.
+5. **Umsetzung begleiten.** In Phase 4 prüft er jedes Arbeitspaket vor der Abnahme darauf, ob die Umsetzung seinem Entwurf entspricht, und lässt Abweichungen über den Entwicklungsleiter beheben ([Prüfung des Entwurfs](#phase-4--umsetzung-eines-arbeitspakets)).
+6. **Vom Ende her denken.** Er beschreibt Installation, Einrichtung, Aktualisierung, Überwachung und Fehlersuche als Bedienabläufe aus Sicht des Anwenders, ohne Handarbeit, die das Programm selbst erledigen kann.
 
 ### Phase 3 – Planung
 
@@ -130,6 +141,7 @@ Ein Arbeitspaket enthält Ziel, Umfang, Nicht-Umfang, die umgesetzten Teile der 
 | Entwickler | ein Auftrag | Code, Unit-Tests (Tests einzelner Funktionen), technische Dokumentation und vorerst die Anwenderdokumentation, im eigenen Zweig mit benanntem Commit |
 | Tester | Auftrag, Commit des Entwicklers, Regeln seines Prüfgebiets | Testbericht zu genau diesem Commit |
 | QA | Arbeitspaket, Anforderungsdokumente, laufende Testumgebung, Anwenderdokumentation | Prüfbericht aus Kundensicht: Anforderungen erfüllt, Software aus Kundensicht funktionsfähig, Anwenderdokumentation verständlich und vollständig |
+| Softwarearchitekt | Arbeitspaket, Spezifikation, Arbeitszweig mit positivem Prüfbericht der QA, laufende Testumgebung | Prüfbericht zum Entwurf: Programme, Bausteine, Daten, Schnittstellen, gewählte Technik und Bedienabläufe von Installation und Einrichtung entsprechen der Spezifikation |
 
 Prüfgebiete der Tester:
 
@@ -141,7 +153,9 @@ Der Tester Funktion prüft jeden Commit eines Entwicklers. Der Tester Sicherheit
 
 Die QA prüft erst, wenn alle Aufträge des Pakets zusammengeführt sind und die Testumgebung läuft. Ändert sich danach der Code, ist eine erneute Prüfung durch Tester und QA erforderlich.
 
-Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit des Arbeitszweigs, positive Testberichte, positiver Prüfbericht der QA, laufende Testumgebung.
+**Prüfung des Entwurfs.** Nach positivem Prüfbericht der QA meldet der Entwicklungsleiter `conform` an den Softwarearchitekten. Der Softwarearchitekt prüft den Arbeitszweig und die laufende Testumgebung gegen seinen Entwurf und schreibt den Prüfbericht nach `<arbeitspaket>/conformance-<n>.md` auf `main`. Abweichungen sind blockierende Befunde. Hält er eine Abweichung für die bessere Lösung, ändert er stattdessen die Spezifikation wie bei `amend`. Er meldet `conformed` an den Entwicklungsleiter. Bei nicht bestandener Prüfung lässt der Entwicklungsleiter die Befunde über Aufträge beheben; der geänderte Code geht erneut durch Tester, QA und diese Prüfung.
+
+Ergebnis der Phase: umgesetztes Arbeitspaket auf einem benannten Commit des Arbeitszweigs, positive Testberichte, positiver Prüfbericht der QA, positiver Prüfbericht des Softwarearchitekten zum Entwurf, laufende Testumgebung.
 
 ### Phase 5 – Abnahme
 
@@ -190,7 +204,8 @@ Während Phase 4 wird kein Eintrag in ein laufendes Arbeitspaket aufgenommen, au
 | Entwickler | Tester | Code mit Commit, technische Dokumentation |
 | Tester | Entwickler, Entwicklungsleiter | Testbericht |
 | QA | Entwicklungsleiter | Prüfbericht in Phase 4 |
-| Entwicklungsleiter | Softwarearchitekt | Lücke in Spezifikation oder Plan |
+| Entwicklungsleiter | Softwarearchitekt | Lücke in Spezifikation oder Plan, Arbeitspaket zur Prüfung des Entwurfs |
+| Softwarearchitekt | Entwicklungsleiter | Prüfbericht zum Entwurf |
 | Projektleiter | Entwicklungsleiter | Abnahmebericht mit den Mängeln |
 
 Direkte Nachrichten zwischen Agenten sind kein Übergabeweg.
@@ -271,10 +286,12 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Entwicklungsleiter | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
 | Softwarearchitekt | `amend` | Phase 4: Lücke in Spezifikation oder Plan schließen | Dokument der Lücke |
 | Entwicklungsleiter | `amended` | Lücke geschlossen, Paket fortsetzen | Dokument der Lücke mit Ergebnis |
+| Softwarearchitekt | `conform` | Phase 4: Umsetzung auf Übereinstimmung mit dem Entwurf prüfen | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
+| Entwicklungsleiter | `conformed` | Ergebnis der Prüfung des Entwurfs | Prüfbericht des Softwarearchitekten |
 | fragende Rolle | `answer` | Antwort auf eine Frage, unterbrochene Aufgabe fortsetzen | Frage mit Antwort |
 | Projektleiter | `review` | Prüfbericht der QA zu den Dokumenten des Auftraggebers, auch eine nicht bestandene Nachprüfung | Prüfbericht |
 | Projektleiter | `present` | Spezifikation oder Plan zur Präsentation und Abstimmung, auch nach `amend` | `specification.md` oder `plan.md` |
-| Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
+| Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung, nach bestandener Prüfung des Entwurfs |
 | Projektleiter | `question` | Frage an den Auftraggeber oder Eskalation | Frage |
 | Projektleiter | `integrated` | Paket in `main` übernommen | `plan.md` |
 | Projektleiter | `failed` | Absturz oder Stillstand einer Sitzung, von `agentrun` | die Meldung, mit der die Sitzung gestartet wurde |
@@ -297,7 +314,7 @@ Diese Regeln gelten für jede Prüfung durch QA und Tester, in allen Phasen:
 
 - **Detailtiefe nach Umfang.** Spezifikation und Plan legen nur Bausteine, Entscheidungen und Abnahmekriterien fest, so knapp, wie der Umfang des Vorhabens es erlaubt. Testdetails, Formulierungen und Schreibweisen von Pfaden gehören in die Aufträge, nicht in Spezifikation oder Plan.
 - **Erster Durchlauf vollständig.** Der erste Durchlauf meldet alle Befunde auf einmal. Jeder weitere Durchlauf ist eine Nachprüfung: Er prüft nur, ob die Befunde behoben sind und ob die dafür geänderten Stellen neue Fehler enthalten.
-- **Nur blockierende Befunde.** Ein Befund verhindert das Bestehen nur, wenn er einer Anforderung oder einem Abnahmekriterium widerspricht, die Funktion beeinträchtigt oder eine Sicherheitslücke ist. Alles andere steht im Bericht als Hinweis. Hinweise verhindern das Bestehen nicht und werden bei der nächsten passenden Gelegenheit erledigt oder verworfen.
+- **Nur blockierende Befunde.** Ein Befund verhindert das Bestehen nur, wenn er einer Anforderung oder einem Abnahmekriterium widerspricht, die Funktion beeinträchtigt, eine Sicherheitslücke ist oder ein Ergebnis der [Aufgaben des Softwarearchitekten](#aufgaben-des-softwarearchitekten) fehlt oder nicht schlüssig ist. Alles andere steht im Bericht als Hinweis. Hinweise verhindern das Bestehen nicht und werden bei der nächsten passenden Gelegenheit erledigt oder verworfen.
 - **Kurze Berichte.** Ein Prüf- oder Testbericht umfasst höchstens etwa 60 Zeilen. Jeder Hinweis steht in einer Zeile. Eine Nachprüfung nennt nur die noch offenen und die neuen Befunde.
 - **Bestanden ist bestanden.** Nach einer bestandenen Prüfung folgt keine weitere Prüfung, nur weil Hinweise eingearbeitet wurden. Das Dokument geht mit dem bestandenen Prüfbericht in den nächsten Schritt; die eingearbeiteten Hinweise nennt der Änderungsnachweis.
 
@@ -486,6 +503,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-25 | Aufgaben des Softwarearchitekten als Architekt: Qualitätsanforderungen, Aufbau, Technikwahl mit Alternativen, begründete Entscheidungen, Prüfung des Entwurfs in Phase 4 (Meldungen `conform`, `conformed`), Bedienabläufe aus Sicht des Anwenders. QA prüft diese Ergebnisse in Phase 2. Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen `relay/wp01`, `backtest/wp02` und `strategiedesign/wp02` scheiterten an Aufbau, Installation, Einrichtung und Bedienung. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-25 | Abschnitt [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen): Liste je Bereich mit Prioritäten `dringend`, `erforderlich`, `gewünscht`, Eintragen durch alle Rollen, Prüfung beim Eintrag, in Phase 1, in Phase 3 und ohne laufendes Vorhaben. Begriff Release und Voraussetzung eines Release. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-23 | Prototyp nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | Phase 2: Mängel aus der Abnahme einer umgesetzten Oberfläche ohne neuen Prototyp direkt in der Software beheben. Anlass: Abnahme `backtest/wp02`, Prototyp der Ansicht „Datenbestand“. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
