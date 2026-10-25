@@ -230,12 +230,12 @@ Eine Anfrage vom zweiten Rechner erreicht über pipwerk relay den Abruf auf dem 
 
 ### Umfang
 
-- Abruf über pipwerk relay in `components/pipwerk-fetch-mt5`: `serve`, Nachrichtenarten `fetch.request`, `fetch.file`, `fetch.result`, `request`, Abschnitt `[relay]` mit Voreinstellungen (6.1 bis 6.3), deutsche Ausgaben (E9).
+- Abruf über pipwerk relay in `components/pipwerk-fetch-mt5`: Programme `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` (E1), Nachrichtenarten `fetch.request`, `fetch.file`, `fetch.result`, Abschnitt `[relay]` mit Voreinstellungen (6.1 bis 6.3), deutsche Ausgaben (E9).
 - Installationsdatei von `pipwerk-fetch-mt5` nach E8, damit der Abruf ohne das Repository auf den Rechner von MetaTrader 5 kommt.
 - Schemas der Nachrichtenarten des Abrufs unter `contracts/messages/v1/` (Abschnitt 5).
 - Sicherheit nach Abschnitt 7 für den Abruf.
 - Tests nach Abschnitt 8: Abruf; Testumgebung um `serve` mit der Nachbildung von `MetaTrader5` erweitert, Durchgang 5.
-- Dokumentation: `docs/technical/pipwerk-fetch-mt5.md` (`serve`, `request`, Abschnitt `[relay]`, Installationsdatei), `docs/user/pipwerk-relay.md` zum Abruf mit `serve` und `request`, Anwenderdokumentation von `pipwerk-fetch-mt5` zur Installation aus der Datei.
+- Dokumentation: `docs/technical/pipwerk-fetch-mt5.md` (`pipwerk-fetch-mt5-serve`, `pipwerk-fetch-request`, Abschnitt `[relay]`, Installationsdatei), `docs/user/pipwerk-relay.md` zum Abruf über pipwerk relay, Anwenderdokumentation von `pipwerk-fetch-mt5` zur Installation aus der Datei.
 
 ### Nicht-Umfang
 
@@ -254,11 +254,11 @@ Abschnitt 1 Nachweis über Verzeichnisse, E8 für `pipwerk-fetch-mt5`, E9 für d
 
 Voraussetzung: die Einrichtung aus `wp01`, MetaTrader 5 auf dem Windows-Rechner, angemeldet am Konto eines Brokers.
 
-1. Der Auftraggeber installiert `pipwerk-fetch-mt5` auf beiden Rechnern nach der Anwenderdokumentation aus einer heruntergeladenen Datei, ohne das Repository, und startet `serve` auf dem Rechner von MetaTrader 5. `serve` schließt sich ohne weitere Einrichtung an das Relay an und zeigt seine Adresse.
-2. Durchgang 5: Eine Anfrage mit `request` mit Broker, Symbol, Zeiteinheiten, Ticks und Zeitraum liefert die Dateien ins Zielverzeichnis, mit einer deutschen Zeile je Datei und dem Ergebnis. Die Dateien lassen sich ohne Änderung in den Datenbestand von pipwerk replay importieren. Eine Anfrage mit einem anderen Broker als dem angemeldeten Handelsserver endet mit dem Grund `broker_mismatch`; eine Anfrage an eine unbekannte Komponente endet mit der Meldung und Exitcode 1.
+1. Der Auftraggeber installiert `pipwerk-fetch-mt5` auf beiden Rechnern nach der Anwenderdokumentation aus einer heruntergeladenen Datei, ohne das Repository, und startet `pipwerk-fetch-mt5-serve` auf dem Rechner von MetaTrader 5. Es ist ohne weitere Einrichtung mit dem Relay verbunden und zeigt seine Adresse.
+2. Durchgang 5: Eine Anfrage mit `pipwerk-fetch-request` mit Broker, Symbol, Zeiteinheiten, Ticks und Zeitraum liefert die Dateien ins Zielverzeichnis, mit einer deutschen Zeile je Datei und dem Ergebnis. Die Dateien lassen sich ohne Änderung in den Datenbestand von pipwerk replay importieren. Eine Anfrage mit einem anderen Broker als dem angemeldeten Handelsserver endet mit dem Grund `broker_mismatch`; eine Anfrage an eine unbekannte Komponente endet mit der Meldung und Exitcode 1.
 3. Wird ein Relay während einer Lieferung hart beendet und neu gestartet, fehlt danach keine Datei, und keine kommt doppelt an.
-4. Der bisherige Aufruf von `pipwerk-fetch-mt5` an der Befehlszeile arbeitet wie vorher; `serve` und `request` öffnen keinen Port.
-5. Die Anwenderdokumentation beschreibt Installation, `serve` und `request` verständlich und vollständig.
+4. Der bisherige Aufruf von `pipwerk-fetch-mt5` an der Befehlszeile arbeitet wie vorher; `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` öffnen keinen Port.
+5. Die Anwenderdokumentation beschreibt Installation, `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` verständlich und vollständig.
 
 Technische Nachweise im Prüfbericht der QA: Die Prüfskripte von `relay-core`, `pipwerk-relay` und `pipwerk-fetch-mt5` enden mit Exitcode 0 auf dem bereitgestellten Commit, darin die Tests nach Abschnitt 8 für den Abruf und Durchgang 5 in der Testumgebung. Positive Testberichte beider Tester liegen vor.
 
@@ -271,7 +271,7 @@ Der Abruf läuft über Matrix, große Dateien über einen Weg für Dateien. Dami
 ### Umfang
 
 - Abschnitt `[relay.file_way]` von `pipwerk-fetch-mt5` (6.1).
-- Testumgebung mit `serve` über Matrix und Weg für Dateien, Durchgang 6.
+- Testumgebung mit `pipwerk-fetch-mt5-serve` über Matrix und Weg für Dateien, Durchgang 6.
 - Dokumentation: `docs/user/pipwerk-relay.md` und Anwenderdokumentation von `pipwerk-fetch-mt5` zum Abruf über Matrix mit Weg für Dateien.
 
 ### Nicht-Umfang
@@ -290,7 +290,7 @@ Abschnitt 1 Nachweis über Matrix, 6.1 `[relay.file_way]`, Abschnitt 8 Durchgang
 
 Voraussetzung: die Einrichtung aus `wp04` und `wp06`.
 
-1. Der Auftraggeber stellt die Strecken von `serve` und `request` nach der Anwenderdokumentation auf Matrix mit Weg für Dateien um.
+1. Der Auftraggeber stellt die Strecken von `pipwerk-fetch-mt5-serve` und `pipwerk-fetch-request` nach der Anwenderdokumentation auf Matrix mit Weg für Dateien um.
 2. Durchgang 6: Eine Anfrage mit Ticks liefert alle Dateien ins Zielverzeichnis; Dateien über der Schwelle liegen unterwegs auf dem SFTP-Server, die übrigen erscheinen als Anlage im Chat. Die Dateien lassen sich in den Datenbestand von pipwerk replay importieren. Danach liegen keine Dateien der Anfrage mehr auf dem SFTP-Server.
 3. Die Anwenderdokumentation beschreibt die Umstellung verständlich und vollständig.
 
