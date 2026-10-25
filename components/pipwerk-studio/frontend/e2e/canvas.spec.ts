@@ -1,7 +1,7 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
 import type { Page } from '@playwright/test';
 
-import { boxOf, card, clickMenu, dragBy, expect, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
+import { boxOf, card, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
 
 /** "Alles zeigen": the whole strategy at once, so that every element can be reached with the mouse. */
 async function showEverything(page: Page): Promise<void> {
@@ -13,9 +13,7 @@ async function showEverything(page: Page): Promise<void> {
 // Specification 5.2, 5.3: inserting, moving, connecting, management, sections, orientation and lines of values on the
 // drawing area, with the real browser events (dragging with the mouse, dragging of library entries, clicking).
 
-test('the view does not jump when a step is dropped (M3)', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1366, height: 768 });
+test('the view does not jump when a step is dropped (M3)', async ({ page }) => {  await openApp(page, { width: 1366, height: 768 });
   await openStrategy(page, 'EMA-Trendfolge');
   // the view is set when the strategy has been fitted into the area; only then does it make sense to compare
   await expect.poll(async () => viewOf(page)).not.toBe('');
@@ -28,12 +26,10 @@ test('the view does not jump when a step is dropped (M3)', async ({ page, api })
   await expect.poll(async () => (await boxOf(step)).x).toBeGreaterThan(start.x + 40);
   expect(await viewOf(page)).toBe(before);
   // the user moved the step: the document holds the place, the document has unsaved changes
-  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  await expectUnsaved(page);
 });
 
-test('a click on an entry of the library inserts the element behind the selected step and connects it', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('a click on an entry of the library inserts the element behind the selected step and connects it', async ({ page }) => {  await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   const nodesBefore = await page.getByTestId('node').count();
   const edgesBefore = await page.getByTestId('flow-edge').count();
@@ -45,12 +41,10 @@ test('a click on an entry of the library inserts the element behind the selected
   await expect(page.getByTestId('flow-edge')).toHaveCount(edgesBefore + 1);
   // the new element is selected, its name is the name of its type, unique
   await expect(page.getByTestId('element-name')).toHaveValue('Berechnung');
-  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  await expectUnsaved(page);
 });
 
-test('an entry of the library dragged onto the drawing area is inserted', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('an entry of the library dragged onto the drawing area is inserted', async ({ page }) => {  await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   const nodesBefore = await page.getByTestId('node').count();
 
@@ -60,9 +54,7 @@ test('an entry of the library dragged onto the drawing area is inserted', async 
   await expect(page.locator('[data-testid="node"][data-node-name="Tick"]')).toHaveCount(1);
 });
 
-test('an entry dragged into the frame of the management belongs to the management', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('an entry dragged into the frame of the management belongs to the management', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
   const frame = await boxOf(page.getByTestId('frame'));
@@ -82,9 +74,7 @@ test('an entry dragged into the frame of the management belongs to the managemen
   expect(inserted.y + inserted.height).toBeLessThanOrEqual(frameAfter.y + frameAfter.height + 1);
 });
 
-test('a step dragged into the frame becomes part of the management, and out of it part of the main flow again', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('a step dragged into the frame becomes part of the management, and out of it part of the main flow again', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
   const step = node(page, 'Richtung');
@@ -112,9 +102,7 @@ test('a step dragged into the frame becomes part of the management, and out of i
   expect(overlap(await boxOf(step), await boxOf(page.getByTestId('frame')))).toBe(false);
 });
 
-test('the management output is connected with the first step when the management has no trigger; a trigger removes the connection', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('the management output is connected with the first step when the management has no trigger; a trigger removes the connection', async ({ page }) => {  await openApp(page);
   await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
   await library(page, 'Order aufgeben').click();
@@ -136,9 +124,7 @@ test('the management output is connected with the first step when the management
   await expect(page.locator('[data-testid="flow-edge"][data-kind="management"]')).toHaveAttribute('data-connection', '');
 });
 
-test('a step is connected by dragging and by clicking, and a selected line is deleted', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('a step is connected by dragging and by clicking, and a selected line is deleted', async ({ page }) => {  await openApp(page);
   await newStrategy(page);
   await expect(page.getByTestId('empty-strategy-hint')).toBeVisible();
   await library(page, 'Manuell').click();
@@ -169,9 +155,7 @@ test('a step is connected by dragging and by clicking, and a selected line is de
   await expect(page.getByTestId('armed-banner')).toHaveCount(0);
 });
 
-test('a value of an object is connected with an element by dragging a line and with the choice of the inputs', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('a value of an object is connected with an element by dragging a line and with the choice of the inputs', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
   const row = card(page, 'EMA50').getByTestId('port-prop-wert');
@@ -196,9 +180,7 @@ test('a value of an object is connected with an element by dragging a line and w
   await expect(ema50).toHaveCount(0);
 });
 
-test('the switch "Weitere Verwendungen" shows the further uses for all, for the selection only, or not at all; the line to the first use stays; the legend explains them', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('the switch "Weitere Verwendungen" shows the further uses for all, for the selection only, or not at all; the line to the first use stays; the legend explains them', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
 
   const wires = page.getByTestId('wire');
@@ -231,9 +213,7 @@ test('the switch "Weitere Verwendungen" shows the further uses for all, for the 
   await expect(page.locator('.legend-row')).toHaveCount(5);
 });
 
-test('the flow can be turned: vertical and horizontal, the choice belongs to the strategy', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('the flow can be turned: vertical and horizontal, the choice belongs to the strategy', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   const trigger = node(page, 'Kreuzen');
   const condition = await boxOf(trigger);
@@ -244,7 +224,7 @@ test('the flow can be turned: vertical and horizontal, the choice belongs to the
 
   await expect(page.getByTestId('canvas')).toHaveAttribute('data-orient', 'h');
   await expect.poll(async () => (await boxOf(page.locator(`[data-node-id="${EMA_ELEMENT_IDS.trigger}"]`))).x).toBeLessThan((await boxOf(node(page, 'Kreuzen'))).x);
-  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  await expectUnsaved(page);
   // no two boxes overlap in the horizontal flow either
   const boxes = await page.locator('[data-testid="node"], [data-testid="card"]').evaluateAll((elements) =>
     elements.map((element) => {
@@ -263,9 +243,7 @@ test('the flow can be turned: vertical and horizontal, the choice belongs to the
   await expect(page.getByTestId('canvas')).toHaveAttribute('data-orient', 'v');
 });
 
-test('a step belongs to a section and to a management by the properties view, without dragging', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('a step belongs to a section and to a management by the properties view, without dragging', async ({ page }) => {  await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   await node(page, 'Richtung').click({ position: { x: 40, y: 14 } });
 
@@ -292,9 +270,7 @@ test('a step belongs to a section and to a management by the properties view, wi
   expect(overlap(await boxOf(node(page, 'Richtung')), await boxOf(page.getByTestId('frame')))).toBe(false);
 });
 
-test('the management folds in and out, and its output can be connected with a step when it has no trigger', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('the management folds in and out, and its output can be connected with a step when it has no trigger', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await page.getByTestId('zoom-fit').click();
   const frame = page.getByTestId('frame');
@@ -312,9 +288,7 @@ test('the management folds in and out, and its output can be connected with a st
   await expect(page.getByTestId('props-frame')).toBeVisible();
 });
 
-test('a card dragged to another place stays there, the line follows, and "Neu anordnen" puts it back beside its element', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('a card dragged to another place stays there, the line follows, and "Neu anordnen" puts it back beside its element', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await expect(page.getByTestId('object-up')).toHaveCount(0);
   const cross = await boxOf(node(page, 'Kreuzen'));
@@ -323,14 +297,14 @@ test('a card dragged to another place stays there, the line follows, and "Neu an
   await dragBy(page, card(page, 'ATR14'), -120, 140, { x: 100, y: 14 });
 
   await expect.poll(async () => (await boxOf(card(page, 'ATR14'))).y).toBeGreaterThan(start.y + 60);
-  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  await expectUnsaved(page);
   // the cards beside "Kreuzen" did not move
   expect((await boxOf(node(page, 'Kreuzen'))).x).toBeCloseTo(cross.x, 0);
   await page.getByTestId('arrange').click();
   await expect.poll(async () => Math.round((await boxOf(card(page, 'ATR14'))).y)).toBe(Math.round(start.y));
 });
 
-test('an element of an unknown type is outlined in red with the identifier of its type, keeps its assignments and can be connected to', async ({ page, api }) => {
+test('an element of an unknown type is outlined in red with the identifier of its type, keeps its assignments and can be connected to', async ({ page }) => {
   await openApp(page);
   await openStrategy(page, 'Mit unbekanntem Typ');
   const unknown = node(page, 'Fremdes Element');
@@ -348,9 +322,9 @@ test('an element of an unknown type is outlined in red with the identifier of it
 
   // saving leaves the assignment as it is
   await clickMenu(page, 'save');
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
   const id = '5a0f3d7e-6b1c-4e52-8f0a-3c9d2b7e4a10';
-  const stored = api !== null ? api.strategies.get(id) : ((await (await page.request.get(`/api/v1/strategies/${id}`)).json()) as Record<string, unknown>);
-  const element = (stored?.elements as { type: string; parameters: Record<string, unknown> }[]).find((candidate) => candidate.type === 'erweiterung.fremder_typ');
+  const stored = (await (await page.request.get(`/api/v1/strategies/${id}`)).json()) as Record<string, unknown>;
+  const element = (stored.elements as { type: string; parameters: Record<string, unknown> }[]).find((candidate) => candidate.type === 'erweiterung.fremder_typ');
   expect(element?.parameters).toEqual({ wert: { kind: 'fixed', value: 42 } });
 });

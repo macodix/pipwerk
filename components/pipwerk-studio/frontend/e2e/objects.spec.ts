@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
-import { boxOf, card, clickMenu, dragBy, expect, library, newStrategy, node, openApp, openStrategy, overlap, test } from './support';
+import { boxOf, card, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, test } from './support';
 
 // Specification 3.3, 5.3 (order 12): the objects lie beside the element of their first use, in both directions of the
 // flow; a value is connected by dragging and by clicking; only an element at which the object is usable takes the line.
@@ -11,9 +11,7 @@ async function showEverything(page: Page): Promise<void> {
   await expect.poll(async () => (await page.getByTestId('canvas').getAttribute('data-view')) ?? '').not.toBe('');
 }
 
-test('"EMA-Trendfolge" opens without a finding of the kind error; the objects without a connection would be named', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('"EMA-Trendfolge" opens without a finding of the kind error; the objects without a connection would be named', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   // the check runs after opening; a hint may stand there, an error may not
   await expect(page.getByTestId('findings-count')).toBeVisible();
@@ -25,9 +23,7 @@ test('"EMA-Trendfolge" opens without a finding of the kind error; the objects wi
 });
 
 for (const orientation of ['v', 'h'] as const) {
-  test(`each object lies beside the element of its first use, nothing is covered (flow ${orientation === 'v' ? 'vertical' : 'horizontal'})`, async ({ page, api }) => {
-    void api;
-    await openApp(page, { width: 1920, height: 1080 });
+  test(`each object lies beside the element of its first use, nothing is covered (flow ${orientation === 'v' ? 'vertical' : 'horizontal'})`, async ({ page }) => {    await openApp(page, { width: 1920, height: 1080 });
     await openStrategy(page, 'EMA-Trendfolge');
     if (orientation === 'h') {
       await page.getByTestId('orient-h').click();
@@ -79,9 +75,7 @@ for (const orientation of ['v', 'h'] as const) {
   });
 }
 
-test('a value is connected by clicking its row and then an element; the first line stays solid, the new one is an input', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('a value is connected by clicking its row and then an element; the first line stays solid, the new one is an input', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
 
@@ -94,16 +88,14 @@ test('a value is connected by clicking its row and then an element; the first li
   await expect(page.getByTestId('armed-banner')).toHaveCount(0);
   const values = page.locator('[data-testid="used-group"][data-instance="ema50"] [data-testid="used-row"]');
   await expect(values).toHaveCount(1);
-  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  await expectUnsaved(page);
   // the line to "Kreuzen" is still the first use; the line to "StopLoss" is a further use
   await page.getByTestId('wires-all').click();
   await expect(page.locator(`[data-testid="wire"][data-first="1"]`)).toHaveCount(3);
   await expect(page.getByTestId('wire')).toHaveCount(9);
 });
 
-test('an element that cannot take the object says so, with a click and with a line, and gets no input', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('an element that cannot take the object says so, with a click and with a line, and gets no input', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
   // ATR14 is first used by "StopLoss": "Kreuzen" and "Richtung" come before it
@@ -120,7 +112,7 @@ test('an element that cannot take the object says so, with a click and with a li
   await expect(page.getByTestId('armed-banner')).toHaveCount(1);
   await page.getByTestId('armed-banner').getByRole('button', { name: 'Abbrechen' }).click();
   await expect(page.getByTestId('armed-banner')).toHaveCount(0);
-  await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
+  await expectSaved(page);
 
   // by dragging a line: it is not taken either
   const row = card(page, 'ATR14').getByTestId('port-prop-wert');
@@ -128,14 +120,12 @@ test('an element that cannot take the object says so, with a click and with a li
   const rowBox = await boxOf(row);
   await dragBy(page, row, target.x + target.width / 2 - (rowBox.x + rowBox.width / 2), target.y + 30 - (rowBox.y + rowBox.height / 2));
   await expect(node(page, 'Kreuzen')).not.toHaveAttribute('data-accepts', /.+/);
-  await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
+  await expectSaved(page);
   await node(page, 'Kreuzen').click({ position: { x: 40, y: 14 } });
   await expect(page.locator('[data-testid="used-group"][data-instance="atr14"]')).toHaveCount(0);
 });
 
-test('a new object that no element uses lies beside the flow, covers nothing, and is connected by its first line', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('a new object that no element uses lies beside the flow, covers nothing, and is connected by its first line', async ({ page }) => {  await openApp(page);
   await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
   await library(page, 'Bedingung').click();
@@ -159,12 +149,10 @@ test('a new object that no element uses lies beside the flow, covers nothing, an
   await expect(page.locator('[data-testid="wire"][data-first="1"]')).toHaveCount(1);
   await expect.poll(async () => (await boxOf(card(page, 'EMA'))).x + (await boxOf(card(page, 'EMA'))).width).toBeLessThanOrEqual((await boxOf(node(page, 'Bedingung'))).x);
   await clickMenu(page, 'save');
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
 });
 
-test('the one connection point of an element for values is on the side of the objects, in both directions', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('the one connection point of an element for values is on the side of the objects, in both directions', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   const port = node(page, 'Kreuzen').locator('.port.data');
   await expect(port).toHaveCount(1);

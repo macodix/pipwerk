@@ -3,13 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { emaTrendfolge } from '../src/testing/emaTrendfolge';
-import { FakeApi } from '../src/testing/fakeApi';
-
 const here = dirname(fileURLToPath(import.meta.url));
-
-/** The tests run against the fake backend (see `playwright.config.ts`) and say so. */
-export const STUB = process.env.PIPWERK_STUDIO_E2E_STUB === '1';
 
 /** The six window sizes of specification 5.1 (width x height in pixels). */
 export const SIZES = [
@@ -21,42 +15,16 @@ export const SIZES = [
   { name: 'large', width: 1920, height: 1080 },
 ] as const;
 
-/** The identifier of the file that cannot be read: `start-backend.mjs` writes a damaged file under it. */
-export const UNREADABLE_ID = '00000000-0000-4000-8000-0000000000ff';
-
 export function unknownTypeStrategy(): Record<string, unknown> {
   return JSON.parse(readFileSync(join(here, 'unknown-type.strategy.json'), 'utf-8')) as Record<string, unknown>;
 }
 
 type Fixtures = {
-  /** The fake backend in the stub mode, otherwise `null` (the real backend answers). */
-  api: FakeApi | null;
   /** The errors the page wrote to its console and the uncaught exceptions. */
   errors: string[];
 };
 
 export const test = base.extend<Fixtures>({
-  api: async ({ page }, use) => {
-    if (!STUB) {
-      await use(null);
-      return;
-    }
-    const api = new FakeApi({ strategies: [emaTrendfolge(), unknownTypeStrategy()], unreadable: [UNREADABLE_ID] });
-    await page.route('**/api/**', async (route) => {
-      const request = route.request();
-      const url = new URL(request.url());
-      const body: unknown = request.postData() === null ? undefined : JSON.parse(request.postData() ?? 'null');
-      const answer = api.handle({ method: request.method(), url: url.pathname + url.search, body });
-      if (answer === undefined) {
-        await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'unknown path' }) });
-      } else if (answer.status === 204) {
-        await route.fulfill({ status: 204 });
-      } else {
-        await route.fulfill({ status: answer.status, contentType: 'application/json', body: JSON.stringify(answer.body) });
-      }
-    });
-    await use(api);
-  },
   errors: async ({ page }, use) => {
     const errors: string[] = [];
     page.on('console', (message) => {
@@ -111,6 +79,14 @@ export async function openStrategy(page: Page, name: string): Promise<void> {
   await expect(page.getByTestId('canvas')).toHaveAttribute('data-usage', 'report');
   await expect.poll(async () => viewOf(page)).not.toBe('');
 }
+
+/**
+ * The state shown next to the name of the strategy, compared in full: "gespeichert" is not found in "ungespeichert" and
+ * the name of the strategy does not count.
+ */
+const stateOf = (page: Page): Locator => page.getByTestId('status-pill').locator('.status-state');
+export const expectSaved = async (page: Page): Promise<void> => expect(stateOf(page)).toHaveText('gespeichert');
+export const expectUnsaved = async (page: Page): Promise<void> => expect(stateOf(page)).toHaveText('ungespeichert');
 
 /** The node of a step or the card of an object by name. */
 export const node = (page: Page, name: string): Locator => page.locator(`[data-testid="node"][data-node-name="${name}"]`);

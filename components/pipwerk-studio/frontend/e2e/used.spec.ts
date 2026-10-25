@@ -2,14 +2,13 @@ import type { Page } from '@playwright/test';
 
 import { add, exprRoot, newStrategyFromScratch, props, select, setCalculation } from './builder';
 import { removeStored, storedStrategy } from './compare';
-import { card, clickMenu, expect, node, openApp, openStrategy, showArea, SIZES, STUB, test } from './support';
+import { card, clickMenu, expect, expectSaved, node, openApp, openStrategy, showArea, SIZES, test } from './support';
 
 // Specification 5.4 (order 13): "Verwendete Werte" with the choice of the property and "Aktualisieren", the element of
 // the first use chosen without dragging, the objects of the branch "wahr" that the branch "falsch" does not offer, and the
 // question before removing an object or a step that places an order. They run against the real backend, which reads and
 // forms the expressions and says where an object can be used.
 
-test.skip(STUB, 'These tests run against the real backend: it reads and forms the expressions and walks the flow.');
 test.use({ actionTimeout: 10_000 });
 
 type Stored = { elements: { name: string | null; inputs: { instance: string; property: string; kind: string; arguments: unknown[]; refresh: boolean }[]; parameters: Record<string, { value?: string }>; instance?: { key: string; name: string; first_use: string | null } | null; id: string }[] };
@@ -65,7 +64,7 @@ for (const size of [{ name: 'notebook', width: 1366, height: 768 }, PHONE]) {
       await expect(refresh).toBeChecked();
 
       await clickMenu(page, 'save');
-      await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
+      await expectSaved(page);
       const stored = (await storedStrategy(page, name)) as unknown as Stored;
       const step = stored.elements.find((element) => element.name === 'Hoch');
       expect(step?.parameters.ausdruck?.value).toBe('zigzag.letztes_tief');
@@ -98,7 +97,7 @@ test('the element of the first use is named in the properties view of the object
     await expect(props(page).getByTestId('used-row')).toHaveCount(1);
 
     await clickMenu(page, 'save');
-    await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
+    await expectSaved(page);
     const stored = (await storedStrategy(page, name)) as unknown as Stored;
     expect(stored.elements.find((element) => element.instance?.name === 'Zacke')?.instance?.first_use).toBe(stored.elements.find((element) => element.name === 'Rechnung')?.id);
   } finally {

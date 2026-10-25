@@ -2,13 +2,12 @@ import type { Page } from '@playwright/test';
 
 import { add, exprRoot, newStrategyFromScratch, props, select, setCalculation, setCondition } from './builder';
 import { removeStored, storedStrategy } from './compare';
-import { clickMenu, expect, node, openApp, showArea, SIZES, STUB, test } from './support';
+import { clickMenu, expect, expectSaved, expectUnsaved, node, openApp, showArea, SIZES, test } from './support';
 
 // Order 06: the formula editor, the blocks and the guided setup in the narrow windows, rename and remove, and the way
 // from a finding to the spot in the expression. They run against the real backend, which forms the expressions. The
 // steps of the test cases that build whole strategies are in `docs/technical/pipwerk-studio-testfaelle.md`.
 
-test.skip(STUB, 'These tests run against the real backend: it reads and forms the expressions.');
 test.use({ actionTimeout: 10_000 });
 
 const PHONES = SIZES.filter((size) => size.name.startsWith('phone'));
@@ -198,9 +197,9 @@ test('the guided setup lays out the elements of its steps, can be left at any st
     await showArea(page, 'canvas');
     await expect(page.locator('[data-testid="node"][data-type-name="Bedingung"]')).toHaveCount(1);
     await expect(page.locator('[data-testid="card"]')).toHaveCount(2);
-    await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+    await expectUnsaved(page);
     await clickMenu(page, 'save');
-    await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+    await expectSaved(page);
     const stored = await storedStrategy(page, name);
     expect((stored.elements as { type: string }[]).map((element) => element.type)).toEqual(
       expect.arrayContaining(['EMA', 'trigger.candle_close', 'flow.condition', 'flow.place_order']),
@@ -224,7 +223,7 @@ test('"Ohne Assistent weiterarbeiten" keeps what the guided setup laid out', asy
   await expect(page.getByTestId('wizard')).toHaveCount(0);
   await showArea(page, 'canvas');
   await expect(page.getByTestId('node')).toHaveCount(1);
-  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  await expectUnsaved(page);
 });
 
 for (const size of PHONES) {

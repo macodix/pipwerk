@@ -2,12 +2,11 @@ import type { Page } from '@playwright/test';
 
 import { add, bindParam, createParam, newStrategyFromScratch, props, setCond, setValue } from './builder';
 import { removeStored, storedStrategy } from './compare';
-import { clickMenu, expect, openApp, showArea, STUB, test } from './support';
+import { clickMenu, expect, expectSaved, openApp, showArea, test } from './support';
 
 // Order 06, points 3 and 4: rules, an own indicator, an own trend and an own ruleset are filled completely in the
 // strategy, saved and found again after opening. They run against the real backend, which forms the expressions.
 
-test.skip(STUB, 'These tests run against the real backend: it forms the expressions.');
 test.use({ actionTimeout: 10_000 });
 
 type Stored = {
@@ -29,7 +28,7 @@ type Stored = {
 /** Saves, then reads the strategy back from the backend. */
 async function saveAndRead(page: Page, name: string): Promise<Stored> {
   await clickMenu(page, 'save');
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
   return (await storedStrategy(page, name)) as unknown as Stored;
 }
 

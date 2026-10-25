@@ -73,9 +73,7 @@ async function inViewport(page: Page, testId: string): Promise<void> {
 }
 
 for (const size of SIZES) {
-  test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, api, errors }) => {
-    void api;
-    await openApp(page, { width: size.width, height: size.height });
+  test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, errors }) => {    await openApp(page, { width: size.width, height: size.height });
     await openStrategy(page, 'EMA-Trendfolge');
     await expect(page.getByTestId('status-pill')).toContainText('EMA-Trendfolge');
     await checkLayout(page, size.width, size.height);
@@ -136,9 +134,7 @@ for (const size of SIZES) {
 
 // In the two sizes of a smartphone the menu and the dialogs are reachable and lie within the window (specification 5.1).
 for (const size of SIZES.filter((candidate) => candidate.width === 390 || candidate.width === 844)) {
-  test(`menu and dialogs in ${size.width} x ${size.height}`, async ({ page, api, errors }) => {
-    void api;
-    await openApp(page, { width: size.width, height: size.height });
+  test(`menu and dialogs in ${size.width} x ${size.height}`, async ({ page, errors }) => {    await openApp(page, { width: size.width, height: size.height });
     await openStrategy(page, 'EMA-Trendfolge');
 
     const withinWindow = async (testId: string | null): Promise<void> => {

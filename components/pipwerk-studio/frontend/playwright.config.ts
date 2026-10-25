@@ -7,11 +7,6 @@ const frontendPort = Number(process.env.PIPWERK_STUDIO_E2E_FRONTEND_PORT ?? 1517
 const backendUrl = `http://127.0.0.1:${backendPort}`;
 const frontendUrl = `http://127.0.0.1:${frontendPort}`;
 
-// With PIPWERK_STUDIO_E2E_STUB=1 the tests run without the backend: a fake backend in the browser answers the requests
-// of the interface (`src/testing/fakeApi.ts`). That is for the time until the backend of the branch speaks format 2.0;
-// the report of a run names the mode.
-const stub = process.env.PIPWERK_STUDIO_E2E_STUB === '1';
-
 export default defineConfig({
   testDir: './e2e',
   forbidOnly: !!process.env.CI,
@@ -30,17 +25,13 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: [
-    ...(stub
-      ? []
-      : [
-          {
-            command: `node e2e/start-backend.mjs ${backendPort}`,
-            // Lets the launcher remove its temporary database directory.
-            gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 10_000 },
-            url: `${backendUrl}/api/health`,
-            reuseExistingServer: false,
-          },
-        ]),
+    {
+      command: `node e2e/start-backend.mjs ${backendPort}`,
+      // Lets the launcher remove its temporary database directory.
+      gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 10_000 },
+      url: `${backendUrl}/api/health`,
+      reuseExistingServer: false,
+    },
     {
       // The tests run against the built user interface, as the test environment
       // delivers it: first the build into its own directory (a user interface in

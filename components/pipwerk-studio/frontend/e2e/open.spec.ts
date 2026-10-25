@@ -1,15 +1,13 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
-import { boxOf, card, expect, node, openApp, openStrategy, overlap, test } from './support';
+import { boxOf, card, expect, expectSaved, node, openApp, openStrategy, overlap, test } from './support';
 
 // Specification 3.7, 5.3: the strategy "EMA-Trendfolge" of the client opens with the names the conversion gives and is
 // arranged without anything overlapping; the steps of the management lie in its frame, the others outside.
 
-test('opens "EMA-Trendfolge" with the names after specification 3.7', async ({ page, api, errors }) => {
-  void api;
-  await openApp(page);
+test('opens "EMA-Trendfolge" with the names after specification 3.7', async ({ page, errors }) => {  await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
 
-  await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+  await expectSaved(page);
   // the strategy parameters with the names of the conversion
   await expect(page.getByTestId('param-chip').filter({ hasText: 'Zeiteinheit' })).toContainText('M15');
   await expect(page.getByTestId('param-chip').filter({ hasText: 'Stop abstand' })).toContainText('0');
@@ -26,9 +24,7 @@ test('opens "EMA-Trendfolge" with the names after specification 3.7', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('arranges "EMA-Trendfolge" without overlap, with the management in its frame and the objects beside the elements that use them', async ({ page, api }) => {
-  void api;
-  await openApp(page, { width: 1920, height: 1080 });
+test('arranges "EMA-Trendfolge" without overlap, with the management in its frame and the objects beside the elements that use them', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await expect(page.getByTestId('frame')).toHaveCount(1);
 
@@ -78,9 +74,7 @@ test('arranges "EMA-Trendfolge" without overlap, with the management in its fram
   await expect(page.locator('[data-testid="card"] [data-testid="card-row"]').first()).toBeVisible();
 });
 
-test('shows no identifier of an element or an expression on the drawing area and in the properties view', async ({ page, api }) => {
-  void api;
-  await openApp(page);
+test('shows no identifier of an element or an expression on the drawing area and in the properties view', async ({ page }) => {  await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   await node(page, 'Kreuzen').click({ position: { x: 40, y: 14 } });
 
