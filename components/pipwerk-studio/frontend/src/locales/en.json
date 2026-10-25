@@ -757,7 +757,13 @@
       "confirm": "Remove",
       "cancel": "Cancel"
     },
-    "usedBy": "These elements use it:",
+    "removeRule": {
+      "title": "Remove rule?",
+      "text": "The rule \"{{name}}\" will be removed.",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    },
+    "usedBy": "It is used by:",
     "usedByStrategyRules": "Rules of the strategy",
     "afterRemoval": "Afterwards the expressions keep an empty place \"Choose value …\". Assignments that use it are \"not assigned\". Connections and inputs that came from it are removed.",
     "error": {
@@ -775,6 +781,7 @@
     "deleteFailed": "The strategy could not be deleted.",
     "checkFailed": "The strategy could not be checked.",
     "insertFailed": "The entry could not be inserted.",
+    "removeFailed": "The entry could not be removed.",
     "codes": {
       "object": {
         "not_found": "The object does not exist any more. Perhaps it was deleted.",

@@ -185,6 +185,8 @@ export type ExpressionBlock = {
   operator?: string;
   function?: string;
   direction?: 'up' | 'down' | 'any';
+  /** A name with `call` is the result of a method; `path` ends with the method, `children` are the blocks of its arguments. */
+  call?: boolean;
   children?: ExpressionBlock[];
 };
 
@@ -207,7 +209,29 @@ export type VisibleProperty = {
   previousValue: boolean;
 };
 
-export type VisibleNameKind = 'instance' | 'result' | 'strategy_parameter' | 'parameter' | 'application_object' | 'rule';
+/** An argument of a method of a name visible at a place. */
+export type VisibleArgument = {
+  key: string;
+  label: { de: string; en: string };
+  datatype: string;
+  required: boolean;
+  default: string | number | boolean | null;
+  explanation: { de: string; en: string } | null;
+  choices: VisibleChoice[];
+};
+
+/** A method of a name visible at a place: its result is a value, it takes arguments. */
+export type VisibleMethod = {
+  key: string;
+  label: { de: string; en: string };
+  datatype: string | null;
+  explanation: { de: string; en: string } | null;
+  choices: VisibleChoice[];
+  arguments: VisibleArgument[];
+  previousValue: boolean;
+};
+
+export type VisibleNameKind ='instance' | 'result' | 'strategy_parameter' | 'parameter' | 'application_object' | 'rule';
 
 /** A name that an expression can address at the place, with its properties. */
 export type VisibleName = {
@@ -216,6 +240,7 @@ export type VisibleName = {
   kind: VisibleNameKind;
   datatype: string | null;
   properties: VisibleProperty[];
+  methods: VisibleMethod[];
   propertiesTruncated: boolean;
   /** The instances and rules contained in an instance, a trend or a ruleset. */
   contents: VisibleName[];
@@ -276,6 +301,9 @@ function parseBlock(value: unknown, what: string): ExpressionBlock {
   if (direction === 'up' || direction === 'down' || direction === 'any') {
     block.direction = direction;
   }
+  if (record.call === true) {
+    block.call = true;
+  }
   if (record.children !== undefined && record.children !== null) {
     const children = expectArray(record.children, `${what}.children`).map((item, index) => parseBlock(item, `${what}.children[${index}]`));
     if (children.length > 0) {
@@ -302,6 +330,42 @@ function parseLabelPair(value: unknown, what: string): { de: string; en: string 
   return { de: expectString(record.de, `${what}.de`), en: expectString(record.en, `${what}.en`) };
 }
 
+function parseChoices(value: unknown, what: string): VisibleChoice[] {
+  return expectArray(value ?? [], what).map((choice, index) => {
+    const entry = expectRecord(choice, `${what}[${index}]`);
+    return { id: expectString(entry.id, `${what}[${index}].id`), label: parseLabelPair(entry.label, `${what}[${index}].label`) };
+  });
+}
+
+function parseOptionalLabel(value: unknown, what: string): { de: string; en: string } | null {
+  return value === null || value === undefined ? null : parseLabelPair(value, what);
+}
+
+function parseMethod(value: unknown, what: string): VisibleMethod {
+  const method = expectRecord(value, what);
+  return {
+    key: expectString(method.key, `${what}.key`),
+    label: parseLabelPair(method.label, `${what}.label`),
+    datatype: expectNullableString(method.datatype ?? null, `${what}.datatype`),
+    explanation: parseOptionalLabel(method.explanation, `${what}.explanation`),
+    choices: parseChoices(method.choices, `${what}.choices`),
+    arguments: expectArray(method.arguments ?? [], `${what}.arguments`).map((item, index) => {
+      const argument = expectRecord(item, `${what}.arguments[${index}]`);
+      const fallback = argument.default;
+      return {
+        key: expectString(argument.key, `${what}.arguments[${index}].key`),
+        label: parseLabelPair(argument.label, `${what}.arguments[${index}].label`),
+        datatype: expectString(argument.datatype, `${what}.arguments[${index}].datatype`),
+        required: argument.required === true,
+        default: typeof fallback === 'string' || typeof fallback === 'number' || typeof fallback === 'boolean' ? fallback : null,
+        explanation: parseOptionalLabel(argument.explanation, `${what}.arguments[${index}].explanation`),
+        choices: parseChoices(argument.choices, `${what}.arguments[${index}].choices`),
+      };
+    }),
+    previousValue: method.previous_value === true,
+  };
+}
+
 function parseVisibleName(value: unknown, what: string): VisibleName {
   const record = expectRecord(value, what);
   return {
@@ -315,20 +379,12 @@ function parseVisibleName(value: unknown, what: string): VisibleName {
         key: expectString(property.key, `${what}.properties[${index}].key`),
         label: parseLabelPair(property.label, `${what}.properties[${index}].label`),
         datatype: expectNullableString(property.datatype, `${what}.properties[${index}].datatype`),
-        explanation:
-          property.explanation === null || property.explanation === undefined
-            ? null
-            : parseLabelPair(property.explanation, `${what}.properties[${index}].explanation`),
-        choices: expectArray(property.choices ?? [], `${what}.properties[${index}].choices`).map((choice, choiceIndex) => {
-          const entry = expectRecord(choice, `${what}.properties[${index}].choices[${choiceIndex}]`);
-          return {
-            id: expectString(entry.id, `${what}.properties[${index}].choices[${choiceIndex}].id`),
-            label: parseLabelPair(entry.label, `${what}.properties[${index}].choices[${choiceIndex}].label`),
-          };
-        }),
+        explanation: parseOptionalLabel(property.explanation, `${what}.properties[${index}].explanation`),
+        choices: parseChoices(property.choices, `${what}.properties[${index}].choices`),
         previousValue: property.previous_value === true,
       };
     }),
+    methods: expectArray(record.methods ?? [], `${what}.methods`).map((item, index) => parseMethod(item, `${what}.methods[${index}]`)),
     propertiesTruncated: record.properties_truncated === true,
     contents: expectArray(record.contents ?? [], `${what}.contents`).map((item, index) => parseVisibleName(item, `${what}.contents[${index}]`)),
   };
@@ -378,4 +434,40 @@ export async function requestExpressions(
     items.forEach((item, index) => answers.push(parseExpressionAnswer(item, `items[${index}]`)));
   }
   return answers;
+}
+
+/** What the backend answers to the question who uses a thing that is about to be removed (`POST /api/v1/removals`). */
+export type RemovalReport = {
+  /** The identifiers of the elements that use it, in the order of the strategy. */
+  usedBy: string[];
+  /** The keys of the rules of the strategy that use it. */
+  usedByRules: string[];
+  /** With `apply`: the identifiers of the removed elements, with the steps of a management. */
+  removed: string[];
+  /** With `apply`: the strategy without it. */
+  document: StrategyDocument | null;
+};
+
+export type RemovalKind = 'element' | 'strategy_parameter' | 'rule';
+
+/** Asks who uses an element, a strategy parameter or a rule; with `apply` the backend also returns the strategy without it. */
+export async function requestRemoval(
+  document: StrategyDocument,
+  kind: RemovalKind,
+  target: string,
+  apply: boolean,
+  signal?: AbortSignal,
+): Promise<RemovalReport> {
+  const record = expectRecord(
+    await requestJson('/api/v1/removals', { method: 'POST', body: { document, kind, target, apply }, signal }),
+    'removals',
+  );
+  const strings = (value: unknown, what: string): string[] =>
+    expectArray(value ?? [], what).map((item, index) => expectString(item, `${what}[${index}]`));
+  return {
+    usedBy: strings(record.used_by, 'used_by'),
+    usedByRules: strings(record.used_by_rules, 'used_by_rules'),
+    removed: strings(record.removed, 'removed'),
+    document: record.document === null || record.document === undefined ? null : parseStrategyDocument(record.document),
+  };
 }

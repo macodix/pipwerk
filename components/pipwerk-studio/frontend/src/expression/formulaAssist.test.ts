@@ -12,6 +12,7 @@ const ema: VisibleName = {
   kind: 'instance',
   datatype: null,
   propertiesTruncated: false,
+  methods: [],
   contents: [],
   properties: [
     { key: 'wert', label: label('Wert', 'Value'), datatype: 'number', explanation: label('Der Wert.', 'The value.'), choices: [], previousValue: true },
@@ -25,6 +26,7 @@ const berechnung: VisibleName = {
   kind: 'result',
   datatype: null,
   propertiesTruncated: false,
+  methods: [],
   contents: [],
   properties: [{ key: 'ergebnis', label: label('Ergebnis', 'Result'), datatype: 'number', explanation: null, choices: [], previousValue: false }],
 };

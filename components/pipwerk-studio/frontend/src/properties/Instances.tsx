@@ -474,7 +474,12 @@ function InstanceCard({ list, instance, index, count, startOpen }: { list: ListR
           title={t('instances.remove', { name: instance.name })}
           testid="instance-remove"
           onClick={() => {
-            studio.actions.edit((latest) => removeFromList(latest, list, instance.key));
+            // a rule of the strategy or of an element may be used by an expression: the backend says so first
+            if (list.list === 'rules' && list.steps.length === 0 && list.root.kind !== 'object') {
+              void studio.actions.requestRemoveRule(list.root.kind === 'element' ? list.root.id : null, instance.key);
+            } else {
+              studio.actions.edit((latest) => removeFromList(latest, list, instance.key));
+            }
           }}
         />
       </div>

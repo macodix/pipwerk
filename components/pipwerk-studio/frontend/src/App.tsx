@@ -172,7 +172,7 @@ function Dialogs({
             {
               label: t('dialogs.removeElement.confirm'),
               onClick: () => {
-                actions.confirmRemoveElement(dialog.id, dialog.plan);
+                actions.confirmRemoveElement(dialog.id);
               },
             },
             { label: t('dialogs.removeElement.cancel'), primary: true, onClick: close },
@@ -209,13 +209,39 @@ function Dialogs({
             {
               label: t('dialogs.removeParameter.confirm'),
               onClick: () => {
-                actions.confirmRemoveParameter(dialog.key, dialog.plan);
+                actions.confirmRemoveParameter(dialog.key);
               },
             },
             { label: t('dialogs.removeParameter.cancel'), primary: true, onClick: close },
           ]}
         >
           <p>{t('dialogs.removeParameter.text', { name: parameter.name })}</p>
+          <UsersList plan={dialog.plan} />
+        </MessageDialog>
+      );
+    }
+    case 'removeRule': {
+      const rule = [...(document?.rules ?? []), ...(document?.elements.flatMap((element) => element.rules) ?? [])].find(
+        (candidate) => candidate.key === dialog.key,
+      );
+      if (rule === undefined) {
+        return null;
+      }
+      return (
+        <MessageDialog
+          title={t('dialogs.removeRule.title')}
+          onCancel={close}
+          actions={[
+            {
+              label: t('dialogs.removeRule.confirm'),
+              onClick: () => {
+                actions.confirmRemoveRule(dialog.key);
+              },
+            },
+            { label: t('dialogs.removeRule.cancel'), primary: true, onClick: close },
+          ]}
+        >
+          <p>{t('dialogs.removeRule.text', { name: rule.name })}</p>
           <UsersList plan={dialog.plan} />
         </MessageDialog>
       );

@@ -757,7 +757,13 @@
       "confirm": "Entfernen",
       "cancel": "Abbrechen"
     },
-    "usedBy": "Diese Elemente verwenden ihn:",
+    "removeRule": {
+      "title": "Regel entfernen?",
+      "text": "Die Regel „{{name}}“ wird entfernt.",
+      "confirm": "Entfernen",
+      "cancel": "Abbrechen"
+    },
+    "usedBy": "Verwendet wird es von:",
     "usedByStrategyRules": "Regeln der Strategie",
     "afterRemoval": "Danach bleibt in den Ausdrücken ein leerer Platz „Wert wählen …“. Belegungen, die ihn verwenden, sind „nicht belegt“. Verbindungen und Eingänge, die von ihm kamen, entfallen.",
     "error": {
@@ -775,6 +781,7 @@
     "deleteFailed": "Die Strategie konnte nicht gelöscht werden.",
     "checkFailed": "Die Strategie konnte nicht geprüft werden.",
     "insertFailed": "Der Eintrag konnte nicht eingefügt werden.",
+    "removeFailed": "Der Eintrag konnte nicht entfernt werden.",
     "codes": {
       "object": {
         "not_found": "Das Objekt gibt es nicht mehr. Vielleicht wurde es gelöscht.",

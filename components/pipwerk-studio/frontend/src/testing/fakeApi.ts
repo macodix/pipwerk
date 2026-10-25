@@ -1,5 +1,6 @@
 import { emaTrendfolge } from './emaTrendfolge';
 import { blocksToStored, namesOf, storedToBlocks } from './fakeExpressions';
+import { removals } from './fakeRemovals';
 import { identifierFromName } from './keys';
 import { typeDescriptionsJson } from './typeDescriptions';
 
@@ -321,6 +322,9 @@ export class FakeApi {
     if (url === '/api/v1/usage' && method === 'POST') {
       const document = asRecord(body.document);
       return fail('usage') ?? { status: 200, body: this.options.usage === undefined ? usageReport(document) : this.options.usage(document) };
+    }
+    if (url === '/api/v1/removals' && method === 'POST') {
+      return fail('removals') ?? removals(body);
     }
     if (url === '/api/v1/keys' && method === 'POST') {
       const document = asRecord(body.document);

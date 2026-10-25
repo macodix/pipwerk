@@ -21,6 +21,7 @@ const name = (display: string, path: string[], kind: VisibleName['kind'], proper
   kind,
   datatype: null,
   properties,
+  methods: [],
   propertiesTruncated: false,
   contents: [],
   ...patch,

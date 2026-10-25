@@ -48,6 +48,7 @@ import {
   removalSet,
   type BindingScope,
   type ConnectionProblem,
+  type InputRef,
 } from '../document/ops';
 import {
   instanceFromTemplate,
@@ -67,7 +68,7 @@ import { elementName, isCardElement } from '../model/elements';
 import { createTypeIndex, holdsInstance, type TypeIndex } from '../model/typeIndex';
 import { NARROW_LAYOUT, matchesMedia } from '../ui/media';
 import { newUuid } from '../document/ids';
-import { NO_USE, planRemoval, removeWithPlan, type RemovalPlan, type RemovalTarget } from './removal';
+import { NO_USE, planRemoval, removeWithBackend, type RemovalPlan, type RemovalTarget } from './removal';
 import {
   initialStudioState,
   isDirty,
@@ -93,6 +94,7 @@ export type DialogState =
   | { kind: 'settings' }
   | { kind: 'removeElement'; id: string; plan: RemovalPlan }
   | { kind: 'removeParameter'; key: string; plan: RemovalPlan }
+  | { kind: 'removeRule'; owner: string | null; key: string; plan: RemovalPlan }
   | { kind: 'error'; titleKey: string; error: unknown };
 
 /** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
@@ -699,12 +701,12 @@ export function useStudioController(language: SupportedLanguage) {
         return NO_USE;
       }
       try {
-        return await planRemoval(document, language, target);
+        return await planRemoval(document, target);
       } catch {
         return NO_USE;
       }
     },
-    [language],
+    [],
   );
 
   const requestRemoveElement = useCallback(
@@ -726,9 +728,9 @@ export function useStudioController(language: SupportedLanguage) {
     [edit, planOf, removalInfo],
   );
 
-  /** Removes an element or a strategy parameter: the expressions that named it get an empty place first. */
+  /** Removes an element, a rule or a strategy parameter: the strategy without it comes from the backend. */
   const applyRemoval = useCallback(
-    async (target: RemovalTarget, plan: RemovalPlan): Promise<void> => {
+    async (target: RemovalTarget): Promise<void> => {
       const index = typesRef.current;
       const document = stateRef.current.document;
       setDialog(null);
@@ -736,18 +738,38 @@ export function useStudioController(language: SupportedLanguage) {
         return;
       }
       try {
-        const changed = await removeWithPlan(document, index, language, target, plan);
+        const changed = await removeWithBackend(document, index, target);
         edit(() => changed, target.kind === 'element' ? { selection: { kind: 'strategy' } } : undefined);
       } catch (error) {
-        showError('errors.insertFailed', error);
+        showError('errors.removeFailed', error);
       }
     },
-    [edit, language, showError],
+    [edit, showError],
   );
 
   const confirmRemoveElement = useCallback(
-    (id: string, plan: RemovalPlan) => {
-      void applyRemoval({ kind: 'element', id }, plan);
+    (id: string) => {
+      void applyRemoval({ kind: 'element', id });
+    },
+    [applyRemoval],
+  );
+
+  /** A rule of the strategy or of an element: asks first if another expression uses its result. */
+  const requestRemoveRule = useCallback(
+    async (owner: string | null, key: string): Promise<void> => {
+      const plan = await planOf({ kind: 'rule', key });
+      if (plan.users.length > 0) {
+        setDialog({ kind: 'removeRule', owner, key, plan });
+      } else {
+        edit((latest) => removeRule(latest, owner, key));
+      }
+    },
+    [edit, planOf],
+  );
+
+  const confirmRemoveRule = useCallback(
+    (key: string) => {
+      void applyRemoval({ kind: 'rule', key });
     },
     [applyRemoval],
   );
@@ -760,8 +782,8 @@ export function useStudioController(language: SupportedLanguage) {
   );
 
   const confirmRemoveParameter = useCallback(
-    (key: string, plan: RemovalPlan) => {
-      void applyRemoval({ kind: 'parameter', key }, plan);
+    (key: string) => {
+      void applyRemoval({ kind: 'parameter', key });
     },
     [applyRemoval],
   );
@@ -804,6 +826,8 @@ export function useStudioController(language: SupportedLanguage) {
       confirmRemoveElement,
       requestRemoveParameter,
       confirmRemoveParameter,
+      requestRemoveRule,
+      confirmRemoveRule,
       elementDisplayName,
       showElement: (id: string) => {
         edit((document) => document, { selection: { kind: 'element', id }, reveal: id });
@@ -832,9 +856,8 @@ export function useStudioController(language: SupportedLanguage) {
           edit((document) => setBinding(document, index, id, scope, key, binding));
         }
       },
-      addInput: (id: string, input: { instance: string; property: string }) => edit((document) => addInput(document, id, input)),
-      removeInput: (id: string, input: { instance: string; property: string }) =>
-        edit((document) => removeInput(document, id, input)),
+      addInput: (id: string, input: InputRef, refresh = false) => edit((document) => addInput(document, id, input, refresh)),
+      removeInput: (id: string, input: InputRef) => edit((document) => removeInput(document, id, input)),
       updateParameter: (key: string, patch: Partial<StrategyParameter>) =>
         edit((document) => updateStrategyParameter(document, key, patch)),
       setManagement: (id: string, owner: string | null) => {
@@ -865,6 +888,7 @@ export function useStudioController(language: SupportedLanguage) {
       confirmDelete,
       confirmRemoveElement,
       confirmRemoveParameter,
+      confirmRemoveRule,
       connectSteps,
       connectValue,
       dropObject,
@@ -879,6 +903,7 @@ export function useStudioController(language: SupportedLanguage) {
       request,
       requestRemoveElement,
       requestRemoveParameter,
+      requestRemoveRule,
       resumeWizard,
       save,
       select,
