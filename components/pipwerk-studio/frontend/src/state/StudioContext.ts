@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 import type { IndexedFindings } from '../findings/findingsModel';
 import type { DescribeContext } from '../model/describe';
 import type { TypeIndex } from '../model/typeIndex';
+import type { UsageModel } from '../model/uses';
 import type { Expressions } from './useExpressions';
 import type { StudioController } from './useStudioController';
 
@@ -15,6 +16,8 @@ export type StudioValue = {
   findings: IndexedFindings;
   /** For the texts of elements and values; `null` without a strategy or type descriptions. */
   describe: DescribeContext | null;
+  /** Who uses which instance, with the place of each card; `null` without a strategy or type descriptions. */
+  uses: UsageModel | null;
 };
 
 export const StudioContext = createContext<StudioValue | null>(null);

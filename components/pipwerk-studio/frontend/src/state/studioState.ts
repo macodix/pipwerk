@@ -78,7 +78,8 @@ export const initialStudioState: StudioState = {
   selection: { kind: 'strategy' },
   // Without an open strategy the properties view is shown first in the narrow layouts (specification 5.1).
   panel: 'props',
-  wires: 'all',
+  // The switch "Weitere Verwendungen" starts with "Auswahl" (specification 5.3): "Alle" lays long lines across the area.
+  wires: 'selection',
   armed: null,
   openCards: [],
   openCount: 0,

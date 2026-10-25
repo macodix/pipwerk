@@ -88,7 +88,7 @@ test('inserts a trigger and a step: the second is connected behind the first', a
 
   await expect(node(page, 'Bedingung')).toHaveCount(1);
   await expect(page.getByTestId('flow-edge')).toHaveCount(1);
-  await expect(page.getByTestId('lane-empty')).toBeVisible();
+  await expect(page.getByTestId('lane-empty')).toHaveCount(0);
   // the parameter of the trigger is "nicht belegt" and required: the properties view says so
   await node(page, 'Kerzenschluss').click({ position: { x: 40, y: 14 } });
   await expect(page.getByTestId('field-zeiteinheit').getByLabel('Pflicht')).toBeVisible();
@@ -115,6 +115,8 @@ test('lets the user change the order type: the new properties get their standard
   void api;
   await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
+  // "Order aufgeben" lies below the objects beside the earlier steps: the whole drawing is brought into the window
+  await page.getByTestId('zoom-fit').click();
   await node(page, 'Order aufgeben').click({ position: { x: 40, y: 14 } });
 
   await expect(page.getByTestId('field-gueltigkeit')).toHaveCount(0);

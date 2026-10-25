@@ -578,54 +578,21 @@ export function removeStrategyParameter(document: StrategyDocument, key: string)
   return next;
 }
 
-// ---- order of the objects --------------------------------------------------------------------------------------
+// ---- first use of an instance ----------------------------------------------------------------------------------
 
-/** Moves an instance one place up or down among the instances: its place in the area for objects. */
-export function moveObject(document: StrategyDocument, types: TypeIndex, id: string, delta: -1 | 1): StrategyDocument {
-  const objects = document.elements.filter((candidate) => isCardElement(candidate, types));
-  const index = objects.findIndex((candidate) => candidate.id === id);
-  const neighbour = objects[index + delta];
-  if (index < 0 || neighbour === undefined) {
-    return document;
-  }
-  const first = document.elements.findIndex((candidate) => candidate.id === id);
-  const second = document.elements.findIndex((candidate) => candidate.id === neighbour.id);
-  const elements = [...document.elements];
-  const a = elements[first];
-  const b = elements[second];
-  if (a === undefined || b === undefined) {
-    return document;
-  }
-  elements[first] = b;
-  elements[second] = a;
-  return { ...document, elements };
-}
-
-/** Puts an instance at a place among the instances (index among the instances). */
-export function placeObject(document: StrategyDocument, types: TypeIndex, id: string, index: number): StrategyDocument {
-  const objects = document.elements.filter((candidate) => isCardElement(candidate, types));
-  const current = objects.findIndex((candidate) => candidate.id === id);
-  if (current < 0) {
-    return document;
-  }
-  const target = Math.max(0, Math.min(objects.length - 1, index));
-  if (target === current) {
-    return document;
-  }
-  const order = objects.map((candidate) => candidate.id);
-  order.splice(current, 1);
-  order.splice(target, 0, id);
-  const byId = new Map(document.elements.map((candidate) => [candidate.id, candidate]));
-  let next = 0;
-  const elements = document.elements.map((candidate) => {
-    if (!isCardElement(candidate, types)) {
-      return candidate;
-    }
-    const replacement = byId.get(order[next] ?? candidate.id) ?? candidate;
-    next += 1;
-    return replacement;
-  });
-  return { ...document, elements };
+/**
+ * Sets the element with which the user connected an instance first (specification 3.3): the interface writes it when
+ * the user connects an instance that no element uses yet. `elementId` is `null` to clear it.
+ */
+export function setFirstUse(document: StrategyDocument, id: string, elementId: string | null): StrategyDocument {
+  return {
+    ...document,
+    elements: document.elements.map((candidate) =>
+      candidate.id === id && candidate.instance !== undefined && candidate.instance !== null
+        ? { ...candidate, instance: { ...candidate.instance, first_use: elementId } }
+        : candidate,
+    ),
+  };
 }
 
 // ---- rules -----------------------------------------------------------------------------------------------------

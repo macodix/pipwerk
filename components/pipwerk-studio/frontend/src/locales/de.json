@@ -349,9 +349,9 @@
     "collapseSection": "Abschnitt einklappen",
     "expandSection": "Abschnitt ausklappen",
     "sectionName": "Name des Abschnitts",
-    "lane": "Objekte und ihre Werte",
     "deleteConnection": "Verbindung löschen",
-    "wireOnlyExpression": "nur im Ausdruck verwendet",
+    "method": "Methode",
+    "refuses": "Hier nicht verwendbar: Der Wert wird zuerst an einem anderen Element ermittelt.",
     "unknownTypeSummary": "Unbekannter Typ „{{type}}“",
     "expressionEmpty": "Noch leer",
     "orientation": "Ausrichtung",
@@ -359,11 +359,11 @@
     "orientHorizontalTip": "Ablauf waagerecht von links nach rechts, für breite Bildschirme",
     "vertical": "Senkrecht",
     "horizontal": "Waagerecht",
-    "wires": "Wertlinien",
+    "wires": "Weitere Verwendungen",
     "wiresTip": {
-      "all": "Alle Wertlinien zeigen",
-      "selection": "Nur die Wertlinien des gewählten Elements zeigen",
-      "off": "Wertlinien ausblenden"
+      "all": "Die gestrichelten Linien aller weiteren Verwendungen zeigen",
+      "selection": "Nur die gestrichelten Linien des gewählten Elements oder Objekts zeigen",
+      "off": "Keine gestrichelten Linien zeigen. Die Linie zum Element der ersten Verwendung bleibt."
     },
     "wiresMode": {
       "all": "Alle",
@@ -382,8 +382,9 @@
     "legend": "Legende",
     "legendFlow": "Ablauf: legt die Reihenfolge fest",
     "legendManagement": "Verwaltung einer Order (grün, gepunktet)",
-    "legendWire": "Wert: Weg eines Werts (farbig, gestrichelt)",
-    "legendWireExpression": "Wert, nur im Ausdruck verwendet (gepunktet)",
+    "legendFirstUse": "Wert an dem Element, das ihn zuerst verwendet (farbig, durchgezogen)",
+    "legendMoreUses": "Wert an einer weiteren Verwendung (farbig, gestrichelt)",
+    "legendRefresh": "Aktualisieren: Der Wert wird hier neu ermittelt",
     "properties": "Eigenschaften"
   },
   "properties": {
@@ -443,9 +444,6 @@
     "mainFlow": "Hauptablauf",
     "managementOf": "Verwaltung von „{{name}}“",
     "belongsToHint": "Hier legen Sie fest, ob der Schritt zum Hauptablauf oder zur Verwaltung einer Order gehört, ohne ihn zu ziehen.",
-    "placeInArea": "Stelle im Bereich der Objekte",
-    "up": "Nach oben",
-    "down": "Nach unten",
     "originType": "{{name}}, aus Objekttyp {{type}}",
     "originTemplate": "{{name}}, aus Vorlage {{template}}, Objekttyp {{type}}"
   },
@@ -716,7 +714,9 @@
     "toMainFlow": "Das Element gehört jetzt zum Hauptablauf.",
     "toManagement": "Das Element gehört jetzt zur Verwaltung dieser Order.",
     "armed": "Wählen Sie jetzt den nächsten Schritt.",
+    "armedValue": "Wählen Sie jetzt das Element, das den Wert verwenden soll.",
     "connection": {
+      "value_not_usable": "„{{object}}“ lässt sich an „{{element}}“ nicht verwenden. Der Wert wird zuerst an „{{first}}“ ermittelt. Verwenden kann ihn nur ein Element, das immer über diesen Schritt erreicht wird.",
       "choose_step": "Wählen Sie zuerst den Schritt, von dem es weitergeht.",
       "no_output": "Dieser Schritt hat keinen Ausgang, von dem eine Verbindung zum nächsten Schritt ausgeht.",
       "unknown_element": "Das Element gibt es nicht mehr.",

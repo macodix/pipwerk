@@ -807,6 +807,21 @@ code {
 .seg button:last-child {
   border-right: 0;
 }
+.seg-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  border-right: 1px solid var(--line);
+  white-space: nowrap;
+}
+@media (max-width: 899px) {
+  .seg-label {
+    display: none;
+  }
+}
 .seg button.on {
   background: #e8f0fe;
   color: var(--accent);
@@ -1250,9 +1265,15 @@ code {
   stroke-dasharray: 7 5;
   fill: none;
 }
-.legend-wire.name {
-  stroke-dasharray: 2 4;
-  opacity: 0.6;
+.legend-wire.first {
+  stroke-dasharray: none;
+}
+.legend-sign {
+  display: inline-block;
+  width: 46px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent);
 }
 .legend-management {
   stroke: #059669;
@@ -1304,37 +1325,6 @@ code {
     right: 6px;
     gap: 5px;
   }
-}
-
-.lane,
-.lane-empty {
-  width: 100%;
-  height: 100%;
-  border: 1.5px dashed #aebdcf;
-  border-radius: 16px;
-  background: rgba(226, 232, 240, 0.38);
-}
-.lane-empty {
-  padding: 12px 14px;
-  color: var(--muted);
-  font-size: 12.5px;
-}
-.lane-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  font-size: 12px;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
-.lane > .lane-title {
-  position: absolute;
-  left: 14px;
-  top: 13px;
-  margin: 0;
 }
 
 .band {
@@ -1447,26 +1437,35 @@ code {
   fill: none;
   stroke: currentColor;
   stroke-width: 2.2;
-  stroke-dasharray: 8 5;
-  opacity: 0.85;
+  opacity: 0.9;
 }
-.wire.name .wire-line {
-  stroke-dasharray: 2 5;
-  stroke-linecap: round;
-  opacity: 0.6;
+.wire.more .wire-line {
+  stroke-dasharray: 8 5;
+  opacity: 0.8;
 }
 .wire.on .wire-line {
   stroke-width: 3.2;
   opacity: 1;
 }
-.wire.dim {
-  opacity: 0.28;
+.wire-label {
+  position: absolute;
+  z-index: 4;
+  padding: 2px 7px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
-.wire-hit {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 14;
-  pointer-events: stroke;
+.wire-label:not(.first) {
+  border-style: dashed;
+  font-weight: 600;
 }
 .wire-end {
   fill: currentColor;
@@ -1476,17 +1475,6 @@ code {
   stroke-width: 2.2;
   fill: none;
   opacity: 0.85;
-}
-.wire-badge rect {
-  fill: #fff;
-  stroke: currentColor;
-  stroke-width: 1.5;
-}
-.wire-badge text {
-  font-size: 11px;
-  font-weight: 700;
-  fill: currentColor;
-  font-family: var(--font);
 }
 
 .node,
@@ -1573,6 +1561,18 @@ code {
 }
 .node.armable {
   cursor: crosshair;
+}
+.node.accepts {
+  cursor: crosshair;
+  box-shadow:
+    0 0 0 3px rgba(21, 128, 61, 0.28),
+    var(--shadow);
+}
+.node.refuses {
+  cursor: not-allowed;
+  opacity: 0.55;
+  border-style: dashed;
+  border-color: var(--bad);
 }
 .node.armed {
   box-shadow:
@@ -1678,6 +1678,10 @@ code {
 }
 .react-flow__handle.port.prop:hover {
   background: #dbeafe;
+}
+.react-flow__handle.port.prop-fallback {
+  opacity: 0;
+  pointer-events: none;
 }
 .card-row.used .react-flow__handle.port.prop {
   background: var(--wire, #2563eb);

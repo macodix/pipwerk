@@ -23,13 +23,12 @@ import { useStudio } from '../state/StudioContext';
 import { Btn } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { EdgeActionsContext, FlowEdge, WireEdge } from './edges';
-import { buildFlow, stepAt, type CardData, type FrameData, type SectionNodeData, type StepData } from './flowModel';
+import { REFRESH_SIGN, buildFlow, stepAt, type FrameData, type SectionNodeData, type StepData } from './flowModel';
 import {
   BandNode,
   CanvasActionsContext,
   CardNode,
   FrameNode,
-  LaneNode,
   SectionNode,
   StepNode,
   type CanvasActions,
@@ -41,7 +40,6 @@ const nodeTypes = {
   frame: FrameNode,
   band: BandNode,
   section: SectionNode,
-  lane: LaneNode,
 } as unknown as NodeTypes;
 
 const edgeTypes = { flow: FlowEdge, wire: WireEdge } as unknown as EdgeTypes;
@@ -65,8 +63,16 @@ export function Canvas() {
   );
 }
 
+/** The element whose instance is being connected: the row of a card was clicked, or a line from it is being dragged. */
+function connectingFrom(armed: { from: string; output: string } | null, dragged: string | null): string | null {
+  if (dragged !== null) {
+    return dragged;
+  }
+  return armed !== null && armed.output.startsWith('prop:') ? armed.from : null;
+}
+
 function CanvasView() {
-  const { studio, types, expressions, findings, describe } = useStudio();
+  const { studio, types, findings, describe, uses } = useStudio();
   const { t } = useTranslation();
   const flowApi = useReactFlow();
   const { state, actions, language } = studio;
@@ -78,28 +84,32 @@ function CanvasView() {
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const [bump, setBump] = useState(0);
   const [dropHint, setDropHint] = useState(false);
+  /** The instance a line is being dragged from. */
+  const [dragged, setDragged] = useState<string | null>(null);
   const dir: Dir = document?.orientation === 'horizontal' ? 'h' : 'v';
   const open = useMemo(() => new Set(state.openCards), [state.openCards]);
+  const connecting = connectingFrom(state.armed, dragged);
 
   const sceneInput = useMemo(() => {
-    if (document === null || types === null) {
+    if (document === null || types === null || uses === null) {
       return null;
     }
     const places = drag === null ? new Map<string, Pt>() : new Map([[drag.id, drag.pos]]);
-    return buildSceneInput(document, types, language, open, expressions.references, places);
-  }, [document, drag, expressions.references, language, open, types]);
+    return buildSceneInput(document, types, language, open, uses, places);
+  }, [document, drag, language, open, types, uses]);
   const scene = useMemo(() => (sceneInput === null ? null : buildScene(sceneInput, dir)), [dir, sceneInput]);
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
 
   const flow = useMemo(() => {
-    if (document === null || types === null || scene === null || describe === null) {
+    if (document === null || types === null || scene === null || describe === null || uses === null) {
       return { nodes: [], edges: [] };
     }
     return buildFlow({
       document,
       types,
       scene,
+      uses,
       dir,
       language,
       t,
@@ -108,11 +118,12 @@ function CanvasView() {
       selection: state.selection,
       armed: state.armed,
       wires: state.wires,
+      connecting,
       selectedEdge,
       openCards: open,
     });
     // `bump` makes React Flow take the places of the arrangement again after a card was dragged away
-  },[bump, describe, dir, document, findings, language, open, scene, selectedEdge, state.armed, state.selection, state.wires, t, types]);
+  }, [bump, connecting, describe, dir, document, findings, language, open, scene, selectedEdge, state.armed, state.selection, state.wires, t, types, uses]);
 
   // --- the view: set when a strategy is opened, never when something is edited (specification 5.3, M3) ---
 
@@ -206,12 +217,30 @@ function CanvasView() {
   );
 
   // The view is set when a strategy is opened and when the direction changes, after React Flow is ready.
+  // Once more when the backend has told who uses which object, as long as the user has not touched the view: the cards
+  // move beside their elements then, and the first view must show the arrangement that stays.
+  const fitStage = useRef<{ key: string; stage: number; document: unknown }>({ key: '', stage: 0, document: null });
+  const reported = uses?.fromReport === true;
   useLayoutEffect(() => {
-    if (ready) {
+    if (!ready) {
+      return;
+    }
+    const key = `${state.openCount}|${dir}`;
+    if (fitStage.current.key !== key) {
+      fitStage.current = { key, stage: 0, document: null };
+    }
+    if (fitStage.current.stage === 0) {
       fit();
+      fitStage.current = { key, stage: reported ? 2 : 1, document };
+    } else if (fitStage.current.stage === 1 && reported) {
+      // only while the document is still the one that was opened
+      if (fitStage.current.document === document) {
+        fit();
+      }
+      fitStage.current.stage = 2;
     }
     // `fit` is left out on purpose: the view is set only when a strategy is opened or the direction changes
-  }, [ready, state.openCount, dir]);
+  }, [ready, state.openCount, dir, reported]);
 
   // A new or targeted element is brought into view only if it is completely outside of the view, and only as far as needed.
   const revealSerial = state.reveal?.serial;
@@ -258,6 +287,35 @@ function CanvasView() {
 
   // --- selection and actions of the nodes ---
 
+  /**
+   * Connects a value of an object with an element (an input), by dragging or by clicking: only an element at which the
+   * instance is usable takes it (specification 3.3, 5.3); at any other the user is told why not. The first connection of
+   * an instance that no element uses yet makes the element that of its first use.
+   */
+  const connectValueTo = useCallback(
+    (card: string, property: string, target: string): boolean => {
+      if (document === null || types === null || uses === null || card === target) {
+        return false;
+      }
+      const targetElement = document.elements.find((candidate) => candidate.id === target);
+      if (targetElement === undefined || isCardElement(targetElement, types)) {
+        return false;
+      }
+      if (!uses.usable(card, target)) {
+        const first = uses.firstUse(card);
+        actions.notify('notices.connection.value_not_usable', {
+          object: actions.elementDisplayName(card),
+          element: actions.elementDisplayName(target),
+          first: first === null ? '' : actions.elementDisplayName(first),
+        });
+        return false;
+      }
+      actions.connectValue(card, property, target, !uses.connected(card));
+      return true;
+    },
+    [actions, document, types, uses],
+  );
+
   const canvasActions = useMemo<CanvasActions>(
     () => ({
       selectElement: (id) => {
@@ -274,7 +332,15 @@ function CanvasView() {
       },
       clickStep: (id) => {
         const armed = studio.state.armed;
-        if (armed !== null && armed.from !== id) {
+        if (armed !== null && armed.output.startsWith('prop:')) {
+          // a row of a card was clicked: this element takes the value if the instance is usable here
+          if (armed.from !== id && connectValueTo(armed.from, armed.output.slice(5), id)) {
+            return;
+          }
+          if (armed.from !== id) {
+            return;
+          }
+        } else if (armed !== null && armed.from !== id) {
           if (actions.connectSteps(armed.from, armed.output, id)) {
             return;
           }
@@ -298,7 +364,7 @@ function CanvasView() {
       renameSection: actions.renameSection,
       toggleCard: actions.toggleCard,
     }),
-    [actions, studio.state.armed],
+    [actions, connectValueTo, studio.state.armed],
   );
 
   const onNodeClick = useCallback(
@@ -351,24 +417,26 @@ function CanvasView() {
         return false;
       }
       if (handle !== null && handle.startsWith('prop:')) {
-        actions.connectValue(sourceId, handle.slice(5), targetId);
-        return true;
+        return connectValueTo(sourceId, handle.slice(5), targetId);
       }
       return handle !== null && actions.connectSteps(sourceId, handle, targetId);
     },
-    [actions, isElement],
+    [actions, connectValueTo, isElement],
   );
 
   const onConnect = useCallback(
-    (connection: Connection) => {
-      connectTo(connection.source, connection.sourceHandle, connection.target);
+    (connection: Connection) => {      connectTo(connection.source, connection.sourceHandle, connection.target);
     },
     [connectTo],
   );
 
+  const onConnectStart = useCallback((_event: unknown, params: { nodeId: string | null; handleId: string | null }) => {
+    setDragged(params.nodeId !== null && params.handleId !== null && params.handleId.startsWith('prop:') ? params.nodeId : null);
+  }, []);
+
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
-      if (state.isValid === true || state.fromNode === null || state.fromHandle === null) {
+      setDragged(null);      if (state.isValid === true || state.fromNode === null || state.fromHandle === null) {
         return;
       }
       // dropped on the body of an element and not on a connection point: the element is the target all the same
@@ -377,8 +445,7 @@ function CanvasView() {
         return;
       }
       const under = window.document.elementFromPoint(point.clientX, point.clientY);
-      const target = under?.closest<HTMLElement>('.react-flow__node')?.dataset.id;
-      if (target !== undefined) {
+      const target = under?.closest<HTMLElement>('.react-flow__node')?.dataset.id;      if (target !== undefined) {
         connectTo(state.fromNode.id, state.fromHandle.id ?? null, target);
       }
     },
@@ -392,18 +459,25 @@ function CanvasView() {
       }
       const handle = connection.sourceHandle ?? '';
       if (handle.startsWith('prop:')) {
-        return isElement(connection.target) && connection.target !== connection.source;
+        // the line is taken by an element at which the instance is usable, by no card (specification 5.3)
+        return (
+          uses !== null &&
+          isElement(connection.target) &&
+          connection.target !== connection.source &&
+          document.elements.some((candidate) => candidate.id === connection.target && !isCardElement(candidate, types)) &&
+          uses.usable(connection.source, connection.target)
+        );
       }
       return !('problem' in connect(document, types, connection.source, handle, connection.target));
     },
-    [document, isElement, types],
+    [document, isElement, types, uses],
   );
 
   // --- dragging ---
 
   const onNodeDrag = useCallback(
     (_event: unknown, node: Node) => {
-      if (node.type === 'step') {
+      if (node.type === 'step' || node.type === 'card') {
         setDrag({ id: node.id, pos: { x: node.position.x, y: node.position.y } });
       }
     },
@@ -423,15 +497,12 @@ function CanvasView() {
         const frame = frameAt(current, center, node.id);
         actions.dropStep(node.id, { x: node.position.x, y: node.position.y }, frame?.owner ?? null);
       } else if (node.type === 'card') {
-        const data = node.data as CardData;
-        const centre = dir === 'v' ? node.position.y + data.height / 2 : node.position.x + data.width / 2;
-        const others = [...current.cards.values()].filter((card) => card.id !== node.id);
-        const index = others.filter((card) => (dir === 'v' ? card.y + card.h / 2 : card.x + card.w / 2) < centre).length;
-        actions.placeObject(node.id, index);
+        // the object stays where the user put it (the document holds the place)
+        actions.dropObject(node.id, { x: node.position.x, y: node.position.y });
       }
       setBump((value) => value + 1);
     },
-    [actions, dir, document, types],
+    [actions, document, types],
   );
 
   // --- dropping an entry of the library ---
@@ -453,7 +524,12 @@ function CanvasView() {
       if (hitElement !== undefined && !isCardElement(hitElement, types)) {
         void actions.insert(key, { after: hitElement.id, flow: hitElement.management_of ?? null });
       } else {
-        void actions.insert(key, { after: null, flow: frame?.owner ?? null });
+        // an object that no element uses lies where it was put down (specification 5.3)
+        void actions.insert(key, { after: null, flow: frame?.owner ?? null }).then((id) => {
+          if (id !== null) {
+            actions.dropObject(id, { x: point.x - 24, y: point.y - 16 });
+          }
+        });
       }
     },
     [actions, document, flowApi, types],
@@ -493,6 +569,7 @@ function CanvasView() {
       data-region="canvas"
       data-testid="canvas"
       data-orient={dir}
+      data-usage={reported ? 'report' : 'document'}
       onKeyDown={onKeyDown}
     >
       <svg className="canvas-defs" width="0" height="0" aria-hidden="true">
@@ -533,7 +610,8 @@ function CanvasView() {
             <span>{t('canvas.horizontal')}</span>
           </button>
         </div>
-        <div className="seg" role="group" aria-label={t('canvas.wires')}>
+        <div className="seg" role="group" aria-label={t('canvas.wires')} data-testid="wires-switch">
+          <span className="seg-label">{t('canvas.wires')}</span>
           {(['all', 'selection', 'off'] as const).map((mode) => (
             <button
               key={mode}
@@ -636,6 +714,7 @@ function CanvasView() {
               onPaneClick={onPaneClick}
               onEdgeClick={onEdgeClick}
               onConnect={onConnect}
+              onConnectStart={onConnectStart}
               onConnectEnd={onConnectEnd}
               isValidConnection={isValidConnection}
               onInit={() => {
@@ -667,15 +746,21 @@ function CanvasView() {
         </div>
         <div className="legend-row">
           <svg width="46" height="12" aria-hidden="true">
-            <path d="M2 6 H44" className="legend-wire" />
+            <path d="M2 6 H44" className="legend-wire first" />
           </svg>
-          <span>{t('canvas.legendWire')}</span>
+          <span>{t('canvas.legendFirstUse')}</span>
         </div>
         <div className="legend-row">
           <svg width="46" height="12" aria-hidden="true">
-            <path d="M2 6 H44" className="legend-wire name" />
+            <path d="M2 6 H44" className="legend-wire" />
           </svg>
-          <span>{t('canvas.legendWireExpression')}</span>
+          <span>{t('canvas.legendMoreUses')}</span>
+        </div>
+        <div className="legend-row">
+          <span className="legend-sign" aria-hidden="true">
+            {REFRESH_SIGN}
+          </span>
+          <span>{t('canvas.legendRefresh')}</span>
         </div>
       </details>
 

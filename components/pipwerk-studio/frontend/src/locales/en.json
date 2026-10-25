@@ -349,9 +349,9 @@
     "collapseSection": "Collapse section",
     "expandSection": "Expand section",
     "sectionName": "Name of the section",
-    "lane": "Objects and their values",
     "deleteConnection": "Delete connection",
-    "wireOnlyExpression": "only used in the expression",
+    "method": "Method",
+    "refuses": "Not usable here: the value is first worked out at another element.",
     "unknownTypeSummary": "Unknown type \"{{type}}\"",
     "expressionEmpty": "Still empty",
     "orientation": "Orientation",
@@ -359,11 +359,11 @@
     "orientHorizontalTip": "Flow horizontal from left to right, for wide screens",
     "vertical": "Vertical",
     "horizontal": "Horizontal",
-    "wires": "Value lines",
+    "wires": "Further uses",
     "wiresTip": {
-      "all": "Show all value lines",
-      "selection": "Show only the value lines of the selected element",
-      "off": "Hide value lines"
+      "all": "Show the dashed lines of all further uses",
+      "selection": "Show only the dashed lines of the selected element or object",
+      "off": "Show no dashed lines. The line to the element of the first use stays."
     },
     "wiresMode": {
       "all": "All",
@@ -382,8 +382,9 @@
     "legend": "Legend",
     "legendFlow": "Flow: defines the order",
     "legendManagement": "Management of an order (green, dotted)",
-    "legendWire": "Value: path of a value (coloured, dashed)",
-    "legendWireExpression": "Value, only used in the expression (dotted)",
+    "legendFirstUse": "Value at the element that uses it first (coloured, solid)",
+    "legendMoreUses": "Value at a further use (coloured, dashed)",
+    "legendRefresh": "Refresh: the value is worked out anew here",
     "properties": "Properties"
   },
   "properties": {
@@ -443,9 +444,6 @@
     "mainFlow": "Main flow",
     "managementOf": "Management of \"{{name}}\"",
     "belongsToHint": "Here you decide whether the step belongs to the main flow or to the management of an order, without dragging it.",
-    "placeInArea": "Place in the area for objects",
-    "up": "Up",
-    "down": "Down",
     "originType": "{{name}}, from object type {{type}}",
     "originTemplate": "{{name}}, from template {{template}}, object type {{type}}"
   },
@@ -716,7 +714,9 @@
     "toMainFlow": "The element now belongs to the main flow.",
     "toManagement": "The element now belongs to the management of this order.",
     "armed": "Now choose the next step.",
+    "armedValue": "Now choose the element that is to use the value.",
     "connection": {
+      "value_not_usable": "\"{{object}}\" cannot be used at \"{{element}}\". The value is first worked out at \"{{first}}\". Only an element that is always reached through that step can use it.",
       "choose_step": "First choose the step that continues.",
       "no_output": "This step has no output from which a connection leads to the next step.",
       "unknown_element": "The element no longer exists.",

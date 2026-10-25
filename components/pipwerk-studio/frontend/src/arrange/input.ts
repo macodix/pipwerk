@@ -2,15 +2,15 @@ import type { ExpressionBlock } from '../api/objects';
 import type { StrategyDocument } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
 import {
-  collectUsage,
+  cardRows,
   isCardElement,
   managementOwner,
   outputsOf,
   ownsManagement,
-  propertyRows,
   type ExpressionReference,
 } from '../model/elements';
 import type { TypeIndex } from '../model/typeIndex';
+import type { UsageModel } from '../model/uses';
 import type { Pt, SceneInput, SceneStep } from './scene';
 
 /**
@@ -38,16 +38,16 @@ export function referencesOfBlocks(block: ExpressionBlock | null): ExpressionRef
 }
 
 /**
- * Reduces the document to what the arrangement needs. `references` holds per element the properties its expressions
- * address, `open` the cards that show all their properties, `places` places that override the stored ones (a step
- * the user is dragging).
+ * Reduces the document to what the arrangement needs. `uses` says which element uses which instance and where each
+ * card sits, `open` names the cards that show all their rows, `places` places that override the stored ones (an
+ * element or card the user is dragging).
  */
 export function buildSceneInput(
   document: StrategyDocument,
   types: TypeIndex,
   language: SupportedLanguage,
   open: ReadonlySet<string>,
-  references: ReadonlyMap<string, readonly ExpressionReference[]>,
+  uses: Pick<UsageModel, 'links' | 'homes'>,
   places: ReadonlyMap<string, Pt> = new Map(),
 ): SceneInput {
   const steps: SceneStep[] = [];
@@ -57,8 +57,11 @@ export function buildSceneInput(
     if (isCardElement(element, types)) {
       cards.push({
         id: element.id,
-        properties: propertyRows(type, element.instance, language).map((row) => row.id),
+        rows: cardRows(type, element.instance, language).map((row) => row.id),
+        usedRows: [...new Set(uses.links.filter((link) => link.src === element.id).flatMap((link) => link.rows))],
         open: open.has(element.id),
+        home: uses.homes.get(element.id) ?? null,
+        pos: places.get(element.id) ?? element.position,
       });
       continue;
     }
@@ -90,6 +93,6 @@ export function buildSceneInput(
       collapsed: section.collapsed,
     })),
     collapsedManagements: document.collapsed_managements,
-    usage: collectUsage(document, references),
+    links: uses.links.map((link) => ({ key: link.key, src: link.src, dst: link.dst, first: link.first, rows: link.rows })),
   };
 }

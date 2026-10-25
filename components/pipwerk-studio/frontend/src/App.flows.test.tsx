@@ -264,6 +264,7 @@ describe('the language (specification 5.1, M4)', () => {
       'Aktionen',
       'Befunde',
       'Objekte und ihre Werte',
+      'Weitere Verwendungen',
       'gespeichert',
       'Zur Stelle',
       'So beheben Sie es',

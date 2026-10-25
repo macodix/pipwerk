@@ -170,7 +170,9 @@ describe('the properties view of invented types (specification 5.4)', () => {
     const delivers = screen.getByTestId('sec-delivers');
     expect(within(delivers).getAllByTestId('prop-row')).toHaveLength(4);
     expect(within(delivers).getByText('Höchststand')).toBeInTheDocument();
-    expect(screen.getByTestId('object-up')).toBeInTheDocument();
+    // there is no place in an area for objects any more: the object lies beside the element that uses it (order 12)
+    expect(screen.queryByTestId('object-up')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sec-place')).not.toBeInTheDocument();
     // the card shows three rows and the way to the others
     expect(within(nodeByName('Messer')).getAllByTestId('card-row')).toHaveLength(3);
     expect(within(nodeByName('Messer')).getByTestId('card-more')).toHaveTextContent('alle 4 Eigenschaften');

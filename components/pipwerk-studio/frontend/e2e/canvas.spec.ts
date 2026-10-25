@@ -106,8 +106,8 @@ test('a step dragged into the frame becomes part of the management, and out of i
 
   // and out again: to a free place in the main flow, left of the flow
   const placed = await boxOf(step);
-  const area = await boxOf(page.getByTestId('lane'));
-  await dragBy(page, step, area.x + area.width + 40 - (placed.x + placed.width / 2), 0);
+  const trigger = await boxOf(page.locator(`[data-node-id="${EMA_ELEMENT_IDS.trigger}"]`));
+  await dragBy(page, step, trigger.x - 130 - (placed.x + placed.width / 2), trigger.y - (placed.y + placed.height / 2));
   await expect(page.getByTestId('message')).toContainText('Hauptablauf');
   expect(overlap(await boxOf(step), await boxOf(page.getByTestId('frame')))).toBe(false);
 });
@@ -175,11 +175,12 @@ test('a value of an object is connected with an element by dragging a line and w
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
   const row = card(page, 'EMA50').getByTestId('port-prop-wert');
-  const target = node(page, 'Position ändern');
+  // "StopLoss" lies behind "Kreuzen", the first use of EMA50: the object is usable there
+  const target = node(page, 'StopLoss');
   const rowBox = await boxOf(row);
   const targetBox = await boxOf(target);
 
-  await dragBy(page, row, targetBox.x + targetBox.width / 2 - (rowBox.x + rowBox.width / 2), targetBox.y + 40 - (rowBox.y + rowBox.height / 2));
+  await dragBy(page, row, targetBox.x + targetBox.width / 2 - (rowBox.x + rowBox.width / 2), targetBox.y + 30 - (rowBox.y + rowBox.height / 2));
 
   await target.click({ position: { x: 40, y: 14 } });
   const chips = page.getByTestId('input-chip');
@@ -194,37 +195,39 @@ test('a value of an object is connected with an element by dragging a line and w
   await expect(chips).toHaveCount(1);
 });
 
-test('the lines of values can be shown for all, for the selection only, or not at all, and the legend explains them', async ({ page, api }) => {
+test('the switch "Weitere Verwendungen" shows the further uses for all, for the selection only, or not at all; the line to the first use stays; the legend explains them', async ({ page, api }) => {
   void api;
   await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
 
   const wires = page.getByTestId('wire');
-  await expect(wires.first()).toBeAttached();
-  // the lines appear while the view is fitted: take the number only when it no longer changes
-  let all = -1;
-  await expect
-    .poll(
-      async () => {
-        const before = all;
-        all = await wires.count();
-        await page.waitForTimeout(400);
-        return all === before && all === (await wires.count());
-      },
-      { intervals: [100] },
-    )
-    .toBe(true);
-  await page.getByTestId('wires-off').click();
-  await expect(wires).toHaveCount(0);
-  await page.getByTestId('wires-selection').click();
-  await expect(wires).toHaveCount(0);
-  await node(page, 'Kreuzen').click({ position: { x: 40, y: 14 } });
-  await expect.poll(async () => wires.count()).toBeGreaterThan(0);
-  expect(await wires.count()).toBeLessThan(all);
+  const first = page.locator('[data-testid="wire"][data-first="1"]');
+  // EMA20 and EMA50 at "Kreuzen", ATR14 at "StopLoss": the lines of the first use are there always, solid
+  await expect(first).toHaveCount(3);
+  // the switch starts with "Auswahl": nothing selected, no further use
+  await expect(page.getByTestId('wires-selection')).toHaveClass(/on/);
+  await expect(wires).toHaveCount(3);
+  await expect(page.getByTestId('wires-switch')).toContainText('Weitere Verwendungen');
+
   await page.getByTestId('wires-all').click();
-  await expect(wires).toHaveCount(all);
+  // EMA20 and EMA50 are used by three elements each, ATR14 by two
+  await expect(wires).toHaveCount(8);
+  await page.getByTestId('wires-off').click();
+  await expect(wires).toHaveCount(3);
+  await page.getByTestId('wires-selection').click();
+  await expect(wires).toHaveCount(3);
+  // a selected element shows its further uses: "Richtung" uses EMA20 and EMA50
+  await node(page, 'Richtung').click({ position: { x: 40, y: 14 } });
+  await expect(wires).toHaveCount(5);
+  await expect(page.locator('[data-testid="wire"][data-first="0"]')).toHaveCount(2);
+  // a selected object shows all its further uses
+  await card(page, 'ATR14').click({ position: { x: 40, y: 14 } });
+  await expect(page.locator('[data-testid="wire"][data-first="0"]')).toHaveCount(1);
+  // one line carries the value in its label
+  await expect(page.getByTestId('wire-label').first()).toContainText('Wert');
+
   await page.locator('.legend summary').click();
-  await expect(page.locator('.legend-row')).toHaveCount(4);
+  await expect(page.locator('.legend-row')).toHaveCount(5);
 });
 
 test('the flow can be turned: vertical and horizontal, the choice belongs to the strategy', async ({ page, api }) => {
@@ -292,6 +295,7 @@ test('the management folds in and out, and its output can be connected with a st
   void api;
   await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
+  await page.getByTestId('zoom-fit').click();
   const frame = page.getByTestId('frame');
   const full = await boxOf(frame);
 
@@ -307,18 +311,22 @@ test('the management folds in and out, and its output can be connected with a st
   await expect(page.getByTestId('props-frame')).toBeVisible();
 });
 
-test('the objects stay in the area for objects: the order is changed with the properties view', async ({ page, api }) => {
+test('a card dragged to another place stays there, the line follows, and "Neu anordnen" puts it back beside its element', async ({ page, api }) => {
   void api;
-  await openApp(page);
+  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
-  await card(page, 'EMA50').click({ position: { x: 40, y: 14 } });
-  const before = await boxOf(card(page, 'EMA50'));
-  const aboveBefore = await boxOf(card(page, 'EMA20'));
-  expect(aboveBefore.y).toBeLessThan(before.y);
+  await expect(page.getByTestId('object-up')).toHaveCount(0);
+  const cross = await boxOf(node(page, 'Kreuzen'));
+  const start = await boxOf(card(page, 'ATR14'));
 
-  await page.getByTestId('object-up').click();
+  await dragBy(page, card(page, 'ATR14'), -120, 140, { x: 100, y: 14 });
 
-  await expect.poll(async () => (await boxOf(card(page, 'EMA50'))).y).toBeLessThan((await boxOf(card(page, 'EMA20'))).y);
+  await expect.poll(async () => (await boxOf(card(page, 'ATR14'))).y).toBeGreaterThan(start.y + 60);
+  await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
+  // the cards beside "Kreuzen" did not move
+  expect((await boxOf(node(page, 'Kreuzen'))).x).toBeCloseTo(cross.x, 0);
+  await page.getByTestId('arrange').click();
+  await expect.poll(async () => Math.round((await boxOf(card(page, 'ATR14'))).y)).toBe(Math.round(start.y));
 });
 
 test('an element of an unknown type is outlined in red with the identifier of its type, keeps its assignments and can be connected to', async ({ page, api }) => {
