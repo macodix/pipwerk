@@ -3,7 +3,7 @@
 ## Status
 
 - status: `draft`
-- stand: 2026-10-21
+- stand: 2026-10-25
 - bereich: Entwicklungsprozess (keine Produktkomponente)
 - abgestimmt: [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html), bestätigt vom Auftraggeber im Chat am 12. Oktober 2026. Prüfung durch die QA in Phase 1 bestätigt am 14. Oktober 2026.
 
@@ -17,6 +17,7 @@ Für die meisten Aufgaben genügt dieser Abschnitt. Die übrigen Abschnitte werd
 - Rückwege: fehlende Anforderung → Phase 1, Lücke der Spezifikation → Phase 2, Mangel in der Abnahme → Phase 4, Planänderung → Phase 3.
 - Übergabe nur über Übergabedokumente und Meldungen unter `development/` auf `origin/main`.
 - Prüfungen: erster Durchlauf vollständig, danach nur Nachprüfung; nur blockierende Befunde verhindern das Bestehen; bestanden ist bestanden.
+- Erkannte, noch nicht beschlossene oder noch nicht eingeplante Anforderungen stehen mit Priorität in den [vorgemerkten Anforderungen](../design/requirements/vorgemerkte-anforderungen.md) und werden nach [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen) geprüft.
 - Dem Auftraggeber wird nur vorgelegt, was nur er entscheiden kann. Korrekturen aus bestehenden Festlegungen, Fragen der Spezifikation und offene Punkte erledigen die Rollen selbst.
 - Prüfschleifen laufen, solange die blockierenden Befunde weniger werden, sonst eine Ebene höher.
 - Rein technische Streitpunkte entscheidet der Softwarearchitekt abschließend, in Phase 4 der Entwicklungsleiter, solange Spezifikation und Plan unverändert bleiben.
@@ -90,7 +91,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Rollen: Auftraggeber, Projektleiter, Softwarearchitekt und QA für die Prüfung
 - Eingabe: Vorhaben des Auftraggebers, Rückmeldungen aus allen späteren Phasen
 - Tätigkeit:
-  1. Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleiter fragt nach und schreibt die Dokumente des Auftraggebers fort: Anforderungsdokumente, Fachmodell, Strategiebeschreibungen. Für ein neues Vorhaben legt er dessen Verzeichnis mit `scope.md` an und führt dort die geltenden Dokumente des Auftraggebers.
+  1. Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleiter fragt nach und schreibt die Dokumente des Auftraggebers fort: Anforderungsdokumente, Fachmodell, Strategiebeschreibungen. Für ein neues Vorhaben legt er dessen Verzeichnis mit `scope.md` an und führt dort die geltenden Dokumente des Auftraggebers. Dabei prüft er die [vorgemerkten Anforderungen](#vorgemerkte-anforderungen) der betroffenen Bereiche.
   2. Der Projektleiter stößt mit der Meldung `check` die Prüfung an. Die QA prüft jedes Dokument laut `scope.md` und seine Widerspruchsfreiheit zum Anforderungsdokument des Gesamtsystems. Sie sucht Widersprüche, Lücken, mehrdeutige Begriffe, nicht gekennzeichnete offene Fragen und Umsetzungsdetails. Nennt `scope.md` Testfälle, prüft sie außerdem, ob sich jeder Testfall mit den beschriebenen Objekten und Arbeitsabläufen vollständig abbilden lässt.
   3. Der Prüfbericht geht über den Softwarearchitekten an den Projektleiter. Was sich anhand bestehender Festlegungen eindeutig korrigieren lässt, korrigiert er ohne den Auftraggeber.
   4. Der Projektleiter erstellt eine Präsentation der wichtigsten Aussagen. Sie enthält die Befunde, die nur der Auftraggeber entscheiden kann, als Fragen mit Vorschlag. Beide stimmen die Präsentation ab. Der Projektleiter arbeitet die Entscheidungen in die Dokumente ein.
@@ -114,7 +115,7 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 
 - Rollen: Softwarearchitekt erstellt den Plan, QA prüft ihn, Projektleiter präsentiert, Auftraggeber bestätigt
 - Eingabe: abgestimmte technische Spezifikation, Anforderungsdokumente
-- Tätigkeit: Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete. Die QA prüft, ob jede Anforderung durch die Spezifikation und jeder Teil der Spezifikation durch ein Arbeitspaket abgedeckt ist, und schreibt einen Prüfbericht. Ein Plan mit positivem Prüfbericht geht an den Projektleiter, der ihn präsentiert und abstimmt.
+- Tätigkeit: Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete. Er nennt im Plan die [vorgemerkten Anforderungen](#vorgemerkte-anforderungen) mit Priorität `erforderlich`, deren Teil der Software ein Arbeitspaket ohnehin ändert. Die QA prüft, ob jede Anforderung durch die Spezifikation und jeder Teil der Spezifikation durch ein Arbeitspaket abgedeckt ist, und schreibt einen Prüfbericht. Ein Plan mit positivem Prüfbericht geht an den Projektleiter, der ihn präsentiert und abstimmt.
 - Ergebnis: Arbeitspaketplan, positiver Prüfbericht, abgestimmte Präsentation mit Vermerk der Bestätigung, alles im Repository
 - Schleifen: Befunde mit konkreten Fragen und Kritikpunkten zurück an den Softwarearchitekten, nach [Grenze der Durchläufe](#grenze-der-durchläufe). Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
@@ -155,6 +156,25 @@ Ergebnis: abgenommenes Arbeitspaket, Abnahme im Abnahmebericht vermerkt.
 Der Entwicklungsleiter übernimmt genau den abgenommenen Commit mit einem Merge-Commit in `main`. Er beendet die Testumgebung, entfernt Arbeitsverzeichnisse und Zweige des Pakets und trägt das Paket im Arbeitspaketplan mit `done` ein.
 
 Ergebnis: Arbeitspaket in `main`, keine Reste aus der Umsetzung. Danach beginnen die Pakete, deren Abhängigkeiten jetzt erfüllt sind.
+
+## Vorgemerkte Anforderungen
+
+Die [vorgemerkten Anforderungen](../design/requirements/vorgemerkte-anforderungen.md) halten je Bereich fest, was erkannt, aber noch nicht beschlossen oder noch nicht umgesetzt ist. Prioritäten: `dringend` (sobald möglich), `erforderlich` (sobald es sich anbietet, spätestens vor dem nächsten Release), `gewünscht` (sobald nichts anderes ansteht oder auf Verlangen des Auftraggebers).
+
+Eintragen:
+
+- Der Projektleiter trägt jede Überlegung des Auftraggebers zu weiteren Funktionen ein, die nicht im laufenden Vorhaben umgesetzt wird, mit der Priorität, die der Auftraggeber nennt. Nennt er keine, fragt der Projektleiter mit Vorschlag.
+- Jede Rolle trägt eine Anforderung, die sie für einen anderen Bereich oder außerhalb des Umfangs ihrer Aufgabe erkennt, mit Priorität `offen` ein, im selben Commit wie ihre übrige Arbeit. Sie setzt sie nicht selbst um. Der Projektleiter lässt die Priorität bei der nächsten Vorlage vom Auftraggeber festlegen.
+- Ein Eintrag ist keine Festlegung. Er wird erst durch Übernahme in das zuständige Dokument des Auftraggebers in Phase 1 zur Anforderung.
+
+Prüfen:
+
+1. **Beim Eintrag** mit Priorität `dringend`: Der Projektleiter legt ihn sofort vor, mit Vorschlag, ob er über den Rückweg in Phase 1 in ein laufendes Vorhaben geht oder als nächstes Vorhaben beginnt.
+2. **Phase 1, beim Anlegen oder Erweitern von `scope.md`:** Der Projektleiter legt alle Einträge mit `dringend` und `erforderlich` der Bereiche vor, die das Vorhaben berührt, jeweils mit Vorschlag zum Mitnehmen. Mitgenommene Einträge schreibt er in das zuständige Dokument und setzt ihren Stand auf `übernommen`.
+3. **Phase 3, Planung:** Der Softwarearchitekt nennt im Plan Einträge mit `erforderlich`, deren Teil der Software ein Arbeitspaket ohnehin ändert und die nicht übernommen sind. Der Projektleiter legt sie mit dem Plan vor. Mitgenommene Einträge gehen über den Rückweg in Phase 1.
+4. **Kein laufendes Vorhaben:** Steht kein Vorhaben an, legt der Projektleiter die übrigen Einträge mit `erforderlich` vor, danach die mit `gewünscht`.
+
+Während Phase 4 wird kein Eintrag in ein laufendes Arbeitspaket aufgenommen, außer über den Rückweg in Phase 1 bei `dringend`.
 
 ## Übergabedokumente
 
@@ -463,6 +483,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-25 | Abschnitt [Vorgemerkte Anforderungen](#vorgemerkte-anforderungen): Liste je Bereich mit Prioritäten `dringend`, `erforderlich`, `gewünscht`, Eintragen durch alle Rollen, Prüfung beim Eintrag, in Phase 1, in Phase 3 und ohne laufendes Vorhaben. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-23 | Prototyp nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | Phase 2: Mängel aus der Abnahme einer umgesetzten Oberfläche ohne neuen Prototyp direkt in der Software beheben. Anlass: Abnahme `backtest/wp02`, Prototyp der Ansicht „Datenbestand“. Entscheidung des Auftraggebers im Chat am 2026-10-23. |
 | 2026-10-23 | Runner: Ein neuer Lauf bricht einen laufenden oder wartenden ab (`cancel-in-progress: true` in `.github/workflows/sync-repo.yml`), damit ein Lauf, den der Runner nicht annimmt, die folgenden nicht blockiert. |
