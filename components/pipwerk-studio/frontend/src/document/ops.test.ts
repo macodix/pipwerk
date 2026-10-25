@@ -7,6 +7,9 @@ import { newElement, newStrategy, uniqueDisplayName, withOrderDefaults } from '.
 import {
   addElement,
   addInput,
+  changeInput,
+  closeGapAfterRemoval,
+  sameInput,
   connect,
   createSection,
   setFirstUse,
@@ -302,6 +305,46 @@ describe('assignments, names and strategy parameters', () => {
     expect(document.elements.find((element) => element.id === doIt)?.inputs).toEqual([]);
   });
 
+  it('keeps the inputs of a method with other arguments apart, and removes only the one that is meant', () => {
+    let document = inventedStrategy();
+    const doIt = byName(document, 'Tun');
+    const three = { instance: 'pegel', property: 'mittel', kind: 'method', arguments: [3] } as const;
+    document = addInput(document, doIt, three);
+    document = addInput(document, doIt, { ...three, arguments: [7] }, true);
+    document = addInput(document, doIt, { instance: 'pegel', property: 'mittel' });
+    const inputs = () => document.elements.find((element) => element.id === doIt)?.inputs;
+    expect(inputs()).toEqual([
+      { instance: 'pegel', property: 'mittel', kind: 'method', arguments: [3], refresh: false },
+      { instance: 'pegel', property: 'mittel', kind: 'method', arguments: [7], refresh: true },
+      { instance: 'pegel', property: 'mittel', kind: 'property', arguments: [], refresh: false },
+    ]);
+
+    document = removeInput(document, doIt, { ...three, arguments: [7] });
+    expect(inputs()?.map((input) => [input.kind, input.arguments])).toEqual([['method', [3]], ['property', []]]);
+    // the name is compared without regard to case
+    expect(sameInput({ instance: 'Pegel', property: 'Mittel', kind: 'method', arguments: [3] }, three)).toBe(true);
+    expect(sameInput({ ...three, arguments: [4] }, three)).toBe(false);
+  });
+
+  it('changes the value an input names or its "Aktualisieren" in its place, and adds the input if it is not there', () => {
+    let document = inventedStrategy();
+    const doIt = byName(document, 'Tun');
+    document = addInput(document, doIt, { instance: 'messer', property: 'stand' });
+    document = addInput(document, doIt, { instance: 'pegel', property: 'stand' });
+    const stand = { instance: 'messer', property: 'stand' };
+    const hoch = { instance: 'messer', property: 'hoch' };
+
+    document = changeInput(document, doIt, stand, hoch, true);
+    expect(document.elements.find((element) => element.id === doIt)?.inputs.map((input) => [input.property, input.refresh])).toEqual([['hoch', true], ['stand', false]]);
+
+    // another input with the same value is replaced, not doubled
+    document = changeInput(document, doIt, { instance: 'pegel', property: 'stand' }, hoch, false);
+    expect(document.elements.find((element) => element.id === doIt)?.inputs).toEqual([{ ...hoch, kind: 'property', arguments: [], refresh: false }]);
+
+    document = changeInput(document, doIt, stand, { instance: 'messer', property: 'tief' }, true);
+    expect(document.elements.find((element) => element.id === doIt)?.inputs.map((input) => input.property)).toEqual(['hoch', 'tief']);
+  });
+
   it('leaves its argument unchanged', () => {
     const document = inventedStrategy();
     const before = JSON.stringify(document);
@@ -361,5 +404,31 @@ describe('the strategy "EMA-Trendfolge" and the operations', () => {
     const changed = removeElement(document, real, EMA_ELEMENT_IDS.newStop);
 
     expect(changed.connections.some((connection) => connection.source === EMA_ELEMENT_IDS.crossAgainst && connection.output === 'falsch' && connection.target === EMA_ELEMENT_IDS.improved)).toBe(true);
+  });
+
+  it('closes the gap in the strategy the backend returned after it removed a step, like removing it here', () => {
+    const document = parseStrategyDocument(emaTrendfolge());
+    const real = testTypes();
+    // the backend removes the element and every connection of it, but does not join its neighbours
+    const withoutIt: StrategyDocument = {
+      ...document,
+      elements: document.elements.filter((element) => element.id !== EMA_ELEMENT_IDS.newStop),
+      connections: document.connections.filter((connection) => connection.source !== EMA_ELEMENT_IDS.newStop && connection.target !== EMA_ELEMENT_IDS.newStop),
+    };
+
+    const closed = closeGapAfterRemoval(document, withoutIt, real, EMA_ELEMENT_IDS.newStop);
+
+    const expected = removeElement(document, real, EMA_ELEMENT_IDS.newStop);
+    const ends = (doc: StrategyDocument) => doc.connections.map(({ source, output, target }) => `${source}/${output}/${target}`).sort();
+    expect(ends(closed)).toEqual(ends(expected));
+    expect(closed.elements).toEqual(expected.elements);
+  });
+
+  it('closes no gap behind a step with a management or with other than one way in and one way out', () => {
+    const document = parseStrategyDocument(emaTrendfolge());
+    const real = testTypes();
+    const withoutOrder: StrategyDocument = { ...document, elements: document.elements.filter((element) => element.id !== EMA_ELEMENT_IDS.order) };
+    expect(closeGapAfterRemoval(document, withoutOrder, real, EMA_ELEMENT_IDS.order)).toBe(withoutOrder);
+    expect(closeGapAfterRemoval(document, withoutOrder, real, 'not-an-element')).toBe(withoutOrder);
   });
 });

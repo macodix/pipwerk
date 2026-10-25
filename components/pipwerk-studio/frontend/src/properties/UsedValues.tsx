@@ -41,7 +41,10 @@ function ArgumentField({
         <NumberInput
           value={typeof value === 'number' ? value : ''}
           onChange={(typed) => {
-            onChange(typed === '' ? defaultArgument(argument) : typed);
+            // an emptied field keeps the value until a number is typed
+            if (typed !== '') {
+              onChange(typed);
+            }
           }}
           ariaLabel={label}
           testid={testid}

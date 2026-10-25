@@ -8,6 +8,7 @@ import {
   parseFindings,
   parseObjectList,
   requestExpressions,
+  requestRemoval,
 } from './objects';
 
 afterEach(() => {
@@ -98,6 +99,69 @@ describe('identifiers and expressions (specification 3.3, 3.4, E2)', () => {
       ['ema20', 'wert'],
       ['ema20', 'wert'],
     ]);
+  });
+
+  it('reads the result of a method as a name with `call` whose children are the arguments, and the methods of a visible name', async () => {
+    const call = { kind: 'name', path: ['pegel', 'mittel'], value: null, operator: null, direction: null, call: true, children: [{ kind: 'literal', value: 3, datatype: 'integer', call: false, children: [] }] };
+    const names = [
+      {
+        display: 'Pegel',
+        path: ['pegel'],
+        kind: 'instance',
+        datatype: null,
+        properties: [],
+        methods: [
+          {
+            key: 'mittel',
+            label: { de: 'Mittel', en: 'Average' },
+            datatype: 'number',
+            explanation: { de: 'Der Mittelwert.', en: 'The mean.' },
+            choices: [],
+            previous_value: true,
+            arguments: [
+              { key: 'anzahl', label: { de: 'Anzahl', en: 'Count' }, datatype: 'integer', required: true, default: null, explanation: { de: 'Wie viele.', en: 'How many.' }, choices: [] },
+              { key: 'gewicht', label: { de: 'Gewicht', en: 'Weight' }, datatype: 'number', required: false, default: 1, explanation: null, choices: [] },
+            ],
+          },
+        ],
+        properties_truncated: false,
+        contents: [],
+      },
+    ];
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve(new Response(JSON.stringify({ items: [{ stored: 'a', display: 'a', sentence: 's', blocks: call, names }] }), { status: 200 })),
+    );
+
+    const [answer] = await requestExpressions(newStrategy('S'), 'de', [{ pointer: '/x', stored: 'a' }]);
+
+    expect(answer?.blocks).toEqual({ kind: 'name', path: ['pegel', 'mittel'], call: true, children: [{ kind: 'literal', value: 3, datatype: 'integer' }] });
+    const method = answer?.names[0]?.methods[0];
+    expect(method).toMatchObject({ key: 'mittel', datatype: 'number', previousValue: true });
+    expect(method?.arguments.map((argument) => [argument.key, argument.required, argument.default, argument.explanation?.de ?? null])).toEqual([
+      ['anzahl', true, null, 'Wie viele.'],
+      ['gewicht', false, 1, null],
+    ]);
+  });
+
+  it('asks who uses a thing before it is removed, and reads the strategy without it', async () => {
+    const calls: { url: string; body: unknown }[] = [];
+    const document = newStrategy('S');
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init?.body)) });
+      const apply = (JSON.parse(String(init?.body)) as { apply: boolean }).apply;
+      return Promise.resolve(
+        new Response(JSON.stringify({ used_by: ['e1', 'e2'], used_by_rules: ['regel'], removed: apply ? ['e0'] : [], document: apply ? document : null }), { status: 200 }),
+      );
+    });
+
+    const asked = await requestRemoval(document, 'element', 'e0', false);
+    const done = await requestRemoval(document, 'strategy_parameter', 'p', true);
+
+    expect(asked).toEqual({ usedBy: ['e1', 'e2'], usedByRules: ['regel'], removed: [], document: null });
+    expect(done.removed).toEqual(['e0']);
+    expect(done.document?.name).toBe('S');
+    expect(calls.map((call) => call.url)).toEqual(['/api/v1/removals', '/api/v1/removals']);
+    expect(calls[1]?.body).toEqual({ document, kind: 'strategy_parameter', target: 'p', apply: true });
   });
 
   it('splits more than the allowed number of expressions into several requests', async () => {
