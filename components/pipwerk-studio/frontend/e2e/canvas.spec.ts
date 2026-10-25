@@ -183,16 +183,17 @@ test('a value of an object is connected with an element by dragging a line and w
   await dragBy(page, row, targetBox.x + targetBox.width / 2 - (rowBox.x + rowBox.width / 2), targetBox.y + 30 - (rowBox.y + rowBox.height / 2));
 
   await target.click({ position: { x: 40, y: 14 } });
-  const chips = page.getByTestId('input-chip');
-  await expect(chips).toHaveCount(1);
-  await expect(chips.first()).toContainText('EMA50');
-  await expect(chips.first()).toContainText('Wert');
+  const ema50 = page.locator('[data-testid="used-group"][data-instance="ema50"] [data-testid="used-row"]');
+  await expect(ema50).toHaveCount(1);
+  await expect(ema50.first()).toContainText('verbunden');
 
-  // the second way: the choice in the properties view
-  await page.getByTestId('input-add').selectOption({ label: 'ATR14 › Wert' });
-  await expect(chips).toHaveCount(2);
-  await chips.first().getByRole('button').click();
-  await expect(chips).toHaveCount(1);
+  // the second way: the choice of a further value in the properties view of the element
+  await page.getByTestId('used-add-object').selectOption({ label: 'ATR14' });
+  await page.getByTestId('used-add-value').selectOption({ label: 'Wert' });
+  await page.getByTestId('used-add-button').click();
+  await expect(page.locator('[data-testid="used-group"][data-instance="atr14"] [data-testid="used-row"]')).toHaveCount(1);
+  await ema50.first().getByRole('button', { name: 'Verbindung entfernen' }).click();
+  await expect(ema50).toHaveCount(0);
 });
 
 test('the switch "Weitere Verwendungen" shows the further uses for all, for the selection only, or not at all; the line to the first use stays; the legend explains them', async ({ page, api }) => {

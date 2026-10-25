@@ -78,15 +78,15 @@ test('renaming shows the new name everywhere at once; removing a connected objec
   await setCalculation(page, { calc: [{ pick: 'EMA 20 › Wert' }, '*', { num: 2 }] });
   const sentence = exprRoot(page).getByTestId('expr-sentence');
   await expect(sentence).toContainText('EMA 20');
-  await expect(props(page).getByTestId('input-chip')).toHaveCount(1);
+  await expect(props(page).getByTestId('used-row')).toHaveCount(1);
 
-  // rename without a question: the sentence, the chip of the input and the card show the new name
+  // rename without a question: the sentence, the group of "Verwendete Werte" and the card show the new name
   await select(page, 'EMA 20');
   await page.getByTestId('element-name').fill('Schnelle EMA');
   await select(page, 'Doppelt');
   await expect(sentence).toContainText('Schnelle EMA');
   await expect(sentence).not.toContainText('EMA 20');
-  await expect(props(page).getByTestId('input-chip').first()).toContainText('Schnelle EMA');
+  await expect(props(page).getByTestId('used-group').first()).toContainText('Schnelle EMA');
 
   // remove: the question lists the step that uses the object
   await select(page, 'Schnelle EMA');
@@ -107,7 +107,7 @@ test('renaming shows the new name everywhere at once; removing a connected objec
 
   // the step that used it has an empty place, no input and no line
   await select(page, 'Doppelt');
-  await expect(props(page).getByTestId('input-chip')).toHaveCount(0);
+  await expect(props(page).getByTestId('used-row')).toHaveCount(0);
   await expect(exprRoot(page).getByTestId('calc-root-select')).toBeVisible();
   await expect(exprRoot(page).locator('.vb-inner.calc .vb').first().locator(':scope > .select select')).toHaveValue('');
   await expect(exprRoot(page).getByTestId('expr-sentence')).not.toContainText('Schnelle EMA');

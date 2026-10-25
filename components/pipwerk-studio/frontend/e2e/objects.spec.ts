@@ -92,9 +92,8 @@ test('a value is connected by clicking its row and then an element; the first li
   await node(page, 'StopLoss').click({ position: { x: 40, y: 14 } });
 
   await expect(page.getByTestId('armed-banner')).toHaveCount(0);
-  const chips = page.getByTestId('input-chip');
-  await expect(chips).toHaveCount(1);
-  await expect(chips.first()).toContainText('EMA50');
+  const values = page.locator('[data-testid="used-group"][data-instance="ema50"] [data-testid="used-row"]');
+  await expect(values).toHaveCount(1);
   await expect(page.getByTestId('status-pill')).toContainText('ungespeichert');
   // the line to "Kreuzen" is still the first use; the line to "StopLoss" is a further use
   await page.getByTestId('wires-all').click();
@@ -131,7 +130,7 @@ test('an element that cannot take the object says so, with a click and with a li
   await expect(node(page, 'Kreuzen')).not.toHaveAttribute('data-accepts', /.+/);
   await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
   await node(page, 'Kreuzen').click({ position: { x: 40, y: 14 } });
-  await expect(page.getByTestId('input-chip')).toHaveCount(0);
+  await expect(page.locator('[data-testid="used-group"][data-instance="atr14"]')).toHaveCount(0);
 });
 
 test('a new object that no element uses lies beside the flow, covers nothing, and is connected by its first line', async ({ page, api }) => {

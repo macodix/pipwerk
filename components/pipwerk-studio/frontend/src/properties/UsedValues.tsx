@@ -188,7 +188,9 @@ function UsedRowView({ element, group, row }: { element: ElementDocument; group:
   const current = group.choices.find((choice) => choice.kind === row.member.kind && choice.id.toLowerCase() === row.member.name.toLowerCase());
   const from: InputRef = { instance: group.instance, property: row.member.name, kind: row.member.kind, arguments: row.member.arguments };
   const change = (to: InputRef, refresh: boolean): void => {
-    void actions.changeUsedValue(element.id, from, row.input, to, refresh, row.expression || row.rule);
+    // the expressions of the element and its rules are asked for in any case: the backend knows which of them name the
+    // value, and the report of the use may not have arrived yet (an expression and an input name the same value)
+    void actions.changeUsedValue(element.id, from, row.input, to, refresh, true);
   };
   const usedIn = [
     row.input ? t('used.inInput') : null,
