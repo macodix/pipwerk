@@ -13,8 +13,11 @@ import {
   hasEmptyPlace,
   ifBlock,
   instanceReferences,
+  isMember,
   literalBlock,
   logicBlock,
+  mapBlocks,
+  methodBlock,
   nameBlock,
   namesIn,
   numberBlock,
@@ -36,11 +39,29 @@ describe('the tree of blocks', () => {
   it('names the instance and the property an expression addresses', () => {
     const tree = crossingBlock('any', nameBlock(['ema20', 'wert']), nameBlock(['ema50', 'wert']));
     expect(instanceReferences(tree)).toEqual([
-      { instance: 'ema20', property: 'wert' },
-      { instance: 'ema50', property: 'wert' },
+      { instance: 'ema20', property: 'wert', kind: 'property', arguments: [] },
+      { instance: 'ema50', property: 'wert', kind: 'property', arguments: [] },
     ]);
     expect(instanceReferences(null)).toEqual([]);
     expect(instanceReferences(nameBlock(['risikogrenze']))).toEqual([]);
+  });
+
+  it('names a method with the fixed values of its arguments, and none if an argument is no fixed value', () => {
+    const fixed = comparisonBlock('>', methodBlock(['pegel', 'mittel'], [numberBlock(3), literalBlock('x', 'text')]), numberBlock(1));
+    expect(instanceReferences(fixed)).toEqual([{ instance: 'pegel', property: 'mittel', kind: 'method', arguments: [3, 'x'] }]);
+    const open = methodBlock(['pegel', 'mittel'], [nameBlock(['Strategie', 'n'])]);
+    expect(instanceReferences(open)).toEqual(
+      expect.arrayContaining([{ instance: 'pegel', property: 'mittel', kind: 'method', arguments: null }]),
+    );
+  });
+
+  it('replaces the blocks that name a value and leaves the others', () => {
+    const tree = comparisonBlock('>', functionBlock('PREVIOUS', [nameBlock(['Pegel', 'Stand'])]), nameBlock(['pegel', 'stand_alt']));
+    const next = mapBlocks(tree, (current) => (isMember(current, 'pegel', 'stand', 'property') ? nameBlock(['pegel', 'mittel']) : undefined));
+    expect(next.children?.[0]).toEqual(functionBlock('PREVIOUS', [nameBlock(['pegel', 'mittel'])]));
+    expect(next.children?.[1]).toEqual(nameBlock(['pegel', 'stand_alt']));
+    expect(isMember(methodBlock(['pegel', 'stand'], []), 'pegel', 'stand', 'property')).toBe(false);
+    expect(isMember(methodBlock(['pegel', 'stand'], []), 'pegel', 'stand', 'method')).toBe(true);
   });
 
   it('puts an empty place where a removed name stood and leaves the rest alone', () => {

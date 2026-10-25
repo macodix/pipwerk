@@ -288,6 +288,11 @@ export function App() {
     () => ({ studio, types, expressions, findings, describe, uses }),
     [describe, expressions, findings, studio, types, uses],
   );
+  // the controller needs to know whether an element already uses an instance when an input is added (first use)
+  const setUsage = studio.actions.setUsage;
+  useEffect(() => {
+    setUsage(uses);
+  }, [setUsage, uses]);
 
   useEffect(() => {
     document.documentElement.lang = language;

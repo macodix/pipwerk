@@ -17,6 +17,31 @@ export function nameBlock(path: readonly string[]): Block {
   return { kind: 'name', path: [...path] };
 }
 
+/** The result of a method of an instance: the name with `call`, its children are the blocks of the arguments. */
+export function methodBlock(path: readonly string[], args: readonly Block[]): Block {
+  return { kind: 'name', path: [...path], call: true, children: [...args] };
+}
+
+/** The block of a fixed value an argument or an input carries. */
+export function argumentBlock(value: string | number | boolean): Block {
+  if (typeof value === 'number') {
+    return numberBlock(value);
+  }
+  return typeof value === 'boolean' ? literalBlock(value, 'boolean') : literalBlock(value, 'text');
+}
+
+/** The fixed values of the arguments of a call if every argument is a fixed value; `null` if one is an expression or empty. */
+export function fixedArguments(block: Block): (string | number | boolean)[] | null {
+  const values: (string | number | boolean)[] = [];
+  for (const part of block.children ?? []) {
+    if (part.kind !== 'literal' || part.value === undefined) {
+      return null;
+    }
+    values.push(part.value);
+  }
+  return values;
+}
+
 export function literalBlock(value: string | number | boolean, datatype: LiteralType): Block {
   return { kind: 'literal', value, datatype };
 }
@@ -101,19 +126,59 @@ export function namesIn(block: Block): string[][] {
   return found;
 }
 
-/** The properties of instances an expression addresses: the first two identifiers of every name (specification 3.3). */
-export function instanceReferences(block: Block | null): { instance: string; property: string }[] {
+/** A property or method of an instance that an expression addresses. `arguments` is `null` if an argument is no fixed value. */
+export type MemberReference = { instance: string; property: string; kind: 'property' | 'method'; arguments: (string | number | boolean)[] | null };
+
+/**
+ * The properties and methods of instances an expression addresses: the first two identifiers of every name (specification
+ * 3.3); a name with `call` is a method, its fixed arguments are the arguments of the reference.
+ */
+export function instanceReferences(block: Block | null): MemberReference[] {
   if (block === null) {
     return [];
   }
-  const found: { instance: string; property: string }[] = [];
-  for (const path of namesIn(block)) {
-    const [instance, property] = path;
-    if (instance !== undefined && property !== undefined) {
-      found.push({ instance, property });
+  const found: MemberReference[] = [];
+  const visit = (current: Block): void => {
+    if (current.kind === 'name' && current.path !== undefined) {
+      const [instance, property] = current.path;
+      if (instance !== undefined && property !== undefined) {
+        found.push(
+          current.call === true
+            ? { instance, property, kind: 'method', arguments: fixedArguments(current) }
+            : { instance, property, kind: 'property', arguments: [] },
+        );
+      }
     }
-  }
+    for (const part of current.children ?? []) {
+      visit(part);
+    }
+  };
+  visit(block);
   return found;
+}
+
+/** The tree with every block for which `replace` answers a block replaced by it (the children of a replaced block stay out of it). */
+export function mapBlocks(block: Block, replace: (current: Block) => Block | undefined): Block {
+  const replaced = replace(block);
+  if (replaced !== undefined) {
+    return replaced;
+  }
+  if (block.children === undefined) {
+    return block;
+  }
+  return { ...block, children: block.children.map((part) => mapBlocks(part, replace)) };
+}
+
+/** Whether the block names the property or method of the instance (without regard to case). */
+export function isMember(block: Block, instance: string, name: string, kind: 'property' | 'method'): boolean {
+  const path = block.path ?? [];
+  return (
+    block.kind === 'name' &&
+    path.length === 2 &&
+    path[0]?.toLowerCase() === instance.toLowerCase() &&
+    path[1]?.toLowerCase() === name.toLowerCase() &&
+    (block.call === true) === (kind === 'method')
+  );
 }
 
 /** The tree with every name for which `matches` is true replaced by an empty place (specification 3.4, "Entfernen"). */

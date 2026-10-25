@@ -130,9 +130,11 @@ describe('a document with inputs of every kind', () => {
     clickNode(nodeByName('Tun'));
     await screen.findByTestId('props-element');
 
-    const chips = within(screen.getByTestId('sec-inputs')).getAllByTestId('input-chip');
-    expect(chips).toHaveLength(4);
-    await user.click(within(chips[0] as HTMLElement).getByRole('button'));
+    // the two entries of "messer.stand" are one value; the two methods with other arguments are two values
+    const rows = within(screen.getByTestId('sec-used')).getAllByTestId('used-row');
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.getAttribute('data-kind'))).toEqual(['property', 'method', 'method']);
+    await user.click(within(rows[0] as HTMLElement).getByTestId('used-messer-stand-remove'));
     await menu(user, 'save');
 
     await waitFor(() => {

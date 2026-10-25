@@ -2564,3 +2564,86 @@ code {
     padding: 8px 14px;
   }
 }
+
+/* "Verwendete Werte" and "Element der ersten Verwendung" in the properties view (specification 5.4) */
+.used-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.used-object {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.used-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.used-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.used-row .select {
+  min-width: 0;
+  max-width: 100%;
+}
+.used-fixed {
+  font-weight: 600;
+}
+.used-args {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  flex-basis: 100%;
+}
+.used-arg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.used-arg-label {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.used-where {
+  font-size: 11.5px;
+  flex: 1 1 100%;
+}
+.used-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.used-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.prop-desc {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--muted);
+}
+.prop-args {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}

@@ -125,9 +125,10 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
     }
     emitted.current = nextStored;
     const owner = ownerElement(placeRef.current);
-    studio.actions.edit((latest) => withInputs(setPlaceStored(latest, index, placeRef.current, nextStored), owner, blocks));
+    const context = studio.actions.inputContext();
+    studio.actions.edit((latest) => withInputs(setPlaceStored(latest, index, placeRef.current, nextStored), owner, blocks, context));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studio.actions.edit]);
+  }, [studio.actions.edit, studio.actions.inputContext]);
 
   const setTree = useCallback(
     (tree: Block) => {
