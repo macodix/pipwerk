@@ -47,6 +47,13 @@ for (const size of [{ name: 'notebook', width: 1366, height: 768 }, PHONE]) {
       expect(await labelsOf(choice)).toEqual(expect.arrayContaining(['Letztes Hoch', 'Vorletztes Hoch', 'Letztes Tief', 'Vorletztes Tief']));
       await choice.selectOption({ label: 'Letztes Tief' });
       await expect(used.getByTestId('used-zigzag-letztes_tief-select')).toBeVisible();
+      // the section and its controls stay within the window, also in the narrowest one
+      const box = await used.boundingBox();
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(size.width + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+      await used.getByTestId('used-add-object').scrollIntoViewIfNeeded();
+      const form = await used.getByTestId('used-add').boundingBox();
+      expect((form?.x ?? 0) + (form?.width ?? 0)).toBeLessThanOrEqual(size.width + 1);
       // the expression of the element follows the choice
       await expect(exprRoot(page).getByTestId('expr-sentence')).toContainText('Letztes Tief');
 
@@ -58,7 +65,7 @@ for (const size of [{ name: 'notebook', width: 1366, height: 768 }, PHONE]) {
       await expect(refresh).toBeChecked();
 
       await clickMenu(page, 'save');
-      await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+      await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
       const stored = (await storedStrategy(page, name)) as unknown as Stored;
       const step = stored.elements.find((element) => element.name === 'Hoch');
       expect(step?.parameters.ausdruck?.value).toBe('zigzag.letztes_tief');
@@ -91,7 +98,7 @@ test('the element of the first use is named in the properties view of the object
     await expect(props(page).getByTestId('used-row')).toHaveCount(1);
 
     await clickMenu(page, 'save');
-    await expect(page.getByTestId('status-pill')).toContainText('gespeichert');
+    await expect(page.getByTestId('status-pill')).not.toContainText('ungespeichert');
     const stored = (await storedStrategy(page, name)) as unknown as Stored;
     expect(stored.elements.find((element) => element.instance?.name === 'Zacke')?.instance?.first_use).toBe(stored.elements.find((element) => element.name === 'Rechnung')?.id);
   } finally {

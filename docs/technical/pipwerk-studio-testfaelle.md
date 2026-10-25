@@ -70,7 +70,7 @@ Klicken Sie nacheinander die Einträge in der Gruppe „Indikatoren“ an. Jedes
 | 4 | Berechnung | Stop-Loss | Ausdruck: Wenn *Richtung › Ergebnis* gleich dem Text `buy`, dann *Kerze › Schluss* minus (*Stop-Abstand* mal *ATR 14 › Wert*), sonst *Kerze › Schluss* plus (*Stop-Abstand* mal *ATR 14 › Wert*) |
 | 5 | Order aufgeben | – | Ordertyp: Fester Wert „MarketOrder“; Richtung: Bindungsart „Ausdruck“, Wert *Richtung › Ergebnis*; Stop-Loss: Bindungsart „Ausdruck“, Wert *Stop-Loss › Ergebnis* |
 
-Jeder Wert aus einer Liste der Bausteine legt den Eingang des Elements an: Wer *EMA 20 › Wert* wählt, bekommt den Eingang *EMA 20 › Wert* ohne weiteren Schritt.
+Jeder Wert aus einer Liste der Bausteine legt den Eingang des Elements an: Wer *EMA 20 › Wert* wählt, bekommt den Eingang *EMA 20 › Wert* ohne weiteren Schritt. Verwendete noch kein Element das Objekt, wird das Element, in dem der Wert gewählt wird, das Element der ersten Verwendung des Objekts: Bei Schritt 2 sind das „Kreuzen“ für *EMA 20* und *EMA 50*, bei Schritt 4 „Stop-Loss“ für *ATR 14*. In der Eigenschaftenansicht des Elements stehen die Werte unter „Verwendete Werte“.
 
 Beim Schritt 5 gehört die Regel „Mindestvolumen“ zum Element: In der Eigenschaftenansicht von „Order aufgeben“ im Abschnitt „Regeln dieses Elements“ in der Liste „Regel oder Regelwerk hinzufügen …“ die Wahl „eigene Regel“, Name `Mindestvolumen`, Ausdruck: Art „Vergleich“, *Order › Volumen* ist größer oder gleich *Order › Instrument › Mindestvolumen*.
 
@@ -86,6 +86,8 @@ Klicken Sie auf den Rahmen „Verwaltung · Order aufgeben“ (auf seinen Titel)
 | 7 | Bedingung | Order ausgeführt | Vergleich *Order › Status* gleich dem Wert „ausgeführt“ (aus der Liste der Werte der Eigenschaft) |
 | 8 | Bedingung | Kreuzen gegen die Position | Art „Eine gilt (oder)“ mit zwei Bedingungen. Erste: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „buy“ und der Kreuzung *EMA 20 › Wert* kreuzt *EMA 50 › Wert* nach unten. Zweite: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „sell“ und der Kreuzung *EMA 20 › Wert* kreuzt *EMA 50 › Wert* nach oben |
 | 9 | Position schließen | – | – |
+
+Die Verwaltung hat eigene Auslöser. Die Objekte des Hauptablaufs behalten darin den Stand, den sie beim Aufgeben der Order hatten; die Verwaltung braucht aber die aktuellen Werte. Deshalb schalten Sie bei Schritt 8 unter „Verwendete Werte“ bei *EMA 20* und bei *EMA 50* den Schalter „Aktualisieren“ ein (nach der Wahl der Werte in den Bausteinen), und bei Schritt 10 bei *ATR 14*.
 
 Der Ausgang „wahr“ der Bedingung 8 führt zu „Position schließen“. Für den Ausgang „falsch“ wählen Sie die Bedingung 8 (Klick auf den Schritt) und fügen den nächsten Eintrag ein; er hängt am nächsten freien Ausgang, das ist „falsch“.
 

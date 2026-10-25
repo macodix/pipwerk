@@ -153,7 +153,11 @@ export function canonical(document: Json): Json {
         if (DROPPED.has(name) || name === 'id') {
           continue;
         }
-        result[name] = name === 'source' || name === 'target' || name === 'management_of' || name === 'flow' ? mapId(inner) : copy(inner, name, value);
+        // `first_use` names the element of the first use of an instance: an identifier like the others
+        result[name] =
+          name === 'source' || name === 'target' || name === 'management_of' || name === 'flow' || name === 'first_use'
+            ? mapId(inner)
+            : copy(inner, name, value);
       }
       return result;
     }
