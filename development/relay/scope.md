@@ -53,3 +53,5 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-24: Plan nach dem Einwand geprüft und bestanden in [plan-2.md](reviews/plan-2.md). Präsentation [plan-2.html](presentations/plan-2.html) zur Bestätigung durch den Auftraggeber.
 
 2026-10-24: Präsentation [plan-2.html](presentations/plan-2.html) bestätigt vom Auftraggeber im Chat am 24. Oktober 2026. Phase 3 abgeschlossen. `wp01` mit `implement` angestoßen.
+
+2026-10-25: Abnahme `wp01` abgebrochen, nicht abgenommen ([Abnahmebericht](wp01/acceptance/1.md)): Einrichtung und Bedienung für den Anwender nicht annehmbar (M1 bis M7). Spezifikation und Plan mit `specify` überarbeiten, Bedienablauf der Einrichtung zur Bestätigung vorlegen.
