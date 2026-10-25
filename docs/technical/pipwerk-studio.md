@@ -863,7 +863,7 @@ Tests der Bausteine, Regeln, Formelansicht, des Entfernens und des geführten Au
 - `src/api/elementTypes.test.ts`: Name und Erklärung einer mitgelieferten Vorlage kommen aus `template_texts` in beiden Sprachen, ohne Eintrag gilt das Dokument (Auftrag 07, B2); `src/library/libraryModel.test.ts` prüft sie für die Elementbibliothek in Deutsch und Englisch, `src/App.flows.test.tsx` die Farbe und den Tooltip der Befundzahl.
 - `src/wizard/Wizard.test.tsx`: der geführte Aufbau durch alle fünf Schritte legt die Elemente an und speichert nichts, er endet mit „Ohne Assistent weiterarbeiten“; beim Einfügen aus der Bibliothek und bei der Wahl eines Elements wartet er und wird mit „Assistent fortsetzen“ fortgesetzt
 - `src/testing/fakeExpressions.test.ts`: das Backend im Speicher bildet Text aus Bausteinen und Bausteine aus Text, eine Kreuzung als die beiden Vergleiche mit dem früheren Wert
-- `src/testing/compare.test.ts`: der Vergleich mit einem Testfall (`e2e/compare.ts`) ignoriert Kennungen, Namen und Lage, bemerkt aber einen geänderten Ausdruck, einen geänderten Wert und eine fehlende Verbindung; die Eigenschaften der Objekte der Anwendung bleiben im Ausdruck unverändert
+- `src/testing/compare.test.ts`: der Vergleich mit einem Testfall (`e2e/compare.ts`) ignoriert Kennungen, Namen und Lage, bemerkt aber einen geänderten Ausdruck, einen geänderten Wert, eine fehlende Verbindung, ein anderes Element der ersten Verwendung und ein anderes „Aktualisieren“; die Eigenschaften der Objekte der Anwendung bleiben im Ausdruck unverändert
 
 Tests der Eigenschaftenansicht, der Bausteine und des Entfernens (Auftrag 13):
 
