@@ -1,8 +1,9 @@
 """The import directory: listing it and reading a file from it (specification 5.3 and 11).
 
 The import directory is a directory on the computer of the backend that belongs to the user. The
-import reads a chosen file directly there, without upload and without a copy. The backend never
-writes, moves, removes or changes anything in it.
+import reads a chosen file directly there, without upload and without a copy. The import never
+writes, moves, removes or changes anything in it. (Only "Dateien behalten" can create a new file
+there, if the storage directory is the import directory or lies inside it; it replaces nothing.)
 
 A request names a path relative to the import directory. ``resolve`` turns it into the real path
 and refuses it if
@@ -24,7 +25,12 @@ of the standard library; the import directory belongs to the user in the network
 operator controls (specification 11), and the file is only read.
 
 Names that the backend uses for its own intermediate files (``file_keeping.py``) never appear in
-the list and cannot be named.
+the list and cannot be named. This holds in every directory of the list, also if the storage
+directory is the import directory or lies inside it or the other way round (the check is the
+name prefix, which only the backend gives to its intermediate files, so it does not depend on
+where the storage directory is), and also for a link whose target is an intermediate file. A
+kept file that arises inside the import directory is an ordinary file of the list: the backend
+only creates it; it is never changed or removed by the import.
 """
 
 from __future__ import annotations
@@ -154,7 +160,7 @@ def _entry(real: Path, item: os.DirEntry[str]) -> Entry | None:
         status = item.stat(follow_symlinks=False)
         if stat.S_ISLNK(status.st_mode):
             target = Path(item.path).resolve(strict=True)
-            if not target.is_relative_to(real):
+            if not target.is_relative_to(real) or is_temporary_name(target.name):
                 return None
             status = target.stat()
         if stat.S_ISDIR(status.st_mode):

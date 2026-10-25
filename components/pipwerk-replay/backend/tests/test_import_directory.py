@@ -472,14 +472,16 @@ def test_after_an_abort_the_files_up_to_then_are_kept(env: Env) -> None:
     assert env.stored_names() == ["one.json", "two.json"]
 
 
-def test_a_file_of_the_same_name_is_replaced(env: Env) -> None:
+def test_a_file_of_the_same_name_is_not_replaced(env: Env) -> None:
     process = begin(env.client)
     upload_file(env.client, process, "same.json", b"first", keep="true")
 
-    upload_file(env.client, process, "same.json", candles_json(2), keep="true")
+    response = upload_file(env.client, process, "same.json", candles_json(2), keep="true")
 
-    assert (env.storage / "same.json").read_bytes() == candles_json(2)
-    assert env.stored_names() == ["same.json"]
+    assert (env.storage / "same.json").read_bytes() == b"first"
+    assert (env.storage / "same (2).json").read_bytes() == candles_json(2)
+    assert response.json()["kept_as"] == "same (2).json"
+    assert env.stored_names() == ["same (2).json", "same.json"]
 
 
 @pytest.mark.parametrize(
@@ -573,7 +575,7 @@ def test_a_failure_while_writing_removes_the_intermediate_file_at_once(
     def failing(source: Any, target: Any) -> None:
         raise OSError("disk full")
 
-    monkeypatch.setattr("pipwerk_replay.file_keeping.os.replace", failing)
+    monkeypatch.setattr("pipwerk_replay.file_keeping.os.link", failing)
     process = begin(env.client)
 
     response = upload_file(env.client, process, "x.json", candles_json(2), keep="true")

@@ -323,10 +323,26 @@ class FileOutcome(OutModel):
     kept: bool = Field(
         description=(
             "``true`` if the uploaded file was written to the storage directory (the request "
-            "asked to keep it, specification 5.6); always ``false`` for a file of the import "
-            "directory, which is never copied."
+            "asked to keep it, specification 5.6), also if the file was refused; exactly then "
+            "``kept_as`` is set. Always ``false`` for a file of the import directory, which is "
+            "never copied."
         )
     )
+    kept_as: str | None = Field(
+        description=(
+            "The name under which the file was kept in the storage directory (only the file "
+            "name, without a directory), ``null`` if it was not kept. A kept file never replaces "
+            "an existing file: if the name is taken, the name gets the smallest free number "
+            "from 2 on in brackets before the extension (``EURUSD_M1.csv`` becomes "
+            "``EURUSD_M1 (2).csv``), so ``kept_as`` can differ from ``name``."
+        )
+    )
+
+    @model_validator(mode="after")
+    def _kept_means_a_name(self) -> FileOutcome:
+        if self.kept != (self.kept_as is not None):
+            raise ValueError("kept is true exactly if kept_as is set")
+        return self
 
 
 class EmptyBody(ApiModel):

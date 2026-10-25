@@ -975,7 +975,7 @@
           "market-data"
         ],
         "summary": "Import one file of an import process",
-        "description": "Imports one file of the process, in a transaction of its own (specification 5.3). The body is a ``multipart/form-data`` form with exactly one part ``file`` and: ``broker`` (the same for all files of the process; it also replaces the broker named in a JSON file), ``timezone`` (the same for all CSV files of the process), and optionally ``instrument`` and ``data``. JSON files (JSON format of ``contracts/market-data/v1/``, candles, ticks or instrument data) name instrument and data in their content; a given ``instrument`` replaces the one of the content, a given ``data`` must equal the one of the content. CSV files (export format of MetaTrader 5, candles or ticks) need ``instrument`` and ``data`` (a time unit or ``ticks``) and ``timezone``. Rows of the same time replace those that exist; rows that fail the checks are rejected and named with a reason; a CSV file covers whole days of its time zone. A file that is refused as a whole (wrong format, nothing readable, unknown time zone, missing or unknown data, larger than the limit per file or with more rows than the limit) changes nothing and does not stop the process: the answer (HTTP 200) has ``refused`` true and ``error`` and ``message``. The limit per file is ``max_upload_bytes`` (default 32 MiB) and ``max_rows`` rows (default 500 000); ``message`` names it in the unit of the user. A request whose body is larger than the file limit plus the envelope of the form is answered with HTTP 413 (``FileTooLarge``) before it is read; the client treats it as the refusal ``too_large`` of that file. Each request starts the idle time of the process again. HTTP 404 if the process does not exist (any more), HTTP 422 if the form is wrong or has no or more than one file, HTTP 403 if a web page of another origin sends the form (the header ``Origin`` is not the address of the backend), HTTP 429 if too many files are being imported at the same time.",
+        "description": "Imports one file of the process, in a transaction of its own (specification 5.3). The body is a ``multipart/form-data`` form with exactly one part ``file`` and: ``broker`` (the same for all files of the process; it also replaces the broker named in a JSON file), ``timezone`` (the same for all CSV files of the process), and optionally ``instrument`` and ``data``. JSON files (JSON format of ``contracts/market-data/v1/``, candles, ticks or instrument data) name instrument and data in their content; a given ``instrument`` replaces the one of the content, a given ``data`` must equal the one of the content. CSV files (export format of MetaTrader 5, candles or ticks) need ``instrument`` and ``data`` (a time unit or ``ticks``) and ``timezone``. Rows of the same time replace those that exist; rows that fail the checks are rejected and named with a reason; a CSV file covers whole days of its time zone. A file that is refused as a whole (wrong format, nothing readable, unknown time zone, missing or unknown data, larger than the limit per file or with more rows than the limit) changes nothing and does not stop the process: the answer (HTTP 200) has ``refused`` true and ``error`` and ``message``. The limit per file is ``max_upload_bytes`` (default 32 MiB) and ``max_rows`` rows (default 500 000); ``message`` names it in the unit of the user. A request whose body is larger than the file limit plus the envelope of the form is answered with HTTP 413 (``FileTooLarge``) before it is read; the client treats it as the refusal ``too_large`` of that file. With ``keep`` the file is also written to the storage directory, under the name ``kept_as`` of the answer; it never replaces a file that exists there. Each request starts the idle time of the process again. HTTP 404 if the process does not exist (any more), HTTP 422 if the form is wrong or has no or more than one file, HTTP 403 if a web page of another origin sends the form (the header ``Origin`` is not the address of the backend), HTTP 429 if too many files are being imported at the same time.",
         "operationId": "import_market_data_file",
         "parameters": [
           {
@@ -1024,7 +1024,8 @@
                       },
                       "error": null,
                       "message": null,
-                      "kept": true
+                      "kept": true,
+                      "kept_as": "EURUSD_M1_202401021000_202401021004 (2).json"
                     }
                   },
                   "refused": {
@@ -1035,7 +1036,20 @@
                       "result": null,
                       "error": "json_invalid",
                       "message": "The file is not valid JSON.",
-                      "kept": false
+                      "kept": false,
+                      "kept_as": null
+                    }
+                  },
+                  "refused_and_kept": {
+                    "summary": "A file that was refused and kept",
+                    "value": {
+                      "name": "broken.json",
+                      "refused": true,
+                      "result": null,
+                      "error": "json_invalid",
+                      "message": "The file is not valid JSON.",
+                      "kept": true,
+                      "kept_as": "broken.json"
                     }
                   }
                 }
@@ -1182,7 +1196,7 @@
                       "true",
                       "false"
                     ],
-                    "description": "Optional: ``true`` writes the file unchanged into the storage directory, also if it is refused (specification 5.6); ``false`` or none does not."
+                    "description": "Optional: ``true`` writes the file unchanged into the storage directory, also if it is refused (specification 5.6); ``false`` or none does not. A file that exists there is never replaced: if the name is taken, the kept file gets a number before the extension, and ``kept_as`` of the answer names it."
                   }
                 },
                 "required": [
@@ -1906,7 +1920,8 @@
                       },
                       "error": null,
                       "message": null,
-                      "kept": false
+                      "kept": false,
+                      "kept_as": null
                     }
                   }
                 }
@@ -3694,7 +3709,19 @@
           "kept": {
             "type": "boolean",
             "title": "Kept",
-            "description": "``true`` if the uploaded file was written to the storage directory (the request asked to keep it, specification 5.6); always ``false`` for a file of the import directory, which is never copied."
+            "description": "``true`` if the uploaded file was written to the storage directory (the request asked to keep it, specification 5.6), also if the file was refused; exactly then ``kept_as`` is set. Always ``false`` for a file of the import directory, which is never copied."
+          },
+          "kept_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kept As",
+            "description": "The name under which the file was kept in the storage directory (only the file name, without a directory), ``null`` if it was not kept. A kept file never replaces an existing file: if the name is taken, the name gets the smallest free number from 2 on in brackets before the extension (``EURUSD_M1.csv`` becomes ``EURUSD_M1 (2).csv``), so ``kept_as`` can differ from ``name``."
           }
         },
         "additionalProperties": false,
@@ -3705,7 +3732,8 @@
           "result",
           "error",
           "message",
-          "kept"
+          "kept",
+          "kept_as"
         ],
         "title": "FileOutcome",
         "description": "The result for one file of an import, in the order of the files of the request.\n\nEither ``result`` is set (the file was taken over; single rows may be rejected, see\n``result``) or ``error`` and ``message`` (the whole file is refused and nothing of it was\nchanged). ``refused`` tells which. ``name`` is the name of the file without a directory.\n``message`` is a fixed text that names fields, never content of the file."
