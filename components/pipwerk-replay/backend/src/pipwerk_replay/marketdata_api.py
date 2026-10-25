@@ -233,7 +233,9 @@ def _form_description(
             "enum": list(KEEP_VALUES),
             "description": (
                 "Optional: ``true`` writes the file unchanged into the storage directory, also "
-                "if it is refused (specification 5.6); ``false`` or none does not."
+                "if it is refused (specification 5.6); ``false`` or none does not. A file that "
+                "exists there is never replaced: if the name is taken, the kept file gets a "
+                "number before the extension, and ``kept_as`` of the answer names it."
             ),
         }
         required = [FIELD_BROKER, FIELD_FILE]
@@ -444,7 +446,9 @@ def build_router(service: MarketDataService) -> APIRouter:
             "(default 500 000); ``message`` names it in the unit of the user. A request whose "
             "body is larger than the file limit plus the envelope of the form is answered with "
             "HTTP 413 (``FileTooLarge``) before it is read; the client treats it as the "
-            "refusal ``too_large`` of that file. Each request starts the idle time of the "
+            "refusal ``too_large`` of that file. With ``keep`` the file is also written to the "
+            "storage directory, under the name ``kept_as`` of the answer; it never replaces a "
+            "file that exists there. Each request starts the idle time of the "
             "process again. HTTP 404 if the process does not exist (any more), HTTP 422 if the "
             "form is wrong or has no or more than one file, HTTP 403 if a web page of another "
             "origin sends the form (the header ``Origin`` is not the address of the backend), "
@@ -457,6 +461,10 @@ def build_router(service: MarketDataService) -> APIRouter:
                 "content": json_examples(
                     imported=("A file that was taken over", ex.FILE_IMPORTED),
                     refused=("A file that was refused", ex.FILE_REFUSED),
+                    refused_and_kept=(
+                        "A file that was refused and kept",
+                        ex.FILE_REFUSED_AND_KEPT,
+                    ),
                 ),
             },
             413: {

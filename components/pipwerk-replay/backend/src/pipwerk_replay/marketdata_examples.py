@@ -105,6 +105,7 @@ FILE_IMPORTED = {
     "error": None,
     "message": None,
     "kept": True,
+    "kept_as": "EURUSD_M1_202401021000_202401021004 (2).json",
 }
 FILE_REFUSED = {
     "name": "broken.json",
@@ -113,7 +114,10 @@ FILE_REFUSED = {
     "error": "json_invalid",
     "message": "The file is not valid JSON.",
     "kept": False,
+    "kept_as": None,
 }
+#: A refused file that was kept: the name was free, so ``kept_as`` equals ``name``.
+FILE_REFUSED_AND_KEPT = {**FILE_REFUSED, "kept": True, "kept_as": "broken.json"}
 
 IMPORT_DIRECTORY_PAGE = {
     "items": [
@@ -130,7 +134,7 @@ IMPORT_DIRECTORY_PAGE = {
     "limit": 1000,
 }
 #: The same file, taken over from the import directory: never kept.
-FILE_IMPORTED_FROM_DIRECTORY = {**FILE_IMPORTED, "kept": False}
+FILE_IMPORTED_FROM_DIRECTORY = {**FILE_IMPORTED, "kept": False, "kept_as": None}
 FILE_TOO_LARGE = {
     "detail": "The file is larger than the limit of 32 MiB per file.",
     "code": "too_large",

@@ -136,15 +136,17 @@ def detect_format(name: str, content: bytes) -> FileFormat:
 NOT_READABLE_TEXT = "The file could not be read."
 
 
-def _outcome(found: LibraryOutcome, *, kept: bool) -> models.FileOutcome:
-    """The answer for a file from the outcome of the data stock and whether it was kept."""
+def _outcome(found: LibraryOutcome, *, kept_as: str | None) -> models.FileOutcome:
+    """The answer for a file from the outcome of the data stock and the name under which it was
+    kept (``None`` if it was not kept)."""
     return models.FileOutcome(
         name=found.name,
         refused=found.refused,
         result=None if found.result is None else models.ImportResult.model_validate(found.result),
         error=found.error,
         message=found.message,
-        kept=kept,
+        kept=kept_as is not None,
+        kept_as=kept_as,
     )
 
 
@@ -157,6 +159,7 @@ def _not_readable(name: str) -> models.FileOutcome:
         error=FileErrorCode.NOT_READABLE,
         message=NOT_READABLE_TEXT,
         kept=False,
+        kept_as=None,
     )
 
 
@@ -220,7 +223,7 @@ class MarketDataService:
             # A broker that left the data stock without the knowledge of this service is not
             # chosen again by importing it (specification 5.5).
             self._forget_missing_broker()
-            kept = self._keep(form)
+            kept_as = self._keep(form)
             batch = self._store.import_files(
                 [
                     ImportFile(
@@ -235,23 +238,24 @@ class MarketDataService:
                 timezone=form.timezone,
                 limits=self._limits,
             )
-        outcome = _outcome(batch.files[0], kept=kept)
+        outcome = _outcome(batch.files[0], kept_as=kept_as)
         self._processes.counted(process_id, imported=not outcome.refused)
         return outcome
 
-    def _keep(self, form: ImportForm) -> bool:
+    def _keep(self, form: ImportForm) -> str | None:
         """Write the uploaded file into the storage directory if the request asks for it
-        (specification 5.6), before it is imported, so that also a refused file is kept.
+        (specification 5.6), before it is imported, so that also a refused file is kept. Returns
+        the name under which it was kept (a number is added if the name was taken; nothing
+        existing is replaced), ``None`` if the request does not ask for it.
 
         ``StorageDirectoryUnavailableError`` if no storage directory can be determined,
         ``KeepFailedError`` if the file cannot be written; the file is not imported then."""
         if not form.keep:
-            return False
+            return None
         directory = self._stored.get_directory("storage").path
         if directory is None:
             raise StorageDirectoryUnavailableError
-        keep_file(directory, form.file.name, form.file.content)
-        return True
+        return keep_file(directory, form.file.name, form.file.content)
 
     # ----- import directory (specification 5.3) -----------------------------------------------
 
@@ -310,7 +314,7 @@ class MarketDataService:
                     timezone=request.timezone or None,
                     limits=self._limits,
                 )
-                outcome = _outcome(batch.files[0], kept=False)
+                outcome = _outcome(batch.files[0], kept_as=None)
         self._processes.counted(process_id, imported=not outcome.refused)
         return outcome
 

@@ -160,6 +160,7 @@ def test_a_refused_file_does_not_stop_the_others(client: TestClient) -> None:
         "error": "json_invalid",
         "message": broken["message"],
         "kept": False,
+        "kept_as": None,
     }
     assert isinstance(broken["message"], str)
     assert (second["refused"], second["result"]["accepted"]) == (False, 3)
