@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { add, addOwnRule, addRiskRule, bindExpr, bindFixed, bindParam, createParam, newStrategyFromScratch, select, setCalculation, setCondition, type C, type V } from './builder';
+import { add, addOwnRule, addRiskRule, bindExpr, bindFixed, bindParam, createParam, newStrategyFromScratch, refreshValue, select, setCalculation, setCondition, type C, type V } from './builder';
 import { canonical, namesOf, removeStored, storedStrategy, testCase } from './compare';
 import { clickMenu, expect, node, openApp, openStrategy, showArea, STUB, test } from './support';
 
@@ -96,10 +96,15 @@ async function buildStr03(page: Page, name: string): Promise<void> {
       { and: [compare(pick('Position › Richtung'), '=', { choice: 'sell' }), { cross: [pick('EMA 20 › Wert'), pick('EMA 50 › Wert'), 'up'] }] },
     ],
   });
+  // the management has its own triggers: the objects of the main flow keep the state they had when the order was placed,
+  // so the management has them refreshed (specification 3.3)
+  await refreshValue(page, 'EMA 20');
+  await refreshValue(page, 'EMA 50');
   await add(page, 'Position schließen');
   await select(page, 'Kreuzen gegen die Position');
   await add(page, 'Berechnung', 'Neuer Stop-Loss');
   await setCalculation(page, { iff: [compare(pick('Position › Richtung'), '=', { choice: 'buy' }), atrDistance('-'), atrDistance('+')] });
+  await refreshValue(page, 'ATR 14');
   await add(page, 'Bedingung', 'Stop-Loss verbessert');
   await setCondition(page, {
     truthy: {

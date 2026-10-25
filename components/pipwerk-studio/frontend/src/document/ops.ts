@@ -9,7 +9,9 @@ import {
   type Bindings,
   type ConnectionDocument,
   type ElementDocument,
+  type InputArgument,
   type InputDocument,
+  type InputKind,
   type InstanceDocument,
   type Position,
   type StrategyDocument,
@@ -319,6 +321,32 @@ export function removeElement(document: StrategyDocument, types: TypeIndex, id: 
   return next;
 }
 
+/**
+ * The strategy the backend returned after it removed an element (`/api/v1/removals` with `apply`), with the gap closed
+ * the way `removeElement` does it: a step with exactly one way in and one way out leaves its predecessor connected with
+ * its successor (specification 5.4). `before` is the strategy as it was.
+ */
+export function closeGapAfterRemoval(before: StrategyDocument, after: StrategyDocument, types: TypeIndex, id: string): StrategyDocument {
+  const removed = element(before, id);
+  if (removed === undefined) {
+    return after;
+  }
+  const into = before.connections.filter((candidate) => candidate.target === id);
+  const out = before.connections.filter((candidate) => candidate.source === id);
+  const from = into[0];
+  const to = out[0];
+  if (into.length !== 1 || out.length !== 1 || from === undefined || to === undefined || managedBy(before, id).length > 0 || ownsManagement(removed, before, types)) {
+    return after;
+  }
+  if (element(after, from.source) === undefined || element(after, to.target) === undefined) {
+    return after;
+  }
+  const next = clone(after);
+  next.connections.push({ id: newUuid(), source: from.source, output: from.output, target: to.target });
+  dropInvalidConnections(next, types);
+  return next;
+}
+
 // ---- place and flow --------------------------------------------------------------------------------------------
 
 /** The place the user gave a step; `null` hands the place back to the arrangement. */
@@ -504,52 +532,71 @@ export function setBinding(
     : next;
 }
 
-/** Whether an input names a property of its instance (a document without `kind` means a property). */
-function isPropertyInput(input: InputDocument): boolean {
-  return input.kind === undefined || input.kind === 'property';
+/** The value an input or a use names: an instance and its property, or its method with the values of the arguments. */
+export type InputRef = { instance: string; property: string; kind?: InputKind; arguments?: readonly InputArgument[] };
+
+/** Whether two inputs name the same value: the same instance (without regard to case), property or method, arguments. */
+export function sameInput(a: InputRef, b: InputRef): boolean {
+  return (
+    a.instance.toLowerCase() === b.instance.toLowerCase() &&
+    a.property.toLowerCase() === b.property.toLowerCase() &&
+    (a.kind ?? 'property') === (b.kind ?? 'property') &&
+    JSON.stringify(a.arguments ?? []) === JSON.stringify(b.arguments ?? [])
+  );
+}
+
+function inputOf(ref: InputRef, refresh: boolean): InputDocument {
+  const method = ref.kind === 'method';
+  return {
+    instance: ref.instance,
+    property: ref.property,
+    kind: method ? 'method' : 'property',
+    arguments: method ? [...(ref.arguments ?? [])] : [],
+    refresh,
+  };
 }
 
 /**
- * Adds the input of a property of an instance to an element (specification 3.3). The input is written with all five
- * fields: `kind` "property", no arguments, no "Aktualisieren". An input of a method of the same name is another input
- * and stays as it is.
+ * Adds the input of a property or method of an instance to an element (specification 3.3). The input is written with
+ * all five fields; without `kind` it is a property with no arguments and no "Aktualisieren". An input of a method of
+ * the same name or with other arguments is another input and stays as it is.
  */
-export function addInput(
-  document: StrategyDocument,
-  id: string,
-  input: { instance: string; property: string },
-): StrategyDocument {
+export function addInput(document: StrategyDocument, id: string, input: InputRef, refresh = false): StrategyDocument {
   return {
     ...document,
     elements: document.elements.map((candidate) =>
-      candidate.id === id &&
-      !candidate.inputs.some(
-        (existing) => isPropertyInput(existing) && existing.instance === input.instance && existing.property === input.property,
-      )
-        ? { ...candidate, inputs: [...candidate.inputs, { ...input, kind: 'property', arguments: [], refresh: false }] }
+      candidate.id === id && !candidate.inputs.some((existing) => sameInput(existing, input))
+        ? { ...candidate, inputs: [...candidate.inputs, inputOf(input, refresh)] }
         : candidate,
     ),
   };
 }
 
-export function removeInput(
-  document: StrategyDocument,
-  id: string,
-  input: { instance: string; property: string },
-): StrategyDocument {
+export function removeInput(document: StrategyDocument, id: string, input: InputRef): StrategyDocument {
   return {
     ...document,
     elements: document.elements.map((candidate) =>
-      candidate.id === id
-        ? {
-            ...candidate,
-            inputs: candidate.inputs.filter(
-              (existing) =>
-                !(isPropertyInput(existing) && existing.instance === input.instance && existing.property === input.property),
-            ),
-          }
-        : candidate,
+      candidate.id === id ? { ...candidate, inputs: candidate.inputs.filter((existing) => !sameInput(existing, input)) } : candidate,
     ),
+  };
+}
+
+/**
+ * Changes the value an input names (property or method, arguments) or its "Aktualisieren". An input that is not there
+ * is added at the end; an input that would equal another one of the element takes the place of that one.
+ */
+export function changeInput(document: StrategyDocument, id: string, from: InputRef, to: InputRef, refresh: boolean): StrategyDocument {
+  return {
+    ...document,
+    elements: document.elements.map((candidate) => {
+      if (candidate.id !== id) {
+        return candidate;
+      }
+      const at = candidate.inputs.findIndex((existing) => sameInput(existing, from));
+      const inputs = candidate.inputs.filter((existing) => !sameInput(existing, from) && !sameInput(existing, to));
+      inputs.splice(at < 0 ? inputs.length : Math.min(at, inputs.length), 0, inputOf(to, refresh));
+      return { ...candidate, inputs };
+    }),
   };
 }
 

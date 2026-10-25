@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { elementName } from '../model/elements';
+import { cardRows, elementName } from '../model/elements';
+import { labelText } from '../model/typeIndex';
 import { PanelTabs } from '../library/Library';
 import { useStudio } from '../state/StudioContext';
 import { Btn, Section } from '../ui/controls';
@@ -9,6 +10,7 @@ import { Icon } from '../ui/Icon';
 import { ElementView } from './ElementView';
 import { FindingsList } from './FindingsList';
 import { InstanceList } from './Instances';
+import { SuppliedList } from './Supplied';
 import { Wizard } from '../wizard/Wizard';
 import { WIZARD_STEPS } from '../wizard/model';
 
@@ -135,6 +137,36 @@ function EmptyStrategyHint() {
   );
 }
 
+/**
+ * The objects of the application that do not lie on the drawing area (the order, the position, the strategy) described
+ * like any object: per entry the name, the data type, the possible values and a description in trader language
+ * (specification 5.4). The list comes from the type descriptions; the interface knows no single object.
+ */
+function ApplicationObjects() {
+  const { studio, types } = useStudio();
+  const { t } = useTranslation();
+  if (types === null) {
+    return null;
+  }
+  const objects = types.list.filter((type) => type.kind === 'application_object' && !type.onCanvas);
+  if (objects.length === 0) {
+    return null;
+  }
+  return (
+    <Section title={t('properties.applicationObjects')} testid="sec-application-objects" aside={<span className="muted">{t('properties.applicationObjectsHint')}</span>}>
+      {objects.map((type) => (
+        <details key={type.id} className="app-object" data-testid="app-object" data-type={type.id}>
+          <summary>
+            <b>{labelText(type.name, studio.language)}</b>
+            <span className="muted"> {labelText(type.explanation, studio.language)}</span>
+          </summary>
+          <SuppliedList rows={cardRows(type, null, studio.language)} type={type} />
+        </details>
+      ))}
+    </Section>
+  );
+}
+
 function StrategyView() {
   const { studio, findings } = useStudio();
   const { t } = useTranslation();
@@ -183,6 +215,7 @@ function StrategyView() {
         <p className="muted">{t('properties.rulesOfStrategyHint')}</p>
         <InstanceList list={{ root: { kind: 'strategy' }, steps: [], list: 'rules' }} kind="rules" />
       </Section>
+      <ApplicationObjects />
       <Section
         title={t('properties.findings')}
         testid="sec-findings"

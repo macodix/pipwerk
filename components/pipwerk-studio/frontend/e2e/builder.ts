@@ -217,6 +217,15 @@ export async function bindExpr(page: Page, fieldId: string, v: V): Promise<void>
   await setValue(f.getByTestId(`expression-${fieldId}`).locator(':scope > .vb'), v);
 }
 
+/**
+ * Switches "Aktualisieren" on for the value of an object that the selected element uses (properties view, "Verwendete
+ * Werte"): the object works out its values again at this element before it passes them on.
+ */
+export async function refreshValue(page: Page, object: string): Promise<void> {
+  const group = props(page).getByTestId('used-group').filter({ has: page.getByRole('heading', { name: object, exact: true }) });
+  await group.getByRole('checkbox', { name: 'Aktualisieren' }).check();
+}
+
 /** Adds an own rule (condition) to the element that is selected, with its name and the condition. */
 export async function addOwnRule(page: Page, name: string, c: C): Promise<void> {
   const section = page.getByTestId('sec-element-rules');

@@ -5,7 +5,7 @@ import type { PropertyDescription, TypeDescription } from '../api/elementTypes';
 import { getOwn } from '../document/own';
 import { sectionOf } from '../document/ops';
 import type { Binding, ElementDocument, InstanceDocument } from '../document/types';
-import { elementName, isCardElement, propertyRows } from '../model/elements';
+import { cardRows, elementName, isCardElement } from '../model/elements';
 import { bindingSlot } from '../model/describe';
 import { iconOf, kindClassOf, labelText, orderSelector } from '../model/typeIndex';
 import { useStudio } from '../state/StudioContext';
@@ -15,6 +15,8 @@ import { contentKind } from '../model/objectContent';
 import { FieldRow, applies, specOfParameter, specOfProperty, type FieldSpec } from './fields';
 import { FindingsList } from './FindingsList';
 import { InstanceList, InstancePanel } from './Instances';
+import { SuppliedList } from './Supplied';
+import { FirstUse, UsedValues } from './UsedValues';
 
 /** The own parameters of an instance (from a template of the user) as entries that can be assigned. */
 function ownSpecs(instance: InstanceDocument | null | undefined): FieldSpec[] {
@@ -136,7 +138,7 @@ function bindingOf(element: ElementDocument, scope: 'parameters' | 'properties' 
 
 /** The properties view of an element: name, origin, settings, the properties it supplies, inputs, rules, section, management. */
 export function ElementView({ element }: { element: ElementDocument }) {
-  const { studio, types, findings, expressions } = useStudio();
+  const { studio, types, findings, expressions, uses } = useStudio();
   const { t } = useTranslation();
   const document = studio.state.document;
   if (document === null || types === null) {
@@ -265,8 +267,8 @@ export function ElementView({ element }: { element: ElementDocument }) {
     .map(specOfProperty)
     .filter((spec) => applies(spec, valueOf));
 
-  // The properties the object supplies, with the elements that use them.
-  const supplied = propertyRows(type, instance, language);
+  // The properties and methods the object supplies, with the elements that use them.
+  const supplied = cardRows(type, instance, language);
   const used = new Map<string, string[]>();
   if (card && instance !== null) {
     for (const other of document.elements) {
@@ -281,13 +283,17 @@ export function ElementView({ element }: { element: ElementDocument }) {
           hits.add(reference.property);
         }
       }
+      for (const use of uses?.usesOf(other.id) ?? []) {
+        if (use.instance.toLowerCase() === instance.key.toLowerCase() && use.byInstance === null) {
+          use.members.forEach((member) => hits.add(member.name));
+        }
+      }
       hits.forEach((property) => {
         used.set(property, [...(used.get(property) ?? []), elementName(other, types, language)]);
       });
     }
   }
 
-  const objects = document.elements.filter((candidate) => isCardElement(candidate, types) && candidate.id !== element.id);
   const originText = (() => {
     const origin = instance?.origin;
     if (!card || origin === undefined || origin === null) {
@@ -357,89 +363,11 @@ export function ElementView({ element }: { element: ElementDocument }) {
           testid="sec-delivers"
           aside={<span className="muted">{t('properties.deliversHint')}</span>}
         >
-          <ul className="prop-list">
-            {supplied.map((property) => {
-              const users = used.get(property.id);
-              return (
-                <li
-                  key={property.id}
-                  className="prop-row"
-                  data-tip={property.explanation === '' ? undefined : property.explanation}
-                  data-testid="prop-row"
-                >
-                  <span className="prop-name">{property.label}</span>
-                  <span className="dtype-chip">{t(`datatype.${property.datatype}`)}</span>
-                  {property.choices.length > 0 ? (
-                    <span className="prop-values" data-testid="prop-values">
-                      {property.choices.map((choice) => labelText(choice.label, language)).join(' · ')}
-                    </span>
-                  ) : null}
-                  {users !== undefined ? (
-                    <span className="prop-used">
-                      <Icon name="link" size={12} />
-                      {users.join(', ')}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
+          <SuppliedList rows={supplied} type={type} users={used} />
         </Section>
       ) : null}
 
-      <Section
-        title={t('properties.inputs')}
-        testid="sec-inputs"
-        aside={<Info tip={t('properties.inputsHint')} label={t('fields.explanation')} />}
-      >
-        {element.inputs.length === 0 ? <p className="empty-note">{t('properties.noInputs')}</p> : null}
-        <div className="chips">
-          {element.inputs.map((input, position) => {
-            const source = objects.find((candidate) => candidate.instance?.key.toLowerCase() === input.instance.toLowerCase());
-            const property = source === undefined ? undefined : propertyRows(types.byId.get(source.type), source.instance, language).find((row2) => row2.id === input.property);
-            return (
-              <span key={`${position}:${input.instance}.${input.property}`} className="chip chip-input" data-testid="input-chip">
-                <Icon name="link" size={12} />
-                {source === undefined ? input.instance : elementName(source, types, language)} › {property?.label ?? input.property}
-                <button
-                  type="button"
-                  aria-label={t('properties.removeInput')}
-                  onClick={() => {
-                    actions.removeInput(element.id, input);
-                  }}
-                >
-                  <Icon name="x" size={12} />
-                </button>
-              </span>
-            );
-          })}
-        </div>
-        <Select
-          value=""
-          onChange={(chosen) => {
-            if (chosen === '') {
-              return;
-            }
-            const [instanceKey, property] = chosen.split('|');
-            if (instanceKey !== undefined && property !== undefined) {
-              actions.addInput(element.id, { instance: instanceKey, property });
-            }
-          }}
-          ariaLabel={t('properties.connectValue')}
-          testid="input-add"
-        >
-          <option value="">{t('properties.connectValueOption')}</option>
-          {objects.map((object) => (
-            <optgroup key={object.id} label={elementName(object, types, language)}>
-              {propertyRows(types.byId.get(object.type), object.instance, language).map((property) => (
-                <option key={property.id} value={`${object.instance?.key ?? ''}|${property.id}`}>
-                  {elementName(object, types, language)} › {property.label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </Select>
-      </Section>
+      {card ? <FirstUse element={element} /> : <UsedValues element={element} />}
 
       {card && contentKind(type) !== null ? (
         <Section title={t('instances.content')} testid="sec-content">

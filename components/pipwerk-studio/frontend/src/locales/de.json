@@ -75,7 +75,8 @@
     "timestamp": "Zeitpunkt",
     "date": "Datum",
     "expression": "Ausdruck",
-    "object": "Objekt"
+    "object": "Objekt",
+    "method": "Methode"
   },
   "binding": {
     "unset": "nicht belegt",
@@ -159,6 +160,10 @@
     "assignment": "Belegung"
   },
   "expression": {
+    "candlesBack": "vor",
+    "candles": "Kerzen",
+    "candlesBackNumber": "Zahl der Kerzen zurück",
+    "crossNothing": "Ohne früheren Wert kann nichts kreuzen. Wählen Sie auf einer Seite einen Wert, der einen früheren Wert hat, zum Beispiel einen Indikator.",
     "empty": "Noch leer.",
     "hasError": "Der Ausdruck hat einen Fehler und lässt sich nicht als Satz zeigen.",
     "formula": "Formel",
@@ -387,7 +392,40 @@
     "legendRefresh": "Aktualisieren: Der Wert wird hier neu ermittelt",
     "properties": "Eigenschaften"
   },
+  "used": {
+    "title": "Verwendete Werte",
+    "info": "Hier stehen die Werte von Objekten, die dieses Element verwendet. Sie wählen, welche Eigenschaft oder Methode gemeint ist. Wo ein Ausdruck des Elements den Wert nennt, ändert sich der Ausdruck mit.",
+    "empty": "Dieses Element verwendet noch keinen Wert eines Objekts. Verbinden Sie unten einen Wert, oder nennen Sie ihn in einem Ausdruck.",
+    "value": "Wert",
+    "properties": "Eigenschaften",
+    "methods": "Methoden",
+    "optional": "freiwillig",
+    "refresh": "Aktualisieren",
+    "refreshTip": "Das Objekt ermittelt seine Werte an diesem Element neu, bevor es sie übergibt. Das brauchen Sie, wenn die Werte inzwischen veraltet sein können, zum Beispiel in einer Verwaltung, die bei neuen Kursen läuft.",
+    "inInput": "verbunden",
+    "inExpression": "im Ausdruck",
+    "inRule": "in einer Regel",
+    "inAssignment": "als Wert eines Parameters",
+    "removeInExpression": "dort entfernen",
+    "removeInput": "Verbindung entfernen",
+    "addHint": "Weiteren Wert verbinden, ohne zu ziehen:",
+    "noneUsable": "An diesem Element ist kein Objekt verwendbar, das noch nicht verbunden ist. Ein Objekt, das an einer anderen Stelle ermittelt wird, steht hier nicht zur Wahl. Legen Sie dafür ein weiteres Objekt mit eigenem Namen an.",
+    "chooseObject": "Objekt wählen",
+    "chooseObjectOption": "Objekt wählen …",
+    "chooseValueOption": "Wert wählen …",
+    "connect": "Verbinden"
+  },
+  "firstUse": {
+    "title": "Element der ersten Verwendung",
+    "info": "Das Objekt ermittelt seine Werte an dem Element, das es zuerst verwendet. An Elementen davor ist es nicht verfügbar. Weitere Elemente können es nur verwenden, wenn jeder Weg zu ihnen über dieses Element führt.",
+    "none": "Noch kein Element verwendet dieses Objekt.",
+    "at": "Das Objekt wird bei „{{element}}“ ermittelt.",
+    "choose": "Element der ersten Verwendung",
+    "chooseOption": "Element wählen …",
+    "goto": "Zum Element"
+  },
   "properties": {
+    "method": "Methode",
     "panel": "Eigenschaften",
     "none": "Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an, „Öffnen“ zeigt gespeicherte Strategien.",
     "emptyTitle": "Die Strategie ist leer",
@@ -398,6 +436,8 @@
     "descriptionPlaceholder": "Worum geht es in dieser Strategie?",
     "rulesOfStrategy": "Regeln der Strategie",
     "rulesOfStrategyHint": "Diese Regeln gelten für jede Order der Strategie.",
+    "applicationObjects": "Objekte der Anwendung",
+    "applicationObjectsHint": "Diese Objekte gibt es immer. Ausdrücke können ihre Werte verwenden.",
     "findings": "Befunde der Prüfung",
     "notChecked": "Noch nicht geprüft. „Prüfen“ sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.",
     "noFindings": "Keine Befunde. Die Strategie ist in sich stimmig.",
@@ -425,12 +465,6 @@
     "orderPropertiesHint": "Diese Werte bekommt die Order. Fehlt eine Pflichtangabe wie das Volumen, muss eine Regel sie bestimmen.",
     "delivers": "Liefert",
     "deliversHint": "Jeder Wert ist ein Ausgang für eine Linie",
-    "inputs": "Eingänge",
-    "inputsHint": "Werte von Objekten, die mit diesem Element verbunden sind.",
-    "noInputs": "Noch kein Wert verbunden. Wählen Sie unten einen Wert oder ziehen Sie auf der Fläche eine Linie von der Eigenschaft eines Objekts hierher.",
-    "removeInput": "Eingang entfernen",
-    "connectValue": "Wert verbinden",
-    "connectValueOption": "+ Wert verbinden …",
     "rulesOfElement": "Regeln dieses Elements",
     "rulesOfElementHint": "Diese Regeln gelten zusätzlich zu den Regeln der Strategie nur für dieses Element.",
     "noRules": "Keine Regeln.",
@@ -757,7 +791,13 @@
       "confirm": "Entfernen",
       "cancel": "Abbrechen"
     },
-    "usedBy": "Diese Elemente verwenden ihn:",
+    "removeRule": {
+      "title": "Regel entfernen?",
+      "text": "Die Regel „{{name}}“ wird entfernt.",
+      "confirm": "Entfernen",
+      "cancel": "Abbrechen"
+    },
+    "usedBy": "Verwendet wird es von:",
     "usedByStrategyRules": "Regeln der Strategie",
     "afterRemoval": "Danach bleibt in den Ausdrücken ein leerer Platz „Wert wählen …“. Belegungen, die ihn verwenden, sind „nicht belegt“. Verbindungen und Eingänge, die von ihm kamen, entfallen.",
     "error": {
@@ -775,6 +815,7 @@
     "deleteFailed": "Die Strategie konnte nicht gelöscht werden.",
     "checkFailed": "Die Strategie konnte nicht geprüft werden.",
     "insertFailed": "Der Eintrag konnte nicht eingefügt werden.",
+    "removeFailed": "Der Eintrag konnte nicht entfernt werden.",
     "codes": {
       "object": {
         "not_found": "Das Objekt gibt es nicht mehr. Vielleicht wurde es gelöscht.",

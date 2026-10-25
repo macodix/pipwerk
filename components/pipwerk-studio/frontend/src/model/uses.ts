@@ -41,6 +41,10 @@ export type UsageModel = {
   usable: (card: string, target: string) => boolean;
   /** The element of the first use of the instance of the card, if there is one. */
   firstUse: (card: string) => string | null;
+  /** How an element uses instances: by input, by name in an expression or rule, by an assignment (specification 3.3). */
+  usesOf: (element: string) => readonly ElementUse[];
+  /** Whether a use of the instance of the card can choose "Aktualisieren" (specification 3.1). */
+  canRefresh: (card: string) => boolean;
 };
 
 /** The row of a card a name of a member belongs to: a name inside a contained instance counts for the first identifier. */
@@ -184,6 +188,11 @@ export function buildUsageModel(
     usageOf.set(card, item);
   }
 
+  const usesByElement = new Map<string, ElementUse[]>();
+  for (const entry of used.elements) {
+    usesByElement.set(entry.element, [...(usesByElement.get(entry.element) ?? []), ...entry.uses]);
+  }
+
   const homes = new Map<string, string | null>();
   for (const [card, item] of usageOf) {
     if (item.firstUse === null) {
@@ -242,6 +251,8 @@ export function buildUsageModel(
     homes,
     connected: (card) => (usageOf.get(card)?.firstUse ?? null) !== null,
     firstUse: (card) => usageOf.get(card)?.firstUse ?? null,
+    usesOf: (element) => usesByElement.get(element) ?? [],
+    canRefresh: (card) => usageOf.get(card)?.canRefresh === true,
     usable: (card, target) => {
       const item = usageOf.get(card);
       if (card === target) {

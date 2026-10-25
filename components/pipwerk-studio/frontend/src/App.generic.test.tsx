@@ -243,15 +243,17 @@ describe('the properties view of invented types (specification 5.4)', () => {
     const { user } = await setup();
     await chooseNode(user, 'Tun');
 
-    await user.selectOptions(screen.getByTestId('input-add'), 'Messer › Stand');
-    expect(screen.getAllByTestId('input-chip')).toHaveLength(1);
-    expect(screen.getByTestId('input-chip')).toHaveTextContent('Messer › Stand');
+    await user.selectOptions(screen.getByTestId('used-add-object'), 'Messer');
+    await user.selectOptions(screen.getByTestId('used-add-value'), 'Stand');
+    await user.click(screen.getByTestId('used-add-button'));
+    expect(screen.getAllByTestId('used-row')).toHaveLength(1);
+    expect(screen.getByTestId('used-messer-stand-select')).toHaveValue('p:stand');
     // the object marks the use in its properties view
     await chooseNode(user, 'Messer');
     expect(within(screen.getByTestId('sec-delivers')).getByText('Tun')).toBeInTheDocument();
     await chooseNode(user, 'Tun');
-    await user.click(within(screen.getByTestId('input-chip')).getByRole('button'));
-    expect(screen.queryAllByTestId('input-chip')).toHaveLength(0);
+    await user.click(screen.getByTestId('used-messer-stand-remove'));
+    expect(screen.queryAllByTestId('used-row')).toHaveLength(0);
   });
 
   it('asks before an element with a management is removed, and names the steps that go with it', async () => {

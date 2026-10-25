@@ -28,6 +28,13 @@ function renamed(document: Json): Json {
       element.management_of = fresh(element.management_of);
     }
   }
+  // the element of the first use of an instance is an identifier of an element like the others
+  for (const element of elements) {
+    const instance = element.instance as Json | null;
+    if (instance !== null && typeof instance.first_use === 'string') {
+      instance.first_use = fresh(instance.first_use);
+    }
+  }
   for (const connection of copy.connections as Json[]) {
     connection.id = fresh(String(connection.id));
     connection.source = fresh(String(connection.source));
@@ -52,6 +59,22 @@ describe('the comparison with a test case (specification 7)', () => {
     const fewer = JSON.parse(JSON.stringify(original)) as Json;
     (fewer.connections as Json[]).pop();
     expect(canonical(fewer)).not.toEqual(canonical(original));
+  });
+
+  it('notices another element of the first use of an object, and another "Aktualisieren"', () => {
+    const original = testCase('str-03');
+    const other = JSON.parse(JSON.stringify(original)) as Json;
+    const elements = other.elements as Json[];
+    const objects = elements.filter((element) => element.instance !== null);
+    const first = objects[0]?.instance as Json;
+    const target = elements.find((element) => element.instance === null && element.id !== first.first_use);
+    first.first_use = target?.id;
+    expect(canonical(other)).not.toEqual(canonical(original));
+
+    const refreshed = JSON.parse(JSON.stringify(original)) as Json;
+    const step = (refreshed.elements as Json[]).find((element) => ((element.inputs as Json[] | undefined) ?? []).some((input) => input.refresh === true));
+    ((step?.inputs as Json[])[0] as Json).refresh = false;
+    expect(canonical(refreshed)).not.toEqual(canonical(original));
   });
 
   it('replaces the keys of steps and objects in expressions, but not the properties of the objects of the application', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { VisibleName, VisibleProperty } from '../api/objects';
-import { buildValueGroups, findOption, matchChoice } from './options';
+import type { VisibleMethod, VisibleName, VisibleProperty } from '../api/objects';
+import { blockOfOption, buildValueGroups, findOption, matchChoice, methodKey, selectKeyOf } from './options';
 
 const label = (de: string, en: string = de) => ({ de, en });
 
@@ -21,6 +21,7 @@ const name = (display: string, path: string[], kind: VisibleName['kind'], proper
   kind,
   datatype: null,
   properties,
+  methods: [],
   propertiesTruncated: false,
   contents: [],
   ...patch,
@@ -84,6 +85,67 @@ describe('the values an expression can use at a place', () => {
     const groups = buildValueGroups([order, instrument], [], null, types, 'de');
     const labels = groups.flatMap((group) => group.options.map((option) => option.label));
     expect(labels).toContain('Order › Instrument › Mindestvolumen');
+  });
+});
+
+describe('the methods an expression can use', () => {
+  const average: VisibleMethod = {
+    key: 'mittel',
+    label: label('Mittel', 'Average'),
+    datatype: 'number',
+    explanation: label('Der Mittelwert.', 'The mean.'),
+    choices: [],
+    previousValue: false,
+    arguments: [
+      { key: 'anzahl', label: label('Anzahl', 'Count'), datatype: 'integer', required: true, default: null, explanation: null, choices: [] },
+      { key: 'gewicht', label: label('Gewicht', 'Weight'), datatype: 'number', required: false, default: 1, explanation: null, choices: [] },
+    ],
+  };
+  const gauge = name('Pegel', ['pegel'], 'instance', [property('stand', 'Stand', 'Reading')], { methods: [average] });
+
+  it('lists a method after the properties of its object, as a value with the standard values of its arguments', () => {
+    const groups = buildValueGroups([gauge], [], null, null, 'de');
+    const options = groups[0]?.options ?? [];
+    expect(options.map((option) => [option.key, option.label, option.method === null])).toEqual([
+      ['n:pegel\u001fstand', 'Pegel › Stand', true],
+      ['m:pegel\u001fmittel', 'Pegel › Mittel', false],
+    ]);
+    expect(blockOfOption(options[0] as never)).toEqual({ kind: 'name', path: ['pegel', 'stand'] });
+    expect(blockOfOption(options[1] as never)).toEqual({
+      kind: 'name',
+      path: ['pegel', 'mittel'],
+      call: true,
+      children: [
+        { kind: 'literal', value: 1, datatype: 'integer' },
+        { kind: 'literal', value: 1, datatype: 'integer' },
+      ],
+    });
+  });
+
+  it('shows a method that the user connected with the element first, with the arguments of the input, and keeps the plain entry', () => {
+    const groups = buildValueGroups([gauge], [{ instance: 'pegel', property: 'mittel', kind: 'method', arguments: [3, 0.5] }], null, null, 'de');
+    expect(groups[0]?.id).toBe('connected');
+    const connected = groups[0]?.options[0];
+    expect(connected).toMatchObject({ label: 'Pegel › Mittel (3; 0.5)', args: [3, 0.5] });
+    expect(blockOfOption(connected as never).children?.map((child) => child.value)).toEqual([3, 0.5]);
+    expect(groups.find((group) => group.id === 'objects')?.options.map((option) => option.key)).toEqual(['n:pegel\u001fstand', 'm:pegel\u001fmittel']);
+  });
+
+  it('finds the entry of a block: a call is a method, the same name without a call is a property', () => {
+    const groups = buildValueGroups([gauge], [{ instance: 'pegel', property: 'mittel', kind: 'method', arguments: [3, 0.5] }], null, null, 'de');
+    expect(findOption(groups, ['PEGEL', 'Mittel'], true)?.method?.key).toBe('mittel');
+    expect(findOption(groups, ['pegel', 'mittel'])).toBeUndefined();
+    expect(findOption(groups, ['pegel', 'stand'])?.method).toBeNull();
+    const call = (args: number[]) => ({ kind: 'name' as const, path: ['pegel', 'mittel'], call: true, children: args.map((value) => ({ kind: 'literal' as const, value, datatype: 'number' as const })) });
+    // exactly the connected variant is shown as such; any other arguments show the plain entry
+    expect(selectKeyOf(call([3, 0.5]), groups)).toBe(methodKey(['pegel', 'mittel'], [3, 0.5]));
+    expect(selectKeyOf(call([9, 9]), groups)).toBe('m:pegel\u001fmittel');
+    expect(selectKeyOf({ kind: 'name', path: ['pegel', 'stand'] }, groups)).toBe('n:pegel\u001fstand');
+  });
+
+  it('knows a value with an earlier value from the entry of a method', () => {
+    const previous = name('Pegel', ['pegel'], 'instance', [], { methods: [{ ...average, previousValue: true }] });
+    expect(buildValueGroups([previous], [], null, null, 'de')[0]?.options[0]?.previousValue).toBe(true);
   });
 });
 

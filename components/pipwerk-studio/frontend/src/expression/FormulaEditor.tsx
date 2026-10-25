@@ -5,7 +5,7 @@ import type { Finding } from '../api/objects';
 import { findingTexts } from '../findings/findingText';
 import { useStudio } from '../state/StudioContext';
 import { Icon } from '../ui/Icon';
-import { callAt, completionsAt, matchingBrackets, type Completion } from './formulaAssist';
+import { callAt, completionsAt, matchingBrackets, methodCallAt, type Completion } from './formulaAssist';
 import type { ExpressionSession } from './useExpressionSession';
 
 /**
@@ -62,6 +62,10 @@ export function FormulaEditor({ session, reveal = null }: { session: ExpressionS
   const hint = useMemo(
     () => (formula === undefined ? null : callAt(formula.tokens, text, caret, functions)),
     [caret, formula, functions, text],
+  );
+  const methodHint = useMemo(
+    () => (formula === undefined ? null : methodCallAt(formula.tokens, text, caret, names)),
+    [caret, formula, names, text],
   );
   const brackets = useMemo(() => (formula === undefined ? null : matchingBrackets(formula.tokens, caret)), [caret, formula]);
   const context = { document: studio.state.document, types, language };
@@ -264,6 +268,26 @@ export function FormulaEditor({ session, reveal = null }: { session: ExpressionS
             {hint.fn.variadic !== null ? '; …' : ''})
           </code>
           <span>{hint.fn.arguments[Math.min(hint.argument, hint.fn.arguments.length - 1)]?.explanation[language] ?? hint.fn.explanation[language]}</span>
+        </div>
+      ) : null}
+
+      {methodHint !== null ? (
+        <div className="fe-hint" data-testid="formula-hint-method">
+          <code>
+            {methodHint.method.label[language]}(
+            {methodHint.method.arguments.map((argument, index) => (
+              <Fragment key={argument.key}>
+                {index > 0 ? '; ' : ''}
+                <b className={index === Math.min(methodHint.argument, methodHint.method.arguments.length - 1) ? 'cur' : ''}>{argument.label[language]}</b>
+              </Fragment>
+            ))}
+            )
+          </code>
+          <span>
+            {methodHint.method.arguments[Math.min(methodHint.argument, methodHint.method.arguments.length - 1)]?.explanation?.[language] ??
+              methodHint.method.explanation?.[language] ??
+              ''}
+          </span>
         </div>
       ) : null}
 

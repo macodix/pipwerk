@@ -19,7 +19,8 @@ import {
 import { addToList, type ListRef } from '../document/instanceOps';
 import { listPointer, placePointer, setPlaceStored, type ExpressionPlace } from '../document/places';
 import type { Block } from '../expression/blocks';
-import { ownerElement, withInputs } from '../expression/inputs';
+import { ownerElement, withInputs, type InputContext } from '../expression/inputs';
+import type { UsageModel } from '../model/uses';
 import {
   addElement,
   addInput,
@@ -46,8 +47,11 @@ import {
   toggleManagementCollapsed,
   updateStrategyParameter,
   removalSet,
+  changeInput,
+  sameInput,
   type BindingScope,
   type ConnectionProblem,
+  type InputRef,
 } from '../document/ops';
 import {
   instanceFromTemplate,
@@ -64,10 +68,12 @@ import type { Binding, StrategyDocument, StrategyParameter } from '../document/t
 import { defaultLanguage, isSupportedLanguage, type SupportedLanguage } from '../i18n';
 import { buildLibrary, findEntry, type StoredTemplates } from '../library/libraryModel';
 import { elementName, isCardElement } from '../model/elements';
+import { inputRefOf, memberChoices } from '../model/usedValues';
 import { createTypeIndex, holdsInstance, type TypeIndex } from '../model/typeIndex';
 import { NARROW_LAYOUT, matchesMedia } from '../ui/media';
 import { newUuid } from '../document/ids';
-import { NO_USE, planRemoval, removeWithPlan, type RemovalPlan, type RemovalTarget } from './removal';
+import { rewriteMember } from './usedValue';
+import { NO_USE, planRemoval, removeWithBackend, type RemovalPlan, type RemovalTarget } from './removal';
 import {
   initialStudioState,
   isDirty,
@@ -93,6 +99,7 @@ export type DialogState =
   | { kind: 'settings' }
   | { kind: 'removeElement'; id: string; plan: RemovalPlan }
   | { kind: 'removeParameter'; key: string; plan: RemovalPlan }
+  | { kind: 'removeRule'; owner: string | null; key: string; plan: RemovalPlan }
   | { kind: 'error'; titleKey: string; error: unknown };
 
 /** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
@@ -479,6 +486,24 @@ export function useStudioController(language: SupportedLanguage) {
     [currentFlow, edit, language, library, notify, showError],
   );
 
+  /**
+   * What `withInputs` needs (specification 5.4): the type descriptions and, from the last report of the use of the
+   * instances, whether an element already uses an instance. An instance that none uses gets the element the input joins
+   * as the element of its first use, as when it is connected on the drawing area.
+   */
+  const usageRef = useRef<UsageModel | null>(null);
+  const setUsage = useCallback((model: UsageModel | null) => {
+    usageRef.current = model;
+  }, []);
+  const inputContext = useCallback(
+    (): InputContext => ({
+      types: typesRef.current,
+      language,
+      connected: usageRef.current === null ? undefined : (card) => usageRef.current?.connected(card) === true,
+    }),
+    [language],
+  );
+
   /** Writes an expression given as blocks: the expression endpoint forms it, the inputs of the values join the element. */
   const writeBlocks = useCallback(
     async (place: ExpressionPlace, blocks: Block): Promise<void> => {
@@ -491,13 +516,14 @@ export function useStudioController(language: SupportedLanguage) {
       try {
         const [answer] = await requestExpressions(document, language, [{ pointer, blocks }]);
         if (answer !== undefined) {
-          edit((latest) => withInputs(setPlaceStored(latest, index, place, answer.stored), ownerElement(place), blocks));
+          const context = inputContext();
+          edit((latest) => withInputs(setPlaceStored(latest, index, place, answer.stored), ownerElement(place), blocks, context));
         }
       } catch (error) {
         showError('errors.insertFailed', error);
       }
     },
-    [edit, language, showError],
+    [edit, inputContext, language, showError],
   );
 
   /** Selects an element without leaving the guided setup (a click on the drawing area leaves it). */
@@ -607,16 +633,85 @@ export function useStudioController(language: SupportedLanguage) {
         return;
       }
       const key = source.instance.key;
+      // a row of a card is a property or a method; a method comes with the standard values of its arguments
+      const choice = memberChoices(index.byId.get(source.type), source.instance, language).find((candidate) => candidate.id === property);
+      const member: InputRef = choice === undefined ? { instance: key, property } : inputRefOf(key, choice);
       edit(
         (latest) => {
-          const withInput = addInput(latest, to, { instance: key, property });
+          const withInput = addInput(latest, to, member);
           return firstUse ? setFirstUse(withInput, instanceElement, to) : withInput;
         },
         { selection: { kind: 'element', id: to } },
       );
       notify('notices.inputAdded');
     },
-    [edit, notify],
+    [edit, language, notify],
+  );
+
+  /**
+   * "Weiteren Wert verbinden" in the properties view of an element (specification 5.4): the input joins the element
+   * without dragging. An instance that no element used yet gets the element as the element of its first use.
+   */
+  const connectMember = useCallback(
+    (card: string, member: InputRef, to: string) => {
+      const connected = usageRef.current === null || usageRef.current.connected(card);
+      edit((latest) => {
+        const next = addInput(latest, to, member);
+        const stored = next.elements.find((candidate) => candidate.id === card)?.instance?.first_use;
+        return !connected && (stored === null || stored === undefined) ? setFirstUse(next, card, to) : next;
+      });
+    },
+    [edit],
+  );
+
+  /**
+   * The user chose another property or method, other arguments, or "Aktualisieren" for a value an element uses
+   * (specification 5.4). The input follows; so do the expressions of the element that name the value, unless only
+   * "Aktualisieren" changed. A value that only an expression used gets an input when "Aktualisieren" is chosen.
+   */
+  const changeUsedValue = useCallback(
+    async (elementId: string, from: InputRef, hasInput: boolean, to: InputRef, refresh: boolean, inExpression: boolean): Promise<void> => {
+      const document = stateRef.current.document;
+      const index = typesRef.current;
+      if (document === null || index === null) {
+        return;
+      }
+      edit((latest) => (hasInput ? changeInput(latest, elementId, from, to, refresh) : refresh ? addInput(latest, elementId, to, true) : latest));
+      if (inExpression && !sameInput(from, to)) {
+        try {
+          const rewrites = await rewriteMember(document, language, elementId, from, to);
+          if (rewrites.length > 0) {
+            edit((latest) => rewrites.reduce((current, rewrite) => setPlaceStored(current, index, rewrite.place, rewrite.stored), latest));
+          }
+        } catch (error) {
+          showError('errors.insertFailed', error);
+        }
+      }
+    },
+    [edit, language, showError],
+  );
+
+  /**
+   * The element the user chose as the element of the first use of an instance, without dragging (specification 5.4).
+   * If the element does not use the instance yet, it gets an input for the first value of the instance.
+   */
+  const chooseFirstUse = useCallback(
+    (card: string, elementId: string) => {
+      const document = stateRef.current.document;
+      const index = typesRef.current;
+      const source = document?.elements.find((candidate) => candidate.id === card);
+      const target = document?.elements.find((candidate) => candidate.id === elementId);
+      if (index === null || source?.instance === undefined || source.instance === null || target === undefined) {
+        return;
+      }
+      const key = source.instance.key;
+      const already =
+        target.inputs.some((input) => input.instance.toLowerCase() === key.toLowerCase()) ||
+        (usageRef.current?.usesOf(elementId) ?? []).some((use) => use.instance.toLowerCase() === key.toLowerCase() && use.byInstance === null);
+      const first = memberChoices(index.byId.get(source.type), source.instance, language)[0];
+      edit((latest) => setFirstUse(already || first === undefined ? latest : addInput(latest, elementId, inputRefOf(key, first)), card, elementId));
+    },
+    [edit, language],
   );
 
   /** An object the user put down on the drawing area stays where it was put (specification 5.3). */
@@ -699,12 +794,12 @@ export function useStudioController(language: SupportedLanguage) {
         return NO_USE;
       }
       try {
-        return await planRemoval(document, language, target);
+        return await planRemoval(document, target);
       } catch {
         return NO_USE;
       }
     },
-    [language],
+    [],
   );
 
   const requestRemoveElement = useCallback(
@@ -726,9 +821,9 @@ export function useStudioController(language: SupportedLanguage) {
     [edit, planOf, removalInfo],
   );
 
-  /** Removes an element or a strategy parameter: the expressions that named it get an empty place first. */
+  /** Removes an element, a rule or a strategy parameter: the strategy without it comes from the backend. */
   const applyRemoval = useCallback(
-    async (target: RemovalTarget, plan: RemovalPlan): Promise<void> => {
+    async (target: RemovalTarget): Promise<void> => {
       const index = typesRef.current;
       const document = stateRef.current.document;
       setDialog(null);
@@ -736,18 +831,38 @@ export function useStudioController(language: SupportedLanguage) {
         return;
       }
       try {
-        const changed = await removeWithPlan(document, index, language, target, plan);
+        const changed = await removeWithBackend(document, index, target);
         edit(() => changed, target.kind === 'element' ? { selection: { kind: 'strategy' } } : undefined);
       } catch (error) {
-        showError('errors.insertFailed', error);
+        showError('errors.removeFailed', error);
       }
     },
-    [edit, language, showError],
+    [edit, showError],
   );
 
   const confirmRemoveElement = useCallback(
-    (id: string, plan: RemovalPlan) => {
-      void applyRemoval({ kind: 'element', id }, plan);
+    (id: string) => {
+      void applyRemoval({ kind: 'element', id });
+    },
+    [applyRemoval],
+  );
+
+  /** A rule of the strategy or of an element: asks first if another expression uses its result. */
+  const requestRemoveRule = useCallback(
+    async (owner: string | null, key: string): Promise<void> => {
+      const plan = await planOf({ kind: 'rule', key });
+      if (plan.users.length > 0) {
+        setDialog({ kind: 'removeRule', owner, key, plan });
+      } else {
+        edit((latest) => removeRule(latest, owner, key));
+      }
+    },
+    [edit, planOf],
+  );
+
+  const confirmRemoveRule = useCallback(
+    (key: string) => {
+      void applyRemoval({ kind: 'rule', key });
     },
     [applyRemoval],
   );
@@ -760,8 +875,8 @@ export function useStudioController(language: SupportedLanguage) {
   );
 
   const confirmRemoveParameter = useCallback(
-    (key: string, plan: RemovalPlan) => {
-      void applyRemoval({ kind: 'parameter', key }, plan);
+    (key: string) => {
+      void applyRemoval({ kind: 'parameter', key });
     },
     [applyRemoval],
   );
@@ -789,6 +904,8 @@ export function useStudioController(language: SupportedLanguage) {
       answerUnsaved,
       insert,
       writeBlocks,
+      setUsage,
+      inputContext,
       selectQuietly,
       pauseWizard,
       resumeWizard,
@@ -796,6 +913,9 @@ export function useStudioController(language: SupportedLanguage) {
       startConnection,
       connectSteps,
       connectValue,
+      connectMember,
+      changeUsedValue,
+      chooseFirstUse,
       dropStep,
       dropObject,
       addParameter,
@@ -804,6 +924,8 @@ export function useStudioController(language: SupportedLanguage) {
       confirmRemoveElement,
       requestRemoveParameter,
       confirmRemoveParameter,
+      requestRemoveRule,
+      confirmRemoveRule,
       elementDisplayName,
       showElement: (id: string) => {
         edit((document) => document, { selection: { kind: 'element', id }, reveal: id });
@@ -832,9 +954,8 @@ export function useStudioController(language: SupportedLanguage) {
           edit((document) => setBinding(document, index, id, scope, key, binding));
         }
       },
-      addInput: (id: string, input: { instance: string; property: string }) => edit((document) => addInput(document, id, input)),
-      removeInput: (id: string, input: { instance: string; property: string }) =>
-        edit((document) => removeInput(document, id, input)),
+      addInput: (id: string, input: InputRef, refresh = false) => edit((document) => addInput(document, id, input, refresh)),
+      removeInput: (id: string, input: InputRef) => edit((document) => removeInput(document, id, input)),
       updateParameter: (key: string, patch: Partial<StrategyParameter>) =>
         edit((document) => updateStrategyParameter(document, key, patch)),
       setManagement: (id: string, owner: string | null) => {
@@ -865,12 +986,17 @@ export function useStudioController(language: SupportedLanguage) {
       confirmDelete,
       confirmRemoveElement,
       confirmRemoveParameter,
+      confirmRemoveRule,
       connectSteps,
       connectValue,
+      connectMember,
+      changeUsedValue,
+      chooseFirstUse,
       dropObject,
       dropStep,
       edit,
       elementDisplayName,
+      inputContext,
       insert,
       notify,
       pauseWizard,
@@ -879,10 +1005,12 @@ export function useStudioController(language: SupportedLanguage) {
       request,
       requestRemoveElement,
       requestRemoveParameter,
+      requestRemoveRule,
       resumeWizard,
       save,
       select,
       selectQuietly,
+      setUsage,
       startConnection,
       startWizard,
       writeBlocks,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { FunctionDescription } from '../api/elementTypes';
 import type { ExpressionToken, VisibleName } from '../api/objects';
-import { callAt, completionsAt, displayName, matchingBrackets } from './formulaAssist';
+import { callAt, completionsAt, displayName, matchingBrackets, methodCallAt } from './formulaAssist';
 
 const label = (de: string, en: string = de) => ({ de, en });
 
@@ -12,6 +12,7 @@ const ema: VisibleName = {
   kind: 'instance',
   datatype: null,
   propertiesTruncated: false,
+  methods: [],
   contents: [],
   properties: [
     { key: 'wert', label: label('Wert', 'Value'), datatype: 'number', explanation: label('Der Wert.', 'The value.'), choices: [], previousValue: true },
@@ -25,6 +26,7 @@ const berechnung: VisibleName = {
   kind: 'result',
   datatype: null,
   propertiesTruncated: false,
+  methods: [],
   contents: [],
   properties: [{ key: 'ergebnis', label: label('Ergebnis', 'Result'), datatype: 'number', explanation: null, choices: [], previousValue: false }],
 };
@@ -103,6 +105,66 @@ describe('the explanation of the arguments', () => {
   it('names no function outside of all brackets', () => {
     expect(callAt(tokens, text, 0, functions)).toBeNull();
     expect(callAt(tokens, text, 16, functions)).toBeNull();
+  });
+});
+
+const gauge: VisibleName = {
+  display: 'Pegel',
+  path: ['pegel'],
+  kind: 'instance',
+  datatype: null,
+  propertiesTruncated: false,
+  contents: [],
+  properties: [{ key: 'stand', label: label('Stand', 'Reading'), datatype: 'number', explanation: null, choices: [], previousValue: false }],
+  methods: [
+    {
+      key: 'mittel',
+      label: label('Mittel', 'Average'),
+      datatype: 'number',
+      explanation: label('Der Mittelwert der letzten Kerzen.', 'The mean of the last candles.'),
+      choices: [],
+      previousValue: false,
+      arguments: [
+        { key: 'anzahl', label: label('Anzahl', 'Count'), datatype: 'integer', required: true, default: null, explanation: label('Wie viele Kerzen.', 'How many candles.'), choices: [] },
+        { key: 'gewicht', label: label('Gewicht', 'Weight'), datatype: 'number', required: false, default: 1, explanation: null, choices: [] },
+      ],
+    },
+  ],
+};
+
+describe('methods in the formula view (specification 5.4)', () => {
+  it('suggests the properties and the methods of an object after its name, a method with its opening bracket', () => {
+    const result = completionsAt('pegel.', 6, [gauge], functions, null, 'de');
+    expect(result?.items.map((item) => [item.label, item.insert, item.detail])).toEqual([
+      ['Stand', 'Stand', 'number'],
+      ['Mittel', 'Mittel(', 'method'],
+    ]);
+    expect(result?.items[1]?.tip).toBe('Der Mittelwert der letzten Kerzen.');
+    expect(completionsAt('pegel.Mi', 8, [gauge], functions, null, 'de')?.items.map((item) => item.label)).toEqual(['Mittel']);
+    expect(completionsAt('pegel.', 6, [gauge], functions, null, 'en')?.items[1]).toMatchObject({ label: 'Average', insert: 'Average(' });
+  });
+
+  // pegel.Mittel(3; 0.5)
+  const call = 'pegel.Mittel(3; 0.5)';
+  const callTokens: ExpressionToken[] = [
+    token(0, 12, 'name'),
+    token(12, 13, 'bracket', 5),
+    token(13, 14, 'value'),
+    token(14, 15, 'separator'),
+    token(16, 19, 'value'),
+    token(19, 20, 'bracket', 1),
+  ];
+
+  it('names the method and the argument the caret is at, so that the arguments are explained while they are typed', () => {
+    expect(methodCallAt(callTokens, call, 14, [gauge])).toMatchObject({ method: { key: 'mittel' }, argument: 0 });
+    expect(methodCallAt(callTokens, call, 17, [gauge])).toMatchObject({ method: { key: 'mittel' }, argument: 1 });
+    expect(methodCallAt(callTokens, call, 20, [gauge])).toBeNull();
+    expect(methodCallAt(callTokens, call, 5, [gauge])).toBeNull();
+    // a function is no method
+    expect(methodCallAt(tokens, text, 4, [gauge])).toBeNull();
+    // the name of the method is found by its label in either language and by its key, also in square brackets
+    const bracketed = '[Pegel].[Average](1)';
+    expect(methodCallAt([token(0, 17, 'name'), token(17, 18, 'bracket', 4), token(18, 19, 'value'), token(19, 20, 'bracket', 1)], bracketed, 19, [gauge])).toMatchObject({ method: { key: 'mittel' } });
   });
 });
 

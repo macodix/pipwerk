@@ -71,7 +71,11 @@ describe('the blocks (specification 5.4)', () => {
     const api = await open(user);
     clickNode(nodeByName('StopLoss'));
     const panel = await screen.findByTestId('expression-ausdruck');
-    expect(within(screen.getByTestId('props-element')).queryAllByTestId('input-chip')).toHaveLength(0);
+    // so far the step only names a value of an object in its expression: no input, so nothing to remove here
+    await waitFor(() => {
+      expect(within(screen.getByTestId('sec-used')).getAllByTestId('used-row')).toHaveLength(1);
+    });
+    expect(within(screen.getByTestId('sec-used')).queryAllByRole('button', { name: 'Verbindung entfernen' })).toHaveLength(0);
 
     // the first operand of the comparison is "Richtung › Ergebnis": pick a value of an object instead
     const left = await within(panel).findByTestId('cmp-left-select');
@@ -79,7 +83,7 @@ describe('the blocks (specification 5.4)', () => {
 
     // every object whose value the expression uses is an input of the step: the one chosen and the one that was there
     await waitFor(() => {
-      expect(within(screen.getByTestId('props-element')).getAllByTestId('input-chip')).toHaveLength(2);
+      expect(within(screen.getByTestId('sec-used')).getAllByTestId('used-row')).toHaveLength(2);
     });
     const groups = Array.from(panel.querySelectorAll('[data-testid="cmp-left-select"] optgroup')).map((group) => group.getAttribute('label'));
     expect(groups.slice(0, 5)).toEqual(['Verbundene Werte', 'Objekte der Strategie', 'Objekte der Anwendung', 'Ergebnisse', 'Strategieparameter']);
