@@ -202,7 +202,7 @@ export function usesName(block: Block, matches: (path: readonly string[]) => boo
 export function valueKey(block: Block): string {
   switch (block.kind) {
     case 'name':
-      return `n:${(block.path ?? []).join('\u001f')}`;
+      return `${block.call === true ? 'm' : 'n'}:${(block.path ?? []).join('\u001f')}`;
     case 'literal':
       return block.datatype === 'text' ? 'k:str' : block.datatype === 'boolean' ? 'k:bool' : 'k:num';
     case 'arithmetic':

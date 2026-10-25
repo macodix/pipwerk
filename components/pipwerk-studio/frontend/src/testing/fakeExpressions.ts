@@ -30,7 +30,7 @@ export function blocksToStored(block: Json | null | undefined): string {
   const children = blocksIn(block.children).map(blocksToStored);
   switch (block.kind) {
     case 'name':
-      return (block.path as string[]).join('.');
+      return block.call === true ? `${(block.path as string[]).join('.')}(${children.join('; ')})` : (block.path as string[]).join('.');
     case 'literal':
       if (block.datatype === 'text') {
         return `"${text(block.value).replaceAll('"', '""')}"`;
@@ -131,6 +131,30 @@ function parseAtom(source: string): Parsed | null {
     path.push(next[1] ?? '');
     rest = rest.slice(next[0].length);
   }
+  if (path.length > 1 && rest.startsWith('(')) {
+    // the result of a method: the blocks of the arguments are the children
+    const children: Json[] = [];
+    rest = rest.slice(1);
+    if (skip(rest).startsWith(')')) {
+      return { block: { kind: 'name', path, call: true }, rest: skip(rest).slice(1) };
+    }
+    for (;;) {
+      const argument = parseExpression(rest);
+      if (argument === null) {
+        return null;
+      }
+      children.push(argument.block);
+      rest = skip(argument.rest);
+      if (rest.startsWith(';')) {
+        rest = rest.slice(1);
+        continue;
+      }
+      if (rest.startsWith(')')) {
+        return { block: { kind: 'name', path, call: true, children }, rest: rest.slice(1) };
+      }
+      return null;
+    }
+  }
   return { block: { kind: 'name', path }, rest };
 }
 
@@ -181,17 +205,65 @@ function property(key: string, de: string, en: string, datatype = 'number', prev
   return { key, label: label(de, en), datatype, explanation: null, choices, previous_value: previous };
 }
 
-function nameOf(display: string, path: string[], kind: string, properties: Json[] = [], datatype: string | null = null): Json {
-  return { display, path, kind, datatype, properties, properties_truncated: false, contents: [] };
+function nameOf(display: string, path: string[], kind: string, properties: Json[] = [], datatype: string | null = null, methods: Json[] = []): Json {
+  return { display, path, kind, datatype, properties, methods, properties_truncated: false, contents: [] };
 }
 
-/** What can be used in the expressions of the document: its instances, the results of its steps, the parameters, the candle. */
-export function namesOf(document: Json): Json[] {
+function pair(value: unknown): { de: string; en: string } {
+  const record = typeof value === 'object' && value !== null ? (value as Json) : {};
+  return { de: text(record.de), en: text(record.en) };
+}
+
+/** The properties and methods the type description of an instance names; a type without methods stands for one value, "Wert". */
+function membersOf(type: Json | undefined): { properties: Json[]; methods: Json[] } {
+  const methods = blocksIn(type?.methods);
+  if (type === undefined || methods.length === 0) {
+    return { properties: [property('wert', 'Wert', 'Value', 'number', true)], methods: [] };
+  }
+  return {
+    properties: blocksIn(type.properties).map((entry) => ({
+      key: entry.id,
+      label: pair(entry.label),
+      datatype: entry.datatype,
+      explanation: pair(entry.explanation),
+      choices: [],
+      previous_value: false,
+    })),
+    methods: methods.map((method) => ({
+      key: method.id,
+      label: pair(method.label),
+      datatype: method.datatype,
+      explanation: pair(method.explanation),
+      choices: [],
+      previous_value: false,
+      arguments: blocksIn(method.arguments).map((argument) => ({
+        key: argument.id,
+        label: pair(argument.label),
+        datatype: argument.datatype,
+        required: argument.required === true,
+        default: argument.default ?? null,
+        explanation: pair(argument.explanation),
+        choices: [],
+      })),
+    })),
+  };
+}
+
+/**
+ * What can be used in the expressions of the document: its instances, the results of its steps, the parameters, the
+ * candle. `usable` says whether the instance of an element can be used at the place of the expression (the real
+ * endpoint leaves out the ones that cannot); by default every instance can.
+ */
+export function namesOf(document: Json, types: ReadonlyMap<string, Json> = new Map(), usable: (instanceKey: string) => boolean = () => true): Json[] {
   const names: Json[] = [];
   for (const element of blocksIn(document.elements)) {
     const instance = element.instance as Json | null | undefined;
     if (instance !== null && instance !== undefined) {
-      names.push(nameOf(text(instance.name), [text(instance.key)], 'instance', [property('wert', 'Wert', 'Value', 'number', true)]));
+      if (!usable(text(instance.key))) {
+        continue;
+      }
+      const members = membersOf(types.get(text(element.type)));
+      names.push(nameOf(text(instance.name), [text(instance.key)], 'instance', members.properties, null, members.methods));
     } else if (typeof element.key === 'string' && element.key !== '') {
       names.push(nameOf(text(element.name), [element.key], 'result', [property('ergebnis', 'Ergebnis', 'Result')]));
     }

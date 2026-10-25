@@ -75,7 +75,8 @@
     "timestamp": "Point in time",
     "date": "Date",
     "expression": "Expression",
-    "object": "Object"
+    "object": "Object",
+    "method": "Method"
   },
   "binding": {
     "unset": "not assigned",
@@ -159,6 +160,10 @@
     "assignment": "Assignment"
   },
   "expression": {
+    "candlesBack": "going back",
+    "candles": "candles",
+    "candlesBackNumber": "Number of candles back",
+    "crossNothing": "Nothing can cross without an earlier value. Choose a value on one side that has an earlier value, for example an indicator.",
     "empty": "Still empty.",
     "hasError": "The expression has an error and cannot be shown as a sentence.",
     "formula": "Formula",

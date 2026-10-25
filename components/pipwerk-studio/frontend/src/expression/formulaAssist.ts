@@ -1,5 +1,5 @@
 import type { FunctionDescription } from '../api/elementTypes';
-import type { ExpressionToken, VisibleName, VisibleProperty } from '../api/objects';
+import type { ExpressionToken, VisibleMethod, VisibleName, VisibleProperty } from '../api/objects';
 import type { SupportedLanguage } from '../i18n';
 import type { TypeIndex } from '../model/typeIndex';
 
@@ -39,7 +39,12 @@ function segmentsOf(qualifier: string): string[] {
   return parts;
 }
 
-type Node = { properties: readonly VisibleProperty[]; contents: readonly VisibleName[]; parameters: readonly VisibleName[] };
+type Node = {
+  properties: readonly VisibleProperty[];
+  methods: readonly VisibleMethod[];
+  contents: readonly VisibleName[];
+  parameters: readonly VisibleName[];
+};
 
 function objectTypeOfProperty(types: TypeIndex | null, key: string): string | null {
   if (types === null) {
@@ -56,7 +61,9 @@ function objectTypeOfProperty(types: TypeIndex | null, key: string): string | nu
 }
 
 function nodeOf(name: VisibleName): Node {
-  return name.kind === 'strategy_parameter' ? { properties: [], contents: [], parameters: [name] } : { properties: name.properties, contents: name.contents, parameters: [] };
+  return name.kind === 'strategy_parameter'
+    ? { properties: [], methods: [], contents: [], parameters: [name] }
+    : { properties: name.properties, methods: name.methods, contents: name.contents, parameters: [] };
 }
 
 function matches(name: VisibleName, segment: string): boolean {
@@ -102,6 +109,16 @@ function propertyCompletion(property: VisibleProperty, language: SupportedLangua
   };
 }
 
+/** A method is suggested with its opening bracket: the arguments are explained while they are typed. */
+function methodCompletion(method: VisibleMethod, language: SupportedLanguage): Completion {
+  return {
+    label: method.label[language],
+    insert: `${displayName(method.label[language])}(`,
+    detail: 'method',
+    tip: method.explanation === null ? '' : method.explanation[language],
+  };
+}
+
 /** The suggestions for the text before the caret, or `null` if there is nothing to suggest. */
 export function completionsAt(
   text: string,
@@ -126,6 +143,7 @@ export function completionsAt(
     };
     for (const node of nodes) {
       node.properties.forEach((property) => { push(propertyCompletion(property, language)); });
+      node.methods.forEach((method) => { push(methodCompletion(method, language)); });
       node.contents.forEach((content) => {
         push({ label: content.display, insert: displayName(content.display), detail: '', tip: '' });
       });
@@ -161,9 +179,11 @@ export function completionsAt(
 
 export type CallHint = { fn: FunctionDescription; argument: number };
 
-/** The function whose brackets the caret is in and the number of the argument it is at, from the tokens of the text. */
-export function callAt(tokens: readonly ExpressionToken[], text: string, caret: number, functions: readonly FunctionDescription[]): CallHint | null {
-  const stack: { fn: string | null; argument: number }[] = [];
+type OpenCall = { fn: string | null; member: string | null; argument: number };
+
+/** The calls whose brackets the caret is in, the innermost last: the function or the name before the bracket, and the argument the caret is at. */
+function openCalls(tokens: readonly ExpressionToken[], text: string, caret: number): OpenCall[] {
+  const stack: OpenCall[] = [];
   tokens.forEach((token, index) => {
     if (token.start >= caret) {
       return;
@@ -171,7 +191,12 @@ export function callAt(tokens: readonly ExpressionToken[], text: string, caret: 
     if (token.kind === 'bracket') {
       if (text[token.start] === '(') {
         const previous = tokens[index - 1];
-        stack.push({ fn: previous !== undefined && previous.kind === 'function' && previous.end === token.start ? text.slice(previous.start, previous.end) : null, argument: 0 });
+        const adjacent = previous !== undefined && previous.end === token.start;
+        stack.push({
+          fn: adjacent && previous.kind === 'function' ? text.slice(previous.start, previous.end) : null,
+          member: adjacent && previous.kind === 'name' ? text.slice(previous.start, previous.end) : null,
+          argument: 0,
+        });
       } else if (token.end <= caret) {
         stack.pop();
       }
@@ -182,13 +207,48 @@ export function callAt(tokens: readonly ExpressionToken[], text: string, caret: 
       }
     }
   });
-  const top = stack[stack.length - 1];
+  return stack;
+}
+
+/** The function whose brackets the caret is in and the number of the argument it is at, from the tokens of the text. */
+export function callAt(tokens: readonly ExpressionToken[], text: string, caret: number, functions: readonly FunctionDescription[]): CallHint | null {
+  const top = openCalls(tokens, text, caret).at(-1);
   if (top === undefined || top.fn === null) {
     return null;
   }
   const wanted = top.fn.toUpperCase();
   const fn = functions.find((candidate) => candidate.name === wanted);
   return fn === undefined ? null : { fn, argument: top.argument };
+}
+
+export type MethodHint = { method: VisibleMethod; argument: number };
+
+function allNames(names: readonly VisibleName[]): VisibleName[] {
+  return names.flatMap((name) => [name, ...allNames(name.contents)]);
+}
+
+/** The last part of a name as written: `[EMA 20].[Wert vor]` gives `wert vor`. */
+function lastSegment(written: string): string {
+  const parts = segmentsOf(written);
+  return parts[parts.length - 1] ?? '';
+}
+
+/** The method whose brackets the caret is in and the number of its argument, for the explanation of the arguments while typing. */
+export function methodCallAt(tokens: readonly ExpressionToken[], text: string, caret: number, names: readonly VisibleName[]): MethodHint | null {
+  const top = openCalls(tokens, text, caret).at(-1);
+  if (top === undefined || top.member === null) {
+    return null;
+  }
+  const wanted = lastSegment(top.member);
+  for (const name of allNames(names)) {
+    const method = name.methods.find(
+      (candidate) => candidate.key.toLowerCase() === wanted || candidate.label.de.toLowerCase() === wanted || candidate.label.en.toLowerCase() === wanted,
+    );
+    if (method !== undefined) {
+      return { method, argument: top.argument };
+    }
+  }
+  return null;
 }
 
 /** The positions of the two brackets that belong together, if the caret stands at one of them. */

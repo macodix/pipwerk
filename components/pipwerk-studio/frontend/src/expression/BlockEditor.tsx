@@ -25,7 +25,7 @@ import {
   type Block,
   type ConditionKind,
 } from './blocks';
-import { findOption, matchChoice, type ValueGroup, type ValueGroupId, type ValueOption } from './options';
+import { blockOfOption, findOption, matchChoice, selectKeyOf, type ValueGroup, type ValueGroupId, type ValueOption } from './options';
 
 /**
  * The block editor (specification 5.4, req-ui-015): a value is chosen from lists, a condition is put together from
@@ -52,7 +52,7 @@ function valueFunctions(functions: readonly FunctionDescription[]): FunctionDesc
 /** The hint a block gives to the block it is compared with: the choices of the property it names. */
 function hintOf(block: Block, ctx: EditorContext): ValueHint {
   if (block.kind === 'name') {
-    const option = findOption(ctx.groups, block.path);
+    const option = findOption(ctx.groups, block.path, block.call === true);
     if (option !== undefined && option.choices.length > 0) {
       return { choices: option.choices };
     }
@@ -61,6 +61,22 @@ function hintOf(block: Block, ctx: EditorContext): ValueHint {
     return hintOf(child(block, 1), ctx) ?? hintOf(child(block, 2), ctx);
   }
   return undefined;
+}
+
+/**
+ * Whether a value has an earlier value, so that something can cross it (specification 3.4). Only a value the endpoint
+ * names with an earlier value has one; a fixed value, a strategy parameter or a calculation does not.
+ */
+function hasPrevious(block: Block, ctx: EditorContext): boolean {
+  if (block.kind === 'name') {
+    return findOption(ctx.groups, block.path, block.call === true)?.previousValue === true;
+  }
+  return block.kind === 'function' && block.function === 'PREVIOUS';
+}
+
+/** Both sides are chosen and neither has an earlier value: nothing can cross (the blocks do not offer the crossing then). */
+function nothingCanCross(left: Block, right: Block, ctx: EditorContext): boolean {
+  return !isEmptyBlock(left) && !isEmptyBlock(right) && !hasPrevious(left, ctx) && !hasPrevious(right, ctx);
 }
 
 function groupLabelKey(id: ValueGroupId): string {
@@ -92,16 +108,18 @@ export function ValueEditor({
   testid?: string;
 }) {
   const { t } = useTranslation();
-  const key = valueKey(value);
-  const known = key === '' || !key.startsWith('n:') || findOption(ctx.groups, value.path) !== undefined;
+  const key = value.kind === 'name' ? selectKeyOf(value, ctx.groups) : valueKey(value);
+  const known = key === '' || !(key.startsWith('n:') || key.startsWith('m:')) || findOption(ctx.groups, value.path, value.call === true) !== undefined;
   const empty = isEmptyBlock(value);
   const functions = useMemo(() => valueFunctions(ctx.functions), [ctx.functions]);
   const sub = (block: Block, change: (next: Block) => void, nested?: ValueHint) => (
     <ValueEditor value={block} onChange={change} ctx={ctx} hint={nested} />
   );
   const pick = (selected: string): void => {
-    onChange(blockForKey(selected, value));
+    const chosen = ctx.groups.flatMap((group) => group.options).find((option) => option.key === selected);
+    onChange(chosen === undefined ? blockForKey(selected, value) : blockOfOption(chosen));
   };
+  const method = value.kind === 'name' && value.call === true ? findOption(ctx.groups, value.path, true)?.method ?? null : null;
   const functionOf = (name: string | undefined): FunctionDescription | undefined => functions.find((fn) => fn.name === name);
 
   return (
@@ -119,7 +137,7 @@ export function ValueEditor({
           <optgroup key={group.id} label={t(groupLabelKey(group.id))}>
             {group.options.map((option) => (
               <option key={option.key} value={option.key}>
-                {option.label}
+                {option.method !== null && option.args === null ? `${option.label} (${t('properties.method')})` : option.label}
               </option>
             ))}
           </optgroup>
@@ -190,8 +208,39 @@ export function ValueEditor({
         </Select>
       ) : null}
 
+      {value.kind === 'name' && value.call === true ? (
+        <span className="vb-inner" data-testid="method-args">
+          {childrenOf(value).map((argument, index) => {
+            const description = method?.arguments[index];
+            return (
+              <Fragment key={index}>
+                {description !== undefined ? (
+                  <span className="vb-caption" data-tip={description.explanation === null ? undefined : description.explanation[ctx.language]}>
+                    {description.label[ctx.language]}
+                  </span>
+                ) : null}
+                {sub(argument, (next) => { onChange(withChild(value, index, next)); }, description === undefined || description.choices.length === 0 ? undefined : { choices: description.choices })}
+              </Fragment>
+            );
+          })}
+        </span>
+      ) : null}
+
       {value.kind === 'function' && value.function === 'PREVIOUS' ? (
-        <span className="vb-inner">{sub(child(value, 0), (next) => { onChange(withChildren(value, [next])); }, hint)}</span>
+        <span className="vb-inner" data-testid="previous-value">
+          {sub(child(value, 0), (next) => { onChange(withChild(value, 0, next)); }, hint)}
+          <span className="vb-caption">{t('expression.candlesBack')}</span>
+          <NumberInput
+            value={childrenOf(value)[1]?.kind === 'literal' && typeof childrenOf(value)[1]?.value === 'number' ? (childrenOf(value)[1]?.value as number) : 1}
+            onChange={(typed) => {
+              const count = typed === '' || typed < 1 ? 1 : Math.floor(typed);
+              onChange(withChildren(value, count === 1 ? [child(value, 0)] : [child(value, 0), numberBlock(count)]));
+            }}
+            ariaLabel={t('expression.candlesBackNumber')}
+            testid={testid === undefined ? 'previous-count' : `${testid}-previous-count`}
+          />
+          <span className="vb-caption">{t('expression.candles')}</span>
+        </span>
       ) : null}
 
       {value.kind === 'arithmetic' && childrenOf(value).length === 2 ? (
@@ -333,7 +382,12 @@ export function CondEditor({
           testid="cond-kind"
         >
           {CONDITION_KINDS.map((entry) => (
-            <option key={entry} value={entry}>
+            <option
+              key={entry}
+              value={entry}
+              // a comparison of two values without an earlier value cannot become a crossing
+              disabled={entry === 'cross' && kind === 'compare' && shown.kind === 'comparison' && nothingCanCross(left, right, ctx)}
+            >
               {t(`expression.conditionKinds.${entry}`)}
             </option>
           ))}
@@ -378,6 +432,11 @@ export function CondEditor({
             <option value="down">{t('expression.directions.down')}</option>
             <option value="any">{t('expression.directions.any')}</option>
           </Select>
+          {nothingCanCross(left, right, ctx) ? (
+            <p className="muted cb-hint" data-testid="cross-hint">
+              {t('expression.crossNothing')}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

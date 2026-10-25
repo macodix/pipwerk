@@ -33,6 +33,8 @@ export type FakeApiOptions = {
   findings?: (document: Json) => FakeFinding[];
   /** The report of the use of the instances (`/api/v1/usage`); by default a small one made from inputs and expressions. */
   usage?: (document: Json) => Json;
+  /** Whether the instance with this key is usable at the element of an expression (`null`: no element); by default every instance is. */
+  usableAt?: (document: Json, elementId: string | null, instanceKey: string) => boolean;
   /** Makes a kind of request fail with this answer. */
   fail?: Partial<Record<string, FakeResponse>>;
   /** Directories that already hold a file of the same name: moving there fails with a conflict. */
@@ -83,7 +85,7 @@ function check(document: Json, types: Map<string, Json>): FakeFinding[] {
  * ones its expressions name; the first use is the stored element if it uses the instance, else the first element in
  * the order of the document; every instance is usable everywhere. The real backend walks the flow.
  */
-function usageReport(document: Json): Json {
+function usageReport(document: Json, types: ReadonlyMap<string, Json>): Json {
   const elements = asArray(document.elements);
   const instanceElements = elements.filter((element) => typeof asRecord(element.instance).key === 'string');
   const keys = instanceElements.map((element) => String(asRecord(element.instance).key));
@@ -137,7 +139,7 @@ function usageReport(document: Json): Json {
       name: instance.name,
       element: element.id,
       object_type: instance.object_type,
-      can_refresh: false,
+      can_refresh: types.get(String(element.type))?.can_refresh === true,
       connected: first !== null,
       first_use: first,
       first_use_source: first === null ? null : stored !== null ? 'stored' : 'flow',
@@ -321,7 +323,7 @@ export class FakeApi {
     }
     if (url === '/api/v1/usage' && method === 'POST') {
       const document = asRecord(body.document);
-      return fail('usage') ?? { status: 200, body: this.options.usage === undefined ? usageReport(document) : this.options.usage(document) };
+      return fail('usage') ?? { status: 200, body: this.options.usage === undefined ? usageReport(document, this.typeById) : this.options.usage(document) };
     }
     if (url === '/api/v1/removals' && method === 'POST') {
       return fail('removals') ?? removals(body);
@@ -349,8 +351,11 @@ export class FakeApi {
       return { status: 200, body: { key } };
     }
     if (url === '/api/v1/expressions' && method === 'POST') {
-      const names = namesOf(asRecord(body.document));
       const items = asArray(body.items).map((entry) => {
+        // the element of the place: the real endpoint leaves out the instances that are not usable there
+        const at = /^\/elements\/(\d+)\//.exec(String(entry.pointer ?? ''));
+        const elementId = at === null ? null : String(asArray(asRecord(body.document).elements)[Number(at[1])]?.id ?? '');
+        const names = namesOf(asRecord(body.document), this.typeById, (key) => this.options.usableAt?.(asRecord(body.document), elementId, key) ?? true);
         const stored = entry.blocks !== undefined ? blocksToStored(asRecord(entry.blocks)) : String(entry.stored ?? entry.display ?? '');
         const blocks = storedToBlocks(stored);
         // a text outside of the part of the language the fake knows is reported as a typing error at its end

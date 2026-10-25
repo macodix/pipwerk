@@ -75,7 +75,8 @@
     "timestamp": "Zeitpunkt",
     "date": "Datum",
     "expression": "Ausdruck",
-    "object": "Objekt"
+    "object": "Objekt",
+    "method": "Methode"
   },
   "binding": {
     "unset": "nicht belegt",
@@ -159,6 +160,10 @@
     "assignment": "Belegung"
   },
   "expression": {
+    "candlesBack": "vor",
+    "candles": "Kerzen",
+    "candlesBackNumber": "Zahl der Kerzen zurück",
+    "crossNothing": "Ohne früheren Wert kann nichts kreuzen. Wählen Sie auf einer Seite einen Wert, der einen früheren Wert hat, zum Beispiel einen Indikator.",
     "empty": "Noch leer.",
     "hasError": "Der Ausdruck hat einen Fehler und lässt sich nicht als Satz zeigen.",
     "formula": "Formel",
