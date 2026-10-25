@@ -1,3 +1,4 @@
+import { select } from './builder';
 import { boxOf, clickMenu, expect, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
 import type { Page } from '@playwright/test';
 
@@ -73,7 +74,8 @@ async function inViewport(page: Page, testId: string): Promise<void> {
 }
 
 for (const size of SIZES) {
-  test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, errors }) => {    await openApp(page, { width: size.width, height: size.height });
+  test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, errors }) => {
+    await openApp(page, { width: size.width, height: size.height });
     await openStrategy(page, 'EMA-Trendfolge');
     await expect(page.getByTestId('status-pill')).toContainText('EMA-Trendfolge');
     await checkLayout(page, size.width, size.height);
@@ -134,7 +136,8 @@ for (const size of SIZES) {
 
 // In the two sizes of a smartphone the menu and the dialogs are reachable and lie within the window (specification 5.1).
 for (const size of SIZES.filter((candidate) => candidate.width === 390 || candidate.width === 844)) {
-  test(`menu and dialogs in ${size.width} x ${size.height}`, async ({ page, errors }) => {    await openApp(page, { width: size.width, height: size.height });
+  test(`menu and dialogs in ${size.width} x ${size.height}`, async ({ page, errors }) => {
+    await openApp(page, { width: size.width, height: size.height });
     await openStrategy(page, 'EMA-Trendfolge');
 
     const withinWindow = async (testId: string | null): Promise<void> => {
@@ -168,6 +171,29 @@ for (const size of SIZES.filter((candidate) => candidate.width === 390 || candid
     await page.getByTestId('strategy-name').fill('EMA-Trendfolge geändert');
     await clickMenu(page, 'close');
     await withinWindow(null);
+    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
+
+    // the question before deleting
+    await clickMenu(page, 'delete');
+    await withinWindow(null);
+    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
+
+    // the question "Dateien verschieben?" in the settings
+    await clickMenu(page, 'settings');
+    await withinWindow(null);
+    await page.getByRole('dialog').getByLabel('Verzeichnis (absoluter Pfad)').fill('/pfad/gibt/es/nicht');
+    await page.getByRole('dialog').getByRole('button', { name: 'Verzeichnis ändern' }).click();
+    await expect(page.getByRole('dialog').getByText('Dateien verschieben?')).toBeVisible();
+    await withinWindow(null);
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Ja, Dateien verschieben' })).toBeInViewport();
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' })).toBeInViewport();
+    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).first().click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
+
+    // the question before removing an object that steps use
+    await select(page, 'EMA20');
+    await page.getByTestId('remove-element').click();
+    await withinWindow('remove-users');
     await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
 
     // about

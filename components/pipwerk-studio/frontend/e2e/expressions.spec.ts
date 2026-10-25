@@ -276,6 +276,11 @@ for (const size of PHONES) {
       // the buttons of the steps can be reached
       await expect(page.getByTestId('wz-next')).toBeInViewport();
       await expect(page.getByTestId('wz-leave')).toBeVisible();
+      // the fifth step and its last button as well
+      await page.getByTestId('wz-next').click();
+      await expect(page.getByTestId('wz-step-5')).toBeVisible();
+      await fitsTheWindow(page, '[data-testid="wz-step-5"]');
+      await expect(page.getByTestId('wz-next')).toBeInViewport();
     });
 
     test('renaming and removing work with clicks', async ({ page }) => {

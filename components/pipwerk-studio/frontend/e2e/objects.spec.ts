@@ -11,7 +11,8 @@ async function showEverything(page: Page): Promise<void> {
   await expect.poll(async () => (await page.getByTestId('canvas').getAttribute('data-view')) ?? '').not.toBe('');
 }
 
-test('"EMA-Trendfolge" opens without a finding of the kind error; the objects without a connection would be named', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
+test('"EMA-Trendfolge" opens without a finding of the kind error; the objects without a connection would be named', async ({ page }) => {
+  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   // the check runs after opening; a hint may stand there, an error may not
   await expect(page.getByTestId('findings-count')).toBeVisible();
@@ -23,7 +24,8 @@ test('"EMA-Trendfolge" opens without a finding of the kind error; the objects wi
 });
 
 for (const orientation of ['v', 'h'] as const) {
-  test(`each object lies beside the element of its first use, nothing is covered (flow ${orientation === 'v' ? 'vertical' : 'horizontal'})`, async ({ page }) => {    await openApp(page, { width: 1920, height: 1080 });
+  test(`each object lies beside the element of its first use, nothing is covered (flow ${orientation === 'v' ? 'vertical' : 'horizontal'})`, async ({ page }) => {
+    await openApp(page, { width: 1920, height: 1080 });
     await openStrategy(page, 'EMA-Trendfolge');
     if (orientation === 'h') {
       await page.getByTestId('orient-h').click();
@@ -75,7 +77,8 @@ for (const orientation of ['v', 'h'] as const) {
   });
 }
 
-test('a value is connected by clicking its row and then an element; the first line stays solid, the new one is an input', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
+test('a value is connected by clicking its row and then an element; the first line stays solid, the new one is an input', async ({ page }) => {
+  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
 
@@ -95,7 +98,8 @@ test('a value is connected by clicking its row and then an element; the first li
   await expect(page.getByTestId('wire')).toHaveCount(9);
 });
 
-test('an element that cannot take the object says so, with a click and with a line, and gets no input', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
+test('an element that cannot take the object says so, with a click and with a line, and gets no input', async ({ page }) => {
+  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   await showEverything(page);
   // ATR14 is first used by "StopLoss": "Kreuzen" and "Richtung" come before it
@@ -125,7 +129,8 @@ test('an element that cannot take the object says so, with a click and with a li
   await expect(page.locator('[data-testid="used-group"][data-instance="atr14"]')).toHaveCount(0);
 });
 
-test('a new object that no element uses lies beside the flow, covers nothing, and is connected by its first line', async ({ page }) => {  await openApp(page);
+test('a new object that no element uses lies beside the flow, covers nothing, and is connected by its first line', async ({ page }) => {
+  await openApp(page);
   await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
   await library(page, 'Bedingung').click();
@@ -152,7 +157,8 @@ test('a new object that no element uses lies beside the flow, covers nothing, an
   await expectSaved(page);
 });
 
-test('the one connection point of an element for values is on the side of the objects, in both directions', async ({ page }) => {  await openApp(page, { width: 1920, height: 1080 });
+test('the one connection point of an element for values is on the side of the objects, in both directions', async ({ page }) => {
+  await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
   const port = node(page, 'Kreuzen').locator('.port.data');
   await expect(port).toHaveCount(1);

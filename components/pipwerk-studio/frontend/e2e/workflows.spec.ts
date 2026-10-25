@@ -11,7 +11,8 @@ async function dialogButton(page: Page, name: string | RegExp) {
   return page.getByRole('dialog').getByRole('button', { name });
 }
 
-test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page }, testInfo) => {  // The backend of the run is shared by all browsers: every browser saves a strategy with a name of its own.
+test('a new strategy opens the empty drawing area and says what to do next; saving always works and shows the findings', async ({ page }, testInfo) => {
+  // The backend of the run is shared by all browsers: every browser saves a strategy with a name of its own.
   const name = `Meine erste Strategie ${testInfo.project.name}`;
   await openApp(page);
   await newStrategy(page);
@@ -34,7 +35,8 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   await expect(page.getByRole('dialog').getByRole('button', { name, exact: true })).toBeVisible();
 });
 
-test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page }) => {  await openApp(page);
+test('"Prüfen" shows the findings with the way to fix them, and a click leads to the element', async ({ page }) => {
+  await openApp(page);
   await newStrategy(page);
   await library(page, 'Bedingung').click();
   await expect(node(page, 'Bedingung')).toHaveCount(1);
@@ -53,7 +55,8 @@ test('"Prüfen" shows the findings with the way to fix them, and a click leads t
   await expect(page.getByTestId('element-name')).toHaveValue('Bedingung');
 });
 
-test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page }, testInfo) => {  const savedName = `Gespeicherter Name ${testInfo.project.name}`;
+test('closing, a new strategy and opening ask what to do with unsaved changes: save, discard, cancel', async ({ page }, testInfo) => {
+  const savedName = `Gespeicherter Name ${testInfo.project.name}`;
   await openApp(page);
   await openStrategy(page, 'EMA-Trendfolge');
   await showArea(page, 'props');
@@ -89,7 +92,8 @@ test('closing, a new strategy and opening ask what to do with unsaved changes: s
   await expect(page.getByRole('dialog').getByRole('button', { name: savedName, exact: true })).toBeVisible();
 });
 
-test('the list of strategies shows name, description and last change, and marks a file that cannot be read', async ({ page }) => {  await openApp(page);
+test('the list of strategies shows name, description and last change, and marks a file that cannot be read', async ({ page }) => {
+  await openApp(page);
 
   await clickMenu(page, 'open');
 
@@ -123,7 +127,8 @@ test('the open strategy is deleted after a question; it is gone from the list', 
   await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge' })).toBeVisible();
 });
 
-test('the language of the interface is changed in the settings and stays after reloading', async ({ page }) => {  await openApp(page);
+test('the language of the interface is changed in the settings and stays after reloading', async ({ page }) => {
+  await openApp(page);
   await clickMenu(page, 'settings');
   await page.getByRole('dialog').getByLabel('Sprache').selectOption('English');
   await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText('Settings');
@@ -143,7 +148,8 @@ test('the language of the interface is changed in the settings and stays after r
   await expect(page.getByTestId('param-strip')).toContainText('Strategieparameter');
 });
 
-test('the object directory is changed with the question "Dateien verschieben?", with and without moving', async ({ page }) => {  await openApp(page);
+test('the object directory is changed with the question "Dateien verschieben?", with and without moving', async ({ page }) => {
+  await openApp(page);
   await clickMenu(page, 'settings');
   const dialog = page.getByRole('dialog');
   const directory = dialog.getByLabel('Verzeichnis (absoluter Pfad)');
@@ -193,7 +199,8 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();
 });
 
-test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page }) => {  await openApp(page);
+test('the dialog "Über pipwerk Studio" shows name, version, license and address', async ({ page }) => {
+  await openApp(page);
 
   await page.getByTestId('menu-about').click();
 
