@@ -65,6 +65,42 @@ test('a rule is added to the strategy with parameters, an expression from blocks
   }
 });
 
+// Saving right after the last block must not leave the block out: the expression reaches the document only with the
+// answer of the expression endpoint, and saving waits for it. The answer is held back for a time that is long enough.
+test('saving at once after the last block saves the block, though the answer of the expression endpoint comes late', async ({ page }, testInfo) => {
+  const name = `Speichern wartet ${testInfo.project.name}`;
+  await openApp(page);
+  try {
+    await newStrategyFromScratch(page, name);
+    await showArea(page, 'props');
+    await page.getByTestId('status-pill').click();
+    const section = page.getByTestId('sec-rules');
+    await section.getByTestId('rule-add-select').selectOption({ label: 'eigene Regel' });
+    const card = section.getByTestId('rule-card').last();
+    await card.getByTestId('instance-name').fill('Spätes Ergebnis');
+    await card.getByTestId('own-parameter-new-name').fill('Grenze');
+    await card.getByTestId('own-parameter-add').click();
+    await expect(card.getByTestId('own-parameter')).toHaveCount(1);
+    await card.getByTestId('rule-determined').selectOption({ label: 'Volumen' });
+    await expect(card.getByTestId('rule-comparison')).toHaveValue('hoechstens');
+
+    await page.route('**/api/v1/expressions', async (route) => {
+      if ((route.request().postData() ?? '').includes('"blocks"')) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      await route.continue();
+    });
+    await setValue(card.getByTestId('rule-expression').locator(':scope > .vb'), { calc: [{ pick: 'Grenze' }, '*', { num: 3 }] });
+
+    const stored = await saveAndRead(page, name);
+    expect(stored.rules[0]?.expression).toContain('* 3');
+    await expectSaved(page);
+  } finally {
+    await page.unroute('**/api/v1/expressions');
+    await removeStored(page, name);
+  }
+});
+
 test('an own indicator has own parameters and properties with expressions from blocks', async ({ page }, testInfo) => {
   const name = `Eigener Indikator ${testInfo.project.name}`;
   await openApp(page);

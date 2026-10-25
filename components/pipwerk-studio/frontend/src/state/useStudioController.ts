@@ -78,6 +78,7 @@ import {
   initialStudioState,
   isDirty,
   studioReducer,
+  documentText,
   type ExpressionFocus,
   initialWizard,
   type StudioAction,
@@ -207,6 +208,25 @@ export function useStudioController(language: SupportedLanguage) {
     [],
   );
 
+  // A change of an expression goes through the expression endpoint and reaches the document only with the answer. What
+  // saves or checks the document waits for these changes: a step the user has done is never left out of what is saved.
+  const pendingChanges = useRef(new Set<Promise<void>>());
+  const trackChange = useCallback((change: Promise<unknown>) => {
+    const tracked: Promise<void> = change.then(
+      () => undefined,
+      () => undefined,
+    );
+    pendingChanges.current.add(tracked);
+    void tracked.then(() => {
+      pendingChanges.current.delete(tracked);
+    });
+  }, []);
+  const settleChanges = useCallback(async (): Promise<void> => {
+    while (pendingChanges.current.size > 0) {
+      await Promise.all([...pendingChanges.current]);
+    }
+  }, []);
+
   const select = useCallback((selection: Selection, panel?: Panel) => {
     dispatch({ type: 'select', selection, panel });
   }, []);
@@ -285,19 +305,28 @@ export function useStudioController(language: SupportedLanguage) {
 
   /** Saves always, the first time with POST, then with PUT; the findings of the answer are shown. */
   const save = useCallback(async (): Promise<boolean> => {
-    const current = stateRef.current;
-    const document = current.document;
-    if (document === null) {
+    if (stateRef.current.document === null) {
       return false;
     }
     setBusy(true);
     try {
+      // the changes of expressions that are still on their way come first, so the saved state has all of them
+      await settleChanges();
+      const current = stateRef.current;
+      const document = current.document;
+      if (document === null) {
+        return false;
+      }
       const result = current.persisted ? await replaceStrategy(document) : await createStrategy(document);
       dispatch({
         type: 'saved',
         saved: result.document ?? document,
         findings: result.findings,
-        replaceOpen: result.document !== null && stateRef.current.document === document,
+        // The open document is replaced by the saved one if the user has not changed it since the save began. The
+        // comparison is by content: the state of the interface hands out the same document as a new object after a
+        // render, so the identity says nothing about a change.
+        replaceOpen:
+          result.document !== null && stateRef.current.document !== null && documentText(stateRef.current.document) === documentText(document),
       });
       void queryClient.invalidateQueries({ queryKey: ['objects'] });
       return true;
@@ -307,22 +336,26 @@ export function useStudioController(language: SupportedLanguage) {
     } finally {
       setBusy(false);
     }
-  }, [queryClient, showError]);
+  }, [queryClient, settleChanges, showError]);
 
   const check = useCallback(async () => {
-    const document = stateRef.current.document;
-    if (document === null) {
+    if (stateRef.current.document === null) {
       return;
     }
     setBusy(true);
     try {
+      await settleChanges();
+      const document = stateRef.current.document;
+      if (document === null) {
+        return;
+      }
       dispatch({ type: 'checked', findings: await checkDocument(document) });
     } catch (error) {
       showError('errors.checkFailed', error);
     } finally {
       setBusy(false);
     }
-  }, [showError]);
+  }, [settleChanges, showError]);
 
   const confirmDelete = useCallback(async () => {
     const current = stateRef.current;
@@ -513,17 +546,22 @@ export function useStudioController(language: SupportedLanguage) {
       if (document === null || index === null || pointer === null) {
         return;
       }
-      try {
-        const [answer] = await requestExpressions(document, language, [{ pointer, blocks }]);
-        if (answer !== undefined) {
-          const context = inputContext();
-          edit((latest) => withInputs(setPlaceStored(latest, index, place, answer.stored), ownerElement(place), blocks, context));
+      const write = async (): Promise<void> => {
+        try {
+          const [answer] = await requestExpressions(document, language, [{ pointer, blocks }]);
+          if (answer !== undefined) {
+            const context = inputContext();
+            edit((latest) => withInputs(setPlaceStored(latest, index, place, answer.stored), ownerElement(place), blocks, context));
+          }
+        } catch (error) {
+          showError('errors.insertFailed', error);
         }
-      } catch (error) {
-        showError('errors.insertFailed', error);
-      }
+      };
+      const running = write();
+      trackChange(running);
+      await running;
     },
-    [edit, inputContext, language, showError],
+    [edit, inputContext, language, showError, trackChange],
   );
 
   /** Selects an element without leaving the guided setup (a click on the drawing area leaves it). */
@@ -906,6 +944,7 @@ export function useStudioController(language: SupportedLanguage) {
       writeBlocks,
       setUsage,
       inputContext,
+      trackChange,
       selectQuietly,
       pauseWizard,
       resumeWizard,
@@ -997,6 +1036,7 @@ export function useStudioController(language: SupportedLanguage) {
       edit,
       elementDisplayName,
       inputContext,
+      trackChange,
       insert,
       notify,
       pauseWizard,

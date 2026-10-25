@@ -96,13 +96,22 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
     }
   }, [answer]);
 
+  const waiting = useRef<(() => void) | null>(null);
+  const endWaiting = useCallback(() => {
+    waiting.current?.();
+    waiting.current = null;
+  }, []);
+  const trackChange = studio.actions.trackChange;
+
   useEffect(
     () => () => {
       if (timer.current !== null) {
         window.clearTimeout(timer.current);
+        timer.current = null;
       }
+      endWaiting();
     },
-    [],
+    [endWaiting],
   );
 
   const convert = useCallback(
@@ -137,23 +146,26 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
       inflight.current += 1;
       setDraft(tree);
       setFailed(false);
-      void convert({ blocks: tree })
-        .then((result) => {
-          if (result === null || mine !== sequence.current) {
-            return;
-          }
-          commit(result.stored, result.blocks ?? tree);
-        })
-        .catch(() => {
-          if (mine === sequence.current) {
-            setFailed(true);
-          }
-        })
-        .finally(() => {
-          inflight.current -= 1;
-        });
+      // saving and checking wait for this change: it reaches the document only with the answer of the endpoint
+      trackChange(
+        convert({ blocks: tree })
+          .then((result) => {
+            if (result === null || mine !== sequence.current) {
+              return;
+            }
+            commit(result.stored, result.blocks ?? tree);
+          })
+          .catch(() => {
+            if (mine === sequence.current) {
+              setFailed(true);
+            }
+          })
+          .finally(() => {
+            inflight.current -= 1;
+          }),
+      );
     },
-    [commit, convert],
+    [commit, convert, trackChange],
   );
 
   const setText = useCallback(
@@ -166,30 +178,40 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
       if (timer.current !== null) {
         window.clearTimeout(timer.current);
       }
+      // the waiting time of the typed text counts as a change on its way too (saving waits for it)
+      endWaiting();
+      trackChange(
+        new Promise<void>((resolve) => {
+          waiting.current = resolve;
+        }),
+      );
       timer.current = window.setTimeout(() => {
         timer.current = null;
         inflight.current += 1;
-        void convert({ display: text })
-          .then((result) => {
-            if (result === null || mine !== sequence.current) {
-              return;
-            }
-            setFormula({ text, answer: result });
-            if (result.stored !== placeStoredNow(documentRef.current, placeRef.current)) {
-              commit(result.stored, result.blocks);
-            }
-          })
-          .catch(() => {
-            if (mine === sequence.current) {
-              setFailed(true);
-            }
-          })
-          .finally(() => {
-            inflight.current -= 1;
-          });
+        trackChange(
+          convert({ display: text })
+            .then((result) => {
+              if (result === null || mine !== sequence.current) {
+                return;
+              }
+              setFormula({ text, answer: result });
+              if (result.stored !== placeStoredNow(documentRef.current, placeRef.current)) {
+                commit(result.stored, result.blocks);
+              }
+            })
+            .catch(() => {
+              if (mine === sequence.current) {
+                setFailed(true);
+              }
+            })
+            .finally(() => {
+              inflight.current -= 1;
+            }),
+        );
+        endWaiting();
       }, FORMULA_DELAY_MS);
     },
-    [commit, convert],
+    [commit, convert, endWaiting, trackChange],
   );
 
   const settle = useCallback(() => {
