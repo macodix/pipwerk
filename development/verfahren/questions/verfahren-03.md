@@ -35,4 +35,7 @@ Vorschlag: Schreibe eine Anweisung in `transfer/` für diese Sitzung und melde d
 
 Die Punkte unter „Hindernis“ (Direktaufruf, `run-browser-test`, Playwright-Browser) lege ich als Hinweise vor. Sie halten nichts auf.
 
-**Antwort:**
+**Antwort des Projektleiters (2026-10-25):**
+
+1. Die Quellen liegen unverändert im Verzeichnis der Testumgebung des Vorhabens: `test/verfahren-umsetzung/devhost-import/`, darunter `scripts/agentrun`, `scripts/heartbeat`, `scripts/pidcheck`, `scripts/README.md`, `scripts/tests/agentrun.bats`, `scripts/tests/fakes/` (`claude`, `gh`, `tmux`) und `devteam/lib/startrole`. Lesbar für den Benutzer der Rollen. Zugangsdaten enthalten sie nicht, feste Pfade schon: Beim Übernehmen nach `tools/devhost/` nach E1 ersetzen, damit keine Pfade, Rechner- oder Benutzernamen ins Repository kommen.
+2. Zur Kenntnis genommen, keine Handlung.
