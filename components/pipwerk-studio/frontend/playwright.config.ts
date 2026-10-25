@@ -2,8 +2,17 @@ import { defineConfig, devices } from '@playwright/test';
 
 // The end-to-end tests start their own backend and frontend on separate ports,
 // so they do not interfere with a development instance.
-const backendPort = Number(process.env.PIPWERK_STUDIO_E2E_BACKEND_PORT ?? 18000);
-const frontendPort = Number(process.env.PIPWERK_STUDIO_E2E_FRONTEND_PORT ?? 15173);
+// The ports are required parameters; there are no default ports.
+function requiredPort(name: string): number {
+  const value = process.env[name];
+  if (!value || !/^[0-9]+$/.test(value) || Number(value) < 1 || Number(value) > 65535) {
+    throw new Error(`${name} is required: a port from 1 to 65535 for the end-to-end tests (the check script passes it).`);
+  }
+  return Number(value);
+}
+
+const backendPort = requiredPort('PIPWERK_STUDIO_E2E_BACKEND_PORT');
+const frontendPort = requiredPort('PIPWERK_STUDIO_E2E_FRONTEND_PORT');
 const backendUrl = `http://127.0.0.1:${backendPort}`;
 const frontendUrl = `http://127.0.0.1:${frontendPort}`;
 

@@ -52,9 +52,8 @@ for (const size of [SIZES[0], SIZES[4]]) {
     // the hint of the empty strategy and the guided setup belong to the properties view: they come back there
     await clickMenu(page, 'close');
     const discard = page.getByRole('dialog').getByRole('button', { name: 'Verwerfen' });
-    if (await discard.isVisible()) {
-      await discard.click();
-    }
+    await expect(discard).toBeVisible();
+    await discard.click();
     await showArea(page, 'props');
     await expect(page.getByTestId('props-none').getByText('Keine Strategie geöffnet')).toBeVisible();
     await expect(page.getByText('Keine Strategie geöffnet')).toHaveCount(1);

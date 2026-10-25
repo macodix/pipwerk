@@ -190,10 +190,19 @@ for (const size of SIZES.filter((candidate) => candidate.width === 390 || candid
     await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
 
     // the question before removing an object that steps use
-    // in a window this low the tools of the drawing area lie over the card: the click is sent to the card itself
+    // in a window this low "show all" cannot show everything even at the smallest zoom, and the floating tools
+    // of the drawing area lie over the top of the content: the view is moved down by dragging the empty area,
+    // then the card is clicked like a user does (Playwright checks that nothing covers it)
     await showArea(page, 'canvas');
     await page.getByTestId('zoom-fit').click();
-    await card(page, 'EMA20').dispatchEvent('click');
+    const pane = await boxOf(page.locator('.react-flow__pane'));
+    const edgeX = pane.x + pane.width - 6;
+    const startY = pane.y + pane.height / 2;
+    await page.mouse.move(edgeX, startY);
+    await page.mouse.down();
+    await page.mouse.move(edgeX, startY + 40, { steps: 5 });
+    await page.mouse.up();
+    await card(page, 'EMA20').click();
     await showArea(page, 'props');
     await expect(page.getByTestId('props-element')).toBeVisible();
     await page.getByTestId('remove-element').click();
