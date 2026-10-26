@@ -15,7 +15,7 @@
 # Szenariendatei: claude.scenario neben dem Ersatzprogramm oder die Datei aus FAKE_CLAUDE_SCENARIO.
 # Fehlt sie, endet der Aufruf mit dem Exitcode aus claude.exit (falls vorhanden), sonst mit 0.
 # Aufbau (siehe tests/scenarios/):
-#   limit_text=<Wortlaut ohne Zeitpunkt>          Platzhalter, wird in Auftrag 07 an einer echten Ausgabe nachgewiesen
+#   limit_text=<Wortlaut ohne Zeitpunkt>          Platzhalter wie LIMIT_TEXT in agentrun, an einer echten Ausgabe ungeprüft
 #   limit_text_time=<Wortlaut, {time} = Zeitpunkt>
 #   call: <aktion> [; <aktion> …]                 je Aufruf eine Zeile, der n-te Aufruf liest die n-te Zeile;
 #                                                 nach der letzten Zeile endet jeder Aufruf mit 0

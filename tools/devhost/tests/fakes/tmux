@@ -1,18 +1,63 @@
 #!/usr/bin/env bash
 # Testattrappe für tmux: eine Sitzung ist eine Datei unter sessions/ neben ihr mit Arbeitsverzeichnis und Befehl.
-# Liegt daneben tmux.fail, schlägt new-session fehl.
+# Alle Aufrufe stehen in sessions/.calls.
+# Liegt neben der Attrappe tmux.fail, schlägt new-session fehl.
+#
+# Ohne Szenario (keine Datei claude.scenario neben der Attrappe) läuft der Befehl der Sitzung nicht; die Tests
+# lassen die Sitzung enden, indem sie die Datei der Sitzung löschen, und stellen den Bildschirm mit der Datei
+# sessions/<name>.screen ein.
+# Mit Szenario (claude.scenario neben der Attrappe) läuft der Befehl im Arbeitsverzeichnis im Hintergrund, seine
+# Ausgabe steht in sessions/<name>.screen, und die Sitzung endet mit dem Befehl: ihre Datei wird gelöscht.
+# kill-session beendet den Befehl.
+#   capture-pane  gibt sessions/<name>.screen aus (der „sichtbare Inhalt“), falls vorhanden
+#   send-keys     legt neben der Attrappe die Datei claude.resume an und hängt den Text an sessions/<name>.keys an
 dir="$(dirname "$0")/sessions"
 mkdir -p "$dir"
 echo "$*" >>"$dir/.calls"
 cmd="$1"
 shift
+
+# Wert nach -t, ohne führendes „=“
+target() {
+  while (( $# )); do
+    if [[ "$1" == -t ]]; then
+      echo "${2#=}"
+      return
+    fi
+    shift
+  done
+}
+
 case "$cmd" in
   has-session|kill-session)
-    target="${2#=}"
-    [[ -f "$dir/$target" ]] || exit 1
+    t="$(target "$@")"
+    [[ -f "$dir/$t" ]] || exit 1
     if [[ "$cmd" == kill-session ]]; then
-      rm "$dir/$target"
+      if [[ -f "$dir/$t.pid" ]]; then
+        kill -- "-$(cat "$dir/$t.pid")" 2>/dev/null
+        rm -f "$dir/$t.pid"
+      fi
+      rm "$dir/$t"
     fi
+    exit 0 ;;
+  capture-pane)
+    t="$(target "$@")"
+    [[ -f "$dir/$t.screen" ]] && cat "$dir/$t.screen"
+    exit 0 ;;
+  send-keys)
+    t="$(target "$@")"
+    touch "$dir/../claude.resume"
+    # Text hinter den Optionen -t <ziel> und -l
+    args=("$@")
+    text=""
+    for ((i = 0; i < ${#args[@]}; i++)); do
+      case "${args[i]}" in
+        -t) i=$((i + 1)) ;;
+        -l) ;;
+        *) text+="${args[i]}" ;;
+      esac
+    done
+    echo "$text" >>"$dir/$t.keys"
     exit 0 ;;
   new-session)
     # new-session kann den tmux-Server starten: offenen Deskriptor 8 (Sperre von agentrun) vermerken
@@ -34,6 +79,16 @@ case "$cmd" in
       esac
     done
     { echo "cwd=$cwd"; printf 'arg=%s\n' "$@"; } >"$dir/$name"
+    rm -f "$dir/$name.screen" "$dir/$name.keys"
+    if [[ -f "$dir/../claude.scenario" ]]; then
+      # eigene Prozessgruppe, damit kill-session den Befehl samt Unterprozessen beendet
+      SCREEN="$dir/$name.screen" SESSION="$dir/$name" PIDFILE="$dir/$name.pid" \
+        setsid bash -c 'cd "$1"; shift; "$@" >"$SCREEN" 2>&1; rm -f "$SESSION" "$PIDFILE"' _ "$cwd" "$@" \
+        </dev/null >/dev/null 2>&1 &
+      echo "$!" >"$dir/$name.pid"
+      # die Aufrufe von claude werden in der Reihenfolge der Sitzungsstarts nummeriert
+      sleep 0.2
+    fi
     exit 0 ;;
 esac
 exit 0

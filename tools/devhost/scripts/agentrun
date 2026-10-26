@@ -10,6 +10,21 @@ HEARTBEAT_TIMEOUT="${HEARTBEAT_TIMEOUT:-900}"    # Sekunden ohne Herzschlag bis 
 INTERVAL="${INTERVAL:-30}"                       # Sekunden, nach denen inotifywait spätestens zurückkehrt
 GITHUB_REPO="${GITHUB_REPO:-}"                   # Repository für Meldungen failed, <Eigentümer>/<Name>; die Installation setzt es
 CLAUDE="${CLAUDE:-claude}"                       # Programm der Sitzung; die Installation setzt den vollständigen Pfad
+ABORT_LIMIT="${ABORT_LIMIT:-3}"                  # Abbrüche derselben Meldung, bei denen nicht mehr fortgesetzt wird, sondern failed folgt
+RESUME_GRACE="${RESUME_GRACE:-60}"               # Endet eine fortgesetzte Sitzung innerhalb dieser Sekunden, gilt die Fortsetzung als nicht möglich
+PAUSE_INTERVAL="${PAUSE_INTERVAL:-900}"          # Sekunden zwischen den Prüfungen der Nutzungsgrenze, wenn die Meldung keinen Zeitpunkt nennt
+
+# Nutzungsgrenze: Suchtext im sichtbaren Inhalt der tmux-Sitzung und Muster des Zeitpunkts in der Zeile mit dem Suchtext
+# (erweiterter regulärer Ausdruck, das Ergebnis muss von „date -d“ gelesen werden).
+# Beide Werte sind Platzhalter: der Wortlaut der echten Ausgabe von Claude Code ist ungeprüft (Spezifikation 3.3 Punkt 5).
+LIMIT_TEXT="${LIMIT_TEXT:-Platzhalter: Nutzungsgrenze erreicht}"
+LIMIT_TIME_PATTERN="${LIMIT_TIME_PATTERN:-}"
+if [[ -z "$LIMIT_TIME_PATTERN" ]]; then
+  LIMIT_TIME_PATTERN='[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'   # Platzhalter: ISO-8601-Zeitpunkt in UTC
+fi
+
+RESUME_PROMPT="Die Sitzung wurde abgebrochen. Prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist."
+CONTINUE_PROMPT="Die Nutzungsgrenze ist aufgehoben. Fahre fort."
 
 MESSAGES_PATH=development/messages               # Meldungen, je Empfänger ein Verzeichnis
 OUTBOX_PATH=$MESSAGES_PATH/projectlead           # Meldungen an den Projektleiter
@@ -82,9 +97,42 @@ send_pending() {
 }
 
 # ---------------------------------------------------------------- Sitzungen
-# Zustand einer Sitzung: run/<key>.session mit Meldung, ref, Startzeit und Rolle,
+# Zustand einer Sitzung: run/<key>.session, eine Angabe je Zeile:
+#   1 Meldung, 2 ref, 3 Beginn der Herzschlagmessung (Start oder Fortsetzung), 4 Rolle,
+#   5 Kennung der Claude-Sitzung (--session-id), 6 Zahl der Abbrüche dieser Meldung,
+#   7 Zeitpunkt der letzten Fortsetzung mit --resume (0: nicht fortgesetzt oder neu gestartet).
+# Die Datei gehört zur Meldung und wird mit ihr gelöscht; der Zähler beginnt damit bei jeder Meldung neu.
 # run/<key>.known mit den Meldungen in projectlead/ und im Verzeichnis der anderen Rolle beim Start.
+# run/<key>.paused: Sitzung ist wegen der Nutzungsgrenze pausiert; Zeile 1 Zeitpunkt der nächsten Prüfung
+#   (Sekunden seit 1970), Zeile 2 der in der Meldung genannte Zeitpunkt (kann leer sein).
 # run/<key>.screen: Bildschirminhalt beim Beenden, bleibt liegen bis zum nächsten Beenden.
+
+# Zeile N einer Zustandsdatei ersetzen (Werte ohne Sonderzeichen): set_line DATEI N WERT
+set_line() {
+  sed -i "$2s/.*/$3/" "$1"
+}
+
+new_id() {
+  cat /proc/sys/kernel/random/uuid
+}
+
+# Startauftrag einer Meldung: start_prompt MELDUNG ROLLE
+start_prompt() {
+  echo "Bearbeite die Meldung $MESSAGES/$2/$1. Entwicklungsverzeichnis: $ROOT."
+}
+
+# Sitzung in tmux starten, Meldungen von tmux auf der Standardausgabe:
+# launch KEY VERZEICHNIS ROLLE --session-id|--resume KENNUNG STARTAUFTRAG
+# 8>&- : ein hier gestarteter tmux-Server erbt die Sperre von agentrun nicht
+launch() {
+  local key="$1" dir="$2" role="$3"
+  shift 3
+  tmux new-session -d -s "$key" -c "$dir" \
+    "$CLAUDE" --setting-sources project --permission-mode dontAsk \
+      --plugin-dir "$DEVTEAM" --settings "$DEVTEAM/settings.json" \
+      --agent "devteam:${AGENT[$role]}" \
+      "$1" "$2" "$3" 2>&1 8>&-
+}
 
 # Meldungen in projectlead/ und im Verzeichnis der anderen Rolle, je Zeile <verzeichnis>/<datei>: answer_candidates ROLLE
 answer_candidates() {
@@ -96,25 +144,21 @@ answer_candidates() {
 
 start_session() {
   local msg="$1" ref="$2" role="$3"
-  local key dir out
+  local key dir out id
   key="$(key_of "$ref")"
   dir="$WORK/$ref/$role"
   mkdir -p "$dir"
   answer_candidates "$role" >"$RUN/$key.known"
   echo "$msg" >>"$STARTED"
-  # 8>&- : ein hier gestarteter tmux-Server erbt die Sperre von agentrun nicht
-  if ! out="$(tmux new-session -d -s "$key" -c "$dir" \
-        "$CLAUDE" --setting-sources project --permission-mode dontAsk \
-          --plugin-dir "$DEVTEAM" --settings "$DEVTEAM/settings.json" \
-          --agent "devteam:${AGENT[$role]}" \
-          "Bearbeite die Meldung $MESSAGES/$role/$msg. Entwicklungsverzeichnis: $ROOT." 2>&1 8>&-)"; then
+  id="$(new_id)"
+  if ! out="$(launch "$key" "$dir" "$role" --session-id "$id" "$(start_prompt "$msg" "$role")")"; then
     rm "$RUN/$key.known"
     queue_failed "$msg" "$ref" "$role" "Die Sitzung ließ sich nicht starten: $out"
     log "$ref: Start fehlgeschlagen: $out"
     return
   fi
-  printf '%s\n%s\n%s\n%s\n' "$msg" "$ref" "$(date +%s)" "$role" >"$RUN/$key.session"
-  log "$ref: Sitzung $key ($role) gestartet für $msg"
+  printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n' "$msg" "$ref" "$(date +%s)" "$role" "$id" 0 0 >"$RUN/$key.session"
+  log "$ref: Sitzung $key ($role, Kennung $id) gestartet für $msg"
 }
 
 # Leeres Verzeichnis entfernen, fehlendes oder volles stehen lassen
@@ -139,10 +183,68 @@ end_session() {
   else
     log "$ref: Sitzung nach Antwortmeldung beendet"
   fi
-  rm -f "$RUN/$key.session" "$RUN/$key.known" "$RUN/$key.heartbeat"
+  rm -f "$RUN/$key.session" "$RUN/$key.known" "$RUN/$key.heartbeat" "$RUN/$key.paused"
   remove_if_empty "$WORK/$ref/$role"
   remove_if_empty "$WORK/$ref"
   remove_if_empty "$WORK/${ref%/*}"
+}
+
+# Sitzung mit dem ursprünglichen Startauftrag neu starten (neue Kennung); zählt als derselbe Abbruch.
+# Gelingt auch das nicht, folgt failed: restart_session KEY GRUND
+restart_session() {
+  local key="$1" reason="$2"
+  local msg ref role dir id out count
+  msg="$(sed -n 1p "$RUN/$key.session")"
+  ref="$(sed -n 2p "$RUN/$key.session")"
+  role="$(sed -n 4p "$RUN/$key.session")"
+  count="$(sed -n 6p "$RUN/$key.session")"
+  dir="$WORK/$ref/$role"
+  mkdir -p "$dir"
+  id="$(new_id)"
+  if out="$(launch "$key" "$dir" "$role" --session-id "$id" "$(start_prompt "$msg" "$role")")"; then
+    set_line "$RUN/$key.session" 3 "$(date +%s)"
+    set_line "$RUN/$key.session" 5 "$id"
+    set_line "$RUN/$key.session" 7 0
+    log "$ref: Sitzung $key neu gestartet ($reason), Kennung $id"
+  else
+    end_session "$key" "Die Sitzung ließ sich nach einem Abbruch nicht neu starten: $out Abbrüche derselben Meldung: $count, Art des letzten Abbruchs: Start fehlgeschlagen."
+  fi
+}
+
+# Sitzung mit --resume im selben Arbeitsverzeichnis fortsetzen; geht das nicht, Neustart: resume_session KEY
+resume_session() {
+  local key="$1"
+  local ref role dir id out
+  ref="$(sed -n 2p "$RUN/$key.session")"
+  role="$(sed -n 4p "$RUN/$key.session")"
+  id="$(sed -n 5p "$RUN/$key.session")"
+  dir="$WORK/$ref/$role"
+  mkdir -p "$dir"
+  if out="$(launch "$key" "$dir" "$role" --resume "$id" "$RESUME_PROMPT")"; then
+    set_line "$RUN/$key.session" 3 "$(date +%s)"
+    set_line "$RUN/$key.session" 7 "$(date +%s)"
+    log "$ref: Sitzung $key fortgesetzt (Kennung $id)"
+  else
+    restart_session "$key" "Fortsetzung ließ sich nicht starten: $out"
+  fi
+}
+
+# Abbruch: Zähler erhöhen und fortsetzen, nach dem ABORT_LIMIT-ten Abbruch derselben Meldung failed.
+# abort_session KEY GRUND ART
+abort_session() {
+  local key="$1" reason="$2" kind="$3"
+  local count
+  count=$(( $(sed -n 6p "$RUN/$key.session") + 1 ))
+  if (( count >= ABORT_LIMIT )); then
+    end_session "$key" "$reason Abbrüche derselben Meldung: $count, Art des letzten Abbruchs: $kind."
+    return
+  fi
+  tmux capture-pane -p -t "$key" -S -200 > "$RUN/$key.screen" 2>&1
+  tmux kill-session -t "=$key" 2>/dev/null
+  rm -f "$RUN/$key.heartbeat" "$RUN/$key.paused"
+  set_line "$RUN/$key.session" 6 "$count"
+  log "$(sed -n 2p "$RUN/$key.session"): Abbruch $count ($kind): $reason"
+  resume_session "$key"
 }
 
 # Liegt in projectlead/ oder im Verzeichnis der anderen Rolle eine neue Meldung der gestarteten Rolle
@@ -173,27 +275,107 @@ silence() {
   echo $(( $(date +%s) - last ))
 }
 
+# ---------------------------------------------------------------- Pause wegen der Nutzungsgrenze
+
+# Pausiert irgendeine Sitzung? Das Kontingent gilt für alle Sitzungen.
+pause_active() {
+  local p=("$RUN"/*.paused)
+  (( ${#p[@]} > 0 ))
+}
+
+# Zeigt der sichtbare Inhalt der tmux-Sitzung die Meldung der Nutzungsgrenze? Zeile mit dem Suchtext auf stdout.
+limit_line() {
+  [[ -n "$LIMIT_TEXT" ]] || return 1
+  tmux capture-pane -p -t "$1" 2>/dev/null | grep -F -m 1 -- "$LIMIT_TEXT"
+}
+
+# Sitzung als pausiert vermerken: pause_session KEY ZEILE
+pause_session() {
+  local key="$1" line="$2"
+  local shown="" next
+  shown="$(grep -oE -m 1 -- "$LIMIT_TIME_PATTERN" <<<"$line")"
+  next=""
+  if [[ -n "$shown" ]]; then
+    next="$(date -d "$shown" +%s 2>/dev/null)"
+  fi
+  if [[ -z "$next" ]]; then
+    shown=""
+    next=$(( $(date +%s) + PAUSE_INTERVAL ))
+  fi
+  printf '%s\n%s\n' "$next" "$shown" >"$RUN/$key.paused"
+  log "$(sed -n 2p "$RUN/$key.session"): Pause wegen der Nutzungsgrenze, nächste Prüfung ${shown:+ab $shown, sonst }um $(date -d "@$next" +%H:%M:%S)"
+}
+
+# Die Messung des Herzschlags beginnt für alle Sitzungen neu
+reset_heartbeats() {
+  local f
+  for f in "$RUN"/*.session; do
+    touch "$RUN/$(basename "$f" .session).heartbeat"
+  done
+}
+
+# Pausierte Sitzungen, deren Prüfzeitpunkt erreicht ist, zum Fortfahren auffordern
+resume_paused() {
+  local f key
+  for f in "$RUN"/*.paused; do
+    key="$(basename "$f" .paused)"
+    if [[ "$(date +%s)" -lt "$(sed -n 1p "$f")" ]]; then
+      continue
+    fi
+    rm "$f"
+    if [[ -f "$RUN/$key.session" ]]; then
+      tmux send-keys -t "$key" -l "$CONTINUE_PROMPT"
+      tmux send-keys -t "$key" Enter
+      reset_heartbeats
+      log "$(sed -n 2p "$RUN/$key.session"): Sitzung $key nach der Pause zum Fortfahren aufgefordert"
+    fi
+  done
+}
+
 check_session() {
   local key="$1"
-  local ref role
+  local ref role resumed
   ref="$(sed -n 2p "$RUN/$key.session")"
   role="$(sed -n 4p "$RUN/$key.session")"
   if has_answer "$key" "$ref" "$role"; then
     end_session "$key" ""
   elif ! tmux has-session -t "=$key" 2>/dev/null; then
-    end_session "$key" "Die Sitzung besteht nicht mehr, ohne dass eine Antwortmeldung vorliegt."
-  elif [[ "$(silence "$key")" -ge "$HEARTBEAT_TIMEOUT" ]]; then
-    end_session "$key" "Die Sitzung wurde beendet, weil $HEARTBEAT_TIMEOUT Sekunden lang kein Herzschlag kam."
+    resumed="$(sed -n 7p "$RUN/$key.session")"
+    if (( resumed > 0 && $(date +%s) - resumed < RESUME_GRACE )); then
+      # die fortgesetzte Sitzung endete sofort: Fortsetzung nicht möglich, Neustart ohne neuen Abbruch
+      restart_session "$key" "Fortsetzung nicht möglich"
+    else
+      abort_session "$key" "Die Sitzung besteht nicht mehr, ohne dass eine Antwortmeldung vorliegt." Absturz
+    fi
+  elif [[ -f "$RUN/$key.paused" ]]; then
+    :
+  elif [[ "$(silence "$key")" -ge "$HEARTBEAT_TIMEOUT" ]] && ! pause_active; then
+    abort_session "$key" "Die Sitzung wurde beendet, weil $HEARTBEAT_TIMEOUT Sekunden lang kein Herzschlag kam." Stillstand
   fi
+}
+
+# Bei fehlendem Herzschlag vor jeder Entscheidung über einen Stillstand den Inhalt der tmux-Sitzungen lesen:
+# Zeigt er die Nutzungsgrenze, gilt die Sitzung als pausiert (für alle Sitzungen, siehe check_session).
+detect_pauses() {
+  local f key line
+  for f in "$RUN"/*.session; do
+    key="$(basename "$f" .session)"
+    if [[ ! -f "$RUN/$key.paused" ]] && tmux has-session -t "=$key" 2>/dev/null \
+        && [[ "$(silence "$key")" -ge "$HEARTBEAT_TIMEOUT" ]] && line="$(limit_line "$key")"; then
+      pause_session "$key" "$line"
+    fi
+  done
 }
 
 # ---------------------------------------------------------------- Bewertung
 
 evaluate() {
   local f msg ref role
+  detect_pauses
   for f in "$RUN"/*.session; do
     check_session "$(basename "$f" .session)"
   done
+  resume_paused
   for role in "${ROLES[@]}"; do
     for f in "$MESSAGES/$role"/*.md; do
       msg="$(basename "$f")"
