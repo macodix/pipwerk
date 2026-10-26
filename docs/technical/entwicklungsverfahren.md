@@ -259,7 +259,7 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Entwicklungsleiter | `implement` | Phase 4 eines Arbeitspakets beginnen oder fortsetzen | `plan.md` |
 | Entwicklungsleiter | `fix` | Mängel aus der Abnahme beheben | Abnahmebericht |
 | Entwicklungsleiter | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
-| Softwarearchitekt | `amend` | Phase 4: Lücke in Spezifikation oder Plan schließen | Dokument der Lücke |
+| Softwarearchitekt | `amend` | Phase 4: Lücke in Spezifikation oder Plan schließen, oder Oberflächenentwurf für eine umgesetzte Ansicht vorschlagen | Dokument der Lücke |
 | Entwicklungsleiter | `amended` | Lücke geschlossen, Paket fortsetzen | Dokument der Lücke mit Ergebnis |
 | fragende Rolle | `answer` | Antwort auf eine Frage, unterbrochene Aufgabe fortsetzen | Frage mit Antwort |
 | Projektleiter | `review` | Prüfbericht der QA zu den Dokumenten des Auftraggebers, auch eine nicht bestandene Nachprüfung | Prüfbericht |
@@ -267,7 +267,7 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
 | Projektleiter | `question` | Frage an den Auftraggeber oder Eskalation | Frage |
 | Projektleiter | `integrated` | Paket in `main` übernommen | `plan.md` |
-| Projektleiter | `failed` | dritter Abbruch derselben Meldung, von `agentrun`; der Text nennt die Zahl der Abbrüche und die Art des letzten | die Meldung, mit der die Sitzung gestartet wurde |
+| Projektleiter | `failed` | dritter Abbruch derselben Meldung oder Meldung mit ungültigem `ref` (sofort), von `agentrun`; der Text nennt die Zahl der Abbrüche und die Art des letzten | die Meldung, mit der die Sitzung gestartet wurde |
 
 Findet der Entwicklungsleiter in Phase 4 eine Lücke in der Spezifikation oder braucht der Plan eine Änderung, beschreibt er sie in `<arbeitspaket>/amend-<nn>.md` auf `main`, meldet `amend` an den Softwarearchitekten und beendet die Sitzung, nachdem er alle davon unabhängigen Teile erledigt hat. Der Softwarearchitekt ergänzt Spezifikation beziehungsweise Plan und lässt sie von der QA prüfen. Ist die Ergänzung rein technisch, entscheidet er sie selbst, vermerkt sie im Änderungsnachweis von Spezifikation beziehungsweise Plan und meldet nach bestandener Prüfung `amended` an den Entwicklungsleiter, der das Paket ohne Pause fortsetzt. Rein technisch ist eine Ergänzung, wenn sie keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert; ist die Zuordnung nicht eindeutig, gilt sie als nicht rein technisch. Nur dann meldet er `present`, das Paket ruht bis zur Bestätigung, und der Projektleiter setzt es danach mit `implement` an den Entwicklungsleiter fort.
 
@@ -546,6 +546,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Meldungstabelle: `failed` auch für eine Meldung mit ungültigem `ref` (sofort). `amend` auch, um einen Oberflächenentwurf für eine umgesetzte Ansicht vorzuschlagen. Vorhaben `verfahren`, Auftrag 10. |
 | 2026-10-24 | Eingang des Projektleiters: Die zweite Wiedervorlage liegt 40 Minuten nach der Aktivierung, nicht 40 Minuten nach der ersten. Entscheidung des Entwicklungsleiters (Vorhaben `verfahren`, Auftrag 04). |
 | 2026-10-24 | Vorhaben `verfahren` (Festlegungen 1 bis 7 des Auftraggebers im Chat am 2026-10-24, Spezifikation `development/verfahren/specification.md`): Abbruch, Fortsetzung durch `agentrun` und `startrole`, Pause wegen der Nutzungsgrenze, `failed` erst nach dem dritten Abbruch; Quellen der Skripte unter `tools/devhost/` und Ermittlung des Entwicklungsverzeichnisses aus dem Ablageort; Testumgebung der Skripte; Wiedervorlage und Eingang des Projektleiters mit `waiting.md` und `followup.md`; Namen von Vorhaben, Paketen und Phasen; Machbarkeitstest und Oberflächenentwurf je Ansicht als einzige Begriffe für Prototypen; neuer Abschnitt „Übersicht“ mit `overview.html` und Workflow `overview.yml`. |
 | 2026-10-23 | Oberflächenentwurf nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Oberflächenentwurf direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |

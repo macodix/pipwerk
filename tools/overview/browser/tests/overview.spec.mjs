@@ -223,6 +223,12 @@ test.describe('Bedienung', () => {
     // Unbekannter Anker führt auf die erste Ebene
     await page.goto(`${BASE}#gibt-es-nicht`);
     await expect(sichtbarerAbschnitt(page)).toHaveAttribute('data-ebene', '1');
+    // Ungültige Prozentkodierung führt ebenso auf die erste Ebene, die Pfadleiste bleibt
+    for (const roh of ['%', '%E0%A4%A', 'backtest/%']) {
+      await page.goto(`${BASE}#${roh}`);
+      await expect(sichtbarerAbschnitt(page)).toHaveAttribute('data-ebene', '1');
+      await expect(page.locator('nav.pfad')).toBeVisible();
+    }
   });
 
   test('Tastatur: Kästchen sind Verweise, erreichbar, Fokus sichtbar, Enter öffnet', async ({ page }) => {

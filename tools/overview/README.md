@@ -19,10 +19,11 @@ python3 generate.py <wurzelverzeichnis> <ausgabedatei> [--ref main] [--now JJJJ-
 - `<ausgabedatei>`: Pfad der Datei, die geschrieben wird, im Repository
   `development/overview.html`. Das Skript schreibt nur diese Datei.
 - `--ref`: Zweig, aus dem gelesen wird. Ohne Angabe gilt `origin/main`, wenn es im Repository
-  besteht, sonst `main`; nur der Stand von `main` ist Quelle der Übersicht (Spezifikation E5).
+  besteht, sonst `main`; nur der Stand von `main` ist Quelle der Übersicht, Zustände aus `run/`
+  und Arbeitszweige werden nicht gelesen.
   Die Angabe dient den Tests und wird unverändert verwendet.
 
-### Entscheidung zum Zweig (Hinweis H2)
+### Wahl des Zweigs
 
 Die Schnittstelle (Wurzelverzeichnis, Ausgabepfad) bleibt gleich; `--ref` ist nur der bisherige
 optionale Parameter. Ohne ihn liest das Skript `origin/main` und fällt auf `main` zurück
@@ -142,7 +143,7 @@ und 1920 × 1080:
 |---|---|
 | Layout (je Größe, 13 Anker auf allen drei Ebenen) | keine waagerechte Bildlaufleiste; keine zwei Kästchen und keine zwei Zeilen eines Kästchens übereinander; kein Inhalt ragt aus Kästchen oder Fenster; Kopf, Legende, Pfadleiste und Inhalt folgen untereinander; unter 1100 Pixel höchstens drei Phasen in einer Reihe |
 | Kontrast (je Größe) | jeder sichtbare Text auf allen Ebenen mindestens 4,5 : 1 |
-| Navigation | Weg über alle drei Ebenen durch Klick, Pfadleiste und Zurück-Taste; unbekannter Anker |
+| Navigation | Weg über alle drei Ebenen durch Klick, Pfadleiste und Zurück-Taste; unbekannter Anker und ungültige Prozentkodierung im Anker (beide zeigen die erste Ebene) |
 | Tastatur | jedes Kästchen der ersten Ebene per Tab erreichbar, Fokusrahmen und Ring sichtbar, Enter öffnet, Fokus auf der neuen Überschrift, Pfadleiste per Tastatur |
 | Stand | Wort mit Zeichen zu jeder Farbe, drei verschiedene Hintergründe, Legende |
 | Hervorhebung | blauer Rahmen und Marke auf allen drei Ebenen, das Paket in jeder Phasenansicht, keine Marke ohne Eintrag |
