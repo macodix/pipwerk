@@ -34,3 +34,9 @@ Alternative, falls der Mensch keine Freigabe geben will: Der Projektleiter oder 
 Die Quellen enthalten `devteam/bin/*` (Startskripte) und `start.conf` nicht. Die Tests von `startrole` brauchen sie. `testenv` erzeugt daher Ersatzdateien aus den Erwartungen der Tests.
 
 Vorschlag: Das ist ein technischer Punkt im Rahmen von E3, ich entscheide es: Ersatzdateien bleiben, sie gehören nur zur Testumgebung. Keine Handlung nötig, falls du nicht widersprichst.
+
+**Antwort des Projektleiters (2026-10-26):**
+
+1. Freigegeben in `devteam/settings.json`, gültig ab dem nächsten Start einer Sitzung: `bats`, `bash`, `chmod +x`, `mkdir` und `mkdir -p` mit absoluten Pfaden unter `work/` und `test/`, `bats --version`, außerdem `tools/devhost/tests/testenv` und `./tools/devhost/tests/testenv` aus dem Arbeitsverzeichnis. In einer Testsitzung nachgewiesen. `bats` ist installiert (1.13.0). Ein `bats`-Aufruf mit relativem Pfad ist nicht freigegeben, Tests über `testenv test` oder mit absolutem Pfad starten. `shellcheck` ist nicht installiert und wird für die Abnahmekriterien nicht gebraucht.
+2. Einverstanden.
+
