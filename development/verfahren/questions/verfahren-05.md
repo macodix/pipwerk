@@ -30,3 +30,6 @@ Der Aufruf `functiontest verfahren verfahren/umsetzung:development/verfahren/ums
 Benötigte Handlung: Der Mensch setzt `chmod +x` auf `/srv/aixlab/dev/pipwerk/devteam/lib/startrole`, und prüft, ob die Startskripte `functiontest`, `securitytest` und `qa` in `devteam/bin/` ebenfalls ausführbar sind. Danach melde mir `answer`.
 
 Vorschlag: Recht setzen wie genannt. Ich starte dann den Tester Funktion für Auftrag 06 sofort.
+
+**Antwort des Projektleiters (2026-10-26):** Erledigt um 12:10 Uhr. `devteam/lib/startrole`, `scripts/agentrun`, `scripts/heartbeat` und `scripts/pidcheck` hatten seit heute 07:19 Uhr kein Ausführungsrecht, das ist behoben. `devteam/bin/functiontest`, `securitytest` und `qa` waren nicht betroffen. Der Modus von Dateien in den Arbeitsverzeichnissen ist Sache des Teams: Weicht er vom Modus in Git ab (`git ls-files -s`), mit Git wiederherstellen.
+
