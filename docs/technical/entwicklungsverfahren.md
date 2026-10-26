@@ -12,7 +12,7 @@
 Für die meisten Aufgaben genügt dieser Abschnitt. Die übrigen Abschnitte werden nur gelesen, wenn die Aufgabe sie betrifft.
 
 - Kette: Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt (Phasen 1 bis 3) beziehungsweise Entwicklungsleiter (Phasen 4 bis 6) ⇄ Team (Entwickler, Tester, QA). Jede Rolle spricht nur mit ihren Nachbarn. Softwarearchitekt und Entwicklungsleiter sprechen über `amend`, `amended`, `conform` und `conformed` miteinander.
-- Der Softwarearchitekt entwirft die Software nach [Aufgaben des Softwarearchitekten](#aufgaben-des-softwarearchitekten) und prüft jedes Arbeitspaket vor der Abnahme gegen seinen Entwurf.
+- Der Softwarearchitekt entwirft die Software nach [Aufgaben des Softwarearchitekten](#aufgaben-des-softwarearchitekten), lässt den Entwurf von einem Unteragenten mit frischem Kontext prüfen (Architekturprüfung) und prüft jedes Arbeitspaket vor der Abnahme gegen seinen Entwurf.
 - Der Auftraggeber entscheidet Anforderungsdokumente, Fachmodell und Strategiebeschreibungen. Alles andere entscheiden Softwarearchitekt, Entwicklungsleiter und Team.
 - Phasen: 1 Anforderung (QA prüft die Dokumente des Auftraggebers, Abstimmung), 2 Konzeption (Spezifikation, klickbarer Prototyp nur für Oberflächen ohne umgesetzte Fassung, Abstimmung), 3 Planung (Arbeitspakete, Abstimmung), 4 Umsetzung (Aufträge, Tester, QA, Prüfung des Entwurfs), 5 Abnahme durch den Auftraggeber, 6 Integration in `main`.
 - Rückwege: fehlende Anforderung → Phase 1, Lücke der Spezifikation → Phase 2, Mangel in der Abnahme → Phase 4, Planänderung → Phase 3.
@@ -108,14 +108,15 @@ Ein Arbeitspaket beginnt, sobald alle Pakete, von denen es laut Plan abhängt, a
 - Tätigkeit:
   1. Die QA prüft nach, ob die Befunde aus Phase 1 erledigt sind und ob die dafür geänderten Stellen neue Fehler enthalten. Ist die Nachprüfung nicht bestanden, geht der Prüfbericht über den Softwarearchitekten an den Projektleiter zurück in Phase 1.
   2. Der Softwarearchitekt erstellt die technische Spezifikation nach seinen [Aufgaben als Architekt](#aufgaben-des-softwarearchitekten). Ist unklar, ob oder wie etwas umsetzbar ist, beauftragt er Entwickler mit Probeumsetzungen und vorzeigbaren Prototypen. Für jede neue Benutzeroberfläche, von der es noch keine umgesetzte Fassung gibt, lässt er vor der Spezifikation der Oberfläche einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens ohne Anleitung durchspielen kann, in den Fenstergrößen nach req-system-024. Die Oberfläche wird erst spezifiziert und umgesetzt, wenn der Auftraggeber den Prototyp bestätigt hat. Änderungen an einer umgesetzten Oberfläche, auch neue oder geänderte Anforderungen und Mängel aus ihrer Abnahme, werden ohne Prototyp spezifiziert, direkt in der Software umgesetzt und in der Testumgebung abgenommen.
-  3. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers und prüft, ob sie die Ergebnisse der [Aufgaben des Softwarearchitekten](#aufgaben-des-softwarearchitekten) 1 bis 4 und 6 vollständig und schlüssig enthält. Fehlt eines oder ist eines nicht schlüssig, ist das ein blockierender Befund.
-  4. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab.
-- Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
+  3. Architekturprüfung: Der Softwarearchitekt lässt den Entwurf von einem Unteragenten mit frischem Kontext prüfen, der nur Spezifikation, Anforderungen, [Qualitätskriterien](qualitaetskriterien.md), [Designgrundsätze](designgrundsaetze.md) und den Skill `architekturpruefung` erhält. Jeden Befund übernimmt er oder lehnt ihn mit Grund ab. Bericht und Antworten legt er unter `reviews/architecture-<n>.md` ab. Nach wesentlichen Änderungen prüft ein neuer Unteragent nur die geänderten Stellen nach.
+  4. Die QA prüft die Spezifikation gegen die Dokumente des Auftraggebers und prüft, ob die Abschnitte des Entwurfs nach den [Designgrundsätzen](designgrundsaetze.md#7-beschreibung-des-entwurfs-arc42) vorhanden sind. Die Güte des Entwurfs prüft die Architekturprüfung, nicht die QA.
+  5. Der Projektleiter macht aus Spezifikation und Prototypen eine Präsentation und stimmt sie mit dem Auftraggeber ab. Sie enthält die Annahmen des Softwarearchitekten zur Bestätigung und die blockierenden Befunde der Architekturprüfung, die er abgelehnt hat, zur Entscheidung.
+- Ergebnis: bestandene Nachprüfung der Dokumente des Auftraggebers, technische Spezifikation, bei Bedarf Prototypen, Bericht der Architekturprüfung mit Antworten, Prüfbericht der QA zur Spezifikation, abgestimmte Präsentation mit Vermerk der Bestätigung
 - Schleifen: QA und Softwarearchitekt nach [Grenze der Durchläufe](#grenze-der-durchläufe). Einwände des Auftraggebers führen zu einem neuen Durchlauf, bis alle einig sind. Fehlende Anforderungen gehen in Phase 1.
 
 ### Aufgaben des Softwarearchitekten
 
-Der Softwarearchitekt setzt nicht nur Anforderungen in Funktionen um. Er entwirft die Software:
+Der Softwarearchitekt setzt nicht nur Anforderungen in Funktionen um. Er entwirft die Software nach den [Qualitätskriterien](qualitaetskriterien.md) und [Designgrundsätzen](designgrundsaetze.md), mit den Skills `sa-qualitaetsziele`, `sa-entwurf` und `sa-umsetzungspruefung`:
 
 1. **Qualitätsanforderungen klären.** Vor der Spezifikation legt er fest, was neben der Funktion gilt: Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten. Was nur der Auftraggeber entscheiden kann, fragt er nach [Fragen an den Auftraggeber](#fragen-an-den-auftraggeber).
 2. **Aufbau entwerfen.** Er legt Programme, Bausteine, Daten, Schnittstellen und die Verteilung auf Rechner fest, jeweils mit ihrer Aufgabe. Jedes Programm hat genau eine Aufgabe ([Entwicklungsregeln Abschnitt 5 Nr. 15](development-test-security-rules.md#5-entwicklungsregeln)).
@@ -126,8 +127,8 @@ Der Softwarearchitekt setzt nicht nur Anforderungen in Funktionen um. Er entwirf
    - Der Aufwand steht im Verhältnis zum Nutzen für Vorhaben oder Software.
 
    Der Messbericht nennt die Bedingungen und prüft andere mögliche Ursachen eines Ergebnisses, zum Beispiel ein langsames Dateisystem. Messgrößen ohne konkreten Nutzen werden nicht erhoben.
-4. **Entscheidungen begründen und festhalten.** Jede Entscheidung steht in der Spezifikation mit den verworfenen Alternativen und dem Grund.
-5. **Umsetzung begleiten.** In Phase 4 prüft er jedes Arbeitspaket vor der Abnahme darauf, ob die Umsetzung seinem Entwurf entspricht, und lässt Abweichungen über den Entwicklungsleiter beheben ([Prüfung des Entwurfs](#phase-4--umsetzung-eines-arbeitspakets)).
+4. **Entscheidungen begründen und festhalten.** Jede Entscheidung steht in der Spezifikation mit den verworfenen Alternativen und dem Grund. Den Entwurf lässt er unabhängig prüfen (Architekturprüfung, Phase 2 Schritt 3).
+5. **Umsetzung begleiten.** In Phase 4 prüft er jedes Arbeitspaket vor der Abnahme mit dem Skill `sa-umsetzungspruefung` darauf, ob die Umsetzung seinem Entwurf entspricht, und lässt Abweichungen über den Entwicklungsleiter beheben ([Prüfung des Entwurfs](#phase-4--umsetzung-eines-arbeitspakets)).
 6. **Vom Ende her denken.** Er beschreibt Installation, Einrichtung, Aktualisierung, Überwachung und Fehlersuche als Bedienabläufe aus Sicht des Anwenders, ohne Handarbeit, die das Programm selbst erledigen kann.
 
 ### Phase 3 – Planung
@@ -307,7 +308,7 @@ Findet der Entwicklungsleiter in Phase 4 eine Lücke in der Spezifikation oder b
 
 Eine Abhängigkeit von einem Paket gilt als erfüllt, sobald dessen Prüfung durch die QA bestanden ist. Das abhängige Paket beginnt auf diesem Stand und übernimmt spätere Korrekturen aus der Abnahme. In `main` übernommen wird es erst nach dem Paket, von dem es abhängt. Nach der Bestätigung des Plans schreibt der Projektleiter je Paket ohne offene Abhängigkeit eine Meldung `implement`. Bei der Integration schreibt der Entwicklungsleiter im selben Commit wie seine Meldung `integrated` eine Meldung `implement` an sich selbst für jedes Paket, dessen Abhängigkeiten jetzt erfüllt sind.
 
-Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antwort. Nach `failed` entfernt der Projektleiter die ursprüngliche Meldung und stößt die Arbeit mit einer neuen Meldung erneut an.
+Jede Sitzung von Softwarearchitekt und Entwicklungsleiter endet mit genau einer Antwortmeldung; danach beginnt sie keine weitere Arbeit. Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antwort. Nach `failed` entfernt der Projektleiter die ursprüngliche Meldung und stößt die Arbeit mit einer neuen Meldung erneut an.
 
 ### Arbeiten auf main
 
@@ -464,6 +465,7 @@ Die Claude-Code-Konfiguration ist Implementierungsdetail des Entwicklungsrechner
 devteam/
   .claude-plugin/plugin.json   Name devteam
   agents/                      software-architect, devlead, backend, frontend, functiontest, securitytest, qa
+  skills -> ../repo/docs/technical/skills   Skills der Rollen, Inhalt im Repository
   bin/                         Startskripte functiontest, securitytest, qa
   lib/startrole                gemeinsamer Teil der Startskripte
   start.conf                   Programmaufruf der Startskripte
@@ -473,7 +475,7 @@ devteam/
 
 Ein Startskript wird mit `ref` und dem Pfad des Übergabedokuments aufgerufen. Das Übergabedokument liegt unter `work/` oder wird als `<zweig>:<pfad>` angegeben. Die Freigaben erlauben Lesen in `work/`, `test/` und `repo/`, Schreiben nur in `work/` und `test/`. HTTP-Anfragen sind nur mit `curl` an `http://127.0.0.1:<port>/<pfad>` und `http://localhost:<port>/<pfad>` freigegeben, mit Optionen vor oder nach der URL, für die Prüfung in einer Testumgebung durch Tester und QA. Die Regeln stehen je erster Ziffer des Ports einzeln (zum Beispiel `Bash(curl http://127.0.0.1:8*/*)` und `Bash(curl -* http://127.0.0.1:8*/*)`), weil Claude Code `:*` nur am Ende einer Regel als Platzhalter liest. Prüfskripte unter `work/` sind mit absolutem Pfad freigegeben, dazu `npx playwright`, `node` mit Skript unter `work/` und die lesenden Befehle `ls`, `grep`, `test` und `sed -n` (Stand 2026-10-21, Frage `strategiedesign/wp02-01`).
 
-Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die Rollendateien in `devteam/agents/` kopieren sie nicht, sondern weisen jede Rolle an, bei jedem Start ihre Abschnitte aus `repo/` (Stand `main`) zu lesen. Sie enthalten nur Angaben, die allein den Entwicklungsrechner betreffen. Eine Änderung der Briefings braucht deshalb keine Änderung in `devteam/`. Andere Änderungen an `devteam/` veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
+Maßgeblich für Inhalt und Verhalten der Rollen sind die Briefings in [Agentenrollen und Briefings](agentenrollen-und-briefings.md) und die Skills unter [`docs/technical/skills/`](skills/). `devteam/skills` ist ein Verweis auf `repo/docs/technical/skills`, sodass der Runner die Skills mit `main` aktuell hält. Die Rollendateien in `devteam/agents/` kopieren sie nicht, sondern weisen jede Rolle an, bei jedem Start ihre Abschnitte aus `repo/` (Stand `main`) zu lesen. Sie enthalten nur Angaben, die allein den Entwicklungsrechner betreffen. Eine Änderung der Briefings braucht deshalb keine Änderung in `devteam/`. Andere Änderungen an `devteam/` veranlasst der Projektleiter mit einer Anweisung in `transfer/` an eine Sitzung auf dem Entwicklungsrechner.
 
 ### Einrichtung auf dem Entwicklungsrechner
 
@@ -510,6 +512,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Phase 2: Architekturprüfung durch Unteragenten mit frischem Kontext und Skill `architekturpruefung`, QA prüft nur noch Anforderungen und Vorhandensein der Entwurfsabschnitte, Präsentation mit Annahmen und abgelehnten Befunden. Skills des Softwarearchitekten unter `docs/technical/skills/`, `devteam/skills` verweist darauf. Sitzungsende mit genau einer Antwortmeldung ins Verfahren übernommen. Festlegung des Auftraggebers im Chat am 2026-10-26. |
 | 2026-10-26 | Qualitätskriterien und Designgrundsätze als projektunabhängige Maßstäbe angelegt, Gestaltungsprinzipien darin aufgegangen. Festlegung des Auftraggebers im Chat am 2026-10-26. |
 | 2026-10-26 | Aufgaben des Softwarearchitekten, Punkt 3: Technikwahl nach Fachwissen; Messungen nur für eine konkrete Frage, mit vorher genannter Folge jedes Ergebnisses, festgelegten Bedingungen und angemessenem Aufwand. Anlass: Probeumsetzung `backtest/prototype/order-04.md` sollte das Speichermodell durch Messung nur unter SQLite entscheiden. Festlegung des Auftraggebers im Chat am 2026-10-26. |
 | 2026-10-25 | Regel „ein Programm je Aufgabe“ (Entwicklungsregeln Abschnitt 5 Nr. 15) wieder in Kraft und in den Aufgaben des Softwarearchitekten verankert. Präsentation Entwicklungsprozess auf den Stand dieses Dokuments gebracht; künftig im selben Commit angeglichen. Festlegung des Auftraggebers im Chat am 2026-10-25. |
