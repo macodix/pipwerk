@@ -192,11 +192,11 @@ development/
     architect/            Meldungen an den Softwarearchitekten
     devlead/              Meldungen an den Entwicklungsleiter
     projectlead/          unbearbeitete Meldungen an den Projektleiter
-  overview.html           Übersicht über den Stand der Vorhaben (erzeugt, nicht von Hand gepflegt)
+  overview.html           Übersicht über den Stand der Vorhaben (erzeugt, nicht von Hand gepflegt; Ort siehe Abschnitt „Übersicht“)
   <vorhaben>/
     scope.md              geltende Dokumente des Auftraggebers und Name des Vorhabens (Projektleiter)
     followup.md           Übernahme des Vorhabens durch einen Chat des Projektleiters
-    waiting.md            Vorlagen, die auf den Auftraggeber warten (Projektleiter)
+    waiting.md            Vorlagen, die auf den Auftraggeber warten, Format der Zeilen im Eingang des Projektleiters (Projektleiter)
     specification.md      technische Spezifikation (Softwarearchitekt)
     plan.md               Arbeitspaketplan mit Namen der Pakete (Softwarearchitekt)
     reviews/              Prüfberichte der QA zu den Dokumenten des Auftraggebers, Spezifikation und Plan
@@ -462,7 +462,7 @@ Die Übersicht ist eine Seite, die den Stand aller Vorhaben in drei Ebenen zeigt
 
 **Erzeugung.**
 
-- Die Seite ist die Datei `development/overview.html` auf `main`, eine einzige HTML-Datei ohne externe Dateien.
+- Die Seite ist die Datei `development/overview.html` auf `main`, eine einzige HTML-Datei ohne externe Dateien. Ort der Seite ist dieser Pfad auf `main`. Der feste Link wird noch festgelegt.
 - Das Skript `tools/overview/generate.py` erzeugt sie. Es ist Python 3 ohne fremde Pakete und hat Unit-Tests. Aufruf mit dem Wurzelverzeichnis eines Repositorys mit vollständiger Geschichte und dem Pfad der Ausgabedatei. Es liest nur und schreibt nur die Ausgabedatei.
 - Der Workflow `.github/workflows/overview.yml` führt es aus. Auslöser sind ein Push auf `main` mit Änderungen unter `development/` außer `development/overview.html` und der Start von Hand. Er läuft auf einem von GitHub betriebenen Runner, nicht auf dem selbst betriebenen, hat nur das Recht `contents: write` und keine Auslöser für Pull Requests. Ein neuer Lauf bricht einen laufenden ab. Der Checkout holt die vollständige Geschichte. Ändert sich die Datei, schreibt der Workflow sie mit einem eigenen Commit auf `main`. Wird der Push abgelehnt, holt er den neuen Stand, erzeugt neu und versucht es bis zu dreimal. Ein Commit mit dem Schlüssel des Workflows startet keinen weiteren Workflow. Das Repository muss dem Workflow den Push auf `main` erlauben.
 - Die Seite enthält Namen, Kennungen, Phasen, Rollen und Zeitpunkte, keine Namen von Rechnern oder Benutzern, keine Pfade, keine Ports und keine Links auf Ziele außerhalb der Seite. Der Inhalt von Meldungen erscheint nicht.
@@ -546,6 +546,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Ablage und Übersicht: Format der Zeilen von `waiting.md` nur im Eingang des Projektleiters, Ort der Seite `development/overview.html` auf `main` mit Hinweis auf den noch festzulegenden festen Link. Vorhaben `verfahren`, Auftrag 11. |
 | 2026-10-26 | Meldungstabelle: `failed` auch für eine Meldung mit ungültigem `ref` (sofort). `amend` auch, um einen Oberflächenentwurf für eine umgesetzte Ansicht vorzuschlagen. Vorhaben `verfahren`, Auftrag 10. |
 | 2026-10-24 | Eingang des Projektleiters: Die zweite Wiedervorlage liegt 40 Minuten nach der Aktivierung, nicht 40 Minuten nach der ersten. Entscheidung des Entwicklungsleiters (Vorhaben `verfahren`, Auftrag 04). |
 | 2026-10-24 | Vorhaben `verfahren` (Festlegungen 1 bis 7 des Auftraggebers im Chat am 2026-10-24, Spezifikation `development/verfahren/specification.md`): Abbruch, Fortsetzung durch `agentrun` und `startrole`, Pause wegen der Nutzungsgrenze, `failed` erst nach dem dritten Abbruch; Quellen der Skripte unter `tools/devhost/` und Ermittlung des Entwicklungsverzeichnisses aus dem Ablageort; Testumgebung der Skripte; Wiedervorlage und Eingang des Projektleiters mit `waiting.md` und `followup.md`; Namen von Vorhaben, Paketen und Phasen; Machbarkeitstest und Oberflächenentwurf je Ansicht als einzige Begriffe für Prototypen; neuer Abschnitt „Übersicht“ mit `overview.html` und Workflow `overview.yml`. |

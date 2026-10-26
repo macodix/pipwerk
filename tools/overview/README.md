@@ -8,6 +8,8 @@ Phasen, Pakete beziehungsweise Schritt) und hervorhebt, was auf den Auftraggeber
 Regeln stehen in Abschnitt 7 der Spezifikation des Vorhabens `verfahren`
 (`development/verfahren/specification.md`): 7.2 Stand, 7.3 Grenzen, 7.4 Gestaltung.
 
+Ort der Seite: der Pfad `development/overview.html` auf `main`. Der feste Link wird noch festgelegt.
+
 ## Aufruf
 
 ```text
@@ -53,7 +55,10 @@ im Plan steht, werden übersprungen.
 
 ### Format von `waiting.md`
 
-Eine Zeile je Vorlage beim Auftraggeber, als Tabellenzeile oder Aufzählung mit senkrechten Strichen:
+Das Format der Zeilen (`ref`, Handlung, Zeitpunkt der Vorlage in UTC) steht im Verfahren unter
+[Eingang des Projektleiters](../../docs/technical/entwicklungsverfahren.md#eingang-des-projektleiters)
+(Spezifikation 4.3 Punkt 2). Das Skript liest eine Zeile je Vorlage, als Tabellenzeile oder
+Aufzählung mit senkrechten Strichen. Beispiel:
 
 ```markdown
 | ref | Handlung | Zeitpunkt (UTC) |
@@ -62,9 +67,9 @@ Eine Zeile je Vorlage beim Auftraggeber, als Tabellenzeile oder Aufzählung mit 
 | `strategiedesign/wp02` | Abnahme durchführen | 2026-10-24 08:05 |
 ```
 
-- `ref`: `<vorhaben>` oder `<vorhaben>/<paket>`, in Backticks oder ohne.
+- `ref`: in Backticks oder ohne.
 - Handlung: der Text, der in der Marke „Wartet auf Sie: <Handlung>“ erscheint.
-- Zeitpunkt in UTC: `JJJJ-MM-TT hh:mm[:ss]`, wahlweise mit `T`, `Z` oder `UTC`. Ist er nicht lesbar,
+- Zeitpunkt: lesbar als `JJJJ-MM-TT hh:mm[:ss]`, wahlweise mit `T`, `Z` oder `UTC`. Ist er nicht lesbar,
   fehlt „seit“, die Zeile gilt trotzdem.
 - Kopf-, Trenn- und andere Zeilen werden übergangen. Eine Zeile zu einem `ref`, zu dem es noch
   keine Meldung gibt, hat keine Wirkung.
