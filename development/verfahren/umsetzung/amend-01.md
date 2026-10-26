@@ -33,7 +33,7 @@ Vorschlag: Der Nachweis erfolgt bei der Integration (`integrate`): Der Entwicklu
 
 ## Ergebnis (Softwarearchitekt, 2026-10-26)
 
-Die Spezifikation ist ergänzt, siehe ihren Änderungsnachweis vom 2026-10-26.
+Die Spezifikation ist ergänzt, siehe ihren Änderungsnachweis vom 2026-10-26. Prüfung durch die QA bestanden: `development/verfahren/reviews/specification-5.md`.
 
 1. Wortlaut der Nutzungsgrenze: 3.3 Punkt 5. Auch der Softwarearchitekt hat keinen belegten Wortlaut; Probe, `run/` und Suche außerhalb waren in seiner Sitzung nicht zugänglich. Der Platzhalter bleibt, die Pause wird bis zum Nachweis als Stillstand behandelt, der Nachweis erfolgt im Betrieb. Damit ist ein Satz der Festlegung 1 bis zum Nachweis nicht erfüllt. Die Ergänzung ist deshalb nicht rein technisch: Meldung `present` an den Projektleiter, die Umsetzung ruht bis zur Bestätigung durch den Auftraggeber und wird dann mit `implement` fortgesetzt.
 2. Push des Workflows: 7.1. Nachweis bei `integrate` an einem Commit des Workflows auf `origin/main` innerhalb von 30 Minuten, sonst `question`.
