@@ -1,13 +1,40 @@
 #!/usr/bin/env bash
 # startrole – gemeinsamer Teil der Startskripte für Tester und QA in bin/.
-# Grundlage: docs/technical/entwicklungsverfahren.md, Abschnitt „Start von Entwickler, Tester und QA“.
+# Grundlage: docs/technical/entwicklungsverfahren.md, Abschnitt „Start von Entwickler, Tester und QA“;
+# Spezifikation development/verfahren/specification.md, Abschnitte 3.2 Punkt 5 und 3.3 Punkt 4.
 #
 # Aufruf: startrole <rolle> <modell> <ref> <übergabedokument>
-# Legt work/<ref>/<rolle>/ an, falls es fehlt, und startet darin das Programm aus start.conf.
-# Endet mit dem Exitcode des Programms.
+# Legt work/<ref>/<rolle>/ an, falls es fehlt, und startet darin das Programm aus start.conf mit einer eigenen
+# Kennung der Sitzung (--session-id).
+# Endet das Programm ohne Bericht (kein neuer Bericht in work/<ref>/reports/), setzt das Skript die Sitzung mit
+# --resume <kennung> fort, höchstens ABORT_LIMIT - 1 mal (zweimal). Beim ABORT_LIMIT-ten (dritten) Abbruch endet es
+# mit Exitcode 1 und nennt die Zahl der Abbrüche und die Art des letzten (Absturz, Ende ohne Bericht).
+# Endet das Programm ohne Bericht und zeigt seine Ausgabe die Nutzungsgrenze, ist das kein Abbruch: das Skript wartet
+# (ab dem genannten Zeitpunkt, sonst PAUSE_INTERVAL Sekunden), ruft dabei alle PAUSE_HEARTBEAT_INTERVAL Sekunden
+# heartbeat mit dem Arbeitsverzeichnis der Rolle auf und setzt die Sitzung dann mit --resume fort.
+# Endet das Programm mit Bericht, endet das Skript mit dem Exitcode des Programms.
 
 # Entwicklungsverzeichnis: zwei Ebenen über devteam/lib/, in dem dieses Skript liegt
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd)"
+
+# Parameter: die Umgebung überschreibt die Standardwerte (so setzt die Testumgebung sie).
+# Dieselben Namen, Standardwerte und dieselbe Erkennung wie in scripts/agentrun; der Code ist nicht geteilt,
+# weil scripts/ und devteam/lib/ einzeln installiert werden. Beide Stellen müssen übereinstimmen (README).
+ABORT_LIMIT="${ABORT_LIMIT:-3}"                          # Abbrüche, bei denen nicht mehr fortgesetzt wird, sondern der Fehler folgt
+PAUSE_INTERVAL="${PAUSE_INTERVAL:-900}"                  # Sekunden Wartezeit, wenn die Ausgabe keinen Zeitpunkt nennt
+PAUSE_HEARTBEAT_INTERVAL="${PAUSE_HEARTBEAT_INTERVAL:-300}"   # Sekunden zwischen den Aufrufen von heartbeat während des Wartens
+
+# Nutzungsgrenze: Suchtext in der Ausgabe des Programms und Muster des Zeitpunkts in der Zeile mit dem Suchtext
+# (erweiterter regulärer Ausdruck, das Ergebnis muss von „date -d“ gelesen werden).
+# Beide Werte sind Platzhalter: der Wortlaut der echten Ausgabe von Claude Code ist ungeprüft (Spezifikation 3.3 Punkt 5).
+LIMIT_TEXT="${LIMIT_TEXT:-Platzhalter: Nutzungsgrenze erreicht}"
+LIMIT_TIME_PATTERN="${LIMIT_TIME_PATTERN:-}"
+if [[ -z "$LIMIT_TIME_PATTERN" ]]; then
+  LIMIT_TIME_PATTERN='[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'   # Platzhalter: ISO-8601-Zeitpunkt in UTC
+fi
+
+RESUME_PROMPT="Die Sitzung wurde abgebrochen. Prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist."
+CONTINUE_PROMPT="Die Nutzungsgrenze ist aufgehoben. Fahre fort."
 
 DEVTEAM="$ROOT/devteam"
 role="$1"
@@ -15,21 +42,111 @@ model="$2"
 ref="$3"
 document="$4"
 dir="$ROOT/work/$ref/$role"
+reports="$ROOT/work/$ref/reports"
 prompt="Bearbeite das Übergabedokument $document. Bezug: $ref. Entwicklungsverzeichnis: $ROOT. Arbeitsverzeichnis: $dir."
+
+log() {
+  echo "startrole: $role $ref: $*" >&2
+}
 
 # setzt START_PROGRAM
 source "$DEVTEAM/start.conf"
 
-# Platzhalter in START_PROGRAM ersetzen
-cmd=()
-for a in "${START_PROGRAM[@]}"; do
-  a="${a//\{devteam\}/$DEVTEAM}"
-  a="${a//\{agent\}/$role}"
-  a="${a//\{model\}/$model}"
-  a="${a//\{prompt\}/$prompt}"
-  cmd+=("$a")
-done
+# Befehl aufbauen, Platzhalter ersetzen. An die Stelle des Platzhalters {prompt} treten die Option für die Kennung
+# und der Auftrag: build_cmd --session-id|--resume AUFTRAG (setzt cmd, Kennung in $id)
+build_cmd() {
+  local flag="$1" text="$2" a
+  cmd=()
+  for a in "${START_PROGRAM[@]}"; do
+    if [[ "$a" == "{prompt}" ]]; then
+      cmd+=("$flag" "$id" "$text")
+      continue
+    fi
+    a="${a//\{devteam\}/$DEVTEAM}"
+    a="${a//\{agent\}/$role}"
+    a="${a//\{model\}/$model}"
+    a="${a//\{prompt\}/$text}"
+    cmd+=("$a")
+  done
+  # Programme ohne {prompt} in start.conf erhalten keine Kennung und werden unverändert neu gestartet
+}
+
+# Zeile der Ausgabe mit dem Suchtext (wie limit_line in agentrun): limit_line DATEI
+limit_line() {
+  [[ -n "$LIMIT_TEXT" ]] || return 1
+  grep -F -m 1 -- "$LIMIT_TEXT" "$1"
+}
+
+# Herzschlag der Rolle: heartbeat liest die Hook-Daten von stdin
+beat() {
+  printf '{"cwd":"%s"}' "$dir" | "$ROOT/scripts/heartbeat"
+}
+
+# Warten wie in agentrun (pause_session und resume_paused): ab dem genannten Zeitpunkt, sonst PAUSE_INTERVAL Sekunden.
+# Alle PAUSE_HEARTBEAT_INTERVAL Sekunden und gleich zu Beginn heartbeat aufrufen: wait_for_limit ZEILE
+wait_for_limit() {
+  local line="$1"
+  local shown next now step
+  shown="$(grep -oE -m 1 -- "$LIMIT_TIME_PATTERN" <<<"$line")"
+  next=""
+  if [[ -n "$shown" ]]; then
+    next="$(date -d "$shown" +%s 2>/dev/null)"
+  fi
+  if [[ -z "$next" ]]; then
+    shown=""
+    next=$(( $(date +%s) + PAUSE_INTERVAL ))
+  fi
+  log "Pause wegen der Nutzungsgrenze, Fortsetzung ${shown:+ab $shown, sonst }um $(date -d "@$next" +%H:%M:%S)"
+  beat
+  while now="$(date +%s)"; (( now < next )); do
+    step=$(( next - now ))
+    if (( step > PAUSE_HEARTBEAT_INTERVAL )); then
+      step="$PAUSE_HEARTBEAT_INTERVAL"
+    fi
+    sleep "$step"
+    beat
+  done
+}
+
+# Liegt in work/<ref>/reports/ eine Datei, die neuer ist als der Start dieses Skripts?
+report_exists() {
+  [[ -d "$reports" ]] && [[ -n "$(find "$reports" -type f -newer "$marker" -print -quit)" ]]
+}
 
 mkdir -p "$dir"
 cd "$dir" || exit 1
-exec "${cmd[@]}"
+
+marker="$(mktemp)"
+output="$(mktemp)"
+trap 'rm -f "$marker" "$output"' EXIT
+
+id="$(cat /proc/sys/kernel/random/uuid)"
+flag=--session-id
+text="$prompt"
+aborts=0
+while true; do
+  build_cmd "$flag" "$text"
+  "${cmd[@]}" 2>&1 | tee "$output"
+  status="${PIPESTATUS[0]}"
+  if report_exists; then
+    exit "$status"
+  fi
+  flag=--resume
+  if line="$(limit_line "$output")"; then
+    wait_for_limit "$line"
+    text="$CONTINUE_PROMPT"
+    continue
+  fi
+  aborts=$(( aborts + 1 ))
+  if (( status != 0 )); then
+    kind="Absturz"
+  else
+    kind="Ende ohne Bericht"
+  fi
+  if (( aborts >= ABORT_LIMIT )); then
+    log "Fehler: Abbrüche: $aborts, Art des letzten Abbruchs: $kind."
+    exit 1
+  fi
+  log "Abbruch $aborts ($kind), Fortsetzung mit --resume $id"
+  text="$RESUME_PROMPT"
+done

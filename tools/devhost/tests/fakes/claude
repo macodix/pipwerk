@@ -22,6 +22,8 @@
 # Aktionen:
 #   reply              Antwortmeldung des aufgerufenen Rollenverzeichnisses nach projectlead/ schreiben
 #                      (from = Rolle der Meldung, ref wie in der Meldung); bei --resume die zuletzt bearbeitete Meldung
+#   report             Bericht nach work/<ref>/reports/ schreiben (neben dem Rollenverzeichnis des Arbeitsverzeichnisses,
+#                      wie ein Tester oder die QA), Datei bericht-<aufrufnummer>.md
 #   crash [code]       sofort mit Exitcode enden (Standard 1)
 #   hang               nicht reagieren: ohne Ausgabe warten, bis der Prozess beendet wird
 #   limit              Meldung der Nutzungsgrenze ohne Zeitpunkt ausgeben
@@ -113,11 +115,18 @@ reply() {
     "$role" "$ref" "$ref" >"$out/$(date -u +%Y%m%d%H%M%S)-$role-$n.md"
 }
 
+# Bericht von Tester oder QA: das Arbeitsverzeichnis ist work/<ref>/<rolle>, der Bericht liegt in work/<ref>/reports/
+report() {
+  mkdir -p "$(dirname "$PWD")/reports"
+  printf '# Bericht\n\nbestanden\n' >"$(dirname "$PWD")/reports/bericht-$n.md"
+}
+
 IFS=';' read -r -a actions <<<"$line"
 for action in "${actions[@]}"; do
   read -r -a w <<<"$action"
   case "${w[0]:-}" in
     reply) reply ;;
+    report) report ;;
     crash) exit "${w[1]:-1}" ;;
     hang) while true; do sleep 1; done ;;
     limit) echo "$limit_text" ;;

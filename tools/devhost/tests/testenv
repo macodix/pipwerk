@@ -9,7 +9,8 @@
 #   --heartbeat-timeout SEKUNDEN   Sekunden ohne Herzschlag bis zum Abbruch (900)
 #   --interval SEKUNDEN            Prüfabstand von agentrun (30)
 #   --pause-interval SEKUNDEN      Abstand der Prüfungen der Nutzungsgrenze ohne genannten Zeitpunkt (900)
-#   --resume-grace SEKUNDEN        Endet eine fortgesetzte Sitzung innerhalb dieser Zeit, gilt die Fortsetzung als nicht möglich (60)
+#   --pause-heartbeat-interval SEKUNDEN   Abstand der Aufrufe von heartbeat, während startrole auf die Nutzungsgrenze wartet (300)
+#   --resume-grace SEKUNDEN       Endet eine fortgesetzte Sitzung innerhalb dieser Zeit, gilt die Fortsetzung als nicht möglich (60)
 #   --claude PROGRAMM              Programm der Sitzungen (tests/fakes/claude)
 #   --tmux PROGRAMM                tmux (tests/fakes/tmux)
 #   --gh PROGRAMM                  gh (tests/fakes/gh)
@@ -20,7 +21,7 @@
 # Zweig main), run/, work/, devteam/ (bin/, lib/startrole, start.conf, settings.json), scripts/ (agentrun,
 # heartbeat, pidcheck), fakes/ (die Programme, in der Umgebung vor dem Suchpfad) und env.
 # Wer die Umgebung benutzt, liest env mit „source VERZEICHNIS/env“. Das setzt PATH, CLAUDE, GITHUB_REPO,
-# HEARTBEAT_TIMEOUT, INTERVAL, PAUSE_INTERVAL, RESUME_GRACE und PIDCHECK_PATH; die Skripte lesen diese Werte als Parameter.
+# HEARTBEAT_TIMEOUT, INTERVAL, PAUSE_INTERVAL, PAUSE_HEARTBEAT_INTERVAL, RESUME_GRACE und PIDCHECK_PATH; die Skripte lesen diese Werte als Parameter.
 
 HERE="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 SRC="$(cd "$HERE/.." && pwd)"
@@ -31,14 +32,15 @@ die() {
 }
 
 create() {
-  local dir="" timeout=900 interval=30 pause=900 grace=60 claude="$HERE/fakes/claude" tmux="$HERE/fakes/tmux" gh="$HERE/fakes/gh"
+  local dir="" timeout=900 interval=30 pause=900 pausehb=300 grace=60 claude="$HERE/fakes/claude" tmux="$HERE/fakes/tmux" gh="$HERE/fakes/gh"
   local scenario="" repo=testowner/testrepo
   while (( $# )); do
     case "$1" in
       --heartbeat-timeout) timeout="${2:?}"; shift 2 ;;
       --interval) interval="${2:?}"; shift 2 ;;
       --pause-interval) pause="${2:?}"; shift 2 ;;
-      --resume-grace) grace="${2:?}"; shift 2 ;;
+      --pause-heartbeat-interval) pausehb="${2:?}"; shift 2 ;;
+      --resume-grace)grace="${2:?}"; shift 2 ;;
       --claude) claude="${2:?}"; shift 2 ;;
       --tmux) tmux="${2:?}"; shift 2 ;;
       --gh) gh="${2:?}"; shift 2 ;;
@@ -102,6 +104,7 @@ export GITHUB_REPO="$repo"
 export HEARTBEAT_TIMEOUT="$timeout"
 export INTERVAL="$interval"
 export PAUSE_INTERVAL="$pause"
+export PAUSE_HEARTBEAT_INTERVAL="$pausehb"
 export RESUME_GRACE="$grace"
 export PIDCHECK_PATH="$dir/fakes:/usr/local/bin:/usr/bin:/bin"
 EOF
