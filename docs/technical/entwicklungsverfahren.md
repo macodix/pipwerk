@@ -368,7 +368,7 @@ Die Abstimmung mit dem Auftraggeber endet mit seiner Bestätigung.
 
 ### Entwicklungsverzeichnis
 
-Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pipwerk`. Es gibt dafür keine Umgebungsvariable. Jedes Skript in `scripts/` und `devteam/` und der Workflow des Runners nennen den Pfad fest, in Skripten als Variable `ROOT` direkt nach dem Kopfkommentar. Darin liegen:
+Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pipwerk`. Es gibt dafür keine Umgebungsvariable. Jedes Skript in `scripts/` und `devteam/` und der Workflow des Runners nennen den Pfad fest, in Skripten als Variable `ROOT` direkt nach dem Kopfkommentar. Skripte lesen keine Werte aus Umgebungsvariablen und verwenden keine Ersatzwerte wie `${NAME:-wert}`. Feste Werte stehen als einfache Zuweisung direkt nach dem Kopfkommentar, veränderliche Werte sind Aufrufparameter. Darin liegen:
 
 | Verzeichnis | Inhalt | verändert von |
 |---|---|---|
