@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Testattrappe für tmux: eine Sitzung ist eine Datei unter sessions/ neben ihr mit Arbeitsverzeichnis und Befehl.
 # Alle Aufrufe stehen in sessions/.calls.
-# Liegt neben der Attrappe tmux.fail, schlägt new-session fehl.
+# Liegt neben der Attrappe tmux.fail, schlägt new-session fehl: bei leerer Datei immer, sonst so oft, wie die Datei
+# als Zahl angibt (danach wird die Datei entfernt).
 #
 # Ohne Szenario (keine Datei claude.scenario neben der Attrappe) läuft der Befehl der Sitzung nicht; die Tests
 # lassen die Sitzung enden, indem sie die Datei der Sitzung löschen, und stellen den Bildschirm mit der Datei
@@ -65,6 +66,15 @@ case "$cmd" in
       echo "fd 8 offen" >>"$dir/.fds"
     fi
     if [[ -f "$dir/../tmux.fail" ]]; then
+      # Inhalt der Datei: Anzahl der noch fehlschlagenden Aufrufe; leer: jeder Aufruf schlägt fehl
+      n="$(cat "$dir/../tmux.fail")"
+      if [[ -n "$n" ]]; then
+        if (( n > 1 )); then
+          echo $((n - 1)) >"$dir/../tmux.fail"
+        else
+          rm "$dir/../tmux.fail"
+        fi
+      fi
       echo "server exited unexpectedly" >&2
       exit 1
     fi

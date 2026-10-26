@@ -157,16 +157,56 @@ EOF
   grep -q "kein gültiges Feld ref" "$(failed_files)"
 }
 
-@test "Start: tmux schlägt fehl, Meldung failed mit dem Grund" {
+@test "Start: drei fehlgeschlagene Starts, Meldung failed mit Grund, Zahl und Art des letzten Abbruchs" {
+  # Änderung nach Spezifikation 3.1: ein fehlgeschlagener Start ist ein Abbruch; failed erst nach dem dritten
   touch "$FAKES/tmux.fail"
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar
+  [ "$(new_sessions)" -eq 3 ]
+  [ "$(failed_files | wc -l)" -eq 1 ]
   grep -q "Die Sitzung ließ sich nicht starten: server exited unexpectedly" "$(failed_files)"
+  grep -qF "Abbrüche derselben Meldung: 3, Art des letzten Abbruchs: Start fehlgeschlagen." "$(failed_files)"
   [ ! -f "$R/run/probe.session" ]
   rm "$FAKES/tmux.fail"
   ar
-  [ "$(new_sessions)" -eq 1 ]
+  [ "$(new_sessions)" -eq 3 ]
   [ ! -f "$FAKES/sessions/probe" ]
+  [ "$(failed_files | wc -l)" -eq 1 ]
+}
+
+@test "Start: ein Start schlägt fehl, der Neustart gelingt, kein failed und derselbe Abbruch" {
+  echo 1 >"$FAKES/tmux.fail"
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar
+  [ "$(new_sessions)" -eq 2 ]
+  [ -f "$FAKES/sessions/probe" ]
+  [ -z "$(failed_files)" ]
+  [ "$(line probe 6)" -eq 1 ]
+  # Startauftrag unverändert, neue Kennung in der Zustandsdatei
+  grep -qxF "arg=Bearbeite die Meldung $IN/20261012100000-projectlead-01.md. Entwicklungsverzeichnis: $R." "$FAKES/sessions/probe"
+  grep -qx "arg=$(line probe 5)" "$FAKES/sessions/probe"
+}
+
+@test "Start: zwei fehlgeschlagene Starts, der dritte gelingt, kein failed" {
+  echo 2 >"$FAKES/tmux.fail"
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar
+  [ "$(new_sessions)" -eq 3 ]
+  [ -f "$FAKES/sessions/probe" ]
+  [ -z "$(failed_files)" ]
+  [ "$(line probe 6)" -eq 2 ]
+}
+
+@test "Start: Abbrüche durch fehlgeschlagene Starts und Abstürze zählen gemeinsam" {
+  echo 1 >"$FAKES/tmux.fail"
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar
+  [ "$(line probe 6)" -eq 1 ]
+  crash probe 1
+  [ "$(line probe 6)" -eq 2 ]
+  [ -z "$(failed_files)" ]
+  crash probe 1
+  grep -qF "Abbrüche derselben Meldung: 3, Art des letzten Abbruchs: Absturz." "$(failed_files)"
 }
 
 @test "Start: andere Dateien im Meldungsverzeichnis zählen nicht" {

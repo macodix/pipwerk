@@ -151,14 +151,28 @@ start_session() {
   answer_candidates "$role" >"$RUN/$key.known"
   echo "$msg" >>"$STARTED"
   id="$(new_id)"
-  if ! out="$(launch "$key" "$dir" "$role" --session-id "$id" "$(start_prompt "$msg" "$role")")"; then
-    rm "$RUN/$key.known"
-    queue_failed "$msg" "$ref" "$role" "Die Sitzung ließ sich nicht starten: $out"
-    log "$ref: Start fehlgeschlagen: $out"
+  printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n' "$msg" "$ref" "$(date +%s)" "$role" "$id" 0 0 >"$RUN/$key.session"
+  if out="$(launch "$key" "$dir" "$role" --session-id "$id" "$(start_prompt "$msg" "$role")")"; then
+    log "$ref: Sitzung $key ($role, Kennung $id) gestartet für $msg"
+  else
+    # ein fehlgeschlagener Start ist ein Abbruch (Spezifikation 3.1); es gibt keine Sitzung zum Fortsetzen
+    start_failed "$key" "$out"
+  fi
+}
+
+# Ein Start (erster Start oder Neustart) ist fehlgeschlagen: das ist ein Abbruch der Art „Start fehlgeschlagen“.
+# Zähler erhöhen; nach dem ABORT_LIMIT-ten Abbruch derselben Meldung folgt failed, sonst Neustart: start_failed KEY AUSGABE
+start_failed() {
+  local key="$1" out="$2"
+  local count
+  count=$(( $(sed -n 6p "$RUN/$key.session") + 1 ))
+  set_line "$RUN/$key.session" 6 "$count"
+  log "$(sed -n 2p "$RUN/$key.session"): Abbruch $count (Start fehlgeschlagen): $out"
+  if (( count >= ABORT_LIMIT )); then
+    end_session "$key" "Die Sitzung ließ sich nicht starten: $out Abbrüche derselben Meldung: $count, Art des letzten Abbruchs: Start fehlgeschlagen."
     return
   fi
-  printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n' "$msg" "$ref" "$(date +%s)" "$role" "$id" 0 0 >"$RUN/$key.session"
-  log "$ref: Sitzung $key ($role, Kennung $id) gestartet für $msg"
+  restart_session "$key" "Start fehlgeschlagen"
 }
 
 # Leeres Verzeichnis entfernen, fehlendes oder volles stehen lassen
@@ -190,14 +204,13 @@ end_session() {
 }
 
 # Sitzung mit dem ursprünglichen Startauftrag neu starten (neue Kennung); zählt als derselbe Abbruch.
-# Gelingt auch das nicht, folgt failed: restart_session KEY GRUND
+# Schlägt auch der Neustart fehl, zählt das als weiterer Abbruch (start_failed): restart_session KEY GRUND
 restart_session() {
   local key="$1" reason="$2"
-  local msg ref role dir id out count
+  local msg ref role dir id out
   msg="$(sed -n 1p "$RUN/$key.session")"
   ref="$(sed -n 2p "$RUN/$key.session")"
   role="$(sed -n 4p "$RUN/$key.session")"
-  count="$(sed -n 6p "$RUN/$key.session")"
   dir="$WORK/$ref/$role"
   mkdir -p "$dir"
   id="$(new_id)"
@@ -207,7 +220,8 @@ restart_session() {
     set_line "$RUN/$key.session" 7 0
     log "$ref: Sitzung $key neu gestartet ($reason), Kennung $id"
   else
-    end_session "$key" "Die Sitzung ließ sich nach einem Abbruch nicht neu starten: $out Abbrüche derselben Meldung: $count, Art des letzten Abbruchs: Start fehlgeschlagen."
+    # auch der Neustart ist ein fehlgeschlagener Start und damit ein weiterer Abbruch
+    start_failed "$key" "$out"
   fi
 }
 
