@@ -48,3 +48,5 @@ Festlegung des Auftraggebers vom 24. Oktober 2026: Nach bestandener Prüfung der
 2026-10-24: Spezifikation geprüft und bestanden ([specification-3.md](reviews/specification-3.md)). Nach verkürztem Ablauf ohne Präsentation Umsetzung mit `implement` an den Entwicklungsleiter angestoßen.
 
 2026-10-26: Entscheidung des Auftraggebers im Chat zu Spezifikation 3.3 Punkt 5: Das Vorhaben darf mit Platzhalter für den Wortlaut der Nutzungsgrenze abgenommen und installiert werden, die Erkennung wird nach dem Nachweis im Betrieb nachgetragen. Umsetzung mit `implement` fortgesetzt.
+
+2026-10-26: Abnahme Versuch 1 nicht bestanden (M1, [acceptance/1.md](umsetzung/acceptance/1.md)), behoben. Präsentation [result-1.html](presentations/result-1.html) zur Bestätigung durch den Auftraggeber.

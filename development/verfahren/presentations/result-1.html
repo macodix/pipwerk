@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ergebnis Entwicklungsverfahren verbessern</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Foliensatz 1920×1080, je Folie ein skalierter Rahmen untereinander. Feste helle Gestaltung wie die Präsentation zu Schritt 1. */
+:root{
+  --ground:#2a2f2c; --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#6b7a72;
+  --line:#d5ddd8; --green:#1f6f5f; --blue:#2d5f8a; --bluebg:#dde9f3; --amber:#8a5a2d; --amberbg:#f3e7d8;
+  --cover:#1b2a24; --coverfg:#f4f6f3; --coveraccent:#8fcbb9;
+  --sans:'IBM Plex Sans', Arial, Helvetica, sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--sans)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding-block:24px;padding-inline:16px}
+.frame{width:min(100%,1920px);aspect-ratio:16/9;max-width:100%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide{position:relative;width:1920px;height:1080px;box-sizing:border-box;background:var(--paper);color:var(--ink);padding:110px 128px;display:flex;flex-direction:column;gap:40px;transform-origin:top left;transform:scale(var(--s,1))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding-left:1.1em}
+h2{font-size:66px;font-weight:600;line-height:1.1;text-wrap:balance}
+h3{font-size:32px;font-weight:600;color:var(--green)}
+.slide p,.slide li{font-size:27px;line-height:1.42;color:var(--text)}
+.note{font-size:25px!important;color:var(--muted)!important}
+.num{position:absolute;right:48px;bottom:32px;font-size:22px!important;color:#8fa39a!important}
+.row{display:flex;gap:32px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 34px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:20px!important;letter-spacing:2px;text-transform:uppercase;color:var(--muted)!important;font-weight:500}
+.chain{display:flex;align-items:center;gap:18px}
+.node{flex:1;min-width:0;text-align:center;border:2px solid var(--blue);background:var(--bluebg);border-radius:12px;padding:22px 10px;font-size:24px;font-weight:600}
+.node small{display:block;font-size:21px;font-weight:400;color:var(--text);margin-top:6px}
+.arrow{font-size:40px;color:var(--blue)}
+.phase{display:grid;grid-template-columns:330px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.phase > div{padding:16px 28px;border-bottom:1px solid var(--line);font-size:26px;line-height:1.4;color:var(--text)}
+.phase > div:nth-last-child(-n+2){border-bottom:none}
+.phase .k{background:#eef2ef;font-weight:600;color:var(--ink)}
+.phase ul li{font-size:26px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line)}
+th,td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:25px;line-height:1.35;color:var(--text)}
+th{background:#eef2ef;color:var(--ink);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.step{border:2px solid var(--green);border-radius:12px;background:var(--card);padding:20px 18px;display:flex;flex-direction:column;gap:8px}
+.step b{font-size:21px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.step span{font-size:29px;font-weight:600}
+.step i{font-style:normal;font-size:21px;color:var(--text);line-height:1.35}
+.rule{background:var(--amberbg);border:2px solid var(--amber);border-radius:14px;padding:26px 34px;font-size:30px!important;color:var(--ink)!important;font-weight:500}
+.cover{background:var(--cover);color:var(--coverfg);justify-content:space-between}
+.cover h1{font-size:120px;font-weight:600;line-height:1.05}
+.cover p{color:#bfd8d0}
+.q{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+.q .card{gap:14px}
+.q .card p, .q .card li{font-size:25px;line-height:1.38}
+.prop{background:var(--amberbg);border:2px solid var(--amber)}
+.prop h3{color:var(--amber)}
+.ask{background:var(--bluebg);border:2px solid var(--blue)}
+.ask h3{color:var(--blue)}
+.ask p{font-size:27px!important;font-weight:500;color:var(--ink)!important}
+.ref{font-size:20px!important;color:var(--muted)!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame"><section class="slide cover">
+<p class="label" style="color:var(--coveraccent)!important">pipwerk · Vorhaben Entwicklungsverfahren verbessern · Abnahme</p>
+<div class="col" style="flex:0">
+<h1>Ergebnis<br>Entwicklungsverfahren verbessern</h1>
+<p style="font-size:34px">Was sich im Ablauf für dich und das Team ändert</p>
+</div>
+<p style="font-size:26px">Stand 26. Oktober 2026 · umgesetzt, von Tester, Sicherheitsprüfung und QA geprüft und bestanden</p>
+<p class="num">1 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Abbruch einer Sitzung</h2>
+<div class="row">
+<div class="card col"><h3>Was passiert</h3><ul><li>Bricht eine Sitzung ab oder steht 15 Minuten still, setzt <code>agentrun</code> sie an der Abbruchstelle fort, mit ihrem bisherigen Gesprächsverlauf.</li><li>Erst nach dem dritten Abbruch derselben Aufgabe geht <code>failed</code> an den Projektleiter. Er stößt die Aufgabe selbst neu an.</li><li>Tester und QA werden genauso fortgesetzt.</li></ul></div>
+<div class="card col"><h3>Offen, von dir bestätigt</h3><p>Die Pause wegen der Nutzungsgrenze erkennt <code>agentrun</code> am Meldungstext von Claude Code. Der Wortlaut ist noch nicht nachgewiesen, im Skript steht ein Platzhalter. Bis zum Nachweis wirkt eine Nutzungsgrenze wie ein Abbruch. Erreicht eine Sitzung die Grenze, sichert <code>agentrun</code> den Bildschirminhalt, und der Wortlaut wird nachgetragen.</p></div>
+</div>
+<p class="num">2 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Meldungen an dich</h2>
+<div class="row">
+<div class="card col"><h3>Wiedervorlage</h3><p>Der Chat, der einen Auftrag erteilt, sieht alle 20 Minuten im Eingang nach Meldungen seines Vorhabens. Setzt du die Arbeit in einem neuen Chat fort, übernimmt dieser die Wiedervorlage.</p></div>
+<div class="card col"><h3>Nur wenn du handeln musst</h3><p>Der Chat meldet sich bei dir nur, um eine Präsentation bestätigen, eine Frage beantworten oder eine Abnahme durchführen zu lassen. Prüfberichte, einzelne Abbrüche und Rückfragen des Teams erledigt er selbst.</p></div>
+<div class="card col"><h3>Eingang</h3><p>Im Eingang des Projektleiters liegen nur unbearbeitete Meldungen. Bearbeitete und überholte entfernt der Projektleiter.</p></div>
+</div>
+<p class="num">3 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Namen und Prototypen</h2>
+<div class="row">
+<div class="card col"><h3>Namen</h3><ul><li>Vorhaben und Arbeitspakete haben neben der Kennung einen Namen. Dir gegenüber werden die Namen verwendet.</li><li>Den Namen eines Vorhabens legt der Projektleiter beim Anlegen mit dir fest. Arbeitspakete benennt der Softwarearchitekt im Plan, du bestätigst sie mit der Präsentation des Plans.</li><li>Phasen: Anforderung, Konzeption, Planung, Umsetzung, Abnahme, Integration.</li></ul></div>
+<div class="card col"><h3>Prototypen</h3><ul><li>Machbarkeitstest in der Konzeption: entscheidet der Softwarearchitekt.</li><li>Oberflächenentwurf: für eine Ansicht, die sich noch nicht in der Testumgebung öffnen und bedienen lässt.</li><li>Für eine bestehende Ansicht sind Wünsche Änderungen an der Software. Ein Entwurf ist dann die Ausnahme: Projektleiter, Softwarearchitekt oder Entwicklungsleiter schlagen ihn vor, du bestätigst oder lehnst ab.</li></ul></div>
+</div>
+<p class="num">4 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Übersicht der Vorhaben</h2>
+<div class="row">
+<div class="card col"><h3>Aufbau</h3><ul><li>Ebene 1: je Vorhaben ein Kästchen. Grau nicht begonnen, gelb begonnen, grün erledigt.</li><li>Klick: die sechs Phasen des Vorhabens. Klick auf eine Phase: deren Arbeitspakete.</li><li>Was auf dich wartet, hat einen blauen Rahmen und nennt die Handlung.</li><li>„Bei“ zeigt, wer arbeitet: Team, Softwarearchitekt, Projektleiter oder du.</li></ul></div>
+<div class="card col"><h3>Erzeugung</h3><p>Ein Workflow auf einem Rechner von GitHub erzeugt die Seite bei jeder Änderung unter <code>development/</code> auf <code>main</code> neu. Kein Dienst bei dir. Die Seite zeigt den Stand der jeweils letzten Meldung. Sie enthält keine Rechner- oder Benutzernamen, Pfade oder Ports.</p><p style="margin-top:20px">Erprobt mit dem echten Stand von heute. Die Seite erscheint mit der Übernahme in <code>main</code>.</p></div>
+</div>
+<p class="num">5 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Trennung der Vorhaben</h2>
+<div class="row">
+<div class="card col"><h3>Ein Chat, ein Vorhaben</h3><p>Ein Chat des Projektleiters bearbeitet nur sein eigenes Vorhaben. Er startet, wiederholt oder repariert nichts für ein anderes, auch nicht bei scheinbar stehengebliebener Arbeit.</p></div>
+<div class="card col"><h3>Kollisionen</h3><p>Kollisionen mit anderen Vorhaben behält er im Blick. Du erfährst davon nur, wenn eine Kollision die Arbeit vollständig blockiert, das Verhalten von pipwerk für den Anwender betrifft und Entwicklungsleiter oder Softwarearchitekt sie nicht selbst lösen können.</p></div>
+</div>
+<div class="rule">Skripte lesen keine Werte aus Umgebungsvariablen. Werte stehen als einfache Zuweisung am Anfang, veränderliche sind Aufrufparameter.</div>
+<p class="num">6 / 7</p></section></div>
+
+<div class="frame"><section class="slide">
+<h2>Nach deiner Bestätigung</h2>
+<div class="row">
+<div class="card col"><h3>Übernahme</h3><p>Der Entwicklungsleiter übernimmt das Vorhaben in <code>main</code> und prüft, dass die Übersicht erzeugt wird. Danach bekommst du ihren festen Link.</p></div>
+<div class="card col"><h3>Installation, einmal du</h3><p>Die geänderten Skripte <code>agentrun</code>, <code>heartbeat</code>, <code>pidcheck</code> und <code>startrole</code> darf das Team auf dem Entwicklungsrechner nicht selbst einspielen. Der Projektleiter legt die Anweisung nach <code>transfer/</code>. Du startest dafür einmal eine Sitzung auf dem Entwicklungsrechner.</p></div>
+<div class="card col"><h3>Offen</h3><ul><li>Wortlaut der Nutzungsgrenze</li><li>Namen für die bestehenden Vorhaben, im Chat des jeweiligen Vorhabens</li><li>Präsentationen und Ablauf der Abnahme, gesondert</li></ul></div>
+</div>
+<p class="num">7 / 7</p></section></div>
+</div>
+<script>
+function fit(){document.querySelectorAll('.frame').forEach(function(f){f.firstElementChild.style.setProperty('--s',(f.clientWidth/1920).toString())})}
+addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
