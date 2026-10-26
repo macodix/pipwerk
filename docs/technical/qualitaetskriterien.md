@@ -26,6 +26,8 @@ Daten gehen nicht verloren und werden nicht unbemerkt verfälscht, auch bei Abst
 - Nach einem Absturz lässt sich das Programm ohne Reparatur von Hand wieder starten. Es setzt fort oder meldet, was verloren ist.
 - Daten von außen werden geprüft, bevor sie weiterverarbeitet werden. Fehlerhafte Daten werden mit Grund abgewiesen. Ob der fehlerfreie Rest übernommen wird, ist festgelegt und wird gemeldet. Nichts wird unbemerkt nur teilweise übernommen.
 - Fällt ein Fremdsystem aus, meldet das Programm es und wiederholt, wo sinnvoll, statt abzustürzen.
+- Die nötige Verfügbarkeit ist festgelegt: wann die Software laufen muss, wie lange sie höchstens ausfallen darf und ob sie während einer Aktualisierung laufen muss.
+- Ein Ausfall wird bemerkt und gemeldet, nicht erst vom Anwender entdeckt.
 
 ## Sicherheit
 
@@ -109,4 +111,5 @@ In dieser Reihenfolge:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Zuverlässigkeit: Verfügbarkeit ergänzt. |
 | 2026-10-26 | Angelegt. Festlegung des Auftraggebers im Chat am 2026-10-26. |
