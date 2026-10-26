@@ -92,8 +92,8 @@ case "$cmd" in
     rm -f "$dir/$name.screen" "$dir/$name.keys"
     if [[ -f "$dir/../claude.scenario" ]]; then
       # eigene Prozessgruppe, damit kill-session den Befehl samt Unterprozessen beendet
-      SCREEN="$dir/$name.screen" SESSION="$dir/$name" PIDFILE="$dir/$name.pid" \
-        setsid bash -c 'cd "$1"; shift; "$@" >"$SCREEN" 2>&1; rm -f "$SESSION" "$PIDFILE"' _ "$cwd" "$@" \
+      setsid bash -c 'cd "$1"; screen="$2"; session="$3"; pidfile="$4"; shift 4; "$@" >"$screen" 2>&1; rm -f "$session" "$pidfile"' \
+        _ "$cwd" "$dir/$name.screen" "$dir/$name" "$dir/$name.pid" "$@" \
         </dev/null >/dev/null 2>&1 &
       echo "$!" >"$dir/$name.pid"
       # die Aufrufe von claude werden in der Reihenfolge der Sitzungsstarts nummeriert

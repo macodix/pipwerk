@@ -3,25 +3,32 @@
 # Grundlage: docs/technical/entwicklungsverfahren.md, Abschnitte „Meldungen“, „agentrun“ und „Herzschlag“.
 # Aufruf: agentrun, gestartet von pidcheck. Beenden: kill "$(cat run/agentrun.pid)".
 
-# Parameter: die Umgebung überschreibt die Standardwerte (so setzt die Testumgebung sie).
-# Die Installation setzt GITHUB_REPO und CLAUDE auf die Werte des Entwicklungsrechners (siehe README).
+# Werte: einfache Zuweisungen, kein Wert kommt aus der Umgebung. Die Installation ersetzt GITHUB_REPO und CLAUDE in der
+# installierten Kopie (README, „Werte bei der Installation“); die Testumgebung ersetzt jeden Wert in ihrer Kopie
+# (tests/testenv set). Die Kopie im Repository enthält für die Werte der Installation einen Platzhalter.
+# Jede Zuweisung steht allein in ihrer Zeile, der Kommentar darüber.
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"    # Entwicklungsverzeichnis: das Verzeichnis über scripts/, in dem dieses Skript liegt
-HEARTBEAT_TIMEOUT="${HEARTBEAT_TIMEOUT:-900}"    # Sekunden ohne Herzschlag bis zum Abbruch
-INTERVAL="${INTERVAL:-30}"                       # Sekunden, nach denen inotifywait spätestens zurückkehrt
-GITHUB_REPO="${GITHUB_REPO:-}"                   # Repository für Meldungen failed, <Eigentümer>/<Name>; die Installation setzt es
-CLAUDE="${CLAUDE:-claude}"                       # Programm der Sitzung; die Installation setzt den vollständigen Pfad
-ABORT_LIMIT="${ABORT_LIMIT:-3}"                  # Abbrüche derselben Meldung, bei denen nicht mehr fortgesetzt wird, sondern failed folgt
-RESUME_GRACE="${RESUME_GRACE:-60}"               # Endet eine fortgesetzte Sitzung innerhalb dieser Sekunden, gilt die Fortsetzung als nicht möglich
-PAUSE_INTERVAL="${PAUSE_INTERVAL:-900}"          # Sekunden zwischen den Prüfungen der Nutzungsgrenze, wenn die Meldung keinen Zeitpunkt nennt
+# Sekunden ohne Herzschlag bis zum Abbruch
+HEARTBEAT_TIMEOUT=900
+# Sekunden, nach denen inotifywait spätestens zurückkehrt
+INTERVAL=30
+# Repository für Meldungen failed, <Eigentümer>/<Name>; die Installation ersetzt den Platzhalter
+GITHUB_REPO='<eigentümer>/<name>'
+# Programm der Sitzung; die Installation ersetzt den Platzhalter durch den vollständigen Pfad
+CLAUDE='<pfad-zu-claude>'
+# Abbrüche derselben Meldung, bei denen nicht mehr fortgesetzt wird, sondern failed folgt
+ABORT_LIMIT=3
+# Endet eine fortgesetzte Sitzung innerhalb dieser Sekunden, gilt die Fortsetzung als nicht möglich
+RESUME_GRACE=60
+# Sekunden zwischen den Prüfungen der Nutzungsgrenze, wenn die Meldung keinen Zeitpunkt nennt
+PAUSE_INTERVAL=900
 
 # Nutzungsgrenze: Suchtext im sichtbaren Inhalt der tmux-Sitzung und Muster des Zeitpunkts in der Zeile mit dem Suchtext
 # (erweiterter regulärer Ausdruck, das Ergebnis muss von „date -d“ gelesen werden).
 # Beide Werte sind Platzhalter: der Wortlaut der echten Ausgabe von Claude Code ist ungeprüft (Spezifikation 3.3 Punkt 5).
-LIMIT_TEXT="${LIMIT_TEXT:-Platzhalter: Nutzungsgrenze erreicht}"
-LIMIT_TIME_PATTERN="${LIMIT_TIME_PATTERN:-}"
-if [[ -z "$LIMIT_TIME_PATTERN" ]]; then
-  LIMIT_TIME_PATTERN='[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'   # Platzhalter: ISO-8601-Zeitpunkt in UTC
-fi
+LIMIT_TEXT='Platzhalter: Nutzungsgrenze erreicht'
+# Platzhalter: ISO-8601-Zeitpunkt in UTC
+LIMIT_TIME_PATTERN='[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'
 
 RESUME_PROMPT="Die Sitzung wurde abgebrochen. Prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist."
 CONTINUE_PROMPT="Die Nutzungsgrenze ist aufgehoben. Fahre fort."

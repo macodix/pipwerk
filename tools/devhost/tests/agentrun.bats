@@ -13,10 +13,10 @@ setup() {
   FAKES="$R/fakes"
   LOG="$T/agentrun.log"
   "$BATS_TEST_DIRNAME/testenv" create "$R"
-  # setzt PATH mit den Ersatzprogrammen sowie CLAUDE, GITHUB_REPO, HEARTBEAT_TIMEOUT, INTERVAL, PIDCHECK_PATH
-  source "$R/env"
+  # tmux und gh sucht agentrun über den Suchpfad des Aufrufers: die Ersatzprogramme stehen davor
+  PATH="$FAKES:$PATH"
   # ohne Fortsetzungsfrist: ein Abbruch kurz nach einer Fortsetzung gilt als neuer Abbruch (die Tests laufen in Sekunden)
-  export RESUME_GRACE=0
+  setv RESUME_GRACE 0
 }
 
 teardown() {
@@ -50,7 +50,9 @@ ar() {
   wait "$pid"
 }
 
-set_timeout() { export HEARTBEAT_TIMEOUT="$1"; }
+# Wert in den Kopien der Skripte dieser Testumgebung ersetzen: setv NAME WERT [NAME WERT …]
+setv() { while (( $# )); do "$BATS_TEST_DIRNAME/testenv" set "$R" "$1" "$2" || return; shift 2; done; }
+set_timeout() { setv HEARTBEAT_TIMEOUT "$1"; }
 not() { ! "$@"; }
 new_sessions() { grep -c '^new-session' "$FAKES/sessions/.calls" 2>/dev/null || echo 0; }
 failed_files() { find "$FAKES/github" -name '*-agentrun-*.md' 2>/dev/null | sort; }
@@ -565,7 +567,7 @@ EOF
 }
 
 @test "Fortsetzung: nicht möglich, Neustart mit dem ursprünglichen Startauftrag zählt als derselbe Abbruch" {
-  export RESUME_GRACE=60
+  setv RESUME_GRACE 60
   scenario - <<'EOF'
 call: crash 1
 call: crash 1
@@ -730,7 +732,7 @@ EOF
   scenario - <<'EOF'
 call: hang
 EOF
-  export LIMIT_TEXT="Grenze X" LIMIT_TIME_PATTERN='bis [0-9]+:[0-9]+'
+  setv LIMIT_TEXT "Grenze X" LIMIT_TIME_PATTERN 'bis [0-9]+:[0-9]+'
   set_timeout 60
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar; settle
@@ -983,7 +985,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: ABORT_LIMIT ist ein Parameter" {
-  export ABORT_LIMIT=2
+  setv ABORT_LIMIT 2
   scenario - <<<$'call: crash 1\ncall: crash 1\ncall: report'
   sr
   [ "$status" -eq 1 ]
@@ -1002,7 +1004,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: Pause ohne Zeitpunkt, Wartezeit PAUSE_INTERVAL, heartbeat mit dem Arbeitsverzeichnis, dann --resume" {
-  export PAUSE_INTERVAL=3 PAUSE_HEARTBEAT_INTERVAL=1
+  setv PAUSE_INTERVAL 3 PAUSE_HEARTBEAT_INTERVAL 1
   hb_stub
   scenario - <<<$'call: limit\ncall: report'
   SECONDS=0
@@ -1019,7 +1021,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: während der Pause hält der echte heartbeat die Herzschlagdatei der Meldung frisch" {
-  export PAUSE_INTERVAL=2 PAUSE_HEARTBEAT_INTERVAL=1
+  setv PAUSE_INTERVAL 2 PAUSE_HEARTBEAT_INTERVAL 1
   scenario - <<<$'call: limit\ncall: report'
   sr
   [ "$status" -eq 0 ]
@@ -1027,7 +1029,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: die Pause zählt nicht als Abbruch, danach bleiben zwei Fortsetzungen" {
-  export PAUSE_INTERVAL=1 PAUSE_HEARTBEAT_INTERVAL=1
+  setv PAUSE_INTERVAL 1 PAUSE_HEARTBEAT_INTERVAL 1
   scenario - <<<$'call: limit\ncall: crash 1\ncall: crash 1\ncall: report'
   sr
   [ "$status" -eq 0 ]
@@ -1035,7 +1037,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: mehrere Pausen nacheinander" {
-  export PAUSE_INTERVAL=1 PAUSE_HEARTBEAT_INTERVAL=1
+  setv PAUSE_INTERVAL 1 PAUSE_HEARTBEAT_INTERVAL 1
   scenario - <<<$'call: limit\ncall: limit\ncall: limit\ncall: report'
   sr
   [ "$status" -eq 0 ]
@@ -1043,7 +1045,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: Meldung mit Zeitpunkt, gewartet wird bis zu diesem Zeitpunkt statt PAUSE_INTERVAL" {
-  export PAUSE_INTERVAL=100 PAUSE_HEARTBEAT_INTERVAL=1
+  setv PAUSE_INTERVAL 100 PAUSE_HEARTBEAT_INTERVAL 1
   hb_stub
   scenario - <<<$'call: limit-time '"$(date -u -d '+3 seconds' +%Y-%m-%dT%H:%M:%SZ)"$'\ncall: report'
   SECONDS=0
@@ -1057,7 +1059,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: genannter Zeitpunkt liegt in der Vergangenheit, keine Wartezeit" {
-  export PAUSE_INTERVAL=100 PAUSE_HEARTBEAT_INTERVAL=1
+  setv PAUSE_INTERVAL 100 PAUSE_HEARTBEAT_INTERVAL 1
   scenario - <<<$'call: limit-time 2000-01-01T00:00:00Z\ncall: report'
   SECONDS=0
   sr
@@ -1067,7 +1069,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: Zeitpunkt, den date nicht lesen kann, gilt als nicht genannt" {
-  export PAUSE_INTERVAL=2 PAUSE_HEARTBEAT_INTERVAL=1 LIMIT_TIME_PATTERN='um [A-Za-z]+'
+  setv PAUSE_INTERVAL 2 PAUSE_HEARTBEAT_INTERVAL 1 LIMIT_TIME_PATTERN 'um [A-Za-z]+'
   scenario - <<<$'call: limit-time Mittag\ncall: report'
   SECONDS=0
   sr
@@ -1077,7 +1079,7 @@ hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
 }
 
 @test "startrole: Suchtext ist ein Parameter, ohne Treffer ist es ein Abbruch" {
-  export PAUSE_INTERVAL=1 PAUSE_HEARTBEAT_INTERVAL=1 LIMIT_TEXT='anderer Wortlaut'
+  setv PAUSE_INTERVAL 1 PAUSE_HEARTBEAT_INTERVAL 1 LIMIT_TEXT 'anderer Wortlaut'
   scenario - <<<$'call: limit\ncall: report'
   sr
   [ "$status" -eq 0 ]
