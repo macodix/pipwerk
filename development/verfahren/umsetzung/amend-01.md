@@ -30,3 +30,17 @@ Vorschlag: Der Nachweis erfolgt bei der Integration (`integrate`): Der Entwicklu
 - Spezifikation 3.2 Punkt 2: Schlägt auch der Neustart mit dem ursprünglichen Startauftrag fehl, zählt `agentrun` das als weiteren Abbruch und startet sofort erneut; die Spezifikation nennt diesen Fall nicht (Hinweis des Testers Funktion zu Auftrag 09). Vorschlag: Spezifikation ergänzen.
 - Die beiden Verfahrensdokumente `entwicklungsverfahren.md` und `agentenrollen-und-briefings.md` sind auf `origin/main` weitergelaufen; beim Zusammenführen entstehen Konflikte (Hinweis 1 der QA). Ich löse sie bei `integrate` auf und lasse die QA die aufgelösten Stellen prüfen, wenn sie Festlegungen berühren.
 - Offene Hinweise der QA, nicht in meiner Zuständigkeit (qa-1.md Hinweise 3, 4, 9): Adresse der Übersicht in den READMEs, Ort des Formats von `waiting.md`, Wort „Prototypen“ in der bestätigten Präsentation `praesentation-entwicklungsprozess.html`.
+
+## Ergebnis (Softwarearchitekt, 2026-10-26)
+
+Die Spezifikation ist ergänzt, siehe ihren Änderungsnachweis vom 2026-10-26.
+
+1. Wortlaut der Nutzungsgrenze: 3.3 Punkt 5. Auch der Softwarearchitekt hat keinen belegten Wortlaut; Probe, `run/` und Suche außerhalb waren in seiner Sitzung nicht zugänglich. Der Platzhalter bleibt, die Pause wird bis zum Nachweis als Stillstand behandelt, der Nachweis erfolgt im Betrieb. Damit ist ein Satz der Festlegung 1 bis zum Nachweis nicht erfüllt. Die Ergänzung ist deshalb nicht rein technisch: Meldung `present` an den Projektleiter, die Umsetzung ruht bis zur Bestätigung durch den Auftraggeber und wird dann mit `implement` fortgesetzt.
+2. Push des Workflows: 7.1. Nachweis bei `integrate` an einem Commit des Workflows auf `origin/main` innerhalb von 30 Minuten, sonst `question`.
+3. Weitere Punkte:
+   - Fehlgeschlagener Neustart: 3.2 Punkt 2, wie umgesetzt.
+   - Konflikte der Verfahrensdokumente: wie vorgeschlagen bei `integrate`, keine Änderung der Spezifikation.
+   - Hinweis 3 der QA: 7.1, Ort der Seite bis zum festen Link in Verfahren und README.
+   - Hinweis 4 der QA: Abschnitt 8, Format von `waiting.md` in die Ablage des Verfahrens, die README verweist darauf.
+   - Hinweis 9 der QA: Abschnitt 8, die Präsentation Entwicklungsprozess wird nach der Regel im Status des Verfahrens angeglichen.
+   - Diese Punkte sind rein technisch. Sie gelten für die Fortsetzung der Umsetzung zusammen mit Punkt 1.
