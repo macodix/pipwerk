@@ -26,7 +26,7 @@ Für die meisten Aufgaben genügt dieser Abschnitt. Die übrigen Abschnitte werd
 
 ## Geltungsbereich und Dokumentationsorte
 
-Dieses Dokument ist die maßgebliche Beschreibung des Entwicklungsprozesses von Pipwerk: Phasen, Übergabedokumente und ihre Ablage, Schleifen und Eskalation sowie die technische Ausführung auf dem Entwicklungsrechner. Rollen, Verhaltensregeln und Briefings stehen in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die technischen Qualitätsanforderungen an Code und Tests stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md).
+Dieses Dokument ist die maßgebliche Beschreibung des Entwicklungsprozesses von Pipwerk: Phasen, Übergabedokumente und ihre Ablage, Schleifen und Eskalation sowie die technische Ausführung auf dem Entwicklungsrechner. Rollen, Verhaltensregeln und Briefings stehen in [Agentenrollen und Briefings](agentenrollen-und-briefings.md). Die technischen Qualitätsanforderungen an Code und Tests stehen in den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md). Maßstab für Entwurf, Umsetzung und Prüfung sind außerdem die [Qualitätskriterien](qualitaetskriterien.md) und die [Designgrundsätze](designgrundsaetze.md).
 
 Für die Dokumentation gilt: Jede Festlegung steht an genau einer Stelle im Repository. Eine README-Datei dient nur der Orientierung in ihrem Verzeichnis. Sie beschreibt, wozu das Verzeichnis da ist, und verweist auf das zuständige Dokument, enthält aber selbst keine Festlegungen.
 
@@ -510,6 +510,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Qualitätskriterien und Designgrundsätze als projektunabhängige Maßstäbe angelegt, Gestaltungsprinzipien darin aufgegangen. Festlegung des Auftraggebers im Chat am 2026-10-26. |
 | 2026-10-26 | Aufgaben des Softwarearchitekten, Punkt 3: Technikwahl nach Fachwissen; Messungen nur für eine konkrete Frage, mit vorher genannter Folge jedes Ergebnisses, festgelegten Bedingungen und angemessenem Aufwand. Anlass: Probeumsetzung `backtest/prototype/order-04.md` sollte das Speichermodell durch Messung nur unter SQLite entscheiden. Festlegung des Auftraggebers im Chat am 2026-10-26. |
 | 2026-10-25 | Regel „ein Programm je Aufgabe“ (Entwicklungsregeln Abschnitt 5 Nr. 15) wieder in Kraft und in den Aufgaben des Softwarearchitekten verankert. Präsentation Entwicklungsprozess auf den Stand dieses Dokuments gebracht; künftig im selben Commit angeglichen. Festlegung des Auftraggebers im Chat am 2026-10-25. |
 | 2026-10-25 | Aufgaben des Softwarearchitekten als Architekt: Qualitätsanforderungen, Aufbau, Technikwahl mit Alternativen, begründete Entscheidungen, Prüfung des Entwurfs in Phase 4 (Meldungen `conform`, `conformed`), Bedienabläufe aus Sicht des Anwenders. QA prüft diese Ergebnisse in Phase 2. Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen `relay/wp01`, `backtest/wp02` und `strategiedesign/wp02` scheiterten an Aufbau, Installation, Einrichtung und Bedienung. Festlegung des Auftraggebers im Chat am 2026-10-25. |
