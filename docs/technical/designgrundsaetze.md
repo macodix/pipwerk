@@ -15,6 +15,17 @@
 - Was die Software leisten muss, steht in den [Qualitätskriterien](qualitaetskriterien.md).
 - Bei konkreten Unklarheiten wird in den Originalquellen nachgelesen.
 
+## Begriffe
+
+- **Programm:** was gestartet wird, vom Anwender, vom Betriebssystem oder von einem anderen Programm. Es läuft als eigener Vorgang und hat einen eigenen Namen.
+- **Baustein:** ein Teil des Codes, zum Beispiel ein Modul, ein Paket oder eine Bibliothek. Er wird nicht selbst gestartet. Ein Programm besteht aus Bausteinen, ein Baustein kann von mehreren Programmen genutzt werden.
+- **Aufgabe** wird je Ebene bestimmt:
+
+| Ebene | Aufgabe aus Sicht von | Prüfung | Beispiel |
+|---|---|---|---|
+| Programm | dem, der es startet | Die Aufgabe lässt sich in einem Satz ohne „und“ beschreiben. Unterscheiden sich Anlass, Laufdauer oder Nutzer, zum Beispiel dauernder Betrieb und einmalige Einrichtung oder Anwender und Tester, sind es getrennte Programme. | „leitet Nachrichten weiter“, „richtet die Weiterleitung ein“ |
+| Baustein | dem Entwickler | Es gibt genau einen Grund, ihn zu ändern. | „prüft die Signatur einer Nachricht“, „speichert die Warteschlange“ |
+
 ## 1. Ermöglichen statt einschränken
 
 - Software wird offen, erweiterbar und konfigurierbar gestaltet. Möglichkeiten werden nur mit dokumentiertem Grund ausgeschlossen.
@@ -98,4 +109,5 @@ Bei jeder Entwurfsentscheidung:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Begriffe Programm, Baustein und Aufgabe ergänzt. |
 | 2026-10-26 | Angelegt aus den Gestaltungsprinzipien (`docs/design/architecture/gestaltungsprinzipien.md`, entfernt), ergänzt um Aufbau, Unix-Regeln, SOLID, arc42 und Prüffragen. Festlegung des Auftraggebers im Chat am 2026-10-26. |
