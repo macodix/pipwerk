@@ -137,7 +137,12 @@ a.kasten .oeffnen::after{content:" \203A"}
   }
 
   function anzeigen() {
-    var anker = decodeURIComponent(location.hash.replace(/^#/, ''));
+    var anker = location.hash.replace(/^#/, '');
+    try {
+      anker = decodeURIComponent(anker);
+    } catch (e) {
+      anker = '';
+    }
     var ziel = (anker === '') ? suche('ebene-alle') : suche(anker);
     if (!ziel) { ziel = suche('ebene-alle'); }
     abschnitte.forEach(function (a) { a.hidden = (a !== ziel); });

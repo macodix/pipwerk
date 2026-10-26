@@ -259,7 +259,7 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Entwicklungsleiter | `implement` | Phase 4 eines Arbeitspakets beginnen oder fortsetzen | `plan.md` |
 | Entwicklungsleiter | `fix` | Mängel aus der Abnahme beheben | Abnahmebericht |
 | Entwicklungsleiter | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
-| Softwarearchitekt | `amend` | Phase 4: Lücke in Spezifikation oder Plan schließen | Dokument der Lücke |
+| Softwarearchitekt | `amend` | Phase 4: Lücke in Spezifikation oder Plan schließen, oder Oberflächenentwurf für eine umgesetzte Ansicht vorschlagen | Dokument der Lücke |
 | Entwicklungsleiter | `amended` | Lücke geschlossen, Paket fortsetzen | Dokument der Lücke mit Ergebnis |
 | fragende Rolle | `answer` | Antwort auf eine Frage, unterbrochene Aufgabe fortsetzen | Frage mit Antwort |
 | Projektleiter | `review` | Prüfbericht der QA zu den Dokumenten des Auftraggebers, auch eine nicht bestandene Nachprüfung | Prüfbericht |
@@ -267,7 +267,7 @@ Darunter steht bei Bedarf ein kurzer Text. Inhalte gehören in das Übergabedoku
 | Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | positiver Prüfbericht der QA auf dem Arbeitszweig mit Commit und Port der Testumgebung |
 | Projektleiter | `question` | Frage an den Auftraggeber oder Eskalation | Frage |
 | Projektleiter | `integrated` | Paket in `main` übernommen | `plan.md` |
-| Projektleiter | `failed` | dritter Abbruch derselben Meldung, von `agentrun`; der Text nennt die Zahl der Abbrüche und die Art des letzten | die Meldung, mit der die Sitzung gestartet wurde |
+| Projektleiter | `failed` | dritter Abbruch derselben Meldung oder Meldung mit ungültigem `ref` (sofort), von `agentrun`; der Text nennt die Zahl der Abbrüche und die Art des letzten | die Meldung, mit der die Sitzung gestartet wurde |
 
 Findet der Entwicklungsleiter in Phase 4 eine Lücke in der Spezifikation oder braucht der Plan eine Änderung, beschreibt er sie in `<arbeitspaket>/amend-<nn>.md` auf `main`, meldet `amend` an den Softwarearchitekten und beendet die Sitzung, nachdem er alle davon unabhängigen Teile erledigt hat. Der Softwarearchitekt ergänzt Spezifikation beziehungsweise Plan und lässt sie von der QA prüfen. Ist die Ergänzung rein technisch, entscheidet er sie selbst, vermerkt sie im Änderungsnachweis von Spezifikation beziehungsweise Plan und meldet nach bestandener Prüfung `amended` an den Entwicklungsleiter, der das Paket ohne Pause fortsetzt. Rein technisch ist eine Ergänzung, wenn sie keine Anforderung, kein Fachmodell, keine Strategiebeschreibung, keine bestätigte Festlegung der Spezifikation, kein Abnahmekriterium und keinen Umfang eines Arbeitspakets ändert; ist die Zuordnung nicht eindeutig, gilt sie als nicht rein technisch. Nur dann meldet er `present`, das Paket ruht bis zur Bestätigung, und der Projektleiter setzt es danach mit `implement` an den Entwicklungsleiter fort.
 
