@@ -15,12 +15,19 @@ setup() {
   "$BATS_TEST_DIRNAME/testenv" create "$R"
   # setzt PATH mit den Ersatzprogrammen sowie CLAUDE, GITHUB_REPO, HEARTBEAT_TIMEOUT, INTERVAL, PIDCHECK_PATH
   source "$R/env"
+  # ohne Fortsetzungsfrist: ein Abbruch kurz nach einer Fortsetzung gilt als neuer Abbruch (die Tests laufen in Sekunden)
+  export RESUME_GRACE=0
 }
 
 teardown() {
   if [[ -f "$R/run/agentrun.pid" ]]; then
     kill "$(cat "$R/run/agentrun.pid")" 2>/dev/null
   fi
+  # vom Ersatzprogramm von tmux gestartete Prozesse beenden
+  local p
+  for p in "$FAKES"/sessions/*.pid; do
+    [[ -f "$p" ]] && kill -- "-$(cat "$p")" 2>/dev/null
+  done
   true
 }
 
@@ -48,6 +55,19 @@ not() { ! "$@"; }
 new_sessions() { grep -c '^new-session' "$FAKES/sessions/.calls" 2>/dev/null || echo 0; }
 failed_files() { find "$FAKES/github" -name '*-agentrun-*.md' 2>/dev/null | sort; }
 
+# Zeile N der Zustandsdatei einer Sitzung: line KEY N
+line() { sed -n "$2p" "$R/run/$1.session"; }
+# Sitzung KEY N-mal abbrechen lassen (Sitzungsdatei der Attrappe löschen) und jeweils bewerten
+crash() { local _; for _ in $(seq 1 "$2"); do rm "$FAKES/sessions/$1"; ar; done; }
+# Anzahl der Aufrufe des Ersatzprogramms claude und Abschnitt des Aufrufs N im Protokoll
+claude_calls() { grep -c '^call=' "$FAKES/claude.calls" 2>/dev/null || echo 0; }
+claude_call() { sed -n "/^call=$1\$/,/^--\$/p" "$FAKES/claude.calls"; }
+# Szenario für das Ersatzprogramm claude einsetzen (damit läuft der Befehl der tmux-Sitzung): scenario DATEI|-
+scenario() { if [[ "$1" == - ]]; then cat >"$FAKES/claude.scenario"; else cp "$1" "$FAKES/claude.scenario"; fi; }
+# kurz warten, bis das Ersatzprogramm in der Attrappe von tmux gelaufen ist
+settle() { sleep 0.5; }
+SCN="$BATS_TEST_DIRNAME/scenarios"
+
 # ---------------------------------------------------------------- Sperre
 
 @test "agentrun: zweite Instanz endet sofort" {
@@ -65,6 +85,9 @@ failed_files() { find "$FAKES/github" -name '*-agentrun-*.md' 2>/dev/null | sort
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar
   [ -d "$R/work/probe/architect" ]
+  # Änderung nach Spezifikation 3.2 Punkt 1: --session-id <kennung> vor dem Startauftrag
+  id="$(line probe 5)"
+  [[ "$id" =~ ^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$ ]]
   diff - "$FAKES/sessions/probe" <<EOF
 cwd=$R/work/probe/architect
 arg=$FAKES/claude
@@ -78,6 +101,8 @@ arg=--settings
 arg=$R/devteam/settings.json
 arg=--agent
 arg=devteam:software-architect
+arg=--session-id
+arg=$id
 arg=Bearbeite die Meldung $IN/20261012100000-projectlead-01.md. Entwicklungsverzeichnis: $R.
 EOF
   grep -qx 20261012100000-projectlead-01.md "$R/run/agentrun.started"
@@ -199,8 +224,8 @@ EOF
 @test "Ende: Sitzung besteht nicht mehr ohne Antwort, Meldung failed über die GitHub-API auf main" {
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar
-  rm "$FAKES/sessions/probe"
-  ar
+  # Änderung nach Spezifikation 3.2: erst der dritte Abbruch führt zu failed, der Text nennt Zahl und Art
+  crash probe 3
   [ ! -f "$R/run/probe.session" ]
   f="$(failed_files)"
   [ "$(wc -l <<<"$f")" -eq 1 ]
@@ -214,7 +239,7 @@ EOF
 - task: `failed`
 - document: `development/messages/architect/20261012100000-projectlead-01.md`
 
-Die Sitzung besteht nicht mehr, ohne dass eine Antwortmeldung vorliegt.
+Die Sitzung besteht nicht mehr, ohne dass eine Antwortmeldung vorliegt. Abbrüche derselben Meldung: 3, Art des letzten Abbruchs: Absturz.
 EOF
   grep -qx "branch=main" "$f.meta"
 }
@@ -226,6 +251,7 @@ EOF
   message "$DL" 20261021100000-projectlead-01.md projectlead probe/wp01 implement
   ar
   [ -d "$R/work/probe/wp01/devlead" ]
+  id="$(line probe-wp01 5)"
   diff - "$FAKES/sessions/probe-wp01" <<EOF
 cwd=$R/work/probe/wp01/devlead
 arg=$FAKES/claude
@@ -239,6 +265,8 @@ arg=--settings
 arg=$R/devteam/settings.json
 arg=--agent
 arg=devteam:devlead
+arg=--session-id
+arg=$id
 arg=Bearbeite die Meldung $DL/20261021100000-projectlead-01.md. Entwicklungsverzeichnis: $R.
 EOF
   grep -qx 20261021100000-projectlead-01.md "$R/run/agentrun.started"
@@ -314,8 +342,7 @@ EOF
   mkdir -p "$DL"
   message "$DL" 20261021100000-projectlead-01.md projectlead probe/wp01 implement
   ar
-  rm "$FAKES/sessions/probe-wp01"
-  ar
+  crash probe-wp01 3
   grep -qxF -- '- document: `development/messages/devlead/20261021100000-projectlead-01.md`' "$(failed_files)"
 }
 
@@ -334,25 +361,34 @@ EOF
 
 # ---------------------------------------------------------------- Herzschlag
 
-@test "Herzschlag: ohne Herzschlag über die Zeitgrenze wird die Sitzung beendet" {
+# Beginn der Herzschlagmessung (Zeile 3 der Sitzungsdatei) weit zurücksetzen: stale KEY
+stale() { sed -i "3s/.*/$(( $(date +%s) - 600 ))/" "$R/run/$1.session"; }
+
+@test "Herzschlag: ohne Herzschlag über die Zeitgrenze wird die Sitzung beendet und fortgesetzt, nach dem dritten Mal failed" {
+  # Änderung nach Spezifikation 3.2: der erste und zweite Stillstand führen zur Fortsetzung, der dritte zu failed
   set_timeout 60
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar
-  sed -i "3s/.*/$(( $(date +%s) - 600 ))/" "$R/run/probe.session"
+  stale probe
   touch -d '-2 minutes' "$R/run/probe.heartbeat"
   ar
-  [ ! -f "$FAKES/sessions/probe" ]
-  grep -q "weil 60 Sekunden lang kein Herzschlag kam" "$(failed_files)"
+  grep -q "^kill-session -t =probe" "$FAKES/sessions/.calls"
+  [ "$(line probe 6)" -eq 1 ]
+  [ -f "$FAKES/sessions/probe" ]
+  [ -z "$(failed_files)" ]
   [ ! -e "$R/run/probe.heartbeat" ]
+  stale probe; ar
+  stale probe; ar
+  [ ! -f "$FAKES/sessions/probe" ]
+  grep -q "weil 60 Sekunden lang kein Herzschlag kam. Abbrüche derselben Meldung: 3, Art des letzten Abbruchs: Stillstand." "$(failed_files)"
 }
 
 @test "Herzschlag: Bildschirminhalt bleibt nach dem Abbruch in run/<key>.screen" {
   set_timeout 60
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar
-  sed -i "3s/.*/$(( $(date +%s) - 600 ))/" "$R/run/probe.session"
+  stale probe
   ar
-  [ ! -f "$FAKES/sessions/probe" ]
   [ -f "$R/run/probe.screen" ]
 }
 
@@ -375,10 +411,295 @@ EOF
   sed -i "3s/.*/$(( $(date +%s) - 3600 ))/" "$R/run/probe.session"
   touch -d '-14 minutes' "$R/run/probe.heartbeat"
   ar
-  [ -f "$FAKES/sessions/probe" ]
+  [ "$(line probe 6)" -eq 0 ]
   touch -d '-16 minutes' "$R/run/probe.heartbeat"
   ar
-  grep -q "weil 900 Sekunden lang" "$(failed_files)"
+  [ "$(line probe 6)" -eq 1 ]
+  grep -q "weil 900 Sekunden lang kein Herzschlag kam" "$LOG"
+}
+
+# ---------------------------------------------------------------- Fortsetzung (Spezifikation 3.2)
+# Mit einem Szenario läuft das Ersatzprogramm claude in der Attrappe von tmux; jede ar-Bewertung
+# ist eine Prüfung, settle wartet auf den Ablauf des Ersatzprogramms.
+
+@test "Fortsetzung: Absturz, Fortsetzung mit --resume <kennung> im selben Arbeitsverzeichnis" {
+  scenario - <<'EOF'
+call: crash 1
+call: reply
+EOF
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  id="$(line probe 5)"
+  [ "$(claude_calls)" -eq 1 ]
+  claude_call 1 | grep -qx "session-id=$id"
+  ar; settle
+  [ "$(claude_calls)" -eq 2 ]
+  claude_call 2 | grep -qx "resume=$id"
+  claude_call 2 | grep -qx "cwd=$R/work/probe/architect"
+  claude_call 2 | grep -qxF "arg=Die Sitzung wurde abgebrochen. Prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist."
+  [ "$(line probe 5)" = "$id" ]
+  [ "$(line probe 6)" -eq 1 ]
+  [ -z "$(failed_files)" ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Fortsetzung: Stillstand, die Sitzung wird beendet und mit --resume fortgesetzt" {
+  scenario - <<'EOF'
+call: hang
+call: reply
+EOF
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  id="$(line probe 5)"
+  stale probe
+  ar; settle
+  grep -q "^kill-session -t =probe" "$FAKES/sessions/.calls"
+  claude_call 2 | grep -qx "resume=$id"
+  [ "$(line probe 6)" -eq 1 ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Fortsetzung: nach dem dritten Abbruch derselben Meldung failed mit Zahl und Art des letzten Abbruchs" {
+  scenario - <<'EOF'
+call: crash 1
+call: crash 1
+call: crash 1
+call: reply
+EOF
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  ar; settle
+  [ "$(line probe 6)" -eq 1 ]
+  ar; settle
+  [ "$(line probe 6)" -eq 2 ]
+  [ -z "$(failed_files)" ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ "$(claude_calls)" -eq 3 ]
+  [ "$(failed_files | wc -l)" -eq 1 ]
+  grep -qF "Abbrüche derselben Meldung: 3, Art des letzten Abbruchs: Absturz." "$(failed_files)"
+  grep -qxF -- '- task: `failed`' "$(failed_files)"
+  # keine weitere Fortsetzung
+  ar; settle
+  [ "$(claude_calls)" -eq 3 ]
+}
+
+@test "Fortsetzung: der Zähler gehört zur Meldung, eine neue Meldung beginnt bei null" {
+  scenario - <<'EOF'
+call: crash 1
+call: crash 1
+call: reply
+call: crash 1
+call: crash 1
+call: reply
+EOF
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle; ar; settle; ar; settle
+  [ "$(line probe 6)" -eq 2 ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  message "$IN" 20261012100100-projectlead-01.md projectlead probe specify
+  ar; settle
+  [ "$(line probe 6)" -eq 0 ]
+  ar; settle; ar; settle
+  [ "$(line probe 6)" -eq 2 ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ "$(claude_calls)" -eq 6 ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Fortsetzung: ungültiges ref führt sofort zu failed, ohne Start und ohne Fortsetzung" {
+  message "$IN" 20261012100000-projectlead-01.md projectlead "Probe/1" check
+  ar
+  [ "$(failed_files | wc -l)" -eq 1 ]
+  grep -q "kein gültiges Feld ref" "$(failed_files)"
+  [ "$(new_sessions)" -eq 0 ]
+  [ ! -e "$FAKES/claude.calls" ]
+  ls "$R/run" | not grep -q session
+}
+
+@test "Fortsetzung: nicht möglich, Neustart mit dem ursprünglichen Startauftrag zählt als derselbe Abbruch" {
+  export RESUME_GRACE=60
+  scenario - <<'EOF'
+call: crash 1
+call: crash 1
+call: reply
+EOF
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  id1="$(line probe 5)"
+  ar; settle
+  claude_call 2 | grep -qx "resume=$id1"
+  [ "$(line probe 6)" -eq 1 ]
+  # die fortgesetzte Sitzung endet sofort: Fortsetzung nicht möglich
+  ar; settle
+  id2="$(line probe 5)"
+  [ "$id2" != "$id1" ]
+  [ "$(claude_calls)" -eq 3 ]
+  claude_call 3 | grep -qx "session-id=$id2"
+  claude_call 3 | grep -qxF "arg=Bearbeite die Meldung $IN/20261012100000-projectlead-01.md. Entwicklungsverzeichnis: $R."
+  not grep -q '^resume=' <(claude_call 3)
+  [ "$(line probe 6)" -eq 1 ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Fortsetzung: Neustart, der ebenfalls nicht startet, führt zu failed mit Art Start fehlgeschlagen" {
+  scenario - <<'EOF'
+call: crash 1
+EOF
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  touch "$FAKES/tmux.fail"
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  grep -qF "Art des letzten Abbruchs: Start fehlgeschlagen." "$(failed_files)"
+}
+
+# ---------------------------------------------------------------- Pause (Spezifikation 3.3)
+
+@test "Pause: Nutzungsgrenze auf dem Bildschirm statt Stillstand, kein Abbruch, Vermerk in run/" {
+  scenario "$SCN/limit-no-time.scn"
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  grep -qF "Platzhalter: Nutzungsgrenze erreicht" "$FAKES/sessions/probe.screen"
+  stale probe
+  ar
+  [ -f "$FAKES/sessions/probe" ]
+  not grep -q '^kill-session' "$FAKES/sessions/.calls"
+  [ -z "$(failed_files)" ]
+  [ "$(line probe 6)" -eq 0 ]
+  [ -f "$R/run/probe.paused" ]
+  # ohne genannten Zeitpunkt: nächste Prüfung nach PAUSE_INTERVAL
+  [ "$(sed -n 1p "$R/run/probe.paused")" -gt "$(( $(date +%s) + 800 ))" ]
+  [ -z "$(sed -n 2p "$R/run/probe.paused")" ]
+  ar
+  [ ! -e "$FAKES/sessions/probe.keys" ]
+}
+
+@test "Pause: solange eine Sitzung pausiert ist, gilt bei keiner Sitzung fehlender Herzschlag als Stillstand" {
+  scenario - <<'EOF'
+call: limit ; wait-resume 60 ; reply
+call: hang
+EOF
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  message "$IN" 20261012100100-projectlead-01.md projectlead other check
+  ar; settle
+  stale probe; stale other
+  ar
+  [ -f "$R/run/probe.paused" ]
+  [ ! -f "$R/run/other.paused" ]
+  [ -f "$FAKES/sessions/other" ]
+  [ "$(line other 6)" -eq 0 ]
+  not grep -q '^kill-session' "$FAKES/sessions/.calls"
+  [ -z "$(failed_files)" ]
+  # auch bei späteren Prüfungen
+  ar
+  [ "$(line other 6)" -eq 0 ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Pause: ohne die Meldung der Nutzungsgrenze auf dem Bildschirm bleibt fehlender Herzschlag ein Stillstand" {
+  scenario - <<'EOF'
+call: hang
+EOF
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  stale probe
+  ar
+  [ ! -e "$R/run/probe.paused" ]
+  [ "$(line probe 6)" -eq 1 ]
+}
+
+@test "Pause: Fortsetzung ohne Zeitpunkt nach PAUSE_INTERVAL, danach Herzschlagmessung für alle neu" {
+  scenario - <<'EOF'
+call: limit ; wait-resume 60 ; reply
+call: hang
+EOF
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  message "$IN" 20261012100100-projectlead-01.md projectlead other check
+  ar; settle
+  stale probe; stale other
+  ar
+  # vor dem Prüfzeitpunkt wird nichts geschickt
+  ar
+  [ ! -e "$FAKES/sessions/probe.keys" ]
+  sed -i "1s/.*/$(( $(date +%s) - 1 ))/" "$R/run/probe.paused"
+  ar; settle
+  grep -qxF "Die Nutzungsgrenze ist aufgehoben. Fahre fort." "$FAKES/sessions/probe.keys"
+  grep -q '^send-keys -t probe Enter' "$FAKES/sessions/.calls"
+  [ ! -e "$R/run/probe.paused" ]
+  # die Messung beginnt für alle Sitzungen neu: kein Stillstand bei other
+  [ "$(( $(date +%s) - $(stat -c %Y "$R/run/other.heartbeat") ))" -lt 30 ]
+  [ "$(line other 6)" -eq 0 ]
+  ar
+  [ "$(line other 6)" -eq 0 ]
+  [ -f "$FAKES/sessions/other" ]
+  # die Sitzung macht weiter und antwortet
+  [ "$(claude_calls)" -eq 2 ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Pause: Meldung mit Zeitpunkt, Prüfung erst ab diesem Zeitpunkt" {
+  scenario "$SCN/limit-with-time.scn"
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  grep -qF "Zurücksetzung um 2099-01-01T00:00:00Z" "$FAKES/sessions/probe.screen"
+  stale probe
+  ar
+  [ "$(sed -n 1p "$R/run/probe.paused")" -eq "$(date -d 2099-01-01T00:00:00Z +%s)" ]
+  [ "$(sed -n 2p "$R/run/probe.paused")" = 2099-01-01T00:00:00Z ]
+  ar
+  [ ! -e "$FAKES/sessions/probe.keys" ]
+  [ -f "$R/run/probe.paused" ]
+}
+
+@test "Pause: Zeitpunkt erreicht, die Sitzung wird fortgesetzt" {
+  scenario - <<'EOF'
+limit_text_time=Platzhalter: Nutzungsgrenze erreicht, Zurücksetzung um {time}
+call: limit-time 2020-01-01T00:00:00Z ; wait-resume 60 ; reply
+EOF
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  stale probe
+  ar; settle
+  grep -qxF "Die Nutzungsgrenze ist aufgehoben. Fahre fort." "$FAKES/sessions/probe.keys"
+  [ ! -e "$R/run/probe.paused" ]
+  ar
+  [ ! -f "$R/run/probe.session" ]
+  [ "$(claude_calls)" -eq 1 ]
+  [ -z "$(failed_files)" ]
+}
+
+@test "Pause: Suchtext und Zeitmuster sind Parameter" {
+  scenario - <<'EOF'
+call: hang
+EOF
+  export LIMIT_TEXT="Grenze X" LIMIT_TIME_PATTERN='bis [0-9]+:[0-9]+'
+  set_timeout 60
+  message "$IN" 20261012100000-projectlead-01.md projectlead probe check
+  ar; settle
+  echo "Grenze X erreicht, bis 23:59" >"$FAKES/sessions/probe.screen"
+  stale probe
+  ar
+  [ -f "$R/run/probe.paused" ]
+  # „bis 23:59“ liest date -d nicht als Zeitpunkt: Prüfung nach PAUSE_INTERVAL
+  [ "$(sed -n 1p "$R/run/probe.paused")" -gt "$(( $(date +%s) + 800 ))" ]
 }
 
 # ---------------------------------------------------------------- Meldung failed
@@ -387,8 +708,7 @@ EOF
   touch "$FAKES/gh.fail"
   message "$IN" 20261012100000-projectlead-01.md projectlead probe check
   ar
-  rm "$FAKES/sessions/probe"
-  ar
+  crash probe 3
   [ -f "$R/run/20261012100000-projectlead-01.md.failed" ]
   grep -q "Meldung failed ließ sich nicht schreiben" "$LOG"
   rm "$FAKES/gh.fail"

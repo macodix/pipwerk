@@ -1,5 +1,6 @@
 # Nutzungsgrenze ohne Zeitpunkt (Auftrag 07, 08): Meldung ausgeben und warten (bis claude.resume liegt).
-# Der Wortlaut ist ein Platzhalter; er wird in Auftrag 07 an einer echten Ausgabe nachgewiesen.
+# Der Wortlaut ist ein Platzhalter und stimmt mit LIMIT_TEXT in agentrun überein; er ist nicht an einer echten
+# Ausgabe von Claude Code nachgewiesen (siehe README, Abschnitt „Nutzungsgrenze“).
 limit_text=Platzhalter: Nutzungsgrenze erreicht
 call: limit ; wait-resume 60 ; reply
 # Fortsetzung mit --resume <kennung>: weitermachen

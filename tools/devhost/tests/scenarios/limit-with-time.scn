@@ -1,5 +1,6 @@
 # Nutzungsgrenze mit Zeitpunkt (Auftrag 07, 08): Meldung mit Zeitpunkt ausgeben und warten (bis claude.resume liegt).
-# Der Wortlaut ist ein Platzhalter; er wird in Auftrag 07 an einer echten Ausgabe nachgewiesen.
+# Der Wortlaut ist ein Platzhalter und stimmt mit LIMIT_TEXT und LIMIT_TIME_PATTERN in agentrun überein; er ist nicht
+# an einer echten Ausgabe von Claude Code nachgewiesen (siehe README, Abschnitt „Nutzungsgrenze“).
 limit_text_time=Platzhalter: Nutzungsgrenze erreicht, Zurücksetzung um {time}
 call: limit-time 2099-01-01T00:00:00Z ; wait-resume 60 ; reply
 # Fortsetzung mit --resume <kennung>: weitermachen
