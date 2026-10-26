@@ -546,6 +546,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Meldungstabelle: `failed` auch für eine Meldung mit ungültigem `ref` (sofort). `amend` auch, um einen Oberflächenentwurf für eine umgesetzte Ansicht vorzuschlagen. Vorhaben `verfahren`, Auftrag 10. |
 | 2026-10-24 | Eingang des Projektleiters: Die zweite Wiedervorlage liegt 40 Minuten nach der Aktivierung, nicht 40 Minuten nach der ersten. Entscheidung des Entwicklungsleiters (Vorhaben `verfahren`, Auftrag 04). |
 | 2026-10-24 | Vorhaben `verfahren` (Festlegungen 1 bis 7 des Auftraggebers im Chat am 2026-10-24, Spezifikation `development/verfahren/specification.md`): Abbruch, Fortsetzung durch `agentrun` und `startrole`, Pause wegen der Nutzungsgrenze, `failed` erst nach dem dritten Abbruch; Quellen der Skripte unter `tools/devhost/` und Ermittlung des Entwicklungsverzeichnisses aus dem Ablageort; Testumgebung der Skripte; Wiedervorlage und Eingang des Projektleiters mit `waiting.md` und `followup.md`; Namen von Vorhaben, Paketen und Phasen; Machbarkeitstest und Oberflächenentwurf je Ansicht als einzige Begriffe für Prototypen; neuer Abschnitt „Übersicht“ mit `overview.html` und Workflow `overview.yml`. |
 | 2026-10-23 | Oberflächenentwurf nur für eine Oberfläche ohne umgesetzte Fassung. Änderungen an einer umgesetzten Oberfläche werden ohne Oberflächenentwurf direkt in der Software umgesetzt und in der Testumgebung abgenommen. Festlegung des Auftraggebers im Chat am 2026-10-23. |
