@@ -352,7 +352,7 @@ Das Entwicklungsverzeichnis auf dem Entwicklungsrechner ist `/srv/aixlab/dev/pip
 | `work/<vorhaben>/<arbeitspaket>/<rolle>/` | Arbeitsverzeichnisse der Phase 4 | die jeweilige Rolle |
 | `work/<ref>/reports/` | Berichte von Tester und QA, kein Git-Arbeitsverzeichnis | Tester und QA |
 | `test/<vorhaben>-<arbeitspaket>/` | Testumgebung eines Arbeitspakets | Entwicklungsleiter |
-| `test/<ref>/` | Testumgebung für die Skripte `agentrun`, `heartbeat` und `startrole`: eine vollständige Kopie dieser Verzeichnisstruktur mit einem lokalen Git-Repository als `origin` und einem Ersatzprogramm für `claude`, das Sitzungen, Abbrüche und Pausen wegen der Nutzungsgrenze nachstellt. Programmaufruf und Prüfabstände sind Parameter. So lassen sich Abbruch, Fortsetzung und Pause prüfen, ohne den laufenden Betrieb und das Nutzungskontingent zu berühren. | Entwicklungsleiter |
+| `test/<ref>/` | Testumgebung für die Skripte `agentrun`, `heartbeat` und `startrole`: eine vollständige Kopie dieser Verzeichnisstruktur mit einem lokalen Git-Repository als `origin` und einem Ersatzprogramm für `claude`, das Sitzungen, Abbrüche und Pausen wegen der Nutzungsgrenze nachstellt. Programmaufruf und Prüfabstände sind einfache Zuweisungen in den Skripten, die die Testumgebung in ihren Kopien der Skripte ersetzt; die Skripte lesen keinen Wert aus der Umgebung. So lassen sich Abbruch, Fortsetzung und Pause prüfen, ohne den laufenden Betrieb und das Nutzungskontingent zu berühren. | Entwicklungsleiter |
 | `scripts/` | `agentrun`, `heartbeat` und `pidcheck` mit Tests und Beschreibung, installiert aus `tools/devhost/` (außer `pidcheck`) | nicht durch das Team |
 | `run/` | PID-Datei, Sperren und Protokoll von `agentrun`, Liste der gestarteten Meldungen, je laufender Sitzung Zustands- und Herzschlagdatei mit Kennung der Sitzung und Zähler der Abbrüche, Vermerk einer Pause wegen der Nutzungsgrenze, noch nicht übertragene Meldungen `failed` | `agentrun`, `heartbeat`, `pidcheck` |
 | `devteam/` | Konfiguration der Rollen für Claude Code und die Startskripte | nicht durch das Team |
@@ -546,6 +546,7 @@ Alle Rollen teilen sich ein Nutzungskontingent. Um es zu schonen, gilt:
 
 | Datum | Änderung |
 |---|---|
+| 2026-10-26 | Testumgebung der Skripte: Programmaufruf und Prüfabstände sind einfache Zuweisungen in den Skripten, keine Werte aus der Umgebung; die Testumgebung ersetzt sie in ihren Kopien der Skripte. Vorhaben `verfahren`, Auftrag 12 (Mangel M1 des Abnahmeberichts). |
 | 2026-10-26 | Ablage und Übersicht: Format der Zeilen von `waiting.md` nur im Eingang des Projektleiters, Ort der Seite `development/overview.html` auf `main` mit Hinweis auf den noch festzulegenden festen Link. Vorhaben `verfahren`, Auftrag 11. |
 | 2026-10-26 | Meldungstabelle: `failed` auch für eine Meldung mit ungültigem `ref` (sofort). `amend` auch, um einen Oberflächenentwurf für eine umgesetzte Ansicht vorzuschlagen. Vorhaben `verfahren`, Auftrag 10. |
 | 2026-10-24 | Eingang des Projektleiters: Die zweite Wiedervorlage liegt 40 Minuten nach der Aktivierung, nicht 40 Minuten nach der ersten. Entscheidung des Entwicklungsleiters (Vorhaben `verfahren`, Auftrag 04). |

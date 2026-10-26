@@ -17,21 +17,23 @@
 # Entwicklungsverzeichnis: zwei Ebenen über devteam/lib/, in dem dieses Skript liegt
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd)"
 
-# Parameter: die Umgebung überschreibt die Standardwerte (so setzt die Testumgebung sie).
-# Dieselben Namen, Standardwerte und dieselbe Erkennung wie in scripts/agentrun; der Code ist nicht geteilt,
+# Werte: einfache Zuweisungen, kein Wert kommt aus der Umgebung; die Testumgebung ersetzt sie in ihrer Kopie
+# (tests/testenv set). Jede Zuweisung steht allein in ihrer Zeile, der Kommentar darüber.
+# Dieselben Namen, Werte und dieselbe Erkennung wie in scripts/agentrun; der Code ist nicht geteilt,
 # weil scripts/ und devteam/lib/ einzeln installiert werden. Beide Stellen müssen übereinstimmen (README).
-ABORT_LIMIT="${ABORT_LIMIT:-3}"                          # Abbrüche, bei denen nicht mehr fortgesetzt wird, sondern der Fehler folgt
-PAUSE_INTERVAL="${PAUSE_INTERVAL:-900}"                  # Sekunden Wartezeit, wenn die Ausgabe keinen Zeitpunkt nennt
-PAUSE_HEARTBEAT_INTERVAL="${PAUSE_HEARTBEAT_INTERVAL:-300}"   # Sekunden zwischen den Aufrufen von heartbeat während des Wartens
+# Abbrüche, bei denen nicht mehr fortgesetzt wird, sondern der Fehler folgt
+ABORT_LIMIT=3
+# Sekunden Wartezeit, wenn die Ausgabe keinen Zeitpunkt nennt
+PAUSE_INTERVAL=900
+# Sekunden zwischen den Aufrufen von heartbeat während des Wartens
+PAUSE_HEARTBEAT_INTERVAL=300
 
 # Nutzungsgrenze: Suchtext in der Ausgabe des Programms und Muster des Zeitpunkts in der Zeile mit dem Suchtext
 # (erweiterter regulärer Ausdruck, das Ergebnis muss von „date -d“ gelesen werden).
 # Beide Werte sind Platzhalter: der Wortlaut der echten Ausgabe von Claude Code ist ungeprüft (Spezifikation 3.3 Punkt 5).
-LIMIT_TEXT="${LIMIT_TEXT:-Platzhalter: Nutzungsgrenze erreicht}"
-LIMIT_TIME_PATTERN="${LIMIT_TIME_PATTERN:-}"
-if [[ -z "$LIMIT_TIME_PATTERN" ]]; then
-  LIMIT_TIME_PATTERN='[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'   # Platzhalter: ISO-8601-Zeitpunkt in UTC
-fi
+LIMIT_TEXT='Platzhalter: Nutzungsgrenze erreicht'
+# Platzhalter: ISO-8601-Zeitpunkt in UTC
+LIMIT_TIME_PATTERN='[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'
 
 RESUME_PROMPT="Die Sitzung wurde abgebrochen. Prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist."
 CONTINUE_PROMPT="Die Nutzungsgrenze ist aufgehoben. Fahre fort."

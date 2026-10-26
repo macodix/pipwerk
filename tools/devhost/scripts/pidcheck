@@ -5,8 +5,9 @@
 # Entwicklungsverzeichnis: das Verzeichnis über scripts/, in dem dieses Skript liegt
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"
 # Suchpfad für agentrun und die Sitzungen (muss das Verzeichnis von claude enthalten); Cron setzt nur /usr/bin:/bin.
-# Die Installation ergänzt hier das Verzeichnis von claude.
-PATH="${PIDCHECK_PATH:-/usr/local/bin:/usr/bin:/bin}"
+# Einfache Zuweisung, kein Wert aus der Umgebung. Die Installation ersetzt den Platzhalter in der installierten Kopie
+# durch den Suchpfad (README, „Werte bei der Installation“).
+PATH='<suchpfad>'
 
 RUN="$ROOT/run"
 

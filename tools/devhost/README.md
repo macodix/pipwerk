@@ -19,7 +19,7 @@ tools/devhost/
     scenarios/        Szenariendateien für das Ersatzprogramm claude
 ```
 
-Die Skripte starten und überwachen die Sitzungen von Softwarearchitekt und Entwicklungsleiter (`agentrun`, `heartbeat`, `pidcheck`) und die von Tester und QA (`startrole`). Sie setzen nach einem Abbruch die Sitzung fort und warten bei erreichter Nutzungsgrenze (Abschnitte „Fortsetzung nach einem Abbruch“, „Nutzungsgrenze“ und „Fortsetzung und Pause in `startrole`“). Die Werte unten sind Parameter am Anfang der Skripte.
+Die Skripte starten und überwachen die Sitzungen von Softwarearchitekt und Entwicklungsleiter (`agentrun`, `heartbeat`, `pidcheck`) und die von Tester und QA (`startrole`). Sie setzen nach einem Abbruch die Sitzung fort und warten bei erreichter Nutzungsgrenze (Abschnitte „Fortsetzung nach einem Abbruch“, „Nutzungsgrenze“ und „Fortsetzung und Pause in `startrole`“). Die Werte unten sind einfache Zuweisungen am Anfang der Skripte; kein Skript liest einen Wert aus der Umgebung.
 
 ## Abhängigkeiten
 
@@ -38,13 +38,13 @@ Die Skripte ermitteln `<root>` aus ihrem Ablageort: `scripts/` liegt direkt, `de
 
 ### Werte bei der Installation
 
-Jeder Wert steht am Anfang des Skripts als Parameter in der Form `NAME="${NAME:-standard}"` (bei `PIDCHECK_PATH`: `PATH="${PIDCHECK_PATH:-standard}"`). Die Umgebung überschreibt den Standardwert. Die Installation setzt einen Wert, indem sie in der installierten Kopie unter `<root>/scripts/` beziehungsweise `<root>/devteam/lib/` den Standard hinter `:-` durch den Wert der letzten Spalte ersetzt (die Kopie im Repository bleibt unverändert). So läuft der Betrieb ohne Umgebungsvariablen. Beispiel für `agentrun`: `sed -i 's|^CLAUDE="${CLAUDE:-claude}"|CLAUDE="${CLAUDE:-/pfad/zu/claude}"|' <root>/scripts/agentrun`.
+Jeder Wert steht am Anfang des Skripts als einfache Zuweisung in einer eigenen Zeile, der Kommentar darüber: `NAME=900` für eine Zahl, `NAME='text'` sonst. Kein Wert kommt aus der Umgebung, die Skripte verwenden keinen Ersatzwert für eine fehlende Umgebungsvariable. Die Werte der Installation (`GITHUB_REPO`, `CLAUDE` und der Suchpfad `PATH` in `pidcheck`) haben in der Kopie im Repository einen erkennbaren Platzhalter in spitzen Klammern (`<eigentümer>/<name>`, `<pfad-zu-claude>`, `<suchpfad>`), keinen Pfad und keinen Rechnernamen. Die Installation ersetzt die Zuweisung in der installierten Kopie unter `<root>/scripts/` beziehungsweise `<root>/devteam/lib/` durch den Wert der letzten Spalte; die Kopie im Repository bleibt unverändert. Beispiel für `agentrun`: `sed -i "s|^CLAUDE=.*|CLAUDE='/pfad/zu/claude'|" <root>/scripts/agentrun`.
 
-| Skript | Parameter | Standard im Repository | Bei der Installation setzen |
+| Skript | Wert | Im Repository | Bei der Installation setzen |
 |---|---|---|---|
-| `agentrun` | `GITHUB_REPO` | leer | `<eigentümer>/<name>` des Repositorys für Meldungen `failed` |
-| `agentrun` | `CLAUDE` | `claude` | vollständiger Pfad des Programms `claude` |
-| `pidcheck` | `PIDCHECK_PATH` | `/usr/local/bin:/usr/bin:/bin` | Suchpfad einschließlich des Verzeichnisses von `claude`; Cron setzt nur `/usr/bin:/bin` |
+| `agentrun` | `GITHUB_REPO` | Platzhalter `<eigentümer>/<name>` | `<eigentümer>/<name>` des Repositorys für Meldungen `failed` |
+| `agentrun` | `CLAUDE` | Platzhalter `<pfad-zu-claude>` | vollständiger Pfad des Programms `claude` |
+| `pidcheck` | `PATH` | Platzhalter `<suchpfad>` | Suchpfad einschließlich des Verzeichnisses von `claude`; Cron setzt nur `/usr/bin:/bin` |
 | `agentrun` | `HEARTBEAT_TIMEOUT` | `900` | unverändert lassen |
 | `agentrun` | `INTERVAL` | `30` | unverändert lassen |
 | `agentrun` | `ABORT_LIMIT` | `3` | unverändert lassen |
@@ -56,7 +56,7 @@ Jeder Wert steht am Anfang des Skripts als Parameter in der Form `NAME="${NAME:-
 | `startrole` | `PAUSE_HEARTBEAT_INTERVAL` | `300` | unverändert lassen |
 | `startrole` | `LIMIT_TEXT`, `LIMIT_TIME_PATTERN` | Platzhalter, gleich denen von `agentrun` | derselbe Wert wie in `agentrun` |
 
-Ist `GITHUB_REPO` leer, scheitert das Schreiben der Meldung `failed`; `agentrun` protokolliert das und versucht es bei der nächsten Prüfung erneut. Die Werte des Entwicklungsrechners stehen nicht in diesem Verzeichnis.
+Steht in `GITHUB_REPO` noch der Platzhalter, scheitert das Schreiben der Meldung `failed`; `agentrun` protokolliert das und versucht es bei der nächsten Prüfung erneut. Die Werte des Entwicklungsrechners stehen nicht in diesem Verzeichnis.
 
 ## Fortsetzung nach einem Abbruch (`agentrun`)
 
@@ -98,9 +98,16 @@ Spezifikation Abschnitte 3.2 Punkt 5 und 3.3 Punkt 4. `startrole` ist der gemein
 
 ```sh
 tools/devhost/tests/testenv create <verzeichnis> [--heartbeat-timeout S] [--interval S] [--pause-interval S] [--pause-heartbeat-interval S] [--resume-grace S] [--claude PROGRAMM] [--tmux PROGRAMM] [--gh PROGRAMM] [--scenario DATEI] [--github-repo NAME]
+tools/devhost/tests/testenv set <verzeichnis> NAME WERT
 ```
 
-legt unter `<verzeichnis>` die Struktur des Entwicklungsverzeichnisses an: `origin.git` (lokales Repository als `origin`), `repo/` (Klon, Zweig `main`), `run/`, `work/`, `devteam/`, `scripts/` und `fakes/`. Es installiert die Skripte und hängt die Programme ein. `<verzeichnis>/env` setzt `PATH`, `CLAUDE`, `GITHUB_REPO`, `HEARTBEAT_TIMEOUT`, `INTERVAL`, `PAUSE_INTERVAL`, `PAUSE_HEARTBEAT_INTERVAL`, `RESUME_GRACE` und `PIDCHECK_PATH`; wer die Umgebung benutzt, liest es mit `source <verzeichnis>/env`.
+`create` legt unter `<verzeichnis>` die Struktur des Entwicklungsverzeichnisses an: `origin.git` (lokales Repository als `origin`), `repo/` (Klon, Zweig `main`), `run/`, `work/`, `devteam/`, `scripts/` und `fakes/`. Es legt **Kopien** der Skripte an und hängt die Programme ein.
+
+**Weg für die Werte der Tests.** Die Werte stehen nicht in der Umgebung, sondern als einfache Zuweisungen in den Skripten (Abschnitt „Werte bei der Installation“). Die Testumgebung ersetzt sie in ihren Kopien; die Quellen unter `tools/devhost/` bleiben unverändert. Das gilt für alle Skripte gleich:
+
+- `create` ersetzt immer `CLAUDE` (`<verzeichnis>/fakes/claude`), `GITHUB_REPO` (`testowner/testrepo`, oder der Wert von `--github-repo`) und den Suchpfad `PATH` in `pidcheck` (`<verzeichnis>/fakes` vor `/usr/local/bin:/usr/bin:/bin`). Die Optionen `--heartbeat-timeout`, `--interval`, `--pause-interval`, `--pause-heartbeat-interval` und `--resume-grace` ersetzen `HEARTBEAT_TIMEOUT`, `INTERVAL`, `PAUSE_INTERVAL`, `PAUSE_HEARTBEAT_INTERVAL` und `RESUME_GRACE`; ohne Option bleibt der Wert des Skripts.
+- `set <verzeichnis> NAME WERT` ersetzt einen weiteren Wert nachträglich, zum Beispiel `ABORT_LIMIT`, `LIMIT_TEXT` oder `LIMIT_TIME_PATTERN`, in jedem Skript der Kopie, das die Zuweisung enthält (`agentrun`, `pidcheck`, `startrole`). Ein Wert darf kein `'` und keinen Zeilenumbruch enthalten. Gibt es die Zuweisung in keinem Skript, endet `set` mit einem Fehler.
+- Die Ersatzprogramme `tmux` und `gh` ruft `agentrun` über den Suchpfad des Aufrufers auf; wer `agentrun` in der Testumgebung unmittelbar startet, stellt `<verzeichnis>/fakes` vor seinen Suchpfad (`pidcheck` setzt ihn selbst). Die Ersatz-`start.conf` nennt das Ersatzprogramm `claude` mit seinem Pfad.
 
 Die Quellen enthalten `devteam/bin/functiontest`, `securitytest`, `qa` und `devteam/start.conf` nicht. Die Testumgebung erzeugt dafür **Ersatz-Startskripte** und eine Ersatz-`start.conf` (Modell `sonnet`, Aufruf von `claude` wie in den Erwartungen der Tests) sowie eine leere `settings.json`. Sie dienen nur den Tests von `startrole`; die echten Dateien gehören nicht zu diesem Verzeichnis.
 
@@ -118,4 +125,4 @@ Die Quellen enthalten `devteam/bin/functiontest`, `securitytest`, `qa` und `devt
 tools/devhost/tests/testenv test
 ```
 
-Jeder Test legt mit `testenv create` eine eigene Testumgebung an. Einzelne Datei: `tools/devhost/tests/testenv test tools/devhost/tests/agentrun.bats`.
+Jeder Test legt mit `testenv create` eine eigene Testumgebung an. Ein Test, der einen Wert ändert (zum Beispiel `PAUSE_INTERVAL`, `ABORT_LIMIT`, `LIMIT_TEXT`), ändert ihn mit `testenv set` in der Kopie seiner Testumgebung; kein Test setzt eine Umgebungsvariable. Einzelne Datei: `tools/devhost/tests/testenv test tools/devhost/tests/agentrun.bats`.

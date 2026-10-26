@@ -12,7 +12,7 @@
 # (letztes Argument ohne führendes „-“). --settings <datei>, --plugin-dir <verzeichnis>,
 # --setting-sources, --permission-mode, --model, -p und --output-format werden ignoriert, aber aufgezeichnet.
 #
-# Szenariendatei: claude.scenario neben dem Ersatzprogramm oder die Datei aus FAKE_CLAUDE_SCENARIO.
+# Szenariendatei: claude.scenario neben dem Ersatzprogramm.
 # Fehlt sie, endet der Aufruf mit dem Exitcode aus claude.exit (falls vorhanden), sonst mit 0.
 # Aufbau (siehe tests/scenarios/):
 #   limit_text=<Wortlaut ohne Zeitpunkt>          Platzhalter wie LIMIT_TEXT in agentrun, an einer echten Ausgabe ungeprüft
@@ -78,7 +78,7 @@ elif [[ -f "$state/last_message" ]]; then
   message="$(cat "$state/last_message")"
 fi
 
-scenario="${FAKE_CLAUDE_SCENARIO:-$dir/claude.scenario}"
+scenario="$dir/claude.scenario"
 if [[ ! -f "$scenario" ]]; then
   if [[ -f "$dir/claude.exit" ]]; then
     exit "$(cat "$dir/claude.exit")"

@@ -3,14 +3,20 @@
 #
 # Aufruf:
 #   testenv create VERZEICHNIS [Option …]   Testumgebung anlegen
+#   testenv set VERZEICHNIS NAME WERT       einen Wert in den Kopien der Skripte einer Testumgebung ersetzen
 #   testenv test [bats-Argument …]          alle Tests (tests/*.bats) ausführen, ohne Argument alle Dateien
 #
-# Optionen von create (Standardwerte in Klammern):
-#   --heartbeat-timeout SEKUNDEN   Sekunden ohne Herzschlag bis zum Abbruch (900)
-#   --interval SEKUNDEN            Prüfabstand von agentrun (30)
-#   --pause-interval SEKUNDEN      Abstand der Prüfungen der Nutzungsgrenze ohne genannten Zeitpunkt (900)
-#   --pause-heartbeat-interval SEKUNDEN   Abstand der Aufrufe von heartbeat, während startrole auf die Nutzungsgrenze wartet (300)
-#   --resume-grace SEKUNDEN       Endet eine fortgesetzte Sitzung innerhalb dieser Zeit, gilt die Fortsetzung als nicht möglich (60)
+# Die Werte der Skripte sind einfache Zuweisungen am Anfang des Skripts (NAME=wert oder NAME='wert', eine Zeile).
+# Die Skripte lesen keinen Wert aus der Umgebung. create legt Kopien der Skripte an und ersetzt darin die Werte;
+# set ersetzt einen weiteren Wert in den Kopien (in jedem der Skripte agentrun, pidcheck und startrole, das ihn enthält).
+# Die Quellen unter tools/devhost/ bleiben unverändert.
+#
+# Optionen von create (ohne Option bleibt der Wert des Skripts):
+#   --heartbeat-timeout SEKUNDEN   HEARTBEAT_TIMEOUT: Sekunden ohne Herzschlag bis zum Abbruch
+#   --interval SEKUNDEN            INTERVAL: Prüfabstand von agentrun
+#   --pause-interval SEKUNDEN      PAUSE_INTERVAL: Abstand der Prüfungen der Nutzungsgrenze ohne genannten Zeitpunkt
+#   --pause-heartbeat-interval SEKUNDEN   PAUSE_HEARTBEAT_INTERVAL: Abstand der Aufrufe von heartbeat, während startrole wartet
+#   --resume-grace SEKUNDEN        RESUME_GRACE: Endet eine fortgesetzte Sitzung innerhalb dieser Zeit, gilt die Fortsetzung als nicht möglich
 #   --claude PROGRAMM              Programm der Sitzungen (tests/fakes/claude)
 #   --tmux PROGRAMM                tmux (tests/fakes/tmux)
 #   --gh PROGRAMM                  gh (tests/fakes/gh)
@@ -19,9 +25,9 @@
 #
 # create legt unter VERZEICHNIS an: origin.git (lokales Git-Repository als origin), repo/ (Klon davon,
 # Zweig main), run/, work/, devteam/ (bin/, lib/startrole, start.conf, settings.json), scripts/ (agentrun,
-# heartbeat, pidcheck), fakes/ (die Programme, in der Umgebung vor dem Suchpfad) und env.
-# Wer die Umgebung benutzt, liest env mit „source VERZEICHNIS/env“. Das setzt PATH, CLAUDE, GITHUB_REPO,
-# HEARTBEAT_TIMEOUT, INTERVAL, PAUSE_INTERVAL, PAUSE_HEARTBEAT_INTERVAL, RESUME_GRACE und PIDCHECK_PATH; die Skripte lesen diese Werte als Parameter.
+# heartbeat, pidcheck) und fakes/ (die Programme). In den Kopien ersetzt es immer CLAUDE (fakes/claude),
+# GITHUB_REPO und den Suchpfad PATH in pidcheck (fakes/ vor dem üblichen Suchpfad). Tests, die tmux und gh
+# als Namen aufrufen lassen, stellen fakes/ selbst vor ihren Suchpfad.
 
 HERE="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 SRC="$(cd "$HERE/.." && pwd)"
@@ -32,7 +38,7 @@ die() {
 }
 
 create() {
-  local dir="" timeout=900 interval=30 pause=900 pausehb=300 grace=60 claude="$HERE/fakes/claude" tmux="$HERE/fakes/tmux" gh="$HERE/fakes/gh"
+  local dir="" timeout="" interval="" pause="" pausehb="" grace="" claude="$HERE/fakes/claude" tmux="$HERE/fakes/tmux" gh="$HERE/fakes/gh"
   local scenario="" repo=testowner/testrepo
   while (( $# )); do
     case "$1" in
@@ -82,8 +88,8 @@ create() {
     printf '#!/usr/bin/env bash\nMODEL=sonnet\nexec "${BASH_SOURCE[0]%%/*}/../lib/startrole" %s "$MODEL" "$@"\n' "$role" >"$dir/devteam/bin/$role"
     chmod +x "$dir/devteam/bin/$role"
   done
-  cat >"$dir/devteam/start.conf" <<'EOF'
-START_PROGRAM=(claude --setting-sources project --permission-mode dontAsk
+  cat >"$dir/devteam/start.conf" <<EOF
+START_PROGRAM=($dir/fakes/claude --setting-sources project --permission-mode dontAsk
   --plugin-dir {devteam} --settings {devteam}/settings.json
   --agent devteam:{agent} --model {model} -p {prompt})
 EOF
@@ -97,17 +103,40 @@ EOF
     cp "$scenario" "$dir/fakes/claude.scenario"
   fi
 
-  cat >"$dir/env" <<EOF
-export PATH="$dir/fakes:\$PATH"
-export CLAUDE="$dir/fakes/claude"
-export GITHUB_REPO="$repo"
-export HEARTBEAT_TIMEOUT="$timeout"
-export INTERVAL="$interval"
-export PAUSE_INTERVAL="$pause"
-export PAUSE_HEARTBEAT_INTERVAL="$pausehb"
-export RESUME_GRACE="$grace"
-export PIDCHECK_PATH="$dir/fakes:/usr/local/bin:/usr/bin:/bin"
-EOF
+  # Werte in den Kopien ersetzen
+  set_value "$dir" CLAUDE "$dir/fakes/claude"
+  set_value "$dir" GITHUB_REPO "$repo"
+  set_value "$dir" PATH "$dir/fakes:/usr/local/bin:/usr/bin:/bin"
+  [[ -z "$timeout" ]] || set_value "$dir" HEARTBEAT_TIMEOUT "$timeout"
+  [[ -z "$interval" ]] || set_value "$dir" INTERVAL "$interval"
+  [[ -z "$pause" ]] || set_value "$dir" PAUSE_INTERVAL "$pause"
+  [[ -z "$pausehb" ]] || set_value "$dir" PAUSE_HEARTBEAT_INTERVAL "$pausehb"
+  [[ -z "$grace" ]] || set_value "$dir" RESUME_GRACE "$grace"
+}
+
+# Wert NAME in den Kopien der Skripte einer Testumgebung ersetzen: set_value VERZEICHNIS NAME WERT
+# Ersetzt die einfache Zuweisung „NAME=…“ am Zeilenanfang in jedem Skript, das sie enthält; Zahlen bleiben
+# ohne Anführungszeichen, anderes steht in einfachen Anführungszeichen.
+set_value() {
+  local dir="$1" name="$2" value="$3" f repl n=0
+  [[ -d "$dir/scripts" ]] || die "$dir ist keine Testumgebung"
+  [[ "$name" =~ ^[A-Z_]+$ ]] || die "ungültiger Name $name"
+  case "$value" in
+    *\'* | *$'\n'*) die "Wert für $name darf weder ' noch einen Zeilenumbruch enthalten" ;;
+  esac
+  if [[ "$value" =~ ^[0-9]+$ ]]; then
+    repl="$value"
+  else
+    repl="'$value'"
+  fi
+  repl="$(printf '%s' "$repl" | sed 's/[\\&|]/\\&/g')"
+  for f in "$dir/scripts/agentrun" "$dir/scripts/pidcheck" "$dir/devteam/lib/startrole"; do
+    if grep -q "^$name=" "$f"; then
+      sed -i "s|^$name=.*|$name=$repl|" "$f"
+      n=$((n + 1))
+    fi
+  done
+  (( n > 0 )) || die "kein Skript enthält die Zuweisung $name="
 }
 
 run_tests() {
@@ -121,6 +150,7 @@ run_tests() {
 
 case "${1:-}" in
   create) shift; create "$@" ;;
+  set) [[ $# -eq 4 ]] || die "Aufruf: testenv set VERZEICHNIS NAME WERT"; set_value "$2" "$3" "$4" ;;
   test) shift; run_tests "$@" ;;
-  *) die "Aufruf: testenv create VERZEICHNIS [Option …] | testenv test [bats-Argument …]" ;;
+  *) die "Aufruf: testenv create VERZEICHNIS [Option …] | testenv set VERZEICHNIS NAME WERT | testenv test [bats-Argument …]" ;;
 esac
