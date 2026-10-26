@@ -801,9 +801,11 @@ hb() { run "$R/scripts/heartbeat" <<<"{\"cwd\":\"$1\"}"; }
 # ---------------------------------------------------------------- Startskripte in devteam/bin
 
 @test "Startskript: legt work/<ref>/<rolle> an und startet das Programm aus start.conf darin" {
+  echo 'call: report' >"$FAKES/claude.scenario"
   run "$R/devteam/bin/functiontest" probe/wp01 "probe/wp01:development/probe/wp01/orders/01.md"
   [ "$status" -eq 0 ]
-  diff - "$FAKES/claude.log" <<EOF
+  # die Kennung der Sitzung (--session-id, Auftrag 08) ist eine UUID und wird durch ID ersetzt
+  sed 's/^arg=[0-9a-f]\{8\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}$/arg=ID/' "$FAKES/claude.log" | diff - <(cat <<EOF
 cwd=$R/work/probe/wp01/functiontest
 arg=--setting-sources
 arg=project
@@ -818,34 +820,236 @@ arg=devteam:functiontest
 arg=--model
 arg=sonnet
 arg=-p
+arg=--session-id
+arg=ID
 arg=Bearbeite das Übergabedokument probe/wp01:development/probe/wp01/orders/01.md. Bezug: probe/wp01. Entwicklungsverzeichnis: $R. Arbeitsverzeichnis: $R/work/probe/wp01/functiontest.
 EOF
+)
 }
 
 @test "Startskript: Rollen securitytest und qa, Exitcode des Programms" {
-  echo 3 >"$FAKES/claude.exit"
+  # der erste Aufruf schreibt einen Bericht und endet mit Exitcode 3, der zweite schreibt einen Bericht
+  printf 'call: report ; exit 3\ncall: report\n' >"$FAKES/claude.scenario"
   run "$R/devteam/bin/securitytest" probe /abs/doc.md
   [ "$status" -eq 3 ]
   grep -qx "arg=devteam:securitytest" "$FAKES/claude.log"
   grep -qx "cwd=$R/work/probe/securitytest" "$FAKES/claude.log"
-  rm "$FAKES/claude.exit"
   run "$R/devteam/bin/qa" probe /abs/doc.md
   [ "$status" -eq 0 ]
   grep -qx "arg=devteam:qa" "$FAKES/claude.log"
 }
 
 @test "Startskript: Programm aus der Konfigurationsdatei" {
-  printf 'START_PROGRAM=(echo {agent} {devteam} {model})\n' >"$R/devteam/start.conf"
+  # das Programm schreibt außerdem einen Bericht, sonst setzt startrole es fort (Auftrag 08)
+  printf 'START_PROGRAM=(bash -c '"'"'echo "$@"; mkdir -p ../reports; touch ../reports/bericht.md'"'"' _ {agent} {devteam} {model})\n' >"$R/devteam/start.conf"
   run "$R/devteam/bin/qa" probe /abs/doc.md
   [ "$output" = "qa $R/devteam sonnet" ]
 }
 
 @test "Startskript: alle drei Rollen starten mit dem Modell Sonnet" {
   local r
+  printf 'call: report\ncall: report\ncall: report\n' >"$FAKES/claude.scenario"
   for r in functiontest securitytest qa; do
     rm -f "$FAKES/claude.log"
     run "$R/devteam/bin/$r" probe /abs/doc.md
     [ "$status" -eq 0 ]
     grep -A1 -x "arg=--model" "$FAKES/claude.log" | grep -qx "arg=sonnet"
   done
+}
+
+# ---------------------------------------------------------------- startrole: Fortsetzung und Pause (Auftrag 08)
+
+# Aufruf von startrole über das Startskript der QA (ref probe, Rolle qa); Ausgabe und Exitcode in $output und $status
+sr() { run "$R/devteam/bin/qa" probe /abs/doc.md; }
+# Kennung der Sitzung im Aufruf N des Ersatzprogramms claude: Wert von session-id= beziehungsweise resume=
+sid() { claude_call "$1" | sed -n 's/^session-id=//p;s/^resume=//p'; }
+# Auftrag (letztes Argument) des Aufrufs N
+prompt_of() { claude_call "$1" | grep '^arg=' | tail -n 1 | sed 's/^arg=//'; }
+# Ersatz für heartbeat, der die Hook-Daten festhält
+hb_stub() {
+  printf '#!/usr/bin/env bash\ncat >>"%s/hb.log"\necho >>"%s/hb.log"\n' "$T" "$T" >"$R/scripts/heartbeat"
+  chmod +x "$R/scripts/heartbeat"
+}
+hb_calls() { grep -c '^{' "$T/hb.log" 2>/dev/null || echo 0; }
+
+@test "startrole: Ablauf ohne Abbruch, ein Aufruf mit Kennung, keine Meldung, kein heartbeat" {
+  hb_stub
+  scenario - <<<"call: report"
+  sr
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ "$(claude_calls)" -eq 1 ]
+  [[ "$(sid 1)" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+  claude_call 1 | grep -qx -- "arg=--session-id"
+  [ "$(hb_calls)" -eq 0 ]
+}
+
+@test "startrole: Absturz, Fortsetzung mit --resume <kennung> im selben Arbeitsverzeichnis" {
+  scenario - <<<$'call: crash 1\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ "$(claude_calls)" -eq 2 ]
+  [ -n "$(sid 1)" ]
+  [ "$(sid 2)" = "$(sid 1)" ]
+  claude_call 1 | grep -qx -- "arg=--session-id"
+  claude_call 2 | grep -qx -- "arg=--resume"
+  ! claude_call 2 | grep -qx -- "arg=--session-id"
+  [ "$(claude_call 1 | grep '^cwd=')" = "cwd=$R/work/probe/qa" ]
+  [ "$(claude_call 2 | grep '^cwd=')" = "cwd=$R/work/probe/qa" ]
+  [ "$(prompt_of 2)" = "Die Sitzung wurde abgebrochen. Prüfe den Stand deines Arbeitsverzeichnisses und setze die Aufgabe dort fort, wo sie abgebrochen ist." ]
+  [[ "$output" == *"Abbruch 1 (Absturz)"* ]]
+}
+
+@test "startrole: Ende ohne Bericht und ohne Fehler ist ebenfalls ein Abbruch" {
+  scenario - <<<$'call: exit 0\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ "$(claude_calls)" -eq 2 ]
+  [ "$(sid 2)" = "$(sid 1)" ]
+  [[ "$output" == *"Abbruch 1 (Ende ohne Bericht)"* ]]
+}
+
+@test "startrole: zweimalige Fortsetzung mit derselben Kennung, danach Bericht" {
+  scenario - <<<$'call: crash 1\ncall: exit 0\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ "$(claude_calls)" -eq 3 ]
+  [ "$(sid 2)" = "$(sid 1)" ]
+  [ "$(sid 3)" = "$(sid 1)" ]
+  claude_call 3 | grep -qx -- "arg=--resume"
+}
+
+@test "startrole: Exitcode des Programms bleibt, wenn der Bericht vorliegt" {
+  scenario - <<<$'call: crash 1\ncall: report ; exit 4'
+  sr
+  [ "$status" -eq 4 ]
+}
+
+@test "startrole: dritter Abbruch endet mit Fehler, Zahl und Art des letzten Abbruchs" {
+  scenario - <<<$'call: crash 1\ncall: crash 1\ncall: crash 2'
+  sr
+  [ "$status" -eq 1 ]
+  [ "$(claude_calls)" -eq 3 ]
+  [[ "$output" == *"Abbrüche: 3, Art des letzten Abbruchs: Absturz."* ]]
+}
+
+@test "startrole: Art des letzten Abbruchs ist die des dritten, Ende ohne Bericht" {
+  scenario - <<<$'call: crash 1\ncall: crash 1\ncall: exit 0\ncall: report'
+  sr
+  [ "$status" -eq 1 ]
+  # nach dem dritten Abbruch keine vierte Sitzung
+  [ "$(claude_calls)" -eq 3 ]
+  [[ "$output" == *"Abbrüche: 3, Art des letzten Abbruchs: Ende ohne Bericht."* ]]
+}
+
+@test "startrole: ABORT_LIMIT ist ein Parameter" {
+  export ABORT_LIMIT=2
+  scenario - <<<$'call: crash 1\ncall: crash 1\ncall: report'
+  sr
+  [ "$status" -eq 1 ]
+  [ "$(claude_calls)" -eq 2 ]
+  [[ "$output" == *"Abbrüche: 2, Art des letzten Abbruchs: Absturz."* ]]
+}
+
+@test "startrole: ein Bericht aus einem früheren Durchlauf zählt nicht" {
+  mkdir -p "$R/work/probe/reports"
+  echo alt >"$R/work/probe/reports/alt.md"
+  touch -d '1 hour ago' "$R/work/probe/reports/alt.md"
+  scenario - <<<$'call: exit 0\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ "$(claude_calls)" -eq 2 ]
+}
+
+@test "startrole: Pause ohne Zeitpunkt, Wartezeit PAUSE_INTERVAL, heartbeat mit dem Arbeitsverzeichnis, dann --resume" {
+  export PAUSE_INTERVAL=3 PAUSE_HEARTBEAT_INTERVAL=1
+  hb_stub
+  scenario - <<<$'call: limit\ncall: report'
+  SECONDS=0
+  sr
+  [ "$status" -eq 0 ]
+  [ "$SECONDS" -ge 3 ]
+  [ "$(claude_calls)" -eq 2 ]
+  [ "$(hb_calls)" -ge 3 ]
+  # jeder Aufruf von heartbeat trägt das Arbeitsverzeichnis der Rolle
+  [ "$(grep -c "\"cwd\":\"$R/work/probe/qa\"" "$T/hb.log")" -eq "$(hb_calls)" ]
+  [ "$(sid 2)" = "$(sid 1)" ]
+  claude_call 2 | grep -qx -- "arg=--resume"
+  [ "$(prompt_of 2)" = "Die Nutzungsgrenze ist aufgehoben. Fahre fort." ]
+}
+
+@test "startrole: während der Pause hält der echte heartbeat die Herzschlagdatei der Meldung frisch" {
+  export PAUSE_INTERVAL=2 PAUSE_HEARTBEAT_INTERVAL=1
+  scenario - <<<$'call: limit\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ -f "$R/run/probe.heartbeat" ]
+}
+
+@test "startrole: die Pause zählt nicht als Abbruch, danach bleiben zwei Fortsetzungen" {
+  export PAUSE_INTERVAL=1 PAUSE_HEARTBEAT_INTERVAL=1
+  scenario - <<<$'call: limit\ncall: crash 1\ncall: crash 1\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ "$(claude_calls)" -eq 4 ]
+}
+
+@test "startrole: mehrere Pausen nacheinander" {
+  export PAUSE_INTERVAL=1 PAUSE_HEARTBEAT_INTERVAL=1
+  scenario - <<<$'call: limit\ncall: limit\ncall: limit\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [ "$(claude_calls)" -eq 4 ]
+}
+
+@test "startrole: Meldung mit Zeitpunkt, gewartet wird bis zu diesem Zeitpunkt statt PAUSE_INTERVAL" {
+  export PAUSE_INTERVAL=100 PAUSE_HEARTBEAT_INTERVAL=1
+  hb_stub
+  scenario - <<<$'call: limit-time '"$(date -u -d '+3 seconds' +%Y-%m-%dT%H:%M:%SZ)"$'\ncall: report'
+  SECONDS=0
+  sr
+  [ "$status" -eq 0 ]
+  [ "$SECONDS" -ge 2 ]
+  [ "$SECONDS" -lt 20 ]
+  [ "$(hb_calls)" -ge 2 ]
+  [ "$(claude_calls)" -eq 2 ]
+  claude_call 2 | grep -qx -- "arg=--resume"
+}
+
+@test "startrole: genannter Zeitpunkt liegt in der Vergangenheit, keine Wartezeit" {
+  export PAUSE_INTERVAL=100 PAUSE_HEARTBEAT_INTERVAL=1
+  scenario - <<<$'call: limit-time 2000-01-01T00:00:00Z\ncall: report'
+  SECONDS=0
+  sr
+  [ "$status" -eq 0 ]
+  [ "$SECONDS" -lt 10 ]
+  [ "$(claude_calls)" -eq 2 ]
+}
+
+@test "startrole: Zeitpunkt, den date nicht lesen kann, gilt als nicht genannt" {
+  export PAUSE_INTERVAL=2 PAUSE_HEARTBEAT_INTERVAL=1 LIMIT_TIME_PATTERN='um [A-Za-z]+'
+  scenario - <<<$'call: limit-time Mittag\ncall: report'
+  SECONDS=0
+  sr
+  [ "$status" -eq 0 ]
+  [ "$SECONDS" -ge 2 ]
+  [ "$(claude_calls)" -eq 2 ]
+}
+
+@test "startrole: Suchtext ist ein Parameter, ohne Treffer ist es ein Abbruch" {
+  export PAUSE_INTERVAL=1 PAUSE_HEARTBEAT_INTERVAL=1 LIMIT_TEXT='anderer Wortlaut'
+  scenario - <<<$'call: limit\ncall: report'
+  sr
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Abbruch 1 (Ende ohne Bericht)"* ]]
+  [[ "$output" != *"Pause wegen der Nutzungsgrenze"* ]]
+}
+
+@test "startrole: Ablauf mit Bericht gibt die Ausgabe des Programms unverändert weiter und ruft kein heartbeat auf" {
+  hb_stub
+  printf 'START_PROGRAM=(bash -c '"'"'echo Ausgabe; mkdir -p ../reports; touch ../reports/bericht.md; exit 5'"'"')\n' >"$R/devteam/start.conf"
+  sr
+  [ "$status" -eq 5 ]
+  [ "$output" = "Ausgabe" ]
+  [ "$(hb_calls)" -eq 0 ]
 }
