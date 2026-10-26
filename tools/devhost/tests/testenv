@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# testenv – Testumgebung für die Steuerskripte unter tools/devhost/ (Entwicklungsverzeichnis im Kleinen).
+#
+# Aufruf:
+#   testenv create VERZEICHNIS [Option …]   Testumgebung anlegen
+#   testenv test [bats-Argument …]          alle Tests (tests/*.bats) ausführen, ohne Argument alle Dateien
+#
+# Optionen von create (Standardwerte in Klammern):
+#   --heartbeat-timeout SEKUNDEN   Sekunden ohne Herzschlag bis zum Abbruch (900)
+#   --interval SEKUNDEN            Prüfabstand von agentrun (30)
+#   --claude PROGRAMM              Programm der Sitzungen (tests/fakes/claude)
+#   --tmux PROGRAMM                tmux (tests/fakes/tmux)
+#   --gh PROGRAMM                  gh (tests/fakes/gh)
+#   --scenario DATEI               Szenariendatei für das Ersatzprogramm claude (keine)
+#   --github-repo NAME             Wert von GITHUB_REPO (testowner/testrepo)
+#
+# create legt unter VERZEICHNIS an: origin.git (lokales Git-Repository als origin), repo/ (Klon davon,
+# Zweig main), run/, work/, devteam/ (bin/, lib/startrole, start.conf, settings.json), scripts/ (agentrun,
+# heartbeat, pidcheck), fakes/ (die Programme, in der Umgebung vor dem Suchpfad) und env.
+# Wer die Umgebung benutzt, liest env mit „source VERZEICHNIS/env“. Das setzt PATH, CLAUDE, GITHUB_REPO,
+# HEARTBEAT_TIMEOUT, INTERVAL und PIDCHECK_PATH; die Skripte lesen diese Werte als Parameter.
+
+HERE="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+SRC="$(cd "$HERE/.." && pwd)"
+
+die() {
+  echo "testenv: $*" >&2
+  exit 1
+}
+
+create() {
+  local dir="" timeout=900 interval=30 claude="$HERE/fakes/claude" tmux="$HERE/fakes/tmux" gh="$HERE/fakes/gh"
+  local scenario="" repo=testowner/testrepo
+  while (( $# )); do
+    case "$1" in
+      --heartbeat-timeout) timeout="${2:?}"; shift 2 ;;
+      --interval) interval="${2:?}"; shift 2 ;;
+      --claude) claude="${2:?}"; shift 2 ;;
+      --tmux) tmux="${2:?}"; shift 2 ;;
+      --gh) gh="${2:?}"; shift 2 ;;
+      --scenario) scenario="${2:?}"; shift 2 ;;
+      --github-repo) repo="${2:?}"; shift 2 ;;
+      -*) die "unbekannte Option $1" ;;
+      *) [[ -z "$dir" ]] || die "mehrere Verzeichnisse angegeben"; dir="$1"; shift ;;
+    esac
+  done
+  [[ -n "$dir" ]] || die "Verzeichnis fehlt"
+  local f
+  for f in "$claude" "$tmux" "$gh"; do
+    [[ -x "$f" ]] || die "$f ist nicht ausführbar"
+  done
+  [[ -z "$scenario" || -f "$scenario" ]] || die "Szenariendatei $scenario fehlt"
+
+  mkdir -p "$dir"
+  dir="$(cd "$dir" && pwd)"
+
+  # origin und repo/
+  local git=(git -c user.name=testenv -c user.email=testenv@example.invalid)
+  "${git[@]}" init -q --bare -b main "$dir/origin.git"
+  "${git[@]}" clone -q "$dir/origin.git" "$dir/repo" 2>/dev/null
+  mkdir -p "$dir/repo/development/messages/architect" "$dir/repo/development/messages/projectlead"
+  touch "$dir/repo/development/messages/architect/.gitkeep" "$dir/repo/development/messages/projectlead/.gitkeep"
+  "${git[@]}" -C "$dir/repo" checkout -q -b main 2>/dev/null
+  "${git[@]}" -C "$dir/repo" add development
+  "${git[@]}" -C "$dir/repo" commit -q -m "Testumgebung"
+  "${git[@]}" -C "$dir/repo" push -q -u origin main
+
+  # Verzeichnisse und Skripte
+  mkdir -p "$dir/run" "$dir/work" "$dir/scripts" "$dir/devteam/bin" "$dir/devteam/lib" "$dir/fakes"
+  cp -p "$SRC/scripts/agentrun" "$SRC/scripts/heartbeat" "$SRC/scripts/pidcheck" "$dir/scripts/"
+  cp -p "$SRC/devteam/lib/startrole" "$dir/devteam/lib/"
+
+  # Ersatz für den Teil von devteam/, der nicht zu den Quellen gehört: Startskripte und Konfiguration
+  local role
+  for role in functiontest securitytest qa; do
+    printf '#!/usr/bin/env bash\nMODEL=sonnet\nexec "${BASH_SOURCE[0]%%/*}/../lib/startrole" %s "$MODEL" "$@"\n' "$role" >"$dir/devteam/bin/$role"
+    chmod +x "$dir/devteam/bin/$role"
+  done
+  cat >"$dir/devteam/start.conf" <<'EOF'
+START_PROGRAM=(claude --setting-sources project --permission-mode dontAsk
+  --plugin-dir {devteam} --settings {devteam}/settings.json
+  --agent devteam:{agent} --model {model} -p {prompt})
+EOF
+  echo '{}' >"$dir/devteam/settings.json"
+
+  # Programme einhängen; ihre Daten liegen neben ihnen
+  cp -p "$claude" "$dir/fakes/claude"
+  cp -p "$tmux" "$dir/fakes/tmux"
+  cp -p "$gh" "$dir/fakes/gh"
+  if [[ -n "$scenario" ]]; then
+    cp "$scenario" "$dir/fakes/claude.scenario"
+  fi
+
+  cat >"$dir/env" <<EOF
+export PATH="$dir/fakes:\$PATH"
+export CLAUDE="$dir/fakes/claude"
+export GITHUB_REPO="$repo"
+export HEARTBEAT_TIMEOUT="$timeout"
+export INTERVAL="$interval"
+export PIDCHECK_PATH="$dir/fakes:/usr/local/bin:/usr/bin:/bin"
+EOF
+}
+
+run_tests() {
+  command -v bats >/dev/null || die "bats ist nicht verfügbar"
+  if (( $# )); then
+    bats "$@"
+  else
+    bats "$HERE"/*.bats
+  fi
+}
+
+case "${1:-}" in
+  create) shift; create "$@" ;;
+  test) shift; run_tests "$@" ;;
+  *) die "Aufruf: testenv create VERZEICHNIS [Option …] | testenv test [bats-Argument …]" ;;
+esac

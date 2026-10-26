@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# Ersatzprogramm für claude (Claude Code). Verhalten nach Szenariendatei, Aufzeichnung der Aufrufe.
+#
+# Aufzeichnung:
+#   claude.log    Arbeitsverzeichnis und Argumente des letzten Aufrufs (cwd=…, arg=… je Zeile)
+#   claude.calls  Protokoll aller Aufrufe mit Argumenten; je Aufruf ein Block
+#                 call=<Nummer>, cwd=…, arg=… je Argument, bei --session-id und --resume zusätzlich
+#                 session-id=<kennung> beziehungsweise resume=<kennung>, abgeschlossen durch „--“
+# Alle Dateien liegen neben dem Ersatzprogramm.
+#
+# Verstanden werden --session-id <kennung>, --resume <kennung>, --agent <name> und der Startauftrag
+# (letztes Argument ohne führendes „-“). --settings <datei>, --plugin-dir <verzeichnis>,
+# --setting-sources, --permission-mode, --model, -p und --output-format werden ignoriert, aber aufgezeichnet.
+#
+# Szenariendatei: claude.scenario neben dem Ersatzprogramm oder die Datei aus FAKE_CLAUDE_SCENARIO.
+# Fehlt sie, endet der Aufruf mit dem Exitcode aus claude.exit (falls vorhanden), sonst mit 0.
+# Aufbau (siehe tests/scenarios/):
+#   limit_text=<Wortlaut ohne Zeitpunkt>          Platzhalter, wird in Auftrag 07 an einer echten Ausgabe nachgewiesen
+#   limit_text_time=<Wortlaut, {time} = Zeitpunkt>
+#   call: <aktion> [; <aktion> …]                 je Aufruf eine Zeile, der n-te Aufruf liest die n-te Zeile;
+#                                                 nach der letzten Zeile endet jeder Aufruf mit 0
+# Aktionen:
+#   reply              Antwortmeldung des aufgerufenen Rollenverzeichnisses nach projectlead/ schreiben
+#                      (from = Rolle der Meldung, ref wie in der Meldung); bei --resume die zuletzt bearbeitete Meldung
+#   crash [code]       sofort mit Exitcode enden (Standard 1)
+#   hang               nicht reagieren: ohne Ausgabe warten, bis der Prozess beendet wird
+#   limit              Meldung der Nutzungsgrenze ohne Zeitpunkt ausgeben
+#   limit-time <zeit>  Meldung der Nutzungsgrenze mit Zeitpunkt ausgeben
+#   wait-resume [s]    warten, bis die Datei claude.resume neben dem Ersatzprogramm liegt (höchstens s Sekunden, Standard 60)
+#   sleep <s>          s Sekunden warten
+#   exit [code]        mit Exitcode enden (Standard 0)
+dir="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+state="$dir/claude.state"
+mkdir -p "$state"
+
+{ echo "cwd=$PWD"; printf 'arg=%s\n' "$@"; } >"$dir/claude.log"
+
+# Aufrufnummer fortschreiben
+n=0
+if [[ -f "$state/count" ]]; then
+  n="$(cat "$state/count")"
+fi
+n=$((n + 1))
+echo "$n" >"$state/count"
+
+session_id=""
+resume=""
+prompt=""
+args=("$@")
+for ((i = 0; i < ${#args[@]}; i++)); do
+  case "${args[i]}" in
+    --session-id) session_id="${args[i + 1]}"; i=$((i + 1)) ;;
+    --resume) resume="${args[i + 1]}"; i=$((i + 1)) ;;
+    --agent | --settings | --plugin-dir | --setting-sources | --permission-mode | --model | --output-format)
+      i=$((i + 1)) ;;
+    -*) ;;
+    *) prompt="${args[i]}" ;;
+  esac
+done
+
+{
+  echo "call=$n"
+  echo "cwd=$PWD"
+  printf 'arg=%s\n' "$@"
+  [[ -n "$session_id" ]] && echo "session-id=$session_id"
+  [[ -n "$resume" ]] && echo "resume=$resume"
+  echo "--"
+} >>"$dir/claude.calls"
+
+# Meldung des Startauftrags merken; bei --resume gilt die zuletzt bearbeitete
+message=""
+if [[ "$prompt" =~ ^Bearbeite\ die\ Meldung\ (.+\.md)\. ]]; then
+  message="${BASH_REMATCH[1]}"
+  echo "$message" >"$state/last_message"
+elif [[ -f "$state/last_message" ]]; then
+  message="$(cat "$state/last_message")"
+fi
+
+scenario="${FAKE_CLAUDE_SCENARIO:-$dir/claude.scenario}"
+if [[ ! -f "$scenario" ]]; then
+  if [[ -f "$dir/claude.exit" ]]; then
+    exit "$(cat "$dir/claude.exit")"
+  fi
+  exit 0
+fi
+
+limit_text="Platzhalter: Nutzungsgrenze erreicht"
+limit_text_time="Platzhalter: Nutzungsgrenze erreicht, Zurücksetzung um {time}"
+line=""
+count=0
+while IFS= read -r l; do
+  case "$l" in
+    limit_text=*) limit_text="${l#limit_text=}" ;;
+    limit_text_time=*) limit_text_time="${l#limit_text_time=}" ;;
+    call:*)
+      count=$((count + 1))
+      if ((count == n)); then
+        line="${l#call:}"
+      fi ;;
+  esac
+done <"$scenario"
+
+# Antwortmeldung schreiben: Verzeichnis der Meldung ist die Rolle, repo/ liegt davor
+reply() {
+  local role root ref out
+  [[ -n "$message" && -f "$message" ]] || return 0
+  role="$(basename "$(dirname "$message")")"
+  root="${message%/repo/development/messages/*}"
+  ref="$(sed -n 's/^- ref: `\(.*\)`$/\1/p' "$message" | head -n 1)"
+  out="$root/repo/development/messages/projectlead"
+  mkdir -p "$out"
+  printf '# Meldung\n\n- from: `%s`\n- ref: `%s`\n- task: `done`\n- document: `development/%s/scope.md`\n\nErledigt.\n' \
+    "$role" "$ref" "$ref" >"$out/$(date -u +%Y%m%d%H%M%S)-$role-$n.md"
+}
+
+IFS=';' read -r -a actions <<<"$line"
+for action in "${actions[@]}"; do
+  read -r -a w <<<"$action"
+  case "${w[0]:-}" in
+    reply) reply ;;
+    crash) exit "${w[1]:-1}" ;;
+    hang) while true; do sleep 1; done ;;
+    limit) echo "$limit_text" ;;
+    limit-time) echo "${limit_text_time//\{time\}/${w[*]:1}}" ;;
+    wait-resume)
+      for ((s = 0; s < ${w[1]:-60} * 10; s++)); do
+        [[ -f "$dir/claude.resume" ]] && break
+        sleep 0.1
+      done ;;
+    sleep) sleep "${w[1]:-0}" ;;
+    exit) exit "${w[1]:-0}" ;;
+  esac
+done
+exit 0

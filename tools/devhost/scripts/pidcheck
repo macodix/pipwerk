@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# pidcheck – Prüfung für Cron: startet agentrun neu, wenn der Prozess aus run/agentrun.pid nicht läuft.
+# Aufruf: pidcheck agentrun
+
+# Entwicklungsverzeichnis: das Verzeichnis über scripts/, in dem dieses Skript liegt
+ROOT="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"
+# Suchpfad für agentrun und die Sitzungen (muss das Verzeichnis von claude enthalten); Cron setzt nur /usr/bin:/bin.
+# Die Installation ergänzt hier das Verzeichnis von claude.
+PATH="${PIDCHECK_PATH:-/usr/local/bin:/usr/bin:/bin}"
+
+RUN="$ROOT/run"
+
+if [[ -f "$RUN/agentrun.pid" ]] && kill -0 "$(cat "$RUN/agentrun.pid")" 2>/dev/null; then
+  exit 0
+fi
+
+# agentrun aus dem Entwicklungsverzeichnis starten, losgelöst von Cron, Ausgabe ins Protokoll
+cd "$ROOT" || exit 1
+setsid "$ROOT/scripts/agentrun" </dev/null >>"$RUN/agentrun.log" 2>&1 &
+echo "$(date +%Y-%m-%dT%H:%M:%S) pidcheck: agentrun gestartet" >>"$RUN/agentrun.log"

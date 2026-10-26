@@ -1,0 +1,6 @@
+# Nutzungsgrenze ohne Zeitpunkt (Auftrag 07, 08): Meldung ausgeben und warten (bis claude.resume liegt).
+# Der Wortlaut ist ein Platzhalter; er wird in Auftrag 07 an einer echten Ausgabe nachgewiesen.
+limit_text=Platzhalter: Nutzungsgrenze erreicht
+call: limit ; wait-resume 60 ; reply
+# Fortsetzung mit --resume <kennung>: weitermachen
+call: reply

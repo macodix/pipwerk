@@ -1,0 +1,2 @@
+# Absturz: die Sitzung endet mit Fehler, ohne Antwortmeldung.
+call: crash 1
