@@ -1,6 +1,6 @@
 # Vorhaben relay
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Abruf von Kursdaten. Eine Anfrage an den Abruf für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
+Vorhaben nach dem [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Abruf von Kursdaten. Eine Anfrage an den Abruf für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
 
 Nachweis des Vorhabens: Eine Anfrage mit Broker, Symbol des Instruments, Zeiteinheit und Zeitraum erreicht über pipwerk relay den Abruf auf dem Rechner von MetaTrader 5, und die Dateien kommen an die Adresse des Absenders zurück. Das gelingt einmal über Matrix und einmal über Dateien.
 
@@ -45,3 +45,13 @@ Als offen gekennzeichnet in den [Anforderungen an das Nachrichtensystem](../../d
 2026-10-23: Nachprüfungen [requirements-4.md](reviews/requirements-4.md) und [requirements-5.md](reviews/requirements-5.md) bestanden. Spezifikation geprüft und bestanden in [specification-4.md](reviews/specification-4.md) und [specification-5.md](reviews/specification-5.md). Präsentation [specification-2.html](presentations/specification-2.html) zur Bestätigung durch den Auftraggeber.
 
 2026-10-23: Präsentation [specification-2.html](presentations/specification-2.html) bestätigt vom Auftraggeber im Chat am 23. Oktober 2026. Phase 2 abgeschlossen. Phase 3 mit `plan` angestoßen.
+
+2026-10-23: Plan geprüft und bestanden in [plan-1.md](reviews/plan-1.md). Präsentation [plan-1.html](presentations/plan-1.html) zur Bestätigung durch den Auftraggeber.
+
+2026-10-24: Abstimmung der Präsentation [plan-1.html](presentations/plan-1.html): Das erste Paket prüft die Grundmechanik des Relays auf Funktion und Robustheit nur mit dem einfachsten Übertragungsweg, lokalen Verzeichnissen. SFTP, Matrix und weitere Wege kommen danach als eigene Pakete hinzu. Festlegung des Auftraggebers. Spezifikation Abschnitt 8 und Plan mit `revise` anpassen.
+
+2026-10-24: Plan nach dem Einwand geprüft und bestanden in [plan-2.md](reviews/plan-2.md). Präsentation [plan-2.html](presentations/plan-2.html) zur Bestätigung durch den Auftraggeber.
+
+2026-10-24: Präsentation [plan-2.html](presentations/plan-2.html) bestätigt vom Auftraggeber im Chat am 24. Oktober 2026. Phase 3 abgeschlossen. `wp01` mit `implement` angestoßen.
+
+2026-10-25: Abnahme `wp01` abgebrochen, nicht abgenommen ([Abnahmebericht](wp01/acceptance/1.md)): Einrichtung und Bedienung für den Anwender nicht annehmbar (M1 bis M7). Spezifikation und Plan mit `specify` überarbeiten, Bedienablauf der Einrichtung zur Bestätigung vorlegen.

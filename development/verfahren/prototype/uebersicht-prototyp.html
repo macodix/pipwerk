@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stand der Vorhaben</title>
+<style>
+/* Gestaltung angelehnt an die Folie "Sechs Phasen" (.flow, .step): heller Grund, weiße Kästchen mit Rahmen,
+   Systemschrift. Stand: grau nicht begonnen, gelb begonnen, grün erledigt. Hervorhebung "Wartet auf Sie": blau. */
+:root{
+  --paper:#f4f6f3; --card:#ffffff; --ink:#1b2a24; --text:#3b4a43; --muted:#5d6c64; --line:#d5ddd8;
+  --grau-bg:#eceeed; --grau-rand:#8d9a94;
+  --gelb-bg:#fdf1c4; --gelb-rand:#b8901a;
+  --gruen-bg:#dcefe6; --gruen-rand:#1f6f5f;
+  --blau:#1c4f9c; --blau-bg:#e6eefb;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.4}
+.seite{max-width:1500px;margin:0 auto;padding:20px 24px 40px}
+h1{margin:0;font-size:32px;font-weight:600;line-height:1.15}
+h2{margin:0 0 4px;font-size:24px;font-weight:600;line-height:1.2}
+p{margin:0}
+.kopf{display:flex;flex-direction:column;gap:4px;padding-bottom:12px}
+.zeit{color:var(--text)}
+.beispiel{color:var(--muted);font-size:14px}
+.legende{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 0 14px;font-size:14px;color:var(--text)}
+.legende span{display:inline-flex;align-items:center;gap:7px}
+.punkt{display:inline-block;width:18px;height:18px;border-radius:5px;border:2px solid}
+.punkt.s-grau{background:var(--grau-bg);border-color:var(--grau-rand)}
+.punkt.s-gelb{background:var(--gelb-bg);border-color:var(--gelb-rand)}
+.punkt.s-gruen{background:var(--gruen-bg);border-color:var(--gruen-rand)}
+.punkt.wartet{background:var(--card);border:4px solid var(--blau)}
+nav.pfad{padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:20px}
+nav.pfad ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+nav.pfad li{display:inline-flex;gap:8px;align-items:center}
+nav.pfad li+li::before{content:"\203A";color:var(--muted)}
+nav.pfad a{color:var(--blau);text-decoration:underline;text-underline-offset:3px;font-weight:500}
+nav.pfad [aria-current]{font-weight:600}
+a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+h2:focus{outline:none}
+
+.kaesten{display:grid;gap:16px;align-items:stretch}
+.ebene1{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.ebene2{grid-template-columns:repeat(6,minmax(0,1fr))}
+.ebene3{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+@media (max-width:1099px){.ebene2{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:519px){.ebene2{grid-template-columns:minmax(0,1fr)} .ebene1,.ebene3{grid-template-columns:minmax(0,1fr)} .seite{padding:14px 16px 32px} h1{font-size:26px}}
+
+.kasten{display:flex;flex-direction:column;gap:7px;padding:16px 16px 14px;border:2px solid;border-radius:12px;color:var(--ink);text-decoration:none;min-width:0;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto}
+.kasten.s-grau{background:var(--grau-bg);border-color:var(--grau-rand)}
+.kasten.s-gelb{background:var(--gelb-bg);border-color:var(--gelb-rand)}
+.kasten.s-gruen{background:var(--gruen-bg);border-color:var(--gruen-rand)}
+.kasten.wartet{border:5px solid var(--blau);padding:13px 13px 11px}
+.kasten .kenn{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text);font-weight:600}
+.kasten .name{font-size:20px;font-weight:600;line-height:1.2}
+.ebene3 .name{font-size:20px}
+.kasten .zeile{font-size:15px;color:var(--text);line-height:1.35}
+.kasten .zeile b{color:var(--ink);font-weight:600}
+.kasten .stand{font-size:14px;font-weight:700;color:var(--ink)}
+.kasten .warte{font-size:14px;color:var(--ink);font-style:italic}
+.kasten .oeffnen{margin-top:auto;padding-top:6px;font-size:14px;font-weight:600;color:var(--ink)}
+a.kasten{cursor:pointer}
+a.kasten:hover{box-shadow:0 3px 10px rgba(27,42,36,.22);transform:translateY(-1px)}
+a.kasten .oeffnen::after{content:" \203A"}
+.marke{hyphens:none;-webkit-hyphens:none;align-self:flex-start;background:var(--blau);color:#fff;font-weight:700;font-size:14px;line-height:1.3;padding:5px 10px;border-radius:6px}
+.marke::before{content:"\25B6\00a0"}
+.hinweis{margin-top:20px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="seite">
+<header class="kopf">
+  <h1>Stand der Vorhaben</h1>
+  <p class="zeit">erzeugt am 24.10.2026 um 09:40 Uhr</p>
+  <p class="beispiel">Beispiel: Alle Angaben auf dieser Seite sind erfundene Beispieldaten.</p>
+</header>
+<div class="legende" role="group" aria-label="Legende">
+  <span><i class="punkt s-grau"></i>grau: nicht begonnen</span>
+  <span><i class="punkt s-gelb"></i>gelb: begonnen</span>
+  <span><i class="punkt s-gruen"></i>grün: erledigt</span>
+  <span><i class="punkt wartet"></i>blauer Rahmen: wartet auf Sie</span>
+</div>
+<nav class="pfad" aria-label="Ebenen"><ol id="pfad"></ol></nav>
+<main id="inhalt"></main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var PHASEN = ['Anforderung', 'Konzeption', 'Planung', 'Umsetzung', 'Abnahme', 'Integration'];
+  var STAND = {
+    grau: { klasse: 's-grau', wort: '○ Nicht begonnen' },
+    gelb: { klasse: 's-gelb', wort: '◐ Begonnen' },
+    gruen: { klasse: 's-gruen', wort: '● Erledigt' }
+  };
+
+  /* Beispieldaten, fest eingetragen. phase: 1 bis 6, null = noch keine Meldung.
+     Paket: phase 4 bis 6 = gerade in dieser Phase, 'fertig', 'wartet' (mit wartetAuf). */
+  var VORHABEN = [
+    { id: 'verfahren', name: 'Entwicklungsverfahren verbessern', phase: 2, bei: 'Softwarearchitekt',
+      seit: '24.10.2026, 09:12 Uhr', schritt: 'Spezifikation wird erstellt', pakete: [] },
+    { id: 'backtest', name: 'Strategietester', phase: 4, pakete: [
+      { id: 'wp01', name: 'Kursdaten und Datenbestand', phase: 'fertig', seit: '17.10.2026' },
+      { id: 'wp02', name: 'Einzelschritt-Test', phase: 5, bei: 'Auftraggeber', seit: '24.10.2026, 08:05 Uhr', aufgabe: 'Abnahme durchführen' },
+      { id: 'wp03', name: 'Backtest und Vergleich', phase: 'wartet', wartetAuf: 'wp02' } ] },
+    { id: 'strategiedesign', name: 'Strategiedesigner', phase: 4, pakete: [
+      { id: 'wp01', name: 'Grundgerüst', phase: 'fertig', seit: '20.10.2026' },
+      { id: 'wp02', name: 'Bearbeiten von Strategien', phase: 4, bei: 'Team', seit: '24.10.2026, 07:30 Uhr' } ] },
+    { id: 'relay', name: 'Verbindung zum Broker', phase: 4, pakete: [
+      { id: 'wp01', name: 'Abruf von Kursdaten', phase: 4, bei: 'Softwarearchitekt', seit: '23.10.2026, 16:48 Uhr', notiz: 'Lücke in der Spezifikation' },
+      { id: 'wp02', name: 'Handel', phase: 'wartet', wartetAuf: 'wp01' } ] },
+    { id: 'beispiel', name: 'Neues Vorhaben', phase: 1, bei: 'Auftraggeber', aufgabe: 'Frage beantworten',
+      seit: '24.10.2026, 09:05 Uhr', schritt: 'Eine Frage zu den Anforderungen wartet auf Antwort', pakete: [] },
+    { id: 'berichte', name: 'Berichte', phase: null, pakete: [] },
+    { id: 'ablauftest', name: 'Über-Dialog', phase: 6, pakete: [
+      { id: 'wp01', name: 'Dialog anlegen', phase: 'fertig', seit: '12.10.2026' },
+      { id: 'wp02', name: 'Dialog anzeigen', phase: 'fertig', seit: '14.10.2026' } ] }
+  ];
+
+  /* ---------- Ableitungen nach Spezifikation 7.2 ---------- */
+  function paketName(v, id) {
+    for (var i = 0; i < v.pakete.length; i++) if (v.pakete[i].id === id) return v.pakete[i].name;
+    return id;
+  }
+  function paketStand(p, nr) { // Stand eines Pakets in Phase nr (4 bis 6)
+    if (p.phase === 'fertig') return 'gruen';
+    if (p.phase === 'wartet') return 'grau';
+    if (nr < p.phase) return 'gruen';
+    return nr === p.phase ? 'gelb' : 'grau';
+  }
+  function aktive(v) { // Pakete in Arbeit: weder fertig noch wartend
+    return v.pakete.filter(function (p) { return typeof p.phase === 'number'; });
+  }
+  function vorhabenStand(v) {
+    if (v.phase === null) return 'grau';
+    if (v.pakete.length && v.pakete.every(function (p) { return p.phase === 'fertig'; })) return 'gruen';
+    return 'gelb';
+  }
+  function phasenStand(v, nr) {
+    var fertig = vorhabenStand(v) === 'gruen';
+    if (v.phase === null) return 'grau';
+    if (fertig) return 'gruen';
+    if (nr <= 3) { return nr < v.phase ? 'gruen' : (nr === v.phase ? 'gelb' : 'grau'); }
+    if (v.pakete.length === 0) return nr < v.phase ? 'gruen' : (nr === v.phase ? 'gelb' : 'grau');
+    var alle = v.pakete.every(function (p) { return paketStand(p, nr) === 'gruen'; });
+    if (alle) return 'gruen';
+    if (v.phase === nr || v.pakete.some(function (p) { return paketStand(p, nr) === 'gelb'; })) return 'gelb';
+    return 'grau';
+  }
+  function aufgaben(liste) { // Aufgaben, die auf den Auftraggeber warten, ohne Doppelte
+    var a = [];
+    liste.forEach(function (x) { if (x && a.indexOf(x) < 0) a.push(x); });
+    return a;
+  }
+  function vorhabenAufgaben(v) {
+    if (v.pakete.length === 0) return v.bei === 'Auftraggeber' ? [v.aufgabe] : [];
+    return aufgaben(v.pakete.filter(function (p) { return p.bei === 'Auftraggeber'; }).map(function (p) { return p.aufgabe; }));
+  }
+  function phasenAufgaben(v, nr) {
+    if (v.pakete.length === 0) return (v.phase === nr && v.bei === 'Auftraggeber') ? [v.aufgabe] : [];
+    return aufgaben(v.pakete.filter(function (p) { return p.phase === nr && p.bei === 'Auftraggeber'; }).map(function (p) { return p.aufgabe; }));
+  }
+  function vorhabenBei(v) { // Wer arbeitet, aus den Paketen in Arbeit; "seit" der jüngsten Meldung
+    if (v.pakete.length === 0) return { bei: v.bei, seit: v.seit };
+    var a = aktive(v);
+    if (!a.length) return null;
+    var bei = [];
+    a.forEach(function (p) { if (bei.indexOf(p.bei) < 0) bei.push(p.bei); });
+    return { bei: bei.join(', '), seit: a[a.length - 1].seit };
+  }
+
+  /* ---------- Bausteine ---------- */
+  function el(tag, klasse, text) {
+    var e = document.createElement(tag);
+    if (klasse) e.className = klasse;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function zeile(label, wert) {
+    var z = el('p', 'zeile');
+    z.appendChild(document.createTextNode(label + ' '));
+    z.appendChild(el('b', null, wert));
+    return z;
+  }
+  function kasten(stand, ziel, aufgaben, beschriftung) {
+    var k = ziel ? el('a', 'kasten ' + STAND[stand].klasse) : el('div', 'kasten ' + STAND[stand].klasse);
+    if (ziel) { k.setAttribute('href', '#' + ziel); }
+    if (aufgaben && aufgaben.length) {
+      k.classList.add('wartet');
+      k.appendChild(el('p', 'marke', 'Wartet auf Sie: ' + aufgaben.join(', ')));
+    }
+    if (beschriftung) k.setAttribute('aria-label', beschriftung);
+    return k;
+  }
+  function suche(id) {
+    for (var i = 0; i < VORHABEN.length; i++) if (VORHABEN[i].id === id) return VORHABEN[i];
+    return null;
+  }
+
+  /* ---------- Ebenen ---------- */
+  function ebene1(wurzel) {
+    wurzel.appendChild(el('h2', null, 'Alle Vorhaben')).setAttribute('tabindex', '-1');
+    var raster = el('div', 'kaesten ebene1');
+    VORHABEN.forEach(function (v) {
+      var st = vorhabenStand(v), auf = vorhabenAufgaben(v);
+      var k = kasten(st, v.id, auf);
+      k.appendChild(el('p', 'name', v.name));
+      k.appendChild(el('p', 'kenn', v.id));
+      k.appendChild(el('p', 'stand', STAND[st].wort));
+      if (v.phase === null) {
+        k.appendChild(zeile('Phase:', 'noch keine'));
+      } else if (st === 'gruen') {
+        k.appendChild(zeile('Phase:', PHASEN[v.phase - 1]));
+        k.appendChild(el('p', 'zeile', 'Alle Pakete fertig'));
+      } else {
+        k.appendChild(zeile('Phase:', PHASEN[v.phase - 1]));
+        var b = vorhabenBei(v);
+        if (b) { k.appendChild(zeile('Bei:', b.bei)); k.appendChild(el('p', 'zeile', 'seit ' + b.seit)); }
+        var w = v.pakete.filter(function (p) { return p.phase === 'wartet'; }).length;
+        if (w) k.appendChild(el('p', 'zeile', w === 1 ? '1 Paket wartet' : w + ' Pakete warten'));
+      }
+      k.appendChild(el('p', 'oeffnen', 'Phasen ansehen'));
+      raster.appendChild(k);
+    });
+    wurzel.appendChild(raster);
+  }
+
+  function ebene2(wurzel, v) {
+    var kopf = el('h2', null, v.name + ' ');
+    kopf.setAttribute('tabindex', '-1');
+    kopf.appendChild(el('small', null, '(' + v.id + ')'));
+    kopf.lastChild.style.cssText = 'font-size:14px;font-weight:500;color:#5d6c64;letter-spacing:1px';
+    wurzel.appendChild(kopf);
+    var raster = el('div', 'kaesten ebene2');
+    for (var nr = 1; nr <= 6; nr++) {
+      var st = phasenStand(v, nr), auf = phasenAufgaben(v, nr);
+      var k = kasten(st, v.id + '/' + nr, auf);
+      k.appendChild(el('p', 'kenn', 'Phase ' + nr));
+      k.appendChild(el('p', 'name', PHASEN[nr - 1]));
+      k.appendChild(el('p', 'stand', STAND[st].wort));
+      if (nr >= 4 && v.pakete.length) {
+        var darin = v.pakete.filter(function (p) { return p.phase === nr; });
+        k.appendChild(el('p', 'zeile', darin.length + ' von ' + v.pakete.length + ' Paketen in dieser Phase'));
+        if (st === 'gelb' && darin.length) {
+          var bei = [];
+          darin.forEach(function (p) { if (bei.indexOf(p.bei) < 0) bei.push(p.bei); });
+          k.appendChild(zeile('Bei:', bei.join(', ')));
+        }
+      } else if (st === 'gelb' && v.bei) {
+        k.appendChild(zeile('Bei:', v.bei));
+        k.appendChild(el('p', 'zeile', 'seit ' + v.seit));
+      }
+      k.appendChild(el('p', 'oeffnen', nr >= 4 && v.pakete.length ? 'Pakete ansehen' : 'Schritt ansehen'));
+      raster.appendChild(k);
+    }
+    wurzel.appendChild(raster);
+  }
+
+  function ebene3(wurzel, v, nr) {
+    var kopf = el('h2', null, v.name + ': ' + PHASEN[nr - 1]);
+    kopf.setAttribute('tabindex', '-1');
+    wurzel.appendChild(kopf);
+    var raster = el('div', 'kaesten ebene3');
+    var pst = phasenStand(v, nr);
+    if (nr >= 4 && v.pakete.length) {
+      v.pakete.forEach(function (p) {
+        var st = paketStand(p, nr);
+        var auf = (p.bei === 'Auftraggeber') ? [p.aufgabe] : []; // Marke am Paket, in welcher Phase man es auch ansieht
+        var k = kasten(st, null, auf);
+        k.appendChild(el('p', 'name', p.name));
+        k.appendChild(el('p', 'kenn', p.id));
+        k.appendChild(el('p', 'stand', STAND[st].wort));
+        if (p.phase === 'wartet') {
+          k.appendChild(el('p', 'warte', 'wartet auf ' + paketName(v, p.wartetAuf) + ' (' + p.wartetAuf + ')'));
+        } else if (p.phase === 'fertig') {
+          k.appendChild(el('p', 'zeile', 'fertig, in main seit ' + p.seit));
+        } else if (st === 'gelb') {
+          k.appendChild(zeile('Bei:', p.bei));
+          k.appendChild(el('p', 'zeile', 'seit ' + p.seit));
+          if (p.notiz) k.appendChild(el('p', 'zeile', p.notiz));
+        } else if (st === 'gruen') {
+          k.appendChild(el('p', 'zeile', 'diese Phase liegt hinter dem Paket; es ist jetzt in ' + PHASEN[p.phase - 1]));
+        } else {
+          k.appendChild(el('p', 'zeile', 'diese Phase ist noch nicht erreicht; das Paket ist in ' + PHASEN[p.phase - 1]));
+        }
+        raster.appendChild(k);
+      });
+    } else {
+      var auf1 = phasenAufgaben(v, nr);
+      var k1 = kasten(pst, null, auf1);
+      k1.appendChild(el('p', 'kenn', 'Schritt in der Phase ' + PHASEN[nr - 1]));
+      if (pst === 'gelb') {
+        k1.appendChild(el('p', 'name', v.schritt || 'In Arbeit'));
+        k1.appendChild(el('p', 'stand', STAND[pst].wort));
+        k1.appendChild(zeile('Bei:', v.bei));
+        k1.appendChild(el('p', 'zeile', 'seit ' + v.seit));
+      } else if (pst === 'gruen') {
+        k1.appendChild(el('p', 'name', PHASEN[nr - 1] + ' abgeschlossen'));
+        k1.appendChild(el('p', 'stand', STAND[pst].wort));
+      } else {
+        k1.appendChild(el('p', 'name', 'Noch nicht erreicht'));
+        k1.appendChild(el('p', 'stand', STAND[pst].wort));
+      }
+      raster.appendChild(k1);
+    }
+    wurzel.appendChild(raster);
+  }
+
+  /* ---------- Pfadleiste und Anzeige ---------- */
+  function pfad(teile) { // teile: [{text, ziel}], der letzte ohne Ziel
+    var liste = document.getElementById('pfad');
+    liste.textContent = '';
+    teile.forEach(function (t, i) {
+      var li = el('li');
+      if (i < teile.length - 1) {
+        var a = el('a', null, t.text);
+        a.setAttribute('href', '#' + t.ziel);
+        li.appendChild(a);
+      } else {
+        var s = el('span', null, t.text);
+        s.setAttribute('aria-current', 'page');
+        li.appendChild(s);
+      }
+      liste.appendChild(li);
+    });
+  }
+
+  var erster = true;
+  function anzeigen() {
+    var teile = location.hash.replace(/^#/, '').split('/');
+    var v = suche(teile[0]);
+    var nr = parseInt(teile[1], 10);
+    var wurzel = document.getElementById('inhalt');
+    wurzel.textContent = '';
+    if (!v) {
+      pfad([{ text: 'Alle Vorhaben' }]);
+      ebene1(wurzel);
+    } else if (!(nr >= 1 && nr <= 6)) {
+      pfad([{ text: 'Alle Vorhaben', ziel: '' }, { text: v.name }]);
+      ebene2(wurzel, v);
+    } else {
+      pfad([{ text: 'Alle Vorhaben', ziel: '' }, { text: v.name, ziel: v.id }, { text: PHASEN[nr - 1] }]);
+      ebene3(wurzel, v, nr);
+    }
+    if (!erster) wurzel.querySelector('h2').focus({ preventScroll: true });
+    erster = false;
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', anzeigen);
+  anzeigen();
+})();
+</script>
+</body>
+</html>

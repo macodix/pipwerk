@@ -1,6 +1,6 @@
 # Vorhaben strategiedesign
 
-Erstes Vorhaben am Produkt nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien gestalten und speichern. In pipwerk Studio lassen sich Strategien und die darin verwendeten wiederverwendbaren Objekte (Indikatoren, Trends, Regeln, Regelwerke) anlegen, gestalten, prüfen, speichern und wieder laden. Die Ausführung von Strategien (Debuggen, Testen, Handeln) gehört nicht zum Vorhaben.
+Erstes Vorhaben am Produkt nach dem [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md): Strategien gestalten und speichern. In pipwerk Studio lassen sich Strategien und die darin verwendeten wiederverwendbaren Objekte (Indikatoren, Trends, Regeln, Regelwerke) anlegen, gestalten, prüfen, speichern und wieder laden. Die Ausführung von Strategien (Debuggen, Testen, Handeln) gehört nicht zum Vorhaben.
 
 Nachweis des Vorhabens sind die beiden Testfälle: Jeder muss sich vollständig im Strategiedesigner gestalten, speichern und wieder laden lassen.
 
@@ -55,3 +55,7 @@ Phase 4, `wp02`: Ergänzung der Typbeschreibung (Spezifikation 3.1, [specificati
 2026-10-22: `wp02` nicht abgenommen ([Abnahmebericht](wp02/acceptance/2.md), Mängel M1 und M2). Neue und geänderte Anforderungen: req-fach-055 (`fachmodell.md`); req-ui-012, req-ui-014, req-ui-017, req-ui-018, req-ablauf-003 (`anforderungen-strategiedesigner.md`). Entscheidung des Auftraggebers: zuerst diese Änderungen, danach Fortsetzung der Abnahme. Rückweg in Phase 1 mit `check`, danach Phase 2 mit Prototyp der geänderten Darstellung, Spezifikation und Plan.
 
 2026-10-23: Spezifikation (Prüfung [specification-14.md](reviews/specification-14.md)) und Plan (Prüfung [plan-4.md](reviews/plan-4.md)) an req-fach-055 und req-ablauf-007 angepasst. Geänderte Abnahmekriterien vom Auftraggeber im Chat bestätigt. `wp02` mit `fix` auf dem Arbeitszweig `strategiedesign/wp02` weiter, Grundlage Abnahmebericht [2.md](wp02/acceptance/2.md).
+
+2026-10-27: `wp02` nicht abgenommen ([Abnahmebericht](wp02/acceptance/3.md), Mängel E1 bis E13). Geänderte Anforderungen: Begriff „Order- und Positionsverwaltung“ statt „Verwaltung einer Order“ in `fachmodell.md` (req-fach-049a und Verwendungen), `anforderungen-strategiedesigner.md` (req-fach-015, req-fach-027, req-ui-017, req-ablauf-003) und `glossar.md`; req-ui-016: geführter Aufbau („Assistent“) wird offener Punkt und entfällt in `wp02`; req-ui-015: Kreuzung kein eigener Baustein. Entscheidung des Auftraggebers: alle Mängel in einem Durchgang beheben. Rückweg in Phase 1 mit `check` (geänderte Stellen), danach Spezifikation (E1, E9, E11, E12 und Folgen für 3.4, 5, 6) und Plan (Abnahmekriterien 1, 2, 12), danach Phase 4.
+
+2026-10-27: Spezifikation (Prüfung [specification-15.md](reviews/specification-15.md)) und Plan (Prüfung [plan-5.md](reviews/plan-5.md)) vom Auftraggeber im Chat bestätigt, Punkt 26 vorläufig bis zur Abnahme. `wp02` mit `implement` an den Entwicklungsleiter.

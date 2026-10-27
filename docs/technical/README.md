@@ -9,9 +9,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 ## Entwicklungsverfahren
 
-- [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) – Phasen, Übergabedokumente, Meldungen, Eskalation und technische Ausführung
-- [Präsentation Entwicklungsprozess](praesentation-entwicklungsprozess.html) – abgestimmte Aufbereitung des Prozesses
-- [Agentenrollen und Briefings](agentenrollen-und-briefings.md) – Rollen, Entscheidungsrechte, Regeln und Briefings
+Entwicklungsverfahren, Agentenrollen mit Briefings, Skills und Regelwerke (Qualitätskriterien, Designgrundsätze, Dokumentationsregeln) liegen in dev-werk, deutsche Fassung unter `de/`. Das dev-werk-Verzeichnis nennt die Projektkonfiguration `dev-werk.md` im Verzeichnis `dev-werk/` des Projektstamms, außerhalb des Repositorys und nicht versioniert.
 
 ## Komponenten
 

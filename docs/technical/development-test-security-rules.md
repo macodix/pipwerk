@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - status: `accepted`
-- stand: 2026-10-19
+- stand: 2026-10-25
 - geltungsbereich: gesamtes Pipwerk-Repository
 
 ## 1. Zweck und Grundsatz
@@ -84,7 +84,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 
 ## 5. Entwicklungsregeln
 
-1. Änderungen an Programmcode erfolgen in einem eigenen Zweig und kommen nach [Das Pipwerk-Entwicklungsverfahren](entwicklungsverfahren.md) in `main`.
+1. Änderungen an Programmcode erfolgen in einem eigenen Zweig und kommen nach dem Entwicklungsverfahren (dev-werk, `de/process/development-process.md`) in `main`.
 2. Jede Änderung muss einer dokumentierten Anforderung, Entscheidung, Fehlerbehebung oder einem klar beschriebenen technischen Zweck zugeordnet sein.
 3. Fachkern, Transport, Persistenz und Benutzeroberfläche werden durch definierte Schnittstellen getrennt.
 4. Keine Frameworkklasse darf erforderlich sein, um eine fachliche Kernoperation auszuführen.
@@ -98,6 +98,7 @@ Soweit dafür administrative Rechte erforderlich sind, erfolgt die Installation 
 12. Neue Abhängigkeiten benötigen einen dokumentierten Zweck und eine Prüfung auf Lizenz, Wartungszustand, Sicherheitsrisiko und Kopplungswirkung.
 13. Python-Code folgt PEP 8, soweit keine begründete und dokumentierte Pipwerk-Regel abweicht. Typannotationen richten sich nach dem aktuellen Python-Typisierungssystem; PEP 484 bildet dafür eine grundlegende Referenz. Python-Paket- und Abhängigkeitsversionen verwenden PEP-440-konforme Versionsangaben.
 14. PEP-Regeln ergänzen die Pipwerk-Regeln. PEPs werden nicht als allgemeines IT-Sicherheitsregelwerk behandelt.
+15. Der modulare Aufbau gilt auf jeder Ebene, nicht nur zwischen den Modulen. Jedes Programm hat genau eine Aufgabe und ist nach ihr benannt. Dauernd laufender Betrieb, gelegentliche Verwaltung wie Einrichtung oder Schlüsselerzeugung und Werkzeuge für Tests sind getrennte Programme. Mehrzweckprogramme, die verschiedene Aufgaben über Unterbefehle bündeln, sind nicht zulässig.
 
 ## 6. Installation und Distribution
 

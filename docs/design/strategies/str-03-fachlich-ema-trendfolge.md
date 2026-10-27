@@ -35,14 +35,14 @@ Nach einem Kreuzen wird eine Marktorder in Richtung des Kreuzens aufgegeben. Der
 
 ### 4. Position verwalten
 
-Jede eröffnete Position hat ihre eigene Verwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Die Verwaltung wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
+Jede eröffnete Position hat ihre eigene Order- und Positionsverwaltung mit dem Auslöser `Kerzenschluss` der Zeiteinheit. Die Order- und Positionsverwaltung wird bei jedem Kerzenschluss ausgewertet, sobald `Order.Status` gleich `ausgeführt` ist:
 
 - Hat der schnelle EMA den langsamen entgegen der Richtung der Position gekreuzt, wird die Position mit „Position schließen“ ohne Volumenangabe ganz geschlossen. Die Risikoregel gilt für die Schließorder nicht (Fachmodell req-fach-046).
 - Andernfalls wird ein neuer Stop-Loss berechnet: beim Kauf Schlusskurs minus 2 ATR, beim Verkauf Schlusskurs plus 2 ATR. Er wird mit „Position ändern“ nur übernommen, wenn er den bisherigen Stop-Loss (`Position.Stop-Loss`) in Richtung der Position (`Position.Richtung`) verbessert, beim Kauf also höher, beim Verkauf niedriger liegt.
 
 ### 5. Position beenden
 
-Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen in Gegenrichtung geschlossen wird. Das Kreuzen in Gegenrichtung ist zugleich das Signal für eine neue Position in die neue Richtung. Beim selben Kerzenschluss wird zuerst die Verwaltung ausgewertet, die die alte Position schließt, danach der Hauptablauf, der nach Abschnitt 3 die neue eröffnet.
+Die Position endet, wenn der Stop-Loss erreicht wird oder sie nach einem Kreuzen in Gegenrichtung geschlossen wird. Das Kreuzen in Gegenrichtung ist zugleich das Signal für eine neue Position in die neue Richtung. Beim selben Kerzenschluss wird zuerst die Order- und Positionsverwaltung ausgewertet, die die alte Position schließt, danach der Hauptablauf, der nach Abschnitt 3 die neue eröffnet.
 
 ## Parameter
 
