@@ -64,7 +64,7 @@ Ein Zustandswechsel wie „Trendrichtung wechselt zu Aufwärts“ ist kein eigen
 
 Eine Strategie erzeugt nicht selbst unmittelbar eine konkrete Order. Wenn ihr Ablauf nach Auswertung der erforderlichen Bedingungen eine Order veranlassen soll, erreicht er das Element `Order aufgeben`. Dieses legt Ordertyp und Eigenschaften der Order fest und übergibt die Order an das Handelssystem, im Testlauf an die interne Abwicklung des Strategietesters (Anforderungen an den Strategietester req-test-004). Ein zusätzliches Objekt `Signal` wird dafür derzeit nicht benötigt.
 
-Erstellung, Bestimmung und Prüfung einer konkreten Order richten sich nach dem fachlichen Ordermodell. Freigegebene Orders werden anschließend zur weiteren Verwaltung an den `OrderManager` übergeben.
+Erstellung, Bestimmung und Prüfung einer konkreten Order richten sich nach dem fachlichen Ordermodell. Freigegebene Orders werden anschließend an den `OrderManager` übergeben, der sie weiterführt und überwacht.
 
 Eine aktive beziehungsweise beim Broker angenommene Order bedeutet noch nicht, dass eine Position besteht. Eine Position entsteht durch Ausführung. Die Ausführung einer Order erzeugt eine `Position` (req-fach-052) als eigenes Objekt, die Order wird nicht zur Position und behält ihren Status. Bei Teilausführung können gleichzeitig eine Position und ein noch offener Rest der Order bestehen.
 
@@ -517,4 +517,4 @@ Offen:
 | 2026-10-23 | req-fach-055: Instanz nur auf Wegen über die Stelle ihrer ersten Verwendung verwendbar, offener Punkt dazu entfällt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 24). |
 | 2026-10-23 | req-fach-055: Mitgelieferte Objekttypen vorerst ohne Methoden, Aktualisieren bei allen mitgelieferten Objekttypen und den Objekten der Anwendung auf der Zeichenfläche; offener Punkt dazu entfällt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 23). |
 | 2026-10-23 | req-fach-055: Verwaltung einer Order kann die vor dem Aufgeben der Order ermittelten Instanzen verwenden, mit den Werten vom Aufgeben der Order, offener Punkt dazu entfällt. Festlegung des Auftraggebers im Chat am 2026-10-23 (Abstimmung `specification-3.html`, Punkt 24), Befund B1 in `development/strategiedesign/reviews/requirements-19.md`. |
-| 2026-10-27 | Begriff „Verwaltung einer Order“ heißt „Order- und Positionsverwaltung“, ohne Kurzform (req-fach-049a und alle Verwendungen). Entscheidung des Auftraggebers im Chat am 2026-10-27 (Abnahme `strategiedesign/wp02`, `development/strategiedesign/wp02/acceptance/3.md`, E1). |
+| 2026-10-27 | Begriff „Verwaltung einer Order“ heißt „Order- und Positionsverwaltung“, ohne Kurzform (req-fach-049a und alle Verwendungen); „Verwaltung“ im Sinn des `OrderManager` umformuliert, damit keine Verwechslung entsteht. Entscheidung des Auftraggebers im Chat am 2026-10-27 (Abnahme `strategiedesign/wp02`, `development/strategiedesign/wp02/acceptance/3.md`, E1). |

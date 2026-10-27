@@ -83,7 +83,7 @@ Ist der Trade handelbar, wird eine Stop-Order in Trendrichtung mit dem berechnet
 
 ### 6. Ausstehende Order überwachen
 
-Die Verwaltung der Order hat zwei Auslöser: `Tick` und `Kerzenschluss` der Handelszeiteinheit.
+Die Order- und Positionsverwaltung hat zwei Auslöser: `Tick` und `Kerzenschluss` der Handelszeiteinheit.
 
 Bei jedem Tick: Durchbricht der Kurs den Stop-Bezug, ist die Grundlage des Trades entfallen. Die Order wird gelöscht.
 
@@ -106,7 +106,7 @@ Der Trade endet, wenn der Stop-Loss oder der Take-Profit erreicht wird.
 | Parameter | Bedeutung | Wert oder Regel | Status |
 |---|---|---|---|
 | Signalzeiteinheit | Strategieparameter, Zeiteinheit für den Trend | M15, H1, H4 oder D1 | bestätigt |
-| Handelszeiteinheit | Strategieparameter, Zeiteinheit für Auslöser, Einstiegsbezug, Stop-Bezug, Tradeplanung und Verwaltung der Order | kleiner als die Signalzeiteinheit, Empfehlung nach der Paarungstabelle in Abschnitt 2 | bestätigt |
+| Handelszeiteinheit | Strategieparameter, Zeiteinheit für Auslöser, Einstiegsbezug, Stop-Bezug, Tradeplanung und Order- und Positionsverwaltung | kleiner als die Signalzeiteinheit, Empfehlung nach der Paarungstabelle in Abschnitt 2 | bestätigt |
 | Entry-Puffer | zusätzlicher Abstand hinter dem Einstiegsbezug | Strategieparameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
 | Stop-Puffer | zusätzlicher Abstand hinter dem Stop-Bezug | Strategieparameter, Wert im Bereich von ungefähr 3–5 Pips, kann instrumentabhängig sein | bestätigt |
 | Risikogrenze | maximaler Verlust je Trade, Regelvorlage „Risiko je Trade“ | 1 % des Kapitals | bestätigt |
