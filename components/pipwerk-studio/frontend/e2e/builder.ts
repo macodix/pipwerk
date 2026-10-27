@@ -233,7 +233,8 @@ export async function refreshValue(page: Page, object: string, values = 1): Prom
   const switches = group.getByRole('checkbox', { name: 'Aktualisieren' });
   await expect(switches).toHaveCount(values);
   for (const each of await switches.all()) {
-    await each.check();
+    // the box of the switch lies over the real check box (its label passes the click on): the click goes to the box
+    await each.check({ force: true });
   }
 }
 

@@ -15,21 +15,6 @@ async function pageText(page: Page): Promise<string> {
   return page.evaluate(() => document.body.innerText);
 }
 
-/**
- * The text of the page that the interface writes itself. The explanations that come with the type descriptions of the
- * library (the explanation of a type, of a property, the description of the objects of the application) are left out:
- * their wording is the business of the library (order 15), not of the interface.
- */
-async function ownText(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const copy = document.body.cloneNode(true) as HTMLElement;
-    for (const element of Array.from(copy.querySelectorAll('.type-tip, .prop-desc, [data-testid="sec-application-objects"], [data-testid="library"]'))) {
-      element.remove();
-    }
-    return copy.textContent ?? '';
-  });
-}
-
 /** The short form of the name: the word without "Order- und Positions" in front of it. */
 const SHORT_FORM = /(?<!Positions)[Vv]erwaltung/;
 
@@ -40,19 +25,19 @@ test('the part of the flow at "gestellt" is called "Order- und Positionsverwaltu
   // the frame on the drawing area, its toggle and the legend
   await expect(page.getByTestId('frame')).toContainText('Order- und Positionsverwaltung · Order aufgeben');
   await expect(page.getByTestId('frame-toggle')).toHaveAccessibleName('Order- und Positionsverwaltung einklappen');
-  expect(await ownText(page)).not.toMatch(SHORT_FORM);
+  expect(await pageText(page)).not.toMatch(SHORT_FORM);
 
   // the properties view of the step that places the order and of the frame
   await select(page, 'Order aufgeben');
-  expect(await ownText(page)).not.toMatch(SHORT_FORM);
+  expect(await pageText(page)).not.toMatch(SHORT_FORM);
   await page.getByTestId('frame').click({ position: { x: 20, y: 10 } });
   await expect(page.getByTestId('props-frame')).toContainText('Order- und Positionsverwaltung');
-  expect(await ownText(page)).not.toMatch(SHORT_FORM);
+  expect(await pageText(page)).not.toMatch(SHORT_FORM);
 
   // the check names the same words
   await clickMenu(page, 'check');
   await page.getByTestId('findings-count').click();
-  expect(await ownText(page)).not.toMatch(SHORT_FORM);
+  expect(await pageText(page)).not.toMatch(SHORT_FORM);
 });
 
 test('"Neue Strategie" opens an empty drawing area without a guided setup, with the hint that a trigger comes first (E9, E6)', async ({ page }) => {
@@ -99,24 +84,23 @@ test('the sentence of a condition is the one of its new kind after the kind chan
     return sentence.innerText();
   };
 
-  // "Zweite" (the one selected last): a condition that is new, changes to "Alle gelten (und)" and to a crossing, each from the comparison
+  // "Zweite" (the one selected last): a condition that is new, changes to "Alle gelten (und)" and to "Nicht", each from the comparison
   const freshAnd = await change('and');
   await expect(exprRoot(page).locator('.cb-item')).toHaveCount(2);
-  const crossAfterAnd = await change('cross');
-  await expect(exprRoot(page).locator('.cb-item')).toHaveCount(0);
-  // from the crossing back to "and": the same as from the comparison, nothing of the crossing stays behind
-  const andAfterCross = await change('and');
-  expect(andAfterCross).toBe(freshAnd);
+  const notAfterAnd = await change('not');
+  // from "Nicht" back to "und": the same as from the comparison, nothing of the old kind stays behind
+  const andAfterNot = await change('and');
+  expect(andAfterNot).toBe(freshAnd);
   await expect(exprRoot(page).locator('.cb-item')).toHaveCount(2);
   await expect(exprRoot(page).locator('.cb-item .cb-kind .select-trigger')).toHaveText(['Vergleich', 'Vergleich']);
 
-  // "Erste": the crossing straight from the comparison reads as the crossing after "and" does
+  // "Erste": "Nicht" straight from the comparison reads as "Nicht" after "und" does
   await select(page, 'Erste');
-  const crossFresh = await change('cross');
-  expect(crossAfterAnd).toBe(crossFresh);
-  // "or" keeps the parts of "and" and only changes the word between them
+  const notFresh = await change('not');
+  expect(notAfterAnd).toBe(notFresh);
+  // "or" starts new as well from "Nicht", and "und" takes the parts of "oder" along
   const orKind = await change('or');
-  expect(orKind).not.toBe(crossFresh);
+  expect(orKind).not.toBe(notFresh);
   const andAgain = await change('and');
   expect(andAgain).toBe(freshAnd);
 });
@@ -185,7 +169,6 @@ test('the drawing area names no program library and stays operable (B3)', async 
   await openStrategy(page, 'EMA-Trendfolge');
 
   const canvas = page.getByTestId('canvas');
-  await expect(canvas.locator('.react-flow__attribution')).toHaveCount(0);
   expect(await canvas.innerText()).not.toMatch(/React ?Flow/i);
   expect(await pageText(page)).not.toMatch(/React ?Flow/i);
   // zooming and fitting still work

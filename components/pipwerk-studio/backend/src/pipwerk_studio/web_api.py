@@ -57,7 +57,19 @@ from pipwerk_domain.expressions.functions import (
 from pipwerk_domain.limits import MAX_BLOCK_DEPTH, MAX_DOCUMENT_BYTES
 from pipwerk_domain.model import Template
 from pipwerk_domain.registry import ElementRegistry
-from pipwerk_domain.typedesc import BindingKind, DataType, ElementKind, Group, ObjectCategory
+from pipwerk_domain.typedesc import (
+    DATATYPE_LABELS,
+    ArgumentDescription,
+    BindingKind,
+    DataType,
+    ElementKind,
+    Group,
+    MethodDescription,
+    ObjectCategory,
+    ParameterDescription,
+    PropertyDescription,
+    TypeDescription,
+)
 from pydantic import AwareDatetime, ConfigDict, Field, ValidationError, create_model
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -69,6 +81,7 @@ from pipwerk_studio.api_models import (
     InvalidRequest,
     LabelModel,
     finding_model,
+    label_model,
 )
 from pipwerk_studio.body_limit import BodyLimitMiddleware
 from pipwerk_studio.errors import ApiException, error_response
@@ -162,11 +175,22 @@ class ConditionModel(ApiModel):
     value: str
 
 
+class DataTypeModel(ApiModel):
+    """A data type with its word in trader language in German and English (specification 3.1,
+    5.4). The word for the data type ``object`` is the general one; a field of this data type
+    carries the name of its object type in ``datatype_label``."""
+
+    id: DataType
+    label: LabelModel
+
+
 class ParameterModel(ApiModel):
-    """A parameter of a type."""
+    """A parameter of a type. ``datatype_label`` is the word for its data type in trader
+    language, for an object the name of its object type."""
 
     id: str
     datatype: DataType
+    datatype_label: LabelModel
     label: LabelModel
     required: bool
     default: bool | int | float | str | None
@@ -178,10 +202,12 @@ class ParameterModel(ApiModel):
 
 
 class PropertyModel(ApiModel):
-    """A property of a type."""
+    """A property of a type. ``datatype_label`` is the word for its data type in trader
+    language, for an object the name of its object type."""
 
     id: str
     datatype: DataType
+    datatype_label: LabelModel
     label: LabelModel
     must: bool
     set_by_user: bool
@@ -196,11 +222,13 @@ class ArgumentModel(ApiModel):
     """An argument of a method (specification 3.1): its identifier, data type, whether it is
     mandatory (``required``) and, if not, its ``default`` value (an expression that leaves an
     optional argument out gets this value), the allowed values of a choice or time unit in
-    ``choices``, the ``object_type`` of an object, and its label and explanation. Arguments
+    ``choices``, the ``object_type`` of an object, and its label and explanation.
+    ``datatype_label`` is the word for its data type in trader language. Arguments
     stand in the order of this list; the mandatory ones come before the optional ones."""
 
     id: str
     datatype: DataType
+    datatype_label: LabelModel
     label: LabelModel
     required: bool
     default: bool | int | float | str | None
@@ -214,10 +242,12 @@ class MethodModel(ApiModel):
     ``Object.Method(Arguments)`` with the values of the arguments separated by ``;``. ``datatype``
     is the data type of the result, with ``choices`` (a result that is a choice or a time unit)
     and ``object_type`` (a result that is an object) like a property; ``arguments`` are the
-    arguments in their order. The delivered types have no methods."""
+    arguments in their order. ``datatype_label`` is the word for the data type of the result in
+    trader language. The delivered types have no methods."""
 
     id: str
     datatype: DataType
+    datatype_label: LabelModel
     label: LabelModel
     arguments: list[ArgumentModel]
     choices: list[ChoiceModel]
@@ -306,10 +336,12 @@ class TemplateTextsModel(ApiModel):
 
 
 class ElementTypesResponse(ApiModel):
-    """All type descriptions of the element register, the delivered templates as documents
-    with their texts in both languages, and the functions of expressions."""
+    """All type descriptions of the element register, the words for the data types in trader
+    language, the delivered templates as documents with their texts in both languages, and the
+    functions of expressions."""
 
     types: list[TypeDescriptionModel]
+    data_types: list[DataTypeModel]
     templates: list[TemplateDocument]
     template_texts: list[TemplateTextsModel]
     functions: list[FunctionModel]
@@ -390,10 +422,35 @@ class CheckResponse(ApiModel):
 # --- conversion --------------------------------------------------------------------------
 
 
+type _TypedField = (
+    ParameterDescription | PropertyDescription | MethodDescription | ArgumentDescription
+)
+
+
+def _word(registry: ElementRegistry, item: _TypedField) -> dict[str, Any]:
+    """The word for the data type of a field in trader language, as plain data."""
+    return dataclasses.asdict(registry.datatype_label(item.datatype, item.object_type))
+
+
+def _type_description(registry: ElementRegistry, item: TypeDescription) -> TypeDescriptionModel:
+    data = dataclasses.asdict(item)
+    for group in ("parameters", "properties", "methods"):
+        for entry, source in zip(data[group], getattr(item, group), strict=True):
+            entry["datatype_label"] = _word(registry, source)
+            if group == "methods":
+                for argument, argument_source in zip(
+                    entry["arguments"], source.arguments, strict=True
+                ):
+                    argument["datatype_label"] = _word(registry, argument_source)
+    return TypeDescriptionModel.model_validate(data)
+
+
 def _type_descriptions(registry: ElementRegistry) -> list[TypeDescriptionModel]:
-    return [
-        TypeDescriptionModel.model_validate(dataclasses.asdict(item)) for item in registry.list()
-    ]
+    return [_type_description(registry, item) for item in registry.list()]
+
+
+def _data_types() -> list[DataTypeModel]:
+    return [DataTypeModel(id=item, label=label_model(DATATYPE_LABELS[item])) for item in DataType]
 
 
 def _template_documents() -> list[
@@ -873,7 +930,10 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
             "data type of the result, arguments with data type, mandatory or optional, default "
             "value, label and explanation, and label and explanation of the method) and the "
             'indication whether a use of an instance can choose "Aktualisieren" '
-            "(`can_refresh`), the delivered templates as documents with their names and "
+            "(`can_refresh`), the word for each data type in trader language in German and "
+            "English (`data_types`, and `datatype_label` at each parameter, property, method "
+            "and argument; for an object it is the name of the object type), the delivered "
+            "templates as documents with their names and "
             "explanations in both languages, and the functions of expressions. The user "
             "interface builds the element library and the property view from this."
         ),
@@ -881,6 +941,7 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
     def element_types() -> ElementTypesResponse:
         return ElementTypesResponse(
             types=_type_descriptions(registry),
+            data_types=_data_types(),
             templates=_template_documents(),
             template_texts=_template_texts(),
             functions=_functions(),

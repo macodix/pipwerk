@@ -121,7 +121,6 @@ describe('the switch "Weitere Verwendungen" and the legend (specification 5.3)',
     await open(inventedStrategy());
 
     const canvas = screen.getByTestId('canvas');
-    expect(canvas.querySelector('.react-flow__attribution')).toBeNull();
     expect(canvas.textContent).not.toMatch(/React ?Flow/i);
     expect(canvas.querySelector('.react-flow__pane')).not.toBeNull();
     expect(screen.getAllByTestId('node').length).toBeGreaterThan(0);

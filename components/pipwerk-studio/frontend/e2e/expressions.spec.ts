@@ -182,7 +182,12 @@ for (const size of PHONES) {
       await add(page, 'EMA', 'EMA 20');
       await add(page, 'EMA', 'EMA 50');
       await add(page, 'Bedingung', 'Kreuzen');
-      await setCondition(page, { cross: [{ pick: 'EMA 20 › Wert' }, { pick: 'EMA 50 › Wert' }, 'any'] });
+      await setCondition(page, {
+        and: [
+          { cmp: [{ prev: { pick: 'EMA 20 › Wert' } }, '<=', { prev: { pick: 'EMA 50 › Wert' } }] },
+          { cmp: [{ pick: 'EMA 20 › Wert' }, '>', { pick: 'EMA 50 › Wert' }] },
+        ],
+      });
       await fitsTheWindow(page, '[data-testid="props-element"] .cb');
       await expect(exprRoot(page).getByTestId('expr-sentence')).toContainText('EMA 20');
 

@@ -275,7 +275,10 @@ _TIPS: dict[str, tuple[str, str]] = {
         "Zeitpunkt der Kerze beziehungsweise des Ticks.",
         "Time of the candle or tick.",
     ),
-    "status": ("Wartend, ausgeführt, gelöscht …", "Pending, filled, deleted …"),
+    "status": (
+        "Der Zustand der Order, zum Beispiel wartend, ausgeführt oder gelöscht.",
+        "The state of the order, for example pending, filled or deleted.",
+    ),
     "order_id": ("Die Kennzeichnung der Order beim Broker.", "The identification of the order."),
     "konto": ("Das Handelskonto der Order.", "The trading account of the order."),
     "strategie_id": (
@@ -339,10 +342,10 @@ def _turning_point_tip(number: int, kind: str) -> tuple[str, str]:
     }
     de, en = texts[kind]
     return (
-        f"{de} Der jüngste Wendepunkt kann sich noch verschieben. Vorläufig sind die drei "
-        "jüngsten Wendepunkte ansprechbar.",
-        f"{en} The most recent turning point can still move. Provisionally the three most "
-        "recent turning points can be addressed.",
+        f"{de} Der jüngste Wendepunkt kann sich noch verschieben. Vorläufig stehen die drei "
+        "jüngsten Wendepunkte zur Verfügung.",
+        f"{en} The most recent turning point can still move. For now the three most recent "
+        "turning points are available.",
     )
 
 
@@ -488,14 +491,15 @@ def _triggers() -> list[TypeDescription]:
             ElementKind.TRIGGER,
             ("Kerzenschluss", "Candle close"),
             (
-                "Wertet die Strategie bei jedem Schluss einer Kerze der Zeiteinheit aus.",
-                "Evaluates the strategy at every close of a candle of the time unit.",
+                "Startet die Strategie bei jedem Schluss einer Kerze der Zeiteinheit.",
+                "Starts the strategy at every close of a candle of the time unit.",
             ),
             (
-                "Die Strategie rechnet jedes Mal, wenn eine Kerze der gewählten Länge "
-                "abgeschlossen ist, zum Beispiel jede Stunde bei H1.",
-                "The strategy calculates whenever a candle of the chosen length closes, for "
-                "example every hour with H1.",
+                "Startet die Strategie jedes Mal, wenn eine Kerze der gewählten Länge "
+                "abgeschlossen ist, zum Beispiel jede Stunde bei H1. Wählen Sie die "
+                "Zeiteinheit.",
+                "Starts the strategy whenever a candle of the chosen length has closed, for "
+                "example every hour with H1. Choose the time unit.",
             ),
             parameters=(_instrument_parameter(), _time_unit_parameter()),
             outputs=next_output,
@@ -507,14 +511,14 @@ def _triggers() -> list[TypeDescription]:
             ElementKind.TRIGGER,
             ("Tick", "Tick"),
             (
-                "Wertet die Strategie bei jedem neuen Tick aus.",
-                "Evaluates the strategy at every new tick.",
+                "Startet die Strategie bei jedem neuen Tick.",
+                "Starts the strategy at every new tick.",
             ),
             (
-                "Die Strategie rechnet bei jedem neuen Kurs (Tick). Das ist sehr oft, daher "
-                "eher für die Überwachung einer Order geeignet.",
-                "The strategy calculates at every new quote (tick). That is very often, so it "
-                "suits monitoring an order.",
+                "Startet die Strategie bei jedem neuen Kurs (Tick). Das geschieht sehr oft; "
+                "der Tick eignet sich daher vor allem, um eine Order zu überwachen.",
+                "Starts the strategy at every new quote (tick). That happens very often, so "
+                "the tick is best suited to monitor an order.",
             ),
             parameters=(_instrument_parameter(),),
             outputs=next_output,
@@ -526,18 +530,18 @@ def _triggers() -> list[TypeDescription]:
             ElementKind.TRIGGER,
             ("Manuell", "Manual"),
             (
-                "Wertet die Strategie aus, wenn der Anwender sie von Hand startet. Steht nur "
+                "Startet die Strategie, wenn der Anwender sie von Hand startet. Steht nur "
                 "im Hauptablauf.",
-                "Evaluates the strategy when the user starts it by hand. Stands only in the "
+                "Starts the strategy when the user starts it by hand. Stands only in the "
                 "main flow.",
             ),
             (
-                "Die Strategie rechnet, wenn Sie sie selbst starten. Das hilft beim "
-                "Ausprobieren, ohne auf eine Kerze oder einen Kurs zu warten. Den Start von "
-                "Hand gibt es nur im Hauptablauf, nicht in der Verwaltung einer Order.",
-                "The strategy calculates when you start it yourself. That helps to try it out "
-                "without waiting for a candle or a quote. Starting by hand exists only in the "
-                "main flow, not in the management of an order.",
+                "Startet die Strategie, wenn Sie sie selbst starten. So können Sie eine "
+                "Strategie ausprobieren, ohne auf eine Kerze oder einen Kurs zu warten. Diesen "
+                "Start gibt es nur im Hauptablauf, nicht in der Order- und Positionsverwaltung.",
+                "Starts the strategy when you start it yourself. That lets you try a strategy "
+                "out without waiting for a candle or a quote. This start exists only in the "
+                "main flow, not in the order and position management.",
             ),
             outputs=next_output,
             on_canvas=True,
@@ -578,10 +582,10 @@ def _flow() -> list[TypeDescription]:
                 "Branches the flow by the result of an expression.",
             ),
             (
-                "Prüft etwas, zum Beispiel „EMA 20 kreuzt EMA 50“. Bei „wahr“ geht es auf dem "
-                "einen Weg weiter, bei „falsch“ auf dem anderen.",
-                'Checks something, for example "EMA 20 crosses EMA 50". If true the flow '
-                "continues one way, if false the other.",
+                "Prüft etwas, zum Beispiel „EMA 20 ist größer als EMA 50“. Trifft es zu, geht "
+                "der Ablauf am Ausgang „wahr“ weiter, sonst am Ausgang „falsch“.",
+                'Checks something, for example "EMA 20 is greater than EMA 50". If it holds, '
+                'the flow continues at the output "true", otherwise at the output "false".',
             ),
             parameters=(
                 _par(
@@ -646,10 +650,12 @@ def _flow() -> list[TypeDescription]:
                 "trading system.",
             ),
             (
-                "Gibt eine Order an den Markt. Am Ausgang „gestellt“ steht danach die "
-                "Verwaltung dieser Order.",
-                'Sends an order to the market. After "placed" follows the management of this '
-                "order.",
+                "Gibt eine Order an den Markt. Was danach mit der Order und ihrer Position "
+                "geschieht, legen Sie am Ausgang „gestellt“ in der Order- und "
+                "Positionsverwaltung fest.",
+                "Sends an order to the market. What happens afterwards to the order and its "
+                'position, you define at the output "placed" in the order and position '
+                "management.",
             ),
             parameters=(
                 _par(
@@ -665,10 +671,11 @@ def _flow() -> list[TypeDescription]:
                     "gestellt",
                     "placed",
                     (
-                        "Hier hängt die Verwaltung der Order: was mit ihr geschieht, solange "
-                        "sie wartet oder als Position offen ist.",
-                        "The management of the order hangs here: what happens to it while it "
-                        "waits or is open as a position.",
+                        "Hier beginnt die Order- und Positionsverwaltung. Sie legen fest, was "
+                        "mit der Order geschieht, solange sie wartet oder als Position offen "
+                        "ist.",
+                        "The order and position management starts here. You define what "
+                        "happens to the order while it waits or is open as a position.",
                     ),
                     management=True,
                 ),
@@ -717,8 +724,8 @@ def _flow() -> list[TypeDescription]:
             ("Order löschen", "Delete order"),
             ("Löscht eine wartende Order.", "Deletes a pending order."),
             (
-                "Löscht die wartende Order dieser Verwaltung.",
-                "Deletes the pending order of this management.",
+                "Löscht die wartende Order dieser Order- und Positionsverwaltung.",
+                "Deletes the pending order of this order and position management.",
             ),
             outputs=next_output,
             on_canvas=True,
@@ -918,9 +925,9 @@ def _application_objects() -> list[TypeDescription]:
             ("Das Handelskonto.", "The trading account."),
             (
                 "Zeigt Kapital, freie Margin und Währung des Handelskontos. Legen Sie es auf "
-                "die Fläche, wenn Sie Werte davon verbinden wollen.",
+                "die Zeichenfläche, wenn Sie Werte davon mit einem Schritt verbinden wollen.",
                 "Shows equity, free margin and currency of the trading account. Place it on "
-                "the canvas to wire values from it.",
+                "the drawing area if you want to connect values from it to a step.",
             ),
             properties=(
                 number("Kapital", "Equity"),
@@ -1007,14 +1014,16 @@ def _application_objects() -> list[TypeDescription]:
             ElementKind.APPLICATION_OBJECT,
             ("Order", "Order"),
             (
-                "In einer Regel die Order, auf die sie angewendet wird; in der Verwaltung "
-                "die eigene Order. Die Eigenschaften der Ordertypen kommen hinzu.",
-                "In a rule the order it is applied to; in a management its own order. "
-                "The properties of the order types are added.",
+                "In einer Regel die Order, auf die sie angewendet wird; in der Order- und "
+                "Positionsverwaltung die Order, zu der sie gehört. Die Eigenschaften der "
+                "Ordertypen kommen hinzu.",
+                "In a rule the order it is applied to; in the order and position management "
+                "the order it belongs to. The properties of the order types are added.",
             ),
             (
-                "Die Order, um die es in einer Regel oder in der Verwaltung einer Order geht.",
-                "The order a rule or the management of an order is about.",
+                "Die Order, um die es in einer Regel oder in der Order- und "
+                "Positionsverwaltung geht.",
+                "The order that a rule or the order and position management is about.",
             ),
             properties=(
                 _prop("Order-ID", "Order ID", DataType.TEXT, must=True, user=False),
@@ -1144,9 +1153,9 @@ def _indicators() -> list[TypeDescription]:
             ("eigener Indikator", "own indicator"),
             (
                 "Ein vom Anwender angelegter Indikator aus Regeln, mitgelieferten Indikatoren "
-                "oder beidem. Parameter und Eigenschaften legt der Anwender fest.",
+                "oder beidem. Der Anwender legt fest, welche Einstellungen und Werte er hat.",
                 "An indicator created by the user from rules, delivered indicators or both. "
-                "The user defines parameters and properties.",
+                "The user defines which settings and values it has.",
             ),
             (
                 "Ein Indikator, den Sie selbst aus Regeln oder anderen Indikatoren "
@@ -1253,8 +1262,9 @@ def _general_object_types() -> list[TypeDescription]:
                 "calculation method.",
             ),
             (
-                "Ein Trend, den Sie selbst festlegen: Ein Ausdruck bestimmt die Richtung.",
-                "A trend you define yourself: an expression determines the direction.",
+                "Ein Trend, den Sie selbst festlegen: Eine Formel aus Bausteinen bestimmt die "
+                "Richtung.",
+                "A trend you define yourself: a formula made of blocks determines the direction.",
             ),
             category=ObjectCategory.TREND,
             parameters=(
@@ -1291,10 +1301,10 @@ def _general_object_types() -> list[TypeDescription]:
             ElementKind.TREND_METHOD,
             ("Ausdruck", "Expression"),
             (
-                "Die Trendrichtung und weitere Eigenschaften ergeben sich aus Ausdrücken über "
-                "enthaltene Instanzen von Indikatoren, Regeln und Regelwerken.",
-                "The trend direction and further properties result from expressions over "
-                "contained instances of indicators, rules and rulesets.",
+                "Die Richtung des Trends und weitere Werte ergeben sich aus Formeln über die "
+                "enthaltenen Indikatoren, Regeln und Regelwerke.",
+                "The direction of the trend and further values result from formulas over the "
+                "contained indicators, rules and rule sets.",
             ),
             (
                 "Sie legen die Richtung des Trends mit Bausteinen fest, auch aus Indikatoren, "
@@ -1326,7 +1336,10 @@ def _general_object_types() -> list[TypeDescription]:
                 "Eine geordnete Sammlung konfigurierter Regeln.",
                 "An ordered collection of configured rules.",
             ),
-            ("Mehrere Regeln in fester Reihenfolge.", "Several rules in a fixed order."),
+            (
+                "Fasst mehrere Regeln zusammen, die der Reihe nach angewendet werden.",
+                "Combines several rules that are applied one after the other.",
+            ),
             category=ObjectCategory.RULESET,
             group=Group.RULES,
         ),

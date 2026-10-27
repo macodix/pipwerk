@@ -643,7 +643,7 @@ def test_an_empty_place_is_an_argument_block() -> None:
 )
 def test_blocks_and_expression_give_the_same_expression_in_both_directions(source: str) -> None:
     block = blocks_of(source)
-    text = blocks_to_text(block, SCOPE)
+    text = blocks_to_text(block)
     assert text == source
     assert blocks_of(text) == block
 
@@ -682,51 +682,42 @@ def test_blocks_that_are_no_method_are_rejected(block: Block, reason: str) -> No
     assert caught.value.reason == reason
 
 
-def test_the_crossing_takes_methods_as_its_values() -> None:
+def test_a_crossing_of_methods_is_broken_down_into_previous_value_comparisons_and_and() -> None:
     source = (
         "AND(PREVIOUS(reihe_a.wert_vor(3)) <= PREVIOUS(reihe_a.wert); "
         "reihe_a.wert_vor(3) > reihe_a.wert)"
     )
     block = blocks_of(source)
-    assert block.kind is BlockKind.CROSSING and block.direction == "up"
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "and")
     first, second = block.children
-    assert first.call and first.path == ("reihe_a", "wert_vor")
-    assert not second.call
-    assert blocks_to_text(block, SCOPE) == source
+    assert [item.operator for item in (first, second)] == ["<=", ">"]
+    previous_method, previous_property = first.children
+    assert (previous_method.kind, previous_method.function) == (BlockKind.FUNCTION, "PREVIOUS")
+    assert previous_method.children[0].call
+    assert previous_method.children[0].path == ("reihe_a", "wert_vor")
+    assert not previous_property.children[0].call
+    assert blocks_to_text(block) == source
 
 
-def test_the_crossing_with_a_value_without_a_previous_value_and_a_method() -> None:
+def test_a_crossing_of_a_method_with_a_fixed_value_is_broken_down_the_same_way() -> None:
     source = "AND(PREVIOUS(reihe_a.wert_vor(3)) <= 50; reihe_a.wert_vor(3) > 50)"
     block = blocks_of(source)
-    assert block.kind is BlockKind.CROSSING
-    assert blocks_to_text(block, SCOPE) == source
-    both_ways = blocks_of(
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "and")
+    assert blocks_to_text(block) == source
+    both_ways = (
         "OR(AND(PREVIOUS(reihe_a.wert_vor(3)) <= 50; reihe_a.wert_vor(3) > 50); "
         "AND(PREVIOUS(reihe_a.wert_vor(3)) >= 50; reihe_a.wert_vor(3) < 50))"
     )
-    assert both_ways.kind is BlockKind.CROSSING and both_ways.direction == "any"
+    block = blocks_of(both_ways)
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "or")
+    assert blocks_to_text(block) == both_ways
 
 
-def test_a_crossing_of_the_results_of_two_methods_without_a_previous_value_is_not_offered() -> None:
-    plain = blocks_of("AND(Messpunkt.abstand(1) <= 2; Messpunkt.abstand(1) > 2)")
-    assert plain.kind is BlockKind.LOGIC  # nothing can cross
-
-
-def test_a_crossing_built_from_blocks_wraps_a_method_result_in_previous() -> None:
-    method_block = Block(
-        BlockKind.NAME,
-        path=("reihe_a", "wert_vor"),
-        call=True,
-        children=(Block(BlockKind.LITERAL, value=3, datatype="integer"),),
-    )
-    crossing = Block(
-        BlockKind.CROSSING,
-        direction="up",
-        children=(method_block, Block(BlockKind.LITERAL, value=50, datatype="integer")),
-    )
-    assert blocks_to_text(crossing, SCOPE) == (
-        "AND(PREVIOUS(reihe_a.wert_vor(3)) <= 50; reihe_a.wert_vor(3) > 50)"
-    )
+def test_two_comparisons_of_methods_without_a_previous_value_are_two_comparisons() -> None:
+    source = "AND(Messpunkt.abstand(1) <= 2; Messpunkt.abstand(1) > 2)"
+    plain = blocks_of(source)
+    assert plain.kind is BlockKind.LOGIC
+    assert blocks_to_text(plain) == source
 
 
 # --- characters -------------------------------------------------------------------------------

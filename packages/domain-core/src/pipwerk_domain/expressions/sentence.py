@@ -1,6 +1,6 @@
 """An expression read as a sentence in German or English (specification 3.4, 5.3, 5.4): what
-the drawing area and the property view show for an expression, for example "EMA 20 kreuzt
-EMA 50 in beide Richtungen"."""
+the drawing area and the property view show for an expression, for example "EMA 20 ist größer
+als EMA 50"."""
 
 from pipwerk_domain.expressions.blocks import Block, BlockKind
 from pipwerk_domain.expressions.exprtypes import ExprType, labels_of, type_of
@@ -23,11 +23,6 @@ _ARITHMETIC = {
     "&": ("verbunden mit", "joined with"),
 }
 _ARITHMETIC_PRECEDENCE = {"&": 2, "+": 3, "-": 3, "*": 4, "/": 4, "^": 5}
-_DIRECTIONS = {
-    "up": ("nach oben", "upwards"),
-    "down": ("nach unten", "downwards"),
-    "any": ("in beide Richtungen", "in either direction"),
-}
 _VALUE_PROPERTIES = ("wert", "ergebnis")
 _EMPTY = "…"
 _MINUS = chr(0x2212)  # the minus sign, not the hyphen
@@ -188,10 +183,6 @@ def _sentence_of(
         return f"{_argument(parts, 0)} {words[0] if de else words[1]} {_argument(parts, 1)}"
     if kind is BlockKind.ARITHMETIC:
         return _arithmetic_sentence(block, parts, de)
-    if kind is BlockKind.CROSSING:
-        way = _DIRECTIONS.get(block.direction or "up", ("", ""))[0 if de else 1]
-        verb = "kreuzt" if de else "crosses"
-        return f"{_argument(parts, 0)} {verb} {_argument(parts, 1)} {way}"
     if kind is BlockKind.IF:
         a, b, c = (_argument(parts, index) for index in range(3))
         if de:

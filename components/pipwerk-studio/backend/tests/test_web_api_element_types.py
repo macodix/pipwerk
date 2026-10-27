@@ -19,9 +19,11 @@ from pipwerk_domain.risk_rule import (
     RISK_PER_TRADE_RULE_ID,
 )
 from pipwerk_domain.typedesc import (
+    DATATYPE_LABELS,
     ArgumentDescription,
     Choice,
     Condition,
+    DataType,
     Label,
     MethodDescription,
     OutputDescription,
@@ -47,7 +49,7 @@ def fetch(client: TestClient) -> dict[str, object]:
 
 def test_the_answer_lists_every_type_of_the_register(client: TestClient) -> None:
     answer = fetch(client)
-    assert set(answer) == {"types", "templates", "template_texts", "functions"}
+    assert set(answer) == {"types", "data_types", "templates", "template_texts", "functions"}
     types = answer["types"]
     assert isinstance(types, list)
     assert [item["id"] for item in types] == [item.id for item in default_registry().list()]
@@ -126,13 +128,35 @@ def test_no_name_label_or_explanation_contains_an_identifier_in_programming_spel
     assert offending == []
 
 
+def test_no_text_of_the_answer_uses_the_short_form_management_or_a_crossing(
+    client: TestClient,
+) -> None:
+    """Mangel E1: "Order- und Positionsverwaltung", English "order and position management",
+    no short form, also within a sentence; Mangel E12: no crossing as a building block."""
+    answer = fetch(client)
+    texts = _texts(answer["types"]) + _texts(answer["functions"]) + _texts(answer["template_texts"])
+    full = 0
+    for text in texts:
+        rest = text.replace("Order- und Positionsverwaltung", "").replace(
+            "order and position management", ""
+        )
+        assert "erwaltung" not in rest and "anagement" not in rest, text
+        assert "Kreuzung" not in text and "crossing" not in text.lower(), text
+        full += rest != text
+    assert full >= 4
+    names = [item["label"]["de"] for item in answer["functions"]]  # type: ignore[attr-defined]
+    assert "Kreuzung" not in names
+    assert "vorheriger Wert von" in names
+
+
 def test_the_types_are_the_descriptions_of_the_library_without_loss(client: TestClient) -> None:
     types = {item["id"]: item for item in fetch(client)["types"]}  # type: ignore[attr-defined]
     for description in default_registry().list():
         item = types[description.id]
         expected = dataclasses.asdict(description)
-        # the answer is the description as JSON: tuples become lists, enumerations their value
-        assert item == _as_json(expected), description.id
+        # the answer is the description as JSON: tuples become lists, enumerations their value;
+        # the word for the data type of each field is added to it (tested below)
+        assert _without_words(item) == _as_json(expected), description.id
 
 
 def _as_json(value: object) -> object:
@@ -141,6 +165,60 @@ def _as_json(value: object) -> object:
     if isinstance(value, tuple | list):
         return [_as_json(item) for item in value]
     return value
+
+
+def _without_words(value: object) -> object:
+    """The answer without the ``datatype_label`` of the fields."""
+    if isinstance(value, dict):
+        return {key: _without_words(item) for key, item in value.items() if key != "datatype_label"}
+    if isinstance(value, list):
+        return [_without_words(item) for item in value]
+    return value
+
+
+def test_every_field_names_the_word_for_its_data_type_in_both_languages(
+    client: TestClient,
+) -> None:
+    """Mangel E11: the words for the data types come from the library; for an object it is the
+    name of the object type."""
+    answer = fetch(client)
+    registry = default_registry()
+    types = {item["id"]: item for item in answer["types"]}  # type: ignore[attr-defined]
+    for description in registry.list():
+        item = types[description.id]
+        for group in ("parameters", "properties"):
+            for source, shown in zip(getattr(description, group), item[group], strict=True):
+                expected = registry.datatype_label(source.datatype, source.object_type)
+                assert shown["datatype_label"] == {"de": expected.de, "en": expected.en}, (
+                    description.id,
+                    source.id,
+                )
+    candle = types["trigger.candle_close"]["parameters"]
+    assert {item["id"]: item["datatype_label"] for item in candle} == {
+        "instrument": {"de": "Instrument", "en": "Instrument"},
+        "zeiteinheit": {"de": "Zeiteinheit", "en": "time unit"},
+    }
+    ema = {item["id"]: item["datatype_label"] for item in types["EMA"]["parameters"]}
+    assert ema["periode"] == {"de": "ganze Zahl", "en": "whole number"}
+    assert ema["anwenden_auf"] == {"de": "Auswahl", "en": "choice"}
+    order = {item["id"]: item["datatype_label"] for item in types["StopOrder"]["properties"]}
+    assert order["konto"] == {"de": "Konto", "en": "Account"}
+    assert order["instrument"] == {"de": "Instrument", "en": "Instrument"}
+    assert order["ablaufzeit"] == {"de": "Zeitpunkt", "en": "point in time"}
+    assert order["volumen"] == {"de": "Zahl", "en": "number"}
+
+
+def test_the_answer_lists_the_word_of_every_data_type(client: TestClient) -> None:
+    listed = fetch(client)["data_types"]
+    assert isinstance(listed, list)
+    assert [item["id"] for item in listed] == [item.value for item in DataType]
+    for item in listed:
+        expected = DATATYPE_LABELS[DataType(item["id"])]
+        assert item["label"] == {"de": expected.de, "en": expected.en}
+        assert item["label"]["de"] and item["label"]["en"]
+    words = {item["id"]: item["label"] for item in listed}
+    assert words["integer"] == {"de": "ganze Zahl", "en": "whole number"}
+    assert words["expression"] == {"de": "Formel", "en": "formula"}
 
 
 def test_the_groups_of_the_delivered_types_are_there(client: TestClient) -> None:
@@ -244,6 +322,7 @@ def test_a_type_with_methods_is_answered_with_all_fields_of_its_methods(tmp_path
     assert set(method) == {
         "id",
         "datatype",
+        "datatype_label",
         "label",
         "arguments",
         "choices",
@@ -262,6 +341,7 @@ def test_a_type_with_methods_is_answered_with_all_fields_of_its_methods(tmp_path
     assert set(first) == {
         "id",
         "datatype",
+        "datatype_label",
         "label",
         "required",
         "default",
@@ -379,10 +459,17 @@ def test_the_models_follow_the_classes_of_the_library_field_by_field() -> None:
         (web_api.MethodModel, MethodDescription),
         (web_api.TypeDescriptionModel, TypeDescription),
     ]
+    with_word = {
+        web_api.ParameterModel,
+        web_api.PropertyModel,
+        web_api.ArgumentModel,
+        web_api.MethodModel,
+    }
     for model, source in pairs:
-        assert list(model.model_fields) == [item.name for item in dataclasses.fields(source)], (
-            source.__name__
-        )
+        fields = [item.name for item in dataclasses.fields(source)]
+        if model in with_word:  # the word for the data type stands right after the data type
+            fields.insert(fields.index("datatype") + 1, "datatype_label")
+        assert list(model.model_fields) == fields, source.__name__
     assert list(web_api.FunctionModel.model_fields) == [
         "name",
         "parameters",
