@@ -1,5 +1,5 @@
 
-# Claude-Code-Konfiguration gehört nicht ins Repository (siehe docs/technical/entwicklungsverfahren.md)
+# Claude-Code-Konfiguration gehört nicht ins Repository (siehe Entwicklungsverfahren in dev-werk)
 .claude/
 
 # Projektkonfiguration für dev-werk, umgebungsspezifisch, nicht versioniert
