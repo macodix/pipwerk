@@ -5,7 +5,19 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import type { ElementDocument, InputDocument, StrategyDocument } from './document/types';
 import { renderWithProviders } from './test-utils';
-import { clickNode, menu, nodeByName, openStored, waitForReady } from './testing/actions';
+import {
+  choiceGroups,
+  choose as pickOption,
+  clickNode,
+  disabledChoices,
+  menu,
+  nodeByName,
+  offeredChoices,
+  offeredGroups,
+  openChoices,
+  openStored,
+  waitForReady,
+} from './testing/actions';
 import { mockApi } from './testing/backend';
 import { emaTrendfolge } from './testing/emaTrendfolge';
 import type { FakeApiOptions } from './testing/fakeApi';
@@ -98,7 +110,7 @@ const elementOf = (document: StrategyDocument, name: string): ElementDocument =>
 
 describe('"Verwendete Werte" of an element', () => {
   it('names per object the values the element uses, with the choice of property or method and the arguments', async () => {
-    await open(strategy());
+    const run = await open(strategy());
     await choose('Tun');
 
     const section = screen.getByTestId('sec-used');
@@ -106,7 +118,7 @@ describe('"Verwendete Werte" of an element', () => {
     const select = within(section).getByTestId('used-pegel-mittel-select');
     expect(select).toHaveValue('m:mittel');
     // properties and methods are two lists of the choice; the method is shown by its label
-    expect(Array.from(select.querySelectorAll('optgroup')).map((group) => group.label)).toEqual(['Eigenschaften', 'Methoden']);
+    expect((await offeredGroups(run.user, select)).map((group) => group.label)).toEqual(['Eigenschaften', 'Methoden']);
     expect(within(section).getByTestId('used-pegel-mittel-arg-anzahl')).toHaveValue('3');
     expect(within(section).getByTestId('used-pegel-mittel-arg-gewicht')).toHaveValue('0.5');
     // the argument carries its explanation and says that it is optional
@@ -129,7 +141,7 @@ describe('"Verwendete Werte" of an element', () => {
     const run = await open(strategy());
     await choose('Tun');
 
-    await run.user.selectOptions(screen.getByTestId('used-pegel-mittel-select'), 'Stand');
+    await pickOption(run.user, screen.getByTestId('used-pegel-mittel-select'), 'Stand');
 
     const stored = await saved(run);
     expect(elementOf(stored, 'Tun').inputs).toEqual([{ instance: 'pegel', property: 'stand', kind: 'property', arguments: [], refresh: false }]);
@@ -159,7 +171,7 @@ describe('"Verwendete Werte" of an element', () => {
     // a value that only an expression names cannot be removed here
     expect(screen.queryByTestId('used-messer-stand-remove')).toBeNull();
 
-    await run.user.selectOptions(row, 'Höchststand');
+    await pickOption(run.user, row, 'Höchststand');
 
     await waitFor(() => {
       expect(screen.getByTestId('used-messer-hoch-select')).toBeInTheDocument();
@@ -187,8 +199,8 @@ describe('"Verwendete Werte" of an element', () => {
     const run = await open(strategy({ usesGauge: false }));
     await choose('Tun');
 
-    await run.user.selectOptions(screen.getByTestId('used-add-object'), 'Pegel');
-    await run.user.selectOptions(screen.getByTestId('used-add-value'), 'Mittel');
+    await pickOption(run.user, screen.getByTestId('used-add-object'), 'Pegel');
+    await pickOption(run.user, screen.getByTestId('used-add-value'), 'Mittel');
     expect(screen.getByTestId('used-add-arg-anzahl')).toHaveValue('1');
     await run.user.click(screen.getByTestId('used-add-button'));
 
@@ -215,18 +227,18 @@ describe('"Verwendete Werte" of an element', () => {
       strategy_rules: [],
       truncated: false,
     });
-    await open(document, { usage });
+    const run = await open(document, { usage });
     await choose('Tun');
 
-    const offered = (): (string | null)[] => within(screen.getByTestId('used-add-object')).getAllByRole('option').map((option) => option.textContent);
+    const offered = (): Promise<string[]> => offeredChoices(run.user, screen.getByTestId('used-add-object'));
     // the report of the backend arrives a moment after the document
-    await waitFor(() => {
-      expect(offered()).toEqual(['Objekt wählen …', 'Messer']);
+    await waitFor(async () => {
+      expect(await offered()).toEqual(['Objekt wählen …', 'Messer']);
     });
     // the element of the first use takes the gauge
     await choose('Weiche');
-    await waitFor(() => {
-      expect(offered()).toEqual(['Objekt wählen …', 'Messer', 'Pegel']);
+    await waitFor(async () => {
+      expect(await offered()).toEqual(['Objekt wählen …', 'Messer', 'Pegel']);
     });
   });
 
@@ -260,8 +272,8 @@ describe('the element of the first use of an object', () => {
 
     expect(screen.getByTestId('first-use-text')).toHaveTextContent('Noch kein Element verwendet dieses Objekt.');
     const select = screen.getByTestId('first-use-select');
-    expect(within(select).getAllByRole('option').map((option) => option.textContent)).toContain('Tun');
-    await run.user.selectOptions(select, 'Tun');
+    expect(await offeredChoices(run.user, select)).toContain('Tun');
+    await pickOption(run.user, select, 'Tun');
 
     await waitFor(() => {
       expect(screen.getByTestId('first-use-text')).toHaveTextContent('Das Objekt wird bei „Tun“ ermittelt.');
@@ -308,8 +320,9 @@ describe('the blocks with methods and the earlier value', () => {
     const panel = await formula(run);
 
     const left = await within(panel).findByTestId('cmp-left-select');
-    expect(within(left).getByRole('option', { name: 'Pegel › Mittel (Methode)' })).toBeInTheDocument();
-    await run.user.selectOptions(left, within(left).getByRole('option', { name: 'Pegel › Mittel (Methode)' }));
+    expect(within(await openChoices(run.user, left)).getByRole('option', { name: 'Pegel › Mittel (Methode)' })).toBeInTheDocument();
+    await run.user.keyboard('{Escape}');
+    await pickOption(run.user, left, 'Pegel › Mittel (Methode)');
 
     // the arguments are blocks of their own, with their captions
     await waitFor(() => {
@@ -328,7 +341,7 @@ describe('the blocks with methods and the earlier value', () => {
     const panel = await formula(run);
 
     const left = await within(panel).findByTestId('cmp-left-select');
-    await run.user.selectOptions(left, within(left).getByRole('option', { name: 'Pegel › Mittel (Methode)' }));
+    await pickOption(run.user, left, 'Pegel › Mittel (Methode)');
 
     const stored = await saved(run);
     expect(stored.elements.find((element) => element.instance?.key === 'pegel')?.instance?.first_use).toBe(elementOf(stored, 'Tun').id);
@@ -337,16 +350,16 @@ describe('the blocks with methods and the earlier value', () => {
   it('list a method that is connected with the element first, with the values of its arguments', async () => {
     const run = await open(strategy({ usesGauge: false, formula: 'messer.stand > 1' }));
     await choose('Weiche');
-    await run.user.selectOptions(screen.getByTestId('used-add-object'), 'Pegel');
-    await run.user.selectOptions(screen.getByTestId('used-add-value'), 'Mittel');
+    await pickOption(run.user, screen.getByTestId('used-add-object'), 'Pegel');
+    await pickOption(run.user, screen.getByTestId('used-add-value'), 'Mittel');
     await run.user.click(screen.getByTestId('used-add-button'));
 
     const left = await within(await screen.findByTestId('expression-formel')).findByTestId('cmp-left-select');
-    const groups = Array.from(left.querySelectorAll('optgroup'));
+    const groups = choiceGroups(await openChoices(run.user, left)).filter((group) => group.label !== null);
     expect(groups[0]?.label).toBe('Verbundene Werte');
-    expect(Array.from(groups[0]?.querySelectorAll('option') ?? []).map((option) => option.textContent)).toEqual(['Pegel › Mittel (1; 1)']);
+    expect(groups[0]?.options).toEqual(['Pegel › Mittel (1; 1)']);
     // the plain entry of the method stays in the list of the objects, for the standard values of its arguments
-    expect(within(left).getByRole('option', { name: 'Pegel › Mittel (Methode)' })).toBeInTheDocument();
+    expect(groups.flatMap((group) => group.options)).toContain('Pegel › Mittel (Methode)');
   });
 
   it('put "vorheriger Wert von" around a value, with the number of candles back', async () => {
@@ -354,7 +367,7 @@ describe('the blocks with methods and the earlier value', () => {
     const panel = await formula(run);
 
     const left = await within(panel).findByTestId('cmp-left-select');
-    await run.user.selectOptions(left, 'k:prev');
+    await pickOption(run.user, left, 'k:prev');
     const count = await within(panel).findByTestId('cmp-left-previous-count');
     await run.user.clear(count);
     await run.user.type(count, '3');
@@ -368,11 +381,13 @@ describe('the blocks with methods and the earlier value', () => {
     const panel = await formula(run);
 
     const kind = await within(panel).findByTestId('cond-kind');
-    expect(within(kind).getByRole('option', { name: 'Kreuzung' })).toBeDisabled();
+    expect(disabledChoices(await openChoices(run.user, kind))).toEqual(['Kreuzung']);
+    await run.user.keyboard('{Escape}');
     // a value with an earlier value on one side: the comparison can become a crossing
-    await run.user.selectOptions(await within(panel).findByTestId('cmp-left-select'), 'n:messer\u001fwert');
-    await waitFor(() => {
-      expect(within(within(panel).getByTestId('cond-kind')).getByRole('option', { name: 'Kreuzung' })).toBeEnabled();
+    await pickOption(run.user, await within(panel).findByTestId('cmp-left-select'), 'n:messer\u001fwert');
+    await waitFor(async () => {
+      expect(disabledChoices(await openChoices(run.user, within(panel).getByTestId('cond-kind')))).toEqual([]);
+      await run.user.keyboard('{Escape}');
     });
   });
 });

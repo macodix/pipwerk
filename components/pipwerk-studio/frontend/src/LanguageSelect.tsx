@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isSupportedLanguage, languageNames, supportedLanguages } from './i18n';
+import { Select } from './ui/controls';
 import { useStudioLanguage, type StudioLanguageState } from './useStudioLanguage';
 
 const messageSuffix = {
@@ -18,12 +19,12 @@ function LanguageSelectView({ state }: { state: StudioLanguageState }) {
   return (
     <div className="language-select">
       <label htmlFor={id}>{t('app.language')}</label>
-      <select
+      <Select
         id={id}
         value={displayedLanguage}
         disabled={isBusy}
-        onChange={(event) => {
-          const language = event.target.value;
+        testid="language-select"
+        onChange={(language) => {
           if (isSupportedLanguage(language)) {
             changeLanguage(language);
           }
@@ -34,7 +35,7 @@ function LanguageSelectView({ state }: { state: StudioLanguageState }) {
             {languageNames[language]}
           </option>
         ))}
-      </select>
+      </Select>
       {error !== null ? (
         <p className="language-select-error" role="alert">
           {t(`app.language${messageSuffix[error]}`)}

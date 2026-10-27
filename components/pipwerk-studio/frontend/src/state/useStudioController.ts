@@ -80,7 +80,6 @@ import {
   studioReducer,
   documentText,
   type ExpressionFocus,
-  initialWizard,
   type StudioAction,
   type Panel,
   type Selection,
@@ -280,15 +279,17 @@ export function useStudioController(language: SupportedLanguage) {
         }
         const name = uniqueDisplayName(i18n.t('strategy.newName'), names);
         strategyToken.current += 1;
-        dispatch({ type: 'loaded', document: newStrategy(name), persisted: false, findings: null });
-        dispatch({ type: 'wizard', wizard: {} });
-        // below 1100 pixels the assistant stands in the properties view, which is shown after "Neue Strategie"
+        const created = newStrategy(name);
+        dispatch({ type: 'loaded', document: created, persisted: false, findings: null });
+        // below 1100 pixels the hint of the empty strategy stands in the properties view, which is shown after "Neue Strategie"
         dispatch({ type: 'panel', panel: 'props' });
+        // the number of findings is known at once, not only after "Prüfen"
+        void checkAfterOpen(created, strategyToken.current);
       } else {
         await openById(action.id);
       }
     },
-    [i18n, openById, queryClient],
+    [checkAfterOpen, i18n, openById, queryClient],
   );
 
   /** "Neue Strategie", "Schließen" and "Öffnen" ask first if there are unsaved changes (specification 5.5). */
@@ -563,33 +564,6 @@ export function useStudioController(language: SupportedLanguage) {
     },
     [edit, inputContext, language, showError, trackChange],
   );
-
-  /** Selects an element without leaving the guided setup (a click on the drawing area leaves it). */
-  const selectQuietly = useCallback(
-    (id: string) => {
-      edit((latest) => latest, { selection: { kind: 'element', id } });
-    },
-    [edit],
-  );
-
-  // --- the assistant ---------------------------------------------------------------------------
-
-  /** The user chose something else: the assistant waits where it is. Without a running assistant nothing happens. */
-  const pauseWizard = useCallback(() => {
-    dispatch({ type: 'wizardPaused', paused: true });
-  }, []);
-
-  /** "Assistent fortsetzen": the assistant takes up the step it was at; the properties view shows it again. */
-  const resumeWizard = useCallback(() => {
-    dispatch({ type: 'wizardPaused', paused: false });
-    dispatch({ type: 'panel', panel: 'props' });
-  }, []);
-
-  /** "Assistent starten" (hint of an empty strategy): the assistant begins at its first step. */
-  const startWizard = useCallback(() => {
-    dispatch({ type: 'wizard', wizard: { ...initialWizard } });
-    dispatch({ type: 'panel', panel: 'props' });
-  }, []);
 
   // --- the drawing area ------------------------------------------------------------------------
 
@@ -945,10 +919,6 @@ export function useStudioController(language: SupportedLanguage) {
       setUsage,
       inputContext,
       trackChange,
-      selectQuietly,
-      pauseWizard,
-      resumeWizard,
-      startWizard,
       startConnection,
       connectSteps,
       connectValue,
@@ -975,6 +945,12 @@ export function useStudioController(language: SupportedLanguage) {
       arm: (armed: StudioState['armed']) => dispatch({ type: 'armed', armed }),
       toggleCard: (id: string) => dispatch({ type: 'toggleCard', id }),
       focusField: (field: string, place?: ExpressionFocus) => dispatch({ type: 'focusField', field, place }),
+      /** A click on the number of findings: the properties view of the strategy, brought to the list of findings. */
+      showFindings: () => {
+        dispatch({ type: 'select', selection: { kind: 'strategy' }, panel: 'props' });
+        dispatch({ type: 'showFindings', shown: true });
+      },
+      findingsShown: () => dispatch({ type: 'showFindings', shown: false }),
       retryTypes: () => {
         void queryClient.invalidateQueries({ queryKey: TYPES_KEY });
         void queryClient.invalidateQueries({ queryKey: ['objects'] });
@@ -1039,20 +1015,16 @@ export function useStudioController(language: SupportedLanguage) {
       trackChange,
       insert,
       notify,
-      pauseWizard,
       queryClient,
       removalInfo,
       request,
       requestRemoveElement,
       requestRemoveParameter,
       requestRemoveRule,
-      resumeWizard,
       save,
       select,
-      selectQuietly,
       setUsage,
       startConnection,
-      startWizard,
       writeBlocks,
     ],
   );

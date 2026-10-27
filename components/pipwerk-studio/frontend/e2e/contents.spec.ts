@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { add, bindParam, createParam, newStrategyFromScratch, props, setCond, setValue } from './builder';
 import { removeStored, storedStrategy } from './compare';
-import { clickMenu, expect, expectSaved, openApp, showArea, test } from './support';
+import { choose, clickMenu, expect, expectChosen, expectSaved, openApp, showArea, test } from './support';
 
 // Order 06, points 3 and 4: rules, an own indicator, an own trend and an own ruleset are filled completely in the
 // strategy, saved and found again after opening. They run against the real backend, which forms the expressions.
@@ -40,7 +40,7 @@ test('a rule is added to the strategy with parameters, an expression from blocks
     await showArea(page, 'props');
     await page.getByTestId('status-pill').click();
     const section = page.getByTestId('sec-rules');
-    await section.getByTestId('rule-add-select').selectOption({ label: 'eigene Regel' });
+    await choose(section.getByTestId('rule-add-select'), { label: 'eigene Regel' });
     const card = section.getByTestId('rule-card').last();
     await card.getByTestId('instance-name').fill('Höchstvolumen');
 
@@ -50,9 +50,9 @@ test('a rule is added to the strategy with parameters, an expression from blocks
     await expect(card.getByTestId('own-parameter')).toHaveCount(1);
 
     // the rule determines the volume; the expression is a number from blocks
-    await card.getByTestId('rule-determined').selectOption({ label: 'Volumen' });
-    await expect(card.getByTestId('rule-comparison')).toHaveValue('hoechstens');
-    await card.getByTestId('rule-comparison').selectOption({ label: 'mindestens' });
+    await choose(card.getByTestId('rule-determined'), { label: 'Volumen' });
+    await expectChosen(card.getByTestId('rule-comparison'), 'hoechstens');
+    await choose(card.getByTestId('rule-comparison'), { label: 'mindestens' });
     await setValue(card.getByTestId('rule-expression').locator(':scope > .vb'), { calc: [{ pick: 'Grenze' }, '*', { num: 2 }] });
 
     const stored = await saveAndRead(page, name);
@@ -75,14 +75,14 @@ test('saving at once after the last block saves the block, though the answer of 
     await showArea(page, 'props');
     await page.getByTestId('status-pill').click();
     const section = page.getByTestId('sec-rules');
-    await section.getByTestId('rule-add-select').selectOption({ label: 'eigene Regel' });
+    await choose(section.getByTestId('rule-add-select'), { label: 'eigene Regel' });
     const card = section.getByTestId('rule-card').last();
     await card.getByTestId('instance-name').fill('Spätes Ergebnis');
     await card.getByTestId('own-parameter-new-name').fill('Grenze');
     await card.getByTestId('own-parameter-add').click();
     await expect(card.getByTestId('own-parameter')).toHaveCount(1);
-    await card.getByTestId('rule-determined').selectOption({ label: 'Volumen' });
-    await expect(card.getByTestId('rule-comparison')).toHaveValue('hoechstens');
+    await choose(card.getByTestId('rule-determined'), { label: 'Volumen' });
+    await expectChosen(card.getByTestId('rule-comparison'), 'hoechstens');
 
     await page.route('**/api/v1/expressions', async (route) => {
       if ((route.request().postData() ?? '').includes('"blocks"')) {
@@ -168,13 +168,13 @@ test('an own ruleset holds rules and an expression for the overall result', asyn
     await showArea(page, 'props');
     await page.getByTestId('status-pill').click();
     const section = page.getByTestId('sec-rules');
-    await section.getByTestId('rule-add-select').selectOption({ label: 'eigenes Regelwerk' });
+    await choose(section.getByTestId('rule-add-select'), { label: 'eigenes Regelwerk' });
     // the ruleset is the only rule of the strategy; the rules it contains stand inside of its card
     const card = section.getByTestId('rule-card').first();
     await card.getByTestId('instance-name').first().fill('Meine Prüfungen');
 
     const rules = card.getByTestId('sec-contained-rules');
-    await rules.getByTestId('rule-add-select').selectOption({ label: 'eigene Regel' });
+    await choose(rules.getByTestId('rule-add-select'), { label: 'eigene Regel' });
     const inner = rules.getByTestId('rule-card').last();
     await inner.getByTestId('instance-name').first().fill('Kapital ausreichend');
     await setCond(inner.getByTestId('rule-expression').locator(':scope > .cb'), { cmp: [{ pick: 'Konto › Kapital' }, '>', { num: 1000 }] });

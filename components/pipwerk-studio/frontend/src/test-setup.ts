@@ -6,7 +6,7 @@ import { afterEach, vi } from 'vitest';
 // A failed query of Testing Library prints the page; a limit keeps the report readable.
 process.env.DEBUG_PRINT_LIMIT ??= '3000';
 
-// jsdom has no layout engine. React Flow needs ResizeObserver to render, so a
+// jsdom has no layout engine. The flow library of the drawing area needs ResizeObserver to render, so a
 // minimal stand-in is provided for component tests.
 class ResizeObserverStub {
   observe(): void {}
@@ -16,7 +16,12 @@ class ResizeObserverStub {
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 
-// React Flow reads the zoom of the viewport with `DOMMatrixReadOnly`, which jsdom does not have.
+// jsdom has no layout engine and does not scroll: a scroll into view is recorded, so a test can ask for it.
+if (typeof Element !== 'undefined') {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: vi.fn() });
+}
+
+// The flow library reads the zoom of the viewport with `DOMMatrixReadOnly`, which jsdom does not have.
 // The viewport of the tests is never zoomed.
 class DOMMatrixReadOnlyStub {
   m22 = 1;

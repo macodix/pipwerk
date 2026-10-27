@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { App } from './App';
 import { renderWithProviders } from './test-utils';
-import { clickNode, menu, nodeByName, openStored, waitForReady } from './testing/actions';
+import { choose, clickNode, menu, nodeByName, offeredGroups, openStored, waitForReady } from './testing/actions';
 import { mockApi } from './testing/backend';
 import { EMA_ELEMENT_IDS, emaTrendfolge } from './testing/emaTrendfolge';
 
@@ -52,7 +52,7 @@ describe('the blocks (specification 5.4)', () => {
     clickNode(nodeByName('Richtung'));
     const panel = await screen.findByTestId('expression-ausdruck');
 
-    await user.selectOptions(await within(panel).findByTestId('cmp-op'), '<');
+    await choose(user, await within(panel).findByTestId('cmp-op'), '<');
 
     await waitFor(() => {
       // the editor sends the blocks, never a text it formed itself
@@ -79,13 +79,13 @@ describe('the blocks (specification 5.4)', () => {
 
     // the first operand of the comparison is "Richtung › Ergebnis": pick a value of an object instead
     const left = await within(panel).findByTestId('cmp-left-select');
-    await user.selectOptions(left, within(left).getAllByRole('option', { name: 'EMA20 › Wert' })[0] as HTMLOptionElement);
+    await choose(user, left, 'EMA20 › Wert');
 
     // every object whose value the expression uses is an input of the step: the one chosen and the one that was there
     await waitFor(() => {
       expect(within(screen.getByTestId('sec-used')).getAllByTestId('used-row')).toHaveLength(2);
     });
-    const groups = Array.from(panel.querySelectorAll('[data-testid="cmp-left-select"] optgroup')).map((group) => group.getAttribute('label'));
+    const groups = (await offeredGroups(user, left)).map((group) => group.label);
     expect(groups.slice(0, 5)).toEqual(['Verbundene Werte', 'Objekte der Strategie', 'Objekte der Anwendung', 'Ergebnisse', 'Strategieparameter']);
     const document = await saved(user, api);
     expect(document.elements.find((element) => element.id === EMA_ELEMENT_IDS.stop)?.inputs).toEqual(
@@ -161,7 +161,7 @@ describe('rules (specification 5.4)', () => {
     const before = within(section).queryAllByTestId('rule-card').length;
 
     const select = within(section).getByTestId('rule-add-select');
-    await user.selectOptions(select, within(select).getByRole('option', { name: 'Risiko je Trade' }));
+    await choose(user, select, 'Risiko je Trade');
     await waitFor(() => {
       expect(within(section).getAllByTestId('rule-card')).toHaveLength(before + 1);
     });
@@ -192,7 +192,7 @@ describe('rules (specification 5.4)', () => {
     const section = await screen.findByTestId('sec-element-rules');
     const select = within(section).getByTestId('rule-add-select');
 
-    await user.selectOptions(select, within(select).getByRole('option', { name: 'eigene Regel' }));
+    await choose(user, select, 'eigene Regel');
 
     await waitFor(() => {
       expect(within(section).getAllByTestId('rule-card')).toHaveLength(2);
@@ -201,11 +201,11 @@ describe('rules (specification 5.4)', () => {
     const ruleKey = card.getAttribute('data-key');
     expect(within(card).getByTestId('rule-expression')).toBeInTheDocument();
     expect(within(card).getByTestId('rule-determined')).toBeInTheDocument();
-    await user.selectOptions(within(card).getByTestId('rule-determined'), 'volumen');
+    await choose(user, within(card).getByTestId('rule-determined'), 'volumen');
     await waitFor(() => {
       expect(within(card).getByTestId('rule-comparison')).toHaveValue('hoechstens');
     });
-    await user.selectOptions(within(card).getByTestId('rule-comparison'), 'mindestens');
+    await choose(user, within(card).getByTestId('rule-comparison'), 'mindestens');
     const document = (await saved(user, api)) as unknown as { elements: { id: string; rules: { key: string; determined_property: string; comparison: string }[] }[] };
     const rule = document.elements.find((element) => element.id === EMA_ELEMENT_IDS.order)?.rules.find((candidate) => candidate.key === ruleKey);
     expect(rule).toMatchObject({ determined_property: 'volumen', comparison: 'mindestens' });

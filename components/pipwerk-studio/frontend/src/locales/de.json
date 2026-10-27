@@ -248,45 +248,6 @@
     "formulaEmpty": "Noch nichts eingegeben.",
     "formulaFine": "Der Ausdruck ist in Ordnung."
   },
-  "wizard": {
-    "title": "Assistent",
-    "start": "Assistent starten",
-    "resume": "Assistent fortsetzen",
-    "barStep": "Assistent, Schritt {{step}} von {{count}}",
-    "step": "Schritt {{step}} von {{count}}",
-    "progress": "Fortschritt",
-    "leave": "Ohne Assistent weiterarbeiten",
-    "leaveTip": "Der Assistent hat bis hierher alles eingefügt. Sie arbeiten von Hand weiter.",
-    "steps": {
-      "name": "Name",
-      "trigger": "Auslöser",
-      "indicators": "Indikatoren",
-      "condition": "Bedingung",
-      "order": "Order"
-    },
-    "back": "Zurück",
-    "skip": "Überspringen",
-    "next": "Weiter",
-    "finish": "Fertig",
-    "nameText": "Wie soll die Strategie heißen? Name und Beschreibung ändern Sie später jederzeit.",
-    "triggerText": "Wann soll die Strategie rechnen? Der Auslöser startet jede Auswertung.",
-    "timeUnitName": "Zeiteinheit",
-    "asParameter": "Als Strategieparameter anlegen (empfohlen: So ändern Sie die Zeiteinheit an einer Stelle)",
-    "indicatorsText": "Welche Indikatoren braucht die Strategie? Sie erscheinen auf der Zeichenfläche.",
-    "noIndicators": "Noch kein Indikator. Sie können diesen Schritt auch überspringen.",
-    "removeIndicator": "Indikator entfernen",
-    "conditionText": "Wann soll gehandelt werden? Stellen Sie eine einfache Bedingung zusammen. Feinere Bedingungen bauen Sie später aus Bausteinen.",
-    "needTwoValues": "Für eine Bedingung brauchen Sie zwei Werte. Gehen Sie zurück und legen Sie Indikatoren an, oder überspringen Sie den Schritt.",
-    "valueA": "Wert A",
-    "valueB": "Wert B",
-    "comparison": "Vergleich",
-    "cross": "kreuzt",
-    "crossName": "Kreuzen",
-    "compareName": "Vergleich",
-    "orderText": "Was soll bei „wahr“ geschehen? Hier wählen Sie die Order. Feinheiten wie den Stop-Loss stellen Sie danach in den Eigenschaften ein.",
-    "withRule": "Regel „{{name}}“ anwenden (bestimmt das Volumen)",
-    "done": "Der Aufbau steht. Die Prüfung zeigt, was noch fehlt."
-  },
   "instances": {
     "parameters": "Parameter",
     "ownParameters": "Eigene Parameter",
@@ -340,15 +301,15 @@
     "noStrategyTitle": "Keine Strategie geöffnet",
     "openLibrary": "Elementbibliothek zeigen",
     "wiresArrive": "{{count}} Wertlinie(n) enden hier",
-    "portManagement": "Hier beginnt die Verwaltung dieser Order. Haben Sie in der Verwaltung keinen eigenen Auslöser, ziehen Sie von hier auf ihren ersten Schritt.",
+    "portManagement": "Hier beginnt die Order- und Positionsverwaltung dieser Order. Hat sie keinen eigenen Auslöser, ziehen Sie von hier auf ihren ersten Schritt.",
     "portReconnect": "Zum Umverbinden auf einen anderen Schritt ziehen",
     "portConnect": "Zum nächsten Schritt ziehen, oder anklicken und dann den nächsten Schritt anklicken",
     "portValue": "Ziehen Sie von hier auf ein Element, um diesen Wert zu verbinden",
     "fewerProperties": "weniger Eigenschaften",
     "allProperties": "alle {{count}} Eigenschaften",
-    "expandManagement": "Verwaltung ausklappen",
-    "collapseManagement": "Verwaltung einklappen",
-    "management": "Verwaltung · {{name}}",
+    "expandManagement": "Order- und Positionsverwaltung ausklappen",
+    "collapseManagement": "Order- und Positionsverwaltung einklappen",
+    "management": "Order- und Positionsverwaltung · {{name}}",
     "steps_one": "{{count}} Schritt",
     "steps_other": "{{count}} Schritte",
     "collapseSection": "Abschnitt einklappen",
@@ -386,7 +347,7 @@
     "arrangeTip": "Alle Elemente wieder automatisch anordnen",
     "legend": "Legende",
     "legendFlow": "Ablauf: legt die Reihenfolge fest",
-    "legendManagement": "Verwaltung einer Order (grün, gepunktet)",
+    "legendManagement": "Order- und Positionsverwaltung einer Order (grün, gepunktet)",
     "legendFirstUse": "Wert an dem Element, das ihn zuerst verwendet (farbig, durchgezogen)",
     "legendMoreUses": "Wert an einer weiteren Verwendung (farbig, gestrichelt)",
     "legendRefresh": "Aktualisieren: Der Wert wird hier neu ermittelt",
@@ -401,7 +362,7 @@
     "methods": "Methoden",
     "optional": "freiwillig",
     "refresh": "Aktualisieren",
-    "refreshTip": "Das Objekt ermittelt seine Werte an diesem Element neu, bevor es sie übergibt. Das brauchen Sie, wenn die Werte inzwischen veraltet sein können, zum Beispiel in einer Verwaltung, die bei neuen Kursen läuft.",
+    "refreshTip": "Das Objekt ermittelt seine Werte an diesem Element neu, bevor es sie übergibt. Das brauchen Sie, wenn die Werte inzwischen veraltet sein können, zum Beispiel in einer Order- und Positionsverwaltung, die bei neuen Kursen läuft.",
     "inInput": "verbunden",
     "inExpression": "im Ausdruck",
     "inRule": "in einer Regel",
@@ -429,7 +390,7 @@
     "panel": "Eigenschaften",
     "none": "Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an, „Öffnen“ zeigt gespeicherte Strategien.",
     "emptyTitle": "Die Strategie ist leer",
-    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Er legt fest, wann die Strategie rechnet. Sie finden ihn in der Elementbibliothek in der Gruppe „Ablaufsteuerung“. Oder lassen Sie sich vom Assistenten führen.",
+    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Das ist das Ereignis, das die Strategie startet, zum Beispiel ein Kerzenschluss. Sie finden ihn in der Elementbibliothek in der Gruppe „Ablaufsteuerung“.",
     "strategy": "Strategie",
     "strategyName": "Name der Strategie",
     "description": "Beschreibung",
@@ -443,9 +404,9 @@
     "noFindings": "Keine Befunde. Die Strategie ist in sich stimmig.",
     "findingsGeneral": "Diese Befunde gehören zu keinem einzelnen Element.",
     "findingsMarked": "Rot und orange umrandete Elemente auf der Fläche haben einen Befund. „Zur Stelle“ führt dorthin.",
-    "management": "Verwaltung",
+    "management": "Order- und Positionsverwaltung",
     "managementOfName": "der Order „{{name}}“",
-    "managementText": "Die Verwaltung läuft für jede gestellte Order einzeln: zuerst für die wartende Order, nach der Ausführung für die Position.",
+    "managementText": "Die Order- und Positionsverwaltung läuft für jede gestellte Order einzeln: zuerst für die wartende Order, nach der Ausführung für die Position.",
     "managementEmpty": "Der Rahmen ist noch leer. Fügen Sie aus der Elementbibliothek zuerst einen Auslöser ein. Weitere Schritte hängen sich daran.",
     "managementInsert": "Was Sie jetzt aus der Elementbibliothek einfügen, kommt in diesen Rahmen.",
     "section": "Abschnitt",
@@ -476,8 +437,8 @@
     "sectionInfo": "Abschnitte fassen zusammengehörige Schritte zusammen. Sie lassen sich auf der Fläche einklappen.",
     "belongsTo": "Gehört zu",
     "mainFlow": "Hauptablauf",
-    "managementOf": "Verwaltung von „{{name}}“",
-    "belongsToHint": "Hier legen Sie fest, ob der Schritt zum Hauptablauf oder zur Verwaltung einer Order gehört, ohne ihn zu ziehen.",
+    "managementOf": "Order- und Positionsverwaltung von „{{name}}“",
+    "belongsToHint": "Hier legen Sie fest, ob der Schritt zum Hauptablauf oder zur Order- und Positionsverwaltung einer Order gehört, ohne ihn zu ziehen.",
     "originType": "{{name}}, aus Objekttyp {{type}}",
     "originTemplate": "{{name}}, aus Vorlage {{template}}, Objekttyp {{type}}"
   },
@@ -529,7 +490,7 @@
       "unknown_target": "das Ziel ist kein Element",
       "unknown_output": "der Ausgang gehört nicht zum Element",
       "target_is_trigger": "ein Auslöser hat keinen Eingang",
-      "across_managements": "die Verbindung führt zwischen dem Ablauf und einer Verwaltung oder zwischen zwei Verwaltungen"
+      "across_managements": "die Verbindung führt zwischen dem Ablauf und einer Order- und Positionsverwaltung oder zwischen zwei Order- und Positionsverwaltungen"
     },
     "bindingReasons": {
       "binding_kind": "diese Art der Belegung ist nicht erlaubt",
@@ -551,13 +512,13 @@
     },
     "trigger": {
       "unconnected": "Der Auslöser ist mit keinem Element des Ablaufs verbunden.",
-      "manual_in_management": "Der Auslöser „{{element}}“ startet von Hand und steht in der Verwaltung einer Order. Dort wird er nie ausgelöst."
+      "manual_in_management": "Der Auslöser „{{element}}“ startet von Hand und steht in der Order- und Positionsverwaltung einer Order. Dort wird er nie ausgelöst."
     },
     "flow": {
       "not_reached": "Kein Auslöser erreicht dieses Element des Ablaufs.",
-      "main_without_trigger": "Hauptablauf ohne Auslöser: Die Strategie startet nie, auch wenn eine Verwaltung eigene Auslöser hat.",
+      "main_without_trigger": "Hauptablauf ohne Auslöser: Die Strategie startet nie, auch wenn eine Order- und Positionsverwaltung eigene Auslöser hat.",
       "unending_loop": "Rückführung ohne Bedingung, die sie beendet (an {{elements}} Elementen).",
-      "management_only": "„{{type}}“ darf nur in einer Verwaltung stehen, nicht im Hauptablauf.",
+      "management_only": "„{{type}}“ darf nur in einer Order- und Positionsverwaltung stehen, nicht im Hauptablauf.",
       "no_order_reachable": "Vom Auslöser aus ist kein Element erreichbar, das eine Order aufgibt."
     },
     "instrument": {
@@ -600,7 +561,7 @@
     "expression": {
       "empty": "Der Ausdruck in {{field}} fehlt oder ist unvollständig.",
       "invalid": "Der Ausdruck in {{field}} ist fehlerhaft: {{problem}}",
-      "order_outside_management": "Der Ausdruck in {{field}} verwendet Order oder Position außerhalb einer Verwaltung."
+      "order_outside_management": "Der Ausdruck in {{field}} verwendet Order oder Position außerhalb einer Order- und Positionsverwaltung."
     },
     "rule": {
       "unresolved_name": "Hinweis zum Ausdruck in {{field}}: {{problem}} Die Vorlage allein kennt den Namen nicht; geprüft wird er in jeder Strategie, die die Vorlage enthält.",
@@ -643,7 +604,7 @@
     },
     "element": {
       "rules_not_allowed": "Diesem Element sind Regeln zugeordnet, obwohl „{{type}}“ keine zulässt.",
-      "management_invalid": "Das Element gehört zur Verwaltung eines Elements, das keine Order aufgibt."
+      "management_invalid": "Das Element gehört zur Order- und Positionsverwaltung eines Elements, das keine Order aufgibt."
     }
   },
   "findingFixes": {
@@ -660,13 +621,13 @@
     },
     "trigger": {
       "unconnected": "Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn.",
-      "manual_in_management": "Entfernen Sie den Auslöser aus der Verwaltung und legen Sie dort einen anderen Auslöser an, oder legen Sie ihn in den Hauptablauf."
+      "manual_in_management": "Entfernen Sie den Auslöser aus der Order- und Positionsverwaltung und legen Sie dort einen anderen Auslöser an, oder legen Sie ihn in den Hauptablauf."
     },
     "flow": {
       "not_reached": "Verbinden Sie einen vorherigen Schritt oder einen Auslöser mit diesem Schritt oder entfernen Sie ihn.",
       "main_without_trigger": "Legen Sie in den Hauptablauf einen Auslöser an und verbinden Sie ihn mit dem ersten Schritt.",
       "unending_loop": "Legen Sie in die Rückführung eine Bedingung, von der ein Ausgang aus der Rückführung hinausführt.",
-      "management_only": "Verschieben Sie den Schritt in die Verwaltung einer Order oder entfernen Sie ihn.",
+      "management_only": "Verschieben Sie den Schritt in die Order- und Positionsverwaltung einer Order oder entfernen Sie ihn.",
       "no_order_reachable": "Verbinden Sie den Ablauf mit einem Schritt, der eine Order aufgibt."
     },
     "instrument": {
@@ -693,7 +654,7 @@
     "expression": {
       "empty": "Geben Sie den Ausdruck vollständig an.",
       "invalid": "Korrigieren Sie den Ausdruck.",
-      "order_outside_management": "Verwenden Sie Order und Position nur in der Verwaltung einer Order."
+      "order_outside_management": "Verwenden Sie Order und Position nur in der Order- und Positionsverwaltung einer Order."
     },
     "rule": {
       "unresolved_name": "Prüfen Sie den Namen im Ausdruck der Vorlage.",
@@ -736,7 +697,7 @@
     },
     "element": {
       "rules_not_allowed": "Entfernen Sie die Regeln von diesem Element.",
-      "management_invalid": "Verschieben Sie das Element in den Hauptablauf oder in die Verwaltung einer Order."
+      "management_invalid": "Verschieben Sie das Element in den Hauptablauf oder in die Order- und Positionsverwaltung einer Order."
     }
   },
   "notices": {
@@ -746,7 +707,7 @@
     "inserted": "„{{name}}“ ist eingefügt. Sie sehen es auf der Zeichenfläche.",
     "inputAdded": "Der Wert ist jetzt ein Eingang des Elements.",
     "toMainFlow": "Das Element gehört jetzt zum Hauptablauf.",
-    "toManagement": "Das Element gehört jetzt zur Verwaltung dieser Order.",
+    "toManagement": "Das Element gehört jetzt zur Order- und Positionsverwaltung dieser Order.",
     "armed": "Wählen Sie jetzt den nächsten Schritt.",
     "armedValue": "Wählen Sie jetzt das Element, das den Wert verwenden soll.",
     "connection": {
@@ -759,8 +720,8 @@
       "instance": "Objekte werden nicht im Ablauf verbunden. Ihre Werte verbinden Sie mit einer Linie von ihrer Karte.",
       "unknown_type": "Von einem Element mit unbekanntem Typ gehen keine neuen Verbindungen aus.",
       "unknown_output": "Dieser Ausgang gehört nicht zum Schritt.",
-      "across_flows": "Die Verwaltung einer Order ist vom Hauptablauf getrennt: Verbinden Sie nur Schritte im selben Rahmen.",
-      "management_has_triggers": "Die Verwaltung hat eigene Auslöser. Von „gestellt“ führt dann keine Verbindung."
+      "across_flows": "Die Order- und Positionsverwaltung einer Order ist vom Hauptablauf getrennt: Verbinden Sie nur Schritte im selben Rahmen.",
+      "management_has_triggers": "Die Order- und Positionsverwaltung hat eigene Auslöser. Von „gestellt“ führt dann keine Verbindung."
     }
   },
   "dialogs": {
@@ -781,7 +742,7 @@
     "removeElement": {
       "title": "Element entfernen?",
       "text": "„{{name}}“ wird entfernt.",
-      "managed": "Mit der Order wird ihre Verwaltung entfernt:",
+      "managed": "Mit der Order wird ihre Order- und Positionsverwaltung entfernt:",
       "confirm": "Entfernen",
       "cancel": "Abbrechen"
     },

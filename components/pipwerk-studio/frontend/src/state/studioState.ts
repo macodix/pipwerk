@@ -19,31 +19,8 @@ export type WireMode = 'all' | 'selection' | 'off';
 /** A short note that disappears on its own (specification 5.3: nothing to click away except critical errors). */
 export type Notice = { serial: number; key: string; params: Record<string, string> };
 
-/**
- * The guided setup of a new strategy (specification 5.5): the step it is at and the elements it laid out so far, so
- * that going back and changing a step replaces what that step made.
- */
-export type WizardState = {
-  step: number;
-  /** The element the trigger step made. */
-  trigger: string | null;
-  /** The objects the indicator step made. */
-  indicators: readonly string[];
-  /** The element the condition step made. */
-  condition: string | null;
-  /**
-   * The user chose something else (an element, the strategy, an entry of the library) while the assistant was running:
-   * the properties view shows the choice, and above it "Assistent, Schritt n von 5" with "Assistent fortsetzen".
-   */
-  paused: boolean;
-};
-
-export const initialWizard: WizardState = { step: 1, trigger: null, indicators: [], condition: null, paused: false };
-
 export type StudioState = {
   document: StrategyDocument | null;
-  /** The guided setup is open; `null` when the user works by hand. */
-  wizard: WizardState | null;
   /** The text of the document at the last opening or saving; a document that differs has unsaved changes. */
   savedText: string | null;
   /** The strategy exists in the object directory (the next save replaces it). */
@@ -66,12 +43,13 @@ export type StudioState = {
    * the formula view of that expression opens and marks the spot (specification 5.5).
    */
   focusField: { field: string; serial: number; place: ExpressionFocus | null } | null;
+  /** The list of findings in the properties view of the strategy is to be brought into view (a click on the number of findings). */
+  showFindings: number | null;
   notice: Notice | null;
 };
 
 export const initialStudioState: StudioState = {
   document: null,
-  wizard: null,
   savedText: null,
   persisted: false,
   findings: null,
@@ -85,6 +63,7 @@ export const initialStudioState: StudioState = {
   openCount: 0,
   reveal: null,
   focusField: null,
+  showFindings: null,
   notice: null,
 };
 
@@ -105,8 +84,7 @@ export type StudioAction =
   | { type: 'armed'; armed: StudioState['armed'] }
   | { type: 'toggleCard'; id: string }
   | { type: 'focusField'; field: string; place?: ExpressionFocus }
-  | { type: 'wizard'; wizard: Partial<WizardState> | null }
-  | { type: 'wizardPaused'; paused: boolean }
+  | { type: 'showFindings'; shown: boolean }
   | { type: 'notice'; key: string; params?: Record<string, string> };
 
 export function documentText(document: StrategyDocument): string {
@@ -174,8 +152,6 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         selection: action.selection,
         armed: null,
         panel: action.panel ?? state.panel,
-        // A choice of the user leaves the assistant where it is; "Assistent fortsetzen" takes it up again.
-        wizard: state.wizard === null ? null : { ...state.wizard, paused: true },
       };
     case 'panel':
       return { ...state, panel: action.panel };
@@ -192,13 +168,8 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       };
     case 'focusField':
       return { ...state, focusField: { field: action.field, serial: nextSerial(), place: action.place ?? null } };
-    case 'wizard':
-      return {
-        ...state,
-        wizard: action.wizard === null ? null : { ...(state.wizard ?? initialWizard), ...action.wizard },
-      };
-    case 'wizardPaused':
-      return state.wizard === null ? state : { ...state, wizard: { ...state.wizard, paused: action.paused } };
+    case 'showFindings':
+      return { ...state, showFindings: action.shown ? nextSerial() : null };
     case 'notice':
       return { ...state, notice: { serial: nextSerial(), key: action.key, params: action.params ?? {} } };
   }

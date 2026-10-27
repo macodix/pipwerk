@@ -13,9 +13,9 @@ import type { UsageModel } from '../model/uses';
 import type { Selection, WireMode } from '../state/studioState';
 
 /**
- * The drawing area as React Flow shows it (specification E8, 5.3). The arrangement computes the places; React Flow
+ * The drawing area as the flow library shows it (specification E8, 5.3). The arrangement computes the places; the library
  * shows them and takes dragging, connecting, zoom and fitting. The nodes and edges are views of the document, never
- * its state (rules for React Flow in the development rules).
+ * its state (rules for the flow library in the development rules).
  */
 
 export const WIRE_COLORS = ['#2f6fb0', '#c2410c', '#15803d', '#a21caf', '#0e7490', '#b45309', '#be123c', '#4d7c0f'] as const;
@@ -188,7 +188,7 @@ export function memberText(member: MemberUse, rows: ReadonlyMap<string, TypeRow>
 /** The sign of "Aktualisieren" on a line and in the legend. */
 export const REFRESH_SIGN = '↻';
 
-/** The nodes and edges React Flow shows for a document and its arrangement. */
+/** The nodes and edges the flow library shows for a document and its arrangement. */
 export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: StudioEdge[] } {
   const { document, types, scene, uses, dir, language, t, describe, findings, selection, armed, wires, selectedEdge } = input;
   const nodes: StudioNode[] = [];

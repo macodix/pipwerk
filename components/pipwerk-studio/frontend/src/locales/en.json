@@ -248,45 +248,6 @@
     "formulaEmpty": "Nothing entered yet.",
     "formulaFine": "The expression is fine."
   },
-  "wizard": {
-    "title": "Assistant",
-    "start": "Start the assistant",
-    "resume": "Continue with the assistant",
-    "barStep": "Assistant, step {{step}} of {{count}}",
-    "step": "Step {{step}} of {{count}}",
-    "progress": "Progress",
-    "leave": "Continue without assistant",
-    "leaveTip": "The assistant has inserted everything up to here. You continue by hand.",
-    "steps": {
-      "name": "Name",
-      "trigger": "Trigger",
-      "indicators": "Indicators",
-      "condition": "Condition",
-      "order": "Order"
-    },
-    "back": "Back",
-    "skip": "Skip",
-    "next": "Next",
-    "finish": "Finish",
-    "nameText": "What should the strategy be called? You can change name and description at any time.",
-    "triggerText": "When should the strategy calculate? The trigger starts every evaluation.",
-    "timeUnitName": "Time unit",
-    "asParameter": "Create as strategy parameter (recommended: change the time unit in one place)",
-    "indicatorsText": "Which indicators does the strategy need? They appear on the drawing area.",
-    "noIndicators": "No indicator yet. You can also skip this step.",
-    "removeIndicator": "Remove indicator",
-    "conditionText": "When should the strategy trade? Put together a simple condition. Finer conditions can be built later from blocks.",
-    "needTwoValues": "A condition needs two values. Go back and create indicators, or skip the step.",
-    "valueA": "Value A",
-    "valueB": "Value B",
-    "comparison": "Comparison",
-    "cross": "crosses",
-    "crossName": "Crossing",
-    "compareName": "Comparison",
-    "orderText": "What should happen on \"true\"? Choose the order here. Details such as the stop loss are set afterwards in the properties.",
-    "withRule": "Apply the rule \"{{name}}\" (determines the volume)",
-    "done": "The setup is in place. The check shows what is still missing."
-  },
   "instances": {
     "parameters": "Parameters",
     "ownParameters": "Own parameters",
@@ -340,15 +301,15 @@
     "noStrategyTitle": "No strategy open",
     "openLibrary": "Show the element library",
     "wiresArrive": "{{count}} value line(s) end here",
-    "portManagement": "The management of this order starts here. If the management has no trigger of its own, drag from here to its first step.",
+    "portManagement": "The order and position management of this order starts here. If it has no trigger of its own, drag from here to its first step.",
     "portReconnect": "Drag to another step to connect differently",
     "portConnect": "Drag to the next step, or click and then click the next step",
     "portValue": "Drag from here to an element to connect this value",
     "fewerProperties": "fewer properties",
     "allProperties": "all {{count}} properties",
-    "expandManagement": "Expand management",
-    "collapseManagement": "Collapse management",
-    "management": "Management · {{name}}",
+    "expandManagement": "Expand order and position management",
+    "collapseManagement": "Collapse order and position management",
+    "management": "Order and position management · {{name}}",
     "steps_one": "{{count}} step",
     "steps_other": "{{count}} steps",
     "collapseSection": "Collapse section",
@@ -386,7 +347,7 @@
     "arrangeTip": "Arrange all elements automatically again",
     "legend": "Legend",
     "legendFlow": "Flow: defines the order",
-    "legendManagement": "Management of an order (green, dotted)",
+    "legendManagement": "Order and position management of an order (green, dotted)",
     "legendFirstUse": "Value at the element that uses it first (coloured, solid)",
     "legendMoreUses": "Value at a further use (coloured, dashed)",
     "legendRefresh": "Refresh: the value is worked out anew here",
@@ -401,7 +362,7 @@
     "methods": "Methods",
     "optional": "optional",
     "refresh": "Refresh",
-    "refreshTip": "The object works out its values again at this element before it passes them on. You need this when the values may be out of date by now, for example in a management that runs on new prices.",
+    "refreshTip": "The object works out its values again at this element before it passes them on. You need this when the values may be out of date by now, for example in an order and position management that runs on new prices.",
     "inInput": "connected",
     "inExpression": "in an expression",
     "inRule": "in a rule",
@@ -429,7 +390,7 @@
     "panel": "Properties",
     "none": "Next step: \"New strategy\" creates an empty strategy, \"Open\" shows saved strategies.",
     "emptyTitle": "The strategy is empty",
-    "emptyText": "Next step: start with a trigger. It defines when the strategy calculates. You find it in the element library in the group \"Flow control\". Or let the assistant guide you.",
+    "emptyText": "Next step: start with a trigger. It is the event that starts the strategy, for example the close of a candle. You find it in the element library in the group \"Flow control\".",
     "strategy": "Strategy",
     "strategyName": "Name of the strategy",
     "description": "Description",
@@ -443,9 +404,9 @@
     "noFindings": "No findings. The strategy is consistent.",
     "findingsGeneral": "These findings belong to no single element.",
     "findingsMarked": "Elements outlined in red or orange on the canvas have a finding. \"Go to it\" leads there.",
-    "management": "Management",
+    "management": "Order and position management",
     "managementOfName": "of the order \"{{name}}\"",
-    "managementText": "The management runs for each placed order individually: first for the waiting order, after execution for the position.",
+    "managementText": "The order and position management runs for each placed order individually: first for the waiting order, after execution for the position.",
     "managementEmpty": "The frame is still empty. First add a trigger from the element library. Further steps attach to it.",
     "managementInsert": "Whatever you insert from the element library now goes into this frame.",
     "section": "Section",
@@ -476,8 +437,8 @@
     "sectionInfo": "Sections group steps that belong together. They can be collapsed on the canvas.",
     "belongsTo": "Belongs to",
     "mainFlow": "Main flow",
-    "managementOf": "Management of \"{{name}}\"",
-    "belongsToHint": "Here you decide whether the step belongs to the main flow or to the management of an order, without dragging it.",
+    "managementOf": "Order and position management of \"{{name}}\"",
+    "belongsToHint": "Here you decide whether the step belongs to the main flow or to the order and position management of an order, without dragging it.",
     "originType": "{{name}}, from object type {{type}}",
     "originTemplate": "{{name}}, from template {{template}}, object type {{type}}"
   },
@@ -529,7 +490,7 @@
       "unknown_target": "the target is not an element",
       "unknown_output": "the output does not belong to the element",
       "target_is_trigger": "a trigger has no input",
-      "across_managements": "the connection leads between the flow and a management or between two managements"
+      "across_managements": "the connection leads between the flow and an order and position management or between two order and position managements"
     },
     "bindingReasons": {
       "binding_kind": "this kind of assignment is not allowed",
@@ -551,13 +512,13 @@
     },
     "trigger": {
       "unconnected": "The trigger is not connected with any element of the flow.",
-      "manual_in_management": "The trigger \"{{element}}\" starts by hand and stands in the management of an order. There it is never triggered."
+      "manual_in_management": "The trigger \"{{element}}\" starts by hand and stands in the order and position management of an order. There it is never triggered."
     },
     "flow": {
       "not_reached": "No trigger reaches this element of the flow.",
-      "main_without_trigger": "Main flow without a trigger: the strategy never starts, even if a management has triggers of its own.",
+      "main_without_trigger": "Main flow without a trigger: the strategy never starts, even if an order and position management has triggers of its own.",
       "unending_loop": "Loop without a condition that ends it (on {{elements}} elements).",
-      "management_only": "\"{{type}}\" may only stand in a management, not in the main flow.",
+      "management_only": "\"{{type}}\" may only stand in an order and position management, not in the main flow.",
       "no_order_reachable": "No element that places an order can be reached from the trigger."
     },
     "instrument": {
@@ -600,7 +561,7 @@
     "expression": {
       "empty": "The expression in {{field}} is missing or incomplete.",
       "invalid": "The expression in {{field}} is faulty: {{problem}}",
-      "order_outside_management": "The expression in {{field}} uses order or position outside of a management."
+      "order_outside_management": "The expression in {{field}} uses order or position outside of an order and position management."
     },
     "rule": {
       "unresolved_name": "Hint on the expression in {{field}}: {{problem}} The template alone does not know the name; it is checked in every strategy that contains the template.",
@@ -643,7 +604,7 @@
     },
     "element": {
       "rules_not_allowed": "Rules are assigned to this element although \"{{type}}\" allows none.",
-      "management_invalid": "The element belongs to the management of an element that does not place an order."
+      "management_invalid": "The element belongs to the order and position management of an element that does not place an order."
     }
   },
   "findingFixes": {
@@ -660,13 +621,13 @@
     },
     "trigger": {
       "unconnected": "Connect the trigger with the first step or remove it.",
-      "manual_in_management": "Remove the trigger from the management and add another trigger there, or put it into the main flow."
+      "manual_in_management": "Remove the trigger from the order and position management and add another trigger there, or put it into the main flow."
     },
     "flow": {
       "not_reached": "Connect a previous step or a trigger with this step or remove it.",
       "main_without_trigger": "Add a trigger and connect it with the first step.",
       "unending_loop": "Put a condition into the loop from which one output leads out of the loop.",
-      "management_only": "Move the step into the management of an order or remove it.",
+      "management_only": "Move the step into the order and position management of an order or remove it.",
       "no_order_reachable": "Connect the flow with a step that places an order."
     },
     "instrument": {
@@ -693,7 +654,7 @@
     "expression": {
       "empty": "Enter the complete expression.",
       "invalid": "Correct the expression.",
-      "order_outside_management": "Use order and position only in the management of an order."
+      "order_outside_management": "Use order and position only in the order and position management of an order."
     },
     "rule": {
       "unresolved_name": "Check the name in the expression of the template.",
@@ -736,7 +697,7 @@
     },
     "element": {
       "rules_not_allowed": "Remove the rules from this element.",
-      "management_invalid": "Move the element into the main flow or into the management of an order."
+      "management_invalid": "Move the element into the main flow or into the order and position management of an order."
     }
   },
   "notices": {
@@ -746,7 +707,7 @@
     "inserted": "\"{{name}}\" is inserted. You can see it on the canvas.",
     "inputAdded": "The value is now an input of the element.",
     "toMainFlow": "The element now belongs to the main flow.",
-    "toManagement": "The element now belongs to the management of this order.",
+    "toManagement": "The element now belongs to the order and position management of this order.",
     "armed": "Now choose the next step.",
     "armedValue": "Now choose the element that is to use the value.",
     "connection": {
@@ -759,8 +720,8 @@
       "instance": "Objects are not connected in the flow. You connect their values with a line from their card.",
       "unknown_type": "No new connections start from an element of an unknown type.",
       "unknown_output": "This output does not belong to the step.",
-      "across_flows": "The management of an order is separate from the main flow: connect only steps in the same frame.",
-      "management_has_triggers": "The management has triggers of its own. No connection leads from \"placed\" then."
+      "across_flows": "The order and position management of an order is separate from the main flow: connect only steps in the same frame.",
+      "management_has_triggers": "The order and position management has triggers of its own. No connection leads from \"placed\" then."
     }
   },
   "dialogs": {
@@ -781,7 +742,7 @@
     "removeElement": {
       "title": "Remove element?",
       "text": "\"{{name}}\" will be removed.",
-      "managed": "The management of the order is removed with it:",
+      "managed": "The order and position management of the order is removed with it:",
       "confirm": "Remove",
       "cancel": "Cancel"
     },

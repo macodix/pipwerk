@@ -10,19 +10,19 @@ import { clickNode, menu, nodeByName, openStored, waitForReady } from './testing
 import { mockApi } from './testing/backend';
 import { inventedStrategy, inventedTypesJson, meterElement } from './testing/inventedTypes';
 
-// Specification 5.1, 5.3 "Keine Hinweise", 5.5, req-ui-016, defect M1: hints, the assistant and short messages stand in
+// Specification 5.1, 5.3 "Keine Hinweise", 5.5, req-ui-016, defect M1: hints and short messages stand in
 // the properties view and nowhere else. The drawing area shows none in any state. Windows stay above the interface.
 
 /** What on the drawing area could be a hint: a card with advice, a button of a hint, the old banner of a connection. */
 function hintsOnCanvas(): string[] {
   const canvas = screen.getByTestId('canvas');
   const found: string[] = [];
-  for (const selector of ['.hint-box', '.empty-card', '.canvas-empty', '.toast', '.message-bar', '[data-testid="armed-banner"]', '[data-testid="empty-wizard"]', '[data-testid="empty-library"]', '[data-testid="empty-new"]', '[data-testid="empty-open"]', '[data-testid="frame-empty"]', '[data-testid="canvas-empty"]', '[data-testid="canvas-no-strategy"]']) {
+  for (const selector of ['.hint-box', '.empty-card', '.canvas-empty', '.toast', '.message-bar', '[data-testid="armed-banner"]', '[data-testid="empty-library"]', '[data-testid="empty-new"]', '[data-testid="empty-open"]', '[data-testid="frame-empty"]', '[data-testid="canvas-empty"]', '[data-testid="canvas-no-strategy"]']) {
     if (canvas.querySelector(selector) !== null) {
       found.push(selector);
     }
   }
-  for (const text of ['Nächster Schritt', 'Keine Strategie geöffnet', 'Assistent', 'Noch leer. Wählen Sie', 'Hier erscheinen', 'Klicken Sie jetzt']) {
+  for (const text of ['Nächster Schritt', 'Keine Strategie geöffnet', 'Noch leer. Wählen Sie', 'Hier erscheinen', 'Klicken Sie jetzt']) {
     if ((canvas.textContent ?? '').includes(text)) {
       found.push(text);
     }
@@ -70,13 +70,12 @@ describe('"Keine Strategie geöffnet" (defect M1, specification 5.5)', () => {
 describe('the hint of an empty strategy (specification 5.5)', () => {
   async function newEmptyStrategy(user: ReturnType<typeof userEvent.setup>): Promise<void> {
     await menu(user, 'new');
-    await screen.findByTestId('wizard');
-    // below 1100 pixels the assistant stands in the properties view, which is shown after "Neue Strategie"
+    // "Neue Strategie" opens an empty drawing area; below 1100 pixels the properties view with the hint is shown
+    await screen.findByTestId('empty-strategy-hint');
     expect(screen.getByTestId('app')).toHaveAttribute('data-panel', 'props');
-    await user.click(screen.getByTestId('wz-leave'));
   }
 
-  it('stands in the properties view above the fields of the strategy, with "Assistent starten", and nowhere on the drawing area', async () => {
+  it('stands in the properties view above the fields of the strategy and nowhere on the drawing area, and names the trigger as the first step', async () => {
     const user = userEvent.setup();
     mockApi();
     renderWithProviders(<App />, 'de');
@@ -86,8 +85,12 @@ describe('the hint of an empty strategy (specification 5.5)', () => {
 
     const hint = await screen.findByTestId('empty-strategy-hint');
     expect(within(screen.getByTestId('props')).getByTestId('empty-strategy-hint')).toBe(hint);
-    expect(hint).toHaveTextContent('Nächster Schritt');
-    expect(within(hint).getByRole('button', { name: 'Assistent starten' })).toBeInTheDocument();
+    expect(hint).toHaveTextContent('Nächster Schritt: Beginnen Sie mit einem Auslöser.');
+    expect(hint).toHaveTextContent('Ablaufsteuerung');
+    // E6: a strategy does not calculate; the trigger is the event that starts it
+    expect(hint).toHaveTextContent('das Ereignis, das die Strategie startet');
+    expect(hint.textContent).not.toMatch(/rechn/);
+    expect(hint.textContent).not.toMatch(/Assist/);
     const name = screen.getByTestId('strategy-name');
     // the hint comes before the name of the strategy in the view
     expect(hint.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -96,7 +99,7 @@ describe('the hint of an empty strategy (specification 5.5)', () => {
     expect(occurrences('Die Strategie ist leer')).toBe(1);
   });
 
-  it('offers "Elementbibliothek zeigen" besides the assistant, which shows the library', async () => {
+  it('offers "Elementbibliothek zeigen", which shows the library', async () => {
     const user = userEvent.setup();
     mockApi();
     renderWithProviders(<App />, 'de');
@@ -108,20 +111,17 @@ describe('the hint of an empty strategy (specification 5.5)', () => {
     expect(screen.getByTestId('app')).toHaveAttribute('data-panel', 'library');
   });
 
-  it('starts the assistant at its first step and is gone as soon as the strategy has an element', async () => {
+  it('offers no assistant after "Neue Strategie" and is gone as soon as the strategy has an element (E9)', async () => {
     const user = userEvent.setup();
     mockApi();
     renderWithProviders(<App />, 'de');
     await waitForReady();
     await newEmptyStrategy(user);
 
-    await user.click(await screen.findByTestId('empty-wizard'));
+    expect(document.body.textContent).not.toMatch(/Assist/);
+    expect(screen.getByTestId('empty-strategy-hint').querySelectorAll('button')).toHaveLength(1);
+    expect(screen.getByTestId('props-strategy')).toBeInTheDocument();
 
-    expect(await screen.findByTestId('wizard')).toBeInTheDocument();
-    expect(screen.getByTestId('wz-step-1')).toBeInTheDocument();
-    expect(screen.queryByTestId('empty-strategy-hint')).toBeNull();
-
-    await user.click(screen.getByTestId('wz-leave'));
     await user.click(
       document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="Kerzenschluss"]') as HTMLElement,
     );
@@ -140,17 +140,15 @@ describe('the hint of an empty strategy (specification 5.5)', () => {
       expect(screen.getByTestId('menu-new')).toBeEnabled();
     });
     await menu(user, 'new');
-    await screen.findByTestId('wizard');
-    await user.click(screen.getByTestId('wz-leave'));
 
     const hint = await screen.findByTestId('empty-strategy-hint');
     expect(hint).toHaveTextContent('The strategy is empty');
-    expect(within(hint).getByRole('button', { name: 'Start the assistant' })).toBeInTheDocument();
-    expect(hint.textContent).not.toMatch(/Nächster|Strategie|Assistent/);
+    expect(hint).toHaveTextContent('the event that starts the strategy');
+    expect(hint.textContent).not.toMatch(/Nächster|Strategie|Assist|assist|calculat/);
   });
 });
 
-describe('the hint of a management without steps (specification 5.5)', () => {
+describe('the hint of an order and position management without steps (specification 5.5)', () => {
   function withEmptyManagement(): StrategyDocument {
     const document = inventedStrategy();
     const elements = document.elements.filter((element) => element.management_of === null);
@@ -179,6 +177,7 @@ describe('the hint of a management without steps (specification 5.5)', () => {
     const frame = await screen.findByTestId('props-frame');
     expect(within(screen.getByTestId('props')).getByTestId('props-frame')).toBe(frame);
     expect(frame).toHaveTextContent('Der Rahmen ist noch leer');
+    expect(frame).toHaveTextContent('Order- und Positionsverwaltung');
     expect(hintsOnCanvas()).toEqual([]);
   });
 

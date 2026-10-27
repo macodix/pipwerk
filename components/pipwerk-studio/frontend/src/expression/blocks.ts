@@ -273,7 +273,12 @@ export function conditionKind(block: Block): ConditionKind {
 
 export const blankComparison = (): Block => comparisonBlock('>', EMPTY, EMPTY);
 
-/** The condition of the kind chosen, made from the one that was there (kept where it fits). */
+/**
+ * The condition of the kind chosen. A change of the kind replaces the condition by a new one of that kind: the sentence of
+ * the new kind stands alone and never behind the sentence of the old one (Mangel E13). Only "Alle gelten (und)" and
+ * "Eine gilt (oder)" keep their parts when one becomes the other, because the parts are the same and only the word
+ * between them changes.
+ */
 export function convertCondition(kind: ConditionKind, current: Block): Block {
   const have = !isEmptyBlock(current);
   const currentKind = conditionKind(current);
@@ -285,13 +290,13 @@ export function convertCondition(kind: ConditionKind, current: Block): Block {
     case 'and':
       return current.kind === 'logic' && current.operator === 'or'
         ? { ...current, operator: 'and' }
-        : logicBlock('and', [have ? current : blankComparison(), blankComparison()]);
+        : logicBlock('and', [blankComparison(), blankComparison()]);
     case 'or':
       return current.kind === 'logic' && current.operator === 'and'
         ? { ...current, operator: 'or' }
-        : logicBlock('or', [have ? current : blankComparison(), blankComparison()]);
+        : logicBlock('or', [blankComparison(), blankComparison()]);
     case 'not':
-      return logicBlock('not', [have ? current : blankComparison()]);
+      return logicBlock('not', [blankComparison()]);
     case 'value':
       return EMPTY;
   }

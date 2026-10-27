@@ -1,4 +1,4 @@
-import { expect, library, newStrategy, node, openApp, openStrategy, showArea, test } from './support';
+import { choose, expect, expectChosen, library, newStrategy, node, openApp, openStrategy, showArea, test } from './support';
 
 // Specification 5.2: groups from the type descriptions in the order of the specification, search, explanation of every
 // entry when it is pointed at and when it has the keyboard focus.
@@ -95,13 +95,13 @@ test('lets the user assign a strategy parameter to a field, creating it on the s
   await library(page, 'Kerzenschluss').click();
   await showArea(page, 'props');
 
-  await page.getByTestId('kind-zeiteinheit').selectOption({ label: 'Strategieparameter' });
+  await choose(page.getByTestId('kind-zeiteinheit'), { label: 'Strategieparameter' });
   await expect(page.getByTestId('param-hint')).toContainText('noch kein Strategieparameter');
   await page.getByTestId('new-param-name').fill('Meine Zeiteinheit');
   await page.getByTestId('new-param-create').click();
 
   await expect(page.getByTestId('param-chip')).toContainText('Meine Zeiteinheit');
-  await expect(page.getByTestId('param-select')).toHaveValue('meine_zeiteinheit');
+  await expectChosen(page.getByTestId('param-select'), 'meine_zeiteinheit');
   await expect(node(page, 'Kerzenschluss')).toContainText('Meine Zeiteinheit');
 });
 
@@ -113,10 +113,10 @@ test('lets the user change the order type: the new properties get their standard
   await node(page, 'Order aufgeben').click({ position: { x: 40, y: 14 } });
 
   await expect(page.getByTestId('field-gueltigkeit')).toHaveCount(0);
-  await page.getByTestId('value-ordertyp').selectOption({ label: 'Stop-Order' });
+  await choose(page.getByTestId('value-ordertyp'), { label: 'Stop-Order' });
 
   await expect(page.getByTestId('field-preis')).toBeVisible();
-  await expect(page.getByTestId('value-gueltigkeit')).toHaveValue('bis_auf_widerruf');
+  await expectChosen(page.getByTestId('value-gueltigkeit'), 'bis_auf_widerruf');
   // the properties that were already assigned stay
-  await expect(page.getByTestId('kind-richtung')).toHaveValue('expression');
+  await expectChosen(page.getByTestId('kind-richtung'), 'expression');
 });

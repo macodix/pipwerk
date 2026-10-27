@@ -14,6 +14,67 @@ export async function menu(user: UserEvent, id: 'new' | 'open' | 'save' | 'check
   await user.click(screen.getByTestId(`menu-${id}`));
 }
 
+/** Opens the list of choices of a field with a click and returns the list. */
+export async function openChoices(user: UserEvent, field: HTMLElement): Promise<HTMLElement> {
+  await user.click(field);
+  return screen.findByRole('listbox');
+}
+
+/** The texts of the entries a field offers: opens its list, reads it and closes it again with Escape. */
+export async function offeredChoices(user: UserEvent, field: HTMLElement): Promise<string[]> {
+  const list = await openChoices(user, field);
+  const texts = within(list).getAllByRole('option').map((option) => option.textContent ?? '');
+  await user.keyboard('{Escape}');
+  return texts;
+}
+
+/** The groups a field offers with the texts of their entries: opens its list, reads it and closes it again with Escape. */
+export async function offeredGroups(user: UserEvent, field: HTMLElement): Promise<{ label: string | null; options: string[] }[]> {
+  const groups = choiceGroups(await openChoices(user, field));
+  await user.keyboard('{Escape}');
+  return groups;
+}
+
+/** The entries of an open list of choices that cannot be chosen. */
+export function disabledChoices(list: HTMLElement): string[] {
+  return within(list)
+    .getAllByRole('option')
+    .filter((option) => option.getAttribute('aria-disabled') === 'true')
+    .map((option) => option.textContent ?? '');
+}
+
+/** The groups of an open list of choices with the texts of their entries; entries before the first group have the label `null`. */
+export function choiceGroups(list: HTMLElement): { label: string | null; options: string[] }[] {
+  const groups: { label: string | null; options: string[] }[] = [];
+  for (const child of Array.from(list.children)) {
+    if (child.classList.contains('select-group')) {
+      groups.push({ label: child.textContent, options: [] });
+    } else {
+      if (groups.length === 0) {
+        groups.push({ label: null, options: [] });
+      }
+      groups[groups.length - 1]?.options.push(child.textContent ?? '');
+    }
+  }
+  return groups;
+}
+
+/**
+ * Chooses an entry of a list of choices of the interface (the field that opens a list, specification 5.1): opens the list
+ * with a click and clicks the entry whose text is `wanted`, or, failing that, whose value is `wanted`. Of several entries
+ * with the same text the first one is taken.
+ */
+export async function choose(user: UserEvent, field: HTMLElement, wanted: string | RegExp): Promise<void> {
+  const list = await openChoices(user, field);
+  const options = within(list).getAllByRole('option');
+  const byText = options.find((option) => (typeof wanted === 'string' ? option.textContent === wanted : wanted.test(option.textContent ?? '')));
+  const entry = byText ?? options.find((option) => typeof wanted === 'string' && option.dataset.value === wanted);
+  if (entry === undefined) {
+    throw new Error(`The list has no entry ${String(wanted)}: ${options.map((option) => option.textContent).join(' | ')}`);
+  }
+  await user.click(entry);
+}
+
 /** Opens a stored strategy by the list of the menu. */
 export async function openStored(user: UserEvent, name: string): Promise<void> {
   await menu(user, 'open');
@@ -27,7 +88,7 @@ export function elementNodes(): HTMLElement[] {
 }
 
 /**
- * Clicks a node of the drawing area. React Flow starts a drag at `mousedown` and its drag library reads `event.view`,
+ * Clicks a node of the drawing area. The flow library starts a drag at `mousedown` and its drag library reads `event.view`,
  * which the events of `user-event` do not carry; so the events are sent with the window as view.
  */
 export function clickNode(target: HTMLElement): void {
@@ -68,7 +129,7 @@ export async function closeSettings(user: UserEvent): Promise<void> {
 /** Changes the language of the interface in the settings and closes the settings again. */
 export async function switchLanguage(user: UserEvent, to: 'Deutsch' | 'English'): Promise<void> {
   const dialog = await openSettings(user);
-  await user.selectOptions(within(dialog).getByLabelText(/^(Sprache|Language)$/), to);
+  await choose(user, within(dialog).getByLabelText(/^(Sprache|Language)$/), to);
   await waitFor(() => {
     expect(within(dialog).getByLabelText(/^(Sprache|Language)$/)).not.toBeDisabled();
   });

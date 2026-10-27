@@ -70,14 +70,15 @@ describe('the texts of the findings that came with the new interface of the libr
     expect(texts('en', f).message).toContain('"Messer" is not connected with any element');
   });
 
-  it('name the trigger "Manuell" in the management of an order and say what to do', () => {
+  it('name the trigger "Manuell" in the order and position management of an order and say what to do', () => {
     const f = finding('trigger.manual_in_management', {}, { element: inside?.id ?? null });
 
     const de = texts('de', f);
     expect(de.message).toContain('„Beginn innen“');
-    expect(de.message).toContain('in der Verwaltung einer Order');
+    expect(de.message).toContain('in der Order- und Positionsverwaltung einer Order');
     expect(de.fix).toContain('Hauptablauf');
     expect(texts('en', f).message).toContain('"Beginn innen"');
+    expect(texts('en', f).message).toContain('in the order and position management of an order');
   });
 
   it.each([

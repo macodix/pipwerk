@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createGate } from './test-utils';
 import { renderWithProviders } from './test-utils';
-import { clickNode, menu, nodeByName, openStored, waitForReady } from './testing/actions';
+import { choose, clickNode, menu, nodeByName, openStored, waitForReady } from './testing/actions';
 import { mockApi } from './testing/backend';
 import { EMA_ELEMENT_IDS } from './testing/emaTrendfolge';
 
@@ -47,7 +47,7 @@ describe('saving while the answer for a change of an expression is on its way (r
     });
 
     const hold = holdBlockAnswers();
-    await user.selectOptions(operator, '<');
+    await choose(user, operator, '<');
     await waitFor(() => {
       expect(hold.held()).toBe(1);
     });
