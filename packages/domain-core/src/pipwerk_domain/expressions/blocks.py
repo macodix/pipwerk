@@ -2,13 +2,12 @@
 blocks, and the expression of a tree of blocks.
 
 Blocks are: a value (a name of a property, result, strategy parameter or parameter, a fixed
-value or an empty place), comparison, arithmetic, logic (and, or, not), case distinction,
-every other function of the list and the crossing. The crossing "A crosses B upwards" stands
-for ``AND(PREVIOUS(A) <= PREVIOUS(B); A > B)``, "downwards" for ``AND(PREVIOUS(A) >= PREVIOUS(B);
-A < B)``, "in either direction" for the ``OR`` of both. ``PREVIOUS`` stands only around a value
-for which the fachmodell defines an earlier value; every other value stands at both places
-itself. The library recognizes this form when it breaks an expression down, also inside
-``AND`` and ``OR``.
+value or an empty place), comparison, arithmetic, logic (and, or, not), case distinction and
+every other function of the list. Every block is exactly one operator or one function; the
+library does not join a sequence of blocks into a block of its own. A crossing of two lines
+is no block: ``AND(PREVIOUS(A) <= PREVIOUS(B); A > B)`` is broken down into "previous value
+of", comparisons and "and", also inside ``AND`` and ``OR``, and the tree gives back the same
+expression.
 
 Everything here works without recursion: the depth of an expression is not limited by the
 recursion limit of Python.
@@ -34,7 +33,7 @@ from pipwerk_domain.expressions.nodes import (
     Unary,
     postorder,
 )
-from pipwerk_domain.expressions.symbols import Environment, Symbol
+from pipwerk_domain.expressions.symbols import Symbol
 
 
 class BlockKind(StrEnum):
@@ -46,13 +45,11 @@ class BlockKind(StrEnum):
     LOGIC = "logic"
     IF = "if"
     FUNCTION = "function"
-    CROSSING = "crossing"
 
 
 COMPARISON_OPERATORS = ("=", "<>", "<", "<=", ">", ">=")
 ARITHMETIC_OPERATORS = ("+", "-", "*", "/", "^", "&")
 LOGIC_OPERATORS = ("and", "or", "not")
-CROSSING_DIRECTIONS = ("up", "down", "any")
 LITERAL_TYPES = ("number", "integer", "percent", "text", "boolean")
 
 _PRECEDENCE = {
@@ -95,7 +92,6 @@ class Block:
     datatype: str | None = None
     operator: str | None = None
     function: str | None = None
-    direction: str | None = None
     children: tuple[Block, ...] = ()
     symbols: tuple[Symbol, ...] = field(default=(), compare=False, repr=False)
     type: ExprType | None = field(default=None, compare=False, repr=False)
@@ -121,7 +117,7 @@ def to_blocks(analysis: Analysis) -> Block | None:
     built: dict[int, Block] = {}
     for node in postorder(tree):
         built[id(node)] = _block_of(node, built, names, analysis)
-    return _recognize(built[id(tree)])
+    return built[id(tree)]
 
 
 def _block_of(
@@ -201,121 +197,6 @@ def _call_block(name: str, children: tuple[Block, ...]) -> Block:
     return Block(BlockKind.FUNCTION, function=function, children=children)
 
 
-def _is_atomic(block: Block) -> bool:
-    return block.kind in (BlockKind.NAME, BlockKind.LITERAL, BlockKind.EMPTY)
-
-
-def _previous_of(block: Block) -> Block:
-    """The block ``PREVIOUS(value)`` around a value that has an earlier value."""
-    return Block(BlockKind.FUNCTION, function="PREVIOUS", children=(block,))
-
-
-def _crossing_pair(first: Block, second: Block) -> Block | None:
-    """The crossing that the two comparisons make up, or ``None``."""
-    if first.kind is not BlockKind.COMPARISON or second.kind is not BlockKind.COMPARISON:
-        return None
-    if (first.operator, second.operator) == ("<=", ">"):
-        direction = "up"
-    elif (first.operator, second.operator) == (">=", "<"):
-        direction = "down"
-    else:
-        return None
-    left, right = second.children
-    if not (_is_atomic(left) and _is_atomic(right)):
-        return None
-    if not (left.previous_value or right.previous_value):
-        return None  # nothing can cross
-    expected_left = _previous_of(left) if left.previous_value else left
-    expected_right = _previous_of(right) if right.previous_value else right
-    if first.children != (expected_left, expected_right):
-        return None
-    return Block(BlockKind.CROSSING, direction=direction, children=(left, right))
-
-
-def _recognize(root: Block) -> Block:
-    """Recognize the crossings in the whole tree, from the leaves up."""
-    order: list[Block] = []
-    stack = [root]
-    while stack:
-        block = stack.pop()
-        order.append(block)
-        stack.extend(block.children)
-    order.reverse()
-    result: dict[int, Block] = {}
-    for original in order:
-        children = tuple(result[id(item)] for item in original.children)
-        block = original
-        if original.kind is BlockKind.LOGIC and original.operator == "and":
-            block = _merge_and(original, children)
-        elif original.kind is BlockKind.LOGIC and original.operator == "or":
-            block = _merge_or(original, children)
-        elif any(new is not old for new, old in zip(children, original.children, strict=True)):
-            block = _with_children(original, children)
-        result[id(original)] = block
-    return result[id(root)]
-
-
-def _with_children(block: Block, children: tuple[Block, ...]) -> Block:
-    return Block(
-        block.kind,
-        block.path,
-        block.value,
-        block.datatype,
-        block.operator,
-        block.function,
-        block.direction,
-        children,
-        block.symbols,
-        block.type,
-        block.previous_value,
-        block.call,
-    )
-
-
-def _merge_and(block: Block, children: tuple[Block, ...]) -> Block:
-    merged: list[Block] = []
-    index = 0
-    while index < len(children):
-        crossing = (
-            _crossing_pair(children[index], children[index + 1])
-            if index + 1 < len(children)
-            else None
-        )
-        if crossing is not None:
-            merged.append(crossing)
-            index += 2
-        else:
-            merged.append(children[index])
-            index += 1
-    if len(merged) == 1 and merged[0].kind is BlockKind.CROSSING and len(children) == 2:
-        return merged[0]
-    return _with_children(block, tuple(merged))
-
-
-def _merge_or(block: Block, children: tuple[Block, ...]) -> Block:
-    merged: list[Block] = []
-    index = 0
-    while index < len(children):
-        first = children[index]
-        second = children[index + 1] if index + 1 < len(children) else None
-        if (
-            second is not None
-            and first.kind is BlockKind.CROSSING
-            and second.kind is BlockKind.CROSSING
-            and first.direction == "up"
-            and second.direction == "down"
-            and first.children == second.children
-        ):
-            merged.append(Block(BlockKind.CROSSING, direction="any", children=first.children))
-            index += 2
-        else:
-            merged.append(first)
-            index += 1
-    if len(merged) == 1 and merged[0].direction == "any" and len(children) == 2:
-        return merged[0]
-    return _with_children(block, tuple(merged))
-
-
 # --- blocks -> expression -------------------------------------------------------------------
 
 
@@ -382,12 +263,9 @@ def _precedence_of(block: Block) -> int:
     return 99
 
 
-def blocks_to_text(root: Block, environment: Environment | None = None) -> str:
-    """The expression (stored form, names as keys) of a tree of blocks.
-
-    ``environment`` tells which names have an earlier value, for the text of a crossing;
-    without it no name has one. Raises :class:`BlockError` for a tree that is no expression.
-    """
+def blocks_to_text(root: Block) -> str:
+    """The expression (stored form, names as keys) of a tree of blocks. Raises
+    :class:`BlockError` for a tree that is no expression."""
     order: list[Block] = []
     stack = [root]
     while stack:
@@ -397,43 +275,11 @@ def blocks_to_text(root: Block, environment: Environment | None = None) -> str:
     order.reverse()
     texts: dict[int, str] = {}
     for block in order:
-        texts[id(block)] = _text_of(block, texts, environment)
+        texts[id(block)] = _text_of(block, texts)
     return texts[id(root)]
 
 
-def _has_previous(block: Block, environment: Environment | None) -> bool:
-    """Whether the fachmodell defines an earlier value for the value ``block``."""
-    if block.kind is not BlockKind.NAME or environment is None or not block.path:
-        return False
-    symbol = environment.resolve(block.path[0])
-    for part in block.path[1:]:
-        if symbol is None:
-            return False
-        symbol = symbol.member(part)
-    return symbol is not None and symbol.previous_value
-
-
-def _wrapped(block: Block, text: str, environment: Environment | None) -> str:
-    return f"PREVIOUS({text})" if _has_previous(block, environment) else text
-
-
-def _crossing_parts(
-    block: Block, texts: dict[int, str], environment: Environment | None
-) -> list[str]:
-    """The texts of the two comparisons that make up an upward or downward crossing."""
-    if len(block.children) != 2:
-        raise BlockError("crossing_children")
-    left, right = block.children
-    if not (_is_atomic(left) and _is_atomic(right)):
-        raise BlockError("crossing_operand")
-    a, b = texts[id(left)], texts[id(right)]
-    pa, pb = _wrapped(left, a, environment), _wrapped(right, b, environment)
-    if block.direction == "up":
-        return [f"{pa} <= {pb}", f"{a} > {b}"]
-    return [f"{pa} >= {pb}", f"{a} < {b}"]
-
-
-def _text_of(block: Block, texts: dict[int, str], environment: Environment | None) -> str:
+def _text_of(block: Block, texts: dict[int, str]) -> str:
     kind = block.kind
     children = [texts[id(item)] for item in block.children]
     if kind is BlockKind.EMPTY:
@@ -451,7 +297,7 @@ def _text_of(block: Block, texts: dict[int, str], environment: Environment | Non
     if kind is BlockKind.COMPARISON or kind is BlockKind.ARITHMETIC:
         return _operation_text(block, children)
     if kind is BlockKind.LOGIC:
-        return _logic_text(block, texts, environment)
+        return _logic_text(block, texts)
     if kind is BlockKind.IF:
         if len(children) not in (2, 3):
             raise BlockError("if_children", count=len(children))
@@ -461,8 +307,6 @@ def _text_of(block: Block, texts: dict[int, str], environment: Environment | Non
         if signature is None:
             raise BlockError("function", function=block.function or "")
         return f"{signature.name}({'; '.join(children)})"
-    if kind is BlockKind.CROSSING:
-        return _crossing_text(block, texts, environment)
     raise BlockError("kind")  # pragma: no cover
 
 
@@ -491,37 +335,13 @@ def _operation_text(block: Block, children: list[str]) -> str:
     return f"{left_text} {operator} {right_text}"
 
 
-def _logic_text(block: Block, texts: dict[int, str], environment: Environment | None) -> str:
+def _logic_text(block: Block, texts: dict[int, str]) -> str:
     operator = block.operator
     if operator not in LOGIC_OPERATORS:
         raise BlockError("operator", operator=operator or "")
-    parts: list[str] = []
-    for child in block.children:
-        if child.kind is BlockKind.CROSSING and operator == "and" and child.direction != "any":
-            parts.extend(_crossing_parts(child, texts, environment))
-        elif child.kind is BlockKind.CROSSING and operator == "or" and child.direction == "any":
-            parts.extend(_crossing_texts(child, texts, environment))
-        else:
-            parts.append(texts[id(child)])
+    parts = [texts[id(child)] for child in block.children]
     if operator == "not" and len(parts) != 1:
         raise BlockError("operand_count", operator="not")
     if not parts:
         raise BlockError("operand_count", operator=operator)
     return f"{(operator or '').upper()}({'; '.join(parts)})"
-
-
-def _crossing_texts(
-    block: Block, texts: dict[int, str], environment: Environment | None
-) -> list[str]:
-    """The texts of the two crossings that make up a crossing in either direction."""
-    up = Block(BlockKind.CROSSING, direction="up", children=block.children)
-    down = Block(BlockKind.CROSSING, direction="down", children=block.children)
-    return [f"AND({'; '.join(_crossing_parts(item, texts, environment))})" for item in (up, down)]
-
-
-def _crossing_text(block: Block, texts: dict[int, str], environment: Environment | None) -> str:
-    if block.direction not in CROSSING_DIRECTIONS:
-        raise BlockError("direction", direction=block.direction or "")
-    if block.direction == "any":
-        return f"OR({'; '.join(_crossing_texts(block, texts, environment))})"
-    return f"AND({'; '.join(_crossing_parts(block, texts, environment))})"

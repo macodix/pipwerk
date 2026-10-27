@@ -10,6 +10,7 @@ from math import isfinite
 from pipwerk_domain import catalog
 from pipwerk_domain.consistency import findings as fc
 from pipwerk_domain.consistency import usage as us
+from pipwerk_domain.consistency.describe import describe_findings
 from pipwerk_domain.consistency.findings import (
     ExpressionNames,
     Finding,
@@ -309,6 +310,7 @@ class Checker:
         self.collect_names = collect_names
         self.record_contexts = record_contexts
         self.findings: list[Finding] = []
+        self._document: Strategy | Template | None = None
         self.expression_names: list[ExpressionNames] = []
         self.contexts: dict[str, ExpressionContext] = {}
         self.names_truncated = False
@@ -350,20 +352,28 @@ class Checker:
 
     def check_strategy(self, strategy: Strategy) -> list[Finding]:
         """Check a strategy. At the limit of findings the check ends with the finding
-        ``findings.truncated``."""
+        ``findings.truncated``. Each finding names its element and field as the user sees them
+        (:func:`describe_findings`)."""
+        self._document = strategy
         try:
             self._check_strategy(strategy)
         except _FindingLimit:
             self._truncated_at_limit()
-        return self.findings
+        return self._described()
 
     def check_template(self, template: Template) -> list[Finding]:
         """Check a template. At the limit of findings the check ends with the finding
-        ``findings.truncated``."""
+        ``findings.truncated``. Each finding names its field as the user sees it."""
+        self._document = template
         try:
             self._check_template(template)
         except _FindingLimit:
             self._truncated_at_limit()
+        return self._described()
+
+    def _described(self) -> list[Finding]:
+        if self._document is not None and not self.spelling_only:
+            self.findings = describe_findings(self.findings, self._document, self.registry)
         return self.findings
 
     def _truncated_at_limit(self) -> None:
@@ -1009,7 +1019,14 @@ class Checker:
 
     def context_findings(self, context: ExpressionContext, analysis: Analysis) -> list[Finding]:
         """The findings of one analyzed expression at a place, as the check reports them:
-        what ``/api/v1/expressions`` answers. Positions refer to the analyzed text."""
+        what ``/api/v1/expressions`` answers. Positions refer to the analyzed text. Each names
+        its element and field as the user sees them (:func:`describe_findings`)."""
+        found = self._context_findings(context, analysis)
+        if self._document is None:
+            return found
+        return describe_findings(found, self._document, self.registry)
+
+    def _context_findings(self, context: ExpressionContext, analysis: Analysis) -> list[Finding]:
         found: list[Finding] = []
         subject = context.subject
         element = context.element_id

@@ -215,6 +215,7 @@ def test_the_visible_names_list_the_methods_with_arguments_data_type_and_explana
         "key",
         "label",
         "datatype",
+        "datatype_label",
         "explanation",
         "choices",
         "arguments",
@@ -222,6 +223,7 @@ def test_the_visible_names_list_the_methods_with_arguments_data_type_and_explana
     }
     assert method["label"] == {"de": "Wert vor", "en": "Value before"}
     assert method["datatype"] == "number"
+    assert method["datatype_label"] == {"de": "Zahl", "en": "number"}
     assert method["explanation"]["de"] == "Der Wert vor einer Anzahl Werten."
     assert method["previous_value"] is True
     first, second = method["arguments"]
@@ -229,6 +231,7 @@ def test_the_visible_names_list_the_methods_with_arguments_data_type_and_explana
         "key",
         "label",
         "datatype",
+        "datatype_label",
         "required",
         "default",
         "explanation",
@@ -240,6 +243,8 @@ def test_the_visible_names_list_the_methods_with_arguments_data_type_and_explana
         True,
         None,
     )
+    assert first["datatype_label"] == {"de": "ganze Zahl", "en": "whole number"}
+    assert second["datatype_label"] == {"de": "Auswahl", "en": "choice"}
     assert first["explanation"] == {"de": "Wie viele Werte zurück.", "en": "How many values back."}
     assert (second["required"], second["default"], second["datatype"]) == (
         False,
@@ -268,15 +273,19 @@ def test_previous_around_the_result_of_a_method(methods_client: TestClient) -> N
     assert other["findings"][0]["details"]["issue"] == "previous_argument"
 
 
-def test_the_crossing_takes_methods(methods_client: TestClient) -> None:
+def test_a_crossing_of_methods_is_written_out(methods_client: TestClient) -> None:
     stored = (
         "AND(PREVIOUS(reihe_a.wert_vor(3)) <= PREVIOUS(reihe_a.wert); "
         "reihe_a.wert_vor(3) > reihe_a.wert)"
     )
     answer = ask(methods_client, stored=stored)
     assert answer["findings"] == []
-    assert answer["blocks"]["kind"] == "crossing"
-    assert answer["sentence"] == "Wert vor (3) von Reihe A kreuzt Reihe A nach oben"
+    assert (answer["blocks"]["kind"], answer["blocks"]["operator"]) == ("logic", "and")
+    assert [child["operator"] for child in answer["blocks"]["children"]] == ["<=", ">"]
+    assert answer["sentence"] == (
+        "vorheriger Wert von Wert vor (3) von Reihe A ist kleiner oder gleich "
+        "vorheriger Wert von Reihe A und Wert vor (3) von Reihe A ist größer als Reihe A"
+    )
     assert ask(methods_client, blocks=answer["blocks"])["stored"] == stored
 
 

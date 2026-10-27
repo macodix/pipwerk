@@ -1,6 +1,7 @@
 """Stored form and display form, blocks, sentence, characters and visible names of expressions
 (specification 3.4), on the test cases of the specification."""
 
+import dataclasses
 import json
 from typing import Any
 
@@ -9,6 +10,7 @@ import pytest
 from pipwerk_domain import catalog
 from pipwerk_domain.consistency import check_with_contexts
 from pipwerk_domain.consistency.engine import ExpressionContext
+from pipwerk_domain.defaults import default_registry
 from pipwerk_domain.documents import read_document
 from pipwerk_domain.expressions import (
     Block,
@@ -26,8 +28,9 @@ from pipwerk_domain.expressions.checker import analyze
 from pipwerk_domain.expressions.symbols import Scope
 from pipwerk_domain.model import Instance, Origin, Strategy
 from pipwerk_domain.pointers import below, pointer
+from pipwerk_domain.typedesc import DATATYPE_LABELS, DataType, Label
 from tests.helpers import condition, connect, element, fixed, place_order, trigger, uid
-from tests.paths import TESTCASE_DIRECTORY
+from tests.paths import EMA_TRENDFOLGE, TESTCASE_DIRECTORY
 
 
 def load(name: str) -> Strategy:
@@ -85,10 +88,12 @@ def blocks(source: str, strategy: Strategy = STR03, key: str = "kreuzen") -> Blo
     return result
 
 
-def text_of(block: Block, strategy: Strategy = STR03, key: str = "kreuzen") -> str:
-    return blocks_to_text(block, env_of(strategy, key))
+def text_of(block: Block) -> str:
+    return blocks_to_text(block)
 
 
+# the expression of a crossing of two lines, which was a block of its own until the third
+# acceptance (Mangel E12): now it is broken down into the blocks of its operators and functions
 CROSSING_BOTH = (
     "OR(AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert); "
     "AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert))"
@@ -223,19 +228,39 @@ def test_the_display_form_of_the_testcases_is_read_back_unchanged() -> None:
 # --- blocks ------------------------------------------------------------------------------------
 
 
-def test_the_crossing_in_either_direction_is_one_block() -> None:
+def test_the_crossing_upwards_is_broken_down_into_previous_value_comparisons_and_and() -> None:
+    block = blocks(CROSSING_UP)
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "and")
+    first, second = block.children
+    assert (first.kind, first.operator) == (BlockKind.COMPARISON, "<=")
+    assert (second.kind, second.operator) == (BlockKind.COMPARISON, ">")
+    for side, name in zip(first.children, ("ema20", "ema50"), strict=True):
+        assert (side.kind, side.function) == (BlockKind.FUNCTION, "PREVIOUS")
+        assert [item.path for item in side.children] == [(name, "wert")]
+    assert [item.path for item in second.children] == [("ema20", "wert"), ("ema50", "wert")]
+    assert text_of(block) == CROSSING_UP
+
+
+def test_the_crossing_downwards_is_broken_down_the_same_way() -> None:
+    block = blocks(CROSSING_DOWN)
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "and")
+    assert [item.operator for item in block.children] == [">=", "<"]
+    assert text_of(block) == CROSSING_DOWN
+
+
+def test_the_crossing_in_either_direction_is_or_of_two_ands() -> None:
     block = blocks(CROSSING_BOTH)
-    assert block.kind is BlockKind.CROSSING
-    assert block.direction == "any"
-    assert [item.path for item in block.children] == [("ema20", "wert"), ("ema50", "wert")]
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "or")
+    assert [(item.kind, item.operator) for item in block.children] == [(BlockKind.LOGIC, "and")] * 2
     assert text_of(block) == CROSSING_BOTH
 
 
-@pytest.mark.parametrize(("source", "direction"), [(CROSSING_UP, "up"), (CROSSING_DOWN, "down")])
-def test_the_crossing_upwards_and_downwards(source: str, direction: str) -> None:
-    block = blocks(source)
-    assert (block.kind, block.direction) == (BlockKind.CROSSING, direction)
-    assert text_of(block) == source
+def test_no_expression_gives_a_block_of_a_crossing() -> None:
+    """The kinds of blocks are the operators and functions of the list: none is a crossing, so
+    nothing offers one (specification 3.4, Mangel E12)."""
+    assert "crossing" not in {item.value for item in BlockKind}
+    assert not hasattr(BlockKind, "CROSSING")
+    assert not any(field.name == "direction" for field in dataclasses.fields(Block))
 
 
 def test_the_crossing_inside_and() -> None:
@@ -249,74 +274,89 @@ def test_the_crossing_inside_and() -> None:
     block = to_blocks(analysis)
     assert block is not None
     assert block.kind is BlockKind.LOGIC
-    assert [item.kind for item in block.children] == [
-        BlockKind.COMPARISON,
-        BlockKind.CROSSING,
-        BlockKind.COMPARISON,
-    ]
-    assert block.children[1].direction == "down"
-    assert blocks_to_text(block, env) == source
+    assert [item.kind for item in block.children] == [BlockKind.COMPARISON] * 4
+    assert [item.operator for item in block.children] == ["=", ">=", "<", ">"]
+    assert blocks_to_text(block) == source
 
 
 def test_the_crossing_inside_or() -> None:
     source = f"OR(Kerze.schluss > 1; {CROSSING_UP}; {CROSSING_DOWN}; Kerze.hoch > 2)"
     block = blocks(source)
-    assert block.kind is BlockKind.LOGIC
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "or")
     assert [item.kind for item in block.children] == [
         BlockKind.COMPARISON,
-        BlockKind.CROSSING,
+        BlockKind.LOGIC,
+        BlockKind.LOGIC,
         BlockKind.COMPARISON,
     ]
-    assert block.children[1].direction == "any"
+    assert [item.operator for item in block.children[1:3]] == ["and", "and"]
     assert text_of(block) == source
 
 
-def test_a_crossing_with_a_fixed_value_has_no_previous_around_it() -> None:
+def test_a_crossing_with_a_fixed_value_is_broken_down_without_previous_around_it() -> None:
     source = "AND(PREVIOUS(ema20.wert) <= 50; ema20.wert > 50)"
     block = blocks(source)
-    assert block.kind is BlockKind.CROSSING
-    assert [item.kind for item in block.children] == [BlockKind.NAME, BlockKind.LITERAL]
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "and")
+    first, second = block.children
+    assert [item.kind for item in first.children] == [BlockKind.FUNCTION, BlockKind.LITERAL]
+    assert [item.kind for item in second.children] == [BlockKind.NAME, BlockKind.LITERAL]
     assert text_of(block) == source
-    both_ways = blocks("OR(AND(PREVIOUS(ema20.wert) <= 50; ema20.wert > 50); "
-                       "AND(PREVIOUS(ema20.wert) >= 50; ema20.wert < 50))")  # fmt: skip
-    assert (both_ways.kind, both_ways.direction) == (BlockKind.CROSSING, "any")
 
 
-def test_a_crossing_of_a_fixed_value_with_a_value_with_previous_value_on_the_left() -> None:
+def test_a_crossing_with_a_fixed_value_on_the_left_is_broken_down_too() -> None:
     source = "AND(50 <= PREVIOUS(ema20.wert); 50 > ema20.wert)"
     block = blocks(source)
-    assert block.kind is BlockKind.CROSSING
+    assert (block.kind, block.operator) == (BlockKind.LOGIC, "and")
     assert text_of(block) == source
 
 
-def test_two_values_without_an_earlier_value_do_not_cross() -> None:
-    """Nothing can cross: the pair of comparisons stays two comparisons."""
-    plain = "AND(Strategie.stop_abstand <= 5; Strategie.stop_abstand > 5)"
-    block = blocks(plain)
-    assert block.kind is BlockKind.LOGIC
-    assert [item.kind for item in block.children] == [BlockKind.COMPARISON] * 2
-    assert text_of(block) == plain
-
-
-def test_a_pair_that_is_not_a_crossing_stays_a_pair() -> None:
-    for source in (
+@pytest.mark.parametrize(
+    "source",
+    [
+        "AND(Strategie.stop_abstand <= 5; Strategie.stop_abstand > 5)",
         "AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert >= ema50.wert)",
         "AND(PREVIOUS(ema20.wert) < PREVIOUS(ema50.wert); ema20.wert > ema50.wert)",
         "AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema50.wert > ema20.wert)",
         "AND(PREVIOUS(ema20.wert) <= ema50.wert; ema20.wert > ema50.wert)",
         "AND(ema20.wert > ema50.wert; PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert))",
         "AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert * 2)",
-    ):
-        block = blocks(source)
-        assert block.kind is BlockKind.LOGIC, source
-        assert text_of(block) == source
-
-
-def test_or_with_the_two_directions_in_the_other_order_stays() -> None:
-    source = f"OR({CROSSING_DOWN}; {CROSSING_UP})"
+        f"OR({CROSSING_DOWN}; {CROSSING_UP})",
+    ],
+)
+def test_every_pair_of_comparisons_is_just_a_pair_of_comparisons(source: str) -> None:
+    """A pair that is no crossing and a pair that is one are broken down the same way, and
+    the tree gives back the same expression."""
     block = blocks(source)
-    assert [item.direction for item in block.children] == ["down", "up"]
+    assert block.kind is BlockKind.LOGIC, source
     assert text_of(block) == source
+
+
+def saved_ema_trendfolge() -> Strategy:
+    value = read_document(EMA_TRENDFOLGE.read_bytes())
+    assert isinstance(value, Strategy)
+    return value
+
+
+def test_the_saved_crossings_are_broken_down_and_come_back_unchanged() -> None:
+    """The expressions of ``str-01``, ``str-03`` and of the saved "EMA-Trendfolge" of the client
+    (among them "EMA 20 crosses EMA 50 in either direction") are read as before: broken down
+    into the blocks of their operators and functions, and the blocks give the same
+    expression."""
+    crossings = 0
+    for strategy in (load("str-01"), STR03, saved_ema_trendfolge()):
+        for item in strategy.elements:
+            binding = item.parameters.get("ausdruck")
+            if not item.key or binding is None or not isinstance(binding.value, str):
+                continue
+            env = env_of(strategy, item.key)
+            block = blocks(binding.value, strategy, item.key)
+            text = text_of(block)
+            assert to_blocks(analyze(text, env)) == block, (strategy.name, item.key)
+            assert text_of(to_blocks(analyze(text, env))) == text  # type: ignore[arg-type]
+            if "PREVIOUS(" in binding.value:
+                crossings += 1
+                assert "PREVIOUS(" in text
+    assert crossings >= 2  # "Kreuzen" of str-03 and of the saved strategy
 
 
 @pytest.mark.parametrize(
@@ -355,10 +395,10 @@ def test_every_expression_without_a_syntax_problem_has_blocks_and_comes_back(sou
     analysis = analyze(source, env)
     block = to_blocks(analysis)
     assert block is not None, source
-    text = blocks_to_text(block, env)
+    text = blocks_to_text(block)
     again = to_blocks(analyze(text, env))
     assert again == block, (source, text)
-    assert blocks_to_text(again, env) == text
+    assert blocks_to_text(again) == text
 
 
 def test_an_expression_with_a_syntax_problem_has_no_blocks() -> None:
@@ -435,16 +475,6 @@ def test_blocks_are_the_input_of_the_expression() -> None:
         Block(BlockKind.LOGIC, operator="and", children=()),
         Block(BlockKind.IF, children=(Block(BlockKind.EMPTY),)),
         Block(BlockKind.FUNCTION, function="EVAL", children=(Block(BlockKind.EMPTY),)),
-        Block(BlockKind.CROSSING, direction="sideways", children=(Block(BlockKind.EMPTY),) * 2),
-        Block(BlockKind.CROSSING, direction="up", children=(Block(BlockKind.EMPTY),)),
-        Block(
-            BlockKind.CROSSING,
-            direction="up",
-            children=(
-                Block(BlockKind.ARITHMETIC, operator="+", children=(Block(BlockKind.EMPTY),) * 2),
-                Block(BlockKind.EMPTY),
-            ),
-        ),
     ],
 )
 def test_blocks_that_are_no_expression_are_refused(block: Block) -> None:
@@ -458,7 +488,7 @@ def test_a_deep_expression_does_not_exhaust_the_stack() -> None:
     analysis = analyze(source, env)
     block = to_blocks(analysis)
     assert block is not None
-    assert blocks_to_text(block, env).count("+") == source.count("+")
+    assert blocks_to_text(block).count("+") == source.count("+")
     assert sentence(block, "de")
 
 
@@ -475,11 +505,20 @@ def sentence_of(
     return sentence(block, language, None)
 
 
-def test_the_sentence_of_the_crossing() -> None:
-    assert sentence_of(CROSSING_BOTH, "de") == "EMA 20 kreuzt EMA 50 in beide Richtungen"
-    assert sentence_of(CROSSING_BOTH, "en") == "EMA 20 crosses EMA 50 in either direction"
-    assert sentence_of(CROSSING_UP, "de") == "EMA 20 kreuzt EMA 50 nach oben"
-    assert sentence_of(CROSSING_DOWN, "en") == "EMA 20 crosses EMA 50 downwards"
+def test_the_sentence_of_the_crossing_is_written_out() -> None:
+    """A crossing is shown as "previous value of", comparisons and "and" (specification 3.4,
+    5.4)."""
+    assert sentence_of(CROSSING_UP, "de") == (
+        "vorheriger Wert von EMA 20 ist kleiner oder gleich vorheriger Wert von EMA 50 "
+        "und EMA 20 ist größer als EMA 50"
+    )
+    assert sentence_of(CROSSING_DOWN, "en") == (
+        "previous value of EMA 20 is greater than or equal to previous value of EMA 50 "
+        "and EMA 20 is less than EMA 50"
+    )
+    both = sentence_of(CROSSING_BOTH, "de")
+    assert both.count(") oder (") == 1 and both.count("vorheriger Wert von") == 4
+    assert "kreuzt" not in both and "crosses" not in sentence_of(CROSSING_BOTH, "en")
 
 
 def test_the_sentence_of_other_blocks() -> None:
@@ -594,6 +633,56 @@ def test_the_visible_names_with_their_properties_and_kinds() -> None:
         "Account",
         "Candle",
     }
+
+
+def test_each_visible_value_says_whether_it_has_an_earlier_value() -> None:
+    """Hint 2 and 3 of the architecture review: "previous value of" offers only values with an
+    earlier value, and the library marks them (specification 3.4, 5.4)."""
+    env = env_of(STR03, "stop")
+    names, _ = visible_names(env, "de", registry=default_registry())
+    by_path = {item.path: item for item in names}
+
+    def flag(path: tuple[str, ...], key: str) -> bool:
+        return next(item for item in by_path[path].properties if item.key == key).previous_value
+
+    assert flag(("ema20",), "wert") is True  # an indicator has a time unit
+    assert flag(("atr14",), "wert") is True
+    assert flag(("Kerze",), "schluss") is True
+    assert flag(("richtung",), "ergebnis") is True  # the result of a condition or calculation
+    assert flag(("Konto",), "kapital") is False  # the account has no earlier value
+    assert flag(("Instrument",), "pip") is False
+    assert flag(("Strategie",), "name") is False
+    # the flag is what the check of the argument of "previous value of" accepts
+    good = analyze("PREVIOUS(ema20.wert)", env)
+    bad = analyze("PREVIOUS(Konto.kapital)", env)
+    assert good.issues == []
+    assert [(item.kind.value, item.reason) for item in bad.issues] == [
+        ("previous_argument", "no_earlier_value")
+    ]
+
+
+def test_the_visible_names_carry_the_word_for_their_data_type_in_both_languages() -> None:
+    env = env_of(STR03, "stop")
+    names, _ = visible_names(env, "de", registry=default_registry())
+    by_path = {item.path: item for item in names}
+    value = next(item for item in by_path[("ema20",)].properties if item.key == "wert")
+    assert value.datatype_label == Label("Zahl", "number")
+    status = next(item for item in by_path[("Order",)].properties if item.key == "status")
+    assert status.datatype_label == Label("Auswahl", "choice")
+    account = next(item for item in by_path[("Order",)].properties if item.key == "konto")
+    assert account.datatype_label == Label("Konto", "Account")  # the name of the object type
+    moment = next(item for item in by_path[("Kerze",)].properties if item.key == "zeitpunkt")
+    assert moment.datatype_label == Label("Zeitpunkt", "point in time")
+    parameter = by_path[("Strategie", "stop_abstand")]
+    assert parameter.datatype_label == DATATYPE_LABELS[DataType(str(parameter.datatype))]
+    # without a register an object is just an object
+    names, _ = visible_names(env, "de")
+    account = next(
+        item
+        for item in next(entry for entry in names if entry.path == ("Order",)).properties
+        if item.key == "konto"
+    )
+    assert account.datatype_label == Label("Objekt", "object")
 
 
 def test_the_names_after_a_calculation_show_its_result() -> None:

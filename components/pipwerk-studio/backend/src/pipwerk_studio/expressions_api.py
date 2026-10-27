@@ -43,6 +43,7 @@ from pipwerk_domain.model import Strategy, Template
 from pipwerk_domain.operations import ScopeError, new_key
 from pipwerk_domain.pointers import PointerError, split_pointer
 from pipwerk_domain.registry import ElementRegistry
+from pipwerk_domain.typedesc import Label
 from pydantic import AfterValidator, Field, model_validator
 
 from pipwerk_studio.api_models import ApiModel, FindingModel, LabelModel, finding_model, label_model
@@ -58,10 +59,8 @@ BlockKindName = Literal[
     "logic",
     "if",
     "function",
-    "crossing",
 ]
 LiteralTypeName = Literal["number", "integer", "percent", "text", "boolean"]
-CrossingDirection = Literal["up", "down", "any"]
 TokenKindName = Literal["name", "function", "value", "operator", "bracket", "separator"]
 NameKindName = Literal[
     "instance", "result", "strategy_parameter", "parameter", "application_object", "rule"
@@ -90,8 +89,9 @@ class BlockModel(ApiModel):
     ``value`` and ``datatype`` (a percentage is the number as written: 5 for 5 %),
     ``comparison`` and ``arithmetic`` their ``operator`` (an arithmetic block with one child is
     a sign), ``logic`` ``and``, ``or`` or ``not``, ``function`` the name of the function from the
-    list of the functions, ``crossing`` its ``direction``; ``children`` are the operands in the
-    order of the expression. A ``name`` block with ``call`` true is the result of a method: its
+    list of the functions; ``children`` are the operands in the order of the expression. A
+    crossing of two lines is no block: it is made of "previous value of" (``PREVIOUS``),
+    comparisons and ``and``. A ``name`` block with ``call`` true is the result of a method: its
     ``path`` ends with the method (``["reihe", "wert_vor"]``) and its ``children`` are the blocks
     of the arguments in the order of the method (none for a method without arguments;
     ``call`` is false or left out for a plain name, which has no children)."""
@@ -102,7 +102,6 @@ class BlockModel(ApiModel):
     datatype: LiteralTypeName | None = None
     operator: str | None = None
     function: str | None = None
-    direction: CrossingDirection | None = None
     call: bool = False
     children: list[BlockModel] = Field(default_factory=list)
 
@@ -141,7 +140,6 @@ def _block_from_model(root: BlockModel) -> Block:
             datatype=model.datatype,
             operator=model.operator,
             function=model.function,
-            direction=model.direction,
             call=model.call,
             children=tuple(built[id(child)] for child in model.children),
         )
@@ -178,7 +176,6 @@ def _block_data(root: Block) -> dict[str, Any]:
             "datatype": block.datatype,
             "operator": block.operator,
             "function": block.function,
-            "direction": block.direction,
             "call": block.call,
             "children": [built[id(child)] for child in block.children],
         }
@@ -239,25 +236,30 @@ class ChoiceValueModel(ApiModel):
 
 
 class VisiblePropertyModel(ApiModel):
-    """A property of a visible name. ``previous_value`` tells that ``PREVIOUS`` may stand around
-    it."""
+    """A property of a visible name. ``datatype_label`` is the word for its data type in
+    trader language (for an object the name of its object type). ``previous_value`` tells that
+    the fachmodell defines an earlier value for it, so that ``PREVIOUS`` ("previous value of")
+    may stand around it (specification 3.4); the blocks offer only such values as the argument
+    of "previous value of"."""
 
     key: str
     label: LabelModel
     datatype: str | None
+    datatype_label: LabelModel | None
     explanation: LabelModel | None
     choices: list[ChoiceValueModel]
     previous_value: bool
 
 
 class VisibleArgumentModel(ApiModel):
-    """An argument of a visible method: key, label, data type, whether it is mandatory
-    (``required``), its ``default`` value if it is optional, its explanation and the possible
-    values of a choice."""
+    """An argument of a visible method: key, label, data type with its word in trader language
+    (``datatype_label``), whether it is mandatory (``required``), its ``default`` value if it is
+    optional, its explanation and the possible values of a choice."""
 
     key: str
     label: LabelModel
     datatype: str
+    datatype_label: LabelModel | None
     required: bool
     default: bool | int | float | str | None
     explanation: LabelModel
@@ -266,13 +268,15 @@ class VisibleArgumentModel(ApiModel):
 
 class VisibleMethodModel(ApiModel):
     """A method of a visible name (specification 3.4): an expression addresses it as
-    ``Name.Method(Arguments)``. ``datatype`` is the data type of the result and ``choices`` its
-    values if it is a choice; ``previous_value`` tells that ``PREVIOUS`` may stand around the
-    result; ``arguments`` are the arguments in their order."""
+    ``Name.Method(Arguments)``. ``datatype`` is the data type of the result, ``datatype_label``
+    its word in trader language and ``choices`` its values if it is a choice;
+    ``previous_value`` tells that ``PREVIOUS`` may stand around the result; ``arguments`` are
+    the arguments in their order."""
 
     key: str
     label: LabelModel
     datatype: str | None
+    datatype_label: LabelModel | None
     explanation: LabelModel | None
     choices: list[ChoiceValueModel]
     arguments: list[VisibleArgumentModel]
@@ -281,7 +285,8 @@ class VisibleMethodModel(ApiModel):
 
 class VisibleNameModel(ApiModel):
     """A name that an expression can address at the place. ``display`` is the name in the
-    language of the request and ``path`` the keys. ``contents`` are the instances and rules
+    language of the request and ``path`` the keys. ``datatype_label`` is the word for the data
+    type of a strategy parameter or parameter. ``contents`` are the instances and rules
     contained in an instance or ruleset. ``properties`` are the properties and ``methods`` the
     methods of the name. ``properties_truncated`` is true if the list of properties or the list
     of methods was cut at the limit."""
@@ -290,6 +295,7 @@ class VisibleNameModel(ApiModel):
     path: list[str]
     kind: NameKindName
     datatype: str | None
+    datatype_label: LabelModel | None
     properties: list[VisiblePropertyModel]
     methods: list[VisibleMethodModel]
     properties_truncated: bool
@@ -326,12 +332,17 @@ class ExpressionsResponse(ApiModel):
     items: list[ExpressionAnswer]
 
 
+def _optional_label(label: Label | None) -> LabelModel | None:
+    return None if label is None else label_model(label)
+
+
 def _property_models(name: VisibleName) -> list[VisiblePropertyModel]:
     return [
         VisiblePropertyModel(
             key=item.key,
             label=label_model(item.label),
             datatype=item.datatype,
+            datatype_label=_optional_label(item.datatype_label),
             explanation=None if item.explanation is None else label_model(item.explanation),
             choices=[
                 ChoiceValueModel(id=choice.key, label=label_model(choice.label))
@@ -353,6 +364,7 @@ def _method_models(name: VisibleName) -> list[VisibleMethodModel]:
             key=item.key,
             label=label_model(item.label),
             datatype=item.datatype,
+            datatype_label=_optional_label(item.datatype_label),
             explanation=None if item.explanation is None else label_model(item.explanation),
             choices=_choice_models(item.choices),
             arguments=[
@@ -360,6 +372,7 @@ def _method_models(name: VisibleName) -> list[VisibleMethodModel]:
                     key=argument.key,
                     label=label_model(argument.label),
                     datatype=argument.datatype,
+                    datatype_label=_optional_label(argument.datatype_label),
                     required=argument.required,
                     default=argument.default,
                     explanation=label_model(argument.explanation),
@@ -379,6 +392,7 @@ def _name_model(name: VisibleName) -> VisibleNameModel:
         path=list(name.path),
         kind=name.kind,  # type: ignore[arg-type]
         datatype=name.datatype,
+        datatype_label=_optional_label(name.datatype_label),
         properties=_property_models(name),
         methods=_method_models(name),
         properties_truncated=name.properties_truncated,
@@ -414,7 +428,7 @@ def _answer_item(
     environment = context.env
     if item.blocks is not None:
         try:
-            source = blocks_to_text(_block_from_model(item.blocks), environment)
+            source = blocks_to_text(_block_from_model(item.blocks))
         except BlockError as error:
             raise _blocks_problem(index, error.reason, **error.details) from error
         if len(source) > MAX_EXPRESSION_LENGTH:
@@ -438,7 +452,12 @@ def _answer_item(
     # an instance that is no use at the element of the expression is not offered (specification
     # 3.4); a name the user has typed all the same is reported among the findings
     names, names_truncated = (
-        visible_names(environment, language, checker.hidden_instances(context.element_id))
+        visible_names(
+            environment,
+            language,
+            checker.hidden_instances(context.element_id),
+            checker.registry,
+        )
         if isinstance(environment, Scope)
         else ([], False)
     )

@@ -348,8 +348,8 @@ FUNCTIONS: tuple[FunctionSignature, ...] = (
                 "Anzahl zurück",
                 "number back",
                 (
-                    "Wie viele Auswertungen zurück. Ohne Angabe die vorherige.",
-                    "How many evaluations back. Without a number, the previous one.",
+                    "Wie viele Auswertungen zurückgegangen wird. Ohne Angabe: die vorherige.",
+                    "How many evaluations to go back. Without a number: the previous one.",
                 ),
                 optional=True,
             ),

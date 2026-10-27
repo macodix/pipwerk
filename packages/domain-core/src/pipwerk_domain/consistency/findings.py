@@ -5,8 +5,10 @@ A finding has a level, an identifier, the affected element and the affected inst
 the user interface writes them from the identifier and the data.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import StrEnum
+
+from pipwerk_domain.typedesc import Label
 
 
 class Level(StrEnum):
@@ -65,6 +67,15 @@ class Finding:
     with points (``regelwerk.regel``). Both are ``None`` if the finding concerns neither.
     ``details`` are the data for the text; for a faulty expression they include ``field``
     (which expression), ``start`` and ``end`` (character positions), ``issue`` and ``reason``.
+
+    So that findings with the same text can be told apart (specification 3.6), a finding
+    also names what the user sees: ``element_name`` is the name of the affected element (the
+    name the user gave it; without one the name of its type in both languages),
+    ``subject_name`` the name of the affected instance or rule, ``field_label`` the label of
+    the affected field in German and English, as the user sees it in the element or the
+    instance (the label of the parameter or property; for a strategy parameter or an own
+    parameter or property its name). Each is ``None`` where the finding has no such thing.
+    These three take no part in the comparison of two findings.
     """
 
     level: Level
@@ -72,6 +83,9 @@ class Finding:
     element: str | None = None
     subject: str | None = None
     details: dict[str, object] = field(default_factory=dict)
+    element_name: Label | None = field(default=None, compare=False)
+    subject_name: str | None = field(default=None, compare=False)
+    field_label: Label | None = field(default=None, compare=False)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -80,6 +94,9 @@ class Finding:
             "element": self.element,
             "subject": self.subject,
             "details": dict(self.details),
+            "element_name": None if self.element_name is None else asdict(self.element_name),
+            "subject_name": self.subject_name,
+            "field_label": None if self.field_label is None else asdict(self.field_label),
         }
 
 
