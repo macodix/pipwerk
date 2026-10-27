@@ -13,7 +13,7 @@ Diese Liste hält fest, was während der Arbeit an einem Bereich für einen ande
 
 Ein Eintrag ist keine Festlegung. Beschlossene Anforderungen stehen ausschließlich in den Anforderungsdokumenten, im Fachmodell und in den Strategiebeschreibungen. Wird ein Eintrag umgesetzt, schreibt der Projektleiter ihn in das zuständige Dokument und setzt hier den Stand auf `übernommen` mit Verweis.
 
-Wann die Liste geprüft wird und wer einträgt, regelt das [Entwicklungsverfahren](../../technical/entwicklungsverfahren.md#vorgemerkte-anforderungen).
+Wann die Liste geprüft wird und wer einträgt, regelt das [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md#vorgemerkte-anforderungen).
 
 ## 2. Prioritäten
 
@@ -26,7 +26,7 @@ Die Priorität legt der Auftraggeber fest.
 | `gewünscht` | sobald nichts anderes mehr ansteht oder der Auftraggeber es verlangt |
 | `offen` | Eintrag einer Rolle, Priorität vom Auftraggeber noch nicht festgelegt |
 
-Was ein Release ist und was vor einem Release erledigt sein muss, regelt das [Entwicklungsverfahren](../../technical/entwicklungsverfahren.md#vorgemerkte-anforderungen).
+Was ein Release ist und was vor einem Release erledigt sein muss, regelt das [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md#vorgemerkte-anforderungen).
 
 ## 3. Aufbau eines Eintrags
 
@@ -71,7 +71,7 @@ Einträge mit Stand `übernommen` oder `verworfen` bleiben stehen.
 
 | Nr. | Inhalt | Priorität | Herkunft | Stand |
 |---|---|---|---|---|
-| vm-001 | Der Softwarearchitekt arbeitet als Architekt statt nur als Übersetzer der Anforderungen: (1) Qualitätsanforderungen klären (Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten), (2) Aufbau entwerfen (Programme, Bausteine, Daten, Schnittstellen, Verteilung auf Rechner, je mit Aufgabe), (3) Technik auswählen mit Vergleich von mindestens zwei Wegen und Probeumsetzung im Zweifel, (4) jede Entscheidung mit verworfenen Alternativen und Grund festhalten, (5) in der Umsetzung je Arbeitspaket vor der Abnahme prüfen, ob sie seinem Entwurf entspricht, und über den Entwicklungsleiter eingreifen, (6) Installation, Einrichtung, Aktualisierung, Überwachung und Fehlersuche aus Sicht des Anwenders beschreiben. Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen `relay/wp01`, `backtest/wp02` und `strategiedesign/wp02` scheiterten an Aufbau, Installation, Einrichtung und Bedienung. | – | 2026-10-25, Chat „Was macht der SA?“ | übernommen in `docs/technical/entwicklungsverfahren.md`, Aufgaben des Softwarearchitekten |
+| vm-001 | Der Softwarearchitekt arbeitet als Architekt statt nur als Übersetzer der Anforderungen: (1) Qualitätsanforderungen klären (Bedienbarkeit, Installation, Betrieb, Aktualisierung, Fehlersuche, Sicherheit, Antwortzeiten), (2) Aufbau entwerfen (Programme, Bausteine, Daten, Schnittstellen, Verteilung auf Rechner, je mit Aufgabe), (3) Technik auswählen mit Vergleich von mindestens zwei Wegen und Probeumsetzung im Zweifel, (4) jede Entscheidung mit verworfenen Alternativen und Grund festhalten, (5) in der Umsetzung je Arbeitspaket vor der Abnahme prüfen, ob sie seinem Entwurf entspricht, und über den Entwicklungsleiter eingreifen, (6) Installation, Einrichtung, Aktualisierung, Überwachung und Fehlersuche aus Sicht des Anwenders beschreiben. Anlass: Spezifikationen bestanden die Prüfung der QA, die Abnahmen `relay/wp01`, `backtest/wp02` und `strategiedesign/wp02` scheiterten an Aufbau, Installation, Einrichtung und Bedienung. | – | 2026-10-25, Chat „Was macht der SA?“ | übernommen in dev-werk, `de/process/development-process.md`, Aufgaben des Softwarearchitekten |
 
 ## 5. Änderungsnachweis
 

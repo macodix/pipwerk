@@ -2,7 +2,7 @@
 
 Name: Entwicklungsverfahren verbessern.
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Änderungen am Entwicklungsverfahren selbst, an den Rollen in `devteam/` und an den Skripten des Entwicklungsrechners. Gegenstand sind die Festlegungen des Auftraggebers unten. Sie gelten als Dokument des Auftraggebers für dieses Vorhaben.
+Vorhaben nach dem [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md): Änderungen am Entwicklungsverfahren selbst, an den Rollen in `devteam/` und an den Skripten des Entwicklungsrechners. Gegenstand sind die Festlegungen des Auftraggebers unten. Sie gelten als Dokument des Auftraggebers für dieses Vorhaben.
 
 ## Festlegungen des Auftraggebers
 

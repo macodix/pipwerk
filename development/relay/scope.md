@@ -1,6 +1,6 @@
 # Vorhaben relay
 
-Vorhaben nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Abruf von Kursdaten. Eine Anfrage an den Abruf für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
+Vorhaben nach dem [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md): Nachrichtensystem pipwerk relay mit dem ersten Anwendungsfall Abruf von Kursdaten. Eine Anfrage an den Abruf für MetaTrader 5 und die Lieferung der Dateien laufen über pipwerk relay. Der Anschluss des Strategietesters gehört zum Vorhaben [backtest](../backtest/scope.md).
 
 Nachweis des Vorhabens: Eine Anfrage mit Broker, Symbol des Instruments, Zeiteinheit und Zeitraum erreicht über pipwerk relay den Abruf auf dem Rechner von MetaTrader 5, und die Dateien kommen an die Adresse des Absenders zurück. Das gelingt einmal über Matrix und einmal über Dateien.
 

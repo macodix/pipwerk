@@ -1,6 +1,6 @@
 # Vorhaben strategiedesign
 
-Erstes Vorhaben am Produkt nach dem [Entwicklungsverfahren](../../docs/technical/entwicklungsverfahren.md): Strategien gestalten und speichern. In pipwerk Studio lassen sich Strategien und die darin verwendeten wiederverwendbaren Objekte (Indikatoren, Trends, Regeln, Regelwerke) anlegen, gestalten, prüfen, speichern und wieder laden. Die Ausführung von Strategien (Debuggen, Testen, Handeln) gehört nicht zum Vorhaben.
+Erstes Vorhaben am Produkt nach dem [Entwicklungsverfahren](https://github.com/macodix/dev-werk/blob/main/de/process/development-process.md): Strategien gestalten und speichern. In pipwerk Studio lassen sich Strategien und die darin verwendeten wiederverwendbaren Objekte (Indikatoren, Trends, Regeln, Regelwerke) anlegen, gestalten, prüfen, speichern und wieder laden. Die Ausführung von Strategien (Debuggen, Testen, Handeln) gehört nicht zum Vorhaben.
 
 Nachweis des Vorhabens sind die beiden Testfälle: Jeder muss sich vollständig im Strategiedesigner gestalten, speichern und wieder laden lassen.
 
