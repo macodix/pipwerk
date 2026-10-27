@@ -83,6 +83,9 @@ def test_findings_have_level_code_element_subject_and_details() -> None:
         "element": "e",
         "subject": "s",
         "details": {"k": 1},
+        "element_name": None,
+        "subject_name": None,
+        "field_label": None,
     }
 
 

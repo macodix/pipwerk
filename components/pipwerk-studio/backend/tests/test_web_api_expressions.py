@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pipwerk_domain import limits
 from web_api_support import (
+    EMA_TRENDFOLGE_FILE,
     JSON,
     body,
     instance,
@@ -94,13 +95,57 @@ def test_the_stored_form_is_answered_with_both_forms_the_sentence_and_the_blocks
     }
     assert answer["stored"] == CROSSING_STORED
     assert answer["display"] == CROSSING_DISPLAY
-    assert answer["sentence"] == "EMA 20 kreuzt EMA 50 in beide Richtungen"
+    assert answer["sentence"] == (
+        "(vorheriger Wert von EMA 20 ist kleiner oder gleich vorheriger Wert von EMA 50 "
+        "und EMA 20 ist größer als EMA 50) oder "
+        "(vorheriger Wert von EMA 20 ist größer oder gleich vorheriger Wert von EMA 50 "
+        "und EMA 20 ist kleiner als EMA 50)"
+    )
     assert answer["findings"] == []
     assert answer["blocks_omitted"] is False
-    blocks = answer["blocks"]
-    assert blocks["kind"] == "crossing"
-    assert blocks["direction"] == "any"
-    assert [child["path"] for child in blocks["children"]] == [["ema20", "wert"], ["ema50", "wert"]]
+    # a crossing is no block: the saved expression is broken down into its operators and
+    # functions (specification 3.4, Mangel E12)
+    assert _kinds(answer["blocks"]) == CROSSING_KINDS
+    assert answer["blocks"]["kind"] == "logic"
+    assert answer["blocks"]["operator"] == "or"
+    assert "direction" not in answer["blocks"]
+
+
+def _block_kinds(block: dict[str, Any]) -> set[str]:
+    kinds = {block["kind"]}
+    for child in block["children"]:
+        kinds |= _block_kinds(child)
+    return kinds
+
+
+def test_the_saved_strategy_of_the_client_shows_its_crossings_written_out(
+    client: TestClient,
+) -> None:
+    """The "EMA-Trendfolge" saved before the change (format 1.0) is read without a change:
+    its conditions with a crossing are broken down into "previous value of", comparisons and
+    "and"/"or", the blocks give the saved expression back, and nothing is a crossing block."""
+    document = json.loads(EMA_TRENDFOLGE_FILE.read_text(encoding="utf-8"))
+    checked = post_json(client, "/api/v1/check", document)
+    assert checked.status_code == 200
+    assert [item for item in checked.json()["findings"] if item["level"] == "error"] == []
+    seen = 0
+    for index in (4, 10):  # "Kreuzen" and "Kreuzen gegen die position"
+        place = f"/elements/{index}/parameters/ausdruck/value"
+        saved = document["elements"][index]["parameters"]["ausdruck"]["value"]
+        answer = one(client, place, document=document, stored=saved)
+        assert answer["findings"] == []
+        assert answer["blocks"] is not None
+        kinds = _block_kinds(answer["blocks"])
+        assert "crossing" not in kinds
+        assert {"logic", "comparison", "function"} <= kinds
+        assert "vorheriger Wert von" in answer["sentence"]
+        assert "kreuzt" not in answer["sentence"]
+        again = one(client, place, document=document, blocks=answer["blocks"])
+        reread = one(client, place, document=document, stored=again["stored"])
+        assert reread["blocks"] == answer["blocks"]
+        assert answer["stored"] == saved  # the saved expression is shown as it was saved
+        seen += 1
+    assert seen == 2
 
 
 def test_the_display_form_is_answered_with_the_stored_form(client: TestClient) -> None:
@@ -110,41 +155,135 @@ def test_the_display_form_is_answered_with_the_stored_form(client: TestClient) -
     assert answer["findings"] == []
 
 
+CROSSING_KINDS = (
+    "logic or",
+    (
+        "logic and",
+        (
+            "comparison <=",
+            ("function PREVIOUS", ("name",)),
+            ("function PREVIOUS", ("name",)),
+        ),
+        ("comparison >", ("name",), ("name",)),
+    ),
+    (
+        "logic and",
+        (
+            "comparison >=",
+            ("function PREVIOUS", ("name",)),
+            ("function PREVIOUS", ("name",)),
+        ),
+        ("comparison <", ("name",), ("name",)),
+    ),
+)
+
+
+def _kinds(block: dict[str, Any]) -> Any:
+    """A block as the nested tuple of its kind and operator or function and its children."""
+    label = block["kind"]
+    detail = block["operator"] or block["function"]
+    if detail:
+        label = f"{label} {detail}"
+    children = tuple(_kinds(child) for child in block["children"])
+    if label == "name":
+        return ("name",)
+    return (label, *children)
+
+
+def name(*path: str) -> dict[str, Any]:
+    return {"kind": "name", "path": list(path)}
+
+
+def previous(inner: dict[str, Any]) -> dict[str, Any]:
+    return {"kind": "function", "function": "PREVIOUS", "children": [inner]}
+
+
+def comparison(operator: str, left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+    return {"kind": "comparison", "operator": operator, "children": [left, right]}
+
+
+def crossing_blocks(first: str, second: str) -> dict[str, Any]:
+    """The blocks of a crossing of the two EMA, upwards (``<=``, ``>``) or downwards."""
+    ema20, ema50 = name("ema20", "wert"), name("ema50", "wert")
+    return {
+        "kind": "logic",
+        "operator": "and",
+        "children": [
+            comparison(first, previous(ema20), previous(ema50)),
+            comparison(second, ema20, ema50),
+        ],
+    }
+
+
 def test_blocks_are_answered_with_the_expression_they_stand_for(client: TestClient) -> None:
     blocks = {
-        "kind": "crossing",
-        "direction": "any",
-        "children": [
-            {"kind": "name", "path": ["ema20", "wert"]},
-            {"kind": "name", "path": ["ema50", "wert"]},
-        ],
+        "kind": "logic",
+        "operator": "or",
+        "children": [crossing_blocks("<=", ">"), crossing_blocks(">=", "<")],
     }
     answer = one(client, CROSSING, blocks=blocks)
     assert answer["stored"] == CROSSING_STORED
     assert answer["display"] == CROSSING_DISPLAY
-    assert answer["blocks"]["direction"] == "any"
+    assert _kinds(answer["blocks"]) == CROSSING_KINDS
 
 
 @pytest.mark.parametrize(
-    ("direction", "stored"),
+    ("first", "second", "stored"),
     [
-        ("up", "AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert)"),
-        ("down", "AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert)"),
+        ("<=", ">", "AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert)"),
+        (">=", "<", "AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert)"),
     ],
 )
-def test_a_crossing_in_one_direction(client: TestClient, direction: str, stored: str) -> None:
+def test_a_crossing_in_one_direction(
+    client: TestClient, first: str, second: str, stored: str
+) -> None:
+    answer = one(client, CROSSING, blocks=crossing_blocks(first, second))
+    assert answer["stored"] == stored
+    assert answer["blocks"]["kind"] == "logic" and answer["blocks"]["operator"] == "and"
+    assert [child["operator"] for child in answer["blocks"]["children"]] == [first, second]
+    assert one(client, CROSSING, stored=stored)["blocks"] == answer["blocks"]
+    assert answer["findings"] == []
+
+
+def test_the_blocks_of_a_crossing_nested_in_and_and_or_give_the_same_expression(
+    client: TestClient,
+) -> None:
+    """The crossing inside ``AND`` and ``OR`` without a block "Kreuzung" in all three
+    directions."""
+    waiting = {"kind": "literal", "value": "wartend", "datatype": "text"}
+    inner = {
+        "kind": "logic",
+        "operator": "and",
+        "children": [comparison("=", name("Order", "status"), waiting), crossing_blocks(">=", "<")],
+    }
+    answer = one(client, CROSSING, blocks=inner)
+    again = one(client, CROSSING, stored=answer["stored"])
+    assert again["blocks"] == answer["blocks"]
+    assert again["stored"] == answer["stored"]
+
+
+def test_a_block_of_the_kind_crossing_is_refused(client: TestClient) -> None:
+    """The kind "crossing" does not exist any more (specification 3.4, Mangel E12)."""
     blocks = {
         "kind": "crossing",
-        "direction": direction,
-        "children": [
-            {"kind": "name", "path": ["ema20", "wert"]},
-            {"kind": "name", "path": ["ema50", "wert"]},
-        ],
+        "direction": "up",
+        "children": [name("ema20", "wert"), name("ema50", "wert")],
     }
-    answer = one(client, CROSSING, blocks=blocks)
-    assert answer["stored"] == stored
-    assert answer["blocks"]["direction"] == direction
-    assert one(client, CROSSING, stored=stored)["blocks"]["direction"] == direction
+    response = ask(client, {"pointer": CROSSING, "blocks": blocks})
+    assert response.status_code == 422
+    assert response.json()["code"] == "request.invalid"
+    assert response.json()["errors"][0] == {
+        "location": ["items", 0, "blocks", "kind"],
+        "type": "literal_error",
+    }
+    extra = ask(
+        client,
+        {"pointer": CROSSING, "blocks": {**crossing_blocks("<=", ">"), "direction": "up"}},
+    )
+    assert extra.status_code == 422
+    assert extra.json()["errors"] == [
+        {"location": ["items", 0, "blocks", "direction"], "type": "extra_forbidden"}
+    ]
 
 
 def test_all_three_forms_of_the_same_expression_give_the_same_answer(client: TestClient) -> None:
@@ -168,7 +307,6 @@ def test_the_kinds_of_blocks(client: TestClient) -> None:
         "datatype": "text",
         "operator": None,
         "function": None,
-        "direction": None,
         "call": False,
         "children": [],
     }
@@ -187,7 +325,6 @@ def test_the_kinds_of_blocks(client: TestClient) -> None:
         "datatype": "boolean",
         "operator": None,
         "function": None,
-        "direction": None,
         "call": False,
         "children": [],
     }
@@ -627,23 +764,8 @@ def test_the_pointer_is_checked_for_every_item(client: TestClient) -> None:
         ({"kind": "comparison", "operator": ">", "children": [{"kind": "empty"}]}, "operand_count"),
         ({"kind": "function", "function": "GIBTESNICHT", "children": []}, "function"),
         ({"kind": "if", "children": [{"kind": "empty"}]}, "if_children"),
-        (
-            {"kind": "crossing", "direction": "up", "children": [{"kind": "empty"}]},
-            "crossing_children",
-        ),
         ({"kind": "logic", "operator": "xor", "children": []}, "operator"),
         ({"kind": "logic", "operator": "not", "children": []}, "operand_count"),
-        (
-            {
-                "kind": "crossing",
-                "direction": "up",
-                "children": [
-                    {"kind": "arithmetic", "operator": "+", "children": [{"kind": "empty"}] * 2},
-                    {"kind": "empty"},
-                ],
-            },
-            "crossing_operand",
-        ),
     ],
 )
 def test_blocks_that_are_no_expression_are_422(
@@ -664,13 +786,6 @@ def test_blocks_of_an_unknown_kind_are_422_with_the_place(client: TestClient) ->
     assert response.json()["code"] == "request.invalid"
     assert response.json()["errors"] == [
         {"location": ["items", 0, "blocks", "kind"], "type": "literal_error"}
-    ]
-    sideways = ask(
-        client, {"pointer": STOP, "blocks": {"kind": "crossing", "direction": "sideways"}}
-    )
-    assert sideways.status_code == 422
-    assert sideways.json()["errors"] == [
-        {"location": ["items", 0, "blocks", "direction"], "type": "literal_error"}
     ]
 
 

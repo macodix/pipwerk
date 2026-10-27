@@ -15,10 +15,12 @@ from pipwerk_domain.typedesc import (
     Condition,
     DataType,
     ElementKind,
+    Label,
     MethodDescription,
     ParameterDescription,
     PropertyDescription,
     TypeDescription,
+    datatype_label,
 )
 
 ENTRY_POINT_GROUP = "pipwerk.element_types"
@@ -97,6 +99,13 @@ class ElementRegistry:
         unknown type does not provide it."""
         description = self._types.get(type_id)
         return description is not None and description.can_refresh
+
+    def datatype_label(self, datatype: DataType, object_type: str | None = None) -> Label:
+        """The word for a data type in trader language, in German and English (specification
+        3.1). For the data type object it is the name of the object type; an object type that
+        is not registered, or none, gives the general word for an object."""
+        description = None if object_type is None else self._types.get(object_type)
+        return datatype_label(datatype, None if description is None else description.name)
 
     def list(self, kind: ElementKind | None = None) -> Descriptions:
         """All registered types in the order of registration, optionally of one kind."""

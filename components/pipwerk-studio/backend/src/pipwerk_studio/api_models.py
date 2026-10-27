@@ -61,13 +61,24 @@ def label_model(label: Label) -> LabelModel:
 
 class FindingModel(ApiModel):
     """A finding of the consistency check (specification 3.6): the identifier of the finding
-    with the data for the text; the library writes no text."""
+    with the data for the text; the library writes no text.
+
+    So that findings with the same text can be told apart, a finding names what the user sees:
+    ``element_name`` is the name of the affected element (the name the user gave it, else the
+    name of its type), ``subject_name`` the name of the affected instance or rule, and
+    ``field_label`` the label of the affected field, as the element or instance shows it. The
+    names of the user are the same in both languages; the labels of the types come in German
+    and English. Each is ``null`` where the finding has no such thing (``element`` and
+    ``subject`` stay the identifiers, ``details.field`` the identifier of the field)."""
 
     level: Literal["error", "hint"]
     code: str
     element: str | None
     subject: str | None
     details: dict[str, Any]
+    element_name: LabelModel | None
+    subject_name: str | None
+    field_label: LabelModel | None
 
 
 def finding_model(finding: Finding) -> FindingModel:

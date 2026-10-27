@@ -12,7 +12,7 @@
           "element-types"
         ],
         "summary": "List the type descriptions",
-        "description": "All type descriptions of the element register with names, descriptions, explanations and groups in German and English, with their methods (identifier, data type of the result, arguments with data type, mandatory or optional, default value, label and explanation, and label and explanation of the method) and the indication whether a use of an instance can choose \"Aktualisieren\" (`can_refresh`), the delivered templates as documents with their names and explanations in both languages, and the functions of expressions. The user interface builds the element library and the property view from this.",
+        "description": "All type descriptions of the element register with names, descriptions, explanations and groups in German and English, with their methods (identifier, data type of the result, arguments with data type, mandatory or optional, default value, label and explanation, and label and explanation of the method) and the indication whether a use of an instance can choose \"Aktualisieren\" (`can_refresh`), the word for each data type in trader language in German and English (`data_types`, and `datatype_label` at each parameter, property, method and argument; for an object it is the name of the object type), the delivered templates as documents with their names and explanations in both languages, and the functions of expressions. The user interface builds the element library and the property view from this.",
         "operationId": "list_element_types",
         "responses": {
           "200": {
@@ -3005,6 +3005,9 @@
           "datatype": {
             "$ref": "#/components/schemas/DataType"
           },
+          "datatype_label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
           "label": {
             "$ref": "#/components/schemas/LabelModel"
           },
@@ -3059,6 +3062,7 @@
         "required": [
           "id",
           "datatype",
+          "datatype_label",
           "label",
           "required",
           "default",
@@ -3067,7 +3071,7 @@
           "explanation"
         ],
         "title": "ArgumentModel",
-        "description": "An argument of a method (specification 3.1): its identifier, data type, whether it is\nmandatory (``required``) and, if not, its ``default`` value (an expression that leaves an\noptional argument out gets this value), the allowed values of a choice or time unit in\n``choices``, the ``object_type`` of an object, and its label and explanation. Arguments\nstand in the order of this list; the mandatory ones come before the optional ones."
+        "description": "An argument of a method (specification 3.1): its identifier, data type, whether it is\nmandatory (``required``) and, if not, its ``default`` value (an expression that leaves an\noptional argument out gets this value), the allowed values of a choice or time unit in\n``choices``, the ``object_type`` of an object, and its label and explanation.\n``datatype_label`` is the word for its data type in trader language. Arguments\nstand in the order of this list; the mandatory ones come before the optional ones."
       },
       "BindingDocument": {
         "properties": {
@@ -3138,8 +3142,7 @@
               "arithmetic",
               "logic",
               "if",
-              "function",
-              "crossing"
+              "function"
             ],
             "title": "Kind"
           },
@@ -3217,22 +3220,6 @@
             ],
             "title": "Function"
           },
-          "direction": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "up",
-                  "down",
-                  "any"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Direction"
-          },
           "call": {
             "type": "boolean",
             "title": "Call",
@@ -3252,7 +3239,7 @@
           "kind"
         ],
         "title": "BlockModel",
-        "description": "A block of an expression (specification 3.4). Every kind uses the fields that belong\nto it: ``name`` the keys in ``path`` (for example ``[\"ema20\", \"wert\"]``), ``literal`` its\n``value`` and ``datatype`` (a percentage is the number as written: 5 for 5 %),\n``comparison`` and ``arithmetic`` their ``operator`` (an arithmetic block with one child is\na sign), ``logic`` ``and``, ``or`` or ``not``, ``function`` the name of the function from the\nlist of the functions, ``crossing`` its ``direction``; ``children`` are the operands in the\norder of the expression. A ``name`` block with ``call`` true is the result of a method: its\n``path`` ends with the method (``[\"reihe\", \"wert_vor\"]``) and its ``children`` are the blocks\nof the arguments in the order of the method (none for a method without arguments;\n``call`` is false or left out for a plain name, which has no children)."
+        "description": "A block of an expression (specification 3.4). Every kind uses the fields that belong\nto it: ``name`` the keys in ``path`` (for example ``[\"ema20\", \"wert\"]``), ``literal`` its\n``value`` and ``datatype`` (a percentage is the number as written: 5 for 5 %),\n``comparison`` and ``arithmetic`` their ``operator`` (an arithmetic block with one child is\na sign), ``logic`` ``and``, ``or`` or ``not``, ``function`` the name of the function from the\nlist of the functions; ``children`` are the operands in the order of the expression. A\ncrossing of two lines is no block: it is made of \"previous value of\" (``PREVIOUS``),\ncomparisons and ``and``. A ``name`` block with ``call`` true is the result of a method: its\n``path`` ends with the method (``[\"reihe\", \"wert_vor\"]``) and its ``children`` are the blocks\nof the arguments in the order of the method (none for a method without arguments;\n``call`` is false or left out for a plain name, which has no children)."
       },
       "CheckResponse": {
         "properties": {
@@ -3420,6 +3407,24 @@
         "title": "DataType",
         "description": "Data types of parameters, properties and expression values."
       },
+      "DataTypeModel": {
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/DataType"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "DataTypeModel",
+        "description": "A data type with its word in trader language in German and English (specification 3.1,\n5.4). The word for the data type ``object`` is the general one; a field of this data type\ncarries the name of its object type in ``datatype_label``."
+      },
       "ElementDocument": {
         "properties": {
           "id": {
@@ -3552,6 +3557,13 @@
             "type": "array",
             "title": "Types"
           },
+          "data_types": {
+            "items": {
+              "$ref": "#/components/schemas/DataTypeModel"
+            },
+            "type": "array",
+            "title": "Data Types"
+          },
           "templates": {
             "items": {
               "oneOf": [
@@ -3600,12 +3612,13 @@
         "type": "object",
         "required": [
           "types",
+          "data_types",
           "templates",
           "template_texts",
           "functions"
         ],
         "title": "ElementTypesResponse",
-        "description": "All type descriptions of the element register, the delivered templates as documents\nwith their texts in both languages, and the functions of expressions."
+        "description": "All type descriptions of the element register, the words for the data types in trader\nlanguage, the delivered templates as documents with their texts in both languages, and the\nfunctions of expressions."
       },
       "ElementUsageModel": {
         "properties": {
@@ -4006,6 +4019,37 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Details"
+          },
+          "element_name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subject_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Name"
+          },
+          "field_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -4015,10 +4059,13 @@
           "code",
           "element",
           "subject",
-          "details"
+          "details",
+          "element_name",
+          "subject_name",
+          "field_label"
         ],
         "title": "FindingModel",
-        "description": "A finding of the consistency check (specification 3.6): the identifier of the finding\nwith the data for the text; the library writes no text."
+        "description": "A finding of the consistency check (specification 3.6): the identifier of the finding\nwith the data for the text; the library writes no text.\n\nSo that findings with the same text can be told apart, a finding names what the user sees:\n``element_name`` is the name of the affected element (the name the user gave it, else the\nname of its type), ``subject_name`` the name of the affected instance or rule, and\n``field_label`` the label of the affected field, as the element or instance shows it. The\nnames of the user are the same in both languages; the labels of the types come in German\nand English. Each is ``null`` where the finding has no such thing (``element`` and\n``subject`` stay the identifiers, ``details.field`` the identifier of the field)."
       },
       "FunctionModel": {
         "properties": {
@@ -4918,6 +4965,9 @@
           "datatype": {
             "$ref": "#/components/schemas/DataType"
           },
+          "datatype_label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
           "label": {
             "$ref": "#/components/schemas/LabelModel"
           },
@@ -4955,6 +5005,7 @@
         "required": [
           "id",
           "datatype",
+          "datatype_label",
           "label",
           "arguments",
           "choices",
@@ -4962,7 +5013,7 @@
           "explanation"
         ],
         "title": "MethodModel",
-        "description": "A method of a type (specification 3.1, req-fach-055): an expression addresses it as\n``Object.Method(Arguments)`` with the values of the arguments separated by ``;``. ``datatype``\nis the data type of the result, with ``choices`` (a result that is a choice or a time unit)\nand ``object_type`` (a result that is an object) like a property; ``arguments`` are the\narguments in their order. The delivered types have no methods."
+        "description": "A method of a type (specification 3.1, req-fach-055): an expression addresses it as\n``Object.Method(Arguments)`` with the values of the arguments separated by ``;``. ``datatype``\nis the data type of the result, with ``choices`` (a result that is a choice or a time unit)\nand ``object_type`` (a result that is an object) like a property; ``arguments`` are the\narguments in their order. ``datatype_label`` is the word for the data type of the result in\ntrader language. The delivered types have no methods."
       },
       "NameModel": {
         "properties": {
@@ -5286,6 +5337,9 @@
           "datatype": {
             "$ref": "#/components/schemas/DataType"
           },
+          "datatype_label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
           "label": {
             "$ref": "#/components/schemas/LabelModel"
           },
@@ -5357,6 +5411,7 @@
         "required": [
           "id",
           "datatype",
+          "datatype_label",
           "label",
           "required",
           "default",
@@ -5367,7 +5422,7 @@
           "explanation"
         ],
         "title": "ParameterModel",
-        "description": "A parameter of a type."
+        "description": "A parameter of a type. ``datatype_label`` is the word for its data type in trader\nlanguage, for an object the name of its object type."
       },
       "PositionDocument": {
         "properties": {
@@ -5466,6 +5521,9 @@
           "datatype": {
             "$ref": "#/components/schemas/DataType"
           },
+          "datatype_label": {
+            "$ref": "#/components/schemas/LabelModel"
+          },
           "label": {
             "$ref": "#/components/schemas/LabelModel"
           },
@@ -5534,6 +5592,7 @@
         "required": [
           "id",
           "datatype",
+          "datatype_label",
           "label",
           "must",
           "set_by_user",
@@ -5544,7 +5603,7 @@
           "explanation"
         ],
         "title": "PropertyModel",
-        "description": "A property of a type."
+        "description": "A property of a type. ``datatype_label`` is the word for its data type in trader\nlanguage, for an object the name of its object type."
       },
       "RemovalRequest": {
         "additionalProperties": false,
@@ -6781,6 +6840,16 @@
             "type": "string",
             "title": "Datatype"
           },
+          "datatype_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "required": {
             "type": "boolean",
             "title": "Required"
@@ -6822,13 +6891,14 @@
           "key",
           "label",
           "datatype",
+          "datatype_label",
           "required",
           "default",
           "explanation",
           "choices"
         ],
         "title": "VisibleArgumentModel",
-        "description": "An argument of a visible method: key, label, data type, whether it is mandatory\n(``required``), its ``default`` value if it is optional, its explanation and the possible\nvalues of a choice."
+        "description": "An argument of a visible method: key, label, data type with its word in trader language\n(``datatype_label``), whether it is mandatory (``required``), its ``default`` value if it is\noptional, its explanation and the possible values of a choice."
       },
       "VisibleMethodModel": {
         "properties": {
@@ -6849,6 +6919,16 @@
               }
             ],
             "title": "Datatype"
+          },
+          "datatype_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "explanation": {
             "anyOf": [
@@ -6885,13 +6965,14 @@
           "key",
           "label",
           "datatype",
+          "datatype_label",
           "explanation",
           "choices",
           "arguments",
           "previous_value"
         ],
         "title": "VisibleMethodModel",
-        "description": "A method of a visible name (specification 3.4): an expression addresses it as\n``Name.Method(Arguments)``. ``datatype`` is the data type of the result and ``choices`` its\nvalues if it is a choice; ``previous_value`` tells that ``PREVIOUS`` may stand around the\nresult; ``arguments`` are the arguments in their order."
+        "description": "A method of a visible name (specification 3.4): an expression addresses it as\n``Name.Method(Arguments)``. ``datatype`` is the data type of the result, ``datatype_label``\nits word in trader language and ``choices`` its values if it is a choice;\n``previous_value`` tells that ``PREVIOUS`` may stand around the result; ``arguments`` are\nthe arguments in their order."
       },
       "VisibleNameModel": {
         "properties": {
@@ -6929,6 +7010,16 @@
             ],
             "title": "Datatype"
           },
+          "datatype_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "properties": {
             "items": {
               "$ref": "#/components/schemas/VisiblePropertyModel"
@@ -6962,13 +7053,14 @@
           "path",
           "kind",
           "datatype",
+          "datatype_label",
           "properties",
           "methods",
           "properties_truncated",
           "contents"
         ],
         "title": "VisibleNameModel",
-        "description": "A name that an expression can address at the place. ``display`` is the name in the\nlanguage of the request and ``path`` the keys. ``contents`` are the instances and rules\ncontained in an instance or ruleset. ``properties`` are the properties and ``methods`` the\nmethods of the name. ``properties_truncated`` is true if the list of properties or the list\nof methods was cut at the limit."
+        "description": "A name that an expression can address at the place. ``display`` is the name in the\nlanguage of the request and ``path`` the keys. ``datatype_label`` is the word for the data\ntype of a strategy parameter or parameter. ``contents`` are the instances and rules\ncontained in an instance or ruleset. ``properties`` are the properties and ``methods`` the\nmethods of the name. ``properties_truncated`` is true if the list of properties or the list\nof methods was cut at the limit."
       },
       "VisiblePropertyModel": {
         "properties": {
@@ -6989,6 +7081,16 @@
               }
             ],
             "title": "Datatype"
+          },
+          "datatype_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "explanation": {
             "anyOf": [
@@ -7018,12 +7120,13 @@
           "key",
           "label",
           "datatype",
+          "datatype_label",
           "explanation",
           "choices",
           "previous_value"
         ],
         "title": "VisiblePropertyModel",
-        "description": "A property of a visible name. ``previous_value`` tells that ``PREVIOUS`` may stand around\nit."
+        "description": "A property of a visible name. ``datatype_label`` is the word for its data type in\ntrader language (for an object the name of its object type). ``previous_value`` tells that\nthe fachmodell defines an earlier value for it, so that ``PREVIOUS`` (\"previous value of\")\nmay stand around it (specification 3.4); the blocks offer only such values as the argument\nof \"previous value of\"."
       }
     }
   },

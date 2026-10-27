@@ -25,6 +25,41 @@ class DataType(StrEnum):
 NUMERIC_TYPES = frozenset({DataType.NUMBER, DataType.INTEGER, DataType.PERCENT})
 
 
+@dataclass(frozen=True, slots=True)
+class Label:
+    """A text in German and English."""
+
+    de: str
+    en: str
+
+
+DATATYPE_LABELS: dict[DataType, Label] = {
+    DataType.NUMBER: Label("Zahl", "number"),
+    DataType.INTEGER: Label("ganze Zahl", "whole number"),
+    DataType.PERCENT: Label("Prozentwert", "percentage"),
+    DataType.BOOLEAN: Label("Wahrheitswert", "true/false value"),
+    DataType.TEXT: Label("Text", "text"),
+    DataType.CHOICE: Label("Auswahl", "choice"),
+    DataType.TIME_UNIT: Label("Zeiteinheit", "time unit"),
+    DataType.TIMESTAMP: Label("Zeitpunkt", "point in time"),
+    DataType.DATE: Label("Datum", "date"),
+    DataType.EXPRESSION: Label("Formel", "formula"),
+    DataType.OBJECT: Label("Objekt", "object"),
+}
+"""The words for the data types in trader language, in German and English (specification 3.1,
+5.4). They stand in the explanation of a field, not next to its label. The data type object
+is called by the name of its object type (:func:`datatype_label`); the word here is for an
+object whose type is not known."""
+
+
+def datatype_label(datatype: DataType, object_name: Label | None = None) -> Label:
+    """The word for a data type. For the data type object ``object_name`` is the name of its
+    object type (for example "Instrument"); without it the general word for an object."""
+    if datatype is DataType.OBJECT and object_name is not None:
+        return object_name
+    return DATATYPE_LABELS[datatype]
+
+
 class ElementKind(StrEnum):
     """The kind ("Art") of a type description."""
 
@@ -87,14 +122,6 @@ INSTRUMENT_PARAMETER = "instrument"
 APPLICATION_INSTRUMENT = "instrument_der_anwendung"
 """Identifier of the fixed value "Instrument der Anwendung": the only choice and the default
 of the parameter ``instrument``."""
-
-
-@dataclass(frozen=True, slots=True)
-class Label:
-    """A text in German and English."""
-
-    de: str
-    en: str
 
 
 NO_TEXT = Label("", "")
