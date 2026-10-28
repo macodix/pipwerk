@@ -76,7 +76,8 @@ export function ExpressionPanel({ place, mode, selfKey = null, hint, label, test
   const broken = session.tree === null && session.stored !== '' && session.answer !== undefined;
 
   return (
-    <div className="ep" data-testid={testid ?? 'expr-panel'}>
+    // data-pending: a change or an answer is on its way, the sentence (and the layout below it) may still change
+    <div className="ep" data-testid={testid ?? 'expr-panel'} data-pending={session.pending}>
       <div className="ep-tabs" role="tablist">
         <button
           type="button"

@@ -65,9 +65,23 @@ export async function newStrategy(page: Page): Promise<void> {
   await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
 }
 
+/**
+ * Waits until the editor of an expression that holds the field has nothing on its way (the panel says `data-pending`): the
+ * answer of the endpoint to the last change changes the sentence, and a sentence of another length moves the fields below
+ * it. A click whose press and release fall on either side of that move ends on another element and opens nothing. A field
+ * outside of an expression editor needs no wait.
+ */
+export async function settled(field: Locator): Promise<void> {
+  const panel = field.locator('xpath=ancestor::div[@class="ep"][1]');
+  if ((await panel.count()) > 0) {
+    await expect(panel).toHaveAttribute('data-pending', 'false');
+  }
+}
+
 /** Opens the list of a field with a click and returns the list. */
 async function openList(field: Locator): Promise<Locator> {
   const list = field.page().getByRole('listbox');
+  await settled(field);
   await field.click();
   await expect(list).toBeVisible();
   return list;

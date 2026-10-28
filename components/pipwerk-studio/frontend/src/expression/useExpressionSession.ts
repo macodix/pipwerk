@@ -34,6 +34,11 @@ export type ExpressionSession = {
   settle: () => void;
   /** The last change could not be turned into an expression. */
   failed: boolean;
+  /**
+   * A change is on its way (the endpoint has not formed it yet) or the answer for the stored expression has not arrived:
+   * the sentence and with it the layout below it may still change.
+   */
+  pending: boolean;
 };
 
 const FORMULA_DELAY_MS = 200;
@@ -71,6 +76,7 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
   const [typed, setTyped] = useState<string | null>(null);
   const [formula, setFormula] = useState<{ text: string; answer: ExpressionAnswer } | null>(null);
   const [failed, setFailed] = useState(false);
+  const [changing, setChanging] = useState(0);
   const emitted = useRef<string | null>(null);
   const sequence = useRef(0);
   const inflight = useRef(0);
@@ -144,6 +150,7 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
       const mine = sequence.current + 1;
       sequence.current = mine;
       inflight.current += 1;
+      setChanging((count) => count + 1);
       setDraft(tree);
       setFailed(false);
       // saving and checking wait for this change: it reaches the document only with the answer of the endpoint
@@ -162,6 +169,7 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
           })
           .finally(() => {
             inflight.current -= 1;
+            setChanging((count) => count - 1);
           }),
       );
     },
@@ -236,6 +244,7 @@ export function useExpressionSession(place: ExpressionPlace): ExpressionSession 
     formula: shown,
     settle,
     failed,
+    pending: changing > 0 || answer === undefined || answer.stored !== stored,
   };
 }
 

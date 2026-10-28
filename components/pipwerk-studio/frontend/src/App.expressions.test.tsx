@@ -123,6 +123,37 @@ describe('the blocks of a new expression', () => {
   });
 });
 
+describe('the panel of an expression while a change is on its way', () => {
+  it('says so until the endpoint has formed the change and answered, because the sentence (and the layout) may still change', async () => {
+    const user = userEvent.setup();
+    await open(user);
+    await user.click(document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="Berechnung"]') as HTMLElement);
+    const panel = await screen.findByTestId('expression-ausdruck');
+    const field = await within(panel).findByTestId('calc-root-select');
+    await waitFor(() => {
+      expect(panel).toHaveAttribute('data-pending', 'false');
+    });
+
+    // from now on the endpoint answers only when the test lets it
+    const answerFetch = globalThis.fetch;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.stubGlobal('fetch', (input: string | URL | Request, init?: RequestInit): Promise<Response> =>
+      String(input).includes('/api/v1/expressions') ? gate.then(() => answerFetch(input, init)) : answerFetch(input, init),
+    );
+
+    await choose(user, field, 'EMA20 › Wert');
+    expect(panel).toHaveAttribute('data-pending', 'true');
+    release();
+    await waitFor(() => {
+      expect(panel).toHaveAttribute('data-pending', 'false');
+    });
+    expect(within(panel).getByTestId('expr-sentence')).toHaveTextContent('ema20.wert');
+  });
+});
+
 describe('the formula view', () => {
   it('shows the display form, writes what is typed through the endpoint and marks a typing error at its place', async () => {
     const user = userEvent.setup();

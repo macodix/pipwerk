@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { card, choose, clickMenu, library, node, showArea } from './support';
+import { card, choose, clickMenu, library, node, settled, showArea } from './support';
 
 /**
  * Helpers to build a strategy only by operating the interface: no step types an expression as text. They follow the
@@ -32,6 +32,7 @@ const trigger = (parent: Locator): Locator => parent.locator(':scope > .select >
 /** Chooses an entry of a list by its label; a label that is not in the list fails with the labels that are. */
 async function chooseLabel(field: Locator, label: string): Promise<void> {
   const list = field.page().getByRole('listbox');
+  await settled(field);
   await field.click();
   const entry = list.getByRole('option', { name: label, exact: true }).first();
   // the values of the list come from the expression endpoint: they may arrive a moment after the list is shown
@@ -107,7 +108,9 @@ export async function setCond(cb: Locator, c: C): Promise<void> {
     await choose(kind, { value: 'and' in c ? 'and' : 'or' });
     const list = cb.locator(':scope > .cb-list');
     for (let index = 2; index < items.length; index += 1) {
-      await list.locator(':scope > [data-testid="cond-add"]').click();
+      const add = list.locator(':scope > [data-testid="cond-add"]');
+      await settled(add);
+      await add.click();
     }
     for (let index = 0; index < items.length; index += 1) {
       await setCond(list.locator(':scope > .cb-item').nth(index).locator(':scope > .cb'), items[index] as C);
