@@ -1,10 +1,10 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 import { renderWithProviders } from './test-utils';
-import { choose, clickNode, menu, nodeByName, offeredGroups, openStored, waitForReady } from './testing/actions';
+import { choose, clickNode, menu, nodeByName, offeredChoices, offeredGroups, openStored, waitForReady } from './testing/actions';
 import { mockApi } from './testing/backend';
 import { EMA_ELEMENT_IDS, emaTrendfolge } from './testing/emaTrendfolge';
 
@@ -94,6 +94,32 @@ describe('the blocks (specification 5.4)', () => {
         expect.objectContaining({ instance: 'atr14', property: 'wert' }),
       ]),
     );
+  });
+});
+
+describe('the blocks of a new expression', () => {
+  it('appear only with the names the endpoint tells, so the list of a field does not grow under the pointer', async () => {
+    const user = userEvent.setup();
+    await open(user);
+    // the endpoint answers only when the test lets it
+    const answerFetch = globalThis.fetch;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.stubGlobal('fetch', (input: string | URL | Request, init?: RequestInit): Promise<Response> =>
+      String(input).includes('/api/v1/expressions') ? gate.then(() => answerFetch(input, init)) : answerFetch(input, init),
+    );
+
+    await user.click(document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="Berechnung"]') as HTMLElement);
+    const panel = await screen.findByTestId('expression-ausdruck');
+
+    // an empty expression has nothing to wait for, but its list of values does: no field is shown before the names are there
+    expect(within(panel).queryByTestId('calc-root-select')).toBeNull();
+    release();
+    const field = await within(panel).findByTestId('calc-root-select');
+    const offered = await offeredChoices(user, field);
+    expect(offered).toContain('EMA20 › Wert');
   });
 });
 

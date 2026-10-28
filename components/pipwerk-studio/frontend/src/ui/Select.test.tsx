@@ -168,28 +168,6 @@ describe('a list of choices (E4)', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
-  it('stays open when the interface draws the field anew while the list is open (a new element at the same place)', async () => {
-    const user = userEvent.setup();
-    const field = (
-      <Select value="a" onChange={() => undefined} ariaLabel="Neu gezeichnet">
-        <option value="a">Alpha</option>
-        <option value="b">Beta</option>
-      </Select>
-    );
-    const { rerender } = render(<div key="eins">{field}</div>);
-
-    await user.click(screen.getByRole('combobox', { name: 'Neu gezeichnet' }));
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-    rerender(<div key="zwei">{field}</div>);
-
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Neu gezeichnet' })).toHaveFocus();
-    // a list that the user closed is not opened again by a redraw
-    await user.keyboard('{Escape}');
-    rerender(<div key="drei">{field}</div>);
-    expect(screen.queryByRole('listbox')).toBeNull();
-  });
-
   it('does not open while disabled', async () => {
     const user = userEvent.setup();
     render(

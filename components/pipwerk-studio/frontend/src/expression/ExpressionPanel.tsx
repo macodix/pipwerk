@@ -123,7 +123,9 @@ export function ExpressionPanel({ place, mode, selfKey = null, hint, label, test
         </p>
       ) : null}
       {view === 'blocks' ? (
-        session.answer === undefined && session.tree === null ? (
+        // The names of the lists of values come with the first answer of the endpoint. A field shown before would offer a
+        // short list that grows when the answer arrives, and a click aimed at an entry would hit another one.
+        session.answer === undefined ? (
           <p className="muted">…</p>
         ) : session.tree === null ? (
           <div className="ep-bad" data-testid="expr-bad">

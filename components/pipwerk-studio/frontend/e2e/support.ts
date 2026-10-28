@@ -65,19 +65,11 @@ export async function newStrategy(page: Page): Promise<void> {
   await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
 }
 
-/**
- * Opens the list of a field with a click and returns the list. The interface may draw the field anew a moment after the
- * click (an answer of the backend arrives and the blocks are formed again); a list that is gone because of that is opened
- * again, as a user would click again.
- */
+/** Opens the list of a field with a click and returns the list. */
 async function openList(field: Locator): Promise<Locator> {
   const list = field.page().getByRole('listbox');
-  await expect(async () => {
-    if ((await field.getAttribute('aria-expanded')) !== 'true') {
-      await field.click();
-    }
-    await expect(list).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 10_000 });
+  await field.click();
+  await expect(list).toBeVisible();
   return list;
 }
 

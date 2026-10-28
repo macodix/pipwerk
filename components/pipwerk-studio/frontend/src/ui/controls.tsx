@@ -94,26 +94,6 @@ function collectOptions(children: ReactNode, group: string | null, into: SelectO
   });
 }
 
-/** How long after a redraw of the field its open list is opened again. */
-const REOPEN_MILLISECONDS = 2000;
-
-/** The list that is open now and where its field stands in the page; it survives a redraw of the field. */
-let openedHere: { path: string; at: number } | null = null;
-
-/** Forgets the open list (the tests start every case without one). */
-export function forgetOpenList(): void {
-  openedHere = null;
-}
-
-/** The place of an element in the page as the indexes of the element and its ancestors. */
-function domPath(element: Element): string {
-  const steps: number[] = [];
-  for (let node: Element | null = element; node !== null && node.parentElement !== null; node = node.parentElement) {
-    steps.push(Array.prototype.indexOf.call(node.parentElement.children, node) as number);
-  }
-  return steps.join('/');
-}
-
 const LIST_MARGIN = 8;
 const LIST_GAP = 4;
 const LIST_MAX_HEIGHT = 320;
@@ -248,34 +228,12 @@ export function Select({
     const first = enabledFrom(options, 0, 1);
     setActive(start ?? (selected >= 0 && options[selected]?.disabled === false ? selected : first));
     setOpen(true);
-    if (root.current !== null) {
-      openedHere = { path: domPath(root.current), at: Date.now() };
-    }
   };
 
-  /** Closes the list because the user closed it (a choice, Escape, Tab, a click outside); the list is then not opened again. */
+  /** Closes the list (a choice, Escape, Tab, a click outside, the focus leaving the field). */
   const closeList = (): void => {
-    openedHere = null;
     setOpen(false);
   };
-
-  // The interface may draw the field anew while its list is open (an answer of the backend arrives and the blocks are
-  // formed again, so the field is a new element at the same place). The list then opens again in the new field.
-  useLayoutEffect(() => {
-    if (
-      openedHere !== null &&
-      Date.now() - openedHere.at < REOPEN_MILLISECONDS &&
-      root.current !== null &&
-      openedHere.path === domPath(root.current) &&
-      !disabled
-    ) {
-      trigger.current?.focus();
-      setActive(selected >= 0 ? selected : enabledFrom(options, 0, 1));
-      setOpen(true);
-    }
-    // only when the field appears
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const choose = (index: number): void => {
     const option = options[index];
@@ -450,8 +408,7 @@ export function Select({
           }
         }}
         onBlur={(event) => {
-          // a field that is being removed from the page does not count as left by the user
-          if (trigger.current?.isConnected === true && !(event.relatedTarget instanceof Node && root.current?.contains(event.relatedTarget) === true)) {
+          if (!(event.relatedTarget instanceof Node && root.current?.contains(event.relatedTarget) === true)) {
             closeList();
           }
         }}

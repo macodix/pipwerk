@@ -3,8 +3,6 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
-import { forgetOpenList } from './ui/controls';
-
 // A failed query of Testing Library prints the page; a limit keeps the report readable.
 process.env.DEBUG_PRINT_LIMIT ??= '3000';
 
@@ -50,7 +48,6 @@ if (typeof HTMLDialogElement !== 'undefined') {
 
 afterEach(() => {
   cleanup();
-  forgetOpenList();
   vi.unstubAllGlobals();
   vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   vi.stubGlobal('DOMMatrixReadOnly', DOMMatrixReadOnlyStub);
