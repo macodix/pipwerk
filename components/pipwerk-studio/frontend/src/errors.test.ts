@@ -10,8 +10,8 @@ describe('the text of the cause of a failed request (specification 4.2, M4)', ()
     const error = new HttpError(422, body.detail, body);
 
     for (const [language, expected] of [
-      ['de', 'Das Objektverzeichnis muss ein absoluter Pfad sein.'],
-      ['en', 'The object directory must be an absolute path.'],
+      ['de', 'Das Objektverzeichnis muss mit dem vollständigen Pfad angegeben werden.'],
+      ['en', 'The object directory must be given with its full path.'],
     ] as const) {
       const instance = createI18n(language);
       expect(describeCause(instance.t, instance, error).summary).toBe(expected);

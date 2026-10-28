@@ -25,7 +25,7 @@ import { resolveInstance, type InstanceRef } from '../document/places';
 import type { InstanceDocument, ParameterDefinition } from '../document/types';
 import { ExpressionPanel } from '../expression/ExpressionPanel';
 import { allowsContainedInstances, allowsContainedRules, allowsOwnParameters, allowsOwnProperties, contentKind, OWN_DATATYPES } from '../model/objectContent';
-import { iconOf, labelText, timeUnitChoices } from '../model/typeIndex';
+import { dataTypeWord, iconOf, labelText, timeUnitChoices } from '../model/typeIndex';
 import { useStudio } from '../state/StudioContext';
 import { Btn, Section, Select, TextInput, Toggle } from '../ui/controls';
 import { Icon } from '../ui/Icon';
@@ -146,7 +146,7 @@ function OwnParameters({ refTo, instance }: { refTo: InstanceRef; instance: Inst
               ariaLabel={t('instances.name')}
               testid="own-parameter-name"
             />
-            <span className="dtype-chip">{t(`datatype.${definition.datatype}`)}</span>
+            <span className="dtype-chip">{dataTypeWord(types, definition.datatype, studio.language)}</span>
             <Btn
               small
               kind="quiet"
@@ -184,7 +184,7 @@ function OwnParameters({ refTo, instance }: { refTo: InstanceRef; instance: Inst
         <Select value={datatype} onChange={(next) => { setDatatype(next as DataType); }} ariaLabel={t('instances.datatype')} testid="own-parameter-new-type">
           {OWN_DATATYPES.map((entry) => (
             <option key={entry} value={entry}>
-              {t(`datatype.${entry}`)}
+              {dataTypeWord(types, entry, studio.language)}
             </option>
           ))}
         </Select>
@@ -232,7 +232,7 @@ function Properties({ refTo, instance }: { refTo: InstanceRef; instance: Instanc
         <div key={property.id} className="own-prop" data-testid="property-missing">
           <div className="own-row">
             <b>{labelText(property.label, studio.language)}</b>
-            <span className="dtype-chip">{t(`datatype.${property.datatype}`)}</span>
+            <span className="dtype-chip">{dataTypeWord(types, property.datatype, studio.language, { specific: property.datatypeLabel, objectType: property.objectType })}</span>
             <Btn
               small
               kind="primary"
@@ -271,7 +271,7 @@ function Properties({ refTo, instance }: { refTo: InstanceRef; instance: Instanc
                   testid="own-property-name"
                 />
               )}
-              <span className="dtype-chip">{t(`datatype.${property.datatype}`)}</span>
+              <span className="dtype-chip">{dataTypeWord(types, property.datatype, studio.language)}</span>
               {fromType ? null : (
                 <Btn
                   small
@@ -299,7 +299,7 @@ function Properties({ refTo, instance }: { refTo: InstanceRef; instance: Instanc
           <Select value={datatype} onChange={(next) => { setDatatype(next as DataType); }} ariaLabel={t('instances.datatype')} testid="own-property-new-type">
             {OWN_DATATYPES.map((entry) => (
               <option key={entry} value={entry}>
-                {t(`datatype.${entry}`)}
+                {dataTypeWord(types, entry, studio.language)}
               </option>
             ))}
           </Select>

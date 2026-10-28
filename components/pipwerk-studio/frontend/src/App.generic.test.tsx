@@ -121,11 +121,14 @@ describe('the properties view of invented types (specification 5.4)', () => {
 
     const field = screen.getByTestId('field-sorte');
     expect(within(field).getByText('Sorte')).toBeInTheDocument();
-    expect(within(field).getByText('Auswahl')).toBeInTheDocument();
+    // the data type is no mark beside the label (E11): the explanation shown on pointing at the field names it, in the word of the library
+    expect(within(field).queryByText('Auswahl')).toBeNull();
     expect(within(field).getByText('*')).toBeInTheDocument();
-    expect(within(field).getByLabelText('Erklärung')).toHaveAttribute('data-tip', 'Erklärung Sorte');
-    // only the kind that the type allows, besides "nicht belegt"
-    expect(await offeredChoices(user, screen.getByTestId('kind-sorte'))).toEqual(['nicht belegt', 'Fester Wert']);
+    expect(within(field).getByLabelText('Erklärung')).toHaveAttribute('data-tip', 'Erklärung Sorte Gefragt ist: Auswahl.');
+    // the question, and only the answers that the type allows, besides "nicht belegt"
+    expect(within(field).getByText('Woher kommt der Wert?')).toBeInTheDocument();
+    expect(within(field).queryByText('Belegung')).toBeNull();
+    expect(await offeredChoices(user, screen.getByTestId('kind-sorte'))).toEqual(['nicht belegt', 'fest eingeben']);
     // the properties of the order come from the chosen order type
     const order = screen.getByTestId('sec-order');
     expect(within(order).getByText('Wunsch')).toBeInTheDocument();
@@ -136,7 +139,7 @@ describe('the properties view of invented types (specification 5.4)', () => {
   it('gives the newly needed properties their standard values when the order type changes, and keeps the others', async () => {
     const { user, api, document } = await setup();
     await chooseNode(user, 'Ausführen');
-    await choose(user, screen.getByTestId('kind-wunsch'), 'Fester Wert');
+    await choose(user, screen.getByTestId('kind-wunsch'), 'fest eingeben');
     await user.type(within(screen.getByTestId('field-wunsch')).getByTestId('value-wunsch'), 'viel');
 
     await select(user, 'value-sorte', 'Sorte B');
@@ -183,10 +186,17 @@ describe('the properties view of invented types (specification 5.4)', () => {
     await chooseNode(user, 'Messer');
     const field = screen.getByTestId('field-ziel');
 
-    // choosing "Fester Wert" starts with the standard value of the type: the one of the application
-    await choose(user, within(field).getByTestId('kind-ziel'), 'Fester Wert');
+    // the standard value of the type is the one of the application: the field says so in words, the user has nothing to choose (E11)
+    expect(within(field).getByTestId('preset-text-ziel')).toHaveTextContent('das zz.target, auf dem die Strategie läuft');
+    expect(within(field).getByText('Dafür müssen Sie nichts wählen.')).toBeInTheDocument();
+    expect(within(field).queryByTestId('kind-ziel')).toBeNull();
+    // "anderes … wählen" shows the question and the answers; the value stays the standard value until something else is entered
+    await user.click(within(field).getByTestId('preset-other-ziel'));
+    expect(within(field).getByTestId('kind-ziel')).toHaveValue('unset');
+    // "fest eingeben" starts with the standard value of the type: the one of the application
+    await choose(user, within(field).getByTestId('kind-ziel'), 'fest eingeben');
     expect(within(field).getByTestId('value-ziel')).toHaveValue('zz.own_target');
-    await choose(user, within(field).getByTestId('value-ziel'), 'Anderes …');
+    await choose(user, within(field).getByTestId('value-ziel'), 'Andere Bezeichnung …');
     await user.type(within(field).getByTestId('value-ziel-text'), 'eurusd');
 
     const stored = await saved({ user, api, document });
@@ -194,12 +204,37 @@ describe('the properties view of invented types (specification 5.4)', () => {
     expect(meter?.instance?.parameter_values?.ziel).toEqual({ kind: 'fixed', value: 'eurusd' });
   });
 
+  it('chooses "anderes … wählen" without entering anything: the standard value stays; and goes back to it from another source (E11)', async () => {
+    const { user, api, document } = await setup();
+    await chooseNode(user, 'Messer');
+    const field = screen.getByTestId('field-ziel');
+
+    await user.click(within(field).getByTestId('preset-other-ziel'));
+    // nothing entered: the field still holds the standard value, and the way back only closes the choice
+    await user.click(within(field).getByTestId('preset-back-ziel'));
+    expect(within(field).getByTestId('preset-text-ziel')).toBeInTheDocument();
+    let stored = await saved({ user, api, document });
+    expect(stored.elements.find((element) => element.instance !== undefined)?.instance?.parameter_values?.ziel).toBeUndefined();
+
+    // another source of the value, then back: the standard value is stored again
+    await user.click(within(field).getByTestId('preset-other-ziel'));
+    await choose(user, within(field).getByTestId('kind-ziel'), 'beim Start der Strategie festlegen');
+    expect(within(field).getByTestId('preset-back-ziel')).toBeInTheDocument();
+    await user.click(within(field).getByTestId('preset-back-ziel'));
+    expect(within(field).getByTestId('preset-text-ziel')).toBeInTheDocument();
+    stored = await saved({ user, api, document });
+    expect(stored.elements.find((element) => element.instance !== undefined)?.instance?.parameter_values?.ziel).toEqual({
+      kind: 'fixed',
+      value: 'zz.own_target',
+    });
+  });
+
   it('creates a strategy parameter on the spot when none exists, and assigns it', async () => {
     const { user, api, document } = await setup();
     await chooseNode(user, 'Messer');
     const field = screen.getByTestId('field-laenge');
 
-    await choose(user, within(field).getByTestId('kind-laenge'), 'Strategieparameter');
+    await choose(user, within(field).getByTestId('kind-laenge'), 'aus einem Strategieparameter');
     expect(within(field).getByTestId('param-hint')).toHaveTextContent('noch kein Strategieparameter');
     await user.type(within(field).getByTestId('new-param-name'), 'Meine Länge');
     await user.click(within(field).getByTestId('new-param-create'));
@@ -221,7 +256,7 @@ describe('the properties view of invented types (specification 5.4)', () => {
     await chooseNode(user, 'Tun');
     const field = screen.getByTestId('field-menge');
 
-    await choose(user, within(field).getByTestId('kind-menge'), 'Wert eines Objekts');
+    await choose(user, within(field).getByTestId('kind-menge'), 'von einem anderen Element');
     await choose(user, within(field).getByTestId('ref-object'), 'Messer');
     // "Menge" is a number: the property "Tendenz" (text) is not offered
     expect(await offeredChoices(user, within(field).getByTestId('ref-prop'))).toEqual([

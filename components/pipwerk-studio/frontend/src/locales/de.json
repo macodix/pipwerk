@@ -64,28 +64,21 @@
       "settings": "Sprache und Speicherort der Objekte."
     }
   },
-  "datatype": {
-    "number": "Zahl",
-    "integer": "Ganzzahl",
-    "percent": "Prozent",
-    "boolean": "Wahrheitswert",
-    "text": "Text",
-    "choice": "Auswahl",
-    "time_unit": "Zeiteinheit",
-    "timestamp": "Zeitpunkt",
-    "date": "Datum",
-    "expression": "Ausdruck",
-    "object": "Objekt",
-    "method": "Methode"
-  },
   "binding": {
     "unset": "nicht belegt",
-    "fixed": "Fester Wert",
-    "parameter": "Strategieparameter",
-    "connection": "Wert eines Objekts",
-    "expression": "Ausdruck",
-    "application": "Bei der Anwendung übergeben",
-    "atApplicationShort": "bei der Anwendung"
+    "fixed": "fest eingeben",
+    "parameter": "aus einem Strategieparameter",
+    "connection": "von einem anderen Element",
+    "expression": "aus einer Formel",
+    "application": "beim Start der Strategie festlegen",
+    "atApplicationShort": "beim Start festgelegt",
+    "stored": {
+      "fixed": "fest eingegeben",
+      "parameter": "aus einem Strategieparameter",
+      "connection": "von einem anderen Element",
+      "expression": "aus einer Formel",
+      "application": "beim Start der Strategie festgelegt"
+    }
   },
   "library": {
     "title": "Elementbibliothek",
@@ -119,13 +112,13 @@
     "title": "Strategieparameter",
     "name": "Name des Strategieparameters",
     "remove": "Strategieparameter entfernen",
-    "datatype": "Datentyp",
+    "datatype": "Art des Werts",
     "value": "Wert",
-    "atApplication": "Wert erst bei der Anwendung übergeben",
-    "atApplicationNote": "wird bei der Anwendung übergeben",
+    "atApplication": "Wert erst beim Start der Strategie festlegen",
+    "atApplicationNote": "wird beim Start der Strategie festgelegt",
     "newName": "Neuer Strategieparameter",
-    "openFirst": "Öffnen Sie eine Strategie, um ihre Parameter zu sehen.",
-    "none": "Noch keine. Mit „Neu“ legen Sie den ersten an, zum Beispiel die Zeiteinheit.",
+    "openFirst": "Öffnen Sie eine Strategie, um ihre Strategieparameter zu sehen.",
+    "none": "Noch kein Strategieparameter. Mit „Neu“ legen Sie den ersten an, zum Beispiel die Zeiteinheit.",
     "clickToChange": "Klicken zum Ändern",
     "new": "Neu",
     "newTip": "Neuen Strategieparameter anlegen",
@@ -136,7 +129,7 @@
   },
   "fields": {
     "choose": "Wert wählen …",
-    "otherObject": "Anderes …",
+    "otherObject": "Andere Bezeichnung …",
     "otherObjectPlaceholder": "Bezeichnung eingeben",
     "otherObjectLabel": "Bezeichnung",
     "noParameterYet": "Es ist noch kein Strategieparameter angelegt. Legen Sie hier den ersten an.",
@@ -152,30 +145,36 @@
     "chooseProperty": "Eigenschaft wählen",
     "choosePropertyOption": "Eigenschaft wählen …",
     "noFittingProperty": "Dieses Objekt liefert keinen Wert, der zu dem Feld passt.",
-    "unsetRequired": "Pflichtangabe: Wählen Sie eine Belegung.",
+    "unsetRequired": "Pflichtangabe: Wählen Sie oben, woher der Wert kommt.",
     "unsetOptional": "Optional. Ohne Wert bleibt die Angabe leer.",
-    "application": "Der Wert wird erst übergeben, wenn die Strategie angewendet wird.",
+    "application": "Der Wert wird erst festgelegt, wenn die Strategie gestartet wird.",
     "required": "Pflicht",
     "explanation": "Erklärung",
-    "assignment": "Belegung"
+    "source": "Woher kommt der Wert?",
+    "expects": "Gefragt ist: {{word}}.",
+    "preset": {
+      "value": "das {{type}}, auf dem die Strategie läuft",
+      "nothingToChoose": "Dafür müssen Sie nichts wählen.",
+      "other": "anderes {{type}} wählen",
+      "back": "wieder das {{type}}, auf dem die Strategie läuft"
+    }
   },
   "expression": {
     "candlesBack": "vor",
     "candles": "Kerzen",
     "candlesBackNumber": "Zahl der Kerzen zurück",
-    "crossNothing": "Ohne früheren Wert kann nichts kreuzen. Wählen Sie auf einer Seite einen Wert, der einen früheren Wert hat, zum Beispiel einen Indikator.",
     "empty": "Noch leer.",
-    "hasError": "Der Ausdruck hat einen Fehler und lässt sich nicht als Satz zeigen.",
+    "hasError": "Die Formel hat einen Fehler und lässt sich nicht als Satz zeigen.",
     "formula": "Formel",
-    "readOnly": "Hier wird der Ausdruck nur angezeigt.",
+    "readOnly": "Hier wird die Formel nur angezeigt.",
     "blocks": "Bausteine",
-    "formulaView": "Ausdruck für Fortgeschrittene",
+    "formulaView": "Formel für Fortgeschrittene",
     "nothingYet": "Noch nichts zusammengestellt. Wählen Sie unten die Bausteine.",
-    "badExpression": "Dieser Ausdruck ist fehlerhaft und lässt sich nicht aus Bausteinen anzeigen.",
-    "tooDeep": "Dieser Ausdruck ist zu tief verschachtelt für die Bausteine. Sie können ihn in der Ansicht für Fortgeschrittene bearbeiten.",
+    "badExpression": "Diese Formel ist fehlerhaft und lässt sich nicht aus Bausteinen anzeigen.",
+    "tooDeep": "Diese Formel ist zu tief verschachtelt für die Bausteine. Sie können sie in der Ansicht für Fortgeschrittene bearbeiten.",
     "toFormula": "Zur Ansicht für Fortgeschrittene",
     "startOver": "Neu zusammenstellen",
-    "cannotForm": "Aus diesen Bausteinen lässt sich kein Ausdruck bilden. Ändern Sie einen Baustein.",
+    "cannotForm": "Aus diesen Bausteinen lässt sich keine Formel bilden. Ändern Sie einen Baustein.",
     "chooseValue": "Wert wählen",
     "chooseValueOption": "Wert wählen …",
     "gone": "(nicht mehr vorhanden)",
@@ -185,8 +184,8 @@
       "application": "Objekte der Anwendung",
       "results": "Ergebnisse",
       "strategy": "Strategieparameter",
-      "parameters": "Parameter",
-      "fixed": "Feste Werte und Rechnen"
+      "parameters": "Angaben der Vorlage",
+      "fixed": "Feste Werte und Rechnungen"
     },
     "kinds": {
       "number": "Zahl …",
@@ -201,7 +200,7 @@
     "number": "Zahl",
     "text": "Text",
     "choiceValue": "Auswahlwert",
-    "truth": "Wahrheitswert",
+    "truth": "Wahr oder falsch",
     "operation": "Rechenart",
     "function": "Funktion",
     "arithmetic": {
@@ -227,49 +226,41 @@
     "conditionKind": "Art der Bedingung",
     "conditionKinds": {
       "compare": "Vergleich",
-      "cross": "Kreuzung",
       "and": "Alle gelten (und)",
       "or": "Eine gilt (oder)",
       "not": "Nicht",
       "value": "Wert ist wahr"
     },
     "comparison": "Vergleich",
-    "crosses": "kreuzt",
-    "crossDirection": "Richtung des Kreuzens",
-    "directions": {
-      "up": "nach oben",
-      "down": "nach unten",
-      "any": "in beide Richtungen"
-    },
     "and": "und",
     "or": "oder",
     "isTrue": "ist wahr",
-    "formulaLabel": "Ausdruck",
+    "formulaLabel": "Formel",
     "formulaEmpty": "Noch nichts eingegeben.",
-    "formulaFine": "Der Ausdruck ist in Ordnung."
+    "formulaFine": "Die Formel ist in Ordnung."
   },
   "instances": {
-    "parameters": "Parameter",
-    "ownParameters": "Eigene Parameter",
-    "ownParametersHint": "Parameter, die Sie selbst festlegen. Ausdrücke dieses Objekts sprechen sie mit ihrem Namen an.",
-    "noOwnParameters": "Noch kein eigener Parameter.",
+    "parameters": "Einstellungen",
+    "ownParameters": "Eigene Einstellungen",
+    "ownParametersHint": "Einstellungen, die Sie selbst festlegen. Die Formeln dieses Objekts verwenden sie mit ihrem Namen.",
+    "noOwnParameters": "Noch keine eigene Einstellung.",
     "name": "Name",
-    "removeParameter": "Parameter „{{name}}“ entfernen",
+    "removeParameter": "Einstellung „{{name}}“ entfernen",
     "required": "Pflicht",
     "standardValue": "Standardwert",
-    "newParameterName": "Name des neuen Parameters",
-    "datatype": "Datentyp",
-    "addParameter": "Parameter hinzufügen",
+    "newParameterName": "Name der neuen Einstellung",
+    "datatype": "Art des Werts",
+    "addParameter": "Einstellung hinzufügen",
     "properties": "Eigenschaften",
-    "propertiesHint": "Eigenschaften, die dieses Objekt liefert. Jede bekommt ihren Wert aus einem Ausdruck.",
-    "propertiesHintTrend": "Die Richtung des Trends bestimmt ein Ausdruck. Weitere Eigenschaften können Sie hinzufügen.",
-    "defineProperty": "Ausdruck für „{{name}}“ festlegen",
+    "propertiesHint": "Eigenschaften, die dieses Objekt liefert. Jede bekommt ihren Wert aus einer Formel.",
+    "propertiesHintTrend": "Die Richtung des Trends bestimmt eine Formel. Weitere Eigenschaften können Sie hinzufügen.",
+    "defineProperty": "Formel für „{{name}}“ festlegen",
     "removeProperty": "Eigenschaft „{{name}}“ entfernen",
     "newPropertyName": "Name der neuen Eigenschaft",
     "addProperty": "Eigenschaft hinzufügen",
-    "ruleExpression": "Ausdruck der Regel",
-    "ruleCheckHint": "Die Regel prüft: Der Ausdruck ergibt wahr oder falsch.",
-    "ruleDetermineHint": "Die Regel bestimmt einen Wert: Der Ausdruck ergibt den Wert der Eigenschaft.",
+    "ruleExpression": "Formel der Regel",
+    "ruleCheckHint": "Die Regel prüft: Die Formel ergibt wahr oder falsch.",
+    "ruleDetermineHint": "Die Regel bestimmt einen Wert: Die Formel ergibt den Wert der Eigenschaft.",
     "ruleDetermines": "Die Regel bestimmt",
     "determinedProperty": "Bestimmte Eigenschaft der Order",
     "determinesNothing": "nichts (sie prüft nur)",
@@ -293,7 +284,7 @@
     "rulesOfRuleset": "Regeln des Regelwerks",
     "rulesContained": "Enthaltene Regeln und Regelwerke",
     "resultExpression": "Gesamtergebnis",
-    "resultHint": "Optional: ein Ausdruck, der aus den Ergebnissen der Regeln das Gesamtergebnis bildet.",
+    "resultHint": "Optional: eine Formel, die aus den Ergebnissen der Regeln das Gesamtergebnis bildet.",
     "noContent": "Dieses Objekt hat keinen Inhalt, den Sie ändern können.",
     "content": "Inhalt"
   },
@@ -355,8 +346,8 @@
   },
   "used": {
     "title": "Verwendete Werte",
-    "info": "Hier stehen die Werte von Objekten, die dieses Element verwendet. Sie wählen, welche Eigenschaft oder Methode gemeint ist. Wo ein Ausdruck des Elements den Wert nennt, ändert sich der Ausdruck mit.",
-    "empty": "Dieses Element verwendet noch keinen Wert eines Objekts. Verbinden Sie unten einen Wert, oder nennen Sie ihn in einem Ausdruck.",
+    "info": "Hier stehen die Werte von Objekten, die dieses Element verwendet. Sie wählen, welche Eigenschaft oder Methode gemeint ist. Wo eine Formel des Elements den Wert nennt, ändert sich die Formel mit.",
+    "empty": "Dieses Element verwendet noch keinen Wert eines Objekts. Verbinden Sie unten einen Wert, oder nennen Sie ihn in einer Formel.",
     "value": "Wert",
     "properties": "Eigenschaften",
     "methods": "Methoden",
@@ -364,10 +355,10 @@
     "refresh": "Aktualisieren",
     "refreshTip": "Das Objekt ermittelt seine Werte an diesem Element neu, bevor es sie übergibt. Das brauchen Sie, wenn die Werte inzwischen veraltet sein können, zum Beispiel in einer Order- und Positionsverwaltung, die bei neuen Kursen läuft.",
     "inInput": "verbunden",
-    "inExpression": "im Ausdruck",
+    "inExpression": "in einer Formel",
     "inRule": "in einer Regel",
-    "inAssignment": "als Wert eines Parameters",
-    "removeInExpression": "dort entfernen",
+    "inAssignment": "als Wert eines Felds",
+    "removeInExpression": "in der Formel entfernen",
     "removeInput": "Verbindung entfernen",
     "addHint": "Weiteren Wert verbinden, ohne zu ziehen:",
     "noneUsable": "An diesem Element ist kein Objekt verwendbar, das noch nicht verbunden ist. Ein Objekt, das an einer anderen Stelle ermittelt wird, steht hier nicht zur Wahl. Legen Sie dafür ein weiteres Objekt mit eigenem Namen an.",
@@ -388,6 +379,8 @@
   "properties": {
     "method": "Methode",
     "panel": "Eigenschaften",
+    "valueIs": "Wert: {{word}}.",
+    "resultIs": "Ergebnis: {{word}}.",
     "none": "Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an, „Öffnen“ zeigt gespeicherte Strategien.",
     "emptyTitle": "Die Strategie ist leer",
     "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Das ist das Ereignis, das die Strategie startet, zum Beispiel ein Kerzenschluss. Sie finden ihn in der Elementbibliothek in der Gruppe „Ablaufsteuerung“.",
@@ -398,7 +391,7 @@
     "rulesOfStrategy": "Regeln der Strategie",
     "rulesOfStrategyHint": "Diese Regeln gelten für jede Order der Strategie.",
     "applicationObjects": "Objekte der Anwendung",
-    "applicationObjectsHint": "Diese Objekte gibt es immer. Ausdrücke können ihre Werte verwenden.",
+    "applicationObjectsHint": "Diese Objekte gibt es immer. Formeln können ihre Werte verwenden.",
     "findings": "Befunde der Prüfung",
     "notChecked": "Noch nicht geprüft. „Prüfen“ sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.",
     "noFindings": "Keine Befunde. Die Strategie ist in sich stimmig.",
@@ -406,7 +399,7 @@
     "findingsMarked": "Rot und orange umrandete Elemente auf der Fläche haben einen Befund. „Zur Stelle“ führt dorthin.",
     "management": "Order- und Positionsverwaltung",
     "managementOfName": "der Order „{{name}}“",
-    "managementText": "Die Order- und Positionsverwaltung läuft für jede gestellte Order einzeln: zuerst für die wartende Order, nach der Ausführung für die Position.",
+    "managementText": "Die Order- und Positionsverwaltung gilt für jede gestellte Order einzeln: zuerst für die wartende Order, nach der Ausführung für die Position.",
     "managementEmpty": "Der Rahmen ist noch leer. Fügen Sie aus der Elementbibliothek zuerst einen Auslöser ein. Weitere Schritte hängen sich daran.",
     "managementInsert": "Was Sie jetzt aus der Elementbibliothek einfügen, kommt in diesen Rahmen.",
     "section": "Abschnitt",
@@ -416,16 +409,16 @@
     "sectionHint": "Auf der Fläche klappt der Abschnitt mit dem Knopf an seinem Titel ein und aus.",
     "dissolveSection": "Abschnitt auflösen",
     "name": "Name",
-    "unknownType": "Der Typ „{{type}}“ ist unbekannt. Die Belegungen werden nur angezeigt und bleiben beim Speichern unverändert.",
-    "storedAssignments": "Gespeicherte Belegungen",
-    "noAssignments": "Keine Belegungen.",
+    "unknownType": "Der Typ „{{type}}“ ist unbekannt. Seine Angaben werden nur angezeigt und bleiben beim Speichern unverändert.",
+    "storedAssignments": "Gespeicherte Angaben",
+    "noAssignments": "Keine Angaben.",
     "remove": "Entfernen",
     "settings": "Einstellungen",
     "settingsOfObject": "Einstellungen des Objekts",
     "orderProperties": "Eigenschaften der Order",
     "orderPropertiesHint": "Diese Werte bekommt die Order. Fehlt eine Pflichtangabe wie das Volumen, muss eine Regel sie bestimmen.",
     "delivers": "Liefert",
-    "deliversHint": "Jeder Wert ist ein Ausgang für eine Linie",
+    "deliversHint": "An jedem Wert beginnt eine Linie zu einem anderen Element.",
     "rulesOfElement": "Regeln dieses Elements",
     "rulesOfElementHint": "Diese Regeln gelten zusätzlich zu den Regeln der Strategie nur für dieses Element.",
     "noRules": "Keine Regeln.",
@@ -446,6 +439,9 @@
     "title": "Befunde",
     "howToFix": "So beheben Sie es: ",
     "goto": "Zur Stelle",
+    "whereElement": "Element: {{name}}",
+    "whereSubject": "Darin: {{name}}",
+    "whereField": "Feld: {{name}}",
     "level": {
       "error": "Fehler",
       "hint": "Hinweis"
@@ -460,51 +456,48 @@
     "countTip": "{{errors}}, {{hints}}. Ein Klick zeigt die Befunde.",
     "unknown": "Befund {{code}}",
     "fields": {
-      "parameter": "Parameter „{{name}}“",
-      "property": "Eigenschaft „{{name}}“",
-      "propertyDefinition": "Eigenschaft „{{name}}“ des Objekts",
-      "expression": "Ausdruck",
-      "result_expression": "Ausdruck für das Gesamtergebnis"
+      "expression": "Formel",
+      "result_expression": "Formel für das Gesamtergebnis"
     },
     "issues": {
       "syntax": "Schreibfehler an Stelle {{start}} bis {{end}}: {{syntaxReason}}",
       "unknown_function": "Unbekannte Funktion „{{name}}“ (Stelle {{start}} bis {{end}}).",
       "unknown_name": "Unbekannter Name „{{name}}“ (Stelle {{start}} bis {{end}}).",
       "unknown_property": "„{{object}}“ hat keine Eigenschaft „{{property}}“ (Stelle {{start}} bis {{end}}).",
-      "type_mismatch": "Der Typ passt nicht: erwartet {{expected}}, gefunden {{found}} (Stelle {{start}} bis {{end}}).",
+      "type_mismatch": "Die Art des Werts passt nicht: erwartet {{expected}}, gefunden {{found}} (Stelle {{start}} bis {{end}}).",
       "unknown_choice_value": "„{{values}}“ ist kein Wert der Auswahl; erlaubt sind {{allowed}} (Stelle {{start}} bis {{end}}).",
       "argument_count": "Die Funktion {{function}} erhält {{found}} Angaben; erlaubt sind {{minimum}} bis {{maximum}} (Stelle {{start}} bis {{end}}).",
-      "other": "Der Ausdruck ist an Stelle {{start}} bis {{end}} fehlerhaft."
+      "other": "Die Formel ist an Stelle {{start}} bis {{end}} fehlerhaft."
     },
     "syntax": {
-      "unexpected_end": "der Ausdruck endet zu früh",
+      "unexpected_end": "die Formel endet zu früh",
       "unexpected_token": "unerwartetes Zeichen „{{found}}“",
       "invalid_character": "ungültiges Zeichen „{{found}}“",
       "invalid_number": "ungültige Zahl",
       "unterminated_string": "Text nicht abgeschlossen",
-      "too_long": "der Ausdruck ist zu lang",
-      "too_deep": "der Ausdruck ist zu tief geschachtelt"
+      "too_long": "die Formel ist zu lang",
+      "too_deep": "die Formel ist zu tief verschachtelt"
     },
     "connectionReasons": {
-      "unknown_source": "die Quelle ist kein Element",
-      "unknown_target": "das Ziel ist kein Element",
+      "unknown_source": "der Anfang ist kein Element",
+      "unknown_target": "das Ende ist kein Element",
       "unknown_output": "der Ausgang gehört nicht zum Element",
       "target_is_trigger": "ein Auslöser hat keinen Eingang",
       "across_managements": "die Verbindung führt zwischen dem Ablauf und einer Order- und Positionsverwaltung oder zwischen zwei Order- und Positionsverwaltungen"
     },
     "bindingReasons": {
-      "binding_kind": "diese Art der Belegung ist nicht erlaubt",
-      "type": "der feste Wert hat den falschen Datentyp",
-      "choice_value": "der feste Wert gehört nicht zur Auswahl",
+      "binding_kind": "diese Herkunft des Werts ist hier nicht erlaubt",
+      "type": "der eingegebene Wert hat die falsche Art",
+      "choice_value": "der eingegebene Wert gehört nicht zur Auswahl",
       "value": "der Wert ist nicht zulässig",
-      "unknown_parameter": "der Parameter ist unbekannt",
+      "unknown_parameter": "das Feld ist unbekannt",
       "unknown_property": "die Eigenschaft ist unbekannt",
-      "set_by_application": "die Anwendung belegt diese Eigenschaft, nicht der Anwender"
+      "set_by_application": "die Anwendung legt diese Eigenschaft fest, nicht der Anwender"
     },
     "resultReasons": {
       "unknown_property": "die bestimmte Eigenschaft ist unbekannt",
       "choice_value": "das Ergebnis ist kein Wert der Auswahl",
-      "type": "der Typ des Ergebnisses passt nicht"
+      "type": "die Art des Ergebnisses passt nicht"
     },
     "referenceKinds": {
       "forward": "Vorwärtsbezug",
@@ -526,7 +519,7 @@
     },
     "data": {
       "unknown": "Die Datenverbindung ist ungültig: {{reason}}.",
-      "type_mismatch": "Der Datentyp des verbundenen Werts passt nicht: erwartet {{expected}}, gefunden {{found}}."
+      "type_mismatch": "Die Art des verbundenen Werts passt nicht: erwartet {{expected}}, gefunden {{found}}."
     },
     "input": {
       "unused": "Der Wert „{{property}}“ von „{{instance}}“ ist mit diesem Element verbunden, wird aber nicht verwendet.",
@@ -541,7 +534,7 @@
       "unnamed": "bei dem Element, das es zuerst verwendet,"
     },
     "key": {
-      "invalid": "Die Kennung „{{key}}“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann."
+      "invalid": "Der Name „{{key}}“ enthält Zeichen, die eine Formel nicht ansprechen kann."
     },
     "layout": {
       "invalid": "Ein Abschnitt oder eingeklappter Rahmen passt nicht: {{reason}}."
@@ -559,39 +552,39 @@
       "other_flow": "das Element gehört zu einem anderen Ablauf"
     },
     "expression": {
-      "empty": "Der Ausdruck in {{field}} fehlt oder ist unvollständig.",
-      "invalid": "Der Ausdruck in {{field}} ist fehlerhaft: {{problem}}",
-      "order_outside_management": "Der Ausdruck in {{field}} verwendet Order oder Position außerhalb einer Order- und Positionsverwaltung."
+      "empty": "Im Feld „{{field}}“ fehlt die Formel, oder sie ist unvollständig.",
+      "invalid": "Die Formel im Feld „{{field}}“ ist fehlerhaft: {{problem}}",
+      "order_outside_management": "Die Formel im Feld „{{field}}“ verwendet Order oder Position außerhalb einer Order- und Positionsverwaltung."
     },
     "rule": {
-      "unresolved_name": "Hinweis zum Ausdruck in {{field}}: {{problem}} Die Vorlage allein kennt den Namen nicht; geprüft wird er in jeder Strategie, die die Vorlage enthält.",
+      "unresolved_name": "Hinweis zur Formel im Feld „{{field}}“: {{problem}} Die Vorlage allein kennt den Namen nicht; geprüft wird er in jeder Strategie, die die Vorlage enthält.",
       "result_mismatch": "Das Ergebnis der Regel passt nicht zur bestimmten Eigenschaft „{{property}}“: {{reason}}.",
       "order_in_indicator": "Die Regel spricht Order oder Position an. In einem Indikator oder Trend ist das nicht erlaubt.",
       "invalid_type": "In dieser Liste von Regeln steht ein Objekt vom Typ „{{type}}“, das dort nicht stehen darf.",
       "comparison_missing": "Die bestimmende Regel nennt keinen Vergleich beim Prüfen."
     },
     "parameter": {
-      "missing": "Der Pflichtparameter „{{parameter}}“ hat keinen Wert.",
-      "binding_invalid": "Die Belegung von „{{parameter}}{{property}}“ passt nicht: {{reason}}."
+      "missing": "Das Pflichtfeld „{{parameter}}“ hat keinen Wert.",
+      "binding_invalid": "Die Angabe zu „{{parameter}}{{property}}“ passt nicht: {{reason}}."
     },
     "order": {
-      "property_missing": "Die Eigenschaft „{{property}}“ der Order ist nicht belegt, und keine bestimmende Regel liefert sie."
+      "property_missing": "Die Eigenschaft „{{property}}“ der Order hat keinen Wert, und keine bestimmende Regel liefert ihn."
     },
     "ruleset": {
-      "reference_order": "Regelwerk mit {{kind}}."
+      "reference_order": "In diesem Regelwerk gibt es einen {{kind}}: Eine Regel verwendet ein Ergebnis, das noch nicht feststeht."
     },
     "candle": {
       "no_instance": "Die Kerze wird verwendet, aber auf der Zeichenfläche liegt keine Kerze mit gesetzter Zeiteinheit."
     },
     "name": {
       "duplicate": "Der Name „{{name}}“ ist doppelt vergeben.",
-      "invalid": "Der Name „{{name}}“ enthält Zeichen, die ein Ausdruck nicht ansprechen kann."
+      "invalid": "Der Name „{{name}}“ enthält Zeichen, die eine Formel nicht ansprechen kann."
     },
     "type": {
       "unknown": "Der Typ „{{type}}“ ist unbekannt."
     },
     "trend": {
-      "direction_missing": "Dem Trend fehlt der Ausdruck für die Eigenschaft „{{property}}“."
+      "direction_missing": "Dem Trend fehlt die Formel für die Eigenschaft „{{property}}“."
     },
     "calculation": {
       "circular_reference": "Berechnungen verwenden ihre Ergebnisse im Kreis ({{names}})."
@@ -608,16 +601,16 @@
     }
   },
   "findingFixes": {
-    "unknown": "Prüfen Sie das betroffene Element und seine Angaben. Zeigt der Befund keine Ursache, melden Sie die Kennung des Befunds.",
+    "unknown": "Prüfen Sie das betroffene Element und seine Angaben. Zeigt der Befund keine Ursache, nennen Sie bei einer Rückfrage seine Bezeichnung: {{code}}.",
     "issues": {
       "syntax": "Korrigieren Sie die Schreibweise an der genannten Stelle.",
       "unknown_function": "Wählen Sie eine Funktion, die es gibt.",
       "unknown_name": "Wählen Sie einen Wert, den es gibt: ein Objekt auf der Zeichenfläche, einen Strategieparameter oder das Ergebnis eines Schritts.",
       "unknown_property": "Wählen Sie eine Eigenschaft, die das Objekt liefert.",
-      "type_mismatch": "Verwenden Sie einen Wert vom passenden Datentyp.",
+      "type_mismatch": "Verwenden Sie einen Wert der passenden Art.",
       "unknown_choice_value": "Wählen Sie einen der erlaubten Werte.",
       "argument_count": "Geben Sie die passende Zahl von Angaben an.",
-      "other": "Korrigieren Sie den Ausdruck an der genannten Stelle."
+      "other": "Korrigieren Sie die Formel an der genannten Stelle."
     },
     "trigger": {
       "unconnected": "Verbinden Sie den Auslöser mit dem ersten Schritt oder entfernen Sie ihn.",
@@ -635,10 +628,10 @@
     },
     "data": {
       "unknown": "Wählen Sie ein Objekt und eine Eigenschaft, die es gibt, oder löschen Sie die Verbindung.",
-      "type_mismatch": "Verbinden Sie einen Wert vom passenden Datentyp."
+      "type_mismatch": "Verbinden Sie einen Wert der passenden Art."
     },
     "input": {
-      "unused": "Verwenden Sie den Wert in einem Ausdruck oder entfernen Sie die Verbindung.",
+      "unused": "Verwenden Sie den Wert in einer Formel oder entfernen Sie die Verbindung.",
       "refresh_not_allowed": "Schalten Sie „Aktualisieren“ für diesen Wert aus. Brauchen Sie aktuelle Werte, legen Sie ein weiteres Objekt mit eigenem Namen an und verwenden Sie dieses."
     },
     "instance": {
@@ -652,23 +645,23 @@
       "invalid": "Entfernen Sie den Abschnitt und legen Sie ihn neu an."
     },
     "expression": {
-      "empty": "Geben Sie den Ausdruck vollständig an.",
-      "invalid": "Korrigieren Sie den Ausdruck.",
+      "empty": "Geben Sie die Formel vollständig an.",
+      "invalid": "Korrigieren Sie die Formel.",
       "order_outside_management": "Verwenden Sie Order und Position nur in der Order- und Positionsverwaltung einer Order."
     },
     "rule": {
-      "unresolved_name": "Prüfen Sie den Namen im Ausdruck der Vorlage.",
-      "result_mismatch": "Ändern Sie den Ausdruck der Regel oder wählen Sie eine andere bestimmte Eigenschaft.",
+      "unresolved_name": "Prüfen Sie den Namen in der Formel der Vorlage.",
+      "result_mismatch": "Ändern Sie die Formel der Regel oder wählen Sie eine andere bestimmte Eigenschaft.",
       "order_in_indicator": "Entfernen Sie die Regel aus dem Indikator oder Trend und ordnen Sie sie der Strategie oder einem Element zu.",
       "invalid_type": "Entfernen Sie das Objekt aus dieser Liste.",
       "comparison_missing": "Wählen Sie den Vergleich beim Prüfen."
     },
     "parameter": {
-      "missing": "Geben Sie dem Parameter einen Wert, wählen Sie einen Strategieparameter oder „bei der Anwendung“.",
-      "binding_invalid": "Wählen Sie eine passende Belegung."
+      "missing": "Geben Sie dem Feld einen Wert: Tragen Sie ihn ein, wählen Sie einen Strategieparameter oder legen Sie ihn beim Start der Strategie fest.",
+      "binding_invalid": "Wählen Sie unter „Woher kommt der Wert?“ eine passende Möglichkeit aus."
     },
     "order": {
-      "property_missing": "Belegen Sie die Eigenschaft oder ordnen Sie dem Element oder der Strategie eine Regel zu, die sie bestimmt."
+      "property_missing": "Geben Sie der Eigenschaft einen Wert oder ordnen Sie dem Element oder der Strategie eine Regel zu, die sie bestimmt."
     },
     "ruleset": {
       "reference_order": "Ändern Sie die Reihenfolge der Regeln, sodass jede Regel nur frühere Ergebnisse verwendet."
@@ -684,7 +677,7 @@
       "unknown": "Entfernen Sie das Element oder installieren Sie die Erweiterung, die den Typ liefert."
     },
     "trend": {
-      "direction_missing": "Geben Sie den Ausdruck für die Richtung des Trends an."
+      "direction_missing": "Geben Sie die Formel für die Richtung des Trends an."
     },
     "calculation": {
       "circular_reference": "Ändern Sie eine der Berechnungen, sodass sie nicht auf sich selbst zurückführt."
@@ -760,7 +753,7 @@
     },
     "usedBy": "Verwendet wird es von:",
     "usedByStrategyRules": "Regeln der Strategie",
-    "afterRemoval": "Danach bleibt in den Ausdrücken ein leerer Platz „Wert wählen …“. Belegungen, die ihn verwenden, sind „nicht belegt“. Verbindungen und Eingänge, die von ihm kamen, entfallen.",
+    "afterRemoval": "Danach bleibt in den Formeln ein leerer Platz „Wert wählen …“. Felder, die ihn verwenden, sind „nicht belegt“. Verbindungen und Eingänge, die von ihm kamen, entfallen.",
     "error": {
       "ok": "OK"
     }
@@ -781,7 +774,7 @@
       "object": {
         "not_found": "Das Objekt gibt es nicht mehr. Vielleicht wurde es gelöscht.",
         "unreadable": "Die Datei dieses Objekts lässt sich nicht lesen. Sie bleibt unverändert.",
-        "kind_conflict": "Im Objektverzeichnis liegt unter dieser Kennung schon etwas anderes. Es wurde nichts geschrieben.",
+        "kind_conflict": "Im Objektverzeichnis liegt unter diesem Namen schon etwas anderes. Es wurde nichts geschrieben.",
         "name_taken": "Der Dateiname dieses Objekts ist im Objektverzeichnis durch einen anderen Eintrag belegt. Es wurde nichts geschrieben.",
         "builtin": "Eine mitgelieferte Vorlage lässt sich weder ändern noch löschen.",
         "write_failed": "Die Datei des Objekts konnte nicht geschrieben oder gelöscht werden. Prüfen Sie das Objektverzeichnis."
@@ -789,7 +782,7 @@
       "document": {
         "invalid": "Das Dokument ist nicht so aufgebaut, wie es sein muss, und wurde nicht angenommen.",
         "format_mismatch": "Das Dokument gehört zu einer anderen Art von Objekt.",
-        "id_mismatch": "Die Kennung im Dokument passt nicht zu dem Objekt, das gespeichert werden soll.",
+        "id_mismatch": "Das Dokument gehört nicht zu dem Objekt, das gespeichert werden soll.",
         "too_large": "Das Dokument ist zu groß, um gespeichert zu werden (Grenze: {{limit_bytes}} Byte)."
       },
       "request": {
@@ -801,11 +794,11 @@
         "failed": "Die Anfrage konnte nicht bearbeitet werden."
       },
       "host": {
-        "not_allowed": "Das Backend nimmt Anfragen unter diesem Rechnernamen nicht an."
+        "not_allowed": "Das Backend nimmt Anfragen unter dieser Adresse nicht an."
       },
       "expressions": {
-        "pointer_invalid": "Die Stelle, an der ein Ausdruck stehen soll, gibt es in dieser Strategie nicht.",
-        "blocks_invalid": "Aus den gewählten Bausteinen lässt sich kein Ausdruck bilden."
+        "pointer_invalid": "Die Stelle, an der eine Formel stehen soll, gibt es in dieser Strategie nicht.",
+        "blocks_invalid": "Aus den gewählten Bausteinen lässt sich keine Formel bilden."
       },
       "keys": {
         "scope_invalid": "An dieser Stelle lässt sich kein neues Objekt anlegen."
@@ -818,14 +811,14 @@
         "type_unknown": "Diesen Objekttyp kennt das Backend nicht."
       },
       "removal": {
-        "strategy_required": "Entfernen mit Folgen für Ausdrücke gibt es nur in einer Strategie, nicht in einer Vorlage.",
+        "strategy_required": "Entfernen mit Folgen für Formeln gibt es nur in einer Strategie, nicht in einer Vorlage.",
         "target_unknown": "Das, was entfernt werden soll, gibt es in der Strategie nicht."
       },
       "object_directory": {
         "not_set": "Es ist kein Objektverzeichnis festgelegt. Legen Sie es in den Einstellungen fest.",
         "stored_invalid": "Das gespeicherte Objektverzeichnis ist ungültig. Legen Sie es in den Einstellungen neu fest.",
         "unreadable": "Das Objektverzeichnis lässt sich nicht lesen.",
-        "not_absolute": "Das Objektverzeichnis muss ein absoluter Pfad sein.",
+        "not_absolute": "Das Objektverzeichnis muss mit dem vollständigen Pfad angegeben werden.",
         "invalid_body": "Die Angabe zum Objektverzeichnis ist unvollständig: Sie braucht den Pfad und die Antwort, ob die Dateien verschoben werden.",
         "conflict": "Im neuen Objektverzeichnis liegen schon Dateien mit denselben Namen. Es wurde nichts verschoben.",
         "stored_invalid_no_move": "Das gespeicherte Objektverzeichnis ist ungültig, deshalb lassen sich keine Dateien verschieben. Speichern Sie das Verzeichnis ohne Verschieben, um es zu reparieren.",
@@ -860,7 +853,7 @@
     "directoryNotSet": "Es ist kein Objektverzeichnis festgelegt und es lässt sich kein Standard bestimmen.",
     "directoryIsDefault": "Es gilt das Standardverzeichnis.",
     "directoryIsSet": "Das Verzeichnis wurde festgelegt.",
-    "directory": "Verzeichnis (absoluter Pfad)",
+    "directory": "Verzeichnis (vollständiger Pfad)",
     "directoryChange": "Verzeichnis ändern",
     "moveQuestion": "Dateien verschieben?",
     "moveYes": "Ja, Dateien verschieben",

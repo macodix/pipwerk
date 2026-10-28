@@ -20,7 +20,6 @@ export type V =
 
 export type C =
   | { cmp: [V, string, V] }
-  | { cross: [V, V, 'up' | 'down' | 'any'] }
   | { and: C[] }
   | { or: C[] }
   | { not: C }
@@ -97,12 +96,6 @@ export async function setCond(cb: Locator, c: C): Promise<void> {
     await setValue(row.locator(':scope > .vb').nth(0), c.cmp[0]);
     await choose(trigger(row), c.cmp[1]);
     await setValue(row.locator(':scope > .vb').nth(1), c.cmp[2]);
-  } else if ('cross' in c) {
-    await choose(kind, { value: 'cross' });
-    const row = cb.locator(':scope > .cb-row');
-    await setValue(row.locator(':scope > .vb').nth(0), c.cross[0]);
-    await setValue(row.locator(':scope > .vb').nth(1), c.cross[1]);
-    await choose(trigger(row), c.cross[2]);
   } else if ('and' in c || 'or' in c) {
     const items = 'and' in c ? c.and : c.or;
     await choose(kind, { value: 'and' in c ? 'and' : 'or' });

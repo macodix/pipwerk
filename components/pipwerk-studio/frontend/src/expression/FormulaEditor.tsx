@@ -248,7 +248,7 @@ export function FormulaEditor({ session, reveal = null }: { session: ExpressionS
               }}
             >
               <span className="fe-pop-label">{item.label}</span>
-              <span className="fe-pop-detail">{item.detail === '' ? '' : (t(`datatype.${item.detail}`, { defaultValue: item.detail }))}</span>
+              <span className="fe-pop-detail">{item.method ? t('properties.method') : item.detail}</span>
               {item.tip !== '' ? <span className="fe-pop-tip">{item.tip}</span> : null}
             </li>
           ))}

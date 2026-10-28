@@ -30,7 +30,7 @@ Die Reihenfolge, in der die Elemente angelegt werden, ist die Reihenfolge im Dok
 
 - „Eintrag *X*“ ist der Eintrag mit dem Namen *X* in der Elementbibliothek. Ein Klick darauf fügt das Element hinter dem gewählten Schritt ein und verbindet es mit dessen erstem freien Ausgang. Die Eigenschaftenansicht zeigt danach das neue Element.
 - „Name“ ist das Feld ganz oben in der Eigenschaftenansicht.
-- „Belegung“ nennt die Bindungsart und den Wert eines Feldes der Eigenschaftenansicht. „Strategieparameter *P*“ heißt: Bindungsart „Strategieparameter“, dort *P* wählen. „Fester Wert“ heißt: Bindungsart „Fester Wert“.
+- „Belegung“ nennt die Antwort auf „Woher kommt der Wert?“ und den Wert eines Feldes der Eigenschaftenansicht. „Strategieparameter *P*“ heißt: „aus einem Strategieparameter“ wählen, dort *P* wählen. „Fester Wert“ heißt: „fest eingeben“. „Ausdruck“ heißt: „aus einer Formel“. Das Instrument bleibt bei „das Instrument, auf dem die Strategie läuft“.
 - „Ausdruck“ nennt die Bausteine. Jeder Baustein hat eine Liste „Wert wählen …“; der Wert steht in der Form *Objekt › Eigenschaft* (zum Beispiel *EMA 20 › Wert*). Die Listen enthalten zuerst die verbundenen Werte, dann die Objekte der Strategie, die Objekte der Anwendung, die Ergebnisse anderer Schritte, die Strategieparameter, die Parameter der Regel und am Ende die festen Werte und die Arten von Bausteinen.
 - „Rechnung“ ist die Wahl „Rechnung (plus, minus, mal, geteilt)“, „Wenn … dann … sonst …“ die Wahl der Fallunterscheidung, „Bedingung“ in einer Liste von Werten die Wahl „Bedingung (wahr oder falsch) …“. Eine Bedingung wählt oben ihre Art: „Vergleich“, „Kreuzung“, „Alle gelten (und)“, „Eine gilt (oder)“, „Nicht“ oder „Wert ist wahr“.
 - Ein Strich „–“ in einer Spalte heißt: nichts zu tun, der Standard bleibt.
@@ -67,7 +67,7 @@ Klicken Sie nacheinander die Einträge in der Gruppe „Indikatoren“ an. Jedes
 | Nr. | Eintrag | Name | Belegung und Ausdruck |
 | --- | --- | --- | --- |
 | 1 | Kerzenschluss | – | Zeiteinheit: Strategieparameter Zeiteinheit |
-| 2 | Bedingung | Kreuzen | Ausdruck: Art „Kreuzung“: *EMA 20 › Wert* kreuzt *EMA 50 › Wert* in beide Richtungen |
+| 2 | Bedingung | Kreuzen | Ausdruck: Art „Eine gilt (oder)“ mit zwei Bedingungen, beide Art „Alle gelten (und)“ (eine Kreuzung ist kein Baustein). Erste (nach oben): *Vorheriger Wert von EMA 20 › Wert* ist kleiner oder gleich *Vorheriger Wert von EMA 50 › Wert* und *EMA 20 › Wert* ist größer als *EMA 50 › Wert*. Zweite (nach unten): *Vorheriger Wert von EMA 20 › Wert* ist größer oder gleich *Vorheriger Wert von EMA 50 › Wert* und *EMA 20 › Wert* ist kleiner als *EMA 50 › Wert* |
 | 3 | Berechnung | Richtung | Ausdruck: Wert „Wenn … dann … sonst …“; Bedingung: Vergleich *EMA 20 › Wert* ist größer als *EMA 50 › Wert*; dann Text `buy`; sonst Text `sell` |
 | 4 | Berechnung | Stop-Loss | Ausdruck: Wenn *Richtung › Ergebnis* gleich dem Text `buy`, dann *Kerze › Schluss* minus (*Stop-Abstand* mal *ATR 14 › Wert*), sonst *Kerze › Schluss* plus (*Stop-Abstand* mal *ATR 14 › Wert*) |
 | 5 | Order aufgeben | – | Ordertyp: Fester Wert „MarketOrder“; Richtung: Bindungsart „Ausdruck“, Wert *Richtung › Ergebnis*; Stop-Loss: Bindungsart „Ausdruck“, Wert *Stop-Loss › Ergebnis* |
@@ -86,7 +86,7 @@ Klicken Sie auf den Rahmen „Verwaltung · Order aufgeben“ (auf seinen Titel)
 | --- | --- | --- | --- |
 | 6 | Kerzenschluss | – | Zeiteinheit: Strategieparameter Zeiteinheit |
 | 7 | Bedingung | Order ausgeführt | Vergleich *Order › Status* gleich dem Wert „ausgeführt“ (aus der Liste der Werte der Eigenschaft) |
-| 8 | Bedingung | Kreuzen gegen die Position | Art „Eine gilt (oder)“ mit zwei Bedingungen. Erste: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „buy“ und der Kreuzung *EMA 20 › Wert* kreuzt *EMA 50 › Wert* nach unten. Zweite: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „sell“ und der Kreuzung *EMA 20 › Wert* kreuzt *EMA 50 › Wert* nach oben |
+| 8 | Bedingung | Kreuzen gegen die Position | Art „Eine gilt (oder)“ mit zwei Bedingungen. Erste: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „buy“ und den zwei Vergleichen der Kreuzung nach unten (*Vorheriger Wert von EMA 20 › Wert* ist größer oder gleich *Vorheriger Wert von EMA 50 › Wert*, *EMA 20 › Wert* ist kleiner als *EMA 50 › Wert*). Zweite: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „sell“ und den zwei Vergleichen der Kreuzung nach oben (*Vorheriger Wert von EMA 20 › Wert* ist kleiner oder gleich *Vorheriger Wert von EMA 50 › Wert*, *EMA 20 › Wert* ist größer als *EMA 50 › Wert*) |
 | 9 | Position schließen | – | – |
 
 Die Verwaltung hat eigene Auslöser. Die Objekte des Hauptablaufs behalten darin den Stand, den sie beim Aufgeben der Order hatten; die Verwaltung braucht aber die aktuellen Werte. Deshalb schalten Sie bei Schritt 8 unter „Verwendete Werte“ bei *EMA 20* und bei *EMA 50* den Schalter „Aktualisieren“ ein (nach der Wahl der Werte in den Bausteinen), und bei Schritt 10 bei *ATR 14*.

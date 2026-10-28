@@ -22,10 +22,13 @@ export type TypeIndex = {
   byId: ReadonlyMap<string, TypeDescription>;
   templates: readonly TemplateDocument[];
   functions: readonly FunctionDescription[];
+  /** The word for each data type in trader language (specification 3.1); for `object` the general word. */
+  dataTypeWords: ReadonlyMap<string, Label>;
 };
 
 export function createTypeIndex(response: ElementTypesResponse): TypeIndex {
   return {
+    dataTypeWords: new Map(response.dataTypes.map((word) => [word.id, word.label])),
     list: response.types,
     byId: new Map(response.types.map((type) => [type.id, type])),
     templates: response.templates,
@@ -41,6 +44,32 @@ export function labelText(label: Label, language: SupportedLanguage): string {
 export function typeName(index: TypeIndex, typeId: string, language: SupportedLanguage): string {
   const type = index.byId.get(typeId);
   return type === undefined ? typeId : labelText(type.name, language);
+}
+
+/**
+ * The word for a data type in trader language (specification 3.1, 5.4): the word the entry itself carries
+ * (`datatype_label`), else, for an object, the name of its object type, else the word of the library for the data type.
+ * Explanation, card on the drawing area and formula editor all use this one function, so they show the same words.
+ */
+export function dataTypeWord(
+  index: TypeIndex | null,
+  datatype: string,
+  language: SupportedLanguage,
+  options?: { specific?: Label | null; objectType?: string | null },
+): string {
+  const specific = options?.specific;
+  if (specific !== undefined && specific !== null && specific[language] !== '') {
+    return specific[language];
+  }
+  if (index === null) {
+    return datatype;
+  }
+  const objectType = options?.objectType;
+  if (datatype === 'object' && objectType !== undefined && objectType !== null) {
+    return typeName(index, objectType, language);
+  }
+  const general = index.dataTypeWords.get(datatype);
+  return general === undefined ? datatype : general[language];
 }
 
 /** The parameter that selects an order type, with the order types it offers. */

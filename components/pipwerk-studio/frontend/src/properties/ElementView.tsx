@@ -185,7 +185,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
               {[...Object.entries(element.parameters), ...Object.entries(element.properties)].map(([key, binding]) => (
                 <li key={key} className="prop-row">
                   <span className="prop-name">{key}</span>
-                  <span className="dtype-chip">{t(`binding.${binding.kind}`)}</span>
+                  <span className="dtype-chip">{t(`binding.stored.${binding.kind}`)}</span>
                   <span className="prop-values">{typeof binding.value === 'string' ? binding.value : JSON.stringify(binding.value ?? null)}</span>
                 </li>
               ))}

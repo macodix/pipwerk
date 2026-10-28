@@ -16,7 +16,17 @@ export type FakeResponse = { status: number; body: unknown };
 
 type Json = Record<string, unknown>;
 
-export type FakeFinding = { level: 'error' | 'hint'; code: string; element: string | null; subject: string | null; details: Record<string, unknown> };
+export type FakeFinding = {
+  level: 'error' | 'hint';
+  code: string;
+  element: string | null;
+  subject: string | null;
+  details: Record<string, unknown>;
+  /** What the user sees (specification 3.6): the name of the element, of the object or rule inside it, the label of the field. */
+  element_name?: { de: string; en: string } | null;
+  subject_name?: string | null;
+  field_label?: { de: string; en: string } | null;
+};
 
 export type FakeApiOptions = {
   /** The type descriptions the backend delivers; by default the ones of the product. */

@@ -27,6 +27,8 @@ export type PropertyRow = {
   label: string;
   explanation: string;
   datatype: DataType;
+  /** The word for the data type the type description carries (`datatype_label`); `null` for an own property. */
+  datatypeLabel: Label | null;
   choices: Choice[];
   objectType: string | null;
   /** The user defined the property in the instance. */
@@ -49,6 +51,7 @@ export function propertyRows(
       label: labelOrText(property.label, language),
       explanation: labelOrText(property.explanation, language),
       datatype: property.datatype,
+      datatypeLabel: property.datatypeLabel,
       choices: property.choices,
       objectType: property.objectType,
       own: false,
@@ -59,6 +62,7 @@ export function propertyRows(
       label: own.name,
       explanation: '',
       datatype: own.datatype,
+      datatypeLabel: null,
       choices: (own.choices ?? []).map((id) => ({ id, label: { de: id, en: id } })),
       objectType: null,
       own: true,
@@ -90,6 +94,7 @@ export function cardRows(
     label: labelOrText(method.label, language),
     explanation: labelOrText(method.explanation, language),
     datatype: method.datatype,
+    datatypeLabel: method.datatypeLabel,
     choices: method.choices,
     objectType: method.objectType,
     own: false,

@@ -90,6 +90,8 @@ export type Condition = { name: string; value: string };
 export type ParameterDescription = {
   id: string;
   datatype: DataType;
+  /** The word for the data type in trader language (specification 3.1); for an object the name of its object type. */
+  datatypeLabel: Label;
   label: Label;
   explanation: Label;
   required: boolean;
@@ -103,6 +105,7 @@ export type ParameterDescription = {
 export type PropertyDescription = {
   id: string;
   datatype: DataType;
+  datatypeLabel: Label;
   label: Label;
   explanation: Label;
   must: boolean;
@@ -119,6 +122,7 @@ export type PropertyDescription = {
 export type ArgumentDescription = {
   id: string;
   datatype: DataType;
+  datatypeLabel: Label;
   label: Label;
   explanation: Label;
   required: boolean;
@@ -134,6 +138,7 @@ export type ArgumentDescription = {
 export type MethodDescription = {
   id: string;
   datatype: DataType;
+  datatypeLabel: Label;
   label: Label;
   explanation: Label;
   choices: Choice[];
@@ -209,7 +214,12 @@ export type TemplateDocument = {
   [field: string]: unknown;
 };
 
+/** A data type with its word in trader language in both languages (`data_types` of the answer). */
+export type DataTypeWord = { id: string; label: Label };
+
 export type ElementTypesResponse = {
+  /** The words for the data types; for `object` the general word. */
+  dataTypes: DataTypeWord[];
   types: TypeDescription[];
   templates: TemplateDocument[];
   functions: FunctionDescription[];
@@ -279,6 +289,7 @@ function parseParameter(value: unknown, what: string): ParameterDescription {
   return {
     id: expectString(record.id, `${what}.id`),
     datatype: parseDataType(record.datatype, `${what}.datatype`),
+    datatypeLabel: optionalLabel(record.datatype_label, `${what}.datatype_label`),
     label: parseLabel(record.label, `${what}.label`),
     explanation: optionalLabel(record.explanation, `${what}.explanation`),
     required: expectBoolean(record.required, `${what}.required`),
@@ -295,6 +306,7 @@ function parseProperty(value: unknown, what: string): PropertyDescription {
   return {
     id: expectString(record.id, `${what}.id`),
     datatype: parseDataType(record.datatype, `${what}.datatype`),
+    datatypeLabel: optionalLabel(record.datatype_label, `${what}.datatype_label`),
     label: parseLabel(record.label, `${what}.label`),
     explanation: optionalLabel(record.explanation, `${what}.explanation`),
     must: expectBoolean(record.must, `${what}.must`),
@@ -326,6 +338,7 @@ function parseArgument(value: unknown, what: string): ArgumentDescription {
   return {
     id: expectString(record.id, `${what}.id`),
     datatype: parseDataType(record.datatype, `${what}.datatype`),
+    datatypeLabel: optionalLabel(record.datatype_label, `${what}.datatype_label`),
     label: parseLabel(record.label, `${what}.label`),
     explanation: optionalLabel(record.explanation, `${what}.explanation`),
     required: expectBoolean(record.required, `${what}.required`),
@@ -340,6 +353,7 @@ function parseMethod(value: unknown, what: string): MethodDescription {
   return {
     id: expectString(record.id, `${what}.id`),
     datatype: parseDataType(record.datatype, `${what}.datatype`),
+    datatypeLabel: optionalLabel(record.datatype_label, `${what}.datatype_label`),
     label: parseLabel(record.label, `${what}.label`),
     explanation: optionalLabel(record.explanation, `${what}.explanation`),
     choices: record.choices === undefined ? [] : parseChoices(record.choices, `${what}.choices`),
@@ -482,6 +496,16 @@ export function parseElementTypes(value: unknown): ElementTypesResponse {
   const record = expectRecord(value, 'element types');
   const texts = parseTemplateTexts(record.template_texts);
   return {
+    dataTypes:
+      record.data_types === undefined
+        ? []
+        : expectArray(record.data_types, 'data_types').map((item, index) => {
+            const word = expectRecord(item, `data_types[${index}]`);
+            return {
+              id: expectString(word.id, `data_types[${index}].id`),
+              label: parseLabel(word.label, `data_types[${index}].label`),
+            };
+          }),
     types: expectArray(record.types, 'types').map((item, index) => parseType(item, `types[${index}]`)),
     templates: expectArray(record.templates, 'templates').map((item, index) =>
       parseTemplate(item, `templates[${index}]`, texts),

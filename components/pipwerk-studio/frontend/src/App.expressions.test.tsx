@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 import { renderWithProviders } from './test-utils';
-import { choose, clickNode, menu, nodeByName, offeredChoices, offeredGroups, openStored, waitForReady } from './testing/actions';
+import { choose, clickNode, menu, nodeByName, offeredChoices, offeredGroups, openStored, switchLanguage, waitForReady } from './testing/actions';
 import { mockApi } from './testing/backend';
 import { EMA_ELEMENT_IDS, emaTrendfolge } from './testing/emaTrendfolge';
 
@@ -206,6 +206,83 @@ describe('the formula view', () => {
       expect(input).toHaveFocus();
       expect([input.selectionStart, input.selectionEnd]).toEqual([11, 12]);
     });
+  });
+});
+
+describe('a stored crossing (specification 3.4, 5.4, E12)', () => {
+  it('opens as "vorheriger Wert von", comparisons and "und"/"oder", written out, and there is no block for a crossing', async () => {
+    const user = userEvent.setup();
+    await open(user);
+    clickNode(nodeByName('Kreuzen'));
+
+    const panel = await screen.findByTestId('expression-ausdruck');
+    // "Eine gilt (oder)" of two times "Alle gelten (und)": the two directions of the crossing
+    await waitFor(() => {
+      const kinds = within(panel).getAllByTestId('cond-kind').map((kind) => (kind as HTMLSelectElement).value);
+      expect(kinds[0]).toBe('or');
+      expect(kinds.filter((kind) => kind === 'and')).toHaveLength(2);
+      expect(kinds.filter((kind) => kind === 'compare')).toHaveLength(4);
+    });
+    // four comparisons, and in each direction the earlier values of both lines are compared first
+    expect(within(panel).getAllByTestId('cmp-op')).toHaveLength(4);
+    expect(within(panel).getAllByTestId('previous-value')).toHaveLength(4);
+    expect(within(panel).queryByText(/Kreuzung|kreuzt/)).toBeNull();
+    // the earlier value is offered for values that have one only
+    const first = within(within(panel).getAllByTestId('previous-value')[0] as HTMLElement).getByTestId('value-select');
+    expect(first).toHaveValue('n:ema20\u001fwert');
+    // the formula view shows the same expression
+    await user.click(within(panel).getByTestId('view-formula'));
+    expect(await within(panel).findByTestId('formula-input')).toHaveValue(
+      'OR(AND(PREVIOUS(ema20.wert) <= PREVIOUS(ema50.wert); ema20.wert > ema50.wert); AND(PREVIOUS(ema20.wert) >= PREVIOUS(ema50.wert); ema20.wert < ema50.wert))',
+    );
+  });
+});
+
+describe('findings with the element and the field the user sees (specification 3.6, 5.1, E3)', () => {
+  it('tell findings with the same text apart by the element and the label of the field, and lead to the field with "Zur Stelle"', async () => {
+    const user = userEvent.setup();
+    const field = { de: 'Bedingung', en: 'Condition' };
+    await open(user, {
+      findings: () => [
+        { level: 'error', code: 'expression.empty', element: EMA_ELEMENT_IDS.cross, subject: null, details: { field: 'parameter:ausdruck' }, element_name: { de: 'Kreuzen', en: 'Crossing' }, subject_name: null, field_label: field },
+        { level: 'error', code: 'expression.empty', element: EMA_ELEMENT_IDS.crossAgainst, subject: null, details: { field: 'parameter:ausdruck' }, element_name: { de: 'Gegenkreuzen', en: 'Crossing against' }, subject_name: null, field_label: field },
+      ],
+    });
+    await menu(user, 'check');
+    await user.click(await screen.findByTestId('findings-count'));
+
+    const findings = await screen.findAllByTestId('finding');
+    expect(findings).toHaveLength(2);
+    // the same text, told apart by the element; "Parameter" (a word of the programming) does not stand in it
+    expect(findings[0]).toHaveTextContent('Im Feld „Bedingung“ fehlt die Formel, oder sie ist unvollständig.');
+    expect(findings[1]).toHaveTextContent('Im Feld „Bedingung“ fehlt die Formel, oder sie ist unvollständig.');
+    expect(within(findings[0] as HTMLElement).getByTestId('finding-element')).toHaveTextContent('Element: Kreuzen');
+    expect(within(findings[1] as HTMLElement).getByTestId('finding-element')).toHaveTextContent('Element: Gegenkreuzen');
+    expect(within(findings[0] as HTMLElement).getByTestId('finding-field')).toHaveTextContent('Feld: Bedingung');
+    expect(findings[0]).not.toHaveTextContent(/Parameter/);
+
+    await user.click(within(findings[1] as HTMLElement).getByTestId('finding-goto'));
+    await waitFor(() => {
+      expect(screen.getByTestId('props-element')).toHaveAttribute('data-element-id', EMA_ELEMENT_IDS.crossAgainst);
+    });
+    expect(screen.getByTestId('field-ausdruck')).toBeInTheDocument();
+  });
+
+  it('write the element and the field in English with the English labels', async () => {
+    const user = userEvent.setup();
+    await open(user, {
+      findings: () => [
+        { level: 'error', code: 'expression.empty', element: EMA_ELEMENT_IDS.cross, subject: null, details: { field: 'parameter:ausdruck' }, element_name: { de: 'Kreuzen', en: 'Crossing' }, subject_name: null, field_label: { de: 'Bedingung', en: 'Condition' } },
+      ],
+    });
+    await switchLanguage(user, 'English');
+    await menu(user, 'check');
+    await user.click(await screen.findByTestId('findings-count'));
+
+    const finding = await screen.findByTestId('finding');
+    expect(finding).toHaveTextContent('The formula in the field "Condition" is missing or incomplete.');
+    expect(within(finding).getByTestId('finding-element')).toHaveTextContent('Element: Crossing');
+    expect(within(finding).getByTestId('finding-field')).toHaveTextContent('Field: Condition');
   });
 });
 

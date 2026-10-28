@@ -71,7 +71,23 @@ function type(id: string, kind: string, de: string, en: string, extra: Record<st
 
 const next = [{ id: 'next', label: label('weiter', 'next'), explanation: label('', ''), holds_management: false }];
 
+/** The words for the data types, as the library delivers them with the type descriptions (`data_types`). */
+export const dataTypeWordsJson = [
+  { id: 'number', label: label('Zahl', 'number') },
+  { id: 'integer', label: label('ganze Zahl', 'whole number') },
+  { id: 'percent', label: label('Prozentwert', 'percentage') },
+  { id: 'boolean', label: label('Wahrheitswert', 'true/false value') },
+  { id: 'text', label: label('Text', 'text') },
+  { id: 'choice', label: label('Auswahl', 'choice') },
+  { id: 'time_unit', label: label('Zeiteinheit', 'time unit') },
+  { id: 'timestamp', label: label('Zeitpunkt', 'point in time') },
+  { id: 'date', label: label('Datum', 'date') },
+  { id: 'expression', label: label('Formel', 'formula') },
+  { id: 'object', label: label('Objekt', 'object') },
+];
+
 export const inventedTypesJson = {
+  data_types: dataTypeWordsJson,
   types: [
     type('zz.start', 'trigger', 'Beginn', 'Start', {
       group: 'flow',

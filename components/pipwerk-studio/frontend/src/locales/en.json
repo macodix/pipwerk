@@ -64,28 +64,21 @@
       "settings": "Language and storage location of the objects."
     }
   },
-  "datatype": {
-    "number": "Number",
-    "integer": "Integer",
-    "percent": "Percent",
-    "boolean": "Yes/no",
-    "text": "Text",
-    "choice": "Choice",
-    "time_unit": "Time unit",
-    "timestamp": "Point in time",
-    "date": "Date",
-    "expression": "Expression",
-    "object": "Object",
-    "method": "Method"
-  },
   "binding": {
     "unset": "not assigned",
-    "fixed": "Fixed value",
-    "parameter": "Strategy parameter",
-    "connection": "Value of an object",
-    "expression": "Expression",
-    "application": "Passed at application",
-    "atApplicationShort": "at application"
+    "fixed": "enter a value",
+    "parameter": "from a strategy parameter",
+    "connection": "from another element",
+    "expression": "from a formula",
+    "application": "set when the strategy starts",
+    "atApplicationShort": "set at start",
+    "stored": {
+      "fixed": "entered",
+      "parameter": "from a strategy parameter",
+      "connection": "from another element",
+      "expression": "from a formula",
+      "application": "set when the strategy starts"
+    }
   },
   "library": {
     "title": "Element library",
@@ -119,13 +112,13 @@
     "title": "Strategy parameters",
     "name": "Name of the strategy parameter",
     "remove": "Remove strategy parameter",
-    "datatype": "Data type",
+    "datatype": "Kind of value",
     "value": "Value",
-    "atApplication": "Pass the value only at application",
-    "atApplicationNote": "passed at application",
+    "atApplication": "Set the value only when the strategy starts",
+    "atApplicationNote": "set when the strategy starts",
     "newName": "New strategy parameter",
-    "openFirst": "Open a strategy to see its parameters.",
-    "none": "None yet. Create the first one with \"New\", for example the time unit.",
+    "openFirst": "Open a strategy to see its strategy parameters.",
+    "none": "No strategy parameter yet. Create the first one with \"New\", for example the time unit.",
     "clickToChange": "Click to change",
     "new": "New",
     "newTip": "Create a new strategy parameter",
@@ -136,7 +129,7 @@
   },
   "fields": {
     "choose": "Choose value …",
-    "otherObject": "Other …",
+    "otherObject": "Other designation …",
     "otherObjectPlaceholder": "Enter the designation",
     "otherObjectLabel": "Designation",
     "noParameterYet": "No strategy parameter has been created yet. Create the first one here.",
@@ -152,30 +145,36 @@
     "chooseProperty": "Choose property",
     "choosePropertyOption": "Choose property …",
     "noFittingProperty": "This object supplies no value that fits the field.",
-    "unsetRequired": "Required: choose an assignment.",
+    "unsetRequired": "Required: choose above where the value comes from.",
     "unsetOptional": "Optional. Without a value the entry stays empty.",
-    "application": "The value is only passed when the strategy is applied.",
+    "application": "The value is only set when the strategy starts.",
     "required": "required",
     "explanation": "Explanation",
-    "assignment": "Assignment"
+    "source": "Where does the value come from?",
+    "expects": "Expected: {{word}}.",
+    "preset": {
+      "value": "the {{type}} the strategy runs on",
+      "nothingToChoose": "You do not have to choose anything here.",
+      "other": "choose another {{type}}",
+      "back": "back to the {{type}} the strategy runs on"
+    }
   },
   "expression": {
     "candlesBack": "going back",
     "candles": "candles",
     "candlesBackNumber": "Number of candles back",
-    "crossNothing": "Nothing can cross without an earlier value. Choose a value on one side that has an earlier value, for example an indicator.",
     "empty": "Still empty.",
-    "hasError": "The expression has an error and cannot be shown as a sentence.",
+    "hasError": "The formula has an error and cannot be shown as a sentence.",
     "formula": "Formula",
-    "readOnly": "The expression is only shown here.",
+    "readOnly": "The formula is only shown here.",
     "blocks": "Blocks",
-    "formulaView": "Expression for advanced users",
+    "formulaView": "Formula for advanced users",
     "nothingYet": "Nothing put together yet. Choose the blocks below.",
-    "badExpression": "This expression has errors and cannot be shown as blocks.",
-    "tooDeep": "This expression is nested too deeply for the blocks. You can edit it in the view for advanced users.",
+    "badExpression": "This formula has errors and cannot be shown as blocks.",
+    "tooDeep": "This formula is nested too deeply for the blocks. You can edit it in the view for advanced users.",
     "toFormula": "To the view for advanced users",
     "startOver": "Start over",
-    "cannotForm": "An expression cannot be formed from these blocks. Change a block.",
+    "cannotForm": "A formula cannot be made from these blocks. Change a block.",
     "chooseValue": "Choose value",
     "chooseValueOption": "Choose value …",
     "gone": "(no longer available)",
@@ -185,8 +184,8 @@
       "application": "Objects of the application",
       "results": "Results",
       "strategy": "Strategy parameters",
-      "parameters": "Parameters",
-      "fixed": "Fixed values and calculating"
+      "parameters": "Entries of the template",
+      "fixed": "Fixed values and calculations"
     },
     "kinds": {
       "number": "Number …",
@@ -201,7 +200,7 @@
     "number": "Number",
     "text": "Text",
     "choiceValue": "Choice value",
-    "truth": "Truth value",
+    "truth": "True or false",
     "operation": "Operation",
     "function": "Function",
     "arithmetic": {
@@ -227,49 +226,41 @@
     "conditionKind": "Kind of condition",
     "conditionKinds": {
       "compare": "Comparison",
-      "cross": "Crossing",
       "and": "All apply (and)",
       "or": "One applies (or)",
       "not": "Not",
       "value": "Value is true"
     },
     "comparison": "Comparison",
-    "crosses": "crosses",
-    "crossDirection": "Direction of the crossing",
-    "directions": {
-      "up": "upwards",
-      "down": "downwards",
-      "any": "in either direction"
-    },
     "and": "and",
     "or": "or",
     "isTrue": "is true",
-    "formulaLabel": "Expression",
+    "formulaLabel": "Formula",
     "formulaEmpty": "Nothing entered yet.",
-    "formulaFine": "The expression is fine."
+    "formulaFine": "The formula is fine."
   },
   "instances": {
-    "parameters": "Parameters",
-    "ownParameters": "Own parameters",
-    "ownParametersHint": "Parameters that you define yourself. Expressions of this object address them by their name.",
-    "noOwnParameters": "No own parameter yet.",
+    "parameters": "Settings",
+    "ownParameters": "Own settings",
+    "ownParametersHint": "Settings that you define yourself. The formulas of this object use them by their name.",
+    "noOwnParameters": "No own setting yet.",
     "name": "Name",
-    "removeParameter": "Remove parameter \"{{name}}\"",
+    "removeParameter": "Remove setting \"{{name}}\"",
     "required": "Required",
     "standardValue": "Standard value",
-    "newParameterName": "Name of the new parameter",
-    "datatype": "Data type",
-    "addParameter": "Add parameter",
+    "newParameterName": "Name of the new setting",
+    "datatype": "Kind of value",
+    "addParameter": "Add setting",
     "properties": "Properties",
-    "propertiesHint": "Properties that this object supplies. Each gets its value from an expression.",
-    "propertiesHintTrend": "An expression determines the direction of the trend. You can add further properties.",
-    "defineProperty": "Set the expression for \"{{name}}\"",
+    "propertiesHint": "Properties that this object supplies. Each gets its value from a formula.",
+    "propertiesHintTrend": "A formula determines the direction of the trend. You can add further properties.",
+    "defineProperty": "Set the formula for \"{{name}}\"",
     "removeProperty": "Remove property \"{{name}}\"",
     "newPropertyName": "Name of the new property",
     "addProperty": "Add property",
-    "ruleExpression": "Expression of the rule",
-    "ruleCheckHint": "The rule checks: the expression is true or false.",
-    "ruleDetermineHint": "The rule determines a value: the expression gives the value of the property.",
+    "ruleExpression": "Formula of the rule",
+    "ruleCheckHint": "The rule checks: the formula is true or false.",
+    "ruleDetermineHint": "The rule determines a value: the formula gives the value of the property.",
     "ruleDetermines": "The rule determines",
     "determinedProperty": "Determined property of the order",
     "determinesNothing": "nothing (it only checks)",
@@ -293,7 +284,7 @@
     "rulesOfRuleset": "Rules of the ruleset",
     "rulesContained": "Contained rules and rulesets",
     "resultExpression": "Overall result",
-    "resultHint": "Optional: an expression that forms the overall result from the results of the rules.",
+    "resultHint": "Optional: a formula that forms the overall result from the results of the rules.",
     "noContent": "This object has no content that you can change.",
     "content": "Content"
   },
@@ -355,8 +346,8 @@
   },
   "used": {
     "title": "Values in use",
-    "info": "These are the values of objects that this element uses. You choose which property or method is meant. Where an expression of the element names the value, the expression changes with it.",
-    "empty": "This element does not use any value of an object yet. Connect a value below, or name it in an expression.",
+    "info": "These are the values of objects that this element uses. You choose which property or method is meant. Where a formula of the element names the value, the formula changes with it.",
+    "empty": "This element does not use any value of an object yet. Connect a value below, or name it in a formula.",
     "value": "Value",
     "properties": "Properties",
     "methods": "Methods",
@@ -364,10 +355,10 @@
     "refresh": "Refresh",
     "refreshTip": "The object works out its values again at this element before it passes them on. You need this when the values may be out of date by now, for example in an order and position management that runs on new prices.",
     "inInput": "connected",
-    "inExpression": "in an expression",
+    "inExpression": "in a formula",
     "inRule": "in a rule",
-    "inAssignment": "as the value of a parameter",
-    "removeInExpression": "remove it there",
+    "inAssignment": "as the value of a field",
+    "removeInExpression": "remove it in the formula",
     "removeInput": "Remove connection",
     "addHint": "Connect a further value without dragging:",
     "noneUsable": "No object that is not connected yet can be used at this element. An object that is worked out somewhere else is not on offer here. Add another object with its own name for this.",
@@ -388,6 +379,8 @@
   "properties": {
     "method": "Method",
     "panel": "Properties",
+    "valueIs": "Value: {{word}}.",
+    "resultIs": "Result: {{word}}.",
     "none": "Next step: \"New strategy\" creates an empty strategy, \"Open\" shows saved strategies.",
     "emptyTitle": "The strategy is empty",
     "emptyText": "Next step: start with a trigger. It is the event that starts the strategy, for example the close of a candle. You find it in the element library in the group \"Flow control\".",
@@ -398,7 +391,7 @@
     "rulesOfStrategy": "Rules of the strategy",
     "rulesOfStrategyHint": "These rules apply to every order of the strategy.",
     "applicationObjects": "Objects of the application",
-    "applicationObjectsHint": "These objects always exist. Expressions can use their values.",
+    "applicationObjectsHint": "These objects always exist. Formulas can use their values.",
     "findings": "Check results",
     "notChecked": "Not checked yet. \"Check\" looks for problems such as missing connections or empty required entries.",
     "noFindings": "No findings. The strategy is consistent.",
@@ -406,7 +399,7 @@
     "findingsMarked": "Elements outlined in red or orange on the canvas have a finding. \"Go to it\" leads there.",
     "management": "Order and position management",
     "managementOfName": "of the order \"{{name}}\"",
-    "managementText": "The order and position management runs for each placed order individually: first for the waiting order, after execution for the position.",
+    "managementText": "The order and position management applies to each placed order individually: first to the waiting order, after execution to the position.",
     "managementEmpty": "The frame is still empty. First add a trigger from the element library. Further steps attach to it.",
     "managementInsert": "Whatever you insert from the element library now goes into this frame.",
     "section": "Section",
@@ -416,16 +409,16 @@
     "sectionHint": "On the canvas the section collapses and expands with the button at its title.",
     "dissolveSection": "Dissolve section",
     "name": "Name",
-    "unknownType": "The type \"{{type}}\" is unknown. The assignments are only shown and stay unchanged when saving.",
-    "storedAssignments": "Stored assignments",
-    "noAssignments": "No assignments.",
+    "unknownType": "The type \"{{type}}\" is unknown. Its entries are only shown and stay unchanged when saving.",
+    "storedAssignments": "Stored entries",
+    "noAssignments": "No entries.",
     "remove": "Remove",
     "settings": "Settings",
     "settingsOfObject": "Settings of the object",
     "orderProperties": "Properties of the order",
     "orderPropertiesHint": "The order gets these values. If a required entry such as the volume is missing, a rule has to determine it.",
     "delivers": "Delivers",
-    "deliversHint": "Each value is an output for a line",
+    "deliversHint": "A line to another element can start at each value.",
     "rulesOfElement": "Rules of this element",
     "rulesOfElementHint": "These rules apply in addition to the rules of the strategy, for this element only.",
     "noRules": "No rules.",
@@ -446,6 +439,9 @@
     "title": "Findings",
     "howToFix": "How to fix it: ",
     "goto": "Go to it",
+    "whereElement": "Element: {{name}}",
+    "whereSubject": "Inside it: {{name}}",
+    "whereField": "Field: {{name}}",
     "level": {
       "error": "Error",
       "hint": "Hint"
@@ -460,51 +456,48 @@
     "countTip": "{{errors}}, {{hints}}. A click shows the findings.",
     "unknown": "Finding {{code}}",
     "fields": {
-      "parameter": "Parameter \"{{name}}\"",
-      "property": "Property \"{{name}}\"",
-      "propertyDefinition": "Property \"{{name}}\" of the object",
-      "expression": "Expression",
-      "result_expression": "Expression for the overall result"
+      "expression": "Formula",
+      "result_expression": "Formula for the overall result"
     },
     "issues": {
       "syntax": "Typing error at position {{start}} to {{end}}: {{syntaxReason}}",
       "unknown_function": "Unknown function \"{{name}}\" (position {{start}} to {{end}}).",
       "unknown_name": "Unknown name \"{{name}}\" (position {{start}} to {{end}}).",
       "unknown_property": "\"{{object}}\" has no property \"{{property}}\" (position {{start}} to {{end}}).",
-      "type_mismatch": "The type does not fit: expected {{expected}}, found {{found}} (position {{start}} to {{end}}).",
+      "type_mismatch": "The kind of value does not fit: expected {{expected}}, found {{found}} (position {{start}} to {{end}}).",
       "unknown_choice_value": "\"{{values}}\" is not a value of the choice; allowed are {{allowed}} (position {{start}} to {{end}}).",
       "argument_count": "The function {{function}} gets {{found}} entries; {{minimum}} to {{maximum}} are allowed (position {{start}} to {{end}}).",
-      "other": "The expression is faulty at position {{start}} to {{end}}."
+      "other": "The formula is faulty at position {{start}} to {{end}}."
     },
     "syntax": {
-      "unexpected_end": "the expression ends too early",
+      "unexpected_end": "the formula ends too early",
       "unexpected_token": "unexpected character \"{{found}}\"",
       "invalid_character": "invalid character \"{{found}}\"",
       "invalid_number": "invalid number",
       "unterminated_string": "text not closed",
-      "too_long": "the expression is too long",
-      "too_deep": "the expression is nested too deeply"
+      "too_long": "the formula is too long",
+      "too_deep": "the formula is nested too deeply"
     },
     "connectionReasons": {
-      "unknown_source": "the source is not an element",
-      "unknown_target": "the target is not an element",
+      "unknown_source": "the start is not an element",
+      "unknown_target": "the end is not an element",
       "unknown_output": "the output does not belong to the element",
       "target_is_trigger": "a trigger has no input",
       "across_managements": "the connection leads between the flow and an order and position management or between two order and position managements"
     },
     "bindingReasons": {
-      "binding_kind": "this kind of assignment is not allowed",
-      "type": "the fixed value has the wrong data type",
-      "choice_value": "the fixed value is not part of the choice",
+      "binding_kind": "this source of the value is not allowed here",
+      "type": "the entered value is of the wrong kind",
+      "choice_value": "the entered value is not part of the choice",
       "value": "the value is not allowed",
-      "unknown_parameter": "the parameter is unknown",
+      "unknown_parameter": "the field is unknown",
       "unknown_property": "the property is unknown",
-      "set_by_application": "the application assigns this property, not the user"
+      "set_by_application": "the application sets this property, not the user"
     },
     "resultReasons": {
       "unknown_property": "the determined property is unknown",
       "choice_value": "the result is not a value of the choice",
-      "type": "the type of the result does not fit"
+      "type": "the kind of the result does not fit"
     },
     "referenceKinds": {
       "forward": "forward reference",
@@ -526,7 +519,7 @@
     },
     "data": {
       "unknown": "The data connection is invalid: {{reason}}.",
-      "type_mismatch": "The data type of the connected value does not fit: expected {{expected}}, found {{found}}."
+      "type_mismatch": "The kind of the connected value does not fit: expected {{expected}}, found {{found}}."
     },
     "input": {
       "unused": "The value \"{{property}}\" of \"{{instance}}\" is connected with this element but not used.",
@@ -541,7 +534,7 @@
       "unnamed": "at the element that uses it first"
     },
     "key": {
-      "invalid": "The identifier \"{{key}}\" contains characters that an expression cannot address."
+      "invalid": "The name \"{{key}}\" contains characters that a formula cannot address."
     },
     "layout": {
       "invalid": "A section or a collapsed frame does not fit: {{reason}}."
@@ -559,39 +552,39 @@
       "other_flow": "the element belongs to another flow"
     },
     "expression": {
-      "empty": "The expression in {{field}} is missing or incomplete.",
-      "invalid": "The expression in {{field}} is faulty: {{problem}}",
-      "order_outside_management": "The expression in {{field}} uses order or position outside of an order and position management."
+      "empty": "The formula in the field \"{{field}}\" is missing or incomplete.",
+      "invalid": "The formula in the field \"{{field}}\" is faulty: {{problem}}",
+      "order_outside_management": "The formula in the field \"{{field}}\" uses order or position outside of an order and position management."
     },
     "rule": {
-      "unresolved_name": "Hint on the expression in {{field}}: {{problem}} The template alone does not know the name; it is checked in every strategy that contains the template.",
+      "unresolved_name": "Hint on the formula in the field \"{{field}}\": {{problem}} The template alone does not know the name; it is checked in every strategy that contains the template.",
       "result_mismatch": "The result of the rule does not fit the determined property \"{{property}}\": {{reason}}.",
       "order_in_indicator": "The rule addresses order or position. That is not allowed in an indicator or trend.",
       "invalid_type": "This list of rules contains an object of the type \"{{type}}\" that must not be there.",
       "comparison_missing": "The determining rule names no comparison for checking."
     },
     "parameter": {
-      "missing": "The required parameter \"{{parameter}}\" has no value.",
-      "binding_invalid": "The assignment of \"{{parameter}}{{property}}\" does not fit: {{reason}}."
+      "missing": "The required field \"{{parameter}}\" has no value.",
+      "binding_invalid": "The entry for \"{{parameter}}{{property}}\" does not fit: {{reason}}."
     },
     "order": {
-      "property_missing": "The property \"{{property}}\" of the order is not assigned, and no determining rule supplies it."
+      "property_missing": "The property \"{{property}}\" of the order has no value, and no determining rule supplies one."
     },
     "ruleset": {
-      "reference_order": "Rule set with {{kind}}."
+      "reference_order": "This rule set has a {{kind}}: a rule uses a result that is not known yet."
     },
     "candle": {
       "no_instance": "The candle is used, but there is no candle with a time unit on the canvas."
     },
     "name": {
       "duplicate": "The name \"{{name}}\" is used twice.",
-      "invalid": "The name \"{{name}}\" contains characters that an expression cannot address."
+      "invalid": "The name \"{{name}}\" contains characters that a formula cannot address."
     },
     "type": {
       "unknown": "The type \"{{type}}\" is unknown."
     },
     "trend": {
-      "direction_missing": "The trend lacks the expression for the property \"{{property}}\"."
+      "direction_missing": "The trend lacks the formula for the property \"{{property}}\"."
     },
     "calculation": {
       "circular_reference": "Calculations use their results in a circle ({{names}})."
@@ -608,16 +601,16 @@
     }
   },
   "findingFixes": {
-    "unknown": "Check the affected element and its entries. If the finding shows no cause, report the identifier of the finding.",
+    "unknown": "Check the affected element and its entries. If the finding shows no cause, quote its designation when you ask for help: {{code}}.",
     "issues": {
       "syntax": "Correct the spelling at the named position.",
       "unknown_function": "Choose a function that exists.",
       "unknown_name": "Choose a value that exists: an object on the canvas, a strategy parameter or the result of a step.",
       "unknown_property": "Choose a property that the object supplies.",
-      "type_mismatch": "Use a value of the fitting data type.",
+      "type_mismatch": "Use a value of the fitting kind.",
       "unknown_choice_value": "Choose one of the allowed values.",
       "argument_count": "Give the fitting number of entries.",
-      "other": "Correct the expression at the named position."
+      "other": "Correct the formula at the named position."
     },
     "trigger": {
       "unconnected": "Connect the trigger with the first step or remove it.",
@@ -625,7 +618,7 @@
     },
     "flow": {
       "not_reached": "Connect a previous step or a trigger with this step or remove it.",
-      "main_without_trigger": "Add a trigger and connect it with the first step.",
+      "main_without_trigger": "Add a trigger to the main flow and connect it with the first step.",
       "unending_loop": "Put a condition into the loop from which one output leads out of the loop.",
       "management_only": "Move the step into the order and position management of an order or remove it.",
       "no_order_reachable": "Connect the flow with a step that places an order."
@@ -635,10 +628,10 @@
     },
     "data": {
       "unknown": "Choose an object and a property that exist, or delete the connection.",
-      "type_mismatch": "Connect a value of the fitting data type."
+      "type_mismatch": "Connect a value of the fitting kind."
     },
     "input": {
-      "unused": "Use the value in an expression or remove the connection.",
+      "unused": "Use the value in a formula or remove the connection.",
       "refresh_not_allowed": "Switch \"Refresh\" off for this value. If you need current values, add another object with a name of its own and use that one."
     },
     "instance": {
@@ -652,23 +645,23 @@
       "invalid": "Remove the section and create it again."
     },
     "expression": {
-      "empty": "Enter the complete expression.",
-      "invalid": "Correct the expression.",
+      "empty": "Enter the complete formula.",
+      "invalid": "Correct the formula.",
       "order_outside_management": "Use order and position only in the order and position management of an order."
     },
     "rule": {
-      "unresolved_name": "Check the name in the expression of the template.",
-      "result_mismatch": "Change the expression of the rule or choose another determined property.",
+      "unresolved_name": "Check the name in the formula of the template.",
+      "result_mismatch": "Change the formula of the rule or choose another determined property.",
       "order_in_indicator": "Remove the rule from the indicator or trend and assign it to the strategy or to an element.",
       "invalid_type": "Remove the object from this list.",
       "comparison_missing": "Choose the comparison for checking."
     },
     "parameter": {
-      "missing": "Give the parameter a value, choose a strategy parameter or \"at application\".",
-      "binding_invalid": "Choose a fitting assignment."
+      "missing": "Give the field a value: enter it, choose a strategy parameter, or set it when the strategy starts.",
+      "binding_invalid": "Under \"Where does the value come from?\", choose a fitting option."
     },
     "order": {
-      "property_missing": "Assign the property or assign a rule that determines it to the element or the strategy."
+      "property_missing": "Give the property a value or assign a rule that determines it to the element or the strategy."
     },
     "ruleset": {
       "reference_order": "Change the order of the rules so that each rule only uses earlier results."
@@ -684,7 +677,7 @@
       "unknown": "Remove the element or install the extension that supplies the type."
     },
     "trend": {
-      "direction_missing": "Enter the expression for the direction of the trend."
+      "direction_missing": "Enter the formula for the direction of the trend."
     },
     "calculation": {
       "circular_reference": "Change one of the calculations so that it does not lead back to itself."
@@ -760,7 +753,7 @@
     },
     "usedBy": "It is used by:",
     "usedByStrategyRules": "Rules of the strategy",
-    "afterRemoval": "Afterwards the expressions keep an empty place \"Choose value …\". Assignments that use it are \"not assigned\". Connections and inputs that came from it are removed.",
+    "afterRemoval": "Afterwards the formulas keep an empty place \"Choose value …\". Fields that use it are \"not assigned\". Connections and inputs that came from it are removed.",
     "error": {
       "ok": "OK"
     }
@@ -781,7 +774,7 @@
       "object": {
         "not_found": "The object does not exist any more. Perhaps it was deleted.",
         "unreadable": "The file of this object cannot be read. It is left unchanged.",
-        "kind_conflict": "Something else already has this identifier in the object directory. Nothing was written.",
+        "kind_conflict": "Something else already has this name in the object directory. Nothing was written.",
         "name_taken": "The file name of this object is taken in the object directory by another entry. Nothing was written.",
         "builtin": "A delivered template can be neither changed nor deleted.",
         "write_failed": "The file of the object could not be written or deleted. Check the object directory."
@@ -789,7 +782,7 @@
       "document": {
         "invalid": "The document is not built as it must be and was not accepted.",
         "format_mismatch": "The document belongs to another kind of object.",
-        "id_mismatch": "The identifier in the document does not fit the object that is to be saved.",
+        "id_mismatch": "The document does not belong to the object that is to be saved.",
         "too_large": "The document is too large to be saved (limit: {{limit_bytes}} bytes)."
       },
       "request": {
@@ -801,11 +794,11 @@
         "failed": "The request could not be processed."
       },
       "host": {
-        "not_allowed": "The backend does not accept requests under this host name."
+        "not_allowed": "The backend does not accept requests under this address."
       },
       "expressions": {
-        "pointer_invalid": "The place where an expression is to stand does not exist in this strategy.",
-        "blocks_invalid": "The chosen blocks do not make an expression."
+        "pointer_invalid": "The place where a formula is to stand does not exist in this strategy.",
+        "blocks_invalid": "The chosen blocks do not make a formula."
       },
       "keys": {
         "scope_invalid": "No new object can be added at this place."
@@ -818,14 +811,14 @@
         "type_unknown": "The backend does not know this object type."
       },
       "removal": {
-        "strategy_required": "Removing with consequences for expressions exists in a strategy only, not in a template.",
+        "strategy_required": "Removing with consequences for formulas exists in a strategy only, not in a template.",
         "target_unknown": "What is to be removed does not exist in the strategy."
       },
       "object_directory": {
         "not_set": "No object directory is set. Set it in the settings.",
         "stored_invalid": "The stored object directory is invalid. Set it anew in the settings.",
         "unreadable": "The object directory cannot be read.",
-        "not_absolute": "The object directory must be an absolute path.",
+        "not_absolute": "The object directory must be given with its full path.",
         "invalid_body": "The entry for the object directory is incomplete: it needs the path and the answer whether the files are moved.",
         "conflict": "The new object directory already holds files with the same names. Nothing was moved.",
         "stored_invalid_no_move": "The stored object directory is invalid, so no files can be moved. Save the directory without moving files to repair it.",
@@ -860,7 +853,7 @@
     "directoryNotSet": "No object directory is set and no default can be determined.",
     "directoryIsDefault": "The default directory applies.",
     "directoryIsSet": "The directory was set.",
-    "directory": "Directory (absolute path)",
+    "directory": "Directory (full path)",
     "directoryChange": "Change directory",
     "moveQuestion": "Move files?",
     "moveYes": "Yes, move files",

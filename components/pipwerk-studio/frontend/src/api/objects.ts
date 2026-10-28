@@ -27,6 +27,14 @@ export type Finding = {
   element: string | null;
   subject: string | null;
   details: Record<string, unknown>;
+  /**
+   * What the user sees (specification 3.6): the name of the affected element, the name of the affected instance or rule
+   * and the label of the affected field, as the element shows it. `null` where the finding has no such thing or the
+   * answer does not name it.
+   */
+  elementName?: { de: string; en: string } | null;
+  subjectName?: string | null;
+  fieldLabel?: { de: string; en: string } | null;
 };
 
 export type ObjectListEntry = {
@@ -62,7 +70,18 @@ function parseFinding(value: unknown, what: string): Finding {
     element: expectNullableString(record.element, `${what}.element`),
     subject: expectNullableString(record.subject, `${what}.subject`),
     details: details ?? {},
+    elementName: optionalPair(record.element_name, `${what}.element_name`),
+    subjectName: record.subject_name === undefined ? null : expectNullableString(record.subject_name, `${what}.subject_name`),
+    fieldLabel: optionalPair(record.field_label, `${what}.field_label`),
   };
+}
+
+function optionalPair(value: unknown, what: string): { de: string; en: string } | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const record = expectRecord(value, what);
+  return { de: expectString(record.de, `${what}.de`), en: expectString(record.en, `${what}.en`) };
 }
 
 export function parseFindings(value: unknown, what = 'findings'): Finding[] {
@@ -166,16 +185,17 @@ export async function createKey(
 }
 
 /** The kinds of block of an expression (specification 3.4). */
-export type BlockKind = 'empty' | 'name' | 'literal' | 'comparison' | 'arithmetic' | 'logic' | 'if' | 'function' | 'crossing';
+export type BlockKind = 'empty' | 'name' | 'literal' | 'comparison' | 'arithmetic' | 'logic' | 'if' | 'function';
 
-const blockKinds: readonly string[] = ['empty', 'name', 'literal', 'comparison', 'arithmetic', 'logic', 'if', 'function', 'crossing'];
+const blockKinds: readonly string[] = ['empty', 'name', 'literal', 'comparison', 'arithmetic', 'logic', 'if', 'function'];
 
 export type LiteralType = 'number' | 'integer' | 'percent' | 'text' | 'boolean';
 
 /**
  * One block of the tree of an expression (specification 3.4). Only the fields that belong to the kind are present:
  * `path` (the identifiers of a name, for example the instance and its property), `value` and `datatype` (a fixed value),
- * `operator` (comparison, arithmetic, logic), `function`, `direction` (crossing) and `children`.
+ * `operator` (comparison, arithmetic, logic), `function` and `children`. A crossing of two values is no block: it is
+ * made of "previous value of", comparisons and "and" (specification 3.4).
  */
 export type ExpressionBlock = {
   kind: BlockKind;
@@ -184,7 +204,6 @@ export type ExpressionBlock = {
   datatype?: LiteralType;
   operator?: string;
   function?: string;
-  direction?: 'up' | 'down' | 'any';
   /** A name with `call` is the result of a method; `path` ends with the method, `children` are the blocks of its arguments. */
   call?: boolean;
   children?: ExpressionBlock[];
@@ -203,6 +222,8 @@ export type VisibleProperty = {
   key: string;
   label: { de: string; en: string };
   datatype: string | null;
+  /** The word for the data type in trader language, for an object the name of its object type (specification 3.1). */
+  datatypeLabel?: { de: string; en: string } | null;
   explanation: { de: string; en: string } | null;
   choices: VisibleChoice[];
   /** The property has an earlier value (`PREVIOUS` may stand around it). */
@@ -214,6 +235,7 @@ export type VisibleArgument = {
   key: string;
   label: { de: string; en: string };
   datatype: string;
+  datatypeLabel?: { de: string; en: string } | null;
   required: boolean;
   default: string | number | boolean | null;
   explanation: { de: string; en: string } | null;
@@ -225,6 +247,7 @@ export type VisibleMethod = {
   key: string;
   label: { de: string; en: string };
   datatype: string | null;
+  datatypeLabel?: { de: string; en: string } | null;
   explanation: { de: string; en: string } | null;
   choices: VisibleChoice[];
   arguments: VisibleArgument[];
@@ -239,6 +262,7 @@ export type VisibleName = {
   path: string[];
   kind: VisibleNameKind;
   datatype: string | null;
+  datatypeLabel?: { de: string; en: string } | null;
   properties: VisibleProperty[];
   methods: VisibleMethod[];
   propertiesTruncated: boolean;
@@ -297,10 +321,6 @@ function parseBlock(value: unknown, what: string): ExpressionBlock {
   if (functionName !== undefined) {
     block.function = functionName;
   }
-  const direction = optionalString(record.direction, `${what}.direction`);
-  if (direction === 'up' || direction === 'down' || direction === 'any') {
-    block.direction = direction;
-  }
   if (record.call === true) {
     block.call = true;
   }
@@ -347,6 +367,7 @@ function parseMethod(value: unknown, what: string): VisibleMethod {
     key: expectString(method.key, `${what}.key`),
     label: parseLabelPair(method.label, `${what}.label`),
     datatype: expectNullableString(method.datatype ?? null, `${what}.datatype`),
+    datatypeLabel: parseOptionalLabel(method.datatype_label, `${what}.datatype_label`),
     explanation: parseOptionalLabel(method.explanation, `${what}.explanation`),
     choices: parseChoices(method.choices, `${what}.choices`),
     arguments: expectArray(method.arguments ?? [], `${what}.arguments`).map((item, index) => {
@@ -356,6 +377,7 @@ function parseMethod(value: unknown, what: string): VisibleMethod {
         key: expectString(argument.key, `${what}.arguments[${index}].key`),
         label: parseLabelPair(argument.label, `${what}.arguments[${index}].label`),
         datatype: expectString(argument.datatype, `${what}.arguments[${index}].datatype`),
+        datatypeLabel: parseOptionalLabel(argument.datatype_label, `${what}.arguments[${index}].datatype_label`),
         required: argument.required === true,
         default: typeof fallback === 'string' || typeof fallback === 'number' || typeof fallback === 'boolean' ? fallback : null,
         explanation: parseOptionalLabel(argument.explanation, `${what}.arguments[${index}].explanation`),
@@ -373,12 +395,14 @@ function parseVisibleName(value: unknown, what: string): VisibleName {
     path: expectArray(record.path, `${what}.path`).map((item, index) => expectString(item, `${what}.path[${index}]`)),
     kind: expectString(record.kind, `${what}.kind`) as VisibleNameKind,
     datatype: expectNullableString(record.datatype, `${what}.datatype`),
+    datatypeLabel: parseOptionalLabel(record.datatype_label, `${what}.datatype_label`),
     properties: expectArray(record.properties ?? [], `${what}.properties`).map((item, index) => {
       const property = expectRecord(item, `${what}.properties[${index}]`);
       return {
         key: expectString(property.key, `${what}.properties[${index}].key`),
         label: parseLabelPair(property.label, `${what}.properties[${index}].label`),
         datatype: expectNullableString(property.datatype, `${what}.properties[${index}].datatype`),
+        datatypeLabel: parseOptionalLabel(property.datatype_label, `${what}.properties[${index}].datatype_label`),
         explanation: parseOptionalLabel(property.explanation, `${what}.properties[${index}].explanation`),
         choices: parseChoices(property.choices, `${what}.properties[${index}].choices`),
         previousValue: property.previous_value === true,

@@ -16,12 +16,6 @@ function blocksIn(value: unknown): Json[] {
   return Array.isArray(value) ? (value as Json[]) : [];
 }
 
-function crossing(direction: string, a: string, b: string): string {
-  const up = `AND(PREVIOUS(${a}) <= PREVIOUS(${b}); ${a} > ${b})`;
-  const down = `AND(PREVIOUS(${a}) >= PREVIOUS(${b}); ${a} < ${b})`;
-  return direction === 'up' ? up : direction === 'down' ? down : `OR(${up}; ${down})`;
-}
-
 /** The stored text of a tree of blocks (an empty place is the empty text). */
 export function blocksToStored(block: Json | null | undefined): string {
   if (block === null || block === undefined) {
@@ -49,8 +43,6 @@ export function blocksToStored(block: Json | null | undefined): string {
       return `IF(${children.join('; ')})`;
     case 'function':
       return `${text(block.function)}(${children.join('; ')})`;
-    case 'crossing':
-      return crossing(text(block.direction), children[0] ?? '', children[1] ?? '');
     default:
       return '';
   }
@@ -201,8 +193,17 @@ export function storedToBlocks(stored: string): Json | null {
 
 const label = (de: string, en: string): { de: string; en: string } => ({ de, en });
 
+/** The word for a data type in trader language, as the library delivers it with the type descriptions. */
+const DATATYPE_WORDS: Record<string, { de: string; en: string }> = {
+  number: label('Zahl', 'number'),
+  integer: label('ganze Zahl', 'whole number'),
+  percent: label('Prozentwert', 'percentage'),
+  boolean: label('Wahrheitswert', 'true/false value'),
+  text: label('Text', 'text'),
+};
+
 function property(key: string, de: string, en: string, datatype = 'number', previous = false, choices: Json[] = []): Json {
-  return { key, label: label(de, en), datatype, explanation: null, choices, previous_value: previous };
+  return { key, label: label(de, en), datatype, datatype_label: DATATYPE_WORDS[datatype] ?? null, explanation: null, choices, previous_value: previous };
 }
 
 function nameOf(display: string, path: string[], kind: string, properties: Json[] = [], datatype: string | null = null, methods: Json[] = []): Json {
@@ -225,6 +226,7 @@ function membersOf(type: Json | undefined): { properties: Json[]; methods: Json[
       key: entry.id,
       label: pair(entry.label),
       datatype: entry.datatype,
+      datatype_label: entry.datatype_label ?? null,
       explanation: pair(entry.explanation),
       choices: [],
       previous_value: false,
@@ -233,6 +235,7 @@ function membersOf(type: Json | undefined): { properties: Json[]; methods: Json[
       key: method.id,
       label: pair(method.label),
       datatype: method.datatype,
+      datatype_label: method.datatype_label ?? null,
       explanation: pair(method.explanation),
       choices: [],
       previous_value: false,
@@ -240,6 +243,7 @@ function membersOf(type: Json | undefined): { properties: Json[]; methods: Json[
         key: argument.id,
         label: pair(argument.label),
         datatype: argument.datatype,
+        datatype_label: argument.datatype_label ?? null,
         required: argument.required === true,
         default: argument.default ?? null,
         explanation: pair(argument.explanation),
@@ -265,12 +269,12 @@ export function namesOf(document: Json, types: ReadonlyMap<string, Json> = new M
       const members = membersOf(types.get(text(element.type)));
       names.push(nameOf(text(instance.name), [text(instance.key)], 'instance', members.properties, null, members.methods));
     } else if (typeof element.key === 'string' && element.key !== '') {
-      names.push(nameOf(text(element.name), [element.key], 'result', [property('ergebnis', 'Ergebnis', 'Result')]));
+      names.push(nameOf(text(element.name), [element.key], 'result', [property('ergebnis', 'Ergebnis', 'Result', 'number', true)]));
     }
   }
   for (const parameter of blocksIn(document.parameters)) {
     names.push(nameOf(text(parameter.name), ['Strategie', text(parameter.key)], 'strategy_parameter', [], text(parameter.datatype)));
   }
-  names.push(nameOf('Kerze', ['Kerze'], 'application_object', [property('schluss', 'Schluss', 'Close')]));
+  names.push(nameOf('Kerze', ['Kerze'], 'application_object', [property('schluss', 'Schluss', 'Close', 'number', true)]));
   return names;
 }

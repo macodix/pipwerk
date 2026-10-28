@@ -342,7 +342,7 @@ describe('the settings (specification 5.5)', () => {
     await waitForReady();
     await menu(user, 'settings');
     const dialog = screen.getByRole('dialog', { name: 'Einstellungen' });
-    const field = await within(dialog).findByLabelText('Verzeichnis (absoluter Pfad)');
+    const field = await within(dialog).findByLabelText('Verzeichnis (vollständiger Pfad)');
 
     fireEvent.change(field, { target: { value: '/neues/verzeichnis' } });
     await user.click(within(dialog).getByRole('button', { name: 'Verzeichnis ändern' }));
@@ -362,7 +362,7 @@ describe('the settings (specification 5.5)', () => {
     await waitForReady();
     await menu(user, 'settings');
     const dialog = screen.getByRole('dialog', { name: 'Einstellungen' });
-    const field = (await within(dialog).findByLabelText('Verzeichnis (absoluter Pfad)')) as HTMLInputElement;
+    const field = (await within(dialog).findByLabelText('Verzeichnis (vollständiger Pfad)')) as HTMLInputElement;
     const stored = field.value;
     expect(stored).not.toBe('');
 
@@ -372,7 +372,7 @@ describe('the settings (specification 5.5)', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Abbrechen' }));
 
     expect(within(dialog).queryByText('Dateien verschieben?')).toBeNull();
-    expect((within(dialog).getByLabelText('Verzeichnis (absoluter Pfad)') as HTMLInputElement).value).toBe(stored);
+    expect((within(dialog).getByLabelText('Verzeichnis (vollständiger Pfad)') as HTMLInputElement).value).toBe(stored);
     expect(within(dialog).getByRole('button', { name: 'Verzeichnis ändern' })).toBeDisabled();
     expect(api.requests('PUT', /object-directory/)).toHaveLength(0);
   });
@@ -409,14 +409,14 @@ describe('the settings (specification 5.5)', () => {
     await waitForReady();
     await menu(user, 'settings');
     const dialog = screen.getByRole('dialog', { name: 'Einstellungen' });
-    const field = await within(dialog).findByLabelText('Verzeichnis (absoluter Pfad)');
+    const field = await within(dialog).findByLabelText('Verzeichnis (vollständiger Pfad)');
 
     fireEvent.change(field, { target: { value: 'relativ' } });
     await user.click(within(dialog).getByRole('button', { name: 'Verzeichnis ändern' }));
     await user.click(within(dialog).getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }));
 
     const alert = await within(dialog).findByRole('alert');
-    expect(alert).toHaveTextContent('Das Objektverzeichnis muss ein absoluter Pfad sein.');
+    expect(alert).toHaveTextContent('Das Objektverzeichnis muss mit dem vollständigen Pfad angegeben werden.');
     expect(alert).not.toHaveTextContent('must be absolute');
   });
 });

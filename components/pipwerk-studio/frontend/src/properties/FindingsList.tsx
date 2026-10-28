@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import type { Finding } from '../api/objects';
-import { findingTexts } from '../findings/findingText';
+import { findingTexts, findingWhere } from '../findings/findingText';
 import { useStudio } from '../state/StudioContext';
 import { Btn } from '../ui/controls';
 import { Icon } from '../ui/Icon';
@@ -41,12 +41,22 @@ export function FindingsList({ items }: { items: readonly Finding[] }) {
     <div className="findings" data-testid="findings-box">
       {items.map((finding, index) => {
         const texts = findingTexts(t, i18n, finding, context);
+        const where = findingWhere(t, finding, context);
         return (
           <div key={`${finding.code}-${finding.element ?? ''}-${finding.subject ?? ''}-${index}`} className={`finding ${finding.level}`} data-testid="finding" data-code={finding.code}>
             <Icon name={finding.level === 'error' ? 'warn' : 'info'} size={18} />
             <div className="finding-body">
               <strong>{t(`findings.level.${finding.level}`)}</strong>
               <p>{texts.message}</p>
+              {where.element !== '' || where.field !== '' ? (
+                <p className="where" data-testid="finding-where">
+                  {where.element !== '' ? (
+                    <span data-testid="finding-element">{t('findings.whereElement', { name: where.element })}</span>
+                  ) : null}
+                  {where.subject !== '' ? <span data-testid="finding-subject">{t('findings.whereSubject', { name: where.subject })}</span> : null}
+                  {where.field !== '' ? <span data-testid="finding-field">{t('findings.whereField', { name: where.field })}</span> : null}
+                </p>
+              ) : null}
               <p className="fix">
                 <b>{t('findings.howToFix')}</b>
                 {texts.fix}

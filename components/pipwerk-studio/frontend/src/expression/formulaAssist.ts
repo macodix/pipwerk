@@ -1,7 +1,7 @@
 import type { FunctionDescription } from '../api/elementTypes';
 import type { ExpressionToken, VisibleMethod, VisibleName, VisibleProperty } from '../api/objects';
 import type { SupportedLanguage } from '../i18n';
-import type { TypeIndex } from '../model/typeIndex';
+import { dataTypeWord, type TypeIndex } from '../model/typeIndex';
 
 /**
  * Help while a formula is typed (specification 5.4, req-ui-013): the suggestions after `Object.` and after a name,
@@ -14,8 +14,10 @@ export type Completion = {
   label: string;
   /** Replaces the part already typed. */
   insert: string;
-  /** The datatype or kind, shown beside the label. */
+  /** The word for the data type (specification 5.4) or the label of a function, shown beside the label. */
   detail: string;
+  /** The entry is a method: the list shows the word "Methode" beside it. */
+  method: boolean;
   /** The explanation of the entry. */
   tip: string;
 };
@@ -100,11 +102,22 @@ function resolve(segments: readonly string[], names: readonly VisibleName[], typ
   return nodes;
 }
 
-function propertyCompletion(property: VisibleProperty, language: SupportedLanguage): Completion {
+/** The word beside an entry: the data type in the words of the library (specification 5.4), none if the entry has no data type. */
+function typeWord(
+  types: TypeIndex | null,
+  datatype: string | null,
+  specific: { de: string; en: string } | null | undefined,
+  language: SupportedLanguage,
+): string {
+  return datatype === null ? '' : dataTypeWord(types, datatype, language, { specific });
+}
+
+function propertyCompletion(property: VisibleProperty, types: TypeIndex | null, language: SupportedLanguage): Completion {
   return {
     label: property.label[language],
     insert: displayName(property.label[language]),
-    detail: property.datatype ?? '',
+    detail: typeWord(types, property.datatype, property.datatypeLabel, language),
+    method: false,
     tip: property.explanation === null ? '' : property.explanation[language],
   };
 }
@@ -114,7 +127,8 @@ function methodCompletion(method: VisibleMethod, language: SupportedLanguage): C
   return {
     label: method.label[language],
     insert: `${displayName(method.label[language])}(`,
-    detail: 'method',
+    detail: '',
+    method: true,
     tip: method.explanation === null ? '' : method.explanation[language],
   };
 }
@@ -142,13 +156,19 @@ export function completionsAt(
       }
     };
     for (const node of nodes) {
-      node.properties.forEach((property) => { push(propertyCompletion(property, language)); });
+      node.properties.forEach((property) => { push(propertyCompletion(property, types, language)); });
       node.methods.forEach((method) => { push(methodCompletion(method, language)); });
       node.contents.forEach((content) => {
-        push({ label: content.display, insert: displayName(content.display), detail: '', tip: '' });
+        push({ label: content.display, insert: displayName(content.display), detail: '', method: false, tip: '' });
       });
       node.parameters.forEach((parameter) => {
-        push({ label: parameter.display, insert: displayName(parameter.display), detail: parameter.datatype ?? '', tip: '' });
+        push({
+          label: parameter.display,
+          insert: displayName(parameter.display),
+          detail: typeWord(types, parameter.datatype, parameter.datatypeLabel, language),
+          method: false,
+          tip: '',
+        });
       });
     }
     return items.length === 0 ? null : { from: caret - (qualified[2] ?? '').length, items };
@@ -166,12 +186,12 @@ export function completionsAt(
     }
     if (name.display.toLowerCase().startsWith(typedWord)) {
       seen.add(name.display);
-      items.push({ label: name.display, insert: displayName(name.display), detail: '', tip: '' });
+      items.push({ label: name.display, insert: displayName(name.display), detail: '', method: false, tip: '' });
     }
   }
   for (const fn of functions) {
     if (fn.name.toLowerCase().startsWith(typedWord) || fn.label[language].toLowerCase().startsWith(typedWord)) {
-      items.push({ label: fn.name, insert: `${fn.name}(`, detail: fn.label[language], tip: fn.explanation[language] });
+      items.push({ label: fn.name, insert: `${fn.name}(`, detail: fn.label[language], method: false, tip: fn.explanation[language] });
     }
   }
   return items.length === 0 ? null : { from: caret - word[0].length, items: items.slice(0, 12) };

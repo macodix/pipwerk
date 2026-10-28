@@ -71,10 +71,6 @@ export function functionBlock(name: string, children: Block[]): Block {
   return { kind: 'function', function: name, children };
 }
 
-export function crossingBlock(direction: 'up' | 'down' | 'any', a: Block, b: Block): Block {
-  return { kind: 'crossing', direction, children: [a, b] };
-}
-
 export function childrenOf(block: Block): Block[] {
   return block.children ?? [];
 }
@@ -101,7 +97,7 @@ export function isEmptyBlock(block: Block): boolean {
   return block.kind === 'empty';
 }
 
-/** Some place in the tree is still empty: the expression is not finished (a crossing, for one, is only one when complete). */
+/** Some place in the tree is still empty: the expression is not finished. */
 export function hasEmptyPlace(block: Block): boolean {
   return isEmptyBlock(block) || (block.children ?? []).some(hasEmptyPlace);
 }
@@ -208,7 +204,6 @@ export function valueKey(block: Block): string {
     case 'arithmetic':
       return 'k:calc';
     case 'comparison':
-    case 'crossing':
     case 'logic':
       return 'k:cond';
     case 'if':
@@ -254,14 +249,12 @@ export function blockForKey(key: string, current: Block): Block {
 
 // ---- the kinds a condition can have --------------------------------------------------------------------------------
 
-export type ConditionKind = 'compare' | 'cross' | 'and' | 'or' | 'not' | 'value';
+export type ConditionKind = 'compare' | 'and' | 'or' | 'not' | 'value';
 
 export function conditionKind(block: Block): ConditionKind {
   switch (block.kind) {
     case 'comparison':
       return 'compare';
-    case 'crossing':
-      return 'cross';
     case 'logic':
       return block.operator === 'or' ? 'or' : block.operator === 'not' ? 'not' : 'and';
     case 'empty':
@@ -285,8 +278,6 @@ export function convertCondition(kind: ConditionKind, current: Block): Block {
   switch (kind) {
     case 'compare':
       return currentKind === 'compare' && have ? current : blankComparison();
-    case 'cross':
-      return crossingBlock('up', EMPTY, EMPTY);
     case 'and':
       return current.kind === 'logic' && current.operator === 'or'
         ? { ...current, operator: 'and' }
