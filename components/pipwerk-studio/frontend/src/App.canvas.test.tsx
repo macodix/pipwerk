@@ -107,6 +107,25 @@ describe('the switch "Weitere Verwendungen" and the legend (specification 5.3)',
     expect(rows.join('|')).toContain('Aktualisieren');
   });
 
+  it('names the part of the flow at "gestellt" "Order- und Positionsverwaltung" in the frame, the legend and the buttons (E1)', async () => {
+    await open(inventedStrategy());
+
+    const frame = screen.getByTestId('frame');
+    expect(frame).toHaveTextContent('Order- und Positionsverwaltung · Ausführen');
+    expect(screen.getByTestId('frame-toggle')).toHaveAccessibleName('Order- und Positionsverwaltung einklappen');
+    expect(document.querySelector('.legend')?.textContent).toContain('Order- und Positionsverwaltung einer Order');
+    expect(screen.getByTestId('canvas').textContent?.replace(/Order- und Positionsverwaltung/g, '')).not.toMatch(/Verwaltung/);
+  });
+
+  it('shows no name of a program library on the drawing area, and the drawing area stays operable (B3)', async () => {
+    await open(inventedStrategy());
+
+    const canvas = screen.getByTestId('canvas');
+    expect(canvas.textContent).not.toMatch(/React ?Flow/i);
+    expect(canvas.querySelector('.react-flow__pane')).not.toBeNull();
+    expect(screen.getAllByTestId('node').length).toBeGreaterThan(0);
+  });
+
   it('puts no hint and no button of a hint on the drawing area, also not for an object without a connection', async () => {
     await open(strategyWithUnusedMeter());
 

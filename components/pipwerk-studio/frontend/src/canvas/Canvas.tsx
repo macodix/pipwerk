@@ -48,7 +48,7 @@ const TOP_ROOM = 58;
 
 type Drag = { id: string; pos: Pt };
 
-/** The drawing area (specification 5.3) with React Flow: it shows the arrangement and takes dragging, connecting, zoom and fitting. */
+/** The drawing area (specification 5.3) on the flow library: it shows the arrangement and takes dragging, connecting, zoom and fitting. */
 export function Canvas() {
   const { studio } = useStudio();
   if (studio.state.document === null) {
@@ -122,7 +122,7 @@ function CanvasView() {
       selectedEdge,
       openCards: open,
     });
-    // `bump` makes React Flow take the places of the arrangement again after a card was dragged away
+    // `bump` makes the flow library take the places of the arrangement again after a card was dragged away
   }, [bump, connecting, describe, dir, document, findings, language, open, scene, selectedEdge, state.armed, state.selection, state.wires, t, types, uses]);
 
   // --- the view: set when a strategy is opened, never when something is edited (specification 5.3, M3) ---
@@ -216,7 +216,7 @@ function CanvasView() {
     [setView],
   );
 
-  // The view is set when a strategy is opened and when the direction changes, after React Flow is ready.
+  // The view is set when a strategy is opened and when the direction changes, after the flow library is ready.
   // Once more when the backend has told who uses which object, as long as the user has not touched the view: the cards
   // move beside their elements then, and the first view must show the arrangement that stays.
   const fitStage = useRef<{ key: string; stage: number; document: unknown }>({ key: '', stage: 0, document: null });
@@ -520,7 +520,6 @@ function CanvasView() {
       const hit = stepAt(current, point);
       const hitElement = hit === undefined ? undefined : document.elements.find((candidate) => candidate.id === hit);
       const frame = frameAt(current, point);
-      actions.pauseWizard();
       if (hitElement !== undefined && !isCardElement(hitElement, types)) {
         void actions.insert(key, { after: hitElement.id, flow: hitElement.management_of ?? null });
       } else {
@@ -692,6 +691,7 @@ function CanvasView() {
               edges={flow.edges}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
+              proOptions={{ hideAttribution: true }}
               defaultViewport={{ x: 40, y: 40, zoom: 1 }}
               minZoom={0.3}
               maxZoom={2}

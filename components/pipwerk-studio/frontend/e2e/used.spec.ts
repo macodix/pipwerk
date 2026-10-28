@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { add, exprRoot, newStrategyFromScratch, props, select, setCalculation } from './builder';
 import { removeStored, storedStrategy } from './compare';
-import { card, clickMenu, expect, expectSaved, node, openApp, openStrategy, showArea, SIZES, test } from './support';
+import { card, choose, clickMenu, expect, expectSaved, node, offered, openApp, openStrategy, showArea, SIZES, test } from './support';
 
 // Specification 5.4 (order 13): "Verwendete Werte" with the choice of the property and "Aktualisieren", the element of
 // the first use chosen without dragging, the objects of the branch "wahr" that the branch "falsch" does not offer, and the
@@ -19,9 +19,7 @@ async function showEverything(page: Page): Promise<void> {
 }
 
 /** The labels of the entries of a list of values. */
-async function labelsOf(list: ReturnType<Page['getByTestId']>): Promise<string[]> {
-  return (await list.locator('option').allTextContents()).map((text) => text.trim());
-}
+const labelsOf = offered;
 
 const PHONE = SIZES[0];
 
@@ -44,8 +42,10 @@ for (const size of [{ name: 'notebook', width: 1366, height: 768 }, PHONE]) {
       const choice = used.getByTestId('used-zigzag-letztes_hoch-select');
       await expect(choice).toBeVisible();
       expect(await labelsOf(choice)).toEqual(expect.arrayContaining(['Letztes Hoch', 'Vorletztes Hoch', 'Letztes Tief', 'Vorletztes Tief']));
-      await choice.selectOption({ label: 'Letztes Tief' });
+      await choose(choice, { label: 'Letztes Tief' });
       await expect(used.getByTestId('used-zigzag-letztes_tief-select')).toBeVisible();
+      // the new value takes the place of the old one: the old row is gone
+      await expect(used.getByTestId('used-row')).toHaveCount(1);
       // the section and its controls stay within the window, also in the narrowest one
       const box = await used.boundingBox();
       expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(size.width + 1);
@@ -88,7 +88,7 @@ test('the element of the first use is named in the properties view of the object
     await select(page, 'Zacke');
 
     await expect(page.getByTestId('first-use-text')).toContainText('Noch kein Element verwendet dieses Objekt');
-    await page.getByTestId('first-use-select').selectOption({ label: 'Rechnung' });
+    await choose(page.getByTestId('first-use-select'), { label: 'Rechnung' });
     await expect(page.getByTestId('first-use-text')).toContainText('Rechnung');
     await showEverything(page);
     await expect(card(page, 'Zacke')).not.toHaveAttribute('data-unconnected', '1');
@@ -186,7 +186,7 @@ test('a strategy parameter that expressions use is removed after a question that
     await page.getByTestId('param-new').click();
     const popover = page.getByTestId('param-popover');
     await popover.getByTestId('param-name').fill('Weite');
-    await popover.getByTestId('param-type').selectOption('number');
+    await choose(popover.getByTestId('param-type'), { value: 'number' });
     await popover.getByTestId('param-value').fill('5');
     await popover.getByTestId('param-done').click();
     await select(page, 'Abstand');

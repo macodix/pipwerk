@@ -38,7 +38,6 @@ const PATHS: Record<string, string> = {
   list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
   arrowdown: 'M12 5v14M6 13l6 6 6-6',
   book: 'M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2zM4 20a2 2 0 0 1 2-2h13',
-  wand: 'M4 20L15 9M13 4l1 2.5L16.5 7.5 14 8.5 13 11l-1-2.5L9.5 7.5 12 6.5zM18 13l.7 1.5L20 15l-1.3.5L18 17l-.7-1.5L16 15l1.3-.5z',
 };
 
 /** A symbol of the interface; an unknown name shows the symbol "info". */

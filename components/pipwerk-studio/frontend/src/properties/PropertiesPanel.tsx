@@ -11,8 +11,6 @@ import { ElementView } from './ElementView';
 import { FindingsList } from './FindingsList';
 import { InstanceList } from './Instances';
 import { SuppliedList } from './Supplied';
-import { Wizard } from '../wizard/Wizard';
-import { WIZARD_STEPS } from '../wizard/model';
 
 /** After a click on a finding the field is scrolled into view and highlighted. */
 function useFocusField(root: React.RefObject<HTMLElement | null>): void {
@@ -86,26 +84,7 @@ function MessageBar() {
   );
 }
 
-/** "Assistent, Schritt n von 5" with "Assistent fortsetzen" above the properties of what the user chose (specification 5.5). */
-function WizardBar() {
-  const { studio } = useStudio();
-  const { t } = useTranslation();
-  const wizard = studio.state.wizard;
-  if (wizard === null || !wizard.paused) {
-    return null;
-  }
-  return (
-    <div className="wizard-bar" data-testid="wizard-bar">
-      <Icon name="wand" size={16} />
-      <span className="grow">{t('wizard.barStep', { step: wizard.step, count: WIZARD_STEPS })}</span>
-      <Btn small kind="primary" onClick={studio.actions.resumeWizard} testid="wz-resume">
-        {t('wizard.resume')}
-      </Btn>
-    </div>
-  );
-}
-
-/** The hint of a strategy without elements: the next step, with the way to the assistant (specification 5.5). */
+/** The hint of a strategy without elements: the next step is a trigger from the element library (specification 5.5). */
 function EmptyStrategyHint() {
   const { studio } = useStudio();
   const { t } = useTranslation();
@@ -116,9 +95,6 @@ function EmptyStrategyHint() {
         <strong>{t('properties.emptyTitle')}</strong>
         <p>{t('properties.emptyText')}</p>
         <div className="btn-row">
-          <Btn small kind="primary" icon="wand" testid="empty-wizard" onClick={studio.actions.startWizard}>
-            {t('wizard.start')}
-          </Btn>
           <span className="only-narrow">
             <Btn
               small
@@ -172,15 +148,24 @@ function StrategyView() {
   const { t } = useTranslation();
   const root = useRef<HTMLDivElement>(null);
   useFocusField(root);
+  const { actions } = studio;
+  // A click on the number of findings brings the list of findings into view (specification 5.1).
+  const showFindings = studio.state.showFindings;
+  useEffect(() => {
+    if (showFindings === null) {
+      return;
+    }
+    root.current?.querySelector<HTMLElement>('[data-testid="sec-findings"]')?.scrollIntoView({ block: 'start' });
+    actions.findingsShown();
+  }, [actions, showFindings]);
   const document = studio.state.document;
   if (document === null) {
     return null;
   }
-  const { actions } = studio;
   const checked = studio.state.findings !== null;
   return (
     <div className="props" ref={root} data-testid="props-strategy">
-      {document.elements.length === 0 && studio.state.wizard === null ? <EmptyStrategyHint /> : null}
+      {document.elements.length === 0 ? <EmptyStrategyHint /> : null}
       <header className="props-head">
         <div className="badge b-strategy">
           <Icon name="chart" size={20} />
@@ -392,8 +377,6 @@ export function PropertiesPanel() {
         </div>
       </div>
     );
-  } else if (state.wizard !== null && !state.wizard.paused) {
-    body = <Wizard />;
   } else if (selection.kind === 'element') {
     const element = document.elements.find((candidate) => candidate.id === selection.id);
     body = element === undefined ? <StrategyView /> : <ElementView element={element} key={element.id} />;
@@ -408,7 +391,6 @@ export function PropertiesPanel() {
     <aside className="region region-props" data-region="props" data-testid="props" aria-label={t('properties.panel')}>
       <PanelTabs />
       <MessageBar />
-      <WizardBar />
       {document !== null && selection.kind !== 'strategy' ? (
         <div className="crumbs">
           <button

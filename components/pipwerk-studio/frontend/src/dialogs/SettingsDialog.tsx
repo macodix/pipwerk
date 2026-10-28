@@ -142,6 +142,8 @@ export function SettingsDialog({ languageState, onClose }: SettingsDialogProps) 
             <button
               type="button"
               onClick={() => {
+                // "Abbrechen" changes nothing: the field shows the stored directory again
+                setText(null);
                 setSave({ phase: 'idle' });
               }}
             >

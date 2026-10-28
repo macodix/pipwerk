@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-import { clickMenu, expect, expectSaved, library, newStrategy, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
+import { choose, clickMenu, expect, expectSaved, library, newStrategy, node, openApp, openStrategy, showArea, test, unknownTypeStrategy } from './support';
 
 // Specification 5.5: the workflows save, check, close, new, open, delete and settings.
 
@@ -81,8 +81,7 @@ test('closing, a new strategy and opening ask what to do with unsaved changes: s
 
   // save: the change is stored, then the strategy is closed
   await showArea(page, 'props');
-  // a new strategy offers the guided setup; the name is changed in the properties view of the strategy
-  await page.getByTestId('wz-leave').click();
+  // the name of the new strategy is changed in the properties view of the strategy
   await page.getByTestId('strategy-name').fill(savedName);
   await clickMenu(page, 'open');
   await page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true }).click();
@@ -130,7 +129,7 @@ test('the open strategy is deleted after a question; it is gone from the list', 
 test('the language of the interface is changed in the settings and stays after reloading', async ({ page }) => {
   await openApp(page);
   await clickMenu(page, 'settings');
-  await page.getByRole('dialog').getByLabel('Sprache').selectOption('English');
+  await choose(page.getByRole('dialog').getByLabel('Sprache'), 'English');
   await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText('Settings');
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
   await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');
@@ -143,7 +142,7 @@ test('the language of the interface is changed in the settings and stays after r
   await expect(library(page, 'Candle close')).toHaveCount(1);
   // back to German for the tests that follow
   await clickMenu(page, 'settings');
-  await page.getByRole('dialog').getByLabel('Language').selectOption('Deutsch');
+  await choose(page.getByRole('dialog').getByLabel('Language'), 'Deutsch');
   await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
   await expect(page.getByTestId('param-strip')).toContainText('Strategieparameter');
 });
@@ -155,6 +154,9 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   const directory = dialog.getByLabel('Verzeichnis (absoluter Pfad)');
   const first = join(tmpdir(), `pipwerk-studio-e2e-objects-${Date.now()}-a`);
   const second = join(tmpdir(), `pipwerk-studio-e2e-objects-${Date.now()}-b`);
+  // the directory that is stored now: it is shown again after "Abbrechen" (B4)
+  await expect(directory).not.toHaveValue('');
+  const stored = await directory.inputValue();
 
   // a relative path is refused
   await directory.fill('relativ/pfad');
@@ -163,14 +165,17 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   await dialog.getByRole('button', { name: 'Nein, nur das Verzeichnis ändern' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Das Objektverzeichnis konnte nicht geändert werden.');
 
-  // the question can be cancelled
+  // the question can be cancelled: the field shows the stored directory again (B4), and nothing was changed
   await directory.fill(first);
   await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
   await expect(dialog.getByText('Dateien verschieben?')).toBeVisible();
   await dialog.getByRole('button', { name: 'Abbrechen' }).first().click();
   await expect(dialog.getByText('Dateien verschieben?')).toHaveCount(0);
+  await expect(directory).toHaveValue(stored);
+  await expect(dialog.getByRole('button', { name: 'Verzeichnis ändern' })).toBeDisabled();
 
   // with moving: the stored strategies come along
+  await directory.fill(first);
   await dialog.getByRole('button', { name: 'Verzeichnis ändern' }).click();
   await dialog.getByRole('button', { name: 'Ja, Dateien verschieben' }).click();
   await expect(dialog.getByText('Das Objektverzeichnis wurde geändert.')).toBeVisible();

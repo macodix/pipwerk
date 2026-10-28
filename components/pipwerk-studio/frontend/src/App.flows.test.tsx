@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 import { renderWithProviders } from './test-utils';
@@ -16,10 +16,6 @@ async function openEma(user: ReturnType<typeof userEvent.setup>): Promise<void> 
 }
 
 async function rename(user: ReturnType<typeof userEvent.setup>, name: string): Promise<void> {
-  const leave = screen.queryByTestId('wz-leave');
-  if (leave !== null) {
-    await user.click(leave);
-  }
   const field = screen.getByTestId('strategy-name');
   await user.clear(field);
   await user.type(field, name);
@@ -104,6 +100,54 @@ describe('unsaved changes (specification 5.5)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('status-pill')).toHaveTextContent('EMA-Trendfolge');
     });
+  });
+});
+
+describe('the number of findings (specification 5.1)', () => {
+  it('is shown at once for a new strategy, not only after "Prüfen" (B1)', async () => {
+    const user = userEvent.setup();
+    const api = mockApi({ findings: () => [{ level: 'error', code: 'flow.main_without_trigger', element: null, subject: null, details: {} }] });
+    renderWithProviders(<App />, 'de');
+    await waitForReady();
+    expect(screen.queryByTestId('findings-count')).toBeNull();
+
+    await menu(user, 'new');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('findings-count')).toHaveTextContent('1 Befund');
+    });
+    expect(api.requests('POST', /\/api\/v1\/check$/)).toHaveLength(1);
+    expect(screen.getByTestId('findings-box')).toHaveTextContent('Hauptablauf ohne Auslöser');
+  });
+
+  it('brings the list of findings into view in the properties view of the strategy after a click (E2)', async () => {
+    const user = userEvent.setup();
+    mockApi({ findings: () => [{ level: 'error', code: 'flow.main_without_trigger', element: null, subject: null, details: {} }] });
+    renderWithProviders(<App />, 'de');
+    await waitForReady();
+    await menu(user, 'new');
+    const count = await screen.findByTestId('findings-count');
+    await waitFor(() => {
+      expect(count).toHaveTextContent('1 Befund');
+    });
+    const scroll = vi.mocked(Element.prototype.scrollIntoView);
+    scroll.mockClear();
+    // another view is shown first: the click leads back to the strategy and to its list
+    await user.click(screen.getByTestId('bar-library'));
+    expect(screen.getByTestId('app')).toHaveAttribute('data-panel', 'library');
+
+    await user.click(count);
+
+    expect(screen.getByTestId('app')).toHaveAttribute('data-panel', 'props');
+    expect(screen.getByTestId('props-strategy')).toBeInTheDocument();
+    const shown = scroll.mock.contexts.filter((element) => element instanceof HTMLElement && element.dataset.testid === 'sec-findings');
+    expect(shown).toHaveLength(1);
+    expect(scroll).toHaveBeenLastCalledWith({ block: 'start' });
+    expect(within(screen.getByTestId('sec-findings')).getByTestId('finding')).toBeInTheDocument();
+    // asked once per click: showing the view again later does not scroll again
+    await user.click(screen.getByTestId('bar-library'));
+    await user.click(screen.getByTestId('bar-props'));
+    expect(scroll.mock.contexts.filter((element) => element instanceof HTMLElement && element.dataset.testid === 'sec-findings')).toHaveLength(1);
   });
 });
 
@@ -268,7 +312,7 @@ describe('the language (specification 5.1, M4)', () => {
       'gespeichert',
       'Zur Stelle',
       'So beheben Sie es',
-      'Verwaltung',
+      'Order- und Positionsverwaltung',
     ]) {
       expect(text, german).not.toContain(german);
     }
@@ -309,6 +353,53 @@ describe('the settings (specification 5.5)', () => {
       expect(within(dialog).getByText('Das Objektverzeichnis wurde geändert.')).toBeInTheDocument();
     });
     expect(api.requests('PUT', /object-directory/)[0]?.body).toEqual({ path: '/neues/verzeichnis', move: true });
+  });
+
+  it('shows the stored directory again after "Abbrechen" of "Dateien verschieben?" (B4), and sends nothing', async () => {
+    const user = userEvent.setup();
+    const api = mockApi();
+    renderWithProviders(<App />, 'de');
+    await waitForReady();
+    await menu(user, 'settings');
+    const dialog = screen.getByRole('dialog', { name: 'Einstellungen' });
+    const field = (await within(dialog).findByLabelText('Verzeichnis (absoluter Pfad)')) as HTMLInputElement;
+    const stored = field.value;
+    expect(stored).not.toBe('');
+
+    fireEvent.change(field, { target: { value: '/neues/verzeichnis' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Verzeichnis ändern' }));
+    expect(within(dialog).getByText('Dateien verschieben?')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Abbrechen' }));
+
+    expect(within(dialog).queryByText('Dateien verschieben?')).toBeNull();
+    expect((within(dialog).getByLabelText('Verzeichnis (absoluter Pfad)') as HTMLInputElement).value).toBe(stored);
+    expect(within(dialog).getByRole('button', { name: 'Verzeichnis ändern' })).toBeDisabled();
+    expect(api.requests('PUT', /object-directory/)).toHaveLength(0);
+  });
+
+  it('has a designed list for the language, which works with the keyboard and leaves the dialog open on Escape (E4)', async () => {
+    const user = userEvent.setup();
+    mockApi();
+    renderWithProviders(<App />, 'de');
+    await waitForReady();
+    await menu(user, 'settings');
+    const dialog = screen.getByRole('dialog', { name: 'Einstellungen' });
+
+    expect(dialog.querySelector('select')).toBeNull();
+    const language = within(dialog).getByLabelText('Sprache');
+    expect(language).toHaveAttribute('role', 'combobox');
+    expect(language).toHaveAttribute('aria-expanded', 'false');
+    language.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(language).toHaveAttribute('aria-expanded', 'true');
+    expect(within(dialog).getAllByRole('option').map((option) => option.textContent)).toEqual(['Deutsch', 'English']);
+    await user.keyboard('{Escape}');
+    expect(language).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('dialog', { name: 'Einstellungen' })).toBeInTheDocument();
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+    });
   });
 
   it('tells the cause of a refused directory in the language of the interface, not the English text of the answer', async () => {

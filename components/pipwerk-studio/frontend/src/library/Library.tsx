@@ -56,8 +56,6 @@ export function Library() {
       studio.actions.notify('notices.openFirst');
       return;
     }
-    // working with the library is working by hand: the assistant waits where it is (specification 5.5)
-    studio.actions.pauseWizard();
     if (entry.target === 'connection') {
       studio.actions.startConnection();
       return;

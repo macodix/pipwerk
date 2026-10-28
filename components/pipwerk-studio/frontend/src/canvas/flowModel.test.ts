@@ -64,7 +64,7 @@ function flowOf(
 
 const wiresOf = (edges: ReturnType<typeof flowOf>['edges']) => edges.filter((edge) => edge.type === 'wire');
 
-describe('the drawing area as React Flow shows it (specification E8)', () => {
+describe('the drawing area as the flow library shows it (specification E8)', () => {
   const document = parseStrategyDocument(emaTrendfolge());
   const types = testTypes();
 
@@ -79,7 +79,7 @@ describe('the drawing area as React Flow shows it (specification E8)', () => {
     expect(edges.filter((edge) => edge.id.startsWith('m:'))).toHaveLength(1);
   });
 
-  it('gives every node the size of its place, so that React Flow does not have to measure it', () => {
+  it('gives every node the size of its place, so that the flow library does not have to measure it', () => {
     const { nodes } = flowOf(document, types);
 
     for (const node of nodes) {

@@ -74,14 +74,31 @@ describe('translations (specification 5.1)', () => {
         'openDialog.columnName',
         'properties.name',
         'revision.commit',
-        'wizard.steps.name',
-        'wizard.steps.order',
       ].sort(),
     );
   });
 
+  it('call the part of the flow at the output "gestellt" only "Order- und Positionsverwaltung" / "order and position management" (E1), and know no assistant (E9)', () => {
+    for (const [key, text] of german) {
+      // the short form of the name: the word without "Order- und Positions" in front of it
+      expect(text, key).not.toMatch(/(?<!Positions)[Vv]erwaltung/);
+      expect(text, key).not.toMatch(/Assist/);
+    }
+    for (const [key, text] of english) {
+      expect(text, key).not.toMatch(/(?<!position )management/i);
+      expect(text, key).not.toMatch(/assist/i);
+    }
+    expect(german.get('canvas.management')).toBe('Order- und Positionsverwaltung · {{name}}');
+    expect(english.get('canvas.management')).toBe('Order and position management · {{name}}');
+  });
+
+  it('have no keys of the removed assistant', () => {
+    expect([...german.keys()].filter((key) => key.startsWith('wiz'))).toEqual([]);
+    expect([...english.keys()].filter((key) => key.startsWith('wiz'))).toEqual([]);
+  });
+
   it('have no German word in an English text', () => {
-    const words = /\b(der|die|das|und|oder|nicht|Strategie|Elemente|Verwaltung|Eigenschaften|Wert|Werte|Ablauf|Bedingung|Berechnung)\b/;
+    const words = /\b(der|die|das|und|oder|nicht|Strategie|Elemente|Positionsverwaltung|Eigenschaften|Wert|Werte|Ablauf|Bedingung|Berechnung)\b/;
     for (const [key, text] of english) {
       if (key === 'datatype.object' || key.endsWith('Placeholder')) {
         continue;

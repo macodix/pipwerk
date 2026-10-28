@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LanguageSelect } from './LanguageSelect';
 import { LANGUAGE_REQUEST_TIMEOUT_MS } from './settingsApi';
 import { createGate, mockFetchRoutes, renderWithProviders, type RouteResponse } from './test-utils';
+import { choose } from './testing/actions';
 
 // The tests are grouped by the state sequences of the language display. Each
 // sequence fixes the displayed language (select value and label text), the
@@ -35,8 +36,19 @@ const LANGUAGE_BODY = (language: 'de' | 'en'): RouteResponse => ({
   body: { language },
 });
 
-function select(): HTMLSelectElement {
+function select(): HTMLElement {
   return screen.getByRole('combobox');
+}
+
+/** Opens the list and chooses a language by clicks without `user-event`, which does not work with the fake timers of the tests. */
+async function pickWithoutUser(language: 'de' | 'en'): Promise<void> {
+  await act(async () => {
+    fireEvent.click(select());
+  });
+  const entry = screen.getByRole('listbox').querySelector<HTMLElement>(`[data-value="${language}"]`);
+  await act(async () => {
+    fireEvent.click(entry as HTMLElement);
+  });
 }
 
 async function waitUntilEnabled(): Promise<void> {
@@ -79,7 +91,7 @@ describe('LanguageSelect, A: first read', () => {
     mockFetchRoutes({ getLanguage: LANGUAGE_BODY('en') });
     renderWithProviders(<LanguageSelect />, 'en');
 
-    expect(await screen.findByDisplayValue('English')).toBeInTheDocument();
+    expect(await screen.findByText('English')).toBeInTheDocument();
     expect(screen.getByText('Language')).toBeInTheDocument();
   });
 
@@ -105,7 +117,7 @@ describe('LanguageSelect, B: saving', () => {
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
 
     await waitFor(() => expect(screen.getByText('Language')).toBeInTheDocument());
     expect(select()).toHaveValue('en');
@@ -119,12 +131,12 @@ describe('LanguageSelect, B: saving', () => {
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() => expect(select()).toHaveValue('en'));
     await waitUntilEnabled();
     expect(screen.getByText('Language')).toBeInTheDocument();
 
-    await user.selectOptions(select(), 'de');
+    await choose(user, select(), 'de');
     await waitFor(() => expect(select()).toHaveValue('de'));
     await waitUntilEnabled();
     expect(screen.getByText('Sprache')).toBeInTheDocument();
@@ -140,7 +152,7 @@ describe('LanguageSelect, B: saving', () => {
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_DE);
     await waitFor(() => expect(select()).toHaveValue('de'));
@@ -155,7 +167,7 @@ describe('LanguageSelect, B: saving', () => {
     renderWithProviders(<LanguageSelect />);
     await screen.findByRole('alert');
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() => expect(select()).toBeDisabled());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
@@ -174,7 +186,7 @@ describe('LanguageSelect, B: saving', () => {
     renderWithProviders(<LanguageSelect />);
     await screen.findByRole('alert');
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
 
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(SAVE_UNCONFIRMED_ERROR_DE),
@@ -238,7 +250,7 @@ describe('LanguageSelect, C: later reads', () => {
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />);
     await screen.findByRole('alert');
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(SAVE_UNCONFIRMED_ERROR_DE),
     );
@@ -267,7 +279,7 @@ describe('LanguageSelect, D: reads overlapping with saving', () => {
     refocusWindow();
     await waitFor(() => expect(reads).toBe(2));
 
-    await user.selectOptions(select(), 'de');
+    await choose(user, select(), 'de');
     await waitFor(() => expect(select()).toHaveValue('de'));
     await waitUntilEnabled();
     staleRead.release(LANGUAGE_BODY('en'));
@@ -292,7 +304,7 @@ describe('LanguageSelect, D: reads overlapping with saving', () => {
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />, 'en');
     await waitFor(() => expect(select()).toHaveValue('en'));
-    await user.selectOptions(select(), 'de');
+    await choose(user, select(), 'de');
     await waitFor(() => expect(select()).toBeDisabled());
     refocusWindow();
     await waitFor(() => expect(reads).toBe(2));
@@ -320,7 +332,7 @@ describe('LanguageSelect, D: reads overlapping with saving', () => {
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() => expect(select()).toBeDisabled());
     refocusWindow();
     await waitFor(() => expect(reads).toBe(2));
@@ -352,9 +364,11 @@ describe('LanguageSelect, E: repeated saves', () => {
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() => expect(select()).toBeDisabled());
-    await user.selectOptions(select(), 'de');
+    // while the save runs the field is disabled: no list opens, no second request is sent
+    await user.click(select());
+    expect(screen.queryByRole('listbox')).toBeNull();
 
     expect(puts).toBe(1);
     expect(select()).toHaveValue('en');
@@ -377,12 +391,12 @@ describe('LanguageSelect, E: repeated saves', () => {
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_DE);
     await waitFor(() => expect(select()).toHaveValue('de'));
     await waitUntilEnabled();
 
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() => expect(select()).toBeDisabled());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
@@ -430,7 +444,7 @@ describe('LanguageSelect, A5 and B4: repeated read while no language is confirme
     const user = userEvent.setup();
     renderWithProviders(<LanguageSelect />);
     await screen.findByRole('alert');
-    await user.selectOptions(select(), 'en');
+    await choose(user, select(), 'en');
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(SAVE_UNCONFIRMED_ERROR_DE),
     );
@@ -463,7 +477,7 @@ describe('LanguageSelect, D4: read running when a save starts', () => {
     refocusWindow();
     await waitFor(() => expect(reads).toBe(2));
 
-    await user.selectOptions(select(), 'de');
+    await choose(user, select(), 'de');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(SAVE_ERROR_EN);
     await waitFor(() => expect(select()).toHaveValue('en'));
@@ -509,9 +523,7 @@ describe('LanguageSelect, time limit of the requests', () => {
     renderWithProviders(<LanguageSelect />);
     await waitUntilEnabled();
     vi.useFakeTimers();
-    await act(async () => {
-      fireEvent.change(select(), { target: { value: 'en' } });
-    });
+    await pickWithoutUser('en');
     await advance(0);
     expect(select()).toBeDisabled();
     expect(select()).toHaveValue('en');
@@ -543,9 +555,7 @@ describe('LanguageSelect, time limit of the requests', () => {
     await advance(0);
     expect(reads).toBe(2);
 
-    await act(async () => {
-      fireEvent.change(select(), { target: { value: 'de' } });
-    });
+    await pickWithoutUser('de');
     await advance(0);
     await advance(LANGUAGE_REQUEST_TIMEOUT_MS * 2);
 
@@ -588,9 +598,7 @@ describe('LanguageSelect, time limit of the requests', () => {
     vi.useFakeTimers();
     onlineManager.setOnline(false);
 
-    await act(async () => {
-      fireEvent.change(select(), { target: { value: 'en' } });
-    });
+    await pickWithoutUser('en');
     await advance(0);
 
     expect(puts).toBe(1);

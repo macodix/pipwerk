@@ -1,7 +1,7 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
 import type { Page } from '@playwright/test';
 
-import { boxOf, card, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
+import { boxOf, card, choose, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
 
 /** "Alles zeigen": the whole strategy at once, so that every element can be reached with the mouse. */
 async function showEverything(page: Page): Promise<void> {
@@ -88,7 +88,7 @@ test('a step dragged into the frame becomes part of the management, and out of i
   // the middle of the step moves to a free place inside the frame: next to its title
   await dragBy(page, step, frame.x + frame.width - 120 - (from.x + from.width / 2), frame.y + 60 - (from.y + from.height / 2));
 
-  await expect(page.getByTestId('message')).toContainText('Verwaltung');
+  await expect(page.getByTestId('message')).toContainText('Order- und Positionsverwaltung');
   // the flow was arranged anew without the step: the frame lies elsewhere now
   const inside = await boxOf(step);
   const frameNow = await boxOf(page.getByTestId('frame'));
@@ -180,8 +180,8 @@ test('a value of an object is connected with an element by dragging a line and w
   await expect(ema50.first()).toContainText('verbunden');
 
   // the second way: the choice of a further value in the properties view of the element
-  await page.getByTestId('used-add-object').selectOption({ label: 'ATR14' });
-  await page.getByTestId('used-add-value').selectOption({ label: 'Wert' });
+  await choose(page.getByTestId('used-add-object'), { label: 'ATR14' });
+  await choose(page.getByTestId('used-add-value'), { label: 'Wert' });
   await page.getByTestId('used-add-button').click();
   await expect(page.locator('[data-testid="used-group"][data-instance="atr14"] [data-testid="used-row"]')).toHaveCount(1);
   await ema50.first().getByRole('button', { name: 'Verbindung entfernen' }).click();
@@ -259,7 +259,7 @@ test('a step belongs to a section and to a management by the properties view, wi
   await node(page, 'Richtung').click({ position: { x: 40, y: 14 } });
 
   // section: form, fold in, fold out
-  await page.getByTestId('section-select').selectOption('__new');
+  await choose(page.getByTestId('section-select'), { value: '__new' });
   await page.getByTestId('section-name').fill('Einstieg');
   await page.getByTestId('section-create').click();
   await expect(page.getByTestId('band')).toHaveAttribute('data-section', 'Einstieg');
@@ -272,12 +272,12 @@ test('a step belongs to a section and to a management by the properties view, wi
   // management: the step moves into the frame and back
   await node(page, 'Richtung').click({ position: { x: 40, y: 14 } });
   const owners = page.getByTestId('management-select');
-  await owners.selectOption({ label: 'Verwaltung von „Order aufgeben“' });
+  await choose(owners, { label: 'Order- und Positionsverwaltung von „Order aufgeben“' });
   const frame = await boxOf(page.getByTestId('frame'));
   const moved = await boxOf(node(page, 'Richtung'));
   expect(moved.y).toBeGreaterThanOrEqual(frame.y - 1);
   expect(moved.y + moved.height).toBeLessThanOrEqual(frame.y + frame.height + 1);
-  await owners.selectOption({ label: 'Hauptablauf' });
+  await choose(owners, { label: 'Hauptablauf' });
   expect(overlap(await boxOf(node(page, 'Richtung')), await boxOf(page.getByTestId('frame')))).toBe(false);
 });
 

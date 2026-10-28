@@ -1,10 +1,9 @@
 import type { Page } from '@playwright/test';
 
 import { add, exprRoot, newStrategyFromScratch, props, select, setCalculation, setCondition } from './builder';
-import { removeStored, storedStrategy } from './compare';
-import { clickMenu, expect, expectSaved, expectUnsaved, node, openApp, showArea, SIZES, test } from './support';
+import { clickMenu, expect, expectChosen, node, openApp, showArea, SIZES, test } from './support';
 
-// Order 06: the formula editor, the blocks and the guided setup in the narrow windows, rename and remove, and the way
+// Order 06: the formula editor, the blocks in the narrow windows, rename and remove, and the way
 // from a finding to the spot in the expression. They run against the real backend, which forms the expressions. The
 // steps of the test cases that build whole strategies are in `docs/technical/pipwerk-studio-testfaelle.md`.
 
@@ -108,7 +107,7 @@ test('renaming shows the new name everywhere at once; removing a connected objec
   await select(page, 'Doppelt');
   await expect(props(page).getByTestId('used-row')).toHaveCount(0);
   await expect(exprRoot(page).getByTestId('calc-root-select')).toBeVisible();
-  await expect(exprRoot(page).locator('.vb-inner.calc .vb').first().locator(':scope > .select select')).toHaveValue('');
+  await expectChosen(exprRoot(page).locator('.vb-inner.calc .vb').first().locator(':scope > .select > .select-trigger'), '');
   await expect(exprRoot(page).getByTestId('expr-sentence')).not.toContainText('Schnelle EMA');
   await showArea(page, 'canvas');
   await expect(page.getByTestId('wire')).toHaveCount(0);
@@ -165,67 +164,6 @@ test('a finding in an expression leads to the spot in the expression', async ({ 
   expect(selected).toBe('=');
 });
 
-test('the guided setup lays out the elements of its steps, can be left at any step and stores only with "Speichern"', async ({ page }, testInfo) => {
-  const name = `Geführter Aufbau ${testInfo.project.name}`;
-  await openApp(page);
-  try {
-    await clickMenu(page, 'new');
-    await showArea(page, 'props');
-    await expect(page.getByTestId('wizard')).toBeVisible();
-
-    await page.getByTestId('wz-name').fill(name);
-    await page.getByTestId('wz-next').click();
-    await page.getByTestId('wz-trigger').first().click();
-    await page.getByTestId('wz-next').click();
-    await expect(page.getByTestId('wz-step-3')).toBeVisible();
-    await page.getByTestId('wz-add-indicator').filter({ hasText: /^EMA$/ }).click();
-    await expect(page.getByTestId('wz-indicator')).toHaveCount(1);
-    await page.getByTestId('wz-add-indicator').filter({ hasText: /^EMA$/ }).click();
-    await expect(page.getByTestId('wz-indicator')).toHaveCount(2);
-    await page.getByTestId('wz-next').click();
-    await expect(page.getByTestId('wz-step-4')).toBeVisible();
-    const choices = await page.getByTestId('wz-a').locator('option').allTextContents();
-    await page.getByTestId('wz-a').selectOption({ index: 1 });
-    await page.getByTestId('wz-b').selectOption({ index: 2 });
-    expect(choices.length).toBeGreaterThan(2);
-    await page.getByTestId('wz-next').click();
-    await expect(page.getByTestId('wz-step-5')).toBeVisible();
-    await page.getByTestId('wz-next').click();
-    await expect(page.getByTestId('wizard')).toHaveCount(0);
-
-    // the elements are there; nothing is stored yet
-    await showArea(page, 'canvas');
-    await expect(page.locator('[data-testid="node"][data-type-name="Bedingung"]')).toHaveCount(1);
-    await expect(page.locator('[data-testid="card"]')).toHaveCount(2);
-    await expectUnsaved(page);
-    await clickMenu(page, 'save');
-    await expectSaved(page);
-    const stored = await storedStrategy(page, name);
-    expect((stored.elements as { type: string }[]).map((element) => element.type)).toEqual(
-      expect.arrayContaining(['EMA', 'trigger.candle_close', 'flow.condition', 'flow.place_order']),
-    );
-  } finally {
-    await removeStored(page, name);
-  }
-});
-
-test('"Ohne Assistent weiterarbeiten" keeps what the guided setup laid out', async ({ page }) => {
-  await openApp(page);
-  await clickMenu(page, 'new');
-  await showArea(page, 'props');
-  await page.getByTestId('wz-next').click();
-  await page.getByTestId('wz-trigger').first().click();
-  await page.getByTestId('wz-next').click();
-  await expect(page.getByTestId('wz-step-3')).toBeVisible();
-
-  await page.getByTestId('wz-leave').click();
-
-  await expect(page.getByTestId('wizard')).toHaveCount(0);
-  await showArea(page, 'canvas');
-  await expect(page.getByTestId('node')).toHaveCount(1);
-  await expectUnsaved(page);
-});
-
 for (const size of PHONES) {
   test.describe(`on a phone, ${size.width} x ${size.height}`, () => {
     /** Nothing reaches beyond the window to the right and the page does not scroll sideways. */
@@ -244,7 +182,12 @@ for (const size of PHONES) {
       await add(page, 'EMA', 'EMA 20');
       await add(page, 'EMA', 'EMA 50');
       await add(page, 'Bedingung', 'Kreuzen');
-      await setCondition(page, { cross: [{ pick: 'EMA 20 › Wert' }, { pick: 'EMA 50 › Wert' }, 'any'] });
+      await setCondition(page, {
+        and: [
+          { cmp: [{ prev: { pick: 'EMA 20 › Wert' } }, '<=', { prev: { pick: 'EMA 50 › Wert' } }] },
+          { cmp: [{ pick: 'EMA 20 › Wert' }, '>', { pick: 'EMA 50 › Wert' }] },
+        ],
+      });
       await fitsTheWindow(page, '[data-testid="props-element"] .cb');
       await expect(exprRoot(page).getByTestId('expr-sentence')).toContainText('EMA 20');
 
@@ -257,30 +200,15 @@ for (const size of PHONES) {
       await fitsTheWindow(page, '[data-testid="formula-editor"]');
     });
 
-    test('the guided setup fits the window and leads through all steps', async ({ page }) => {
+    test('"Neue Strategie" shows the empty drawing area and the hint of the empty strategy, which fits the window', async ({ page }) => {
       await openApp(page, size);
       await clickMenu(page, 'new');
       await showArea(page, 'props');
-      await expect(page.getByTestId('wizard')).toBeVisible();
-      await fitsTheWindow(page, '[data-testid="wizard"]');
-      for (const step of ['wz-step-1', 'wz-step-2', 'wz-step-3']) {
-        await expect(page.getByTestId(step)).toBeVisible();
-        await fitsTheWindow(page, `[data-testid="${step}"]`);
-        if (step === 'wz-step-2') {
-          await page.getByTestId('wz-trigger').first().click();
-        }
-        await page.getByTestId('wz-next').click();
-      }
-      await expect(page.getByTestId('wz-step-4')).toBeVisible();
-      await fitsTheWindow(page, '[data-testid="wz-step-4"]');
-      // the buttons of the steps can be reached
-      await expect(page.getByTestId('wz-next')).toBeInViewport();
-      await expect(page.getByTestId('wz-leave')).toBeVisible();
-      // the fifth step and its last button as well
-      await page.getByTestId('wz-next').click();
-      await expect(page.getByTestId('wz-step-5')).toBeVisible();
-      await fitsTheWindow(page, '[data-testid="wz-step-5"]');
-      await expect(page.getByTestId('wz-next')).toBeInViewport();
+      await expect(page.getByTestId('empty-strategy-hint')).toBeVisible();
+      await fitsTheWindow(page, '[data-testid="empty-strategy-hint"]');
+      // the hint names the first step: the trigger from the element library, which is one click away in the narrow window
+      await page.getByTestId('empty-library').click();
+      await expect(page.getByTestId('library')).toBeVisible();
     });
 
     test('renaming and removing work with clicks', async ({ page }) => {

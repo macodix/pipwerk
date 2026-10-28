@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EMPTY,
   arithmeticBlock,
+  blankComparison,
   blockForKey,
   comparisonBlock,
   convertCondition,
@@ -125,16 +126,35 @@ describe('the kinds of condition', () => {
     expect(conditionKind(nameBlock(['a', 'b']))).toBe('value');
   });
 
-  it('turns "and" into "or" without losing the conditions, and wraps a single one otherwise', () => {
+  it('turns "and" into "or" and back without losing the conditions', () => {
     const both = logicBlock('and', [comparisonBlock('>', EMPTY, EMPTY), comparisonBlock('<', EMPTY, EMPTY)]);
     expect(convertCondition('or', both)).toEqual({ ...both, operator: 'or' });
+    expect(convertCondition('and', convertCondition('or', both))).toEqual(both);
+  });
+
+  it('replaces the condition by a new one of the kind chosen, in both directions: nothing of the old one stays behind (E13)', () => {
     const single = comparisonBlock('=', nameBlock(['a', 'b']), numberBlock(1));
-    const wrapped = convertCondition('and', single);
-    expect(wrapped.operator).toBe('and');
-    expect(wrapped.children?.[0]).toEqual(single);
-    expect(wrapped.children).toHaveLength(2);
-    expect(convertCondition('not', single).children).toEqual([single]);
+    const crossing = crossingBlock('any', nameBlock(['a', 'b']), nameBlock(['c', 'd']));
+
+    // to "Alle gelten (und)" and to "Eine gilt (oder)": two new comparisons, not the old condition with a second one
+    for (const old of [single, crossing]) {
+      for (const kind of ['and', 'or'] as const) {
+        const next = convertCondition(kind, old);
+        expect(next.operator).toBe(kind);
+        expect(next.children).toEqual([blankComparison(), blankComparison()]);
+        expect(namesIn(next)).toEqual([]);
+      }
+      expect(convertCondition('not', old).children).toEqual([blankComparison()]);
+    }
+
+    // and back: a new crossing or comparison, not the "and" with the old condition inside
+    const both = logicBlock('and', [single, crossing]);
+    expect(convertCondition('cross', both)).toEqual(crossingBlock('up', EMPTY, EMPTY));
+    expect(convertCondition('compare', both)).toEqual(blankComparison());
+    expect(convertCondition('compare', crossing)).toEqual(blankComparison());
+    expect(convertCondition('value', both)).toEqual(EMPTY);
+
+    // the kind that is already there stays as it is
     expect(convertCondition('compare', single)).toBe(single);
-    expect(convertCondition('cross', single).kind).toBe('crossing');
   });
 });

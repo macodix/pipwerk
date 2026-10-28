@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import type { StrategyDocument } from './document/types';
 import { renderWithProviders } from './test-utils';
-import { clickNode, menu, nodeByName, openStored, waitForReady } from './testing/actions';
+import { choose, clickNode, menu, nodeByName, offeredChoices, openStored, waitForReady } from './testing/actions';
 import { mockApi } from './testing/backend';
 import { inventedStrategy, inventedTypesJson } from './testing/inventedTypes';
 
@@ -32,7 +32,7 @@ async function setup(): Promise<Setup> {
 }
 
 async function select(user: Setup['user'], testId: string, label: string): Promise<void> {
-  await user.selectOptions(screen.getByTestId(testId), label);
+  await choose(user, screen.getByTestId(testId), label);
 }
 
 async function chooseNode(_user: Setup['user'], name: string): Promise<void> {
@@ -125,7 +125,7 @@ describe('the properties view of invented types (specification 5.4)', () => {
     expect(within(field).getByText('*')).toBeInTheDocument();
     expect(within(field).getByLabelText('Erklärung')).toHaveAttribute('data-tip', 'Erklärung Sorte');
     // only the kind that the type allows, besides "nicht belegt"
-    expect(within(screen.getByTestId('kind-sorte')).getAllByRole('option').map((option) => option.textContent)).toEqual(['nicht belegt', 'Fester Wert']);
+    expect(await offeredChoices(user, screen.getByTestId('kind-sorte'))).toEqual(['nicht belegt', 'Fester Wert']);
     // the properties of the order come from the chosen order type
     const order = screen.getByTestId('sec-order');
     expect(within(order).getByText('Wunsch')).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe('the properties view of invented types (specification 5.4)', () => {
   it('gives the newly needed properties their standard values when the order type changes, and keeps the others', async () => {
     const { user, api, document } = await setup();
     await chooseNode(user, 'Ausführen');
-    await user.selectOptions(screen.getByTestId('kind-wunsch'), 'Fester Wert');
+    await choose(user, screen.getByTestId('kind-wunsch'), 'Fester Wert');
     await user.type(within(screen.getByTestId('field-wunsch')).getByTestId('value-wunsch'), 'viel');
 
     await select(user, 'value-sorte', 'Sorte B');
@@ -184,9 +184,9 @@ describe('the properties view of invented types (specification 5.4)', () => {
     const field = screen.getByTestId('field-ziel');
 
     // choosing "Fester Wert" starts with the standard value of the type: the one of the application
-    await user.selectOptions(within(field).getByTestId('kind-ziel'), 'Fester Wert');
+    await choose(user, within(field).getByTestId('kind-ziel'), 'Fester Wert');
     expect(within(field).getByTestId('value-ziel')).toHaveValue('zz.own_target');
-    await user.selectOptions(within(field).getByTestId('value-ziel'), 'Anderes …');
+    await choose(user, within(field).getByTestId('value-ziel'), 'Anderes …');
     await user.type(within(field).getByTestId('value-ziel-text'), 'eurusd');
 
     const stored = await saved({ user, api, document });
@@ -199,7 +199,7 @@ describe('the properties view of invented types (specification 5.4)', () => {
     await chooseNode(user, 'Messer');
     const field = screen.getByTestId('field-laenge');
 
-    await user.selectOptions(within(field).getByTestId('kind-laenge'), 'Strategieparameter');
+    await choose(user, within(field).getByTestId('kind-laenge'), 'Strategieparameter');
     expect(within(field).getByTestId('param-hint')).toHaveTextContent('noch kein Strategieparameter');
     await user.type(within(field).getByTestId('new-param-name'), 'Meine Länge');
     await user.click(within(field).getByTestId('new-param-create'));
@@ -221,16 +221,16 @@ describe('the properties view of invented types (specification 5.4)', () => {
     await chooseNode(user, 'Tun');
     const field = screen.getByTestId('field-menge');
 
-    await user.selectOptions(within(field).getByTestId('kind-menge'), 'Wert eines Objekts');
-    await user.selectOptions(within(field).getByTestId('ref-object'), 'Messer');
+    await choose(user, within(field).getByTestId('kind-menge'), 'Wert eines Objekts');
+    await choose(user, within(field).getByTestId('ref-object'), 'Messer');
     // "Menge" is a number: the property "Tendenz" (text) is not offered
-    expect(within(within(field).getByTestId('ref-prop')).getAllByRole('option').map((option) => option.textContent)).toEqual([
+    expect(await offeredChoices(user, within(field).getByTestId('ref-prop'))).toEqual([
       'Eigenschaft wählen …',
       'Stand',
       'Höchststand',
       'Tiefststand',
     ]);
-    await user.selectOptions(within(field).getByTestId('ref-prop'), 'Stand');
+    await choose(user, within(field).getByTestId('ref-prop'), 'Stand');
 
     const stored = await saved({ user, api, document });
     const doIt = stored.elements.find((element) => element.name === 'Tun');
@@ -243,14 +243,15 @@ describe('the properties view of invented types (specification 5.4)', () => {
     const { user } = await setup();
     await chooseNode(user, 'Tun');
 
-    await user.selectOptions(screen.getByTestId('used-add-object'), 'Messer');
-    await user.selectOptions(screen.getByTestId('used-add-value'), 'Stand');
+    await choose(user, screen.getByTestId('used-add-object'), 'Messer');
+    await choose(user, screen.getByTestId('used-add-value'), 'Stand');
     await user.click(screen.getByTestId('used-add-button'));
     expect(screen.getAllByTestId('used-row')).toHaveLength(1);
     expect(screen.getByTestId('used-messer-stand-select')).toHaveValue('p:stand');
     // the object marks the use in its properties view
     await chooseNode(user, 'Messer');
-    expect(within(screen.getByTestId('sec-delivers')).getByText('Tun')).toBeInTheDocument();
+    // the report of the backend may name further elements that use the value: "Tun" is among them
+    expect(within(screen.getByTestId('sec-delivers')).getByText(/\bTun\b/)).toBeInTheDocument();
     await chooseNode(user, 'Tun');
     await user.click(screen.getByTestId('used-messer-stand-remove'));
     expect(screen.queryAllByTestId('used-row')).toHaveLength(0);

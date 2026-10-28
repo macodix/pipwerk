@@ -59,14 +59,68 @@ export async function clickMenu(page: Page, id: 'new' | 'open' | 'save' | 'check
   await page.getByTestId(`cmenu-${id}`).click();
 }
 
-/** "Neue Strategie" and leaving the guided setup: the user works by hand on the empty drawing area. */
+/** "Neue Strategie": an empty drawing area; the user works by hand. */
 export async function newStrategy(page: Page): Promise<void> {
   await clickMenu(page, 'new');
   await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
-  const leave = page.getByTestId('wz-leave');
-  if (await leave.isVisible()) {
-    await leave.click();
+}
+
+/**
+ * Waits until the editor of an expression that holds the field has nothing on its way (the panel says `data-pending`): the
+ * answer of the endpoint to the last change changes the sentence, and a sentence of another length moves the fields below
+ * it. A click whose press and release fall on either side of that move ends on another element and opens nothing. A field
+ * outside of an expression editor needs no wait.
+ */
+export async function settled(field: Locator): Promise<void> {
+  const panel = field.locator('xpath=ancestor::div[@class="ep"][1]');
+  if ((await panel.count()) > 0) {
+    await expect(panel).toHaveAttribute('data-pending', 'false');
   }
+}
+
+/** Opens the list of a field with a click and returns the list. */
+async function openList(field: Locator): Promise<Locator> {
+  const list = field.page().getByRole('listbox');
+  await settled(field);
+  await field.click();
+  await expect(list).toBeVisible();
+  return list;
+}
+
+/**
+ * Chooses an entry of a list of choices of the interface (a designed control, specification 5.1): opens the list with a
+ * click and clicks the entry. A text is taken for the label of the entry, `{ value }` for its value; a text that is no label
+ * is tried as a value.
+ */
+export async function choose(field: Locator, wanted: string | { label: string } | { value: string }): Promise<void> {
+  const list = await openList(field);
+  const byValue = (value: string): Locator => list.locator(`[role="option"][data-value=${JSON.stringify(value)}]`);
+  const byLabel = (label: string): Locator => list.getByRole('option', { name: label, exact: true });
+  let entry: Locator;
+  if (typeof wanted === 'string') {
+    entry = (await byLabel(wanted).count()) > 0 ? byLabel(wanted).first() : byValue(wanted).first();
+  } else if ('label' in wanted) {
+    entry = byLabel(wanted.label).first();
+  } else {
+    entry = byValue(wanted.value).first();
+  }
+  await entry.click();
+  await expect(list).toHaveCount(0);
+}
+
+/** The value that a field of a list of choices shows (a designed control, so `toHaveValue` does not apply). */
+export async function expectChosen(field: Locator, value: string): Promise<void> {
+  await expect(field).toHaveJSProperty('value', value);
+}
+
+/** The labels of the entries a field offers: opens its list, reads it and closes it with Escape. */
+export async function offered(field: Locator): Promise<string[]> {
+  const page = field.page();
+  const list = await openList(field);
+  const labels = (await list.getByRole('option').allTextContents()).map((text) => text.trim());
+  await page.keyboard.press('Escape');
+  await expect(list).toHaveCount(0);
+  return labels;
 }
 
 /** Opens a stored strategy by name. */

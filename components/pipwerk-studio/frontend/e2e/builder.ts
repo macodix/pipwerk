@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { card, clickMenu, library, node, showArea } from './support';
+import { card, choose, clickMenu, library, node, settled, showArea } from './support';
 
 /**
  * Helpers to build a strategy only by operating the interface: no step types an expression as text. They follow the
@@ -26,90 +26,100 @@ export type C =
   | { not: C }
   | { truthy: V };
 
+/** The field of a designed list of choices inside `parent` (a direct child of it). */
+const trigger = (parent: Locator): Locator => parent.locator(':scope > .select > .select-trigger');
+
 /** Chooses an entry of a list by its label; a label that is not in the list fails with the labels that are. */
-async function chooseLabel(list: Locator, label: string): Promise<void> {
-  const labelsOf = async (): Promise<string[]> => (await list.locator('option').allTextContents()).map((text) => text.trim());
+async function chooseLabel(field: Locator, label: string): Promise<void> {
+  const list = field.page().getByRole('listbox');
+  await settled(field);
+  await field.click();
+  const entry = list.getByRole('option', { name: label, exact: true }).first();
   // the values of the list come from the expression endpoint: they may arrive a moment after the list is shown
   try {
-    await expect.poll(labelsOf, { timeout: 10_000 }).toContain(label);
+    await expect(entry).toBeVisible({ timeout: 10_000 });
   } catch {
-    throw new Error(`"${label}" is not in the list: ${(await labelsOf()).join(' | ')}`);
+    const labels = (await list.getByRole('option').allTextContents()).map((text) => text.trim());
+    throw new Error(`"${label}" is not in the list: ${labels.join(' | ')}`);
   }
-  await list.selectOption({ label });
+  await entry.click();
+  await expect(list).toHaveCount(0);
 }
 
 /** Sets a value in the block editor: `vb` is the element of the value (`.vb`). */
 export async function setValue(vb: Locator, v: V): Promise<void> {
-  const sel = vb.locator(':scope > .select select');
+  const sel = trigger(vb);
   if ('pick' in v) {
     await chooseLabel(sel, v.pick);
   } else if ('num' in v) {
-    await sel.selectOption('k:num');
+    await choose(sel, { value: 'k:num' });
     await vb.locator(':scope > .num-wrap input').fill(String(v.num));
   } else if ('text' in v) {
-    await sel.selectOption('k:str');
+    await choose(sel, { value: 'k:str' });
     await vb.locator(':scope > input.input').fill(v.text);
   } else if ('choice' in v) {
-    await sel.selectOption('k:str');
-    await chooseLabel(vb.locator(':scope > .select').nth(1).locator('select'), v.choice);
+    await choose(sel, { value: 'k:str' });
+    await chooseLabel(vb.locator(':scope > .select').nth(1).locator('.select-trigger'), v.choice);
   } else if ('calc' in v) {
-    await sel.selectOption('k:calc');
+    await choose(sel, { value: 'k:calc' });
     const inner = vb.locator(':scope > .vb-inner.calc');
     await setValue(inner.locator(':scope > .vb').nth(0), v.calc[0]);
-    await inner.locator(':scope > .select select').selectOption(v.calc[1]);
+    await choose(trigger(inner), v.calc[1]);
     await setValue(inner.locator(':scope > .vb').nth(1), v.calc[2]);
   } else if ('prev' in v) {
-    await sel.selectOption('k:prev');
+    await choose(sel, { value: 'k:prev' });
     await setValue(vb.locator(':scope > .vb-inner > .vb'), v.prev);
   } else if ('iff' in v) {
-    await sel.selectOption('k:if');
+    await choose(sel, { value: 'k:if' });
     const lines = vb.locator(':scope > .vb-inner.stack > .vb-line');
     await setCond(lines.nth(0).locator(':scope > .cb'), v.iff[0]);
     await setValue(lines.nth(1).locator(':scope > .vb'), v.iff[1]);
     await setValue(lines.nth(2).locator(':scope > .vb'), v.iff[2]);
   } else if ('fn' in v) {
-    await sel.selectOption('k:func');
+    await choose(sel, { value: 'k:func' });
     const inner = vb.locator(':scope > .vb-inner');
-    await inner.locator(':scope > .select select').selectOption({ label: v.fn[0] });
+    await choose(trigger(inner), { label: v.fn[0] });
     for (let index = 0; index < v.fn[1].length; index += 1) {
       await setValue(inner.locator(':scope > .vb').nth(index), v.fn[1][index] as V);
     }
   } else {
-    await sel.selectOption('k:cond');
+    await choose(sel, { value: 'k:cond' });
     await setCond(vb.locator(':scope > .vb-inner.stack > .cb'), v.cond);
   }
 }
 
 /** Sets a condition in the block editor: `cb` is the element of the condition (`.cb`). */
 export async function setCond(cb: Locator, c: C): Promise<void> {
-  const kind = cb.locator(':scope > .cb-kind select');
+  const kind = cb.locator(':scope > .cb-kind > .select > .select-trigger');
   if ('cmp' in c) {
-    await kind.selectOption('compare');
+    await choose(kind, { value: 'compare' });
     const row = cb.locator(':scope > .cb-row');
     await setValue(row.locator(':scope > .vb').nth(0), c.cmp[0]);
-    await row.locator(':scope > .select select').selectOption(c.cmp[1]);
+    await choose(trigger(row), c.cmp[1]);
     await setValue(row.locator(':scope > .vb').nth(1), c.cmp[2]);
   } else if ('cross' in c) {
-    await kind.selectOption('cross');
+    await choose(kind, { value: 'cross' });
     const row = cb.locator(':scope > .cb-row');
     await setValue(row.locator(':scope > .vb').nth(0), c.cross[0]);
     await setValue(row.locator(':scope > .vb').nth(1), c.cross[1]);
-    await row.locator(':scope > .select select').selectOption(c.cross[2]);
+    await choose(trigger(row), c.cross[2]);
   } else if ('and' in c || 'or' in c) {
     const items = 'and' in c ? c.and : c.or;
-    await kind.selectOption('and' in c ? 'and' : 'or');
+    await choose(kind, { value: 'and' in c ? 'and' : 'or' });
     const list = cb.locator(':scope > .cb-list');
     for (let index = 2; index < items.length; index += 1) {
-      await list.locator(':scope > [data-testid="cond-add"]').click();
+      const add = list.locator(':scope > [data-testid="cond-add"]');
+      await settled(add);
+      await add.click();
     }
     for (let index = 0; index < items.length; index += 1) {
       await setCond(list.locator(':scope > .cb-item').nth(index).locator(':scope > .cb'), items[index] as C);
     }
   } else if ('not' in c) {
-    await kind.selectOption('not');
+    await choose(kind, { value: 'not' });
     await setCond(cb.locator(':scope > .cb-list > .cb'), c.not);
   } else {
-    await kind.selectOption('value');
+    await choose(kind, { value: 'value' });
     await setValue(cb.locator(':scope > .cb-row > .vb'), c.truthy);
   }
 }
@@ -150,12 +160,10 @@ export async function select(page: Page, name: string): Promise<void> {
   await showArea(page, 'props');
 }
 
-/** "Neue Strategie": the guided setup is left, the strategy gets its name. */
+/** "Neue Strategie": an empty drawing area; the strategy gets its name. */
 export async function newStrategyFromScratch(page: Page, name: string): Promise<void> {
   await clickMenu(page, 'new');
   await showArea(page, 'props');
-  await expect(page.getByTestId('wizard')).toBeVisible();
-  await page.getByTestId('wz-leave').click();
   await page.getByTestId('strategy-name').fill(name);
   // the hint of the empty strategy stands in the properties view, not on the drawing area
   await expect(page.getByTestId('empty-strategy-hint')).toBeVisible();
@@ -169,9 +177,9 @@ export async function createParam(page: Page, name: string, type: 'time_unit' | 
   const popover = page.getByTestId('param-popover');
   await expect(popover).toBeVisible();
   await popover.getByTestId('param-name').fill(name);
-  await popover.getByTestId('param-type').selectOption(type);
+  await choose(popover.getByTestId('param-type'), type);
   if (type === 'time_unit') {
-    await popover.getByTestId('param-value').selectOption(value);
+    await choose(popover.getByTestId('param-value'), value);
   } else {
     await popover.getByTestId('param-value').fill(value);
   }
@@ -181,17 +189,17 @@ export async function createParam(page: Page, name: string, type: 'time_unit' | 
 
 export async function bindParam(page: Page, fieldId: string, paramName: string): Promise<void> {
   const f = field(page, fieldId);
-  await f.getByTestId(`kind-${fieldId}`).selectOption('parameter');
-  await f.getByTestId('param-select').selectOption({ label: paramName });
+  await choose(f.getByTestId(`kind-${fieldId}`), { value: 'parameter' });
+  await choose(f.getByTestId('param-select'), { label: paramName });
 }
 
 export async function bindFixed(page: Page, fieldId: string, value: string): Promise<void> {
   const f = field(page, fieldId);
-  await f.getByTestId(`kind-${fieldId}`).selectOption('fixed');
+  await choose(f.getByTestId(`kind-${fieldId}`), { value: 'fixed' });
   const v = f.getByTestId(`value-${fieldId}`);
-  const tag = await v.evaluate((element) => element.tagName);
-  if (tag === 'SELECT') {
-    await v.selectOption(value);
+  const role = await v.getAttribute('role');
+  if (role === 'combobox') {
+    await choose(v, value);
   } else {
     await v.fill(value);
   }
@@ -213,7 +221,7 @@ export async function setCalculation(page: Page, v: V): Promise<void> {
 /** A field that takes an expression (choosing the kind "Ausdruck" first). */
 export async function bindExpr(page: Page, fieldId: string, v: V): Promise<void> {
   const f = field(page, fieldId);
-  await f.getByTestId(`kind-${fieldId}`).selectOption('expression');
+  await choose(f.getByTestId(`kind-${fieldId}`), { value: 'expression' });
   await setValue(f.getByTestId(`expression-${fieldId}`).locator(':scope > .vb'), v);
 }
 
@@ -228,14 +236,15 @@ export async function refreshValue(page: Page, object: string, values = 1): Prom
   const switches = group.getByRole('checkbox', { name: 'Aktualisieren' });
   await expect(switches).toHaveCount(values);
   for (const each of await switches.all()) {
-    await each.check();
+    // the box of the switch lies over the real check box (its label passes the click on): the click goes to the box
+    await each.check({ force: true });
   }
 }
 
 /** Adds an own rule (condition) to the element that is selected, with its name and the condition. */
 export async function addOwnRule(page: Page, name: string, c: C): Promise<void> {
   const section = page.getByTestId('sec-element-rules');
-  await section.getByTestId('rule-add-select').selectOption({ label: 'eigene Regel' });
+  await choose(section.getByTestId('rule-add-select'), { label: 'eigene Regel' });
   const card = section.getByTestId('rule-card').last();
   await card.getByTestId('instance-name').fill(name);
   await setCond(card.getByTestId('rule-expression').locator(':scope > .cb'), c);
@@ -247,6 +256,6 @@ export async function addRiskRule(page: Page, name: string): Promise<void> {
   await page.getByTestId('status-pill').click();
   await showArea(page, 'props');
   const section = page.getByTestId('sec-rules');
-  await section.getByTestId('rule-add-select').selectOption({ label: 'Risiko je Trade' });
+  await choose(section.getByTestId('rule-add-select'), { label: 'Risiko je Trade' });
   await section.getByTestId('rule-card').last().getByTestId('instance-name').fill(name);
 }

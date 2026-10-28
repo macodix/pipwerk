@@ -109,7 +109,7 @@ export function Header({ onAbout, aboutRef }: { onAbout: () => void; aboutRef: R
             type="button"
             className={`count-pill${findings.errors > 0 ? ' bad' : count > 0 ? ' hints-only' : ' good'}`}
             onClick={() => {
-              actions.select({ kind: 'strategy' }, 'props');
+              actions.showFindings();
             }}
             data-testid="findings-count"
             data-tip={t('findings.countTip', {

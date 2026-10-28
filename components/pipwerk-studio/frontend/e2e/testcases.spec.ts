@@ -15,6 +15,16 @@ test.use({ actionTimeout: 10_000 });
 const pick = (label: string): V => ({ pick: label });
 const calc = (a: V, sign: '+' | '-' | '*' | '/', b: V): V => ({ calc: [a, sign, b] });
 const compare = (a: V, operator: string, b: V): C => ({ cmp: [a, operator, b] });
+const earlier = (label: string): V => ({ prev: pick(label) });
+/** "EMA 20 crosses EMA 50 upwards" (there is no block for a crossing): the earlier values and the present ones compared. */
+const crossingUp = (): C[] => [
+  compare(earlier('EMA 20 › Wert'), '<=', earlier('EMA 50 › Wert')),
+  compare(pick('EMA 20 › Wert'), '>', pick('EMA 50 › Wert')),
+];
+const crossingDown = (): C[] => [
+  compare(earlier('EMA 20 › Wert'), '>=', earlier('EMA 50 › Wert')),
+  compare(pick('EMA 20 › Wert'), '<', pick('EMA 50 › Wert')),
+];
 
 /** The frame of the management of the selected step becomes the place the next entries are laid out in. */
 async function selectFrame(page: Page): Promise<void> {
@@ -81,7 +91,7 @@ async function buildStr03(page: Page, name: string): Promise<void> {
   await add(page, 'Kerzenschluss');
   await bindParam(page, 'zeiteinheit', 'Zeiteinheit');
   await add(page, 'Bedingung', 'Kreuzen');
-  await setCondition(page, { cross: [pick('EMA 20 › Wert'), pick('EMA 50 › Wert'), 'any'] });
+  await setCondition(page, { or: [{ and: crossingUp() }, { and: crossingDown() }] });
   await add(page, 'Berechnung', 'Richtung');
   await setCalculation(page, { iff: [compare(pick('EMA 20 › Wert'), '>', pick('EMA 50 › Wert')), { text: 'buy' }, { text: 'sell' }] });
   await add(page, 'Berechnung', 'Stop-Loss');
@@ -102,8 +112,8 @@ async function buildStr03(page: Page, name: string): Promise<void> {
   await add(page, 'Bedingung', 'Kreuzen gegen die Position');
   await setCondition(page, {
     or: [
-      { and: [compare(pick('Position › Richtung'), '=', { choice: 'buy' }), { cross: [pick('EMA 20 › Wert'), pick('EMA 50 › Wert'), 'down'] }] },
-      { and: [compare(pick('Position › Richtung'), '=', { choice: 'sell' }), { cross: [pick('EMA 20 › Wert'), pick('EMA 50 › Wert'), 'up'] }] },
+      { and: [compare(pick('Position › Richtung'), '=', { choice: 'buy' }), ...crossingDown()] },
+      { and: [compare(pick('Position › Richtung'), '=', { choice: 'sell' }), ...crossingUp()] },
     ],
   });
   // the management has its own triggers: the objects of the main flow keep the state they had when the order was placed,
