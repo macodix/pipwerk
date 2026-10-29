@@ -832,7 +832,7 @@ def test_in_the_main_flow_a_property_of_no_order_type_is_unknown_not_an_order_er
     assert only(found, fc.EXPRESSION_ORDER_OUTSIDE_MANAGEMENT)
 
 
-# Order ändern usw. außerhalb einer Verwaltung ----------------------------------------------------
+# Order ändern usw. außerhalb einer Order- und Positionsverwaltung ---------------------------------
 
 
 def test_elements_for_existing_orders_and_positions_need_a_management() -> None:
@@ -1267,7 +1267,7 @@ def test_candle_at_an_instance_on_the_canvas() -> None:
     )
 
 
-# Verbindungen und Verwaltungen (weitere Befunde) --------------------------------------------------
+# Verbindungen und Order- und Positionsverwaltungen (weitere Befunde) ------------------------------
 
 
 def test_invalid_connections() -> None:

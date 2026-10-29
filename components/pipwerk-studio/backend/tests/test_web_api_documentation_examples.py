@@ -260,7 +260,7 @@ CASES: list[tuple[str, Callable[[dict[str, Any]], None], list[Finding]]] = [
         [("error", "instance.unconnected", NEW_A)],
     ),
     (
-        "str-03-manuell-in-verwaltung.strategy.json",
+        "str-03-manuell-in-order-und-positionsverwaltung.strategy.json",
         add_a_manual_trigger_to_the_management,
         [("error", "trigger.manual_in_management", NEW_A)],
     ),
@@ -290,11 +290,14 @@ def test_every_example_is_a_valid_document_and_named_in_the_documentation() -> N
         assert f"`{name}`" in documentation, name
 
 
-def test_the_user_documentation_points_to_the_section_and_no_longer_holds_it() -> None:
+def test_the_user_documentation_holds_no_instructions_to_try_the_web_api() -> None:
+    """Order 18 (E5): no steps for trying the web API in the user documentation."""
     text = USER_DOCUMENTATION.read_text(encoding="utf-8")
     assert "docs/technical/pipwerk-studio.md" in text
-    assert "Abschnitt 5.4" in text
     for gone in (
+        "Web-API ausprobieren",
+        "erwarteten Befunde",
+        "Abschnitt 5.4",
         "#### Beispieldokumente",
         "#### Vorlage anlegen",
         "str-03-ohne-ausloeser",
@@ -302,7 +305,6 @@ def test_the_user_documentation_points_to_the_section_and_no_longer_holds_it() -
     ):
         assert gone not in text, gone
     assert "contracts/strategies/v1/examples" not in text
-    assert "Web-API ausprobieren" in text
 
 
 def test_the_documentation_names_the_findings_of_every_change() -> None:

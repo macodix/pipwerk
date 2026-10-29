@@ -1,7 +1,7 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
 import type { Page } from '@playwright/test';
 
-import { boxOf, card, choose, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
+import { boxOf, card, choose, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, showArea, test, viewOf } from './support';
 
 /** "Alles zeigen": the whole strategy at once, so that every element can be reached with the mouse. */
 async function showEverything(page: Page): Promise<void> {
@@ -148,11 +148,15 @@ test('a step is connected by dragging and by clicking, and a selected line is de
   await dragBy(page, port, targetBox.x + targetBox.width / 2 - (await boxOf(port)).x, targetBox.y + 30 - (await boxOf(port)).y);
   await expect(page.getByTestId('flow-edge')).toHaveCount(1);
 
-  // a click on the line selects it, the cross deletes it
+  // a click on the line selects it; the properties view of the line deletes it (specification 5.3)
   const line = await boxOf(page.locator('[data-testid="flow-edge"] .react-flow__edge-interaction').first());
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2);
-  await page.getByTestId('edge-delete').click();
+  await showArea(page, 'props');
+  await expect(page.getByTestId('props-connection')).toContainText('Von „Manuell“ zu „Order löschen“');
+  await page.getByTestId('connection-remove').click();
   await expect(page.getByTestId('flow-edge')).toHaveCount(0);
+  await expect(page.getByTestId('props-strategy')).toBeVisible();
+  await showArea(page, 'canvas');
 
   // by clicking the output and then the other step
   await port.click();

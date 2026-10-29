@@ -555,7 +555,7 @@ def test_sections_of_the_main_flow_and_of_a_management() -> None:
     strategy.connections.append(connect(2, "gestellt", 5))
     strategy.sections = [
         Section("Einstieg", None, [uid(1), uid(2)], False, uid(60)),
-        Section("Verwaltung", uid(2), [uid(5)], True, uid(61)),
+        Section("Nachbetreuung", uid(2), [uid(5)], True, uid(61)),
     ]
     strategy.collapsed_managements = [uid(2)]
     assert check(strategy) == []
