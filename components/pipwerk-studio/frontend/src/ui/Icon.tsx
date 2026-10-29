@@ -1,3 +1,5 @@
+// The symbols and the component `Icon` are code of the prototype, taken over and extended (specification E8: the
+// prototype is an aid, not a template); see docs/technical/pipwerk-studio.md, section 2.3.
 const PATHS: Record<string, string> = {
   plus: 'M12 5v14M5 12h14',
   minus: 'M5 12h14',

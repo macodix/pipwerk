@@ -88,6 +88,11 @@ function parseInstance(value: unknown, what: string): InstanceDocument {
   return record as InstanceDocument;
 }
 
+/** Checks an instance that the backend made (the answer of `/api/v1/insert`) and returns it as it is. */
+export function parseInstanceDocument(value: unknown, what: string): InstanceDocument {
+  return parseInstance(value, what);
+}
+
 function parseInstances(value: unknown, what: string): InstanceDocument[] {
   if (value === undefined) {
     return [];

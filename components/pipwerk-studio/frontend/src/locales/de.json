@@ -774,6 +774,7 @@
     "deleteFailed": "Die Strategie konnte nicht gelöscht werden.",
     "checkFailed": "Die Strategie konnte nicht geprüft werden.",
     "insertFailed": "Der Eintrag konnte nicht eingefügt werden.",
+    "insertFailedHint": "In der Strategie wurde nichts geändert. Versuchen Sie es noch einmal. Klappt es wieder nicht, speichern Sie die Strategie und prüfen Sie, ob das Programm noch läuft.",
     "removeFailed": "Der Eintrag konnte nicht entfernt werden.",
     "codes": {
       "object": {

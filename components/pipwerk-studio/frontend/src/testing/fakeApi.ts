@@ -1,12 +1,13 @@
 import { emaTrendfolge } from './emaTrendfolge';
 import { blocksToStored, namesOf, storedToBlocks } from './fakeExpressions';
+import { insert } from './fakeInsert';
 import { removals } from './fakeRemovals';
 import { identifierFromName } from './keys';
 import { typeDescriptionsJson } from './typeDescriptions';
 
 /**
  * A backend in memory for the tests of the interface: the Web API of specification 4.2 (type descriptions, lists,
- * strategies, check, identifiers, expressions) and the internal endpoints of the settings. It does what the interface
+ * strategies, check, identifiers, expressions, insertion of templates) and the internal endpoints of the settings. It does what the interface
  * needs to be tested without the real backend; it does not parse expressions and checks only a few things. The browser
  * tests use it where the real backend of the branch does not speak format 2.0 yet; every test that runs against it says so.
  */
@@ -337,6 +338,9 @@ export class FakeApi {
     }
     if (url === '/api/v1/removals' && method === 'POST') {
       return fail('removals') ?? removals(body);
+    }
+    if (url === '/api/v1/insert' && method === 'POST') {
+      return fail('insert') ?? insert(body, this.types, this.typeById);
     }
     if (url === '/api/v1/keys' && method === 'POST') {
       const document = asRecord(body.document);

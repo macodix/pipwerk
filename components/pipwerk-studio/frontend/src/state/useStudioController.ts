@@ -2,7 +2,7 @@ import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { fetchElementTypes } from '../api/elementTypes';
+import { fetchElementTypes, templateDocument } from '../api/elementTypes';
 import {
   checkDocument,
   createKey,
@@ -13,8 +13,10 @@ import {
   readTemplate,
   replaceStrategy,
   requestExpressions,
+  requestInsert,
   templateArts,
   type Finding,
+  type InsertSource,
 } from '../api/objects';
 import { addToList, type ListRef } from '../document/instanceOps';
 import { listPointer, placePointer, setPlaceStored, type ExpressionPlace } from '../document/places';
@@ -54,15 +56,14 @@ import {
   type InputRef,
 } from '../document/ops';
 import {
-  instanceFromTemplate,
-  instanceFromType,
+  elementForInstance,
   newElement,
   newStrategy,
-  newTemplateElement,
   takenNames,
   typeDisplayName,
   uniqueDisplayName,
   withOrderDefaults,
+  withStandardValues,
 } from '../document/build';
 import type { Binding, StrategyDocument, StrategyParameter } from '../document/types';
 import { defaultLanguage, isSupportedLanguage, type SupportedLanguage } from '../i18n';
@@ -100,7 +101,7 @@ export type DialogState =
   | { kind: 'removeElement'; id: string; plan: RemovalPlan }
   | { kind: 'removeParameter'; key: string; plan: RemovalPlan }
   | { kind: 'removeRule'; owner: string | null; key: string; plan: RemovalPlan }
-  | { kind: 'error'; titleKey: string; error: unknown };
+  | { kind: 'error'; titleKey: string; error: unknown; hintKey?: string };
 
 /** A strategy parameter that is about to be created: the identifier in expressions comes from the backend. */
 export type NewParameter = Pick<StrategyParameter, 'name' | 'datatype' | 'object_type' | 'value' | 'at_application' | 'choices'>;
@@ -192,8 +193,9 @@ export function useStudioController(language: SupportedLanguage) {
   const noticeVisible = noticeSerial !== null && shownNotice === noticeSerial;
   const messageShown = noticeVisible || state.armed !== null;
 
-  const showError = useCallback((titleKey: string, error: unknown) => {
-    setDialog({ kind: 'error', titleKey, error });
+  /** `hintKey` is the text of what the user can do about it, shown below the cause. */
+  const showError = useCallback((titleKey: string, error: unknown, hintKey?: string) => {
+    setDialog({ kind: 'error', titleKey, error, hintKey });
   }, []);
 
   const notify = useCallback((key: string, params?: Record<string, string>) => {
@@ -422,12 +424,10 @@ export function useStudioController(language: SupportedLanguage) {
    * Lays an entry of the library on the drawing area or adds it as a rule. The answer is the identifier of the
    * element that was laid out, the key of the rule or contained object that was added, or `null` if nothing was.
    */
-  const insert = useCallback(
+  const insertNow = useCallback(
     async (entryKey: string, drop?: DropTarget): Promise<string | null> => {
-      const current = stateRef.current;
       const index = typesRef.current;
-      const document = current.document;
-      if (document === null || index === null) {
+      if (stateRef.current.document === null || index === null) {
         return null;
       }
       const entry = findEntry(library, entryKey);
@@ -436,74 +436,84 @@ export function useStudioController(language: SupportedLanguage) {
       }
       try {
         const source = entry.source;
-        let template: ({ id: string; name: string; object_type: string } & Record<string, unknown>) | null = null;
-        let own = false;
+        let from: InsertSource;
         let typeId: string;
         if (source.kind === 'type') {
           typeId = source.typeId;
+          from = { objectType: typeId };
         } else if (source.kind === 'builtinTemplate') {
           const found = index.templates.find((candidate) => candidate.id === source.templateId);
           if (found === undefined) {
             return null;
           }
-          template = found;
           typeId = found.object_type;
+          from = { template: templateDocument(found) };
         } else {
           const record = await readTemplate(source.art, source.id);
-          template = record as { id: string; name: string; object_type: string } & Record<string, unknown>;
-          typeId = template.object_type;
-          own = true;
+          typeId = String(record.object_type);
+          from = { template: record };
+        }
+        // The document the request starts from is the one after every insertion before this one (they run one after the
+        // other), as it is now, after the stored template was read.
+        const current = stateRef.current;
+        const document = current.document;
+        if (document === null) {
+          return null;
         }
         const type = index.byId.get(typeId);
-        const name = uniqueDisplayName(
-          entry.name === '' ? (type === undefined ? typeId : typeDisplayName(type, language)) : entry.name,
-          type === undefined || holdsInstance(type) || type.named || entry.target === 'rules' || template !== null
-            ? takenNames(document, index)
-            : [],
-        );
-        if (entry.target === 'rules' || drop?.instanceList !== undefined) {
+        const makesInstance = 'template' in from || entry.target === 'rules' || drop?.instanceList !== undefined || (type !== undefined && holdsInstance(type));
+        if (makesInstance) {
+          if (type === undefined && !('template' in from)) {
+            return null;
+          }
+          // Name, key, origin and content, with the names and keys of what is inside, come from the backend (E2); nothing
+          // changes in the document before the answer is there.
+          const instance = withStandardValues(await requestInsert(document, from, entry.name, language), type);
+          if (entry.target === 'rules' || drop?.instanceList !== undefined) {
+            const selection = current.selection;
+            const selected =
+              selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
+            const owner = selected !== undefined && index.byId.get(selected.type)?.rulesAllowed === true ? selected.id : null;
+            const explicit = drop?.instanceList ?? drop?.ruleList;
+            const list: ListRef = explicit ?? { root: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner }, steps: [], list: 'rules' };
+            if (listPointer(document, list) === null) {
+              return null;
+            }
+            const nested = list.steps.length > 0;
+            edit((latest) => addToList(latest, list, instance), {
+              selection: nested || explicit !== undefined ? undefined : owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
+            });
+            if (!nested && explicit === undefined) {
+              notify(list.root.kind === 'strategy' ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
+            }
+            return instance.key;
+          }
           const selection = current.selection;
-          const selected =
-            selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
-          const owner = selected !== undefined && index.byId.get(selected.type)?.rulesAllowed === true ? selected.id : null;
-          const explicit = drop?.instanceList ?? drop?.ruleList;
-          const list: ListRef = explicit ?? { root: owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner }, steps: [], list: 'rules' };
-          const scope = listPointer(document, list);
-          if (scope === null) {
-            return null;
-          }
-          const key = await createKey(document, scope, name, undefined, { kind: list.list === 'rules' ? 'rule' : 'instance', objectType: typeId });
-          const rule =
-            template !== null
-              ? instanceFromTemplate(template, name, key, own)
-              : type === undefined
-                ? null
-                : instanceFromType(type, name, key);
-          if (rule === null) {
-            return null;
-          }
-          const nested = list.steps.length > 0;
-          edit((latest) => addToList(latest, list, rule), {
-            selection: nested || explicit !== undefined ? undefined : owner === null ? { kind: 'strategy' } : { kind: 'element', id: owner },
+          const after = drop?.after !== undefined ? drop.after : selection.kind === 'element' ? selection.id : null;
+          const added = elementForInstance(instance);
+          edit((latest) => addElement(latest, index, added, after), {
+            selection: { kind: 'element', id: added.id },
+            reveal: added.id,
           });
-          if (!nested && explicit === undefined) {
-            notify(list.root.kind === 'strategy' ? 'notices.ruleForStrategy' : 'notices.ruleForElement');
+          if (matchesMedia(NARROW_LAYOUT)) {
+            notify('notices.inserted', { name: instance.name });
           }
-          return key;
+          return added.id;
         }
+        // A trigger or a step of the flow shows no instance: it has the name of its type, made free among the names, and a
+        // condition or calculation its key from `/api/v1/keys`.
         if (type === undefined) {
           return null;
         }
-        const needsKey = holdsInstance(type) || type.named;
-        const key = needsKey ? await createKey(document, '/elements', name) : null;
+        const name = uniqueDisplayName(
+          entry.name === '' ? typeDisplayName(type, language) : entry.name,
+          type.named ? takenNames(document, index) : [],
+        );
+        const key = type.named ? await createKey(document, '/elements', name) : null;
         const flow = drop?.flow !== undefined ? drop.flow : currentFlow();
         const selection = current.selection;
         const after = drop?.after !== undefined ? drop.after : selection.kind === 'element' ? selection.id : null;
-        const options = { name, key, managementOf: type.kind === 'object_type' || type.kind === 'application_object' ? null : flow };
-        const added =
-          template !== null
-            ? newTemplateElement(template, { ...options, managementOf: null }, own)
-            : withOrderDefaults(newElement(type, options), index);
+        const added = withOrderDefaults(newElement(type, { name, key, managementOf: flow }), index);
         edit((latest) => addElement(latest, index, added, after), {
           selection: { kind: 'element', id: added.id },
           reveal: added.id,
@@ -513,11 +523,23 @@ export function useStudioController(language: SupportedLanguage) {
         }
         return added.id;
       } catch (error) {
-        showError('errors.insertFailed', error);
+        showError('errors.insertFailed', error, 'errors.insertFailedHint');
         return null;
       }
     },
     [currentFlow, edit, language, library, notify, showError],
+  );
+
+  // Insertions run one after the other: the request of the second starts from the document the first one left, so two
+  // quick insertions of the same entry do not get the same name.
+  const insertQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const insert = useCallback(
+    (entryKey: string, drop?: DropTarget): Promise<string | null> => {
+      const turn = insertQueue.current.then(() => insertNow(entryKey, drop));
+      insertQueue.current = turn.catch(() => undefined);
+      return turn;
+    },
+    [insertNow],
   );
 
   /**
