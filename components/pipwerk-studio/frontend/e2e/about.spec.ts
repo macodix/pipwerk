@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 test('shows the status of the backend and the revision in the footer', async ({ page, errors }) => {
   const footer = page.getByTestId('footer');
 
-  await expect(footer.getByRole('status')).toHaveText('Backend: verbunden');
+  await expect(footer.getByRole('status')).toHaveText('Verbindung zum Server: hergestellt');
   await expect(footer.locator('.studio-revision')).toContainText(/^Stand: /);
   expect(errors).toEqual([]);
 });

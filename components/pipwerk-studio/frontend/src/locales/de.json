@@ -11,20 +11,20 @@
     "revision": "Stand",
     "revisionValue": "{{commit}} vom {{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr",
     "license": "Lizenz",
-    "repository": "Repository",
+    "repository": "Quelltext",
     "unknown": "unbekannt",
     "close": "Schließen"
   },
   "backend": {
-    "checking": "Backend: Verbindung wird geprüft",
-    "connected": "Backend: verbunden",
-    "unreachable": "Backend: nicht erreichbar"
+    "checking": "Verbindung zum Server: wird geprüft",
+    "connected": "Verbindung zum Server: hergestellt",
+    "unreachable": "Verbindung zum Server: nicht möglich"
   },
   "revision": {
     "known": "Stand: {{revision}}",
     "unknown": "Stand: unbekannt",
-    "commit": "Commit {{commit}}",
-    "commitAt": "Commit {{commit}} vom {{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr"
+    "commit": "Stand {{commit}}",
+    "commitAt": "Stand {{commit}} vom {{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr"
   },
   "common": {
     "cancel": "Abbrechen"
@@ -759,11 +759,11 @@
     }
   },
   "errors": {
-    "http": "Das Backend hat die Anfrage mit dem Status {{status}} abgelehnt.",
-    "httpCode": "Das Backend hat die Anfrage abgelehnt (Status {{status}}, Ursache {{code}}).",
-    "timeout": "Das Backend hat nicht rechtzeitig geantwortet.",
-    "unexpectedResponse": "Das Backend hat eine unerwartete Antwort geschickt.",
-    "network": "Das Backend ist nicht erreichbar.",
+    "http": "Der Server hat die Anfrage mit dem Status {{status}} abgelehnt.",
+    "httpCode": "Der Server hat die Anfrage abgelehnt (Status {{status}}, Ursache {{code}}).",
+    "timeout": "Der Server hat nicht rechtzeitig geantwortet.",
+    "unexpectedResponse": "Der Server hat eine unerwartete Antwort geschickt.",
+    "network": "Der Server ist nicht erreichbar.",
     "saveFailed": "Die Strategie konnte nicht gespeichert werden.",
     "openFailed": "Die Strategie konnte nicht geöffnet werden.",
     "deleteFailed": "Die Strategie konnte nicht gelöscht werden.",
@@ -789,12 +789,12 @@
         "invalid": "Die Anfrage ist unvollständig oder fehlerhaft.",
         "not_json": "Die Anfrage hat nicht das erwartete Format.",
         "too_large": "Die Anfrage ist zu groß (Grenze: {{limit_bytes}} Byte).",
-        "not_found": "Diese Adresse gibt es im Backend nicht.",
+        "not_found": "Diese Adresse gibt es auf dem Server nicht.",
         "method_not_allowed": "Diese Anfrage ist für diese Adresse nicht erlaubt.",
         "failed": "Die Anfrage konnte nicht bearbeitet werden."
       },
       "host": {
-        "not_allowed": "Das Backend nimmt Anfragen unter dieser Adresse nicht an."
+        "not_allowed": "Der Server nimmt Anfragen unter dieser Adresse nicht an."
       },
       "expressions": {
         "pointer_invalid": "Die Stelle, an der eine Formel stehen soll, gibt es in dieser Strategie nicht.",
@@ -808,7 +808,7 @@
       },
       "insert": {
         "template_invalid": "Diese Vorlage lässt sich nicht einfügen.",
-        "type_unknown": "Diesen Objekttyp kennt das Backend nicht."
+        "type_unknown": "Diesen Objekttyp kennt der Server nicht."
       },
       "removal": {
         "strategy_required": "Entfernen mit Folgen für Formeln gibt es nur in einer Strategie, nicht in einer Vorlage.",

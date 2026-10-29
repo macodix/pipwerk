@@ -11,20 +11,20 @@
     "revision": "Revision",
     "revisionValue": "{{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}",
     "license": "License",
-    "repository": "Repository",
+    "repository": "Source code",
     "unknown": "unknown",
     "close": "Close"
   },
   "backend": {
-    "checking": "Backend: checking connection",
-    "connected": "Backend: connected",
-    "unreachable": "Backend: unreachable"
+    "checking": "Connection to the server: being checked",
+    "connected": "Connection to the server: established",
+    "unreachable": "Connection to the server: not possible"
   },
   "revision": {
     "known": "Revision: {{revision}}",
     "unknown": "Revision: unknown",
-    "commit": "Commit {{commit}}",
-    "commitAt": "Commit {{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}"
+    "commit": "Revision {{commit}}",
+    "commitAt": "Revision {{commit}} from {{year}}-{{month}}-{{day}} {{hours}}:{{minutes}}"
   },
   "common": {
     "cancel": "Cancel"
@@ -759,11 +759,11 @@
     }
   },
   "errors": {
-    "http": "The backend rejected the request with status {{status}}.",
-    "httpCode": "The backend rejected the request (status {{status}}, cause {{code}}).",
-    "timeout": "The backend did not answer in time.",
-    "unexpectedResponse": "The backend sent an unexpected answer.",
-    "network": "The backend is not reachable.",
+    "http": "The server rejected the request with status {{status}}.",
+    "httpCode": "The server rejected the request (status {{status}}, cause {{code}}).",
+    "timeout": "The server did not answer in time.",
+    "unexpectedResponse": "The server sent an unexpected answer.",
+    "network": "The server is not reachable.",
     "saveFailed": "The strategy could not be saved.",
     "openFailed": "The strategy could not be opened.",
     "deleteFailed": "The strategy could not be deleted.",
@@ -789,12 +789,12 @@
         "invalid": "The request is incomplete or faulty.",
         "not_json": "The request does not have the expected format.",
         "too_large": "The request is too large (limit: {{limit_bytes}} bytes).",
-        "not_found": "The backend does not have this address.",
+        "not_found": "The server does not have this address.",
         "method_not_allowed": "This request is not allowed for this address.",
         "failed": "The request could not be processed."
       },
       "host": {
-        "not_allowed": "The backend does not accept requests under this address."
+        "not_allowed": "The server does not accept requests under this address."
       },
       "expressions": {
         "pointer_invalid": "The place where a formula is to stand does not exist in this strategy.",
@@ -808,7 +808,7 @@
       },
       "insert": {
         "template_invalid": "This template cannot be inserted.",
-        "type_unknown": "The backend does not know this object type."
+        "type_unknown": "The server does not know this object type."
       },
       "removal": {
         "strategy_required": "Removing with consequences for formulas exists in a strategy only, not in a template.",

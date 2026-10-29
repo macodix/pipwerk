@@ -22,18 +22,18 @@ describe('the text of the cause of a failed request (specification 4.2, M4)', ()
     const instance = createI18n('de');
 
     expect(describeCause(instance.t, instance, new HttpError(409, 'x', { code: 'neu.unbekannt', params: {} })).summary).toBe(
-      'Das Backend hat die Anfrage abgelehnt (Status 409, Ursache neu.unbekannt).',
+      'Der Server hat die Anfrage abgelehnt (Status 409, Ursache neu.unbekannt).',
     );
     expect(describeCause(instance.t, instance, new HttpError(500, null, undefined)).summary).toBe(
-      'Das Backend hat die Anfrage mit dem Status 500 abgelehnt.',
+      'Der Server hat die Anfrage mit dem Status 500 abgelehnt.',
     );
   });
 
   it('tells a timeout, an unexpected answer and a backend that cannot be reached', () => {
     const instance = createI18n('en');
 
-    expect(describeCause(instance.t, instance, new RequestTimeoutError(10)).summary).toBe('The backend did not answer in time.');
-    expect(describeCause(instance.t, instance, new ResponseFormatError('x')).summary).toBe('The backend sent an unexpected answer.');
-    expect(describeCause(instance.t, instance, new TypeError('network')).summary).toBe('The backend is not reachable.');
+    expect(describeCause(instance.t, instance, new RequestTimeoutError(10)).summary).toBe('The server did not answer in time.');
+    expect(describeCause(instance.t, instance, new ResponseFormatError('x')).summary).toBe('The server sent an unexpected answer.');
+    expect(describeCause(instance.t, instance, new TypeError('network')).summary).toBe('The server is not reachable.');
   });
 });

@@ -111,12 +111,17 @@ test('an own indicator has own parameters and properties with expressions from b
     await parameters.getByTestId('own-parameter-new-name').fill('Faktor');
     await parameters.getByTestId('own-parameter-add').click();
     await expect(parameters.getByTestId('own-parameter')).toHaveCount(1);
+    // the data type stands in the explanation, not as a mark beside the name (E11)
+    await expect(parameters.getByTestId('own-parameter').locator('.dtype-chip')).toHaveCount(0);
+    await expect(parameters.getByTestId('own-parameter').getByLabel('Erklärung')).toHaveAttribute('data-tip', /^Gefragt ist: .+\.$/);
 
     const properties = page.getByTestId('sec-instance-properties');
     await properties.getByTestId('own-property-new-name').fill('Wert');
     await properties.getByTestId('own-property-add').click();
     const property = properties.getByTestId('instance-property').first();
     await expect(property).toBeVisible();
+    await expect(property.locator('.dtype-chip')).toHaveCount(0);
+    await expect(property.getByLabel('Erklärung').first()).toHaveAttribute('data-tip', /^Gefragt ist: .+\.$/);
     await setValue(property.getByTestId('property-expression-wert').locator(':scope > .vb'), {
       calc: [{ pick: 'Kerze › Schluss' }, '*', { pick: 'Faktor' }],
     });

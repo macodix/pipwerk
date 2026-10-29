@@ -27,7 +27,7 @@ import { ExpressionPanel } from '../expression/ExpressionPanel';
 import { allowsContainedInstances, allowsContainedRules, allowsOwnParameters, allowsOwnProperties, contentKind, OWN_DATATYPES } from '../model/objectContent';
 import { dataTypeWord, iconOf, labelText, timeUnitChoices } from '../model/typeIndex';
 import { useStudio } from '../state/StudioContext';
-import { Btn, Section, Select, TextInput, Toggle } from '../ui/controls';
+import { Btn, Info, Section, Select, TextInput, Toggle } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { FieldRow, applies, initialValue, specOfParameter, type FieldSpec, ValueInput } from './fields';
 
@@ -146,7 +146,10 @@ function OwnParameters({ refTo, instance }: { refTo: InstanceRef; instance: Inst
               ariaLabel={t('instances.name')}
               testid="own-parameter-name"
             />
-            <span className="dtype-chip">{dataTypeWord(types, definition.datatype, studio.language)}</span>
+            <Info
+              tip={t('fields.expects', { word: dataTypeWord(types, definition.datatype, studio.language) })}
+              label={t('fields.explanation')}
+            />
             <Btn
               small
               kind="quiet"
@@ -232,7 +235,12 @@ function Properties({ refTo, instance }: { refTo: InstanceRef; instance: Instanc
         <div key={property.id} className="own-prop" data-testid="property-missing">
           <div className="own-row">
             <b>{labelText(property.label, studio.language)}</b>
-            <span className="dtype-chip">{dataTypeWord(types, property.datatype, studio.language, { specific: property.datatypeLabel, objectType: property.objectType })}</span>
+            <Info
+              tip={t('fields.expects', {
+                word: dataTypeWord(types, property.datatype, studio.language, { specific: property.datatypeLabel, objectType: property.objectType }),
+              })}
+              label={t('fields.explanation')}
+            />
             <Btn
               small
               kind="primary"
@@ -271,7 +279,10 @@ function Properties({ refTo, instance }: { refTo: InstanceRef; instance: Instanc
                   testid="own-property-name"
                 />
               )}
-              <span className="dtype-chip">{dataTypeWord(types, property.datatype, studio.language)}</span>
+              <Info
+                tip={t('fields.expects', { word: dataTypeWord(types, property.datatype, studio.language) })}
+                label={t('fields.explanation')}
+              />
               {fromType ? null : (
                 <Btn
                   small

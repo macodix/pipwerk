@@ -372,6 +372,26 @@ describe('own indicators and trends (specification 5.4)', () => {
     expect(sent).toContain('"name":"Faktor"');
     expect(sent).toContain('"name":"Doppelt"');
   });
+
+  it('show the data type of an own parameter and of an own property in the explanation, not as a mark beside the name (E11)', async () => {
+    const user = userEvent.setup();
+    await open(user);
+    const entry = document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="eigener Indikator"]');
+    await user.click(entry as HTMLElement);
+    const section = await screen.findByTestId('sec-own-parameters');
+    await user.type(within(section).getByTestId('own-parameter-new-name'), 'Faktor');
+    await user.click(within(section).getByTestId('own-parameter-add'));
+    const properties = await screen.findByTestId('sec-instance-properties');
+    await user.type(within(properties).getByTestId('own-property-new-name'), 'Doppelt');
+    await user.click(within(properties).getByTestId('own-property-add'));
+
+    const parameter = await within(screen.getByTestId('sec-own-parameters')).findByTestId('own-parameter');
+    const property = await within(screen.getByTestId('sec-instance-properties')).findByTestId('instance-property');
+    for (const row of [parameter, property]) {
+      expect(row.querySelector('.dtype-chip')).toBeNull();
+      expect(within(row).getByLabelText('Erklärung').getAttribute('data-tip')).toBe('Gefragt ist: Zahl.');
+    }
+  });
 });
 
 describe('renaming (specification 5.4)', () => {

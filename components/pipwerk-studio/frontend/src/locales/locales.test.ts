@@ -62,7 +62,6 @@ describe('translations (specification 5.1)', () => {
     // Names and words that are written alike in both languages.
     expect(same.sort()).toEqual(
       [
-        'about.repository',
         'canvas.zoom',
         'dialogs.error.ok',
         'expression.arithmetic.+',
@@ -73,7 +72,6 @@ describe('translations (specification 5.1)', () => {
         'library.groups.trends',
         'openDialog.columnName',
         'properties.name',
-        'revision.commit',
       ].sort(),
     );
   });
@@ -93,25 +91,28 @@ describe('translations (specification 5.1)', () => {
   });
 
   it('use the words of the traders and not those of the programming (E10): the review rules of the texts', () => {
-    // Words that the user does not know or that mislead. "Commit" and "Repository" stay in the two places that identify
-    // the build for a question to the support (the footer and "Über pipwerk Studio", req-ui-010).
+    // Words that the user does not know or that mislead. No text is excepted: not even the places that identify the
+    // build ("Stand" in the footer and "Über pipwerk Studio") use "Commit" or "Repository".
     const germanWords =
-      /\bParameter|\bInstanz|Kennung|Namensraum|\bPort\b|Belegung|Bindungsart|\bDatentyp|\bTooltip|\bCursor|\bFokus|OpenFormula|\brechnet\b|\bAusdruck|\bAusdrücke/;
-    const englishWords = /\binstance\b|\bnamespace\b|\bport\b|\bassignment\b|\bbinding\b|\bdata type\b|\btooltip\b|\bcursor\b|\bfocus\b|OpenFormula|\bexpressions?\b/i;
-    const allowed = new Set(['revision.commit', 'revision.commitAt', 'about.repository']);
+      /\bParameter|\bInstanz|Kennung|Namensraum|\bPort\b|Belegung|Bindungsart|\bDatentyp|\bTooltip|\bCursor|\bFokus|OpenFormula|\brechnet\b|\bAusdruck|\bAusdrücke|\bCommit|\bRepository|\bBackend|\bAPI\b|\bSchema|\bToken/;
+    const englishWords =
+      /\binstance\b|\bnamespace\b|\bport\b|\bassignment\b|\bbinding\b|\bdata type\b|\btooltip\b|\bcursor\b|\bfocus\b|OpenFormula|\bexpressions?\b|\bcommit\b|\brepository\b|\bbackend\b|\bapi\b|\bschema\b|\btoken\b|\bidentifier\b/i;
     const shown = (text: string): string => text.replace(/\{\{\w+\}\}/g, '');
     for (const [key, text] of german) {
-      if (!allowed.has(key)) {
-        expect(shown(text), key).not.toMatch(germanWords);
-        expect(shown(text), key).not.toMatch(/\bCommit\b|\bRepository\b/);
-      }
+      expect(shown(text), key).not.toMatch(germanWords);
     }
     for (const [key, text] of english) {
-      if (!allowed.has(key)) {
-        expect(shown(text), key).not.toMatch(englishWords);
-        expect(shown(text), key).not.toMatch(/\bCommit\b|\bRepository\b/);
-      }
+      expect(shown(text), key).not.toMatch(englishWords);
     }
+  });
+
+  it('name the build and the connection without the words of the programming', () => {
+    expect(german.get('revision.commit')).toBe('Stand {{commit}}');
+    expect(english.get('revision.commit')).toBe('Revision {{commit}}');
+    expect(german.get('about.repository')).toBe('Quelltext');
+    expect(english.get('about.repository')).toBe('Source code');
+    expect(german.get('backend.connected')).toBe('Verbindung zum Server: hergestellt');
+    expect(english.get('backend.connected')).toBe('Connection to the server: established');
   });
 
   it('ask "Woher kommt der Wert?" and name the five possible answers as the specification does (5.4, E11)', () => {

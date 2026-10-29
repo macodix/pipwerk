@@ -103,6 +103,15 @@ describe('no fixed port in the browser tests and their configuration (rules of t
     expect(offenders).toEqual([]);
   });
 
+  it('has none in vite.config.ts either, and no default address for the backend', () => {
+    const text = withoutComments(readFileSync(join(frontend, 'vite.config.ts'), 'utf-8'));
+
+    expect(fixedPort.test(text)).toBe(false);
+    expect(text).not.toMatch(/localhost|https?:\/\/[^'"`\s]*\d/);
+    expect(text).not.toMatch(/BACKEND_URL[^\n]*(\?\?|\|\|)/);
+    expect(text).not.toMatch(/(?:\?\?|\|\|)\s*['"`]https?:/);
+  });
+
   it('has no default value for the ports in the configuration', () => {
     const text = withoutComments(readFileSync(join(frontend, 'playwright.config.ts'), 'utf-8'));
     expect(text).not.toMatch(/PORT[^\n]*(\?\?|\|\|)/);
