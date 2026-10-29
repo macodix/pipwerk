@@ -10,16 +10,18 @@ describe('the expressions of the test backend', () => {
     expect(blocksToStored(blocks)).toBe(stored);
   });
 
-  it('writes a crossing as the two comparisons with the earlier values', () => {
+  it('writes a crossing as the comparisons of the earlier values and of the present ones, joined by "and" (no block of its own)', () => {
+    const name = (key: string) => ({ kind: 'name', path: [key, 'wert'] });
     const stored = blocksToStored({
-      kind: 'crossing',
-      direction: 'up',
+      kind: 'logic',
+      operator: 'and',
       children: [
-        { kind: 'name', path: ['a', 'wert'] },
-        { kind: 'name', path: ['b', 'wert'] },
+        { kind: 'comparison', operator: '<=', children: [{ kind: 'function', function: 'PREVIOUS', children: [name('a')] }, { kind: 'function', function: 'PREVIOUS', children: [name('b')] }] },
+        { kind: 'comparison', operator: '>', children: [name('a'), name('b')] },
       ],
     });
     expect(stored).toBe('AND(PREVIOUS(a.wert) <= PREVIOUS(b.wert); a.wert > b.wert)');
+    expect(storedToBlocks(stored)).toMatchObject({ kind: 'logic', operator: 'and', children: [{ kind: 'comparison', operator: '<=' }, { kind: 'comparison', operator: '>' }] });
   });
 
   it('reads the precedence of the operators and brackets', () => {

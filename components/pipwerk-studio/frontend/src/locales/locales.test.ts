@@ -62,18 +62,16 @@ describe('translations (specification 5.1)', () => {
     // Names and words that are written alike in both languages.
     expect(same.sort()).toEqual(
       [
-        'about.repository',
         'canvas.zoom',
-        'datatype.text',
         'dialogs.error.ok',
         'expression.arithmetic.+',
         'expression.arithmetic.-',
         'expression.text',
+        'findings.whereElement',
         'instances.name',
         'library.groups.trends',
         'openDialog.columnName',
         'properties.name',
-        'revision.commit',
       ].sort(),
     );
   });
@@ -90,6 +88,64 @@ describe('translations (specification 5.1)', () => {
     }
     expect(german.get('canvas.management')).toBe('Order- und Positionsverwaltung · {{name}}');
     expect(english.get('canvas.management')).toBe('Order and position management · {{name}}');
+  });
+
+  it('use the words of the traders and not those of the programming (E10): the review rules of the texts', () => {
+    // Words that the user does not know or that mislead. No text is excepted: not even the places that identify the
+    // build ("Stand" in the footer and "Über pipwerk Studio") use "Commit" or "Repository".
+    const germanWords =
+      /\bParameter|\bInstanz|Kennung|Namensraum|\bPort\b|Belegung|Bindungsart|\bDatentyp|\bTooltip|\bCursor|\bFokus|OpenFormula|\brechnet\b|\bAusdruck|\bAusdrücke|\bCommit|\bRepository|\bBackend|\bAPI\b|\bSchema|\bToken/;
+    const englishWords =
+      /\binstance\b|\bnamespace\b|\bport\b|\bassignment\b|\bbinding\b|\bdata type\b|\btooltip\b|\bcursor\b|\bfocus\b|OpenFormula|\bexpressions?\b|\bcommit\b|\brepository\b|\bbackend\b|\bapi\b|\bschema\b|\btoken\b|\bidentifier\b/i;
+    const shown = (text: string): string => text.replace(/\{\{\w+\}\}/g, '');
+    for (const [key, text] of german) {
+      expect(shown(text), key).not.toMatch(germanWords);
+    }
+    for (const [key, text] of english) {
+      expect(shown(text), key).not.toMatch(englishWords);
+    }
+  });
+
+  it('name the build and the connection without the words of the programming', () => {
+    expect(german.get('revision.commit')).toBe('Stand {{commit}}');
+    expect(english.get('revision.commit')).toBe('Revision {{commit}}');
+    expect(german.get('about.repository')).toBe('Quelltext');
+    expect(english.get('about.repository')).toBe('Source code');
+    expect(german.get('backend.connected')).toBe('Verbindung zum Server: hergestellt');
+    expect(english.get('backend.connected')).toBe('Connection to the server: established');
+  });
+
+  it('ask "Woher kommt der Wert?" and name the five possible answers as the specification does (5.4, E11)', () => {
+    expect(german.get('fields.source')).toBe('Woher kommt der Wert?');
+    expect(english.get('fields.source')).toBe('Where does the value come from?');
+    expect(
+      ['fixed', 'parameter', 'connection', 'expression', 'application'].map((kind) => german.get(`binding.${kind}`)),
+    ).toEqual([
+      'fest eingeben',
+      'aus einem Strategieparameter',
+      'von einem anderen Element',
+      'aus einer Formel',
+      'beim Start der Strategie festlegen',
+    ]);
+    expect(
+      ['fixed', 'parameter', 'connection', 'expression', 'application'].map((kind) => english.get(`binding.${kind}`)),
+    ).toEqual(['enter a value', 'from a strategy parameter', 'from another element', 'from a formula', 'set when the strategy starts']);
+    // the name of the object type (here "Instrument") stands in the place of {{type}}
+    const de = createI18n('de');
+    const en = createI18n('en');
+    expect(de.t('fields.preset.value', { type: 'Instrument' })).toBe('das Instrument, auf dem die Strategie läuft');
+    expect(de.t('fields.preset.other', { type: 'Instrument' })).toBe('anderes Instrument wählen');
+    expect(de.t('fields.preset.back', { type: 'Instrument' })).toBe('wieder das Instrument, auf dem die Strategie läuft');
+    expect(en.t('fields.preset.value', { type: 'instrument' })).toBe('the instrument the strategy runs on');
+    expect(en.t('fields.preset.other', { type: 'instrument' })).toBe('choose another instrument');
+    expect(en.t('fields.preset.back', { type: 'instrument' })).toBe('back to the instrument the strategy runs on');
+  });
+
+  it('offer no crossing and no word list for the data types of the interface: the library delivers them (E11, E12)', () => {
+    expect([...german.keys()].filter((key) => key.startsWith('datatype.'))).toEqual([]);
+    const crossingKeys = (key: string): boolean => /(^|\.)(cross\w*|directions)(\.|$)|conditionKinds\.cross/.test(key);
+    expect([...german.keys()].filter(crossingKeys)).toEqual([]);
+    expect([...english.keys()].filter(crossingKeys)).toEqual([]);
   });
 
   it('have no keys of the removed assistant', () => {

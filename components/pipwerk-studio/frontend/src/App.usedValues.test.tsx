@@ -9,7 +9,6 @@ import {
   choiceGroups,
   choose as pickOption,
   clickNode,
-  disabledChoices,
   menu,
   nodeByName,
   offeredChoices,
@@ -167,7 +166,7 @@ describe('"Verwendete Werte" of an element', () => {
     await choose('Weiche');
     // the expression is read by the backend: the value appears when its answer is there
     const row = await screen.findByTestId('used-messer-stand-select');
-    expect(screen.getByTestId('used-messer-stand-where')).toHaveTextContent('im Ausdruck – dort entfernen');
+    expect(screen.getByTestId('used-messer-stand-where')).toHaveTextContent('in einer Formel – in der Formel entfernen');
     // a value that only an expression names cannot be removed here
     expect(screen.queryByTestId('used-messer-stand-remove')).toBeNull();
 
@@ -376,18 +375,66 @@ describe('the blocks with methods and the earlier value', () => {
     expect(String(elementOf(stored, 'Weiche').parameters.formel?.value)).toBe('PREVIOUS(messer.stand; 3) > 1');
   });
 
-  it('do not offer a crossing when neither side has an earlier value', async () => {
-    const run = await open(strategy({ usesGauge: false, formula: 'pegel.stand > 2' }));
+  it('offer no crossing among the kinds of a condition (E12)', async () => {
+    const run = await open(strategy({ formula: 'messer.wert > 1' }));
     const panel = await formula(run);
 
     const kind = await within(panel).findByTestId('cond-kind');
-    expect(disabledChoices(await openChoices(run.user, kind))).toEqual(['Kreuzung']);
+    expect(await offeredChoices(run.user, kind)).toEqual(['Vergleich', 'Alle gelten (und)', 'Eine gilt (oder)', 'Nicht', 'Wert ist wahr']);
+    expect(screen.queryByText(/Kreuzung|kreuzt/)).toBeNull();
+  });
+
+  it('offer only values with an earlier value as the argument of "vorheriger Wert von" (E12, specification 5.4)', async () => {
+    const run = await open(strategy({ usesGauge: false, formula: 'pegel.stand > 2' }));
+    const panel = await formula(run);
+
+    await pickOption(run.user, await within(panel).findByTestId('cmp-left-select'), 'k:prev');
+    const inner = await within(await within(panel).findByTestId('previous-value')).findByTestId('value-select');
+    const groups = choiceGroups(await openChoices(run.user, inner));
+
+    // "Messer" and the candle have an earlier value; the gauge, fixed values, calculations and strategy parameters have none
+    const offered = groups.flatMap((group) => group.options);
+    expect(offered).toContain('Messer › Wert');
+    expect(offered).toContain('Kerze › Schluss');
+    expect(offered).not.toContain('Pegel › Mittel (Methode)');
+    expect(offered.filter((option) => /Zahl …|Rechnung|Wenn …|Funktion|Bedingung|Vorheriger Wert/.test(option))).toEqual([]);
+    expect(groups.map((group) => group.label)).not.toContain('Feste Werte und Rechnungen');
     await run.user.keyboard('{Escape}');
-    // a value with an earlier value on one side: the comparison can become a crossing
-    await pickOption(run.user, await within(panel).findByTestId('cmp-left-select'), 'n:messer\u001fwert');
+  });
+
+  it('build the condition of a crossing from "vorheriger Wert von", comparisons and "und", without an expression typed as text (E12)', async () => {
+    const run = await open(strategy({ usesGauge: false, formula: 'messer.wert > kerze.schluss' }));
+    await formula(run);
+    const panel = (): HTMLElement => screen.getByTestId('expression-formel');
+
+    // "Alle gelten (und)": two comparisons
+    await pickOption(run.user, await within(panel()).findByTestId('cond-kind'), 'Alle gelten (und)');
+    await waitFor(() => {
+      expect(within(panel()).getAllByTestId('cmp-left-select')).toHaveLength(2);
+    });
+
+    // first comparison: the earlier value of the first line is at most the earlier value of the second line
+    await pickOption(run.user, within(panel()).getAllByTestId('cmp-left-select')[0] as HTMLElement, 'k:prev');
+    await waitFor(() => {
+      expect(within(panel()).getAllByTestId('previous-value')).toHaveLength(1);
+    });
+    await pickOption(run.user, within(within(panel()).getAllByTestId('previous-value')[0] as HTMLElement).getByTestId('value-select'), 'n:messer\u001fwert');
+    await pickOption(run.user, within(panel()).getAllByTestId('cmp-op')[0] as HTMLElement, 'ist kleiner oder gleich');
+    await pickOption(run.user, within(panel()).getAllByTestId('cmp-right-select')[0] as HTMLElement, 'k:prev');
+    await waitFor(() => {
+      expect(within(panel()).getAllByTestId('previous-value')).toHaveLength(2);
+    });
+    await pickOption(run.user, within(within(panel()).getAllByTestId('previous-value')[1] as HTMLElement).getByTestId('value-select'), 'n:Kerze\u001fschluss');
+
+    // second comparison: the present value of the first line is greater than the present value of the second line
+    await pickOption(run.user, within(panel()).getAllByTestId('cmp-left-select')[1] as HTMLElement, 'n:messer\u001fwert');
+    await pickOption(run.user, within(panel()).getAllByTestId('cmp-right-select')[1] as HTMLElement, 'n:Kerze\u001fschluss');
+
     await waitFor(async () => {
-      expect(disabledChoices(await openChoices(run.user, within(panel).getByTestId('cond-kind')))).toEqual([]);
-      await run.user.keyboard('{Escape}');
+      const stored = await saved(run);
+      expect(String(elementOf(stored, 'Weiche').parameters.formel?.value)).toBe(
+        'AND(PREVIOUS(messer.wert) <= PREVIOUS(Kerze.schluss); messer.wert > Kerze.schluss)',
+      );
     });
   });
 });

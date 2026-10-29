@@ -23,7 +23,7 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   await expect(page.getByTestId('empty-strategy-hint')).toContainText('Nächster Schritt');
   await expect(page.getByTestId('canvas')).not.toContainText('Nächster Schritt');
   await expect(page.getByTestId('lane-empty')).toHaveCount(0);
-  await expect(page.getByTestId('param-strip')).toContainText('Noch keine');
+  await expect(page.getByTestId('param-strip')).toContainText('Noch kein Strategieparameter');
 
   // the name, then saving: "gespeichert", and the strategy stands in the list
   await showArea(page, 'props');
@@ -151,7 +151,7 @@ test('the object directory is changed with the question "Dateien verschieben?", 
   await openApp(page);
   await clickMenu(page, 'settings');
   const dialog = page.getByRole('dialog');
-  const directory = dialog.getByLabel('Verzeichnis (absoluter Pfad)');
+  const directory = dialog.getByLabel('Verzeichnis (vollständiger Pfad)');
   const first = join(tmpdir(), `pipwerk-studio-e2e-objects-${Date.now()}-a`);
   const second = join(tmpdir(), `pipwerk-studio-e2e-objects-${Date.now()}-b`);
   // the directory that is stored now: it is shown again after "Abbrechen" (B4)

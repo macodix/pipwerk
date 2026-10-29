@@ -8,7 +8,6 @@ import {
   comparisonBlock,
   convertCondition,
   conditionKind,
-  crossingBlock,
   emptyWhere,
   functionBlock,
   hasEmptyPlace,
@@ -26,6 +25,15 @@ import {
   valueKey,
   withChild,
 } from './blocks';
+import * as blocksModule from './blocks';
+
+/** "a crosses b upwards" as the blocks make it: the earlier values compared, then the present ones (specification 3.4). */
+function crossingUp(a: ReturnType<typeof nameBlock>, b: ReturnType<typeof nameBlock>) {
+  return logicBlock('and', [
+    comparisonBlock('<=', functionBlock('PREVIOUS', [a]), functionBlock('PREVIOUS', [b])),
+    comparisonBlock('>', a, b),
+  ]);
+}
 
 describe('the tree of blocks', () => {
   it('collects every name in the order of the expression', () => {
@@ -38,8 +46,10 @@ describe('the tree of blocks', () => {
   });
 
   it('names the instance and the property an expression addresses', () => {
-    const tree = crossingBlock('any', nameBlock(['ema20', 'wert']), nameBlock(['ema50', 'wert']));
+    const tree = crossingUp(nameBlock(['ema20', 'wert']), nameBlock(['ema50', 'wert']));
     expect(instanceReferences(tree)).toEqual([
+      { instance: 'ema20', property: 'wert', kind: 'property', arguments: [] },
+      { instance: 'ema50', property: 'wert', kind: 'property', arguments: [] },
       { instance: 'ema20', property: 'wert', kind: 'property', arguments: [] },
       { instance: 'ema50', property: 'wert', kind: 'property', arguments: [] },
     ]);
@@ -79,8 +89,8 @@ describe('the tree of blocks', () => {
   });
 
   it('knows whether an empty place is left in the tree', () => {
-    expect(hasEmptyPlace(crossingBlock('any', nameBlock(['a', 'wert']), EMPTY))).toBe(true);
-    expect(hasEmptyPlace(crossingBlock('any', nameBlock(['a', 'wert']), nameBlock(['b', 'wert'])))).toBe(false);
+    expect(hasEmptyPlace(crossingUp(nameBlock(['a', 'wert']), EMPTY))).toBe(true);
+    expect(hasEmptyPlace(crossingUp(nameBlock(['a', 'wert']), nameBlock(['b', 'wert'])))).toBe(false);
     expect(hasEmptyPlace(EMPTY)).toBe(true);
   });
 
@@ -97,7 +107,7 @@ describe('the kinds of value', () => {
     expect(valueKey(literalBlock('buy', 'text'))).toBe('k:str');
     expect(valueKey(literalBlock(true, 'boolean'))).toBe('k:bool');
     expect(valueKey(arithmeticBlock('+', EMPTY, EMPTY))).toBe('k:calc');
-    expect(valueKey(crossingBlock('up', EMPTY, EMPTY))).toBe('k:cond');
+    expect(valueKey(crossingUp(nameBlock(['a', 'wert']), nameBlock(['b', 'wert'])))).toBe('k:cond');
     expect(valueKey(ifBlock(EMPTY, EMPTY, EMPTY))).toBe('k:if');
     expect(valueKey(functionBlock('PREVIOUS', [EMPTY]))).toBe('k:prev');
     expect(valueKey(functionBlock('MIN', [EMPTY]))).toBe('k:func');
@@ -118,7 +128,6 @@ describe('the kinds of value', () => {
 describe('the kinds of condition', () => {
   it('names the kind of a condition', () => {
     expect(conditionKind(comparisonBlock('>', EMPTY, EMPTY))).toBe('compare');
-    expect(conditionKind(crossingBlock('any', EMPTY, EMPTY))).toBe('cross');
     expect(conditionKind(logicBlock('or', []))).toBe('or');
     expect(conditionKind(logicBlock('not', []))).toBe('not');
     expect(conditionKind(logicBlock('and', []))).toBe('and');
@@ -134,10 +143,10 @@ describe('the kinds of condition', () => {
 
   it('replaces the condition by a new one of the kind chosen, in both directions: nothing of the old one stays behind (E13)', () => {
     const single = comparisonBlock('=', nameBlock(['a', 'b']), numberBlock(1));
-    const crossing = crossingBlock('any', nameBlock(['a', 'b']), nameBlock(['c', 'd']));
+    const negated = logicBlock('not', [comparisonBlock('=', nameBlock(['a', 'b']), nameBlock(['c', 'd']))]);
 
     // to "Alle gelten (und)" and to "Eine gilt (oder)": two new comparisons, not the old condition with a second one
-    for (const old of [single, crossing]) {
+    for (const old of [single, negated]) {
       for (const kind of ['and', 'or'] as const) {
         const next = convertCondition(kind, old);
         expect(next.operator).toBe(kind);
@@ -147,14 +156,29 @@ describe('the kinds of condition', () => {
       expect(convertCondition('not', old).children).toEqual([blankComparison()]);
     }
 
-    // and back: a new crossing or comparison, not the "and" with the old condition inside
-    const both = logicBlock('and', [single, crossing]);
-    expect(convertCondition('cross', both)).toEqual(crossingBlock('up', EMPTY, EMPTY));
+    // and back: a new comparison, not the "and" with the old condition inside
+    const both = logicBlock('and', [single, negated]);
     expect(convertCondition('compare', both)).toEqual(blankComparison());
-    expect(convertCondition('compare', crossing)).toEqual(blankComparison());
+    expect(convertCondition('compare', negated)).toEqual(blankComparison());
     expect(convertCondition('value', both)).toEqual(EMPTY);
 
     // the kind that is already there stays as it is
     expect(convertCondition('compare', single)).toBe(single);
+  });
+
+  it('offers no crossing, and a crossing is made of "previous value of", comparisons and "and" (E12, specification 3.4)', () => {
+    const a = nameBlock(['ema20', 'wert']);
+    const b = nameBlock(['ema50', 'wert']);
+    // the way of the user: "Alle gelten (und)", then two comparisons, the first side of the first one "Vorheriger Wert von"
+    let tree = convertCondition('and', EMPTY);
+    tree = withChild(tree, 0, comparisonBlock('<=', blockForKey('k:prev', a), blockForKey('k:prev', b)));
+    tree = withChild(tree, 1, comparisonBlock('>', a, b));
+
+    expect(tree).toEqual(crossingUp(a, b));
+    expect(hasEmptyPlace(tree)).toBe(false);
+    expect(conditionKind(tree)).toBe('and');
+    expect(valueKey(tree)).toBe('k:cond');
+    // a block for the crossing does not exist any more
+    expect(Object.keys(blocksModule).filter((name) => /cross/i.test(name))).toEqual([]);
   });
 });

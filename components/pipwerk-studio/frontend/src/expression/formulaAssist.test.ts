@@ -115,7 +115,9 @@ const gauge: VisibleName = {
   datatype: null,
   propertiesTruncated: false,
   contents: [],
-  properties: [{ key: 'stand', label: label('Stand', 'Reading'), datatype: 'number', explanation: null, choices: [], previousValue: false }],
+  properties: [
+    { key: 'stand', label: label('Stand', 'Reading'), datatype: 'number', datatypeLabel: label('Zahl', 'number'), explanation: null, choices: [], previousValue: false },
+  ],
   methods: [
     {
       key: 'mittel',
@@ -135,10 +137,12 @@ const gauge: VisibleName = {
 describe('methods in the formula view (specification 5.4)', () => {
   it('suggests the properties and the methods of an object after its name, a method with its opening bracket', () => {
     const result = completionsAt('pegel.', 6, [gauge], functions, null, 'de');
-    expect(result?.items.map((item) => [item.label, item.insert, item.detail])).toEqual([
-      ['Stand', 'Stand', 'number'],
-      ['Mittel', 'Mittel(', 'method'],
+    // beside a property stands the word of the library for its data type (E11), beside a method the word "Methode"
+    expect(result?.items.map((item) => [item.label, item.insert, item.detail, item.method])).toEqual([
+      ['Stand', 'Stand', 'Zahl', false],
+      ['Mittel', 'Mittel(', '', true],
     ]);
+    expect(completionsAt('pegel.', 6, [gauge], functions, null, 'en')?.items[0]?.detail).toBe('number');
     expect(result?.items[1]?.tip).toBe('Der Mittelwert der letzten Kerzen.');
     expect(completionsAt('pegel.Mi', 8, [gauge], functions, null, 'de')?.items.map((item) => item.label)).toEqual(['Mittel']);
     expect(completionsAt('pegel.', 6, [gauge], functions, null, 'en')?.items[1]).toMatchObject({ label: 'Average', insert: 'Average(' });

@@ -60,7 +60,7 @@ describe('AboutDialog content', () => {
     expect(within(dialog).getByText('pipwerk Studio')).toBeInTheDocument();
     expect(within(dialog).getByText('Stand')).toBeInTheDocument();
     expect(within(dialog).getByText('Lizenz')).toBeInTheDocument();
-    expect(within(dialog).getByText('Repository')).toBeInTheDocument();
+    expect(within(dialog).getByText('Quelltext')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Schließen' })).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('AboutDialog content', () => {
     expect(within(dialog).getByText('pipwerk Studio')).toBeInTheDocument();
     expect(within(dialog).getByText('Revision')).toBeInTheDocument();
     expect(within(dialog).getByText('License')).toBeInTheDocument();
-    expect(within(dialog).getByText('Repository')).toBeInTheDocument();
+    expect(within(dialog).getByText('Source code')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
   });
 
@@ -235,7 +235,7 @@ describe('AboutDialog repository', () => {
     renderDialog('de');
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
-    expect(screen.getByText('Repository').nextElementSibling).toHaveTextContent('unbekannt');
+    expect(screen.getByText('Quelltext').nextElementSibling).toHaveTextContent('unbekannt');
   });
 
   it('shows unknown in English without a link if the address is not valid', () => {
@@ -243,7 +243,7 @@ describe('AboutDialog repository', () => {
     renderDialog('en');
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
-    expect(screen.getByText('Repository').nextElementSibling).toHaveTextContent('unknown');
+    expect(screen.getByText('Source code').nextElementSibling).toHaveTextContent('unknown');
   });
 });
 

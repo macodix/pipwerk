@@ -95,7 +95,7 @@ test('lets the user assign a strategy parameter to a field, creating it on the s
   await library(page, 'Kerzenschluss').click();
   await showArea(page, 'props');
 
-  await choose(page.getByTestId('kind-zeiteinheit'), { label: 'Strategieparameter' });
+  await choose(page.getByTestId('kind-zeiteinheit'), { label: 'aus einem Strategieparameter' });
   await expect(page.getByTestId('param-hint')).toContainText('noch kein Strategieparameter');
   await page.getByTestId('new-param-name').fill('Meine Zeiteinheit');
   await page.getByTestId('new-param-create').click();

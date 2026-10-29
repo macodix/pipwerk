@@ -35,14 +35,6 @@ export async function offeredGroups(user: UserEvent, field: HTMLElement): Promis
   return groups;
 }
 
-/** The entries of an open list of choices that cannot be chosen. */
-export function disabledChoices(list: HTMLElement): string[] {
-  return within(list)
-    .getAllByRole('option')
-    .filter((option) => option.getAttribute('aria-disabled') === 'true')
-    .map((option) => option.textContent ?? '');
-}
-
 /** The groups of an open list of choices with the texts of their entries; entries before the first group have the label `null`. */
 export function choiceGroups(list: HTMLElement): { label: string | null; options: string[] }[] {
   const groups: { label: string | null; options: string[] }[] = [];

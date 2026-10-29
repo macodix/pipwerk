@@ -8,7 +8,7 @@ import type { IndexedFindings } from '../findings/findingsModel';
 import type { SupportedLanguage } from '../i18n';
 import { cardSubtitle, stepSummary, type DescribeContext } from '../model/describe';
 import { cardRows, elementName, isCardElement, outputsOf, type CardRow as TypeRow } from '../model/elements';
-import { iconOf, kindClassOf, labelText, type KindClass, type TypeIndex } from '../model/typeIndex';
+import { dataTypeWord, iconOf, kindClassOf, labelText, type KindClass, type TypeIndex } from '../model/typeIndex';
 import type { UsageModel } from '../model/uses';
 import type { Selection, WireMode } from '../state/studioState';
 
@@ -348,7 +348,9 @@ export function buildFlow(input: FlowInput): { nodes: StudioNode[]; edges: Studi
           {
             id,
             label: property.label,
-            datatype: property.method ? t('canvas.method') : t(`datatype.${property.datatype}`),
+            datatype: property.method
+              ? t('canvas.method')
+              : dataTypeWord(types, property.datatype, language, { specific: property.datatypeLabel, objectType: property.objectType }),
             method: property.method,
             explanation: property.explanation,
             used: used.has(id),

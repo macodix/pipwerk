@@ -180,7 +180,7 @@ for (const size of SIZES.filter((candidate) => candidate.width === 390 || candid
     // the question "Dateien verschieben?" in the settings
     await clickMenu(page, 'settings');
     await withinWindow(null);
-    await page.getByRole('dialog').getByLabel('Verzeichnis (absoluter Pfad)').fill('/pfad/gibt/es/nicht');
+    await page.getByRole('dialog').getByLabel('Verzeichnis (vollständiger Pfad)').fill('/pfad/gibt/es/nicht');
     await page.getByRole('dialog').getByRole('button', { name: 'Verzeichnis ändern' }).click();
     await expect(page.getByRole('dialog').getByText('Dateien verschieben?')).toBeVisible();
     await withinWindow(null);

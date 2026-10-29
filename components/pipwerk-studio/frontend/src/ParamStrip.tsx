@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { DataType } from './api/elementTypes';
 import type { StrategyParameter } from './document/types';
 import { fixedText } from './model/describe';
-import { objectTypeChoices, objectTypesInUse, timeUnitChoices, labelText } from './model/typeIndex';
+import { dataTypeWord, objectTypeChoices, objectTypesInUse, timeUnitChoices, labelText } from './model/typeIndex';
 import { initialValue, ValueInput } from './properties/fields';
 import { useStudio } from './state/StudioContext';
 import { Btn, Select, TextInput, Toggle } from './ui/controls';
@@ -64,7 +64,7 @@ function ParameterEditor({ parameter }: { parameter: StrategyParameter }) {
         >
           {PLAIN_TYPES.map((id) => (
             <option key={id} value={id}>
-              {t(`datatype.${id}`)}
+              {dataTypeWord(types, id, language)}
             </option>
           ))}
           {objectTypesInUse(types).map((id) => (

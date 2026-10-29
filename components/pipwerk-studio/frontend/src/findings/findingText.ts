@@ -196,10 +196,11 @@ export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextCo
     params[key] = plain(finding.details[key]);
   }
   params.code = finding.code;
-  params.subject = finding.subject ?? '';
+  params.subject = finding.subjectName ?? finding.subject ?? '';
   const element = ctx.document?.elements.find((candidate) => candidate.id === finding.element);
   params.element =
-    element === undefined ? '' : ctx.types === null ? element.type : elementName(element, ctx.types, ctx.language);
+    finding.elementName?.[ctx.language] ??
+    (element === undefined ? '' : ctx.types === null ? element.type : elementName(element, ctx.types, ctx.language));
   if (typeof finding.details.parameter === 'string') {
     params.parameter = labelOfId(ctx, finding, 'parameter', finding.details.parameter);
   }
@@ -232,16 +233,20 @@ export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextCo
     const kind = separator < 0 ? field : field.slice(0, separator);
     const id = separator < 0 ? '' : field.slice(separator + 1);
     if (kind === 'parameter') {
-      params.field = t('findings.fields.parameter', { name: labelOfId(ctx, finding, 'parameter', id) });
+      params.field = labelOfId(ctx, finding, 'parameter', id);
     } else if (kind === 'property') {
-      params.field = t('findings.fields.property', { name: labelOfId(ctx, finding, 'property', id) });
+      params.field = labelOfId(ctx, finding, 'property', id);
     } else if (kind === 'property_definition') {
-      params.field = t('findings.fields.propertyDefinition', { name: id });
+      params.field = id;
     } else if (kind === 'expression' || kind === 'result_expression') {
       params.field = t(`findings.fields.${kind}`);
     } else {
       params.field = field;
     }
+  }
+  // The label the element shows for the field, as the library names it, is what the user sees (specification 3.6).
+  if (finding.fieldLabel !== undefined && finding.fieldLabel !== null) {
+    params.field = finding.fieldLabel[ctx.language];
   }
   const reason = params.reason ?? '';
   if (finding.code === 'connection.invalid') {
@@ -263,6 +268,18 @@ export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextCo
     params.syntaxReason = t(`findings.syntax.${reason}`, { defaultValue: reason, found: params.found });
   }
   return params;
+}
+
+/**
+ * What the user sees of the place of a finding: the element, the instance or rule inside it, and the field with the label
+ * the element shows (specification 3.6, E3). An empty text means the finding has no such thing. Findings with the same
+ * text are told apart by these.
+ */
+export function findingWhere(t: TFunction, finding: Finding, ctx: FindingTextContext): { element: string; subject: string; field: string } {
+  const params = findingParams(t, finding, ctx);
+  const field = typeof finding.details.field === 'string' || finding.fieldLabel ? (params.field ?? '') : '';
+  const subject = finding.subjectName ?? '';
+  return { element: finding.element === null ? '' : (params.element ?? ''), subject: subject === params.element ? '' : subject, field };
 }
 
 /** The keys of the texts that are missing for a list of identifiers. `has` tells whether a key exists. */

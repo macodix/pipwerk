@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { TypeDescription } from '../api/elementTypes';
 import type { CardRow } from '../model/elements';
-import { labelText } from '../model/typeIndex';
+import { dataTypeWord, labelText } from '../model/typeIndex';
 import { useStudio } from '../state/StudioContext';
 import { Icon } from '../ui/Icon';
 
@@ -22,7 +22,7 @@ export function SuppliedList({
   users?: ReadonlyMap<string, string[]>;
 }) {
   const { t } = useTranslation();
-  const { studio } = useStudio();
+  const { studio, types } = useStudio();
   const language = studio.language;
   return (
     <ul className="prop-list">
@@ -38,10 +38,7 @@ export function SuppliedList({
             data-kind={property.method ? 'method' : 'property'}
           >
             <span className="prop-name">{property.label}</span>
-            <span className="dtype-chip">
-              {property.method ? `${t('properties.method')} · ` : ''}
-              {t(`datatype.${property.datatype}`)}
-            </span>
+            {property.method ? <span className="dtype-chip">{t('properties.method')}</span> : null}
             {property.choices.length > 0 ? (
               <span className="prop-values" data-testid="prop-values">
                 {property.choices.map((choice) => labelText(choice.label, language)).join(' · ')}
@@ -53,11 +50,12 @@ export function SuppliedList({
                 {names.join(', ')}
               </span>
             ) : null}
-            {property.explanation !== '' ? (
-              <span className="prop-desc" data-testid="prop-desc">
-                {property.explanation}
-              </span>
-            ) : null}
+            <span className="prop-desc" data-testid="prop-desc">
+              {t(property.method ? 'properties.resultIs' : 'properties.valueIs', {
+                word: dataTypeWord(types, property.datatype, language, { specific: property.datatypeLabel, objectType: property.objectType }),
+              })}
+              {property.explanation === '' ? '' : ` ${property.explanation}`}
+            </span>
             {method !== undefined && method.arguments.length > 0 ? (
               <ul className="prop-args" data-testid="prop-args">
                 {method.arguments.map((argument) => (

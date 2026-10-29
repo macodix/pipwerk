@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { BindingKind, Choice, DataType, ParameterDescription, PropertyDescription } from '../api/elementTypes';
+import type { BindingKind, Choice, DataType, Label, ParameterDescription, PropertyDescription } from '../api/elementTypes';
 import type { ExpressionAnswer } from '../api/objects';
 import type { BindingScope } from '../document/ops';
 import { getOwn } from '../document/own';
@@ -10,7 +10,7 @@ import { isConnectionValue, type Binding, type ElementDocument, type StrategyDoc
 import { ExpressionPanel } from '../expression/ExpressionPanel';
 import type { SupportedLanguage } from '../i18n';
 import { elementName, propertyRows } from '../model/elements';
-import { compatibleDataTypes, labelText, objectTypeChoices, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
+import { compatibleDataTypes, dataTypeWord, labelText, objectTypeChoices, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
 import { Btn, Info, NumberInput, Select, TextInput } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 
@@ -18,7 +18,11 @@ import { Icon } from '../ui/Icon';
 export type FieldSpec = Pick<
   ParameterDescription,
   'id' | 'datatype' | 'label' | 'explanation' | 'bindings' | 'choices' | 'default' | 'objectType' | 'appliesWhen'
-> & { required: boolean };
+> & {
+  required: boolean;
+  /** The word for the data type the description carries; none for an own parameter of an instance. */
+  datatypeLabel?: Label | null;
+};
 
 export function specOfParameter(parameter: ParameterDescription): FieldSpec {
   return { ...parameter };
@@ -26,6 +30,18 @@ export function specOfParameter(parameter: ParameterDescription): FieldSpec {
 
 export function specOfProperty(property: PropertyDescription): FieldSpec {
   return { ...property, required: property.must };
+}
+
+/**
+ * The value of an object that stands in for "the one of the application" (specification 3.1, 5.4): the description names
+ * it as the default and as one of the values of the field. The field shows it in words and offers the way to choose
+ * another one, and the way back.
+ */
+export function presetChoice(spec: Pick<FieldSpec, 'datatype' | 'default' | 'choices'>): Choice | null {
+  if (spec.datatype !== 'object' || spec.default === null) {
+    return null;
+  }
+  return spec.choices.find((choice) => choice.id === spec.default) ?? null;
 }
 
 /** The value a new strategy parameter of the datatype starts with. */
@@ -432,7 +448,23 @@ export function FieldRow(props: FieldRowProps) {
   const place: ExpressionPlace | null =
     props.place ?? (element !== undefined && scope !== undefined ? { kind: 'binding', element: element.id, scope, key: spec.id } : null);
   const { t } = useTranslation();
-  const tip = labelText(spec.explanation, language);
+  const [chooseOther, setChooseOther] = useState(false);
+  // The data type stands in the explanation shown when the field is pointed at, in the words of the library (E11).
+  const typeSentence =
+    spec.datatype === 'expression'
+      ? ''
+      : t('fields.expects', {
+          word: dataTypeWord(types, spec.datatype, language, { specific: spec.datatypeLabel, objectType: spec.objectType }),
+        });
+  const tip = [labelText(spec.explanation, language), typeSentence].filter((part) => part !== '').join(' ');
+  const preset = presetChoice(spec);
+  // The name of the object type stands in the sentences of the field that holds the one of the application ("das Instrument …").
+  const presetType = (() => {
+    const name = dataTypeWord(types, 'object', language, { objectType: spec.objectType });
+    return language === 'en' ? name.toLowerCase() : name;
+  })();
+  const atPreset = preset !== null && (binding === undefined || (binding.kind === 'fixed' && binding.value === preset.id));
+  const showPreset = atPreset && !chooseOther && readOnly !== true;
   const kinds = kindsFor(spec, binding?.kind);
   const exprOnly = spec.bindings.length === 1 && spec.bindings[0] === 'expression';
   const current = binding?.kind ?? 'unset';
@@ -565,7 +597,6 @@ export function FieldRow(props: FieldRowProps) {
           </span>
         ) : null}
         <Info tip={tip} label={t('fields.explanation')} />
-        {spec.datatype !== 'expression' ? <span className="dtype-chip">{t(`datatype.${spec.datatype}`)}</span> : null}
       </div>
       {note !== undefined ? (
         <div className="field-note">
@@ -573,25 +604,61 @@ export function FieldRow(props: FieldRowProps) {
           <span>{note}</span>
         </div>
       ) : null}
-      {exprOnly || reference || readOnly === true ? null : (
-        <label className="kind-row">
-          <span className="kind-cap">{t('fields.assignment')}</span>
-          <Select
-            value={current}
-            onChange={setKind}
-            testid={`kind-${spec.id}`}
-            ariaLabel={`${labelText(spec.label, language)}: ${t('fields.assignment')}`}
+      {showPreset ? (
+        <div className="preset" data-testid={`preset-${spec.id}`}>
+          <p className="fixed-note" data-testid={`preset-text-${spec.id}`}>
+            {t('fields.preset.value', { type: presetType })}
+          </p>
+          <p className="muted">{t('fields.preset.nothingToChoose')}</p>
+          <Btn
+            small
+            kind="ghost"
+            testid={`preset-other-${spec.id}`}
+            onClick={() => {
+              setChooseOther(true);
+            }}
           >
-            <option value="unset">{t('binding.unset')}</option>
-            {kinds.map((kind) => (
-              <option key={kind} value={kind}>
-                {t(`binding.${kind}`)}
-              </option>
-            ))}
-          </Select>
-        </label>
+            {t('fields.preset.other', { type: presetType })}
+          </Btn>
+        </div>
+      ) : (
+        <>
+          {exprOnly || reference || readOnly === true ? null : (
+            <label className="kind-row">
+              <span className="kind-cap">{t('fields.source')}</span>
+              <Select
+                value={current}
+                onChange={setKind}
+                testid={`kind-${spec.id}`}
+                ariaLabel={`${labelText(spec.label, language)}: ${t('fields.source')}`}
+              >
+                <option value="unset">{t('binding.unset')}</option>
+                {kinds.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {t(`binding.${kind}`)}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          )}
+          <div className="field-value">{valueEditor()}</div>
+          {preset !== null && readOnly !== true ? (
+            <Btn
+              small
+              kind="ghost"
+              testid={`preset-back-${spec.id}`}
+              onClick={() => {
+                if (!atPreset) {
+                  onChange({ kind: 'fixed', value: preset.id });
+                }
+                setChooseOther(false);
+              }}
+            >
+              {t('fields.preset.back', { type: presetType })}
+            </Btn>
+          ) : null}
+        </>
       )}
-      <div className="field-value">{valueEditor()}</div>
     </div>
   );
 }

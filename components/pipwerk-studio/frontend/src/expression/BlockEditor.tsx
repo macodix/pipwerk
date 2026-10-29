@@ -29,7 +29,8 @@ import { blockOfOption, findOption, matchChoice, selectKeyOf, type ValueGroup, t
 
 /**
  * The block editor (specification 5.4, req-ui-015): a value is chosen from lists, a condition is put together from
- * comparisons, crossings and connections. The tree it works on is the one the expression endpoint reads out of the
+ * comparisons and connections ("and", "or", "not"). A crossing of two values has no block of its own: it is made of
+ * "previous value of", comparisons and "and". The tree it works on is the one the expression endpoint reads out of the
  * expression; every change goes back through the endpoint, which forms the expression (`ExpressionPanel`).
  */
 
@@ -64,19 +65,13 @@ function hintOf(block: Block, ctx: EditorContext): ValueHint {
 }
 
 /**
- * Whether a value has an earlier value, so that something can cross it (specification 3.4). Only a value the endpoint
- * names with an earlier value has one; a fixed value, a strategy parameter or a calculation does not.
+ * The values the list offers for the argument of "previous value of": only those with an earlier value (specification
+ * 3.4, 5.4). The endpoint marks them (`previous_value`); the interface does not repeat the rule (E2).
  */
-function hasPrevious(block: Block, ctx: EditorContext): boolean {
-  if (block.kind === 'name') {
-    return findOption(ctx.groups, block.path, block.call === true)?.previousValue === true;
-  }
-  return block.kind === 'function' && block.function === 'PREVIOUS';
-}
-
-/** Both sides are chosen and neither has an earlier value: nothing can cross (the blocks do not offer the crossing then). */
-function nothingCanCross(left: Block, right: Block, ctx: EditorContext): boolean {
-  return !isEmptyBlock(left) && !isEmptyBlock(right) && !hasPrevious(left, ctx) && !hasPrevious(right, ctx);
+function withPrevious(groups: readonly ValueGroup[]): ValueGroup[] {
+  return groups
+    .map((group) => ({ ...group, options: group.options.filter((option) => option.previousValue) }))
+    .filter((group) => group.options.length > 0);
 }
 
 function groupLabelKey(id: ValueGroupId): string {
@@ -100,20 +95,27 @@ export function ValueEditor({
   ctx,
   hint,
   testid,
+  previousOnly,
 }: {
   value: Block;
   onChange: (block: Block) => void;
   ctx: EditorContext;
   hint?: ValueHint;
   testid?: string;
+  /** The list offers only values with an earlier value: the place is the argument of "previous value of". */
+  previousOnly?: boolean;
 }) {
   const { t } = useTranslation();
   const key = value.kind === 'name' ? selectKeyOf(value, ctx.groups) : valueKey(value);
   const known = key === '' || !(key.startsWith('n:') || key.startsWith('m:')) || findOption(ctx.groups, value.path, value.call === true) !== undefined;
   const empty = isEmptyBlock(value);
   const functions = useMemo(() => valueFunctions(ctx.functions), [ctx.functions]);
-  const sub = (block: Block, change: (next: Block) => void, nested?: ValueHint) => (
-    <ValueEditor value={block} onChange={change} ctx={ctx} hint={nested} />
+  const shownGroups = useMemo(() => (previousOnly === true ? withPrevious(ctx.groups) : ctx.groups), [ctx.groups, previousOnly]);
+  // a value that is chosen but has no earlier value (a stored expression the endpoint accepted before) stays visible
+  const current = previousOnly === true && value.kind === 'name' ? findOption(ctx.groups, value.path, value.call === true) : undefined;
+  const currentHidden = current !== undefined && !shownGroups.some((group) => group.options.some((option) => option.key === current.key));
+  const sub = (block: Block, change: (next: Block) => void, nested?: ValueHint, only?: boolean) => (
+    <ValueEditor value={block} onChange={change} ctx={ctx} hint={nested} previousOnly={only} />
   );
   const pick = (selected: string): void => {
     const chosen = ctx.groups.flatMap((group) => group.options).find((option) => option.key === selected);
@@ -133,7 +135,8 @@ export function ValueEditor({
       >
         {key === '' ? <option value="">{t('expression.chooseValueOption')}</option> : null}
         {!known ? <option value={key}>{t('expression.gone')}</option> : null}
-        {ctx.groups.map((group) => (
+        {currentHidden && current !== undefined ? <option value={current.key}>{current.label}</option> : null}
+        {shownGroups.map((group) => (
           <optgroup key={group.id} label={t(groupLabelKey(group.id))}>
             {group.options.map((option) => (
               <option key={option.key} value={option.key}>
@@ -142,16 +145,18 @@ export function ValueEditor({
             ))}
           </optgroup>
         ))}
-        <optgroup label={t('expression.groups.fixed')}>
-          <option value="k:num">{t('expression.kinds.number')}</option>
-          <option value="k:str">{t('expression.kinds.text')}</option>
-          <option value="k:bool">{t('expression.kinds.boolean')}</option>
-          <option value="k:prev">{t('expression.kinds.previous')}</option>
-          <option value="k:calc">{t('expression.kinds.calculation')}</option>
-          <option value="k:if">{t('expression.kinds.if')}</option>
-          <option value="k:func">{t('expression.kinds.function')}</option>
-          <option value="k:cond">{t('expression.kinds.condition')}</option>
-        </optgroup>
+        {previousOnly === true ? null : (
+          <optgroup label={t('expression.groups.fixed')}>
+            <option value="k:num">{t('expression.kinds.number')}</option>
+            <option value="k:str">{t('expression.kinds.text')}</option>
+            <option value="k:bool">{t('expression.kinds.boolean')}</option>
+            <option value="k:prev">{t('expression.kinds.previous')}</option>
+            <option value="k:calc">{t('expression.kinds.calculation')}</option>
+            <option value="k:if">{t('expression.kinds.if')}</option>
+            <option value="k:func">{t('expression.kinds.function')}</option>
+            <option value="k:cond">{t('expression.kinds.condition')}</option>
+          </optgroup>
+        )}
       </Select>
 
       {value.kind === 'literal' && value.datatype !== 'text' && value.datatype !== 'boolean' ? (
@@ -228,7 +233,7 @@ export function ValueEditor({
 
       {value.kind === 'function' && value.function === 'PREVIOUS' ? (
         <span className="vb-inner" data-testid="previous-value">
-          {sub(child(value, 0), (next) => { onChange(withChild(value, 0, next)); }, hint)}
+          {sub(child(value, 0), (next) => { onChange(withChild(value, 0, next)); }, hint, true)}
           <span className="vb-caption">{t('expression.candlesBack')}</span>
           <NumberInput
             value={childrenOf(value)[1]?.kind === 'literal' && typeof childrenOf(value)[1]?.value === 'number' ? (childrenOf(value)[1]?.value as number) : 1}
@@ -347,7 +352,7 @@ export function ValueEditor({
 
 // ---- condition --------------------------------------------------------------------------------------------------
 
-const CONDITION_KINDS: readonly ConditionKind[] = ['compare', 'cross', 'and', 'or', 'not', 'value'];
+const CONDITION_KINDS: readonly ConditionKind[] = ['compare', 'and', 'or', 'not', 'value'];
 
 export function CondEditor({
   value,
@@ -382,12 +387,7 @@ export function CondEditor({
           testid="cond-kind"
         >
           {CONDITION_KINDS.map((entry) => (
-            <option
-              key={entry}
-              value={entry}
-              // a comparison of two values without an earlier value cannot become a crossing
-              disabled={entry === 'cross' && kind === 'compare' && shown.kind === 'comparison' && nothingCanCross(left, right, ctx)}
-            >
+            <option key={entry} value={entry}>
               {t(`expression.conditionKinds.${entry}`)}
             </option>
           ))}
@@ -412,31 +412,6 @@ export function CondEditor({
             ))}
           </Select>
           <ValueEditor value={right} onChange={(next) => { onChange(withChild(shown, 1, next)); }} ctx={ctx} hint={hintOf(left, ctx)} testid="cmp-right" />
-        </div>
-      ) : null}
-
-      {kind === 'cross' && shown.kind === 'crossing' ? (
-        <div className="cb-row">
-          <ValueEditor value={left} onChange={(next) => { onChange(withChild(shown, 0, next)); }} ctx={ctx} testid="cross-a" />
-          <span className="cb-word">{t('expression.crosses')}</span>
-          <ValueEditor value={right} onChange={(next) => { onChange(withChild(shown, 1, next)); }} ctx={ctx} testid="cross-b" />
-          <Select
-            value={shown.direction ?? 'up'}
-            onChange={(direction) => {
-              onChange({ ...shown, direction: direction as 'up' | 'down' | 'any' });
-            }}
-            ariaLabel={t('expression.crossDirection')}
-            testid="cross-dir"
-          >
-            <option value="up">{t('expression.directions.up')}</option>
-            <option value="down">{t('expression.directions.down')}</option>
-            <option value="any">{t('expression.directions.any')}</option>
-          </Select>
-          {nothingCanCross(left, right, ctx) ? (
-            <p className="muted cb-hint" data-testid="cross-hint">
-              {t('expression.crossNothing')}
-            </p>
-          ) : null}
         </div>
       ) : null}
 
