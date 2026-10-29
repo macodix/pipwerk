@@ -33,7 +33,7 @@ Qualitätsziele mit Messvorgabe nennt die Spezifikation für `wp02` nicht; die G
 - Abweichungen, die die bessere Lösung sind; die Spezifikation ist dafür angepasst (Änderungsnachweis vom 2026-10-29), nicht die Umsetzung:
   - Web-API mit `POST /api/v1/keys`, `/usage`, `/insert`, `/removals` (`web_api.py:1022`, `:1059`, `:1100`, `:1150`). 4.2 nannte sie nicht. Ohne sie müsste die Oberfläche gegen E2 selbst rechnen.
   - Anordnung und Erscheinungsbild aus dem Code des Prototyps übernommen (`arrange/layout.ts:3-4`, `arrange/scene.ts:3-6`, `styles.css:1`). E8 schloss das aus. Der Code erfüllt E2 und ist geprüft wie jeder andere Code.
-- Prüfung dieser Ergänzung durch die QA: siehe unten.
+- Die QA hat die Ergänzung geprüft: [specification-16.md](../reviews/specification-16.md), bestanden, Commit `4f04ed5c43406f7a00f94dadcbcba6e9275c2de1`. Sie ist rein technisch; Plan und Abnahmekriterien bleiben.
 
 ## Befunde (blockierend)
 
