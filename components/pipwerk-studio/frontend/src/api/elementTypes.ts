@@ -214,6 +214,15 @@ export type TemplateDocument = {
   [field: string]: unknown;
 };
 
+/** The document of a delivered template as the backend takes it back (`/api/v1/insert`): without the texts added for display. */
+export function templateDocument(template: TemplateDocument): Record<string, unknown> {
+  const document: Record<string, unknown> = { ...template };
+  delete document.label;
+  delete document.explanation;
+  delete document.group;
+  return document;
+}
+
 /** A data type with its word in trader language in both languages (`data_types` of the answer). */
 export type DataTypeWord = { id: string; label: Label };
 

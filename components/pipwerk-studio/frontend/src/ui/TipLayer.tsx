@@ -5,7 +5,8 @@ type Tip = { text: string; x: number; y: number; below: boolean; side: 'top' | '
 /**
  * The layer for explanations: every element with `data-tip` shows its text when it is pointed at and when it has the
  * focus (specification 5.2: also with the keyboard). Entries of the element library explain themselves to the right,
- * fields of the properties view to the left.
+ * fields of the properties view to the left. The course of the layer is code of the prototype, taken over and adapted
+ * (specification E8: the prototype is an aid, not a template); see docs/technical/pipwerk-studio.md, section 2.3.
  */
 export function TipLayer() {
   const [tip, setTip] = useState<Tip | null>(null);

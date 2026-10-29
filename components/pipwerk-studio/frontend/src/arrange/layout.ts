@@ -1,7 +1,8 @@
 // Layered layout for the flow: ranks along the main axis, order inside a rank by
 // barycenter sweeps (few crossings), long edges get invisible waypoints so they
-// run beside the boxes instead of through them. The layout is taken over from the
-// confirmed prototype (specification E8) as a building block of the user interface.
+// run beside the boxes instead of through them. Code of the prototype, taken over and
+// adapted (specification E8: the prototype is an aid, not a template); it is checked like
+// any other code (docs/technical/pipwerk-studio.md, section 2.3).
 
 export interface LNode {
   id: string;

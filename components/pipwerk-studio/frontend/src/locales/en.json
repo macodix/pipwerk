@@ -774,6 +774,7 @@
     "deleteFailed": "The strategy could not be deleted.",
     "checkFailed": "The strategy could not be checked.",
     "insertFailed": "The entry could not be inserted.",
+    "insertFailedHint": "Nothing in the strategy was changed. Try again. If it fails again, save the strategy and check that the program is still running.",
     "removeFailed": "The entry could not be removed.",
     "codes": {
       "object": {

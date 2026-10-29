@@ -1,9 +1,10 @@
 // Geometry of the drawing area: automatic arrangement of the flow, the frames of the
 // managements and the sections, the places of the objects beside the elements that use
-// them, plus the lines of the data connections between them. The arrangement is taken over
-// from the confirmed prototype (specification E8, 5.3); the flow library shows what is computed
-// here. The input is reduced to what the arrangement needs, so that it knows no single
-// type (E2).
+// them, plus the lines of the data connections between them. Code of the prototype, taken
+// over and adapted (specification E8: the prototype is an aid, not a template; 5.3 is
+// authoritative); it is checked like any other code (docs/technical/pipwerk-studio.md,
+// section 2.3). The flow library shows what is computed here. The input is reduced to what
+// the arrangement needs, so that it knows no single type (E2).
 import { layered } from './layout';
 import type { LEdge, LNode, Pt } from './layout';
 

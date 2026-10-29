@@ -1,6 +1,6 @@
 import type { ParameterDescription, PropertyDescription, TypeDescription } from '../api/elementTypes';
 import type { SupportedLanguage } from '../i18n';
-import { holdsInstance, labelText, orderSelector, type TypeIndex } from '../model/typeIndex';
+import { labelText, orderSelector, type TypeIndex } from '../model/typeIndex';
 import { newUuid } from './ids';
 import { getOwn, hasOwn, setOwn } from './own';
 import {
@@ -141,7 +141,7 @@ export function withOrderDefaults(element: ElementDocument, types: TypeIndex): E
 }
 
 export type NewElementOptions = {
-  /** The name of the element or instance, already unique. */
+  /** The name of the element, already unique. */
   name: string;
   /** The identifier in expressions, for an element with a result (condition, calculation). */
   key?: string | null;
@@ -164,72 +164,40 @@ function baseElement(type: TypeDescription, options: NewElementOptions): Element
   };
 }
 
-/** A new instance of an object type (without a template), the parameters set to their standard values. */
-export function instanceFromType(type: TypeDescription, name: string, key: string): InstanceDocument {
+/**
+ * The instance the backend made (`/api/v1/insert`: name, key, origin and content, expressions written on the new keys)
+ * with the standard values of its parameters, which the backend does not set: those of the parameters the instance
+ * defines itself, and, for an instance of an object type without a template, those of the type. Names, keys and
+ * expressions of the instance stay as they are; only a rule from an object type gets the empty expression a rule is
+ * started with.
+ */
+export function withStandardValues(instance: InstanceDocument, type: TypeDescription | undefined): InstanceDocument {
+  const parameterValues: Bindings = { ...instance.parameter_values };
+  const fromType = type !== undefined && (instance.origin?.template_id ?? null) === null;
+  const standards: Bindings = fromType ? defaultBindings(type.parameters) : {};
+  for (const definition of instance.parameters ?? []) {
+    if (definition.default !== undefined && definition.default !== null) {
+      setOwn(standards, definition.key, { kind: 'fixed', value: definition.default });
+    }
+  }
+  for (const [key, binding] of Object.entries(standards)) {
+    if (!hasOwn(parameterValues, key)) {
+      setOwn(parameterValues, key, binding);
+    }
+  }
   return {
-    name,
-    key,
-    object_type: type.id,
-    origin: { object_type: type.id, template_id: null },
-    parameter_values: defaultBindings(type.parameters),
-    parameters: [],
-    properties: [],
-    instances: [],
-    rules: [],
-    expression: type.category === 'rule' ? '' : null,
-    determined_property: null,
-    comparison: null,
-    result_expression: null,
+    ...instance,
+    parameter_values: parameterValues,
+    ...(fromType && type.category === 'rule' && (instance.expression ?? null) === null ? { expression: '' } : {}),
   };
 }
 
 /**
- * A new instance from a template: a complete copy of its content (specification E4) with the origin. A mentioned
- * template stores only its identifier in the origin, an own template also its name (3.7).
+ * A new element for a type of the flow (a trigger or a step), the parameters set to their standard values. An element
+ * that shows an object is made by `elementForInstance`.
  */
-export function instanceFromTemplate(
-  template: { id: string; name: string; object_type: string } & Record<string, unknown>,
-  name: string,
-  key: string,
-  own: boolean,
-): InstanceDocument {
-  const copy = clone(template) as Record<string, unknown>;
-  const definitions = (copy.parameters ?? []) as NonNullable<InstanceDocument['parameters']>;
-  const parameterValues = (copy.parameter_values ?? {}) as Bindings;
-  for (const definition of definitions) {
-    const standard = definition.default;
-    if (standard !== undefined && standard !== null && !hasOwn(parameterValues, definition.key)) {
-      setOwn(parameterValues, definition.key, { kind: 'fixed', value: standard });
-    }
-  }
-  return {
-    name,
-    key,
-    object_type: template.object_type,
-    origin: {
-      object_type: template.object_type,
-      template_id: template.id,
-      ...(own ? { template_name: template.name } : {}),
-    },
-    parameter_values: parameterValues,
-    parameters: definitions,
-    properties: (copy.properties ?? []) as NonNullable<InstanceDocument['properties']>,
-    instances: (copy.instances ?? []) as InstanceDocument[],
-    rules: (copy.rules ?? []) as InstanceDocument[],
-    expression: (copy.expression ?? null) as string | null,
-    determined_property: (copy.determined_property ?? null) as string | null,
-    comparison: (copy.comparison ?? null) as InstanceDocument['comparison'],
-    result_expression: (copy.result_expression ?? null) as string | null,
-  };
-}
-
-/** A new element for a type of the drawing area: an instance for an object, otherwise a trigger or a step of the flow. */
 export function newElement(type: TypeDescription, options: NewElementOptions): ElementDocument {
   const element = baseElement(type, options);
-  if (holdsInstance(type)) {
-    element.instance = instanceFromType(type, options.name, options.key ?? '');
-    return element;
-  }
   element.name = options.name;
   if (type.named) {
     element.key = options.key ?? null;
@@ -238,15 +206,11 @@ export function newElement(type: TypeDescription, options: NewElementOptions): E
   return element;
 }
 
-/** A new element that shows an object from a template. */
-export function newTemplateElement(
-  template: { id: string; name: string; object_type: string } & Record<string, unknown>,
-  options: NewElementOptions,
-  own: boolean,
-): ElementDocument {
+/** A new element on the drawing area that shows an instance (from `/api/v1/insert`). */
+export function elementForInstance(instance: InstanceDocument): ElementDocument {
   return {
     id: newUuid(),
-    type: template.object_type,
+    type: instance.object_type,
     name: null,
     key: null,
     position: null,
@@ -254,8 +218,8 @@ export function newTemplateElement(
     properties: {},
     inputs: [],
     rules: [],
-    management_of: options.managementOf,
-    instance: instanceFromTemplate(template, options.name, options.key ?? '', own),
+    management_of: null,
+    instance,
   };
 }
 

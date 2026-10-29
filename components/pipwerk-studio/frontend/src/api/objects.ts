@@ -1,5 +1,5 @@
-import { parseStrategyDocument } from '../document/parse';
-import type { StrategyDocument } from '../document/types';
+import { parseInstanceDocument, parseStrategyDocument } from '../document/parse';
+import type { InstanceDocument, StrategyDocument } from '../document/types';
 import {
   expectArray,
   expectBoolean,
@@ -182,6 +182,35 @@ export async function createKey(
   }
   const record = expectRecord(await requestJson('/api/v1/keys', { method: 'POST', body, signal }), 'key');
   return expectString(record.key, 'key');
+}
+
+/** What an instance is made from: the document of a template, or the identifier of an object type. */
+export type InsertSource = { template: JsonRecord } | { objectType: string };
+
+/**
+ * The complete instance for a template or an object type (`POST /api/v1/insert`, specification 4.2, E2, E4): the backend
+ * gives it a name that is free in the document, forms the keys of it and of everything inside it and writes the
+ * expressions on the new keys. The user interface takes the instance as it is and puts it where it belongs; the document
+ * is not changed by the request.
+ */
+export async function requestInsert(
+  document: StrategyDocument,
+  source: InsertSource,
+  name: string,
+  language: 'de' | 'en',
+  signal?: AbortSignal,
+): Promise<InstanceDocument> {
+  const body: Record<string, unknown> = { document, language };
+  if (name !== '') {
+    body.name = name;
+  }
+  if ('template' in source) {
+    body.template = source.template;
+  } else {
+    body.object_type = source.objectType;
+  }
+  const record = expectRecord(await requestJson('/api/v1/insert', { method: 'POST', body, signal }), 'insert');
+  return parseInstanceDocument(record.instance, 'instance');
 }
 
 /** The kinds of block of an expression (specification 3.4). */

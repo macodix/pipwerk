@@ -1,4 +1,4 @@
-/* pipwerk Studio: one design system for colours, spacing, type and controls (specification 5.1, taken over from the confirmed prototype). */
+/* pipwerk Studio: one design system for colours, spacing, type and controls (specification 5.1). Code of the prototype, taken over and extended (specification E8: the prototype is an aid, not a template); see docs/technical/pipwerk-studio.md, section 2.3. */
 :root {
   --bg: #eef2f7;
   --panel: #ffffff;

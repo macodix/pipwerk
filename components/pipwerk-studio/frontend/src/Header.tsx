@@ -1,3 +1,5 @@
+// Structure, class names and test identifiers follow the prototype (specification E8: an aid, not a template); a few
+// lines are equal to it. See docs/technical/pipwerk-studio.md, section 2.3.
 import { useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 

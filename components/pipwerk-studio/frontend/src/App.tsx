@@ -255,6 +255,7 @@ function Dialogs({
           actions={[{ label: t('dialogs.error.ok'), primary: true, onClick: close }]}
         >
           <p>{describeCause(t, i18n, dialog.error).summary}</p>
+          {dialog.hintKey === undefined ? null : <p>{t(dialog.hintKey)}</p>}
         </MessageDialog>
       );
   }

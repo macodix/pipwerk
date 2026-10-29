@@ -12,7 +12,9 @@ import type { ExpressionSession } from './useExpressionSession';
  * The formula view (specification 5.4, req-ui-013, req-ui-015): a multi-line editor for the display form of an
  * expression, with colours for names, functions and values, the brackets that belong together, errors underlined
  * where they are, suggestions after `Object.` and the explanation of the arguments of a function. The marks come from
- * the answer of the expression endpoint for exactly the text shown.
+ * the answer of the expression endpoint for exactly the text shown. The structure of the view and its class names and
+ * test identifiers follow the prototype, a few lines are equal to it (specification E8: the prototype is an aid, not a
+ * template); see docs/technical/pipwerk-studio.md, section 2.3.
  */
 
 type Piece = { from: number; to: number; className: string; message?: string };
