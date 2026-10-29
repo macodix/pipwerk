@@ -1202,6 +1202,8 @@ code {
 
 /* ---- canvas ------------------------------------------------------------------------------------- */
 .canvas {
+  /* the area takes the focus with a click (tabindex -1), so that the keys reach it; no frame around it */
+  outline: none;
   position: relative;
   overflow: hidden;
   min-width: 0;

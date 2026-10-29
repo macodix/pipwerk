@@ -1,7 +1,8 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
 import type { Page } from '@playwright/test';
 
-import { boxOf, card, choose, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, test, viewOf } from './support';
+import { removeStored, storedStrategy } from './compare';
+import { boxOf, card, choose, clickMenu, dragBy, expect, expectSaved, expectUnsaved, library, newStrategy, node, openApp, openStrategy, overlap, showArea, test, viewOf } from './support';
 
 /** "Alles zeigen": the whole strategy at once, so that every element can be reached with the mouse. */
 async function showEverything(page: Page): Promise<void> {
@@ -148,11 +149,15 @@ test('a step is connected by dragging and by clicking, and a selected line is de
   await dragBy(page, port, targetBox.x + targetBox.width / 2 - (await boxOf(port)).x, targetBox.y + 30 - (await boxOf(port)).y);
   await expect(page.getByTestId('flow-edge')).toHaveCount(1);
 
-  // a click on the line selects it, the cross deletes it
+  // a click on the line selects it; the properties view of the line deletes it (specification 5.3)
   const line = await boxOf(page.locator('[data-testid="flow-edge"] .react-flow__edge-interaction').first());
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2);
-  await page.getByTestId('edge-delete').click();
+  await showArea(page, 'props');
+  await expect(page.getByTestId('props-connection')).toContainText('Von „Manuell“ zu „Order löschen“');
+  await page.getByTestId('connection-remove').click();
   await expect(page.getByTestId('flow-edge')).toHaveCount(0);
+  await expect(page.getByTestId('props-strategy')).toBeVisible();
+  await showArea(page, 'canvas');
 
   // by clicking the output and then the other step
   await port.click();
@@ -340,4 +345,91 @@ test('an element of an unknown type is outlined in red with the identifier of it
   const stored = (await (await page.request.get(`/api/v1/strategies/${id}`)).json()) as Record<string, unknown>;
   const element = (stored.elements as { type: string; parameters: Record<string, unknown> }[]).find((candidate) => candidate.type === 'erweiterung.fremder_typ');
   expect(element?.parameters).toEqual({ wert: { kind: 'fixed', value: 42 } });
+});
+
+// Deleting a connection on the drawing area: the cross at the line and the keys Delete and Backspace. The specification
+// 5.3 holds this an open point of the customer, so the ways stay and need their tests.
+
+/** A new strategy with two steps and the one connection between them. */
+async function connectedPair(page: Page): Promise<void> {
+  await openApp(page);
+  // no rest of an aborted run: the tests read the stored strategy by its name
+  await removeStored(page, 'Neue Strategie');
+  await newStrategy(page);
+  await library(page, 'Manuell').click();
+  await page.getByTestId('canvas').locator('.react-flow__pane').click({ position: { x: 700, y: 400 }, force: true });
+  await library(page, 'Order löschen').click();
+  await expect(page.getByTestId('node')).toHaveCount(2);
+  const port = node(page, 'Manuell').getByTestId('port-out-weiter');
+  const targetBox = await boxOf(node(page, 'Order löschen'));
+  await dragBy(page, port, targetBox.x + targetBox.width / 2 - (await boxOf(port)).x, targetBox.y + 30 - (await boxOf(port)).y);
+  await expect(page.getByTestId('flow-edge')).toHaveCount(1);
+}
+
+/** Selects the line with a click on it. */
+async function selectLine(page: Page): Promise<void> {
+  const line = await boxOf(page.locator('[data-testid="flow-edge"] .react-flow__edge-interaction').first());
+  await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2);
+  await expect(page.locator('[data-testid="flow-edge"].on')).toHaveCount(1);
+}
+
+/** The codes of the findings that "Prüfen" reports, in the list of the findings. */
+async function findingCodes(page: Page): Promise<string[]> {
+  await clickMenu(page, 'check');
+  await page.getByTestId('findings-count').click();
+  await expect(page.getByTestId('props-strategy')).toBeVisible();
+  const codes = await page.getByTestId('finding').evaluateAll((items) => items.map((item) => item.getAttribute('data-code') ?? ''));
+  await showArea(page, 'canvas');
+  return codes;
+}
+
+/** The number of connections in the stored document, after saving. */
+async function storedConnections(page: Page): Promise<number> {
+  await clickMenu(page, 'save');
+  await expectSaved(page);
+  return ((await storedStrategy(page, 'Neue Strategie')).connections as unknown[]).length;
+}
+
+for (const way of ['the cross at the line', 'the key Delete', 'the key Backspace'] as const) {
+  test(`${way} deletes the selected connection: it is gone from the drawing area, the stored document and the findings`, async ({ page }) => {
+    await connectedPair(page);
+    expect(await storedConnections(page)).toBe(1);
+    const before = await findingCodes(page);
+    await selectLine(page);
+
+    if (way === 'the cross at the line') {
+      await page.getByTestId('edge-delete').click();
+    } else {
+      await page.keyboard.press(way === 'the key Delete' ? 'Delete' : 'Backspace');
+    }
+
+    await expect(page.getByTestId('flow-edge')).toHaveCount(0);
+    await expectUnsaved(page);
+    expect(await storedConnections(page)).toBe(0);
+    // the findings tell what the missing connection means: the trigger leads nowhere and the step is not reached
+    expect(before).not.toContain('trigger.unconnected');
+    expect(before).not.toContain('flow.not_reached');
+    const after = await findingCodes(page);
+    expect(after).toContain('trigger.unconnected');
+    expect(after).toContain('flow.not_reached');
+    await removeStored(page, 'Neue Strategie');
+  });
+}
+
+test('the keys Delete and Backspace delete nothing while the input focus lies in a text field', async ({ page }) => {
+  await connectedPair(page);
+  // a text field on the drawing area: the name of a section
+  await node(page, 'Manuell').click({ position: { x: 40, y: 14 } });
+  await choose(page.getByTestId('section-select'), { value: '__new' });
+  await page.getByTestId('section-name').fill('Einstieg');
+  await page.getByTestId('section-create').click();
+  await expect(page.getByTestId('band')).toHaveAttribute('data-section', 'Einstieg');
+  await selectLine(page);
+
+  // the keys come from the text field (focusing it would select the section): they delete no line
+  const field = page.getByRole('textbox', { name: 'Name des Abschnitts' });
+  for (const key of ['Delete', 'Backspace']) {
+    await field.dispatchEvent('keydown', { key, bubbles: true, cancelable: true });
+  }
+  await expect(page.getByTestId('flow-edge')).toHaveCount(1);
 });

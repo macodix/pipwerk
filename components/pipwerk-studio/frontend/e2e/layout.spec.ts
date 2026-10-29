@@ -1,4 +1,4 @@
-import { boxOf, card, clickMenu, expect, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
+import { boxOf, card, clickMenu, expect, expectSaved, openApp, openStrategy, overlap, showArea, SIZES, test, type Box } from './support';
 import type { Page } from '@playwright/test';
 
 // Specification 5.1 and 5.3: the arrangement in the six window sizes with the open strategy "EMA-Trendfolge". In every size
@@ -78,6 +78,13 @@ for (const size of SIZES) {
     await openStrategy(page, 'EMA-Trendfolge');
     await expect(page.getByTestId('status-pill')).toContainText('EMA-Trendfolge');
     await checkLayout(page, size.width, size.height);
+
+    // the saved strategy opens as it is, without being built anew, and the check reports no error
+    await clickMenu(page, 'check');
+    await expect(page.getByTestId('findings-count')).toBeVisible();
+    await expect(page.getByTestId('findings-count')).not.toHaveClass(/bad/);
+    await expect(page.getByText('Neu zusammenstellen')).toHaveCount(0);
+    await expectSaved(page);
 
     // the strategy parameters are always visible and can be changed
     await inViewport(page, 'param-strip');

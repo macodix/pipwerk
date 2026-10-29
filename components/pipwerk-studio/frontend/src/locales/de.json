@@ -433,7 +433,12 @@
     "managementOf": "Order- und Positionsverwaltung von „{{name}}“",
     "belongsToHint": "Hier legen Sie fest, ob der Schritt zum Hauptablauf oder zur Order- und Positionsverwaltung einer Order gehört, ohne ihn zu ziehen.",
     "originType": "{{name}}, aus Objekttyp {{type}}",
-    "originTemplate": "{{name}}, aus Vorlage {{template}}, Objekttyp {{type}}"
+    "originTemplate": "{{name}}, aus Vorlage {{template}}, Objekttyp {{type}}",
+    "connection": {
+      "title": "Verbindung",
+      "fromTo": "Von „{{from}}“ zu „{{to}}“",
+      "text": "Nach dem Ausgang „{{output}}“ von „{{from}}“ folgt der Schritt, zu dem die Linie führt. Hier löschen Sie die Verbindung; beide Schritte bleiben."
+    }
   },
   "findings": {
     "title": "Befunde",

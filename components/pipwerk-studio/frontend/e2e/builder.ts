@@ -182,13 +182,14 @@ export async function createParam(page: Page, name: string, type: 'time_unit' | 
 
 export async function bindParam(page: Page, fieldId: string, paramName: string): Promise<void> {
   const f = field(page, fieldId);
-  await choose(f.getByTestId(`kind-${fieldId}`), { value: 'parameter' });
+  // the question "Woher kommt der Wert?" and its answer in the words of the interface
+  await choose(f.getByTestId(`kind-${fieldId}`), { label: 'aus einem Strategieparameter' });
   await choose(f.getByTestId('param-select'), { label: paramName });
 }
 
 export async function bindFixed(page: Page, fieldId: string, value: string): Promise<void> {
   const f = field(page, fieldId);
-  await choose(f.getByTestId(`kind-${fieldId}`), { value: 'fixed' });
+  await choose(f.getByTestId(`kind-${fieldId}`), { label: 'fest eingeben' });
   const v = f.getByTestId(`value-${fieldId}`);
   const role = await v.getAttribute('role');
   if (role === 'combobox') {
@@ -214,7 +215,7 @@ export async function setCalculation(page: Page, v: V): Promise<void> {
 /** A field that takes an expression (choosing the kind "Ausdruck" first). */
 export async function bindExpr(page: Page, fieldId: string, v: V): Promise<void> {
   const f = field(page, fieldId);
-  await choose(f.getByTestId(`kind-${fieldId}`), { value: 'expression' });
+  await choose(f.getByTestId(`kind-${fieldId}`), { label: 'aus einer Formel' });
   await setValue(f.getByTestId(`expression-${fieldId}`).locator(':scope > .vb'), v);
 }
 

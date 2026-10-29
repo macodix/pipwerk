@@ -25,6 +25,9 @@ describe('the state of the open strategy (specification E3)', () => {
   it('counts selecting, folding in a frame of the view and the choice of the lines as no change', () => {
     let state = opened(true);
     state = studioReducer(state, { type: 'select', selection: { kind: 'element', id: 'x' } });
+    // a selected line of the flow is a selection of the properties view, no change of the strategy
+    state = studioReducer(state, { type: 'select', selection: { kind: 'connection', id: 'c1' } });
+    expect(state.selection).toEqual({ kind: 'connection', id: 'c1' });
     state = studioReducer(state, { type: 'wires', mode: 'off' });
     state = studioReducer(state, { type: 'toggleCard', id: 'c' });
 

@@ -1,10 +1,10 @@
-# User documentation
+# Anwenderdokumentation
 
-User documentation is created together with the corresponding usable components.
+Die Anwenderdokumentation entsteht zusammen mit den Komponenten, die sich benutzen lassen.
 
-It describes what a user sees and does with the component, in the language of the interface: how to start it, what each part of the screen is for, how to carry out each task, what the messages mean and how to fix what they report. It contains no instructions for tests or acceptance, no developer tools and no paths, user names or host names of a development machine; those belong to the technical documentation in `docs/technical/`. Only what the component can do at the stage described is documented, and each stage is described completely before the next one starts.
+Sie beschreibt, was der Anwender sieht und tut, in den Wörtern der Oberfläche: wie man die Komponente öffnet, wofür jeder Teil des Bildschirms da ist, wie man jede Aufgabe erledigt, was die Meldungen bedeuten und wie man behebt, was sie melden. Beschrieben ist nur, was die Komponente im jeweiligen Stand kann; jeder Stand wird vollständig beschrieben, bevor der nächste beginnt.
 
-Grundsatz: Die Anwenderdokumentation enthält keine Test- und keine Abnahmeanleitungen. Wie Testfälle aufgebaut, Browsertests ausgeführt und Prüfungen durchgeführt werden, steht in der technischen Dokumentation, für pipwerk Studio in `docs/technical/pipwerk-studio.md` und `docs/technical/pipwerk-studio-testfaelle.md`.
+Grundsatz: Die Anwenderdokumentation enthält keine Test- und keine Abnahmeanleitungen, keine Werkzeuge der Entwickler und keine Pfade, Benutzer- oder Rechnernamen eines Entwicklungsrechners. Sie benutzt keine Begriffe der Programmierung ohne Not. Wie Testfälle aufgebaut, Browsertests ausgeführt und Prüfungen durchgeführt werden, steht in der technischen Dokumentation in `docs/technical/`, für pipwerk Studio in `docs/technical/pipwerk-studio.md` und `docs/technical/pipwerk-studio-testfaelle.md`.
 
 ## pipwerk Studio
 

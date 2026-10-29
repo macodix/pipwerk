@@ -199,7 +199,7 @@ def full_strategy() -> Strategy:
         connections=[connect(1, "weiter", 2), connect(1, "weiter", 3)],
         sections=[
             Section("Abschnitt", None, [uid(3)], True),
-            Section("Verwaltung", uid(2), [uid(6)], False),
+            Section("Nachbetreuung", uid(2), [uid(6)], False),
         ],
         orientation=Orientation.HORIZONTAL,
         collapsed_managements=[uid(2)],

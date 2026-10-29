@@ -9,7 +9,8 @@ export type Selection =
   | { kind: 'strategy' }
   | { kind: 'element'; id: string }
   | { kind: 'frame'; id: string }
-  | { kind: 'section'; id: string };
+  | { kind: 'section'; id: string }
+  | { kind: 'connection'; id: string };
 
 /** The areas of the narrow layouts: below 1100 pixels the library and the properties view share a side area. */
 export type Panel = 'canvas' | 'library' | 'props';

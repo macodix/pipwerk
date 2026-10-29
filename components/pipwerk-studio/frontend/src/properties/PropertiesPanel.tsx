@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { cardRows, elementName } from '../model/elements';
+import { cardRows, elementName, outputsOf } from '../model/elements';
 import { labelText } from '../model/typeIndex';
 import { PanelTabs } from '../library/Library';
 import { useStudio } from '../state/StudioContext';
@@ -340,7 +340,55 @@ function SectionView({ id }: { id: string }) {
   );
 }
 
-/** The properties view (specification 5.4): the strategy, the selected element, frame or section. */
+/** A selected line of the flow: where it leads from and to, and its deletion (specification 5.3). */
+function ConnectionView({ id }: { id: string }) {
+  const { studio, types } = useStudio();
+  const { t } = useTranslation();
+  const document = studio.state.document;
+  const connection = document?.connections.find((candidate) => candidate.id === id);
+  const source = document?.elements.find((candidate) => candidate.id === connection?.source);
+  const target = document?.elements.find((candidate) => candidate.id === connection?.target);
+  if (document === null || connection === undefined || source === undefined || target === undefined || types === null) {
+    return <StrategyView />;
+  }
+  const outputs = outputsOf(source, types.byId.get(source.type), document, studio.language);
+  const output = outputs.find((candidate) => candidate.id === connection.output)?.label ?? connection.output;
+  return (
+    <div className="props" data-testid="props-connection">
+      <header className="props-head">
+        <div className="badge b-trg">
+          <Icon name="link" size={20} />
+        </div>
+        <div className="props-title">
+          <span className="props-kind">{t('properties.connection.title')}</span>
+          <h2>
+            {t('properties.connection.fromTo', {
+              from: elementName(source, types, studio.language),
+              to: elementName(target, types, studio.language),
+            })}
+          </h2>
+        </div>
+      </header>
+      <p>{t('properties.connection.text', { from: elementName(source, types, studio.language), output })}</p>
+      <div className="btn-row">
+        <Btn
+          small
+          kind="quiet"
+          icon="trash"
+          testid="connection-remove"
+          onClick={() => {
+            studio.actions.select({ kind: 'strategy' });
+            studio.actions.disconnect(id);
+          }}
+        >
+          {t('canvas.deleteConnection')}
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+/** The properties view (specification 5.4): the strategy, the selected element, frame, section or line. */
 export function PropertiesPanel() {
   const { studio } = useStudio();
   const { t } = useTranslation();
@@ -384,6 +432,8 @@ export function PropertiesPanel() {
     body = <FrameView owner={selection.id} />;
   } else if (selection.kind === 'section') {
     body = <SectionView id={selection.id} key={selection.id} />;
+  } else if (selection.kind === 'connection') {
+    body = <ConnectionView id={selection.id} key={selection.id} />;
   } else {
     body = <StrategyView />;
   }

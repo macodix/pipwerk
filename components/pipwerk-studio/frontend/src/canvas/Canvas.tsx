@@ -81,7 +81,8 @@ function CanvasView() {
   const viewRef = useRef<Viewport>({ x: 40, y: 40, zoom: 1 });
   const [ready, setReady] = useState(false);
   const [drag, setDrag] = useState<Drag | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  // The selected line is a selection of the properties view (specification 5.3): its deletion is offered there.
+  const selectedEdge = state.selection.kind === 'connection' ? `e:${state.selection.id}` : null;
   const [bump, setBump] = useState(0);
   const [dropHint, setDropHint] = useState(false);
   /** The instance a line is being dragged from. */
@@ -369,7 +370,6 @@ function CanvasView() {
 
   const onNodeClick = useCallback(
     (_event: unknown, node: Node) => {
-      setSelectedEdge(null);
       if (node.type === 'step') {
         canvasActions.clickStep(node.id);
       } else if (node.type === 'card') {
@@ -384,19 +384,26 @@ function CanvasView() {
   );
 
   const onPaneClick = useCallback(() => {
-    setSelectedEdge(null);
     actions.arm(null);
     actions.select({ kind: 'strategy' });
   }, [actions]);
 
-  const onEdgeClick = useCallback((_event: unknown, edge: Edge) => {
-    setSelectedEdge(edge.id.startsWith('e:') ? edge.id : null);
-  }, []);
+  const onEdgeClick = useCallback(
+    (_event: unknown, edge: Edge) => {
+      if (edge.id.startsWith('e:')) {
+        actions.select({ kind: 'connection', id: edge.id.slice(2) });
+        if (matchesMedia(MIDDLE_LAYOUT)) {
+          actions.setPanel('props');
+        }
+      }
+    },
+    [actions],
+  );
 
   const edgeActions = useMemo(
     () => ({
       deleteConnection: (connectionId: string) => {
-        setSelectedEdge(null);
+        actions.select({ kind: 'strategy' });
         actions.disconnect(connectionId);
       },
     }),
@@ -559,7 +566,9 @@ function CanvasView() {
         ? document.name
         : selection.kind === 'frame'
           ? actions.elementDisplayName(selection.id)
-          : (document.sections.find((section) => section.id === selection.id)?.name ?? '');
+          : selection.kind === 'connection'
+            ? t('properties.connection.title')
+            : (document.sections.find((section) => section.id === selection.id)?.name ?? '');
 
   return (
     <div
@@ -569,6 +578,7 @@ function CanvasView() {
       data-testid="canvas"
       data-orient={dir}
       data-usage={reported ? 'report' : 'document'}
+      tabIndex={-1}
       onKeyDown={onKeyDown}
     >
       <svg className="canvas-defs" width="0" height="0" aria-hidden="true">

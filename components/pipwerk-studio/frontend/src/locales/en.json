@@ -433,7 +433,12 @@
     "managementOf": "Order and position management of \"{{name}}\"",
     "belongsToHint": "Here you decide whether the step belongs to the main flow or to the order and position management of an order, without dragging it.",
     "originType": "{{name}}, from object type {{type}}",
-    "originTemplate": "{{name}}, from template {{template}}, object type {{type}}"
+    "originTemplate": "{{name}}, from template {{template}}, object type {{type}}",
+    "connection": {
+      "title": "Connection",
+      "fromTo": "From \"{{from}}\" to \"{{to}}\"",
+      "text": "After the output \"{{output}}\" of \"{{from}}\" comes the step the line leads to. Here you delete the connection; both steps stay."
+    }
   },
   "findings": {
     "title": "Findings",
