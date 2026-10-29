@@ -578,6 +578,7 @@ function CanvasView() {
       data-testid="canvas"
       data-orient={dir}
       data-usage={reported ? 'report' : 'document'}
+      tabIndex={-1}
       onKeyDown={onKeyDown}
     >
       <svg className="canvas-defs" width="0" height="0" aria-hidden="true">
