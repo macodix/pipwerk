@@ -730,6 +730,7 @@
       "target_is_trigger": "A trigger has no input.",
       "object_as_source": "\"{{object}}\" supplies values and does not belong in the flow. Draw a line from one of its values to the step that needs it.",
       "object_as_target": "\"{{object}}\" supplies values and does not belong in the flow. Connect one of its values with the step that needs it, and let the flow continue at the step.",
+      "value_to_self": "A value belongs at a step that needs it. \"{{object}}\" cannot use its own value.",
       "value_to_object": "A value belongs at a step that needs it, not at another object. \"{{object}}\" does not take a value.",
       "unknown_type": "No new connections start from an element of an unknown type.",
       "unknown_output": "This output does not belong to the step.",

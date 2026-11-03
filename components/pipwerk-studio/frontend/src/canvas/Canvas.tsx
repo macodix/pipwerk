@@ -434,8 +434,20 @@ function CanvasView() {
 
   /** Connects what was dragged from a connection point to the node: a value becomes an input, an output gets its successor. */
   const connectTo = useCallback(
-    (sourceId: string, handle: string | null, targetId: string): boolean => {
-      if (!isElement(sourceId) || !isElement(targetId) || sourceId === targetId) {
+    (sourceId: string, handle: string | null, targetId: string, moved = true): boolean => {
+      if (!isElement(sourceId) || !isElement(targetId)) {
+        return false;
+      }
+      if (sourceId === targetId) {
+        // A line that was drawn back to its own element is refused with its reason. A click on a connection point also
+        // ends on its own element; that is no attempt to connect and stays without a message (it arms the output).
+        if (moved && handle !== null) {
+          if (handle.startsWith('prop:')) {
+            actions.notify('notices.connection.value_to_self', { object: actions.elementDisplayName(sourceId) });
+          } else {
+            actions.connectSteps(sourceId, handle, targetId);
+          }
+        }
         return false;
       }
       if (handle !== null && handle.startsWith('prop:')) {
@@ -452,7 +464,12 @@ function CanvasView() {
     [connectTo],
   );
 
-  const onConnectStart = useCallback((_event: unknown, params: { nodeId: string | null; handleId: string | null }) => {
+  /** Where the line was started: a release at the same place is a click, not a line. */
+  const connectOrigin = useRef<{ x: number; y: number } | null>(null);
+
+  const onConnectStart = useCallback((event: MouseEvent | TouchEvent, params: { nodeId: string | null; handleId: string | null }) => {
+    const origin = 'touches' in event ? event.touches[0] : event;
+    connectOrigin.current = origin === undefined ? null : { x: origin.clientX, y: origin.clientY };
     setDragged(params.nodeId !== null && params.handleId !== null && params.handleId.startsWith('prop:') ? params.nodeId : null);
   }, []);
 
@@ -468,7 +485,9 @@ function CanvasView() {
       }
       const under = window.document.elementFromPoint(point.clientX, point.clientY);
       const target = under?.closest<HTMLElement>('.react-flow__node')?.dataset.id;      if (target !== undefined) {
-        connectTo(state.fromNode.id, state.fromHandle.id ?? null, target);
+        const origin = connectOrigin.current;
+        const moved = origin === null || Math.hypot(point.clientX - origin.x, point.clientY - origin.y) > 8;
+        connectTo(state.fromNode.id, state.fromHandle.id ?? null, target, moved);
       }
     },
     [connectTo],

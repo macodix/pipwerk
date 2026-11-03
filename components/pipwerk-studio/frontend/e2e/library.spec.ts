@@ -1,4 +1,4 @@
-import { choose, clickMenu, expect, expectChosen, library, newStrategy, node, openApp, openStrategy, showArea, SIZES, test } from './support';
+import { choose, expect, expectChosen, library, newStrategy, node, openApp, openStrategy, showArea, SIZES, test } from './support';
 
 // Specification 5.2: groups from the type descriptions in the order of the specification, search, explanation of every
 // entry when it is pointed at and when it has the keyboard focus.
@@ -81,8 +81,16 @@ test('does not insert without a strategy: the library says so itself and its ent
   await expect(entry).toHaveAttribute('data-tip', /\S/);
 
   // click and drag change nothing and say nothing
-  await entry.click();
+  // the click is forced: Playwright does not click an entry with aria-disabled, but a user does
+  await entry.click({ force: true });
   await expect(page.getByTestId('message')).toHaveCount(0);
+  await expect(page.getByTestId('canvas')).toHaveAttribute('data-state', 'no-strategy');
+  await expect(note).toBeVisible();
+  await entry.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Space');
+  await expect(page.getByTestId('message')).toHaveCount(0);
+  await expect(page.getByTestId('canvas')).toHaveAttribute('data-state', 'no-strategy');
   await expect(note).toBeVisible();
   if ((page.viewportSize()?.width ?? 0) >= 1100) {
     await entry.dragTo(page.getByTestId('viewport').or(page.getByTestId('canvas')).first());

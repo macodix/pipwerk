@@ -730,6 +730,7 @@
       "target_is_trigger": "Ein Auslöser hat keinen Eingang.",
       "object_as_source": "„{{object}}“ liefert Werte und gehört nicht in den Ablauf. Ziehen Sie eine Linie von einem seiner Werte zu dem Schritt, der ihn braucht.",
       "object_as_target": "„{{object}}“ liefert Werte und gehört nicht in den Ablauf. Verbinden Sie einen seiner Werte mit dem Schritt, der ihn braucht, und lassen Sie den Ablauf am Schritt weitergehen.",
+      "value_to_self": "Ein Wert gehört an einen Schritt, der ihn braucht. „{{object}}“ kann seinen eigenen Wert nicht verwenden.",
       "value_to_object": "Ein Wert gehört an einen Schritt, der ihn braucht, nicht an ein anderes Objekt. „{{object}}“ nimmt keinen Wert an.",
       "unknown_type": "Von einem Element mit unbekanntem Typ gehen keine neuen Verbindungen aus.",
       "unknown_output": "Dieser Ausgang gehört nicht zum Schritt.",

@@ -144,6 +144,28 @@ test('says why no connection starts from an object: "Verbindung" with an object 
   await expect(page.getByTestId('armed-banner')).toHaveCount(0);
 });
 
+test('says why a step cannot be connected with itself when the line is drawn back to it; a click on the output only arms it', async ({ page }) => {
+  await openApp(page);
+  await newStrategy(page);
+  await library(page, 'Manuell').click();
+  await expect(node(page, 'Manuell')).toHaveCount(1);
+  const trigger = node(page, 'Manuell');
+  const port = trigger.getByTestId('port-out-weiter');
+
+  // a click only arms the output and says nothing
+  await port.click();
+  await expect(page.getByTestId('armed-banner')).toBeVisible();
+  await expect(page.getByTestId('message')).toHaveCount(0);
+  await page.getByTestId('armed-banner').getByRole('button', { name: 'Abbrechen' }).click();
+
+  // a line drawn back onto the step is refused with its reason
+  const portBox = await boxOf(port);
+  const box = await boxOf(trigger);
+  await dragBy(page, port, box.x + box.width / 2 - (portBox.x + portBox.width / 2), box.y + box.height / 2 - (portBox.y + portBox.height / 2));
+  await expect(page.getByTestId('message')).toContainText('Ein Schritt lässt sich nicht mit sich selbst verbinden.');
+  await expect(page.getByTestId('flow-edge')).toHaveCount(0);
+});
+
 test('says why a value cannot be given to another object', async ({ page }) => {
   await openApp(page, { width: 1920, height: 1080 });
   await openStrategy(page, 'EMA-Trendfolge');
