@@ -152,8 +152,15 @@ def test_remove_an_instance_with_its_uses() -> None:
     )
     assert [entry.instance for entry in crossing.inputs] == ["ema50"]
     assert all(entry.instance != "ema20" for item in strategy.elements for entry in item.inputs)
-    # one per element and field (order 22): "kreuzen" and the elements that use ema20 as well
-    assert len(only(check_strategy(strategy), fc.EXPRESSION_EMPTY)) >= 1
+    # one per element and field (order 22): three elements used ema20
+    empty = only(check_strategy(strategy), fc.EXPRESSION_EMPTY)
+    assert len(empty) == 3
+    assert len({item.element for item in empty}) == 3
+    assert crossing.id in {item.element for item in empty}
+    assert {(item.details["field"], item.details["reason"]) for item in empty} == {
+        ("parameter:ausdruck", "slot")
+    }
+    assert sorted(int(str(item.details["start"])) for item in empty) == [3, 16, 43]
 
 
 def test_remove_an_instance_that_a_data_connection_uses() -> None:
