@@ -9,7 +9,7 @@ Technical documentation for development, installation, operation, interfaces, fo
 
 ## Entwicklungsverfahren
 
-Entwicklungsverfahren, Agentenrollen mit Briefings, Skills und Regelwerke (Qualitätskriterien, Designgrundsätze, Dokumentationsregeln) liegen in dev-werk, deutsche Fassung unter `de/`. Das dev-werk-Verzeichnis nennt die Projektkonfiguration `dev-werk.md` im Verzeichnis `dev-werk/` des Projektstamms, außerhalb des Repositorys und nicht versioniert.
+- [Entwicklungsverfahren](entwicklungsverfahren.md) – Rollen, Phasen, Übergabedokumente und Meldungen
 
 ## Komponenten
 
