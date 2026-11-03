@@ -86,7 +86,7 @@ test('inserts a trigger and a step: the second is connected behind the first', a
   await expect(page.getByTestId('lane-empty')).toHaveCount(0);
   // the parameter of the trigger is "nicht belegt" and required: the properties view says so
   await node(page, 'Kerzenschluss').click({ position: { x: 40, y: 14 } });
-  await expect(page.getByTestId('field-zeiteinheit').getByLabel('Pflicht')).toBeVisible();
+  await expect(page.getByTestId('field-zeiteinheit').getByLabel('Pflichtangabe')).toBeVisible();
 });
 
 test('lets the user assign a strategy parameter to a field, creating it on the spot', async ({ page }) => {

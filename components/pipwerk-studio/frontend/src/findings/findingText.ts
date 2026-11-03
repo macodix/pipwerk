@@ -4,7 +4,7 @@ import type { Finding } from '../api/objects';
 import type { StrategyDocument } from '../document/types';
 import type { SupportedLanguage } from '../i18n';
 import { elementName, instanceElementByKey, propertyRows } from '../model/elements';
-import { labelText, orderSelector, typeName, type TypeIndex } from '../model/typeIndex';
+import { isFormulaField, labelText, orderSelector, typeName, type TypeIndex } from '../model/typeIndex';
 
 /**
  * The text of a finding in the language of the interface, with the way to fix it (specification 3.6, 5.5). The texts
@@ -168,6 +168,15 @@ function labelOfId(ctx: FindingTextContext, finding: Finding, kind: 'parameter' 
   return id;
 }
 
+function isFormulaParameter(ctx: FindingTextContext, finding: Finding, id: string): boolean {
+  if (ctx.document === null || ctx.types === null || finding.element === null) {
+    return false;
+  }
+  const element = ctx.document.elements.find((candidate) => candidate.id === finding.element);
+  const parameter = element === undefined ? undefined : ctx.types.byId.get(element.type)?.parameters.find((candidate) => candidate.id === id);
+  return parameter !== undefined && isFormulaField(parameter);
+}
+
 /**
  * The name the user sees for the object with the identifier `key`, and the label of its value `member` (a property or
  * a method). What the document or the type descriptions do not know stays as the identifier.
@@ -247,6 +256,10 @@ export function findingParams(t: TFunction, finding: Finding, ctx: FindingTextCo
   // The label the element shows for the field, as the library names it, is what the user sees (specification 3.6).
   if (finding.fieldLabel !== undefined && finding.fieldLabel !== null) {
     params.field = finding.fieldLabel[ctx.language];
+  }
+  // A field that holds only a formula is called "Formel", as on the properties view, and not by the word of the library.
+  if (typeof field === 'string' && field.startsWith('parameter:') && isFormulaParameter(ctx, finding, field.slice('parameter:'.length))) {
+    params.field = t('expression.formula');
   }
   const reason = params.reason ?? '';
   if (finding.code === 'connection.invalid') {

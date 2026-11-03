@@ -40,6 +40,15 @@ export function labelText(label: Label, language: SupportedLanguage): string {
   return label[language];
 }
 
+/**
+ * Whether the entry holds nothing but a formula (an expression is its only kind of assignment). The interface calls such
+ * an entry "Formel" and not by the programming word the library may use for it (Mangel F11); the explanation stays the one
+ * of the library.
+ */
+export function isFormulaField(spec: { datatype: DataType; bindings: readonly string[] }): boolean {
+  return spec.datatype === 'expression' && spec.bindings.length === 1 && spec.bindings[0] === 'expression';
+}
+
 /** Name of a type in the language; the identifier if the type is not known. */
 export function typeName(index: TypeIndex, typeId: string, language: SupportedLanguage): string {
   const type = index.byId.get(typeId);

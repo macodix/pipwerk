@@ -14,7 +14,7 @@ import { useStudio } from '../state/StudioContext';
 import { Btn, Info, Section, Select, TextInput } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { contentKind } from '../model/objectContent';
-import { FieldRow, applies, specOfParameter, specOfProperty, type FieldSpec } from './fields';
+import { FieldRow, applies, fieldLabelText, specOfParameter, specOfProperty, type FieldSpec } from './fields';
 import { FindingsList } from './FindingsList';
 import { InstanceList, InstancePanel } from './Instances';
 import { SuppliedList } from './Supplied';
@@ -341,7 +341,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
       <FindingsList items={mine} />
 
       {exprSpecs.map((spec) => (
-        <Section key={spec.id} title={labelText(spec.label, language)} testid={`sec-${spec.id}`}>
+        <Section key={spec.id} title={fieldLabelText(spec, language, t('expression.formula'))} testid={`sec-${spec.id}`}>
           {row(spec, scope)}
         </Section>
       ))}

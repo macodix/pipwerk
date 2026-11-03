@@ -62,7 +62,7 @@ export async function clickMenu(page: Page, id: 'new' | 'open' | 'save' | 'check
 /** "Neue Strategie": an empty drawing area; the user works by hand. */
 export async function newStrategy(page: Page): Promise<void> {
   await clickMenu(page, 'new');
-  await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
+  await expect(page.getByTestId('status-pill')).toContainText('(noch ohne Name)');
 }
 
 /**

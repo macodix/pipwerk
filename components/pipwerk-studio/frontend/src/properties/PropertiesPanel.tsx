@@ -173,18 +173,21 @@ function StrategyView() {
           <Icon name="chart" size={20} />
         </div>
         <div className="props-title">
-          <span className="props-kind">{t('properties.strategy')}</span>
-          <input
-            className="input title-input"
-            value={document.name}
-            onChange={(event) => {
-              actions.setName(event.target.value);
-            }}
-            aria-label={t('properties.strategyName')}
-            data-testid="strategy-name"
-          />
+          <h2>{t('properties.strategy')}</h2>
         </div>
       </header>
+      <Section title={t('properties.strategyName')}>
+        <input
+          className="input"
+          value={document.name}
+          onChange={(event) => {
+            actions.setName(event.target.value);
+          }}
+          aria-label={t('properties.strategyName')}
+          data-testid="strategy-name"
+          placeholder={t('properties.strategyNamePlaceholder')}
+        />
+      </Section>
       <Section title={t('properties.description')}>
         <textarea
           className="input area"
@@ -453,7 +456,7 @@ export function PropertiesPanel() {
             data-testid="crumb-strategy"
           >
             <Icon name="left" size={14} />
-            {document.name}
+            {document.name === '' ? t('strategy.unnamed') : document.name}
           </button>
         </div>
       ) : null}

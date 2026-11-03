@@ -254,11 +254,13 @@ describe('findings with the element and the field the user sees (specification 3
     const findings = await screen.findAllByTestId('finding');
     expect(findings).toHaveLength(2);
     // the same text, told apart by the element; "Parameter" (a word of the programming) does not stand in it
-    expect(findings[0]).toHaveTextContent('Im Feld „Bedingung“ fehlt die Formel, oder sie ist unvollständig.');
-    expect(findings[1]).toHaveTextContent('Im Feld „Bedingung“ fehlt die Formel, oder sie ist unvollständig.');
+    // a field that holds only a formula is called "Formel", as on the properties view, whatever label the finding carries (F11)
+    expect(findings[0]).toHaveTextContent('Im Feld „Formel“ fehlt die Formel, oder sie ist unvollständig.');
+    expect(findings[1]).toHaveTextContent('Im Feld „Formel“ fehlt die Formel, oder sie ist unvollständig.');
     expect(within(findings[0] as HTMLElement).getByTestId('finding-element')).toHaveTextContent('Element: Kreuzen');
     expect(within(findings[1] as HTMLElement).getByTestId('finding-element')).toHaveTextContent('Element: Gegenkreuzen');
-    expect(within(findings[0] as HTMLElement).getByTestId('finding-field')).toHaveTextContent('Feld: Bedingung');
+    expect(within(findings[0] as HTMLElement).getByTestId('finding-field')).toHaveTextContent('Feld: Formel');
+    expect(findings[0]).not.toHaveTextContent(/Ausdruck/);
     expect(findings[0]).not.toHaveTextContent(/Parameter/);
 
     await user.click(within(findings[1] as HTMLElement).getByTestId('finding-goto'));
@@ -280,9 +282,9 @@ describe('findings with the element and the field the user sees (specification 3
     await user.click(await screen.findByTestId('findings-count'));
 
     const finding = await screen.findByTestId('finding');
-    expect(finding).toHaveTextContent('The formula in the field "Condition" is missing or incomplete.');
+    expect(finding).toHaveTextContent('The formula in the field "Formula" is missing or incomplete.');
     expect(within(finding).getByTestId('finding-element')).toHaveTextContent('Element: Crossing');
-    expect(within(finding).getByTestId('finding-field')).toHaveTextContent('Field: Condition');
+    expect(within(finding).getByTestId('finding-field')).toHaveTextContent('Field: Formula');
   });
 });
 

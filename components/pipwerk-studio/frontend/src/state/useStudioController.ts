@@ -268,20 +268,9 @@ export function useStudioController(language: SupportedLanguage) {
         strategyToken.current += 1;
         dispatch({ type: 'closed' });
       } else if (action.kind === 'new') {
-        let names: string[] = [];
-        try {
-          const list = await queryClient.fetchQuery({
-            queryKey: ['objects', 'strategies', 'names'],
-            queryFn: ({ signal }) => listObjects('strategies', signal),
-            staleTime: 0,
-          });
-          names = list.map((entry) => entry.name ?? '');
-        } catch {
-          names = [];
-        }
-        const name = uniqueDisplayName(i18n.t('strategy.newName'), names);
         strategyToken.current += 1;
-        const created = newStrategy(name);
+        // the name stays empty: the user types it in the field "Name der Strategie" (Mangel F2 of the fourth acceptance)
+        const created = newStrategy('');
         dispatch({ type: 'loaded', document: created, persisted: false, findings: null });
         // below 1100 pixels the hint of the empty strategy stands in the properties view, which is shown after "Neue Strategie"
         dispatch({ type: 'panel', panel: 'props' });
@@ -291,7 +280,7 @@ export function useStudioController(language: SupportedLanguage) {
         await openById(action.id);
       }
     },
-    [checkAfterOpen, i18n, openById, queryClient],
+    [checkAfterOpen, openById],
   );
 
   /** "Neue Strategie", "Schließen" and "Öffnen" ask first if there are unsaved changes (specification 5.5). */

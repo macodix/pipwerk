@@ -91,7 +91,7 @@ describe('unsaved changes (specification 5.5)', () => {
     await menu(user, 'new');
     // no changes: no question, the new strategy is open
     await waitFor(() => {
-      expect(screen.getByTestId('status-pill')).toHaveTextContent('Neue Strategie');
+      expect(screen.getByTestId('status-pill')).toHaveTextContent('(noch ohne Name)');
     });
     // a new strategy was never saved: the question comes before opening another one
     await openStored(user, 'EMA-Trendfolge');
@@ -159,7 +159,7 @@ describe('saving, checking and deleting', () => {
     await waitForReady();
     await menu(user, 'new');
     await waitFor(() => {
-      expect(screen.getByTestId('status-pill')).toHaveTextContent('Neue Strategie');
+      expect(screen.getByTestId('status-pill')).toHaveTextContent('(noch ohne Name)');
     });
 
     await menu(user, 'save');

@@ -8,7 +8,7 @@
 
 ## 1. Zweck
 
-Dieses Dokument beschreibt Schritt für Schritt, wie sich die beiden Testfälle `str-03` (EMA-Trendfolge) und `str-01` (Scalping Punkt 2 Ausbruch) aus der leeren Zeichenfläche nur durch Bedienen der Oberfläche aufbauen lassen. Kein Schritt gibt einen Ausdruck als Text ein; alle Ausdrücke entstehen aus Bausteinen. Die Browsertests in `components/pipwerk-studio/frontend/e2e/testcases.spec.ts` führen genau diese Schritte aus (mit den Hilfen aus `e2e/builder.ts`), speichern die Strategie, lesen sie vom Backend und vergleichen sie mit den Dokumenten unter `contracts/strategies/v2/testcases/`. Die Testfälle sind die Dokumente `str-01.strategy.json` und `str-03.strategy.json` in diesem Verzeichnis; die Schritte unten bilden sie ab. In der Order- und Positionsverwaltung beider Testfälle verwenden die Schritte Objekte des Hauptablaufs mit „Aktualisieren“ (Spezifikation 3.3). `str-03` baut der Browsertest zusätzlich in einem Fenster von 390 × 844 Pixeln nur mit Klicks auf, ohne Ziehen.
+Dieses Dokument beschreibt Schritt für Schritt, wie sich die beiden Testfälle `str-03` (EMA-Trendfolge) und `str-01` (Scalping Punkt 2 Ausbruch) aus der leeren Zeichenfläche nur durch Bedienen der Oberfläche aufbauen lassen. Kein Schritt gibt eine Formel als Text ein; alle Formeln entstehen aus Bausteinen. Die Browsertests in `components/pipwerk-studio/frontend/e2e/testcases.spec.ts` führen genau diese Schritte aus (mit den Hilfen aus `e2e/builder.ts`), speichern die Strategie, lesen sie vom Backend und vergleichen sie mit den Dokumenten unter `contracts/strategies/v2/testcases/`. Die Testfälle sind die Dokumente `str-01.strategy.json` und `str-03.strategy.json` in diesem Verzeichnis; die Schritte unten bilden sie ab. In der Order- und Positionsverwaltung beider Testfälle verwenden die Schritte Objekte des Hauptablaufs mit „Aktualisieren“ (Spezifikation 3.3). `str-03` baut der Browsertest zusätzlich in einem Fenster von 390 × 844 Pixeln nur mit Klicks auf, ohne Ziehen.
 
 Zu dem, was die Oberfläche kann, siehe die Anwenderdokumentation `docs/user/pipwerk-studio.md`. Hier stehen nur die Schritte der Testfälle.
 
@@ -32,14 +32,14 @@ Die Reihenfolge, in der die Elemente angelegt werden, ist die Reihenfolge im Dok
 - „Name“ ist das Feld ganz oben in der Eigenschaftenansicht.
 - Unter der Beschriftung jedes Feldes der Eigenschaftenansicht steht die Frage „Woher kommt der Wert?“ mit einer Auswahl. „Strategieparameter *P*“ heißt: „aus einem Strategieparameter“ wählen, dort *P* wählen. „fest eingegeben“ heißt: „fest eingeben“ wählen und den Wert eintragen. „Formel“ heißt: „aus einer Formel“ wählen und die Formel aus Bausteinen zusammenstellen. Das Instrument bleibt bei „das Instrument, auf dem die Strategie läuft“.
 - „Formel“ nennt die Bausteine. Jeder Baustein hat eine Liste „Wert wählen …“; der Wert steht in der Form *Objekt › Eigenschaft* (zum Beispiel *EMA 20 › Wert*). Die Listen enthalten zuerst die verbundenen Werte, dann die Objekte der Strategie, die Objekte der Anwendung, die Ergebnisse anderer Schritte, die Strategieparameter, die Angaben der Vorlage (in einer Regel) und am Ende die festen Werte und Rechnungen und die Arten von Bausteinen.
-- „Rechnung“ ist die Wahl „Rechnung (plus, minus, mal, geteilt)“, „Wenn … dann … sonst …“ die Wahl der Fallunterscheidung, „Bedingung“ in einer Liste von Werten die Wahl „Bedingung (wahr oder falsch) …“. Eine Bedingung wählt oben ihre Art: „Vergleich“, „Alle gelten (und)“, „Eine gilt (oder)“, „Nicht“ oder „Wert ist wahr“. Das Kreuzen zweier Linien bilden Sie aus „Alle gelten (und)“, zwei Vergleichen und „Vorheriger Wert von“ (siehe die Bedingungen „Kreuzen“ und „Kreuzen gegen die Position“).
+- „Rechnung“ ist die Wahl „Rechnung (plus, minus, mal, geteilt)“, „Wenn … dann … sonst …“ die Wahl der Fallunterscheidung, „Bedingung“ in einer Liste von Werten die Wahl „Bedingung (wahr oder falsch) …“. Eine Bedingung stellt oben die Frage „Was soll geprüft werden?“. Die Antworten heißen „Zwei Werte vergleichen“, „Alle Bedingungen müssen gelten (und)“, „Mindestens eine Bedingung muss gelten (oder)“, „Eine Bedingung umkehren (nicht)“ und „Prüfen, ob ein Wert wahr ist“. In den Tabellen dieses Dokuments stehen sie als **Vergleich**, **und**, **oder**, **nicht** und **Wert wahr**; die Angabe „Antwort *und*“ heißt also: bei „Was soll geprüft werden?“ „Alle Bedingungen müssen gelten (und)“ wählen. Das Kreuzen zweier Linien bilden Sie aus der Antwort *und*, zwei Vergleichen und „Vorheriger Wert von“ (siehe die Bedingungen „Kreuzen“ und „Kreuzen gegen die Position“). Wählen Sie *und* oder *oder*, nachdem Sie schon einen Vergleich eingegeben haben, wird dieser Vergleich der erste Teil.
 - Ein Strich „–“ in einer Spalte heißt: nichts zu tun, der Standard bleibt.
 
 ## 4. Vorbereitung
 
 1. pipwerk Studio öffnen (Anwenderdokumentation, Abschnitt „pipwerk Studio öffnen“).
 2. „Neue Strategie“. Die Zeichenfläche ist leer; die Eigenschaftenansicht der Strategie zeigt den Hinweis „Die Strategie ist leer“. Einen geführten Aufbau gibt es nicht.
-3. Name der Strategie: in der Eigenschaftenansicht der Strategie (sie zeigt sich, wenn Sie auf eine freie Stelle der Zeichenfläche klicken oder den Namen der Strategie oben in der Eigenschaftenansicht wählen) den Namen eintragen. Er gehört nicht zum Vergleich.
+3. Name der Strategie: in der Eigenschaftenansicht der Strategie (sie zeigt sich, wenn Sie auf eine freie Stelle der Zeichenfläche klicken oder den Namen der Strategie oben in der Eigenschaftenansicht wählen) im Feld „Name der Strategie“ den Namen eintragen. Das Feld ist leer und zeigt den grauen Hinweis „Name eingeben“. Der Name gehört nicht zum Vergleich.
 
 ## 5. str-03 – EMA-Trendfolge
 
@@ -67,14 +67,14 @@ Klicken Sie nacheinander die Einträge in der Gruppe „Indikatoren“ an. Jedes
 | Nr. | Eintrag | Name | Angaben und Formel |
 | --- | --- | --- | --- |
 | 1 | Kerzenschluss | – | Zeiteinheit: aus dem Strategieparameter Zeiteinheit |
-| 2 | Bedingung | Kreuzen | Formel: Art „Eine gilt (oder)“ mit zwei Bedingungen, beide Art „Alle gelten (und)“. Das Kreuzen zweier Linien wird aus „Vorheriger Wert von …“, Vergleichen und „und“ sowie „oder“ gebildet. Erste (nach oben): *Vorheriger Wert von EMA 20 › Wert* ist kleiner oder gleich *Vorheriger Wert von EMA 50 › Wert* und *EMA 20 › Wert* ist größer als *EMA 50 › Wert*. Zweite (nach unten): *Vorheriger Wert von EMA 20 › Wert* ist größer oder gleich *Vorheriger Wert von EMA 50 › Wert* und *EMA 20 › Wert* ist kleiner als *EMA 50 › Wert* |
+| 2 | Bedingung | Kreuzen | Formel: Antwort *oder* mit zwei Bedingungen, beide Antwort *und*. Das Kreuzen zweier Linien wird aus „Vorheriger Wert von …“, Vergleichen und „und“ sowie „oder“ gebildet. Erste (nach oben): *Vorheriger Wert von EMA 20 › Wert* ist kleiner oder gleich *Vorheriger Wert von EMA 50 › Wert* und *EMA 20 › Wert* ist größer als *EMA 50 › Wert*. Zweite (nach unten): *Vorheriger Wert von EMA 20 › Wert* ist größer oder gleich *Vorheriger Wert von EMA 50 › Wert* und *EMA 20 › Wert* ist kleiner als *EMA 50 › Wert* |
 | 3 | Berechnung | Richtung | Formel: Wert „Wenn … dann … sonst …“; Bedingung: Vergleich *EMA 20 › Wert* ist größer als *EMA 50 › Wert*; dann Text `buy`; sonst Text `sell` |
 | 4 | Berechnung | Stop-Loss | Formel: Wenn *Richtung › Ergebnis* gleich dem Text `buy`, dann *Kerze › Schluss* minus (*Stop-Abstand* mal *ATR 14 › Wert*), sonst *Kerze › Schluss* plus (*Stop-Abstand* mal *ATR 14 › Wert*) |
 | 5 | Order aufgeben | – | Ordertyp: fest eingegeben „MarketOrder“; Richtung: aus einer Formel, Wert *Richtung › Ergebnis*; Stop-Loss: aus einer Formel, Wert *Stop-Loss › Ergebnis* |
 
 Jeder Wert aus einer Liste der Bausteine legt den Eingang des Elements an: Wer *EMA 20 › Wert* wählt, bekommt den Eingang *EMA 20 › Wert* ohne weiteren Schritt. Verwendete noch kein Element das Objekt, wird das Element, in dem der Wert gewählt wird, das Element der ersten Verwendung des Objekts: Bei Schritt 2 sind das „Kreuzen“ für *EMA 20* und *EMA 50*, bei Schritt 4 „Stop-Loss“ für *ATR 14*. In der Eigenschaftenansicht des Elements stehen die Werte unter „Verwendete Werte“.
 
-Beim Schritt 5 gehört die Regel „Mindestvolumen“ zum Element: In der Eigenschaftenansicht von „Order aufgeben“ im Abschnitt „Regeln dieses Elements“ in der Liste „Regel oder Regelwerk hinzufügen …“ die Wahl „eigene Regel“, Name `Mindestvolumen`, Formel der Regel: Art „Vergleich“, *Order › Volumen* ist größer oder gleich *Order › Instrument › Mindestvolumen*.
+Beim Schritt 5 gehört die Regel „Mindestvolumen“ zum Element: In der Eigenschaftenansicht von „Order aufgeben“ im Abschnitt „Regeln dieses Elements“ in der Liste „Regel oder Regelwerk hinzufügen …“ die Wahl „eigene Regel“, Name `Mindestvolumen`, Formel der Regel: Antwort *Vergleich*, *Order › Volumen* ist größer oder gleich *Order › Instrument › Mindestvolumen*.
 
 Zur Strategie gehört die Regel „Risiko“: In der Eigenschaftenansicht der Strategie im Abschnitt „Regeln der Strategie“ in der Liste „Regel oder Regelwerk hinzufügen …“ den Eintrag „Risiko je Trade“ wählen und die Regel `Risiko` nennen. Ihre Angaben und ihre Formel stammen aus der mitgelieferten Vorlage und bleiben, wie sie sind.
 
@@ -86,7 +86,7 @@ Klicken Sie auf den Rahmen „Order- und Positionsverwaltung · Order aufgeben�
 | --- | --- | --- | --- |
 | 6 | Kerzenschluss | – | Zeiteinheit: aus dem Strategieparameter Zeiteinheit |
 | 7 | Bedingung | Order ausgeführt | Vergleich *Order › Status* gleich dem Wert „ausgeführt“ (aus der Liste der Werte der Eigenschaft) |
-| 8 | Bedingung | Kreuzen gegen die Position | Art „Eine gilt (oder)“ mit zwei Bedingungen. Erste: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „buy“ und den zwei Vergleichen des Kreuzens nach unten (*Vorheriger Wert von EMA 20 › Wert* ist größer oder gleich *Vorheriger Wert von EMA 50 › Wert*, *EMA 20 › Wert* ist kleiner als *EMA 50 › Wert*). Zweite: Art „Alle gelten (und)“ mit dem Vergleich *Position › Richtung* gleich „sell“ und den zwei Vergleichen des Kreuzens nach oben (*Vorheriger Wert von EMA 20 › Wert* ist kleiner oder gleich *Vorheriger Wert von EMA 50 › Wert*, *EMA 20 › Wert* ist größer als *EMA 50 › Wert*) |
+| 8 | Bedingung | Kreuzen gegen die Position | Antwort *oder* mit zwei Bedingungen. Erste: Antwort *und* mit dem Vergleich *Position › Richtung* gleich „buy“ und den zwei Vergleichen des Kreuzens nach unten (*Vorheriger Wert von EMA 20 › Wert* ist größer oder gleich *Vorheriger Wert von EMA 50 › Wert*, *EMA 20 › Wert* ist kleiner als *EMA 50 › Wert*). Zweite: Antwort *und* mit dem Vergleich *Position › Richtung* gleich „sell“ und den zwei Vergleichen des Kreuzens nach oben (*Vorheriger Wert von EMA 20 › Wert* ist kleiner oder gleich *Vorheriger Wert von EMA 50 › Wert*, *EMA 20 › Wert* ist größer als *EMA 50 › Wert*) |
 | 9 | Position schließen | – | – |
 
 Die Order- und Positionsverwaltung hat eigene Auslöser. Die Objekte des Hauptablaufs behalten darin den Stand, den sie beim Aufgeben der Order hatten; sie braucht aber die aktuellen Werte. Deshalb schalten Sie bei Schritt 8 unter „Verwendete Werte“ bei *EMA 20* und bei *EMA 50* den Schalter „Aktualisieren“ ein (nach der Wahl der Werte in den Bausteinen), und bei Schritt 10 bei *ATR 14*.
@@ -96,7 +96,7 @@ Der Ausgang „wahr“ der Bedingung 8 führt zu „Position schließen“. Für
 | Nr. | Eintrag | Name | Angaben und Formel |
 | --- | --- | --- | --- |
 | 10 | Berechnung | Neuer Stop-Loss | Formel: Wenn *Position › Richtung* gleich „buy“, dann *Kerze › Schluss* minus (*Stop-Abstand* mal *ATR 14 › Wert*), sonst *Kerze › Schluss* plus (*Stop-Abstand* mal *ATR 14 › Wert*) |
-| 11 | Bedingung | Stop-Loss verbessert | Art „Wert ist wahr“ mit dem Wert „Wenn … dann … sonst …“: Bedingung *Position › Richtung* gleich „buy“; dann die Bedingung *Neuer Stop-Loss › Ergebnis* größer als *Position › Stop-Loss*; sonst die Bedingung *Neuer Stop-Loss › Ergebnis* kleiner als *Position › Stop-Loss* |
+| 11 | Bedingung | Stop-Loss verbessert | Antwort *Wert wahr* mit dem Wert „Wenn … dann … sonst …“: Bedingung *Position › Richtung* gleich „buy“; dann die Bedingung *Neuer Stop-Loss › Ergebnis* größer als *Position › Stop-Loss*; sonst die Bedingung *Neuer Stop-Loss › Ergebnis* kleiner als *Position › Stop-Loss* |
 | 12 | Position ändern | – | Stop-Loss: aus einer Formel, Wert *Neuer Stop-Loss › Ergebnis* |
 
 ### 5.5 Speichern, Neuladen, Prüfen
@@ -131,9 +131,9 @@ Die übrigen Angaben des ZigZag (Depth 12, Deviation 5, Backstep 3 und das Instr
 | Nr. | Eintrag | Name | Angaben und Formel |
 | --- | --- | --- | --- |
 | 1 | Kerzenschluss | – | Zeiteinheit: aus dem Strategieparameter Handelszeiteinheit |
-| 2 | Berechnung | Trend Signalzeiteinheit | Wenn (Art „Alle gelten (und)“: *ZigZag Signal › Letztes Hoch* größer als *ZigZag Signal › Vorletztes Hoch*; *ZigZag Signal › Letztes Tief* größer als *ZigZag Signal › Vorletztes Tief*), dann Text `aufwaerts`, sonst Wenn (Art „Alle gelten (und)“: *ZigZag Signal › Letztes Hoch* kleiner als *ZigZag Signal › Vorletztes Hoch*; *ZigZag Signal › Letztes Tief* kleiner als *ZigZag Signal › Vorletztes Tief*), dann Text `abwaerts`, sonst Text `kein` |
+| 2 | Berechnung | Trend Signalzeiteinheit | Wenn (Antwort *und*: *ZigZag Signal › Letztes Hoch* größer als *ZigZag Signal › Vorletztes Hoch*; *ZigZag Signal › Letztes Tief* größer als *ZigZag Signal › Vorletztes Tief*), dann Text `aufwaerts`, sonst Wenn (Antwort *und*: *ZigZag Signal › Letztes Hoch* kleiner als *ZigZag Signal › Vorletztes Hoch*; *ZigZag Signal › Letztes Tief* kleiner als *ZigZag Signal › Vorletztes Tief*), dann Text `abwaerts`, sonst Text `kein` |
 | 3 | Berechnung | Trend Handelszeiteinheit | ebenso mit *ZigZag Handel* statt *ZigZag Signal* |
-| 4 | Bedingung | Trend in beiden Zeiteinheiten gleich | Art „Alle gelten (und)“: Vergleich *Trend Signalzeiteinheit › Ergebnis* ungleich dem Text `kein`; Vergleich *Trend Handelszeiteinheit › Ergebnis* gleich *Trend Signalzeiteinheit › Ergebnis* |
+| 4 | Bedingung | Trend in beiden Zeiteinheiten gleich | Antwort *und*: Vergleich *Trend Signalzeiteinheit › Ergebnis* ungleich dem Text `kein`; Vergleich *Trend Handelszeiteinheit › Ergebnis* gleich *Trend Signalzeiteinheit › Ergebnis* |
 | 5 | Bedingung | Keine Order und keine Position | Vergleich: Rechnung *Strategie › wartende Orders* plus *Strategie › offene Positionen* gleich der Zahl 0 |
 | 6 | Berechnung | Einstieg | Wenn *Trend Signalzeiteinheit › Ergebnis* gleich dem Text `aufwaerts`, dann (*ZigZag Handel › Letztes Hoch* plus *Instrument › Spread*) plus (*Entry-Puffer* mal *Instrument › Pip*), sonst *ZigZag Handel › Letztes Tief* minus (*Entry-Puffer* mal *Instrument › Pip*) |
 | 7 | Berechnung | Stop-Loss | Wenn *Trend Signalzeiteinheit › Ergebnis* gleich dem Text `aufwaerts`, dann *ZigZag Handel › Letztes Tief* minus (*Stop-Puffer* mal *Instrument › Pip*), sonst (*ZigZag Handel › Letztes Hoch* plus (*Stop-Puffer* mal *Instrument › Pip*)) plus *Instrument › Spread* |
@@ -149,7 +149,7 @@ Auf den Titel des Rahmens „Order- und Positionsverwaltung · Order aufgeben“
 | Nr. | Eintrag | Name | Angaben und Formel |
 | --- | --- | --- | --- |
 | 10 | Tick (Gruppe „Ablaufsteuerung“) | – | Instrument: bleibt „das Instrument, auf dem die Strategie läuft“ |
-| 11 | Bedingung | Kurs durchbricht den Stop-Bezug | Art „Alle gelten (und)“: Vergleich *Order › Status* gleich „wartend“; „Wert ist wahr“ mit „Wenn … dann … sonst …“: Bedingung *Order › Richtung* gleich „buy“; dann die Bedingung *Tick › Geld* kleiner als *ZigZag Handel › Letztes Tief*; sonst die Bedingung *Tick › Brief* größer als *ZigZag Handel › Letztes Hoch*. Danach unter „Verwendete Werte“ bei *ZigZag Handel* für beide Werte „Aktualisieren“ einschalten |
+| 11 | Bedingung | Kurs durchbricht den Stop-Bezug | Antwort *und*: Vergleich *Order › Status* gleich „wartend“; Antwort *Wert wahr* mit „Wenn … dann … sonst …“: Bedingung *Order › Richtung* gleich „buy“; dann die Bedingung *Tick › Geld* kleiner als *ZigZag Handel › Letztes Tief*; sonst die Bedingung *Tick › Brief* größer als *ZigZag Handel › Letztes Hoch*. Danach unter „Verwendete Werte“ bei *ZigZag Handel* für beide Werte „Aktualisieren“ einschalten |
 | 12 | Order löschen | – | – |
 | 13 | Kerzenschluss | – | Zeiteinheit: aus dem Strategieparameter Handelszeiteinheit |
 | 14 | Bedingung | Order wartet | Vergleich *Order › Status* gleich „wartend“ |

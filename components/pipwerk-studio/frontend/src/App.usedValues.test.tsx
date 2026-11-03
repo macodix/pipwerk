@@ -380,7 +380,13 @@ describe('the blocks with methods and the earlier value', () => {
     const panel = await formula(run);
 
     const kind = await within(panel).findByTestId('cond-kind');
-    expect(await offeredChoices(run.user, kind)).toEqual(['Vergleich', 'Alle gelten (und)', 'Eine gilt (oder)', 'Nicht', 'Wert ist wahr']);
+    expect(await offeredChoices(run.user, kind)).toEqual([
+      'Zwei Werte vergleichen',
+      'Alle Bedingungen müssen gelten (und)',
+      'Mindestens eine Bedingung muss gelten (oder)',
+      'Eine Bedingung umkehren (nicht)',
+      'Prüfen, ob ein Wert wahr ist',
+    ]);
     expect(screen.queryByText(/Kreuzung|kreuzt/)).toBeNull();
   });
 
@@ -407,8 +413,8 @@ describe('the blocks with methods and the earlier value', () => {
     await formula(run);
     const panel = (): HTMLElement => screen.getByTestId('expression-formel');
 
-    // "Alle gelten (und)": two comparisons
-    await pickOption(run.user, await within(panel()).findByTestId('cond-kind'), 'Alle gelten (und)');
+    // "Alle Bedingungen müssen gelten (und)": the comparison is the first part, a blank comparison the second (F10)
+    await pickOption(run.user, await within(panel()).findByTestId('cond-kind'), 'Alle Bedingungen müssen gelten (und)');
     await waitFor(() => {
       expect(within(panel()).getAllByTestId('cmp-left-select')).toHaveLength(2);
     });

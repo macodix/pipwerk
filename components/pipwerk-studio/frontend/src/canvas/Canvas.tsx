@@ -563,7 +563,9 @@ function CanvasView() {
     selection.kind === 'element'
       ? actions.elementDisplayName(selection.id)
       : selection.kind === 'strategy'
-        ? document.name
+        ? document.name === ''
+          ? t('strategy.unnamed')
+          : document.name
         : selection.kind === 'frame'
           ? actions.elementDisplayName(selection.id)
           : selection.kind === 'connection'

@@ -291,11 +291,7 @@ function AddValue({ element }: { element: ElementDocument }) {
   const choice = choices.find((candidate) => candidate.value === member);
   const values = choice === undefined ? [] : (args ?? choice.arguments.map(defaultArgument));
   if (cards.length === 0) {
-    return (
-      <p className="muted" data-testid="used-none-usable">
-        {t('used.noneUsable')}
-      </p>
-    );
+    return null;
   }
   return (
     <div className="used-add" data-testid="used-add">
@@ -424,10 +420,23 @@ export function UsedValues({ element }: { element: ElementDocument }) {
   }
   const groups = usedValueGroups(document, types, uses, element, studio.language);
   const mine = findings.ofElement(element.id).filter((finding) => USED_VALUE_CODES.includes(finding.code));
+  // The objects of the strategy: those the element can use now (they can be connected here) and those it cannot use
+  // because they are determined at another place in the flow.
+  const objects = document.elements.filter((candidate) => candidate.instance !== undefined && candidate.instance !== null);
+  const usable = objects.filter((candidate) => uses.usable(candidate.id, element.id));
+  const elsewhere = objects.some((candidate) => !usable.includes(candidate) && !groups.some((group) => group.card === candidate.id));
+  // An element that uses no value and can use none shows no section; if objects exist that it cannot use, one sentence says what to do.
+  if (groups.length === 0 && usable.length === 0 && mine.length === 0 && !elsewhere) {
+    return null;
+  }
   return (
     <Section title={t('used.title')} testid="sec-used" aside={<Info tip={t('used.info')} label={t('fields.explanation')} />}>
       <FindingsList items={mine} />
-      {groups.length === 0 ? <p className="empty-note" data-testid="used-empty">{t('used.empty')}</p> : null}
+      {groups.length === 0 && usable.length > 0 ? (
+        <p className="empty-note" data-testid="used-empty">
+          {t('used.empty')}
+        </p>
+      ) : null}
       {groups.map((group) => (
         <div key={group.card} className="used-group" data-testid="used-group" data-instance={group.instance}>
           <h4 className="used-object">
@@ -442,6 +451,11 @@ export function UsedValues({ element }: { element: ElementDocument }) {
         </div>
       ))}
       <AddValue element={element} />
+      {elsewhere ? (
+        <p className="muted" data-testid="used-elsewhere">
+          {t('used.elsewhere')}
+        </p>
+      ) : null}
     </Section>
   );
 }
