@@ -248,6 +248,37 @@ export function iconOfClass(kindClass: KindClass): string {
   }
 }
 
+/**
+ * What an element is for, derived from the kind of its type description (specification 5.2, 5.3): a step belongs into the
+ * flow (trigger, element of the flow); a supplier of values is an object that is connected with a line from one of its
+ * values. A kind that is neither (order type, trend method) has no role.
+ */
+export type ElementRole = 'step' | 'value';
+
+export function roleOf(type: TypeDescription | undefined): ElementRole | null {
+  switch (type?.kind) {
+    case 'trigger':
+    case 'flow':
+      return 'step';
+    case 'object_type':
+    case 'application_object':
+      return 'value';
+    default:
+      return null;
+  }
+}
+
+/** Whether the type is a trigger: the element a flow begins with. */
+export function isTriggerType(type: TypeDescription | undefined): boolean {
+  return type?.kind === 'trigger';
+}
+
+/** The names of the triggers the library offers, in the language, as a list in words ("A, B oder C"). */
+export function triggerNames(index: TypeIndex, language: SupportedLanguage): string {
+  const names = index.list.filter((type) => isTriggerType(type) && type.onCanvas).map((type) => labelText(type.name, language));
+  return new Intl.ListFormat(language, { style: 'long', type: 'disjunction' }).format(names);
+}
+
 /** The group of the element library a stored template of an object type belongs to. */
 export function groupOfCategory(category: TypeDescription['category']): GroupId | null {
   switch (category) {

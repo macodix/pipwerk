@@ -59,13 +59,17 @@ export type ConnectionProblem =
   | 'unknown_element'
   | 'same_element'
   | 'target_is_trigger'
-  | 'instance'
+  | 'object_as_source'
+  | 'object_as_target'
   | 'unknown_type'
   | 'unknown_output'
   | 'across_flows'
   | 'management_has_triggers';
 
-export type ConnectResult = { document: StrategyDocument } | { problem: ConnectionProblem };
+/** A refused connection: the reason and, for an object, the element it concerns (the message names it). */
+export type ConnectRefusal = { problem: ConnectionProblem; element?: string };
+
+export type ConnectResult = { document: StrategyDocument } | ConnectRefusal;
 
 /**
  * Connects the output of a step with another step (specification 3.3): a trigger has no input, instances have no
@@ -90,8 +94,12 @@ export function connect(
   }
   const sourceType = types.byId.get(source.type);
   const targetType = types.byId.get(target.type);
-  if (isCardElement(source, types) || isCardElement(target, types)) {
-    return { problem: 'instance' };
+  // objects supply values and have no place in the flow: the reason names the object (specification 3.3, 5.3)
+  if (isCardElement(source, types)) {
+    return { problem: 'object_as_source', element: source.id };
+  }
+  if (isCardElement(target, types)) {
+    return { problem: 'object_as_target', element: target.id };
   }
   if (sourceType === undefined) {
     return { problem: 'unknown_type' };

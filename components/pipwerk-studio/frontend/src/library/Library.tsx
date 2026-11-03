@@ -52,8 +52,8 @@ export function Library() {
   const canInsert = studio.state.document !== null;
 
   const insert = (entry: LibraryEntry): void => {
+    // Without an open strategy the entries are not usable: the sentence in the library says so and they do nothing.
     if (!canInsert) {
-      studio.actions.notify('notices.openFirst');
       return;
     }
     if (entry.target === 'connection') {
@@ -94,20 +94,26 @@ export function Library() {
             <span>{t(`library.groups.${group.id}`, { defaultValue: group.id })}</span>
             <span className="count">{group.entries.length}</span>
           </button>
+          {isClosed ? null : group.role === null ? null : (
+            <p className="lib-role" data-testid="lib-group-role" data-role={group.role} data-tip={t(`library.roleTip.${group.role}`)}>
+              <Icon name={group.role === 'step' ? 'right' : 'wave'} size={13} />
+              {t(`library.role.${group.role}`)}
+            </p>
+          )}
           {isClosed ? null : (
             <ul>
               {group.entries.map((entry) => (
                 <li key={entry.key}>
                   <div
-                    className="lib-item"
+                    className={`lib-item${canInsert ? '' : ' closed'}`}
                     role="button"
                     tabIndex={0}
-                    draggable={!entry.unreadable && entry.target !== 'connection'}
+                    draggable={canInsert && !entry.unreadable && entry.target !== 'connection'}
                     data-lib={entry.key}
                     data-testid="lib-item"
                     data-label={entry.name}
                     data-tip={entry.explanation === '' ? undefined : entry.explanation}
-                    aria-disabled={entry.unreadable}
+                    aria-disabled={entry.unreadable || !canInsert}
                     onDragStart={(event) => {
                       event.dataTransfer.setData(LIBRARY_DRAG_TYPE, entry.key);
                       event.dataTransfer.effectAllowed = 'copy';
@@ -126,6 +132,16 @@ export function Library() {
                       <Icon name={iconOfClass(entry.style)} size={16} />
                     </span>
                     <span className="lib-label">{entry.name}</span>
+                    {entry.trigger ? (
+                      <span className="tag-trigger" data-testid="lib-trigger" data-tip={t('library.triggerTip')}>
+                        {t('library.trigger')}
+                      </span>
+                    ) : null}
+                    {group.role === null && entry.role !== null ? (
+                      <span className="tag-role" data-testid="lib-role" data-role={entry.role} data-tip={t(`library.roleTip.${entry.role}`)}>
+                        {t(`library.role.${entry.role}`)}
+                      </span>
+                    ) : null}
                     {entry.own ? <span className="tag-own">{t('library.own')}</span> : null}
                     {entry.unreadable ? <span className="tag-own">{t('library.unreadable')}</span> : null}
                   </div>
@@ -149,6 +165,12 @@ export function Library() {
       <header className="panel-head">
         <h2>{t('library.title')}</h2>
         <p className="panel-hint">{t('library.hint')}</p>
+        {canInsert ? null : (
+          // stays until a strategy is open; it stands here and not on the drawing area (specification 5.3, 5.5)
+          <p className="lib-closed-note" role="note" data-testid="library-closed">
+            {t('library.closed', { new: t('menu.new'), open: t('menu.open') })}
+          </p>
+        )}
         <label className="search">
           <Icon name="search" size={15} />
           <input

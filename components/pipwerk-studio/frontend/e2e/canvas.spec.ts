@@ -224,7 +224,8 @@ test('the switch "Weitere Verwendungen" shows the further uses for all, for the 
   await expect(page.getByTestId('wire-label').first()).toContainText('Wert');
 
   await page.locator('.legend summary').click();
-  await expect(page.locator('.legend-row')).toHaveCount(5);
+  // two shapes (order 20, F8) and five lines
+  await expect(page.locator('.legend-row')).toHaveCount(7);
 });
 
 test('the flow can be turned: vertical and horizontal, the choice belongs to the strategy', async ({ page }) => {

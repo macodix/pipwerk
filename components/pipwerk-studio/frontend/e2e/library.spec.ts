@@ -1,4 +1,4 @@
-import { choose, expect, expectChosen, library, newStrategy, node, openApp, openStrategy, showArea, test } from './support';
+import { choose, clickMenu, expect, expectChosen, library, newStrategy, node, openApp, openStrategy, showArea, SIZES, test } from './support';
 
 // Specification 5.2: groups from the type descriptions in the order of the specification, search, explanation of every
 // entry when it is pointed at and when it has the keyboard focus.
@@ -58,18 +58,57 @@ test('searches names and explanations, and shows what to do when nothing is foun
   await expect(page.getByTestId('library')).toContainText('Nichts gefunden');
 });
 
-test('does not insert without a strategy and says what to do', async ({ page }) => {
+test('does not insert without a strategy: the library says so itself and its entries do nothing (order 20, F1)', async ({ page }) => {
   await openApp(page);
   // the hint stands in the properties view and nowhere else (specification 5.5)
   await showArea(page, 'props');
   await expect(page.getByTestId('props-none')).toContainText('Nächster Schritt');
   await expect(page.getByTestId('canvas')).not.toContainText('Nächster Schritt');
 
-  await library(page, 'Kerzenschluss').click();
+  // the sentence stands in the library, not on the drawing area, and stays
+  await showArea(page, 'library');
+  const note = page.getByTestId('library-closed');
+  await expect(note).toBeVisible();
+  await expect(note).toHaveText('Die Elemente sind erst verwendbar, wenn Sie „Neue Strategie“ oder „Öffnen“ gewählt haben.');
+  await expect(page.getByTestId('canvas')).not.toContainText('erst verwendbar');
+  const entry = library(page, 'Kerzenschluss');
+  await expect(entry).toHaveAttribute('aria-disabled', 'true');
+  await expect(entry).toHaveAttribute('draggable', 'false');
+  // not usable by its look: dashed border and pale
+  expect(await entry.evaluate((item) => getComputedStyle(item).borderStyle)).toBe('dashed');
+  expect(Number(await entry.evaluate((item) => getComputedStyle(item).opacity))).toBeLessThan(0.8);
+  // the explanation stays reachable
+  await expect(entry).toHaveAttribute('data-tip', /\S/);
 
-  await showArea(page, 'props');
-  await expect(page.getByTestId('message')).toContainText('Öffnen Sie zuerst eine Strategie');
-  await expect(page.getByTestId('canvas')).not.toContainText('Öffnen Sie zuerst');
+  // click and drag change nothing and say nothing
+  await entry.click();
+  await expect(page.getByTestId('message')).toHaveCount(0);
+  await expect(note).toBeVisible();
+  if ((page.viewportSize()?.width ?? 0) >= 1100) {
+    await entry.dragTo(page.getByTestId('viewport').or(page.getByTestId('canvas')).first());
+  }
+  await expect(page.getByTestId('canvas')).toHaveAttribute('data-state', 'no-strategy');
+  await expect(note).toBeVisible();
+
+  // after "Neue Strategie" the sentence is gone and the entry works
+  await newStrategy(page);
+  await showArea(page, 'library');
+  await expect(page.getByTestId('library-closed')).toHaveCount(0);
+  await expect(library(page, 'Kerzenschluss')).toHaveAttribute('aria-disabled', 'false');
+  await library(page, 'Kerzenschluss').click();
+  await expect(node(page, 'Kerzenschluss')).toHaveCount(1);
+});
+
+test('shows the sentence of the closed library at every window size without a horizontal scroll bar (order 20, F1)', async ({ page }) => {
+  for (const size of SIZES) {
+    await openApp(page, size);
+    await showArea(page, 'library');
+    await expect(page.getByTestId('library-closed'), size.name).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, size.name).toBeLessThanOrEqual(0);
+    const library = await page.getByTestId('library').evaluate((region) => region.scrollWidth - region.clientWidth);
+    expect(library, size.name).toBeLessThanOrEqual(0);
+  }
 });
 
 test('inserts a trigger and a step: the second is connected behind the first', async ({ page }) => {

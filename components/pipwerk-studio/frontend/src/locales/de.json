@@ -101,6 +101,17 @@
     },
     "own": "eigene",
     "unreadable": "nicht lesbar",
+    "closed": "Die Elemente sind erst verwendbar, wenn Sie „{{new}}“ oder „{{open}}“ gewählt haben.",
+    "trigger": "Auslöser",
+    "triggerTip": "Ein Auslöser startet die Strategie. Jeder Ablauf beginnt mit einem Auslöser.",
+    "role": {
+      "step": "Schritt im Ablauf",
+      "value": "liefert Werte"
+    },
+    "roleTip": {
+      "step": "Gehört in den Ablauf der Strategie: Diese Elemente verbinden Sie der Reihe nach, von oben nach unten.",
+      "value": "Liefert Werte, die ein Schritt braucht. Es gehört nicht in den Ablauf: Verbinden Sie einen seiner Werte mit dem Schritt, der ihn braucht."
+    },
     "loading": "Die Elemente werden geladen.",
     "loadFailed": "Die Elemente konnten nicht geladen werden. Ohne sie lässt sich keine Strategie anlegen oder öffnen.",
     "retry": "Erneut versuchen",
@@ -337,7 +348,9 @@
     "arrange": "Neu anordnen",
     "arrangeTip": "Alle Elemente wieder automatisch anordnen",
     "legend": "Legende",
-    "legendFlow": "Ablauf: legt die Reihenfolge fest",
+    "legendStep": "Schritt im Ablauf: Rechteck mit Eingang oben und Ausgang unten",
+    "legendObject": "Objekt, liefert Werte: abgerundete Karte, die Farbe oben zeigt die Art",
+    "legendFlow":"Ablauf: legt die Reihenfolge fest",
     "legendManagement": "Order- und Positionsverwaltung einer Order (grün, gepunktet)",
     "legendFirstUse": "Wert an dem Element, das ihn zuerst verwendet (farbig, durchgezogen)",
     "legendMoreUses": "Wert an einer weiteren Verwendung (farbig, gestrichelt)",
@@ -383,7 +396,7 @@
     "resultIs": "Ergebnis: {{word}}.",
     "none": "Nächster Schritt: „Neue Strategie“ legt eine leere Strategie an, „Öffnen“ zeigt gespeicherte Strategien.",
     "emptyTitle": "Die Strategie ist leer",
-    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Das ist das Ereignis, das die Strategie startet, zum Beispiel ein Kerzenschluss. Sie finden ihn in der Elementbibliothek in der Gruppe „Ablaufsteuerung“.",
+    "emptyText": "Nächster Schritt: Beginnen Sie mit einem Auslöser. Das ist das Ereignis, das die Strategie startet. In der Elementbibliothek sind die Auslöser gekennzeichnet: {{triggers}}.",
     "strategy": "Strategie",
     "strategyName": "Name der Strategie",
     "description": "Beschreibung",
@@ -699,7 +712,7 @@
     }
   },
   "notices": {
-    "openFirst": "Öffnen Sie zuerst eine Strategie oder legen Sie eine neue an.",
+    "startWithTrigger": "Eine Strategie beginnt mit einem Auslöser. Wählen Sie zuerst {{triggers}} in der Elementbibliothek.",
     "ruleForStrategy": "Die Regel gilt für die ganze Strategie.",
     "ruleForElement": "Die Regel gilt für das gewählte Element.",
     "inserted": "„{{name}}“ ist eingefügt. Sie sehen es auf der Zeichenfläche.",
@@ -715,7 +728,9 @@
       "unknown_element": "Das Element gibt es nicht mehr.",
       "same_element": "Ein Schritt lässt sich nicht mit sich selbst verbinden.",
       "target_is_trigger": "Ein Auslöser hat keinen Eingang.",
-      "instance": "Objekte werden nicht im Ablauf verbunden. Ihre Werte verbinden Sie mit einer Linie von ihrer Karte.",
+      "object_as_source": "„{{object}}“ liefert Werte und gehört nicht in den Ablauf. Ziehen Sie eine Linie von einem seiner Werte zu dem Schritt, der ihn braucht.",
+      "object_as_target": "„{{object}}“ liefert Werte und gehört nicht in den Ablauf. Verbinden Sie einen seiner Werte mit dem Schritt, der ihn braucht, und lassen Sie den Ablauf am Schritt weitergehen.",
+      "value_to_object": "Ein Wert gehört an einen Schritt, der ihn braucht, nicht an ein anderes Objekt. „{{object}}“ nimmt keinen Wert an.",
       "unknown_type": "Von einem Element mit unbekanntem Typ gehen keine neuen Verbindungen aus.",
       "unknown_output": "Dieser Ausgang gehört nicht zum Schritt.",
       "across_flows": "Die Order- und Positionsverwaltung einer Order ist vom Hauptablauf getrennt: Verbinden Sie nur Schritte im selben Rahmen.",

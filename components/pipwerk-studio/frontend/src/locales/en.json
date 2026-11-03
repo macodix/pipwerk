@@ -101,6 +101,17 @@
     },
     "own": "own",
     "unreadable": "not readable",
+    "closed": "The elements can only be used once you have chosen \"{{new}}\" or \"{{open}}\".",
+    "trigger": "Trigger",
+    "triggerTip": "A trigger starts the strategy. Every flow begins with a trigger.",
+    "role": {
+      "step": "Step in the flow",
+      "value": "supplies values"
+    },
+    "roleTip": {
+      "step": "Belongs in the flow of the strategy: you connect these elements one after the other, from top to bottom.",
+      "value": "Supplies values that a step needs. It does not belong in the flow: connect one of its values with the step that needs it."
+    },
     "loading": "The elements are loading.",
     "loadFailed": "The elements could not be loaded. Without them no strategy can be created or opened.",
     "retry": "Try again",
@@ -337,7 +348,9 @@
     "arrange": "Arrange again",
     "arrangeTip": "Arrange all elements automatically again",
     "legend": "Legend",
-    "legendFlow": "Flow: defines the order",
+    "legendStep": "Step in the flow: rectangle with an entry at the top and an exit at the bottom",
+    "legendObject": "Object, supplies values: rounded card, the colour at the top shows its kind",
+    "legendFlow":"Flow: defines the order",
     "legendManagement": "Order and position management of an order (green, dotted)",
     "legendFirstUse": "Value at the element that uses it first (coloured, solid)",
     "legendMoreUses": "Value at a further use (coloured, dashed)",
@@ -383,7 +396,7 @@
     "resultIs": "Result: {{word}}.",
     "none": "Next step: \"New strategy\" creates an empty strategy, \"Open\" shows saved strategies.",
     "emptyTitle": "The strategy is empty",
-    "emptyText": "Next step: start with a trigger. It is the event that starts the strategy, for example the close of a candle. You find it in the element library in the group \"Flow control\".",
+    "emptyText": "Next step: start with a trigger. It is the event that starts the strategy. The triggers are marked in the element library: {{triggers}}.",
     "strategy": "Strategy",
     "strategyName": "Name of the strategy",
     "description": "Description",
@@ -699,7 +712,7 @@
     }
   },
   "notices": {
-    "openFirst": "Open a strategy first or create a new one.",
+    "startWithTrigger": "A strategy begins with a trigger. First choose {{triggers}} in the element library.",
     "ruleForStrategy": "The rule applies to the whole strategy.",
     "ruleForElement": "The rule applies to the selected element.",
     "inserted": "\"{{name}}\" is inserted. You can see it on the canvas.",
@@ -715,7 +728,9 @@
       "unknown_element": "The element no longer exists.",
       "same_element": "A step cannot be connected with itself.",
       "target_is_trigger": "A trigger has no input.",
-      "instance": "Objects are not connected in the flow. You connect their values with a line from their card.",
+      "object_as_source": "\"{{object}}\" supplies values and does not belong in the flow. Draw a line from one of its values to the step that needs it.",
+      "object_as_target": "\"{{object}}\" supplies values and does not belong in the flow. Connect one of its values with the step that needs it, and let the flow continue at the step.",
+      "value_to_object": "A value belongs at a step that needs it, not at another object. \"{{object}}\" does not take a value.",
       "unknown_type": "No new connections start from an element of an unknown type.",
       "unknown_output": "This output does not belong to the step.",
       "across_flows": "The order and position management of an order is separate from the main flow: connect only steps in the same frame.",

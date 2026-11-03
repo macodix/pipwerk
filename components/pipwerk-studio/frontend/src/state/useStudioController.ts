@@ -68,9 +68,9 @@ import {
 import type { Binding, StrategyDocument, StrategyParameter } from '../document/types';
 import { defaultLanguage, isSupportedLanguage, type SupportedLanguage } from '../i18n';
 import { buildLibrary, findEntry, type StoredTemplates } from '../library/libraryModel';
-import { elementName, isCardElement } from '../model/elements';
+import { elementName, isCardElement, mainFlowHasStep } from '../model/elements';
 import { inputRefOf, memberChoices } from '../model/usedValues';
-import { createTypeIndex, holdsInstance, type TypeIndex } from '../model/typeIndex';
+import { createTypeIndex, holdsInstance, isTriggerType, triggerNames, type TypeIndex } from '../model/typeIndex';
 import { NARROW_LAYOUT, matchesMedia } from '../ui/media';
 import { newUuid } from '../document/ids';
 import { rewriteMember } from './usedValue';
@@ -518,7 +518,11 @@ export function useStudioController(language: SupportedLanguage) {
           selection: { kind: 'element', id: added.id },
           reveal: added.id,
         });
-        if (matchesMedia(NARROW_LAYOUT)) {
+        if (flow === null && !isTriggerType(type) && !mainFlowHasStep(document, index)) {
+          // The first step is not a trigger. The element is still laid out (the user can put the trigger before it, and the
+          // finding "Hauptablauf ohne Auslöser" stays until then), but the message says what a strategy begins with.
+          notify('notices.startWithTrigger', { triggers: triggerNames(index, language) });
+        } else if (matchesMedia(NARROW_LAYOUT)) {
           notify('notices.inserted', { name });
         }
         return added.id;
@@ -601,9 +605,17 @@ export function useStudioController(language: SupportedLanguage) {
     if (document === null || index === null) {
       return false;
     }
+    if (!mainFlowHasStep(document, index)) {
+      notify('notices.startWithTrigger', { triggers: triggerNames(index, language) });
+      return false;
+    }
     const selection = current.selection;
     const from = selection.kind === 'element' ? document.elements.find((candidate) => candidate.id === selection.id) : undefined;
-    if (from === undefined || isCardElement(from, index)) {
+    if (from !== undefined && isCardElement(from, index)) {
+      notify('notices.connection.object_as_source', { object: elementName(from, index, language) });
+      return false;
+    }
+    if (from === undefined) {
       notify('notices.connection.choose_step');
       return false;
     }
@@ -621,13 +633,19 @@ export function useStudioController(language: SupportedLanguage) {
     }
     dispatch({ type: 'armed', armed: { from: from.id, output: output.id } });
     return true;
-  }, [notify]);
+  }, [language, notify]);
 
+  /** The reason a connection of the flow is refused, in trader language; an object is named in it. */
   const problemNotice = useCallback(
-    (problem: ConnectionProblem) => {
-      notify(`notices.connection.${problem}`);
+    (problem: ConnectionProblem, element?: string) => {
+      const found = element === undefined ? undefined : stateRef.current.document?.elements.find((candidate) => candidate.id === element);
+      const index = typesRef.current;
+      notify(
+        `notices.connection.${problem}`,
+        found === undefined || index === null ? undefined : { object: elementName(found, index, language) },
+      );
     },
-    [notify],
+    [language, notify],
   );
 
   const connectSteps = useCallback(
@@ -639,7 +657,7 @@ export function useStudioController(language: SupportedLanguage) {
       }
       const result = connect(document, index, from, output, to);
       if ('problem' in result) {
-        problemNotice(result.problem);
+        problemNotice(result.problem, result.element);
         dispatch({ type: 'armed', armed: null });
         return false;
       }

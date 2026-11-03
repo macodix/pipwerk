@@ -168,6 +168,40 @@ describe('the element library (specification 5.2)', () => {
     ]);
   });
 
+  it('marks triggers and the role of every entry and group from the kind of the type description (order 20, F3, F8)', () => {
+    const groups = buildLibrary(testTypes(), {}, 'de', connection);
+    const role = (id: string) => groups.find((group) => group.id === id)?.role;
+
+    expect(groups.flatMap((group) => group.entries.filter((entry) => entry.trigger).map((entry) => entry.name))).toEqual([
+      'Kerzenschluss',
+      'Tick',
+      'Manuell',
+    ]);
+    expect(role('flow')).toBe('step');
+    expect(role('calculation')).toBe('step');
+    expect(role('actions')).toBe('step');
+    for (const id of ['indicators', 'trends', 'market', 'account', 'rules']) {
+      expect(role(id)).toBe('value');
+    }
+    // "Verbindung" is no element: it has no role and does not decide the role of its group
+    expect(findEntry(groups, CONNECTION_ENTRY_KEY)).toMatchObject({ role: null, trigger: false });
+    // a stored template is an object that supplies values
+    const withStored = buildLibrary(testTypes(), { indicators: [stored('i-1', 'Mein EMA', null)] }, 'de');
+    expect(findEntry(withStored, 'stored:indicators:i-1')).toMatchObject({ role: 'value', trigger: false });
+  });
+
+  it('gives a group whose entries differ in their role no role of its own, so that the entries carry it', () => {
+    const json = JSON.parse(JSON.stringify(inventedTypesJson)) as { types: { kind: string; group: string | null }[] };
+    const object = json.types.find((type) => type.kind === 'object_type' && type.group !== null);
+    expect(object).toBeDefined();
+    (object as { group: string | null }).group = 'flow';
+
+    const flow = buildLibrary(createTypeIndex(parseElementTypes(json)), {}, 'de').find((group) => group.id === 'flow');
+
+    expect(new Set(flow?.entries.map((entry) => entry.role))).toEqual(new Set(['step', 'value']));
+    expect(flow?.role).toBeNull();
+  });
+
   it('names and explains the delivered rule template in the language of the interface (order 07, B2)', () => {
     const rules = (language: 'de' | 'en') => buildLibrary(testTypes(), {}, language).find((group) => group.id === 'rules')?.entries[0];
 
