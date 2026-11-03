@@ -47,6 +47,13 @@ Die Mängel F1 bis F3, F7 bis F12 setzt der Entwicklungsleiter in den Aufträgen
 - 5.2, 5.3: Die Bibliothek, die Kastenformen und die Legende unterscheiden Schritte und Objekte; die Oberfläche begründet jede abgelehnte Verbindung (F8).
 - 5.4: Frage „Was soll geprüft werden?“ statt „Art“ (F11), Übernahme des Vergleichs als erster Teil und Rückfrage beim Wechsel der Art einer Bedingung (F10), „Entfernen“ an jedem Teil (F9), Bereich „Verwendete Werte“ nur bei Elementen mit verwendbaren Werten (F7).
 
+## Stand der Umsetzung (Entwicklungsleiter, 3. November 2026)
+
+- Auftrag 22 (F12), Auftrag 21 (F2, F7, F9, F10, F11) und Auftrag 20 (F1, F3, F8) sind nach bestandenem Funktionstest im Arbeitszweig `strategiedesign/wp02` zusammengeführt; Berichte in `tests/22-functiontest-2.md`, `tests/21-functiontest-1.md`, `tests/20-functiontest-3.md`.
+- Offen und von dieser Lücke abhängig: F4, F5, F6 mit der Anwenderdokumentation dazu. Die Testumgebung für die Abnahme wird nach diesen Aufträgen bereitgestellt.
+- Der Browsertest `testcases.spec.ts` „str-01 Scalping Punkt 2 Ausbruch …“ schlug in einem Lauf in Chromium fehl (`refreshValue` in `e2e/builder.ts`, Schalter „Aktualisieren“), in zwei vollständigen Läufen davor und danach bestand er. Nicht als Ursache belegt; wiederholt er sich, bekommt ein Entwickler einen Auftrag dazu.
+- Hinweis Tester zu Auftrag 21: Die Bibliothek liefert in Typbeschreibungen und Befundtexten (`catalog.py`, `consistency/describe.py`) noch das Wort „Ausdruck“, die Oberfläche ersetzt es nur für Felder, die eine Formel halten. „(noch ohne Name)“ in der Oberfläche und „(ohne Name)“ in der Öffnen-Liste benennen denselben Zustand uneinheitlich. Beides kann der Softwarearchitekt bei den Begriffen in L1 mitregeln.
+
 Der Entwicklungsleiter setzt nach der Ergänzung (`amended`) die Aufträge für L1 bis L3 und die Anwenderdokumentation dazu um, dann die Meldung `acceptance`.
 
 ## Ergebnis
