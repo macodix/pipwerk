@@ -19,6 +19,7 @@ from pipwerk_domain.model import (
     Strategy,
     StrategyParameter,
 )
+from pipwerk_domain.operations import remove_element
 from pipwerk_domain.pointers import below, pointer
 from pipwerk_domain.typedesc import BindingKind, DataType
 from tests.helpers import (
@@ -372,7 +373,40 @@ def test_an_empty_place_in_an_expression_is_an_error() -> None:
     assert (found[0].details["start"], found[0].details["end"]) == (0, 2)
     assert only(check(strategy), fc.EXPRESSION_INVALID) == []
     two = with_condition("IF([]; 1; []) > 1")
-    assert len(only(check(two), fc.EXPRESSION_EMPTY)) == 2
+    found_two = only(check(two), fc.EXPRESSION_EMPTY)
+    assert [(item.details["start"], item.details["end"]) for item in found_two] == [(3, 5)]
+
+
+def test_several_empty_places_in_one_field_are_one_finding() -> None:
+    four = with_condition("AND([] > 1; [] > 2; [] > 3; [] > 4)")
+    found = only(check(four), fc.EXPRESSION_EMPTY)
+    assert len(found) == 1
+    assert found[0].details["reason"] == "slot"
+    assert (found[0].details["start"], found[0].details["end"]) == (4, 6)
+
+
+def test_empty_places_of_different_elements_stay_separate() -> None:
+    strategy = with_condition("AND([] > 1; [] > 2)")
+    strategy.elements.insert(2, condition(6, "[] > 3"))
+    strategy.connections = [connect(1, "weiter", 5), connect(5, "wahr", 6), connect(6, "wahr", 2)]
+    found = only(check(strategy), fc.EXPRESSION_EMPTY)
+    assert [item.element for item in found] == [uid(5), uid(6)]
+
+
+def test_a_removed_object_used_four_times_gives_one_finding() -> None:
+    text = "AND(ema20.wert > 1; ema20.wert > 2; ema20.wert > 3; ema20.wert < 4)"
+    strategy = with_condition(text)
+    remove_element(strategy, uid(10))
+    found = [item for item in only(check(strategy), fc.EXPRESSION_EMPTY) if item.element == uid(5)]
+    assert len(found) == 1
+    assert found[0].details["reason"] == "slot"
+
+
+def test_an_empty_place_and_another_error_in_one_field_stay_two_findings() -> None:
+    strategy = with_condition("AND([] > 1; [] > 2; gibtesnicht > 3)")
+    found = check(strategy)
+    assert len(only(found, fc.EXPRESSION_EMPTY)) == 1
+    assert len(only(found, fc.EXPRESSION_INVALID)) == 1
 
 
 def test_an_empty_expression_is_an_error_of_its_own() -> None:

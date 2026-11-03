@@ -84,6 +84,37 @@ def test_the_findings_after_the_removal_of_an_object_name_their_elements(
     assert all(item["element_name"]["de"] == item["element_name"]["en"] for item in found)
 
 
+def test_a_removed_object_used_four_times_in_one_field_gives_one_finding(
+    client: TestClient,
+) -> None:
+    """Acceptance 4 F12: one finding per element and field, not one per empty place."""
+    document = load_case("str-03")
+    first = next(item for item in document["elements"] if item["name"] == "Neuer Stop-Loss")
+    first["parameters"]["ausdruck"]["value"] = (
+        "Strategie.stop_abstand + Strategie.stop_abstand"
+        " + Strategie.stop_abstand + Strategie.stop_abstand"
+    )
+    second = next(item for item in document["elements"] if item["name"] == "Stop-Loss")
+    second["parameters"]["ausdruck"]["value"] = "Strategie.stop_abstand * 2"
+    removed = post_json(
+        client,
+        "/api/v1/removals",
+        {
+            "document": document,
+            "kind": "strategy_parameter",
+            "target": "stop_abstand",
+            "apply": True,
+        },
+    )
+    assert removed.status_code == 200, removed.text
+    found = empty_findings(check(client, removed.json()["document"]).json()["findings"])
+    names = sorted(item["element_name"]["de"] for item in found)
+    assert names == ["Neuer Stop-Loss", "Stop-Loss"]
+    assert all(item["details"]["reason"] == "slot" for item in found)
+    own = next(item for item in found if item["element_name"]["de"] == "Neuer Stop-Loss")
+    assert own["details"]["start"] == 0  # the first place
+
+
 def test_every_answer_with_findings_names_element_and_field(client: TestClient) -> None:
     """The check, the creation and the saving answer with the same names."""
     document = load_case("str-03")

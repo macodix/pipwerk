@@ -462,6 +462,13 @@ def test_an_empty_place_is_a_block_and_a_finding(client: TestClient) -> None:
     assert one(client, STOP, blocks=blocks)["stored"] == "ema20.wert + []"
 
 
+def test_several_empty_places_are_one_finding(client: TestClient) -> None:
+    answer = one(client, STOP, stored="ema20.wert + [] + [] + []")
+    [finding] = answer["findings"]
+    assert (finding["code"], finding["details"]["reason"]) == ("expression.empty", "slot")
+    assert finding["details"]["start"] == 16  # the first empty place
+
+
 def test_a_blank_text_is_an_empty_expression(client: TestClient) -> None:
     forms: tuple[dict[str, Any], ...] = ({"stored": ""}, {"display": "   "})
     for form in forms:
