@@ -103,9 +103,9 @@ Die fachlichen Objekte selbst sind im [Fachmodell](../design/domain/fachmodell.m
 | Index | Ein Verzeichnis der gespeicherten Objekte mit Kennung, Name und Beschreibung, das sich aus den Dateien neu aufbauen lässt. In pipwerk Studio gibt es keinen Index und keine Tabelle dafür in der Datenbank (Entscheidung E5): Ein Index wäre nur eine zweite Fassung derselben Daten. Die Dateien im Objektverzeichnis sind die einzige Quelle, das Backend liest sie bei Bedarf. Wird das zu langsam, kann später ein Index ergänzt werden. |
 | Schnittstelle | Eine Stelle, an der Daten in ein Programm hinein- oder herauskommen: die Web-API, das Lesen und Schreiben von Dateien, das Lesen der Konfiguration. |
 | Web-API | Die über HTTP erreichbare Schnittstelle einer Komponente. Jede Adresse darin heißt Endpunkt. Die öffentliche Web-API von pipwerk Studio liegt unter `/api/v1/` und ist unter `contracts/api/` beschrieben; die übrigen Endpunkte unter `/api/` sind interne Verbindungen der Komponente. |
-| Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Die QA prüft dort aus Kundensicht, der Auftraggeber erprobt dort und nimmt ab. |
+| Testumgebung | Die auf dem Entwicklungsrechner aus dem Commit eines Arbeitspakets gestartete Komponente. Der Auftraggeber erprobt dort und nimmt ab. |
 | Entwicklungsrechner | Der Rechner, auf dem Arbeitsverzeichnisse, Testumgebungen und die Sitzungen von Softwarearchitekt, Entwicklungsleiter und Team liegen. |
-| Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert im Entwicklungsverfahren (dev-werk, `de/process/development-process.md`, Abschnitt „Begriffe“). |
+| Vorhaben, Arbeitspaket, Auftrag, Übergabedokument, Meldung, Durchlauf | Begriffe des Entwicklungsprozesses, definiert im [Entwicklungsverfahren](entwicklungsverfahren.md), Abschnitt „Begriffe“. |
 
 ## Werkzeuge und Bibliotheken
 
