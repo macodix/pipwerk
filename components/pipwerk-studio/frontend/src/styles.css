@@ -1173,6 +1173,63 @@ code {
   opacity: 0.6;
   cursor: default;
 }
+/* Without an open strategy the entries cannot be used: dashed, pale, without the colour of their kind, no hand cursor. */
+.lib-item.closed,
+.lib-item.closed:hover,
+.lib-item.closed:active {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+}
+.lib-item.closed .badge {
+  background: var(--muted);
+}
+.lib-closed-note {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a4a00;
+  background: #fffaf0;
+  border: 1px solid #e59a1c;
+  border-radius: 9px;
+  padding: 7px 10px;
+}
+.lib-role {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0 6px 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tag-trigger,
+.tag-role {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.tag-trigger {
+  text-transform: uppercase;
+  color: #0b5a3c;
+  background: #e3f6ec;
+  border: 1px solid #0b5a3c;
+}
+.tag-role {
+  color: var(--muted);
+  background: var(--panel-2);
+}
+.legend-shape {
+  fill: #fff;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+.legend-dot {
+  fill: var(--muted);
+}
 .lib-label {
   flex: 1;
   min-width: 0;
@@ -1547,9 +1604,12 @@ code {
   user-select: none;
   cursor: pointer;
 }
+/* A step of the flow is a rectangle with a connection point for the way in and for the way out; an object is a card
+   with a rounded form and the colour of the object on top (specification 5.3). The shapes differ without colour. */
 .node {
   padding: 9px 12px 8px 14px;
   --k: var(--k-ind);
+  border-radius: 4px;
 }
 .node::before,
 .card::before {
@@ -1787,6 +1847,16 @@ code {
 .card {
   padding: 0;
   --k: var(--k-ind);
+  border-radius: 22px 22px 14px 14px;
+}
+.card::before {
+  left: 20px;
+  right: 20px;
+  top: -1.5px;
+  bottom: auto;
+  width: auto;
+  height: 5px;
+  border-radius: 0 0 5px 5px;
 }
 .card-head {
   height: 50px;

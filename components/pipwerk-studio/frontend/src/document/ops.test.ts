@@ -60,7 +60,8 @@ describe('connecting steps (specification 3.3)', () => {
 
   it.each([
     ['a trigger has no input', 'Weiche', 'yes', 'Beginn', 'target_is_trigger'],
-    ['an object has no connection in the flow', 'Messer', 'next', 'Weiche', 'instance'],
+    ['an object is no start of a connection in the flow', 'Messer', 'next', 'Weiche', 'object_as_source'],
+    ['an object is no end of a connection in the flow', 'Tun', 'next', 'Messer', 'object_as_target'],
     ['between the main flow and a management', 'Tun', 'next', 'Tun innen', 'across_flows'],
     ['an output that the step does not have', 'Tun', 'gibtsnicht', 'Weiche', 'unknown_output'],
     ['a step with itself', 'Tun', 'next', 'Tun', 'same_element'],
@@ -69,7 +70,15 @@ describe('connecting steps (specification 3.3)', () => {
 
     const result = connect(document, types, byName(document, from), output, byName(document, to));
 
-    expect(result).toEqual({ problem });
+    expect(result).toMatchObject({ problem });
+  });
+
+  it('names the object when it refuses a connection with an object', () => {
+    const document = inventedStrategy();
+    const object = byName(document, 'Messer');
+
+    expect(connect(document, types, object, 'next', byName(document, 'Weiche'))).toEqual({ problem: 'object_as_source', element: object });
+    expect(connect(document, types, byName(document, 'Tun'), 'next', object)).toEqual({ problem: 'object_as_target', element: object });
   });
 
   it('refuses a new connection from an element of an unknown type', () => {

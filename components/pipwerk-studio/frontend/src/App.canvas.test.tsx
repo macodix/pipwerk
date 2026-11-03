@@ -101,7 +101,10 @@ describe('the switch "Weitere Verwendungen" and the legend (specification 5.3)',
     const legend = document.querySelector('.legend');
     expect(legend).not.toBeNull();
     const rows = Array.from(legend?.querySelectorAll('.legend-row') ?? []).map((row) => row.textContent);
-    expect(rows).toHaveLength(5);
+    // the two shapes (step, object) and the five lines
+    expect(rows).toHaveLength(7);
+    expect(rows.join('|')).toContain('Schritt im Ablauf');
+    expect(rows.join('|')).toContain('Objekt, liefert Werte');
     expect(rows.join('|')).toContain('durchgezogen');
     expect(rows.join('|')).toContain('gestrichelt');
     expect(rows.join('|')).toContain('Aktualisieren');

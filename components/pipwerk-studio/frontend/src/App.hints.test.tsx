@@ -86,7 +86,9 @@ describe('the hint of an empty strategy (specification 5.5)', () => {
     const hint = await screen.findByTestId('empty-strategy-hint');
     expect(within(screen.getByTestId('props')).getByTestId('empty-strategy-hint')).toBe(hint);
     expect(hint).toHaveTextContent('Nächster Schritt: Beginnen Sie mit einem Auslöser.');
-    expect(hint).toHaveTextContent('Ablaufsteuerung');
+    // order 20 (F3): the hint names the triggers and no longer the group "Ablaufsteuerung"
+    expect(hint).toHaveTextContent('Kerzenschluss, Tick oder Manuell');
+    expect(hint.textContent).not.toContain('Ablaufsteuerung');
     // E6: a strategy does not calculate; the trigger is the event that starts it
     expect(hint).toHaveTextContent('das Ereignis, das die Strategie startet');
     expect(hint.textContent).not.toMatch(/rechn/);
@@ -231,13 +233,17 @@ describe('short messages (specification 5.1)', () => {
     mockApi();
     renderWithProviders(<App />, 'de');
     await waitForReady();
+    await openStored(user, 'EMA-Trendfolge');
+    await waitFor(() => {
+      expect(nodeByName('Kreuzen')).toBeInTheDocument();
+    });
 
-    // an entry of the library without an open strategy: the message says what to do first
-    await user.click(document.querySelector<HTMLElement>('[data-testid="lib-item"]') as HTMLElement);
+    // "Verbindung" without a chosen step: the message says what to do first
+    await user.click(document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="Verbindung"]') as HTMLElement);
 
     const message = await screen.findByTestId('message');
     expect(within(screen.getByTestId('props')).getByTestId('message')).toBe(message);
-    expect(message).toHaveTextContent('Öffnen Sie zuerst eine Strategie');
+    expect(message).toHaveTextContent('Wählen Sie zuerst den Schritt');
     expect(screen.queryByTestId('toast')).toBeNull();
     expect(hintsOnCanvas()).toEqual([]);
   });
@@ -247,11 +253,15 @@ describe('short messages (specification 5.1)', () => {
     mockApi();
     renderWithProviders(<App />, 'de');
     await waitForReady();
+    await openStored(user, 'EMA-Trendfolge');
+    await waitFor(() => {
+      expect(nodeByName('Kreuzen')).toBeInTheDocument();
+    });
     await user.click(within(screen.getByTestId('library')).getByTestId('tab-library'));
     expect(screen.getByTestId('app')).toHaveAttribute('data-panel', 'library');
     expect(within(screen.getByTestId('library')).getByTestId('tab-props')).not.toHaveAttribute('data-marked');
 
-    await user.click(document.querySelector<HTMLElement>('[data-testid="lib-item"]') as HTMLElement);
+    await user.click(document.querySelector<HTMLElement>('[data-testid="lib-item"][data-label="Verbindung"]') as HTMLElement);
 
     await waitFor(() => {
       expect(within(screen.getByTestId('library')).getByTestId('tab-props')).toHaveAttribute('data-marked', 'true');

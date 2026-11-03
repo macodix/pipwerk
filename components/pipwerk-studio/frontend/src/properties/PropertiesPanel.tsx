@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cardRows, elementName, outputsOf } from '../model/elements';
-import { labelText } from '../model/typeIndex';
+import { labelText, triggerNames } from '../model/typeIndex';
 import { PanelTabs } from '../library/Library';
 import { useStudio } from '../state/StudioContext';
 import { Btn, Section } from '../ui/controls';
@@ -88,14 +88,14 @@ function MessageBar() {
 
 /** The hint of a strategy without elements: the next step is a trigger from the element library (specification 5.5). */
 function EmptyStrategyHint() {
-  const { studio } = useStudio();
+  const { studio, types } = useStudio();
   const { t } = useTranslation();
   return (
     <div className="hint-box hint-card" data-testid="empty-strategy-hint">
       <Icon name="info" size={16} />
       <div className="hint-body">
         <strong>{t('properties.emptyTitle')}</strong>
-        <p>{t('properties.emptyText')}</p>
+        <p>{t('properties.emptyText', { triggers: types === null ? '' : triggerNames(types, studio.language) })}</p>
         <div className="btn-row">
           <span className="only-narrow">
             <Btn

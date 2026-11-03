@@ -1,7 +1,16 @@
 import { groupIds, type GroupId, type TypeDescription } from '../api/elementTypes';
 import type { ObjectArt, ObjectListEntry } from '../api/objects';
 import type { SupportedLanguage } from '../i18n';
-import { groupOfCategory, kindClassOf, labelText, type KindClass, type TypeIndex } from '../model/typeIndex';
+import {
+  groupOfCategory,
+  isTriggerType,
+  kindClassOf,
+  labelText,
+  roleOf,
+  type ElementRole,
+  type KindClass,
+  type TypeIndex,
+} from '../model/typeIndex';
 
 /**
  * The element library (specification 5.2): the groups come from the field `group` of the type descriptions, in the
@@ -33,9 +42,14 @@ export type LibraryEntry = {
   own: boolean;
   unreadable: boolean;
   style: KindClass;
+  /** Step of the flow or supplier of values, from the kind of the type description; `null` for "Verbindung". */
+  role: ElementRole | null;
+  /** The element is a trigger (kind of the type description). */
+  trigger: boolean;
 };
 
-export type LibraryGroup = { id: GroupId; entries: LibraryEntry[] };
+/** `role` is the role all entries of the group share; `null` if they differ or none has one. */
+export type LibraryGroup = { id: GroupId; role: ElementRole | null; entries: LibraryEntry[] };
 
 export type StoredTemplates = Partial<Record<ObjectArt, readonly ObjectListEntry[]>>;
 
@@ -96,6 +110,8 @@ export function buildLibrary(
       own: false,
       unreadable: false,
       style: kindClassOf(objectType),
+      role: roleOf(objectType),
+      trigger: isTriggerType(objectType),
     });
   }
   for (const type of types.list) {
@@ -115,6 +131,8 @@ export function buildLibrary(
       own: false,
       unreadable: false,
       style: kindClassOf(type),
+      role: roleOf(type),
+      trigger: isTriggerType(type),
     });
   }
   if (connection !== undefined) {
@@ -127,6 +145,8 @@ export function buildLibrary(
       own: false,
       unreadable: false,
       style: 'conn',
+      role: null,
+      trigger: false,
     });
   }
   for (const art of Object.keys(artGroups) as ObjectArt[]) {
@@ -146,19 +166,27 @@ export function buildLibrary(
         own: true,
         unreadable: entry.unreadable,
         style: objectType === undefined ? (art === 'rules' || art === 'rulesets' ? 'rule' : art === 'trends' ? 'trend' : 'ind') : kindClassOf(objectType),
+        // a stored template is an object: it supplies values
+        role: objectType === undefined ? 'value' : roleOf(objectType),
+        trigger: isTriggerType(objectType),
       });
     }
   }
   const known: readonly string[] = groupIds;
   const ordered = [...known.filter((id) => groups.has(id)), ...[...groups.keys()].filter((id) => !known.includes(id))];
-  return ordered.map((id) => ({ id, entries: groups.get(id) ?? [] }));
+  return ordered.map((id) => {
+    const entries = groups.get(id) ?? [];
+    const roles = new Set(entries.map((entry) => entry.role).filter((role) => role !== null));
+    const [only] = [...roles];
+    return { id, role: roles.size === 1 && only !== undefined ? only : null, entries };
+  });
 }
 
 /** The entries whose name or explanation contains the search text (without regard to case); empty groups stay out. */
 export function filterLibrary(groups: readonly LibraryGroup[], query: string): LibraryGroup[] {
   const needle = query.trim().toLowerCase();
   const filtered = groups.map((group) => ({
-    id: group.id,
+    ...group,
     entries:
       needle === ''
         ? group.entries

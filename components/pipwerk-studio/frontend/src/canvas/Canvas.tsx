@@ -299,7 +299,12 @@ function CanvasView() {
         return false;
       }
       const targetElement = document.elements.find((candidate) => candidate.id === target);
-      if (targetElement === undefined || isCardElement(targetElement, types)) {
+      if (targetElement === undefined) {
+        return false;
+      }
+      if (isCardElement(targetElement, types)) {
+        // a value goes to a step that needs it, not to another object
+        actions.notify('notices.connection.value_to_object', { object: actions.elementDisplayName(target) });
         return false;
       }
       if (!uses.usable(card, target)) {
@@ -373,6 +378,16 @@ function CanvasView() {
       if (node.type === 'step') {
         canvasActions.clickStep(node.id);
       } else if (node.type === 'card') {
+        const armed = studio.state.armed;
+        if (armed !== null && armed.from !== node.id) {
+          // A card was chosen as the next step or as the element that takes a value: the reason it is refused is told.
+          if (armed.output.startsWith('prop:')) {
+            connectValueTo(armed.from, armed.output.slice(5), node.id);
+          } else {
+            actions.connectSteps(armed.from, armed.output, node.id);
+          }
+          return;
+        }
         canvasActions.selectElement(node.id);
       } else if (node.type === 'frame') {
         canvasActions.selectFrame((node.data as FrameData).owner);
@@ -380,7 +395,7 @@ function CanvasView() {
         canvasActions.selectSection((node.data as SectionNodeData).section);
       }
     },
-    [canvasActions],
+    [actions, canvasActions, connectValueTo, studio.state.armed],
   );
 
   const onPaneClick = useCallback(() => {
@@ -419,8 +434,20 @@ function CanvasView() {
 
   /** Connects what was dragged from a connection point to the node: a value becomes an input, an output gets its successor. */
   const connectTo = useCallback(
-    (sourceId: string, handle: string | null, targetId: string): boolean => {
-      if (!isElement(sourceId) || !isElement(targetId) || sourceId === targetId) {
+    (sourceId: string, handle: string | null, targetId: string, moved = true): boolean => {
+      if (!isElement(sourceId) || !isElement(targetId)) {
+        return false;
+      }
+      if (sourceId === targetId) {
+        // A line that was drawn back to its own element is refused with its reason. A click on a connection point also
+        // ends on its own element; that is no attempt to connect and stays without a message (it arms the output).
+        if (moved && handle !== null) {
+          if (handle.startsWith('prop:')) {
+            actions.notify('notices.connection.value_to_self', { object: actions.elementDisplayName(sourceId) });
+          } else {
+            actions.connectSteps(sourceId, handle, targetId);
+          }
+        }
         return false;
       }
       if (handle !== null && handle.startsWith('prop:')) {
@@ -437,7 +464,12 @@ function CanvasView() {
     [connectTo],
   );
 
-  const onConnectStart = useCallback((_event: unknown, params: { nodeId: string | null; handleId: string | null }) => {
+  /** Where the line was started: a release at the same place is a click, not a line. */
+  const connectOrigin = useRef<{ x: number; y: number } | null>(null);
+
+  const onConnectStart = useCallback((event: MouseEvent | TouchEvent, params: { nodeId: string | null; handleId: string | null }) => {
+    const origin = 'touches' in event ? event.touches[0] : event;
+    connectOrigin.current = origin === undefined ? null : { x: origin.clientX, y: origin.clientY };
     setDragged(params.nodeId !== null && params.handleId !== null && params.handleId.startsWith('prop:') ? params.nodeId : null);
   }, []);
 
@@ -453,7 +485,9 @@ function CanvasView() {
       }
       const under = window.document.elementFromPoint(point.clientX, point.clientY);
       const target = under?.closest<HTMLElement>('.react-flow__node')?.dataset.id;      if (target !== undefined) {
-        connectTo(state.fromNode.id, state.fromHandle.id ?? null, target);
+        const origin = connectOrigin.current;
+        const moved = origin === null || Math.hypot(point.clientX - origin.x, point.clientY - origin.y) > 8;
+        connectTo(state.fromNode.id, state.fromHandle.id ?? null, target, moved);
       }
     },
     [connectTo],
@@ -743,6 +777,20 @@ function CanvasView() {
 
       <details className="legend">
         <summary>{t('canvas.legend')}</summary>
+        <div className="legend-row" data-testid="legend-step">
+          <svg width="46" height="22" aria-hidden="true">
+            <rect x="9" y="3" width="28" height="16" rx="2" className="legend-shape" />
+            <circle cx="23" cy="3" r="2.5" className="legend-dot" />
+            <circle cx="23" cy="19" r="2.5" className="legend-dot" />
+          </svg>
+          <span>{t('canvas.legendStep')}</span>
+        </div>
+        <div className="legend-row" data-testid="legend-object">
+          <svg width="46" height="22" aria-hidden="true">
+            <rect x="5" y="3" width="36" height="16" rx="8" className="legend-shape card" />
+          </svg>
+          <span>{t('canvas.legendObject')}</span>
+        </div>
         <div className="legend-row">
           <svg width="46" height="12" aria-hidden="true">
             <path d="M2 6 H36" className="edge-line" />

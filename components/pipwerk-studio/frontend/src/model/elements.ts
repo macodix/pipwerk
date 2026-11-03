@@ -21,6 +21,14 @@ export function isCardElement(element: ElementDocument, types: TypeIndex): boole
   return type !== undefined && holdsInstance(type) && element.instance !== undefined && element.instance !== null;
 }
 
+/**
+ * Whether the main flow has a step: an element that is not an object and does not belong to the management of an
+ * order. A strategy without one is empty in the sense of the first step (specification 5.5).
+ */
+export function mainFlowHasStep(document: StrategyDocument, types: TypeIndex): boolean {
+  return document.elements.some((element) => (element.management_of ?? null) === null && !isCardElement(element, types));
+}
+
 /** A row of a card or of the list of values an object supplies. */
 export type PropertyRow = {
   id: string;

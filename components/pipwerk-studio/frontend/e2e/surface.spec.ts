@@ -49,7 +49,9 @@ test('"Neue Strategie" opens an empty drawing area without a guided setup, with 
   await expect(hint).toBeVisible();
   await expect(hint).toContainText('Beginnen Sie mit einem Auslöser');
   await expect(hint).toContainText('das Ereignis, das die Strategie startet');
-  await expect(hint).toContainText('Ablaufsteuerung');
+  // order 20 (F3): the hint names the triggers and no longer the group
+  await expect(hint).toContainText('Kerzenschluss, Tick oder Manuell');
+  expect(await hint.innerText()).not.toContain('Ablaufsteuerung');
   expect(await hint.innerText()).not.toMatch(/rechn/);
   expect(await pageText(page)).not.toMatch(/Assist/i);
   await showArea(page, 'canvas');
