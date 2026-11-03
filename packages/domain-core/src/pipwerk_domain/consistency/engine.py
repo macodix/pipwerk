@@ -860,7 +860,7 @@ class Checker:
                 )
         if analysis.truncated:  # the analysis dropped findings of its own
             self._expression_overflow(key, ctx.element_id, subject)
-        for start, end in analysis.slots:
+        for start, end in analysis.slots[:1]:  # one finding per field, at the first empty place
             self._expression_finding(
                 key,
                 Level.ERROR,
@@ -1057,7 +1057,7 @@ class Checker:
                 found.append(Finding(Level.HINT, fc.RULE_UNRESOLVED_NAME, element, subject, data))
             else:
                 found.append(Finding(Level.ERROR, fc.EXPRESSION_INVALID, element, subject, data))
-        for start, end in analysis.slots:
+        for start, end in analysis.slots[:1]:  # one finding per field, at the first empty place
             found.append(
                 Finding(
                     Level.ERROR,

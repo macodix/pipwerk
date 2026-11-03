@@ -116,7 +116,8 @@ def test_remove_a_strategy_parameter() -> None:
     )
     found = check_strategy(strategy)
     assert {item.code for item in found if item.level.value == "error"} == {fc.EXPRESSION_EMPTY}
-    assert len(only(found, fc.EXPRESSION_EMPTY)) == 4  # two in "stop", two in "stop neu"
+    # one per element and field, although each has two empty places (order 22)
+    assert len(only(found, fc.EXPRESSION_EMPTY)) == 2
 
 
 def test_a_binding_to_a_removed_strategy_parameter_is_not_set() -> None:
@@ -151,7 +152,8 @@ def test_remove_an_instance_with_its_uses() -> None:
     )
     assert [entry.instance for entry in crossing.inputs] == ["ema50"]
     assert all(entry.instance != "ema20" for item in strategy.elements for entry in item.inputs)
-    assert len(only(check_strategy(strategy), fc.EXPRESSION_EMPTY)) >= 4
+    # one per element and field (order 22): "kreuzen" and the elements that use ema20 as well
+    assert len(only(check_strategy(strategy), fc.EXPRESSION_EMPTY)) >= 1
 
 
 def test_remove_an_instance_that_a_data_connection_uses() -> None:
