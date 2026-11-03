@@ -356,6 +356,10 @@ async function connectedPair(page: Page): Promise<void> {
   // no rest of an aborted run: the tests read the stored strategy by its name
   await removeStored(page, 'Neue Strategie');
   await newStrategy(page);
+  // the name of a new strategy is empty: the tests find the stored strategy by this name
+  await showArea(page, 'props');
+  await page.getByTestId('strategy-name').fill('Neue Strategie');
+  await showArea(page, 'canvas');
   await library(page, 'Manuell').click();
   await page.getByTestId('canvas').locator('.react-flow__pane').click({ position: { x: 700, y: 400 }, force: true });
   await library(page, 'Order löschen').click();

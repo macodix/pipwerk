@@ -17,7 +17,7 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   await openApp(page);
   await newStrategy(page);
 
-  await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
+  await expect(page.getByTestId('status-pill')).toContainText('(noch ohne Name)');
   // the hint of the empty strategy stands in the properties view, above the fields of the strategy
   await showArea(page, 'props');
   await expect(page.getByTestId('empty-strategy-hint')).toContainText('Nächster Schritt');
@@ -74,7 +74,7 @@ test('closing, a new strategy and opening ask what to do with unsaved changes: s
   // discard: the strategy is closed, the stored one is unchanged
   await clickMenu(page, 'new');
   await (await dialogButton(page, 'Verwerfen')).click();
-  await expect(page.getByTestId('status-pill')).toContainText('Neue Strategie');
+  await expect(page.getByTestId('status-pill')).toContainText('(noch ohne Name)');
   await clickMenu(page, 'open');
   await expect(page.getByRole('dialog').getByRole('button', { name: 'EMA-Trendfolge', exact: true })).toBeVisible();
   await page.getByTestId('dialog-cancel').click();

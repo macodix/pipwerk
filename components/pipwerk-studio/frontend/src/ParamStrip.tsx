@@ -151,7 +151,7 @@ export function ParamStrip() {
           data-tip={t('params.statusTip')}
         >
           <span className="dot" />
-          <span className="status-name">{strategy.name}</span>
+          <span className="status-name">{strategy.name === '' ? t('strategy.unnamed') : strategy.name}</span>
           <span className="status-state">{t(studio.dirty ? 'params.unsaved' : 'params.saved')}</span>
         </button>
       ) : null}

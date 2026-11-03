@@ -267,28 +267,80 @@ export function conditionKind(block: Block): ConditionKind {
 export const blankComparison = (): Block => comparisonBlock('>', EMPTY, EMPTY);
 
 /**
- * The condition of the kind chosen. A change of the kind replaces the condition by a new one of that kind: the sentence of
- * the new kind stands alone and never behind the sentence of the old one (Mangel E13). Only "Alle gelten (und)" and
- * "Eine gilt (oder)" keep their parts when one becomes the other, because the parts are the same and only the word
- * between them changes.
+ * Whether the user has entered something in the tree: a value, a number, a text, a function, or another comparison
+ * sign than the one a new comparison starts with. Empty places and the frame of "und", "oder", "nicht" and of a blank
+ * comparison are no entries.
  */
-export function convertCondition(kind: ConditionKind, current: Block): Block {
+export function hasInput(block: Block): boolean {
+  switch (block.kind) {
+    case 'empty':
+      return false;
+    case 'comparison':
+      return (block.operator ?? '>') !== '>' || childrenOf(block).some(hasInput);
+    case 'logic':
+      return childrenOf(block).some(hasInput);
+    default:
+      return true;
+  }
+}
+
+/** The condition after a change of its kind, and whether entries of the user would be lost by it. */
+export type Conversion = { result: Block; loses: boolean };
+
+/**
+ * The condition of the kind chosen (specification 5.4, table in docs/technical/pipwerk-studio.md, section "Wechsel der
+ * Art einer Bedingung"). A change of the kind replaces the condition by a new one of that kind: the sentence of the new
+ * kind stands alone and never behind the sentence of the old one (Mangel E13). Three changes keep what is there:
+ * a comparison becomes the first part of "und" and "oder"; "und" and "oder" keep their parts when one becomes the other,
+ * because the parts are the same and only the word between them changes; "und" or "oder" with a single comparison becomes
+ * that comparison. Every other change loses what the user entered; `loses` says so, and the interface asks first.
+ */
+export function convertConditionWithLoss(kind: ConditionKind, current: Block): Conversion {
   const have = !isEmptyBlock(current);
   const currentKind = conditionKind(current);
+  const lost = hasInput(current);
   switch (kind) {
-    case 'compare':
-      return currentKind === 'compare' && have ? current : blankComparison();
+    case 'compare': {
+      if (currentKind === 'compare' && have) {
+        return { result: current, loses: false };
+      }
+      const parts = childrenOf(current);
+      const only = parts[0];
+      if ((currentKind === 'and' || currentKind === 'or') && parts.length === 1 && only !== undefined && only.kind === 'comparison') {
+        return { result: only, loses: false };
+      }
+      return { result: blankComparison(), loses: lost };
+    }
     case 'and':
-      return current.kind === 'logic' && current.operator === 'or'
-        ? { ...current, operator: 'and' }
-        : logicBlock('and', [blankComparison(), blankComparison()]);
-    case 'or':
-      return current.kind === 'logic' && current.operator === 'and'
-        ? { ...current, operator: 'or' }
-        : logicBlock('or', [blankComparison(), blankComparison()]);
+    case 'or': {
+      if (current.kind === 'logic' && (current.operator === 'and' || current.operator === 'or')) {
+        return { result: { ...current, operator: kind }, loses: false };
+      }
+      if (current.kind === 'comparison') {
+        return { result: logicBlock(kind, [current, blankComparison()]), loses: false };
+      }
+      return { result: logicBlock(kind, [blankComparison(), blankComparison()]), loses: lost };
+    }
     case 'not':
-      return logicBlock('not', [blankComparison()]);
+      return currentKind === 'not' && have ? { result: current, loses: false } : { result: logicBlock('not', [blankComparison()]), loses: lost };
     case 'value':
-      return EMPTY;
+      return currentKind === 'value' && have ? { result: current, loses: false } : { result: EMPTY, loses: lost };
   }
+}
+
+export function convertCondition(kind: ConditionKind, current: Block): Block {
+  return convertConditionWithLoss(kind, current).result;
+}
+
+/**
+ * The block without its part at `index` (a part of "und", "oder", or an argument of a function that takes more). The
+ * rest stays. Fewer than `minimum` parts are filled up with a blank part, so the result is always a block the user can
+ * go on editing; the check reports the empty place.
+ */
+export function withoutPart(block: Block, index: number, blank: () => Block, minimum = 1): Block {
+  const rest = childrenOf(block).filter((_, position) => position !== index);
+  while (rest.length < Math.max(minimum, 1)) {
+    rest.push(blank());
+  }
+  return withChildren(block, rest);
 }

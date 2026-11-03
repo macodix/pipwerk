@@ -95,7 +95,13 @@ test('there is no block "Kreuzung": the condition of a crossing is built from "v
 
     // the kinds of a condition: no crossing
     const kind = exprRoot(page).locator(':scope > .cb > .cb-kind > .select > .select-trigger');
-    expect(await offered(kind)).toEqual(['Vergleich', 'Alle gelten (und)', 'Eine gilt (oder)', 'Nicht', 'Wert ist wahr']);
+    expect(await offered(kind)).toEqual([
+      'Zwei Werte vergleichen',
+      'Alle Bedingungen müssen gelten (und)',
+      'Mindestens eine Bedingung muss gelten (oder)',
+      'Eine Bedingung umkehren (nicht)',
+      'Prüfen, ob ein Wert wahr ist',
+    ]);
     await expect(page.getByText(/Kreuzung|kreuzt/)).toHaveCount(0);
 
     // "vorheriger Wert von" offers only values that have an earlier value

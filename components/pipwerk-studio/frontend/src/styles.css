@@ -2319,6 +2319,12 @@ code {
 .cb-list { display: flex; flex-direction: column; gap: 6px; }
 .cb-item { display: flex; gap: 6px; align-items: flex-start; }
 .cb-item > .cb { flex: 1; min-width: 0; }
+.cb-item > .btn { flex: none; }
+/* a narrow window: the button "Entfernen" stands under the part, so the part keeps the whole width */
+@media (max-width: 699px) {
+  .cb-item { flex-direction: column; align-items: stretch; }
+  .cb-item > .btn { align-self: flex-start; }
+}
 .cb-join { align-self: flex-start; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; color: var(--k-cond); padding-left: 4px; }
 .cb, .cb-row, .cb-list, .cb-item, .vb, .vb-inner, .vb-line, .own-prop, .rule-edit { min-width: 0; max-width: 100%; }
 .vb-line > .cb, .vb-line > .vb { flex: 1 1 0; }

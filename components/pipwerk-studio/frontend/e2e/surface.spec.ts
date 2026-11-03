@@ -92,7 +92,7 @@ test('the sentence of a condition is the one of its new kind after the kind chan
   const andAfterNot = await change('and');
   expect(andAfterNot).toBe(freshAnd);
   await expect(exprRoot(page).locator('.cb-item')).toHaveCount(2);
-  await expect(exprRoot(page).locator('.cb-item .cb-kind .select-trigger')).toHaveText(['Vergleich', 'Vergleich']);
+  await expect(exprRoot(page).locator('.cb-item .cb-kind .select-trigger')).toHaveText(['Zwei Werte vergleichen', 'Zwei Werte vergleichen']);
 
   // "Erste": "Nicht" straight from the comparison reads as "Nicht" after "und" does
   await select(page, 'Erste');

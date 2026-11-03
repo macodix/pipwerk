@@ -12,7 +12,7 @@ import { isConnectionValue, type Binding, type ElementDocument, type StrategyDoc
 import { ExpressionPanel } from '../expression/ExpressionPanel';
 import type { SupportedLanguage } from '../i18n';
 import { elementName, propertyRows } from '../model/elements';
-import { compatibleDataTypes, dataTypeWord, labelText, objectTypeChoices, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
+import { compatibleDataTypes, dataTypeWord, isFormulaField, labelText, objectTypeChoices, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
 import { Btn, Info, NumberInput, Select, TextInput } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 
@@ -65,6 +65,11 @@ export function initialValue(datatype: DataType, spec: Pick<FieldSpec, 'default'
     default:
       return '';
   }
+}
+
+/** The label the user sees for an entry: "Formel" for an entry that holds only a formula. */
+export function fieldLabelText(spec: Pick<FieldSpec, 'datatype' | 'bindings' | 'label'>, language: SupportedLanguage, formula: string): string {
+  return isFormulaField(spec) ? formula : labelText(spec.label, language);
 }
 
 /** The kinds of assignment the user can choose, in the order of the type description. */
@@ -472,6 +477,7 @@ export function FieldRow(props: FieldRowProps) {
   const current = binding?.kind ?? 'unset';
   const timeUnits = timeUnitChoices(types);
   const choices = spec.datatype === 'time_unit' && spec.choices.length === 0 ? timeUnits : spec.choices;
+  const shownLabel = fieldLabelText(spec, language, t('expression.formula'));
   const objectChoices = spec.datatype === 'object' && spec.choices.length === 0 ? objectTypeChoices(types, spec.objectType) : spec.choices;
 
   const setKind = (kind: string): void => {
@@ -539,7 +545,7 @@ export function FieldRow(props: FieldRowProps) {
               onChange({ kind: 'fixed', value });
             }}
             testid={`value-${spec.id}`}
-            ariaLabel={labelText(spec.label, language)}
+            ariaLabel={shownLabel}
           />
         );
       case 'parameter':
@@ -592,7 +598,7 @@ export function FieldRow(props: FieldRowProps) {
       data-field={spec.id}
     >
       <div className="field-label" data-tip={tip === '' ? undefined : tip}>
-        <span>{labelText(spec.label, language)}</span>
+        <span>{shownLabel}</span>
         {spec.required ? (
           <span className="req" aria-label={t('fields.required')}>
             *
@@ -632,7 +638,7 @@ export function FieldRow(props: FieldRowProps) {
                 value={current}
                 onChange={setKind}
                 testid={`kind-${spec.id}`}
-                ariaLabel={`${labelText(spec.label, language)}: ${t('fields.source')}`}
+                ariaLabel={`${shownLabel}: ${t('fields.source')}`}
               >
                 <option value="unset">{t('binding.unset')}</option>
                 {kinds.map((kind) => (

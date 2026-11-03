@@ -125,7 +125,7 @@ function Dialogs({
             },
           ]}
         >
-          <p>{t('dialogs.unsaved.text', { name: document?.name ?? '' })}</p>
+          <p>{t('dialogs.unsaved.text', { name: document === null || document.name === '' ? t('strategy.unnamed') : document.name })}</p>
         </MessageDialog>
       );
     case 'open':
@@ -153,7 +153,7 @@ function Dialogs({
             { label: t('dialogs.delete.cancel'), primary: true, onClick: close },
           ]}
         >
-          <p>{t('dialogs.delete.text', { name: document?.name ?? '' })}</p>
+          <p>{t('dialogs.delete.text', { name: document === null || document.name === '' ? t('strategy.unnamed') : document.name })}</p>
           {state.persisted ? null : <p>{t('dialogs.delete.notSaved')}</p>}
         </MessageDialog>
       );

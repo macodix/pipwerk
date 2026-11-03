@@ -31,7 +31,7 @@ Wo Sie was finden:
 | umbenennen oder entfernen | 6.8 |
 | speichern, prüfen, schließen, öffnen oder löschen | 6.9 |
 | eine gespeicherte Vorlage ansehen und einfügen | 6.10 |
-| einen Ausdruck aus Bausteinen zusammenstellen oder als Formel schreiben und verstehen, was „leer“ und „nicht verfügbar“ bedeuten | 7 |
+| eine Formel aus Bausteinen zusammenstellen oder als Text schreiben und verstehen, was „leer“ und „nicht verfügbar“ bedeuten | 7 |
 | einen Befund der Prüfung verstehen und beheben | 8 |
 | alles ohne Ziehen bedienen, zum Beispiel auf einem Telefon | 9 |
 | die Grenzen des jetzigen Stands kennen | 10 |
@@ -283,7 +283,7 @@ Dieser Abschnitt beschreibt die Arbeitsabläufe der Reihe nach. Die Einstellunge
 
 1. Wählen Sie im Menü „Neue Strategie“. Hat die geöffnete Strategie ungespeicherte Änderungen, fragt pipwerk Studio vorher (Abschnitt 6.9).
 2. Die Zeichenfläche ist leer. Die Eigenschaftenansicht zeigt die Strategie mit dem Hinweis „Die Strategie ist leer“. Einen geführten Aufbau gibt es nicht; Sie bauen den Ablauf selbst auf.
-3. Tragen Sie in der Eigenschaftenansicht der Strategie den Namen und die Beschreibung ein. Die Eigenschaftenansicht der Strategie öffnen Sie jederzeit mit einem Klick auf den Namen im Streifen der Strategieparameter oder auf eine freie Stelle der Zeichenfläche. Eine neue Strategie heißt „Neue Strategie“, mit angehängter Zahl, wenn der Name schon vergeben ist.
+3. Tragen Sie in der Eigenschaftenansicht der Strategie den Namen und die Beschreibung ein. Das Feld „Name der Strategie“ ist bei einer neuen Strategie leer und zeigt in Grau den Hinweis „Name eingeben“; er verschwindet mit dem ersten Zeichen, wie beim Feld „Beschreibung“. Solange der Name fehlt, steht im Streifen der Strategieparameter „(noch ohne Name)“. Ohne Namen lässt sich die Strategie speichern; in der Liste „Strategie öffnen“ heißt sie dann „(ohne Name)“. Die Eigenschaftenansicht der Strategie öffnen Sie jederzeit mit einem Klick auf den Namen im Streifen der Strategieparameter oder auf eine freie Stelle der Zeichenfläche.
 4. Beginnen Sie den Ablauf mit einem Auslöser aus der Gruppe „Ablaufsteuerung“ der Elementbibliothek (Abschnitt 6.2). Ein Auslöser ist das Ereignis, das die Strategie startet, zum Beispiel ein Kerzenschluss.
 5. Gespeichert wird erst mit „Speichern“.
 
@@ -312,22 +312,22 @@ Indikatoren, Trends und die Objekte des Marktes liegen als Karten neben dem Schr
 
 **Welche Objekte an einer Stelle zur Wahl stehen.** Ein Objekt ermittelt seine Werte an dem Schritt, der es zuerst verwendet (dem **Element der ersten Verwendung**). Spätere Schritte erhalten diese Werte, aber nur, wenn jeder Weg zu ihnen über das Element der ersten Verwendung führt. Beim Ziehen, beim Klick, in den Bausteinen, in der Formelansicht und unter „Verwendete Werte“ stehen deshalb nur die Objekte zur Wahl, die an dem Schritt verwendbar sind. Im Zweig „falsch“ einer Bedingung steht kein Objekt zur Wahl, das erst im Zweig „wahr“ ermittelt wird. Ein Objekt, das zuerst in einer Order- und Positionsverwaltung verwendet wird, steht dem Hauptablauf und den anderen Order- und Positionsverwaltungen nicht zur Wahl. Die anderen Schritte erscheinen beim Verbinden blass mit gestricheltem Rand; ein Klick darauf verbindet nichts und sagt in der Meldung, an welchem Schritt der Wert zuerst ermittelt wird („Hier nicht verwendbar: Der Wert wird zuerst an einem anderen Element ermittelt.“). Brauchen Sie die Werte an so einer Stelle, legen Sie ein weiteres Objekt mit eigenem Namen an und verwenden Sie dieses dort; zwei Objekte sind zwei getrennte Verwendungen. Verbinden Sie ein Objekt, das noch kein Schritt verwendet, wird dieser Schritt das Element der ersten Verwendung: Die Karte rückt neben ihn, und die Linie ist durchgezogen. Das gilt auch, wenn Sie den Wert in den Bausteinen wählen oder unter „Verwendete Werte“ verbinden. Eine Karte nehmen die Linien nicht an.
 
-**Verwendete Werte.** In der Eigenschaftenansicht eines Schritts steht unter „Verwendete Werte“ je Objekt eine Gruppe mit den Werten, die der Schritt verwendet: die Eingänge und die Werte, die eine Formel des Schritts oder einer seiner Regeln nennt.
+**Verwendete Werte.** In der Eigenschaftenansicht eines Schritts steht unter „Verwendete Werte“ je Objekt eine Gruppe mit den Werten, die der Schritt verwendet: die Eingänge und die Werte, die eine Formel des Schritts oder einer seiner Regeln nennt. Kann ein Schritt keinen Wert verwenden, weil auf der Zeichenfläche noch kein Objekt liegt, fehlt der Abschnitt ganz. Liegen Objekte auf der Fläche, die der Schritt nicht verwenden kann, weil sie an anderer Stelle des Ablaufs ermittelt werden, steht dort ein einziger Satz: Sie können ein solches Objekt hier verwenden, wenn Sie bei ihm dieses oder ein früheres Element als „Element der ersten Verwendung“ wählen.
 
 - Pro Wert wählen Sie in einer Liste die **Eigenschaft oder Methode** des Objekts. Bei einer Methode erscheinen darunter ihre **Argumente** mit Beschriftung und Erklärung beim Zeigen; freiwillige Argumente sind gekennzeichnet („freiwillig“) und haben einen Standardwert. Nennt eine Formel des Schritts den Wert, ändert sich die Formel mit Ihrer Wahl. Sie finden die Änderung in den Bausteinen, in der Formelansicht und im Satz.
 - Der Schalter **„Aktualisieren“** erscheint nur bei Objekten, die ihre Werte neu ermitteln können. Bei „Aktualisieren“ ermittelt das Objekt seine Werte an diesem Schritt neu, bevor es sie übergibt. Das brauchen Sie, wenn die Werte bis dahin veraltet sein können. Beispiel: Eine Order- und Positionsverwaltung läuft bei jedem neuen Tick und braucht den aktuellen Wert eines Indikators, den die Order beim Aufgeben gesehen hat. Dort schalten Sie „Aktualisieren“ ein, oder Sie legen ein weiteres Objekt an. Wählen Sie „Aktualisieren“ für einen Wert, den bisher nur eine Formel nennt, entsteht dafür ein Eingang. Zeigen Sie auf den Schalter, steht die Erklärung da. Hat das Objekt die Möglichkeit nicht, meldet die Prüfung „Aktualisieren“ als Fehler und sagt, wie Sie ihn beheben (Abschnitt 8).
 - Ein Wert, den Sie selbst verbunden haben und den keine Formel nennt, lässt sich mit „Verbindung entfernen“ entfernen. Ein Wert, den eine Formel nennt, bleibt, bis Sie ihn in der Formel entfernen („in der Formel entfernen“ sagt die Zeile). Ein Eingang, den keine Formel verwendet, wird bei der Prüfung als Hinweis gemeldet.
-- **Weiteren Wert verbinden:** Wählen Sie ein Objekt, einen seiner Werte (bei einer Methode die Argumente) und klicken Sie „Verbinden“. Zur Wahl stehen nur Objekte, die an diesem Schritt verwendbar sind. Gibt es keines, sagt der Hinweis es und nennt den Weg: ein weiteres Objekt mit eigenem Namen anlegen.
+- **Weiteren Wert verbinden:** Wählen Sie ein Objekt, einen seiner Werte (bei einer Methode die Argumente) und klicken Sie „Verbinden“. Zur Wahl stehen nur Objekte, die an diesem Schritt verwendbar sind. Gibt es keines, fehlt die Auswahl; der Satz unter „Verwendete Werte“ nennt den Weg (siehe oben).
 - Befunde zu diesen Werten („Aktualisieren“ nicht möglich, Objekt hier nicht verwendbar, falsche Argumente) stehen mit ihrem Text und ihrer Behebung gleich darüber.
 
 **Element der ersten Verwendung wählen.** In der Eigenschaftenansicht eines Objekts nennt „Element der ersten Verwendung“, wo das Objekt ermittelt wird („Das Objekt wird bei … ermittelt.“), mit „Zum Element“. Auch ohne Ziehen legen Sie es dort fest: Sie wählen in der Liste einen Schritt. Der Schritt erhält dafür einen Eingang mit dem ersten Wert des Objekts. Zur Wahl stehen nur Schritte, an denen das Objekt verwendbar ist.
 
-**„Vorheriger Wert von“ und das Kreuzen zweier Werte.** In den Bausteinen steht „Vorheriger Wert von …“ für den Wert, den ein Objekt oder eine Berechnung bei der Kerze davor hatte. Rechts davon wählen Sie, wie viele Kerzen zurück („vor 3 Kerzen“); ohne Angabe ist es eine Kerze. Zur Wahl stehen nur Werte, die einen früheren Wert haben, zum Beispiel der Wert eines Indikators. Einen eigenen Baustein für das Kreuzen zweier Werte gibt es nicht; Sie bilden die Bedingung aus „Vorheriger Wert von …“, Vergleichen und „Alle gelten (und)“ (Abschnitt 7.4). Beispiel „EMA 20 kreuzt EMA 50 nach oben“: Wählen Sie bei einer Bedingung die Art „Alle gelten (und)“ und legen Sie zwei Vergleiche an:
+**„Vorheriger Wert von“ und das Kreuzen zweier Werte.** In den Bausteinen steht „Vorheriger Wert von …“ für den Wert, den ein Objekt oder eine Berechnung bei der Kerze davor hatte. Rechts davon wählen Sie, wie viele Kerzen zurück („vor 3 Kerzen“); ohne Angabe ist es eine Kerze. Zur Wahl stehen nur Werte, die einen früheren Wert haben, zum Beispiel der Wert eines Indikators. Einen eigenen Baustein für das Kreuzen zweier Werte gibt es nicht; Sie bilden die Bedingung aus „Vorheriger Wert von …“, Vergleichen und „Alle Bedingungen müssen gelten (und)“ (Abschnitt 7.4). Beispiel „EMA 20 kreuzt EMA 50 nach oben“: Wählen Sie bei der Frage „Was soll geprüft werden?“ die Antwort „Alle Bedingungen müssen gelten (und)“ und legen Sie zwei Vergleiche an:
 
 1. „Vorheriger Wert von EMA 20 › Wert“ ist kleiner oder gleich „Vorheriger Wert von EMA 50 › Wert“ (zuvor lag EMA 20 darunter oder gleichauf),
 2. „EMA 20 › Wert“ ist größer als „EMA 50 › Wert“ (jetzt liegt EMA 20 darüber).
 
-Nach unten tauschen Sie die Vergleiche (größer oder gleich, dann kleiner als). In beide Richtungen wählen Sie die Art „Eine gilt (oder)“ mit zwei Bedingungen der Art „Alle gelten (und)“, einer für jede Richtung. Eine so gebildete Bedingung zeigt der Satz auf der Zeichenfläche ausgeschrieben („Vorheriger Wert von EMA 20 ist kleiner oder gleich vorheriger Wert von EMA 50 und EMA 20 ist größer als EMA 50“).
+Nach unten tauschen Sie die Vergleiche (größer oder gleich, dann kleiner als). In beide Richtungen wählen Sie „Mindestens eine Bedingung muss gelten (oder)“ mit zwei Bedingungen, die jeweils „Alle Bedingungen müssen gelten (und)“ lauten, eine für jede Richtung. Eine so gebildete Bedingung zeigt der Satz auf der Zeichenfläche ausgeschrieben („Vorheriger Wert von EMA 20 ist kleiner oder gleich vorheriger Wert von EMA 50 und EMA 20 ist größer als EMA 50“).
 
 Eine Karte verschieben Sie, indem Sie sie ziehen; sie bleibt dort, wo Sie sie ablegen, und die Linie folgt. „Neu anordnen“ in der Werkzeugleiste ordnet alles wieder selbst an. Ein Objekt, das noch kein Schritt verwendet, trägt nach „Prüfen“ den Befund „… ist mit keinem Element verbunden. Es wird nirgends verwendet.“
 
@@ -485,17 +485,33 @@ Ein Wert wird in der Form *Objekt › Eigenschaft* gezeigt, zum Beispiel „EMA 
 
 Die Rechnungen und Vergleiche stehen in Händlersprache: „ist größer als“, „und“, „oder“, „nicht“, „Vorheriger Wert von … vor … Kerzen“, die Rechnung „plus, minus, mal, geteilt“, die Fallunterscheidung „Wenn … dann … sonst …“ und die Funktionen (kleinster, größter, abgerundet …). Bei einem Text, dessen Wert aus einer Auswahl stammt (zum Beispiel die Richtung oder der Status einer Order), bietet pipwerk Studio die erlaubten Werte zur Wahl an. Ein Wert kann selbst eine Rechnung, eine Fallunterscheidung, eine Funktion oder eine Bedingung sein; die Bausteine klappen sich nach Bedarf auf.
 
-Eine **Bedingung** wählt oben ihre Art („Art der Bedingung“):
+Eine **Bedingung** stellt oben die Frage „Was soll geprüft werden?“. Sie antworten mit einer der fünf Möglichkeiten:
 
-| Art | Bedeutung |
+| Antwort | Bedeutung |
 | --- | --- |
-| Vergleich | Zwei Werte und ein Vergleich: ist gleich, ist ungleich, ist kleiner als, ist kleiner oder gleich, ist größer als, ist größer oder gleich. |
-| Alle gelten (und) | Mindestens zwei Bedingungen, alle müssen wahr sein. „Bedingung hinzufügen“ fügt eine hinzu; ab drei Bedingungen entfernt „Bedingung entfernen“ eine wieder. |
-| Eine gilt (oder) | Mehrere Bedingungen, mindestens eine muss wahr sein. |
-| Nicht | Kehrt eine Bedingung um. |
-| Wert ist wahr | Ein Wert, der wahr oder falsch ist, zum Beispiel ein Strategieparameter von der Art Wahrheitswert, eine Eigenschaft eines eigenen Indikators oder Trends mit dieser Art oder eine Fallunterscheidung, deren Zweige Bedingungen sind. |
+| Zwei Werte vergleichen | Zwei Werte und ein Vergleich: ist gleich, ist ungleich, ist kleiner als, ist kleiner oder gleich, ist größer als, ist größer oder gleich. |
+| Alle Bedingungen müssen gelten (und) | Mindestens zwei Bedingungen, alle müssen wahr sein. „Bedingung hinzufügen“ fügt eine hinzu. |
+| Mindestens eine Bedingung muss gelten (oder) | Mehrere Bedingungen, mindestens eine muss wahr sein. |
+| Eine Bedingung umkehren (nicht) | Kehrt eine Bedingung um. |
+| Prüfen, ob ein Wert wahr ist | Ein Wert, der wahr oder falsch ist, zum Beispiel ein Strategieparameter von der Art Wahrheitswert, eine Eigenschaft eines eigenen Indikators oder Trends mit dieser Art oder eine Fallunterscheidung, deren Zweige Bedingungen sind. |
 
-Eine Art für das Kreuzen zweier Werte gibt es nicht. Wie Sie es aus „Vorheriger Wert von …“, Vergleichen und „Alle gelten (und)“ bilden, steht in Abschnitt 6.3. Wechseln Sie die Art einer Bedingung, ersetzt die neue Art die alte samt ihrer Erklärung; nur zwischen „Alle gelten (und)“ und „Eine gilt (oder)“ bleiben die Teile erhalten.
+Eine Antwort für das Kreuzen zweier Werte gibt es nicht. Wie Sie es aus „Vorheriger Wert von …“, Vergleichen und „Alle Bedingungen müssen gelten (und)“ bilden, steht in Abschnitt 6.3.
+
+**Eine Bedingung aufbauen.**
+
+1. Wählen Sie den Schritt „Bedingung“ und öffnen Sie seine Eigenschaftenansicht. Unter „Formel“ stehen die Bausteine.
+2. Beantworten Sie „Was soll geprüft werden?“, zum Beispiel mit „Zwei Werte vergleichen“.
+3. Wählen Sie links und rechts je einen Wert und in der Mitte, wie verglichen wird.
+4. Sollen mehrere Bedingungen zugleich gelten, wählen Sie „Alle Bedingungen müssen gelten (und)“ oder „Mindestens eine Bedingung muss gelten (oder)“. Der Vergleich, den Sie schon eingegeben haben, bleibt der erste Teil; darunter steht ein zweiter leerer Teil. „Bedingung hinzufügen“ fügt weitere Teile hinzu.
+
+**Einen Teil entfernen.** Jeder Teil von „Alle Bedingungen müssen gelten (und)“ und „Mindestens eine Bedingung muss gelten (oder)“ hat rechts oder darunter die Schaltfläche „Entfernen“. Zeigen Sie darauf, sagt eine kurze Erklärung, was sie tut; mit der Tab-Taste erreichen Sie sie auch ohne Maus. „Entfernen“ nimmt nur diesen Teil weg; die übrigen bleiben. Bleibt ein Teil übrig, steht die Bedingung mit diesem einen Teil da. Entfernen Sie den letzten Teil, bleibt ein leerer Teil „Wert wählen …“, den Sie neu ausfüllen können; die Prüfung meldet ihn, solange er leer ist. Dasselbe gilt für die Werte einer Funktion wie „kleinster Wert“, zu der Sie Werte hinzufügen können: Jeder Wert hat „Entfernen“. In der Formelansicht gibt es keine Schaltfläche; dort löschen Sie den Teil im Text.
+
+**Die Antwort auf „Was soll geprüft werden?“ ändern.**
+
+1. Öffnen Sie die Antworten der Frage „Was soll geprüft werden?“ und wählen Sie eine andere.
+2. Von „Zwei Werte vergleichen“ zu „Alle Bedingungen müssen gelten (und)“ oder „Mindestens eine Bedingung muss gelten (oder)“ wird Ihr Vergleich der erste Teil. Zwischen „und“ und „oder“ bleiben alle Teile. „Und“ oder „oder“ mit einem einzigen Vergleich wird wieder zu diesem Vergleich.
+3. Würden dabei Eingaben verloren gehen, fragt pipwerk Studio im Fenster „Andere Prüfung wählen?“: „Dabei gehen die Eingaben dieser Bedingung verloren. Trotzdem wechseln?“ Mit „Wechseln“ ersetzt die neue Antwort die alte, mit „Abbrechen“ (oder der Escape-Taste) bleibt die Bedingung, wie sie war.
+4. Eine Bedingung ohne Eingaben, zum Beispiel eine neue, wechseln Sie ohne Rückfrage.
 
 Ein leerer Platz trägt „Wert wählen …“. Er macht die Formel unvollständig; die Prüfung meldet das.
 

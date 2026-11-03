@@ -142,7 +142,7 @@ test('an object that is determined only in the branch "wahr" is offered neither 
     expect(await labelsOf(inFalse)).not.toContain('Schnell › Wert');
 
     // "Verwendete Werte": the object is not on offer for a further value there either; it is at the element of its first use
-    await expect(page.getByTestId('used-none-usable')).toBeVisible();
+    await expect(page.getByTestId('used-elsewhere')).toContainText('Weitere Objekte lassen sich hier erst verwenden');
     await expect(page.getByTestId('used-add-object')).toHaveCount(0);
     await select(page, 'Im Ja');
     expect(await labelsOf(page.getByTestId('used-add-object'))).toContain('Schnell');

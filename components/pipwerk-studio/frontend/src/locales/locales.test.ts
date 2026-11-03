@@ -66,14 +66,44 @@ describe('translations (specification 5.1)', () => {
         'dialogs.error.ok',
         'expression.arithmetic.+',
         'expression.arithmetic.-',
-        'expression.text',
         'findings.whereElement',
-        'instances.name',
         'library.groups.trends',
-        'openDialog.columnName',
-        'properties.name',
       ].sort(),
     );
+  });
+
+  it('have no label, heading, button or answer that is a single word without a statement (F11)', () => {
+    // Words that say nothing without the sentence around them. A label is a question, a request or a noun phrase that
+    // says what to enter or choose: "Wert des Objekts wählen", not "Wert".
+    const emptyWords = {
+      de: ['Art', 'Typ', 'Wert', 'Name', 'Zahl', 'Text', 'Vergleich', 'Funktion', 'Pflicht', 'Inhalt', 'Nicht', 'Ausdruck', 'Rechenart', 'Auswahlwert'],
+      en: ['Kind', 'Type', 'Value', 'Name', 'Number', 'Text', 'Comparison', 'Function', 'Required', 'Content', 'Not', 'Expression', 'Operation', 'Choice value'],
+    };
+    for (const [language, texts] of [['de', german], ['en', english]] as const) {
+      const empty = new Set(emptyWords[language].map((word) => word.toLowerCase()));
+      for (const [key, text] of texts) {
+        expect(empty.has(text.trim().toLowerCase()), `${language}: ${key} = "${text}"`).toBe(false);
+      }
+    }
+  });
+
+  it('ask the kind of a condition as a question and answer in whole words, in both languages (F11)', () => {
+    expect(german.get('expression.conditionKind')).toBe('Was soll geprüft werden?');
+    expect(english.get('expression.conditionKind')).toBe('What should be checked?');
+    expect(['compare', 'and', 'or', 'not', 'value'].map((kind) => german.get(`expression.conditionKinds.${kind}`))).toEqual([
+      'Zwei Werte vergleichen',
+      'Alle Bedingungen müssen gelten (und)',
+      'Mindestens eine Bedingung muss gelten (oder)',
+      'Eine Bedingung umkehren (nicht)',
+      'Prüfen, ob ein Wert wahr ist',
+    ]);
+    expect(['compare', 'and', 'or', 'not', 'value'].map((kind) => english.get(`expression.conditionKinds.${kind}`))).toEqual([
+      'Compare two values',
+      'All conditions must hold (and)',
+      'At least one condition must hold (or)',
+      'Reverse a condition (not)',
+      'Check whether a value is true',
+    ]);
   });
 
   it('call the part of the flow at the output "gestellt" only "Order- und Positionsverwaltung" / "order and position management" (E1), and know no assistant (E9)', () => {

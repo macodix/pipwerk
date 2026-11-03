@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { FunctionDescription } from '../api/elementTypes';
 import type { VisibleChoice } from '../api/objects';
 import type { SupportedLanguage } from '../i18n';
+import { MessageDialog } from '../dialogs/MessageDialog';
 import { Btn, NumberInput, Select, TextInput } from '../ui/controls';
 import {
   ARITHMETIC_OPERATORS,
@@ -16,7 +17,7 @@ import {
   child,
   childrenOf,
   conditionKind,
-  convertCondition,
+  convertConditionWithLoss,
   functionBlock,
   isEmptyBlock,
   literalBlock,
@@ -24,6 +25,7 @@ import {
   valueKey,
   withChild,
   withChildren,
+  withoutPart,
   type Block,
   type ConditionKind,
 } from './blocks';
@@ -326,6 +328,21 @@ export function ValueEditor({
                   </span>
                 ) : null}
                 {sub(argument, (next) => { onChange(withChild(value, index, next)); })}
+                {functionOf(value.function)?.variadic != null ? (
+                  <Btn
+                    kind="quiet"
+                    small
+                    icon="x"
+                    title={t('expression.removeValue', { number: index + 1 })}
+                    tip={t('expression.removeValueTip')}
+                    testid="arg-remove"
+                    onClick={() => {
+                      onChange(withoutPart(value, index, () => EMPTY, functionOf(value.function)?.minArguments ?? 1));
+                    }}
+                  >
+                    {t('expression.remove')}
+                  </Btn>
+                ) : null}
               </Fragment>
             );
           })}
@@ -370,10 +387,16 @@ export function CondEditor({
   const { t } = useTranslation();
   // "The value is true" starts empty; it stays chosen until a value is picked.
   const [forced, setForced] = useState<ConditionKind | null>(null);
+  // A change of the kind that would lose entries waits here for the answer to the question.
+  const [asking, setAsking] = useState<{ kind: ConditionKind; next: Block } | null>(null);
   const kind: ConditionKind = isEmptyBlock(value) && forced !== null ? forced : conditionKind(value);
   const shown: Block = isEmptyBlock(value) && kind === 'compare' ? blankComparison() : value;
   const left = child(shown, 0);
   const right = child(shown, 1);
+  const switchTo = (chosen: ConditionKind, next: Block): void => {
+    setForced(isEmptyBlock(next) ? chosen : null);
+    onChange(next);
+  };
 
   return (
     <div className={`cb cb-${kind}${depth > 0 ? ' cb-nested' : ''}`} data-testid="cond-block">
@@ -381,9 +404,12 @@ export function CondEditor({
         <Select
           value={kind}
           onChange={(chosen) => {
-            const next = convertCondition(chosen as ConditionKind, value);
-            setForced(isEmptyBlock(next) ? (chosen as ConditionKind) : null);
-            onChange(next);
+            const conversion = convertConditionWithLoss(chosen as ConditionKind, value);
+            if (conversion.loses) {
+              setAsking({ kind: chosen as ConditionKind, next: conversion.result });
+            } else {
+              switchTo(chosen as ConditionKind, conversion.result);
+            }
           }}
           ariaLabel={t('expression.conditionKind')}
           testid="cond-kind"
@@ -395,6 +421,32 @@ export function CondEditor({
           ))}
         </Select>
       </div>
+      {asking !== null ? (
+        <MessageDialog
+          title={t('expression.switch.title')}
+          onCancel={() => {
+            setAsking(null);
+          }}
+          actions={[
+            {
+              label: t('common.cancel'),
+              primary: true,
+              onClick: () => {
+                setAsking(null);
+              },
+            },
+            {
+              label: t('expression.switch.confirm'),
+              onClick: () => {
+                switchTo(asking.kind, asking.next);
+                setAsking(null);
+              },
+            },
+          ]}
+        >
+          <p data-testid="switch-question">{t('expression.switch.text')}</p>
+        </MessageDialog>
+      ) : null}
 
       {kind === 'compare' && shown.kind === 'comparison' ? (
         <div className="cb-row">
@@ -424,17 +476,19 @@ export function CondEditor({
               {index > 0 ? <div className="cb-join">{t(kind === 'and' ? 'expression.and' : 'expression.or')}</div> : null}
               <div className="cb-item">
                 <CondEditor value={entry} onChange={(next) => { onChange(withChild(shown, index, next)); }} ctx={ctx} depth={depth + 1} />
-                {childrenOf(shown).length > 2 ? (
-                  <Btn
-                    kind="quiet"
-                    small
-                    icon="x"
-                    title={t('expression.removeCondition')}
-                    onClick={() => {
-                      onChange(withChildren(shown, childrenOf(shown).filter((_, position) => position !== index)));
-                    }}
-                  />
-                ) : null}
+                <Btn
+                  kind="quiet"
+                  small
+                  icon="x"
+                  title={t('expression.removePart', { number: index + 1 })}
+                  tip={t('expression.removePartTip')}
+                  testid="cond-remove"
+                  onClick={() => {
+                    onChange(withoutPart(shown, index, blankComparison));
+                  }}
+                >
+                  {t('expression.remove')}
+                </Btn>
               </div>
             </Fragment>
           ))}
