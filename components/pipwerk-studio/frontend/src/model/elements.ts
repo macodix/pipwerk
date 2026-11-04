@@ -1,12 +1,15 @@
 import type { Choice, DataType, Label, TypeDescription } from '../api/elementTypes';
 import type { ElementDocument, InstanceDocument, StrategyDocument } from '../document/types';
-import type { SupportedLanguage } from '../i18n';
+import { resources, type SupportedLanguage } from '../i18n';
 import { holdsInstance, labelText, managementOutput, type TypeIndex } from './typeIndex';
 
-/** The name the user sees for an element: the name of its instance, its own name, or the name of its type. */
+/**
+ * The name the user sees for an element: the name of its instance ("(noch ohne Name)" while it has none), its own
+ * name, or the name of its type.
+ */
 export function elementName(element: ElementDocument, types: TypeIndex, language: SupportedLanguage): string {
   if (element.instance !== undefined && element.instance !== null) {
-    return element.instance.name;
+    return element.instance.name === '' ? resources[language].translation.strategy.unnamed : element.instance.name;
   }
   if (typeof element.name === 'string' && element.name !== '') {
     return element.name;

@@ -304,8 +304,21 @@ const issueCodes = new Set(['expression.invalid', 'rule.unresolved_name']);
 
 export type FindingTexts = { message: string; fix: string };
 
-/** The text of a finding and the way to fix it. */
+/**
+ * The text of a finding and the way to fix it. A text that names the main flow gets the explanation of the word as its
+ * second sentence, once per finding (specification 5.4, "Begriffe").
+ */
 export function findingTexts(t: TFunction, i18n: I18n, finding: Finding, ctx: FindingTextContext): FindingTexts {
+  const texts = plainFindingTexts(t, i18n, finding, ctx);
+  const explanation = t('properties.mainFlowExplanation');
+  const word = t('properties.mainFlow').toLowerCase();
+  if (texts.message.includes(explanation) || !(texts.message.toLowerCase().includes(word) || texts.fix.toLowerCase().includes(word))) {
+    return texts;
+  }
+  return { message: `${texts.message} ${explanation}`, fix: texts.fix };
+}
+
+function plainFindingTexts(t: TFunction, i18n: I18n, finding: Finding, ctx: FindingTextContext): FindingTexts {
   const params = findingParams(t, finding, ctx);
   const key = `findings.${finding.code}`;
   const fixKey = `findingFixes.${finding.code}`;

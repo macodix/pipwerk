@@ -295,13 +295,15 @@ export function ElementView({ element }: { element: ElementDocument }) {
       return '';
     }
     const objectType = types.byId.get(origin.object_type);
-    const objectTypeName = objectType === undefined ? origin.object_type : labelText(objectType.name, language);
     if (origin.template_id === null || origin.template_id === undefined) {
-      return t('properties.originType', { name, type: objectTypeName });
+      // the kind from the type description with the name of the type: "Indikator EMA"
+      const typeName = objectType === undefined ? origin.object_type : labelText(objectType.name, language);
+      const kind = objectType?.categoryLabel == null ? '' : labelText(objectType.categoryLabel, language);
+      return t('properties.originType', { name, type: kind === '' ? typeName : `${kind} ${typeName}` });
     }
     const delivered = types.templates.find((template) => template.id === origin.template_id);
     const templateName = delivered === undefined ? (origin.template_name ?? '') : labelText(delivered.label, language);
-    return t('properties.originTemplate', { name, template: templateName, type: objectTypeName });
+    return t('properties.originTemplate', { name, template: templateName });
   })();
   const sections = !card;
 
@@ -314,7 +316,8 @@ export function ElementView({ element }: { element: ElementDocument }) {
         <div className="props-title">
           <span className="props-kind">{labelText(type.name, language)}</span>
           <TextInput
-            value={name}
+            value={instance === null ? name : instance.name}
+            placeholder={instance === null ? undefined : t('strategy.unnamed')}
             onChange={(value) => {
               actions.renameElement(element.id, value);
             }}
@@ -340,7 +343,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
       ))}
 
       {settingSpecs.length > 0 ? (
-        <Section title={t(card ? 'properties.settingsOfObject' : 'properties.settings')} testid="sec-settings">
+        <Section title={card ? t('properties.settingsOfName', { name }) : t('properties.settings')} testid="sec-settings">
           {settingSpecs.map((spec) => row(spec, scope))}
         </Section>
       ) : null}
@@ -391,6 +394,11 @@ export function ElementView({ element }: { element: ElementDocument }) {
         <Section title={t('properties.belongsTo')} testid="sec-management">
           <ManagementPicker element={element} />
           <p className="muted">{t('properties.belongsToHint')}</p>
+          {(element.management_of ?? null) === null ? (
+            <p className="muted" data-testid="main-flow-explanation">
+              {t('properties.mainFlowExplanation')}
+            </p>
+          ) : null}
         </Section>
       ) : null}
 

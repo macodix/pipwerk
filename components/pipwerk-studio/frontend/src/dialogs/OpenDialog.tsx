@@ -81,7 +81,7 @@ export function OpenDialog({ onOpen, onCancel }: OpenDialogProps) {
                       onOpen(entry.id);
                     }}
                   >
-                    {entry.name !== null && entry.name !== '' ? entry.name : t('openDialog.untitled')}
+                    {entry.name !== null && entry.name !== '' ? entry.name : t('strategy.unnamed')}
                   </button>
                 )}
               </td>

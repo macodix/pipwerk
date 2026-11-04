@@ -1,5 +1,5 @@
 import { EMA_ELEMENT_IDS } from '../src/testing/emaTrendfolge';
-import { boxOf, card, expect, expectSaved, node, openApp, openStrategy, overlap, test } from './support';
+import { boxOf, card, expect, expectSaved, node, openApp, openStrategy, overlap, showArea, test } from './support';
 
 // Specification 3.7, 5.3: the strategy "EMA-Trendfolge" of the client opens with the names the conversion gives and is
 // arranged without anything overlapping; the steps of the management lie in its frame, the others outside.
@@ -85,4 +85,37 @@ test('shows no identifier of an element or an expression on the drawing area and
   const text = await page.getByTestId('app').innerText();
   expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
   expect(text).not.toContain('flow.condition');
+});
+
+// Specification 5.4, point "Begriffe" (defect F4): the words of the table stand where the old words stood, and the
+// explanation of "Hauptablauf" and the sentence above the rules are visible.
+test('speaks with the words of the table: Handelsdaten, Indikator EMA, Einstellungen von, Hauptablauf explained, rules optional', async ({ page }) => {
+  await openApp(page);
+  await openStrategy(page, 'EMA-Trendfolge');
+
+  await showArea(page, 'props');
+  await page.getByTestId('status-pill').click();
+  await showArea(page, 'props');
+  const trading = page.getByTestId('sec-application-objects');
+  await expect(trading.getByRole('heading', { name: 'Handelsdaten: Order, Position, Strategie', exact: true })).toBeVisible();
+  await expect(trading).toContainText('Diese Werte brauchen kein Element auf der Zeichenfläche. Sie stehen in Formeln und Regeln zur Wahl, wo sie verwendbar sind.');
+  await expect(page.getByTestId('sec-rules')).toContainText('Regeln sind freiwillig. Eine Regel der Strategie gilt für jede Order der Strategie.');
+
+  await showArea(page, 'canvas');
+  await card(page, 'EMA20').click({ position: { x: 40, y: 14 } });
+  await showArea(page, 'props');
+  await expect(page.getByTestId('element-origin')).toContainText('EMA20 – Indikator EMA');
+  await expect(page.getByTestId('sec-settings').getByRole('heading', { name: 'Einstellungen von „EMA20“', exact: true })).toBeVisible();
+
+  await showArea(page, 'canvas');
+  await node(page, 'Kreuzen').click({ position: { x: 40, y: 14 } });
+  await showArea(page, 'props');
+  await expect(page.getByTestId('main-flow-explanation')).toHaveText(
+    'Der Hauptablauf ist der Ablauf der Strategie ab ihren Auslösern, ohne die Schritte in den Order- und Positionsverwaltungen.',
+  );
+
+  const text = await page.getByTestId('app').innerText();
+  for (const word of ['Objekt der Anwendung', 'Objekte der Anwendung', 'Objekttyp', 'Einstellungen des Objekts', 'Ausdruck']) {
+    expect(text, word).not.toContain(word);
+  }
 });

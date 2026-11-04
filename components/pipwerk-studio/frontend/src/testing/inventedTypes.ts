@@ -145,6 +145,7 @@ export const inventedTypesJson = {
     type('zz.meter', 'object_type', 'Messer', 'Meter', {
       group: 'indicators',
       category: 'indicator',
+      category_label: label('Indikator', 'indicator'),
       parameters: [
         parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true, choices: [{ id: 'fast', label: label('schnell', 'fast') }, { id: 'slow', label: label('langsam', 'slow') }] }),
         parameter('laenge', 'integer', 'Länge', 'Length', { required: true }),
@@ -155,11 +156,12 @@ export const inventedTypesJson = {
     type('zz.chain', 'object_type', 'Kette', 'Chain', {
       group: 'trends',
       category: 'trend',
+      category_label: label('Trend', 'trend'),
       parameters: [parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true })],
       properties: [property('richtung', 'text', 'Richtung', 'Direction', { must: true })],
     }),
-    type('zz.rule', 'object_type', 'Regel', 'Rule', { group: 'rules', category: 'rule', on_canvas: false }),
-    type('zz.ruleset', 'object_type', 'Regelsatz', 'Rule set', { group: 'rules', category: 'ruleset', on_canvas: false }),
+    type('zz.rule', 'object_type', 'Regel', 'Rule', { group: 'rules', category: 'rule', category_label: label('Regel', 'rule'), on_canvas: false }),
+    type('zz.ruleset', 'object_type', 'Regelsatz', 'Rule set', { group: 'rules', category: 'ruleset', category_label: label('Regelwerk', 'rule set'), on_canvas: false }),
   ],
   templates: [
     {
@@ -197,6 +199,7 @@ export const UNKNOWN_GROUP = 'zz_unbekannt';
 export const methodTypeJson = type('zz.gauge', 'object_type', 'Pegel', 'Gauge', {
   group: UNKNOWN_GROUP,
   category: 'indicator',
+  category_label: label('Indikator', 'indicator'),
   can_refresh: true,
   parameters: [parameter('takt', 'time_unit', 'Takt', 'Beat', { required: true })],
   properties: [property('stand', 'number', 'Stand', 'Reading', { must: true })],
