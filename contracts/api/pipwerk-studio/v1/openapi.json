@@ -12,7 +12,7 @@
           "element-types"
         ],
         "summary": "List the type descriptions",
-        "description": "All type descriptions of the element register with names, descriptions, explanations and groups in German and English, with their methods (identifier, data type of the result, arguments with data type, mandatory or optional, default value, label and explanation, and label and explanation of the method) and the indication whether a use of an instance can choose \"Aktualisieren\" (`can_refresh`), the word for each data type in trader language in German and English (`data_types`, and `datatype_label` at each parameter, property, method and argument; for an object it is the name of the object type), the delivered templates as documents with their names and explanations in both languages, and the functions of expressions. The user interface builds the element library and the property view from this.",
+        "description": "All type descriptions of the element register with names, descriptions, explanations and groups in German and English, with their methods (identifier, data type of the result, arguments with data type, mandatory or optional, default value, label and explanation, and label and explanation of the method) and the indication whether a use of an instance can choose \"Aktualisieren\" (`can_refresh`), the word for each data type in trader language in German and English (`data_types`, and `datatype_label` at each parameter, property, method and argument; for an object it is the name of the object type), the word for the kind of an object type (`category_label`), the delivered templates as documents with their names and explanations in both languages, and the functions of expressions. The user interface builds the element library and the property view from this.",
         "operationId": "list_element_types",
         "responses": {
           "200": {
@@ -6597,6 +6597,16 @@
               }
             ]
           },
+          "category_label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabelModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "parameters": {
             "items": {
               "$ref": "#/components/schemas/ParameterModel"
@@ -6675,6 +6685,7 @@
           "name",
           "description",
           "category",
+          "category_label",
           "parameters",
           "properties",
           "outputs",
@@ -6690,7 +6701,7 @@
           "can_refresh"
         ],
         "title": "TypeDescriptionModel",
-        "description": "Description of an element type or object type: the data the user interface is built\nfrom (specification 3.1). ``group`` is the group of the element library: ``flow``,\n``calculation``, ``indicators``, ``trends``, ``market``, ``account``, ``actions`` or\n``rules``, ``null`` for a type that is not in it; the names of the groups in both languages\nare not part of the description, the user interface has them. ``explanation`` is the short\ntext on pointing at the type, in the language of a trader. ``methods`` are the methods of\nthe type (empty for every delivered type). ``can_refresh`` tells whether a use of an\ninstance of this type can choose \"Aktualisieren\"; a template of the user and its instances\ntake it from their object type."
+        "description": "Description of an element type or object type: the data the user interface is built\nfrom (specification 3.1). ``group`` is the group of the element library: ``flow``,\n``calculation``, ``indicators``, ``trends``, ``market``, ``account``, ``actions`` or\n``rules``, ``null`` for a type that is not in it; the names of the groups in both languages\nare not part of the description, the user interface has them. ``explanation`` is the short\ntext on pointing at the type, in the language of a trader. ``methods`` are the methods of\nthe type (empty for every delivered type). ``can_refresh`` tells whether a use of an\ninstance of this type can choose \"Aktualisieren\"; a template of the user and its instances\ntake it from their object type. ``category_label`` is the word for the ``category`` in\nGerman and English (``null`` without a category): the user interface forms the origin of\nan instance from the name of the instance, this word and the name of the type\n(specification 5.4)."
       },
       "UsageEntry": {
         "properties": {
