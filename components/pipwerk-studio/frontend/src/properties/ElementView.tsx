@@ -1,6 +1,6 @@
 // Structure, class names and test identifiers follow the prototype (specification E8: an aid, not a template); a few
 // lines are equal to it. See docs/technical/pipwerk-studio.md, section 2.3.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { PropertyDescription, TypeDescription } from '../api/elementTypes';
@@ -18,6 +18,7 @@ import { FieldRow, applies, fieldLabelText, specOfParameter, specOfProperty, typ
 import { FindingsList } from './FindingsList';
 import { InstanceList, InstancePanel } from './Instances';
 import { SuppliedList } from './Supplied';
+import { useFocusField } from './useFocusField';
 import { FirstUse, UsedValues } from './UsedValues';
 
 /** The own parameters of an instance (from a template of the user) as entries that can be assigned. */
@@ -142,6 +143,8 @@ function bindingOf(element: ElementDocument, scope: 'parameters' | 'properties' 
 export function ElementView({ element }: { element: ElementDocument }) {
   const { studio, types, findings, expressions, uses } = useStudio();
   const { t } = useTranslation();
+  const root = useRef<HTMLDivElement>(null);
+  useFocusField(root);
   const document = studio.state.document;
   if (document === null || types === null) {
     return null;
@@ -242,16 +245,6 @@ export function ElementView({ element }: { element: ElementDocument }) {
       onChange={(binding) => {
         actions.setBinding(element.id, where, spec.id, binding);
       }}
-      onCreateParameter={(parameterName) =>
-        actions.addParameter({
-          name: parameterName,
-          datatype: spec.datatype,
-          object_type: spec.objectType,
-          value: spec.default ?? undefined,
-          at_application: false,
-          choices: spec.datatype === 'choice' ? spec.choices.map((choice) => choice.id) : [],
-        })
-      }
     />
   );
 
@@ -313,7 +306,7 @@ export function ElementView({ element }: { element: ElementDocument }) {
   const sections = !card;
 
   return (
-    <div className="props" data-testid="props-element" data-kind={element.type} data-element-id={element.id}>
+    <div className="props" ref={root} data-testid="props-element" data-kind={element.type} data-element-id={element.id}>
       <header className="props-head">
         <div className={`badge b-${cls}`}>
           <Icon name={iconOf(type)} size={20} />

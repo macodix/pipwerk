@@ -10,8 +10,9 @@ test('opens "EMA-Trendfolge" with the names after specification 3.7', async ({ p
 
   await expectSaved(page);
   // the strategy parameters with the names of the conversion
-  await expect(page.getByTestId('param-chip').filter({ hasText: 'Zeiteinheit' })).toContainText('M15');
-  await expect(page.getByTestId('param-chip').filter({ hasText: 'Stop abstand' })).toContainText('0');
+  await expect(page.getByTestId('param-row').filter({ hasText: 'Zeiteinheit' })).toContainText('M15');
+  await expect(page.getByTestId('param-row').filter({ hasText: 'Stop abstand' })).toContainText('0');
+  await expect(page.getByTestId('param-strip')).toHaveCount(0);
   // steps and objects
   for (const name of ['Kreuzen', 'Richtung', 'StopLoss', 'Order aufgeben', 'Order ausgefuehrt', 'Kreuzen gegen die position', 'Position schließen', 'Neuer Stop-Loss', 'StopLossVerbessert', 'Position ändern']) {
     await expect(node(page, name), name).toHaveCount(1);

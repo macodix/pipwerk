@@ -84,16 +84,6 @@ function ParameterValues({ refTo, instance }: { refTo: InstanceRef; instance: In
           onChange={(binding) => {
             studio.actions.edit((latest) => setInstanceBinding(latest, refTo, spec.id, binding));
           }}
-          onCreateParameter={(name) =>
-            studio.actions.addParameter({
-              name,
-              datatype: spec.datatype,
-              object_type: spec.objectType,
-              value: spec.default ?? undefined,
-              at_application: false,
-              choices: spec.datatype === 'choice' ? spec.choices.map((choice) => choice.id) : [],
-            })
-          }
         />
       ))}
     </Section>

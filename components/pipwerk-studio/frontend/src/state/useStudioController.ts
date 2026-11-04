@@ -980,6 +980,18 @@ export function useStudioController(language: SupportedLanguage) {
         dispatch({ type: 'showFindings', shown: true });
       },
       findingsShown: () => dispatch({ type: 'showFindings', shown: false }),
+      /** "Zur Strategie" in a field: the strategy parameters, with the data type of the field for a new one (specification 5.4). */
+      visitParameters: (element: string | null, field: string, datatype: string, objectType: string | null) =>
+        dispatch({ type: 'visitParameters', element, field, datatype, objectType }),
+      /** "Zurück zu …": the element the user came from, with the field in view. */
+      backToField: () => {
+        const visit = stateRef.current.parameterVisit;
+        if (visit === null || visit.element === null) {
+          return;
+        }
+        dispatch({ type: 'select', selection: { kind: 'element', id: visit.element }, panel: 'props' });
+        dispatch({ type: 'focusField', field: visit.field });
+      },
       retryTypes: () => {
         void queryClient.invalidateQueries({ queryKey: TYPES_KEY });
         void queryClient.invalidateQueries({ queryKey: ['objects'] });

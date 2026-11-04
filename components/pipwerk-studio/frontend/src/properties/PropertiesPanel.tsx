@@ -12,34 +12,9 @@ import { Icon } from '../ui/Icon';
 import { ElementView } from './ElementView';
 import { FindingsList } from './FindingsList';
 import { InstanceList } from './Instances';
+import { StrategyParameters } from './StrategyParameters';
 import { SuppliedList } from './Supplied';
-
-/** After a click on a finding the field is scrolled into view and highlighted. */
-function useFocusField(root: React.RefObject<HTMLElement | null>): void {
-  const { studio } = useStudio();
-  const focus = studio.state.focusField;
-  useEffect(() => {
-    if (focus === null || root.current === null) {
-      return;
-    }
-    const target = root.current.querySelector<HTMLElement>(`[data-field="${CSS.escape(focus.field)}"]`);
-    if (target === null) {
-      return;
-    }
-    target.scrollIntoView({ block: 'center' });
-    target.classList.add('flash');
-    // a finding in an expression leads to the spot in the formula, which takes the focus itself
-    if (focus.place === null) {
-      target.querySelector<HTMLElement>('select, input, textarea, button')?.focus({ preventScroll: true });
-    }
-    const timer = window.setTimeout(() => {
-      target.classList.remove('flash');
-    }, 1800);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [focus, root]);
-}
+import { useFocusField } from './useFocusField';
 
 /**
  * The short message of the properties view (specification 5.1): the prompt of a step that waits for its successor, or a
@@ -201,6 +176,7 @@ function StrategyView() {
           placeholder={t('properties.descriptionPlaceholder')}
         />
       </Section>
+      <StrategyParameters />
       <Section title={t('properties.rulesOfStrategy')} testid="sec-rules">
         <p className="muted">{t('properties.rulesOfStrategyHint')}</p>
         <InstanceList list={{ root: { kind: 'strategy' }, steps: [], list: 'rules' }} kind="rules" />

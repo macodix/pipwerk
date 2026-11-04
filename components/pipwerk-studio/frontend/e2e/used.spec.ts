@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { add, exprRoot, newStrategyFromScratch, props, select, setCalculation } from './builder';
+import { add, createParam, exprRoot, newStrategyFromScratch, props, select, setCalculation } from './builder';
 import { removeStored, storedStrategy } from './compare';
 import { card, choose, clickMenu, expect, expectSaved, node, offered, openApp, openStrategy, showArea, SIZES, test } from './support';
 
@@ -182,24 +182,20 @@ test('a strategy parameter that expressions use is removed after a question that
     await newStrategyFromScratch(page, name);
     await add(page, 'Kerzenschluss');
     await add(page, 'Berechnung', 'Abstand');
-    await showArea(page, 'canvas');
-    await page.getByTestId('param-new').click();
-    const popover = page.getByTestId('param-popover');
-    await popover.getByTestId('param-name').fill('Weite');
-    await choose(popover.getByTestId('param-type'), { value: 'number' });
-    await popover.getByTestId('param-value').fill('5');
-    await popover.getByTestId('param-done').click();
+    await createParam(page, 'Weite', 'number', '5');
     await select(page, 'Abstand');
     await setCalculation(page, { pick: 'Weite' });
     await expect(exprRoot(page).getByTestId('expr-sentence')).toContainText('Weite');
 
     await showArea(page, 'canvas');
-    await page.getByTestId('param-chip').filter({ hasText: 'Weite' }).click();
+    await page.getByTestId('status-pill').click();
+    await showArea(page, 'props');
+    await page.getByTestId('param-row').filter({ hasText: 'Weite' }).click();
     await page.getByTestId('param-delete').click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByTestId('remove-users')).toContainText('Abstand');
     await dialog.getByRole('button', { name: 'Entfernen' }).click();
-    await expect(page.getByTestId('param-chip').filter({ hasText: 'Weite' })).toHaveCount(0);
+    await expect(page.getByTestId('param-row').filter({ hasText: 'Weite' })).toHaveCount(0);
 
     // the check finds the empty place and says what to do
     await clickMenu(page, 'check');

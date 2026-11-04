@@ -46,7 +46,23 @@ export type StudioState = {
   focusField: { field: string; serial: number; place: ExpressionFocus | null } | null;
   /** The list of findings in the properties view of the strategy is to be brought into view (a click on the number of findings). */
   showFindings: number | null;
+  /**
+   * The way from a field to the strategy parameters and back ("Zur Strategie", specification 5.4): the element and the
+   * field the user came from and the data type a new strategy parameter starts with. It lapses as soon as the user
+   * selects something else, closes the strategy or removes the element.
+   */
+  parameterVisit: ParameterVisit | null;
   notice: Notice | null;
+};
+
+export type ParameterVisit = {
+  /** The element whose field the user came from; `null` where the field lies in no element. */
+  element: string | null;
+  field: string;
+  /** The data type of the field (and the object type of an object) for the new strategy parameter. */
+  datatype: string;
+  objectType: string | null;
+  serial: number;
 };
 
 export const initialStudioState: StudioState = {
@@ -65,6 +81,7 @@ export const initialStudioState: StudioState = {
   reveal: null,
   focusField: null,
   showFindings: null,
+  parameterVisit: null,
   notice: null,
 };
 
@@ -86,6 +103,7 @@ export type StudioAction =
   | { type: 'toggleCard'; id: string }
   | { type: 'focusField'; field: string; place?: ExpressionFocus }
   | { type: 'showFindings'; shown: boolean }
+  | { type: 'visitParameters'; element: string | null; field: string; datatype: string; objectType: string | null }
   | { type: 'notice'; key: string; params?: Record<string, string> };
 
 export function documentText(document: StrategyDocument): string {
@@ -133,6 +151,7 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         ...state,
         document,
         selection: action.selection ?? state.selection,
+        parameterVisit: action.selection !== undefined && action.selection.kind !== 'strategy' ? null : state.parameterVisit,
         armed: null,
         reveal: action.reveal === undefined ? state.reveal : { id: action.reveal, serial: nextSerial() },
       };
@@ -151,6 +170,8 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       return {
         ...state,
         selection: action.selection,
+        // the way back lapses when something else than the strategy is selected
+        parameterVisit: action.selection.kind === 'strategy' ? state.parameterVisit : null,
         armed: null,
         panel: action.panel ?? state.panel,
       };
@@ -171,6 +192,20 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       return { ...state, focusField: { field: action.field, serial: nextSerial(), place: action.place ?? null } };
     case 'showFindings':
       return { ...state, showFindings: action.shown ? nextSerial() : null };
+    case 'visitParameters':
+      return {
+        ...state,
+        selection: { kind: 'strategy' },
+        panel: 'props',
+        armed: null,
+        parameterVisit: {
+          element: action.element,
+          field: action.field,
+          datatype: action.datatype,
+          objectType: action.objectType,
+          serial: nextSerial(),
+        },
+      };
     case 'notice':
       return { ...state, notice: { serial: nextSerial(), key: action.key, params: action.params ?? {} } };
   }

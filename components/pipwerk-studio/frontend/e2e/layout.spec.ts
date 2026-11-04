@@ -72,6 +72,28 @@ async function inViewport(page: Page, testId: string): Promise<void> {
   expect(box.y + box.height).toBeLessThanOrEqual(size.height + 1);
 }
 
+/** The element is the one at its centre and at a quarter and three quarters of its width (the corners of a rounded element belong to what lies below): no other element covers it, so a click reaches it. */
+async function expectNothingOver(page: Page, testId: string): Promise<void> {
+  const covered = await page.evaluate((id) => {
+    const element = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+    if (element === null) return 'missing';
+    const rect = element.getBoundingClientRect();
+    const points: Array<[number, number]> = [
+      [rect.x + rect.width / 2, rect.y + rect.height / 2],
+      [rect.x + rect.width * 0.25, rect.y + rect.height / 2],
+      [rect.x + rect.width * 0.75, rect.y + rect.height / 2],
+    ];
+    for (const [x, y] of points) {
+      const top = document.elementFromPoint(x, y);
+      if (top !== null && top !== element && !element.contains(top)) {
+        return `${top.tagName.toLowerCase()}[${top.getAttribute('data-testid') ?? top.className.toString()}] at ${Math.round(x)},${Math.round(y)}`;
+      }
+    }
+    return '';
+  }, testId);
+  expect(covered, `${testId} is covered`).toBe('');
+}
+
 for (const size of SIZES) {
   test(`window size ${size.width} x ${size.height} (${size.name})`, async ({ page, errors }) => {
     await openApp(page, { width: size.width, height: size.height });
@@ -86,19 +108,35 @@ for (const size of SIZES) {
     await expect(page.getByText('Neu zusammenstellen')).toHaveCount(0);
     await expectSaved(page);
 
-    // the strategy parameters are always visible and can be changed
-    await inViewport(page, 'param-strip');
-    await expect(page.getByTestId('param-chip')).toHaveCount(2);
-    await page.getByTestId('param-chip').first().click();
-    await inViewport(page, 'param-popover');
+    // there is no strip of strategy parameters below the header; they stand in the properties view of the strategy,
+    // which can be reached in every size, and can be changed there
+    await expect(page.getByTestId('param-strip')).toHaveCount(0);
+    await showArea(page, 'canvas');
+    await page.getByTestId('status-pill').click();
+    await showArea(page, 'props');
+    await expect(page.getByTestId('props-strategy')).toBeVisible();
+    await expect(page.getByTestId('param-row')).toHaveCount(2);
+    await page.getByTestId('param-row').first().scrollIntoViewIfNeeded();
+    await inViewport(page, 'param-row');
+    await page.getByTestId('param-row').first().click();
+    await page.getByTestId('param-edit').scrollIntoViewIfNeeded();
+    await inViewport(page, 'param-edit');
     await page.getByTestId('param-done').click();
+    await page.getByTestId('param-new').scrollIntoViewIfNeeded();
+    await inViewport(page, 'param-new');
+    await checkLayout(page, size.width, size.height);
+    await showArea(page, 'canvas');
 
     // the menu: all entries can be reached
     const ids = ['new', 'open', 'save', 'check', 'close', 'delete', 'settings'];
     if (size.width >= 1280) {
       for (const id of ids) {
         await inViewport(page, `menu-${id}`);
+        await expectNothingOver(page, `menu-${id}`);
       }
+      // with the counter of the findings (the check above made it appear) the entries still lie free of it (B1 of order 24)
+      await expect(page.getByTestId('findings-count')).toBeVisible();
+      await expectNothingOver(page, 'findings-count');
     } else {
       await page.getByTestId('menu-toggle').click();
       for (const id of ids) {

@@ -21,8 +21,9 @@ describe('opening "EMA-Trendfolge"', () => {
     });
     expect(nodeByName('EMA20')).toBeInTheDocument();
     expect(nodeByName('Order ausgefuehrt')).toBeInTheDocument();
-    expect(screen.getAllByTestId('param-chip')).toHaveLength(2);
-    expect(within(screen.getByTestId('param-strip')).getByText('Stop abstand')).toBeInTheDocument();
+    expect(screen.getAllByTestId('param-row')).toHaveLength(2);
+    expect(within(screen.getByTestId('sec-parameters')).getByText('Stop abstand')).toBeInTheDocument();
+    expect(screen.queryByTestId('param-strip')).toBeNull();
     await menu(user, 'check');
   });
 });
