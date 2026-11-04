@@ -14,7 +14,8 @@
 * Origin from a delivered template or an object type: only the identifier; the stored name
   is dropped. The position on the drawing area is dropped. The parameter ``Kursquelle`` of the
   EMA becomes ``Anwenden auf``. The parameter and the order property ``Instrument`` get the
-  preset "Instrument der Anwendung". Inputs and sections are empty, the orientation is vertical.
+  preset "Voreingestelltes Instrument aus Strategie". Inputs and sections are empty, the
+  orientation is vertical.
 * A management without triggers of its own gets the connection from the output ``gestellt`` to
   its one element without an incoming connection, if there is exactly one.
 """

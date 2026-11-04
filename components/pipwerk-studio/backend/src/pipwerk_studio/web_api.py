@@ -69,6 +69,7 @@ from pipwerk_domain.typedesc import (
     ParameterDescription,
     PropertyDescription,
     TypeDescription,
+    category_label,
 )
 from pydantic import AwareDatetime, ConfigDict, Field, ValidationError, create_model
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -273,13 +274,17 @@ class TypeDescriptionModel(ApiModel):
     text on pointing at the type, in the language of a trader. ``methods`` are the methods of
     the type (empty for every delivered type). ``can_refresh`` tells whether a use of an
     instance of this type can choose "Aktualisieren"; a template of the user and its instances
-    take it from their object type."""
+    take it from their object type. ``category_label`` is the word for the ``category`` in
+    German and English (``null`` without a category): the user interface forms the origin of
+    an instance from the name of the instance, this word and the name of the type
+    (specification 5.4)."""
 
     id: str
     kind: ElementKind
     name: LabelModel
     description: LabelModel
     category: ObjectCategory | None
+    category_label: LabelModel | None
     parameters: list[ParameterModel]
     properties: list[PropertyModel]
     outputs: list[OutputModel]
@@ -434,6 +439,8 @@ def _word(registry: ElementRegistry, item: _TypedField) -> dict[str, Any]:
 
 def _type_description(registry: ElementRegistry, item: TypeDescription) -> TypeDescriptionModel:
     data = dataclasses.asdict(item)
+    word = category_label(item.category)
+    data["category_label"] = None if word is None else dataclasses.asdict(word)
     for group in ("parameters", "properties", "methods"):
         for entry, source in zip(data[group], getattr(item, group), strict=True):
             entry["datatype_label"] = _word(registry, source)
@@ -932,7 +939,8 @@ def build_router(service: ObjectService, registry: ElementRegistry) -> APIRouter
             'indication whether a use of an instance can choose "Aktualisieren" '
             "(`can_refresh`), the word for each data type in trader language in German and "
             "English (`data_types`, and `datatype_label` at each parameter, property, method "
-            "and argument; for an object it is the name of the object type), the delivered "
+            "and argument; for an object it is the name of the object type), the word for the "
+            "kind of an object type (`category_label`), the delivered "
             "templates as documents with their names and "
             "explanations in both languages, and the functions of expressions. The user "
             "interface builds the element library and the property view from this."

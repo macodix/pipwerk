@@ -168,9 +168,14 @@ def _as_json(value: object) -> object:
 
 
 def _without_words(value: object) -> object:
-    """The answer without the ``datatype_label`` of the fields."""
+    """The answer without the ``datatype_label`` of the fields and the ``category_label`` of
+    the type, which the library derives and the answer adds."""
     if isinstance(value, dict):
-        return {key: _without_words(item) for key, item in value.items() if key != "datatype_label"}
+        return {
+            key: _without_words(item)
+            for key, item in value.items()
+            if key not in ("datatype_label", "category_label")
+        }
     if isinstance(value, list):
         return [_without_words(item) for item in value]
     return value
@@ -206,6 +211,87 @@ def test_every_field_names_the_word_for_its_data_type_in_both_languages(
     assert order["instrument"] == {"de": "Instrument", "en": "Instrument"}
     assert order["ablaufzeit"] == {"de": "Zeitpunkt", "en": "point in time"}
     assert order["volumen"] == {"de": "Zahl", "en": "number"}
+
+
+def test_the_fixed_value_of_the_instrument_has_the_label_of_the_client(
+    client: TestClient,
+) -> None:
+    """Order 23: "Voreingestelltes Instrument aus Strategie" in both languages, at the
+    parameter and at the property of the order types; the identifier stays."""
+    types = {item["id"]: item for item in fetch(client)["types"]}  # type: ignore[attr-defined]
+    expected = {
+        "id": "instrument_der_anwendung",
+        "label": {
+            "de": "Voreingestelltes Instrument aus Strategie",
+            "en": "Default instrument from strategy",
+        },
+    }
+    parameters = {item["id"]: item for item in types["EMA"]["parameters"]}
+    assert parameters["instrument"]["choices"] == [expected]
+    assert parameters["instrument"]["default"] == "instrument_der_anwendung"
+    properties = {item["id"]: item for item in types["StopOrder"]["properties"]}
+    assert properties["instrument"]["choices"] == [expected]
+
+
+def test_the_kind_of_each_object_type_has_a_word_in_both_languages(client: TestClient) -> None:
+    """Order 23, point 3: ``category_label`` for the origin of an instance."""
+    types = {item["id"]: item for item in fetch(client)["types"]}  # type: ignore[attr-defined]
+    assert types["EMA"]["category_label"] == {"de": "Indikator", "en": "indicator"}
+    assert types["ZigZag"]["category_label"] == {"de": "Indikator", "en": "indicator"}
+    assert types["Indikator"]["category_label"] == {"de": "Indikator", "en": "indicator"}
+    assert types["Trend"]["category_label"] == {"de": "Trend", "en": "trend"}
+    assert types["Regel"]["category_label"] == {"de": "Regel", "en": "rule"}
+    assert types["Regelwerk"]["category_label"] == {"de": "Regelwerk", "en": "rule set"}
+    for item in types.values():
+        assert (item["category_label"] is None) == (item["category"] is None), item["id"]
+
+
+_EXCLUDED = (
+    "Ausdruck",
+    "Objekttyp",
+    "Objekt der Anwendung",
+    "Objekte der Anwendung",
+    "Einstellungen des Objekts",
+    "(ohne Name)",
+)
+
+
+def test_no_visible_text_of_the_answer_uses_a_word_of_the_specification(
+    client: TestClient,
+) -> None:
+    """Order 23 (specification 5.4, point "Begriffe"): the texts of the types, templates and
+    functions say "Formel" / "formula" and not the words that stay terms of the specification.
+    The English "expression" does not occur as a word in any text; the field names and codes
+    are no texts (they stand under keys other than ``de`` and ``en``)."""
+    answer = fetch(client)
+    texts = _texts(answer["types"]) + _texts(answer["functions"]) + _texts(answer["template_texts"])
+    texts += _texts(answer["data_types"])
+    assert len(texts) > 700
+    for text in texts:
+        for word in _EXCLUDED:
+            assert word not in text, text
+        assert not re.search(r"\bexpressions?\b|\bobject types?\b", text, re.IGNORECASE), text
+
+
+def test_every_text_with_the_main_flow_ends_with_its_explanation(client: TestClient) -> None:
+    answer = fetch(client)
+    types = answer["types"]
+    assert isinstance(types, list)
+    found = 0
+    for item in types:
+        for key in ("description", "explanation"):
+            text = item[key]
+            if "Hauptablauf" in text["de"]:
+                found += 1
+                assert text["de"].endswith(
+                    " Der Hauptablauf ist der Ablauf der Strategie ab ihren Auslösern, ohne die "
+                    "Schritte in den Order- und Positionsverwaltungen."
+                )
+                assert text["en"].endswith(
+                    " The main flow is the flow of the strategy from its triggers, without the "
+                    "steps inside the order and position managements."
+                )
+    assert found == 2  # description and explanation of the trigger "Manuell"
 
 
 def test_the_answer_lists_the_word_of_every_data_type(client: TestClient) -> None:
@@ -469,6 +555,8 @@ def test_the_models_follow_the_classes_of_the_library_field_by_field() -> None:
         fields = [item.name for item in dataclasses.fields(source)]
         if model in with_word:  # the word for the data type stands right after the data type
             fields.insert(fields.index("datatype") + 1, "datatype_label")
+        if model is web_api.TypeDescriptionModel:  # the word for the category follows it
+            fields.insert(fields.index("category") + 1, "category_label")
         assert list(model.model_fields) == fields, source.__name__
     assert list(web_api.FunctionModel.model_fields) == [
         "name",

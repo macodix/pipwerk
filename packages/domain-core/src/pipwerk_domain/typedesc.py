@@ -80,6 +80,33 @@ class ObjectCategory(StrEnum):
     RULESET = "ruleset"
 
 
+CATEGORY_LABELS: dict[ObjectCategory, Label] = {
+    ObjectCategory.INDICATOR: Label("Indikator", "indicator"),
+    ObjectCategory.TREND: Label("Trend", "trend"),
+    ObjectCategory.RULE: Label("Regel", "rule"),
+    ObjectCategory.RULESET: Label("Regelwerk", "rule set"),
+}
+"""The word for the kind of an object type in trader language, in German and English
+(specification 5.4, point "Begriffe", row "Objekttyp in der Herkunft einer Instanz"). The
+user interface forms the origin of an instance from it: the name of the instance, this word
+and the name of the type, for example "EMA 20" and "Indikator EMA"."""
+
+
+def category_label(category: ObjectCategory | None) -> Label | None:
+    """The word for the kind of an object type, ``None`` for a type without a kind."""
+    return None if category is None else CATEGORY_LABELS[category]
+
+
+MAIN_FLOW_EXPLANATION = Label(
+    "Der Hauptablauf ist der Ablauf der Strategie ab ihren Auslösern, ohne die Schritte in den "
+    "Order- und Positionsverwaltungen.",
+    "The main flow is the flow of the strategy from its triggers, without the steps inside the "
+    "order and position managements.",
+)
+"""The sentence that explains "Hauptablauf" (specification 5.4, point "Begriffe"). Every text of
+the library that names the main flow carries it as a sentence of its own."""
+
+
 class BindingKind(StrEnum):
     """How a parameter or property receives its value (glossary "Bindungsart")."""
 
@@ -120,8 +147,8 @@ INSTRUMENT_PARAMETER = "instrument"
 """Identifier of the parameter and of the order property ``Instrument`` (specification 3.1)."""
 
 APPLICATION_INSTRUMENT = "instrument_der_anwendung"
-"""Identifier of the fixed value "Instrument der Anwendung": the only choice and the default
-of the parameter ``instrument``."""
+"""Identifier of the fixed value "Voreingestelltes Instrument aus Strategie": the only choice
+and the default of the parameter ``instrument``."""
 
 
 NO_TEXT = Label("", "")
@@ -346,10 +373,12 @@ TIME_UNIT_IDS = frozenset(_TIME_UNIT_IDS)
 
 INSTRUMENT_CHOICES: tuple[Choice, ...] = (
     Choice(
-        APPLICATION_INSTRUMENT, Label("Instrument der Anwendung", "Instrument of the application")
+        APPLICATION_INSTRUMENT,
+        Label("Voreingestelltes Instrument aus Strategie", "Default instrument from strategy"),
     ),
 )
-"""The fixed value of the parameter ``instrument``: the instrument of the application."""
+"""The fixed value of the parameter ``instrument``: the instrument of the application. Its label
+is the wording of the client (specification 5.4); the identifier does not change."""
 
 
 def choice_ids(datatype: DataType, choices: tuple[Choice, ...]) -> tuple[str, ...] | None:

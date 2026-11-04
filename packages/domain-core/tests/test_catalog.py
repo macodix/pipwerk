@@ -186,18 +186,24 @@ def test_no_text_contains_an_identifier_in_programming_spelling() -> None:
 
 def test_identifiers_follow_the_formation_rule() -> None:
     """Identifiers of properties, parameters, outputs and fixed values come from the German
-    name (specification 3.1)."""
+    name (specification 3.1). Two identifiers keep their old spelling although their label has
+    a new word (specification 5.4, point "Begriffe"): the parameter ``ausdruck`` (label
+    "Formel") and the fixed value ``instrument_der_anwendung`` (label "Voreingestelltes
+    Instrument aus Strategie"); stored documents carry them."""
     for description in REGISTRY.list():
         for parameter in description.parameters:
-            assert identifier_from_name(parameter.label.de) == parameter.id, description.id
+            if parameter.id != catalog.EXPRESSION_PARAMETER:
+                assert identifier_from_name(parameter.label.de) == parameter.id, description.id
             # the values of these two come from other registrations and are type identifiers
             if parameter.id not in ("berechnungsverfahren", "ordertyp"):
                 for choice in parameter.choices:
-                    assert identifier_from_name(choice.label.de) == choice.id
+                    if choice.id != APPLICATION_INSTRUMENT:
+                        assert identifier_from_name(choice.label.de) == choice.id
         for prop in description.properties:
             assert identifier_from_name(prop.label.de) == prop.id, description.id
             for choice in prop.choices:
-                assert identifier_from_name(choice.label.de) == choice.id
+                if choice.id != APPLICATION_INSTRUMENT:
+                    assert identifier_from_name(choice.label.de) == choice.id
         for output in description.outputs:
             assert identifier_from_name(output.label.de) == output.id
 
@@ -255,7 +261,7 @@ def test_the_parameter_instrument_is_preset_with_the_instrument_of_the_applicati
         assert parameter.default == APPLICATION_INSTRUMENT == "instrument_der_anwendung"
         assert [item.id for item in parameter.choices] == ["instrument_der_anwendung"]
         assert parameter.choices[0].label == Label(
-            "Instrument der Anwendung", "Instrument of the application"
+            "Voreingestelltes Instrument aus Strategie", "Default instrument from strategy"
         )
         assert not parameter.required
         assert set(parameter.bindings) == set(BindingKind)
