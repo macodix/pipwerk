@@ -36,7 +36,7 @@ from tests.helpers import (
     valid_strategy,
 )
 
-EXPRESSION_LABEL = Label("Ausdruck", "Expression")
+EXPRESSION_LABEL = Label("Formel", "Formula")
 
 
 def nine_empty_conditions() -> Strategy:

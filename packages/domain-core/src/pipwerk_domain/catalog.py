@@ -15,6 +15,7 @@ from pipwerk_domain.typedesc import (
     INSTRUMENT_CHOICES,
     INSTRUMENT_PARAMETER,
     INSTRUMENT_TYPE,
+    MAIN_FLOW_EXPLANATION,
     BindingKind,
     Choice,
     Condition,
@@ -29,6 +30,10 @@ from pipwerk_domain.typedesc import (
     Scalar,
     TypeDescription,
 )
+
+EXPRESSION_PARAMETER = "ausdruck"
+"""Identifier of the parameter with the formula of a condition or calculation. It stays as it is
+in stored documents; only the label is "Formel" (specification 5.4, point "Begriffe")."""
 
 # Identifiers of the delivered types
 TRIGGER_CANDLE_CLOSE = "trigger.candle_close"
@@ -139,7 +144,7 @@ _TIPS: dict[str, tuple[str, str]] = {
         "Mindestabstand in Kerzen zwischen einem Hoch und einem Tief.",
         "Minimum distance in candles between a high and a low.",
     ),
-    "ausdruck": (
+    EXPRESSION_PARAMETER: (
         "Hier legen Sie fest, was geprüft oder berechnet wird. Wählen Sie die Bausteine aus "
         "den Listen.",
         "Here you define what is checked or calculated. Choose the blocks from the lists.",
@@ -186,9 +191,9 @@ _TIPS: dict[str, tuple[str, str]] = {
     ),
     "bemerkung": ("Freier Text, nur zur Information.", "Free text, for information only."),
     "berechnungsverfahren": (
-        "Wie der Trend berechnet wird. Mitgeliefert ist „Ausdruck“: Sie legen die Richtung "
+        "Wie der Trend berechnet wird. Mitgeliefert ist „Formel“: Sie legen die Richtung "
         "mit Bausteinen fest.",
-        'How the trend is calculated. Delivered is "Expression": you define the direction '
+        'How the trend is calculated. Delivered is "Formula": you define the direction '
         "with blocks.",
     ),
     "risikogrenze": (
@@ -361,8 +366,9 @@ def _par(
     when: Condition | None = None,
     obj: str | None = None,
     tip: tuple[str, str] | None = None,
+    ident: str | None = None,
 ) -> ParameterDescription:
-    ident = identifier_from_name(de)
+    ident = ident or identifier_from_name(de)
     texts = tip or _TIPS.get(ident)
     return ParameterDescription(
         ident,
@@ -531,17 +537,19 @@ def _triggers() -> list[TypeDescription]:
             ("Manuell", "Manual"),
             (
                 "Startet die Strategie, wenn der Anwender sie von Hand startet. Steht nur "
-                "im Hauptablauf.",
+                f"im Hauptablauf. {MAIN_FLOW_EXPLANATION.de}",
                 "Starts the strategy when the user starts it by hand. Stands only in the "
-                "main flow.",
+                f"main flow. {MAIN_FLOW_EXPLANATION.en}",
             ),
             (
                 "Startet die Strategie, wenn Sie sie selbst starten. So können Sie eine "
                 "Strategie ausprobieren, ohne auf eine Kerze oder einen Kurs zu warten. Diesen "
-                "Start gibt es nur im Hauptablauf, nicht in der Order- und Positionsverwaltung.",
+                "Start gibt es nur im Hauptablauf, nicht in der Order- und Positionsverwaltung. "
+                f"{MAIN_FLOW_EXPLANATION.de}",
                 "Starts the strategy when you start it yourself. That lets you try a strategy "
                 "out without waiting for a candle or a quote. This start exists only in the "
-                "main flow, not in the order and position management.",
+                "main flow, not in the order and position management. "
+                f"{MAIN_FLOW_EXPLANATION.en}",
             ),
             outputs=next_output,
             on_canvas=True,
@@ -552,11 +560,12 @@ def _triggers() -> list[TypeDescription]:
 
 def _flow() -> list[TypeDescription]:
     expression = _par(
-        "Ausdruck",
-        "Expression",
+        "Formel",
+        "Formula",
         DataType.EXPRESSION,
         required=True,
         bindings=_EXPRESSION_ONLY,
+        ident=EXPRESSION_PARAMETER,
     )
     next_output = (_out("weiter", "next", ("Der Ablauf geht weiter.", "The flow continues.")),)
     changed = (
@@ -578,8 +587,8 @@ def _flow() -> list[TypeDescription]:
             ElementKind.FLOW,
             ("Bedingung", "Condition"),
             (
-                "Verzweigt den Ablauf nach dem Ergebnis eines Ausdrucks.",
-                "Branches the flow by the result of an expression.",
+                "Verzweigt den Ablauf nach dem Ergebnis einer Formel.",
+                "Branches the flow by the result of a formula.",
             ),
             (
                 "Prüft etwas, zum Beispiel „EMA 20 ist größer als EMA 50“. Trifft es zu, geht "
@@ -589,12 +598,13 @@ def _flow() -> list[TypeDescription]:
             ),
             parameters=(
                 _par(
-                    "Ausdruck",
-                    "Expression",
+                    "Formel",
+                    "Formula",
                     DataType.EXPRESSION,
                     required=True,
                     bindings=_EXPRESSION_ONLY,
-                    tip=_TIPS["ausdruck"],
+                    tip=_TIPS[EXPRESSION_PARAMETER],
+                    ident=EXPRESSION_PARAMETER,
                 ),
             ),
             properties=(_prop("Ergebnis", "Result", DataType.BOOLEAN, must=True, tip=result_note),),
@@ -622,8 +632,8 @@ def _flow() -> list[TypeDescription]:
             ElementKind.FLOW,
             ("Berechnung", "Calculation"),
             (
-                "Berechnet einen Ausdruck und liefert das Ergebnis.",
-                "Calculates an expression and provides the result.",
+                "Berechnet eine Formel und liefert das Ergebnis.",
+                "Calculates a formula and provides the result.",
             ),
             (
                 "Rechnet einen Wert aus, zum Beispiel den Stop-Loss. Das Ergebnis können "
@@ -1286,9 +1296,9 @@ def _general_object_types() -> list[TypeDescription]:
                     DataType.TEXT,
                     must=True,
                     tip=(
-                        "Die Richtung, die der Ausdruck bestimmt, zum Beispiel aufwärts oder "
+                        "Die Richtung, die die Formel bestimmt, zum Beispiel aufwärts oder "
                         "abwärts.",
-                        "The direction determined by the expression, for example up or down.",
+                        "The direction determined by the formula, for example up or down.",
                     ),
                 ),
             ),
@@ -1299,7 +1309,7 @@ def _general_object_types() -> list[TypeDescription]:
         _type(
             TREND_METHOD_EXPRESSION,
             ElementKind.TREND_METHOD,
-            ("Ausdruck", "Expression"),
+            ("Formel", "Formula"),
             (
                 "Die Richtung des Trends und weitere Werte ergeben sich aus Formeln über die "
                 "enthaltenen Indikatoren, Regeln und Regelwerke.",

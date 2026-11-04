@@ -53,7 +53,7 @@ def test_findings_with_the_same_text_are_told_apart_by_their_element(client: Tes
     assert sorted(item["element_name"]["de"] for item in found) == sorted(names)
     assert len({item["element"] for item in found}) == 7
     for item in found:
-        assert item["field_label"] == {"de": "Ausdruck", "en": "Expression"}
+        assert item["field_label"] == {"de": "Formel", "en": "Formula"}
         assert item["subject_name"] is None
         assert set(item) == FINDING_KEYS
 
@@ -80,7 +80,7 @@ def test_the_findings_after_the_removal_of_an_object_name_their_elements(
     # an empty place is one finding; two in one expression differ by their place
     assert len({(item["element"], item["details"]["start"]) for item in found}) == len(found)
     assert {item["element_name"]["de"] for item in found} == {"Stop-Loss", "Neuer Stop-Loss"}
-    assert all(item["field_label"] == {"de": "Ausdruck", "en": "Expression"} for item in found)
+    assert all(item["field_label"] == {"de": "Formel", "en": "Formula"} for item in found)
     assert all(item["element_name"]["de"] == item["element_name"]["en"] for item in found)
 
 
@@ -124,7 +124,7 @@ def test_every_answer_with_findings_names_element_and_field(client: TestClient) 
     assert created.status_code == 201, created.text
     saved = empty_findings(created.json()["findings"])
     assert [item["element_name"] for item in saved] == [item["element_name"] for item in checked]
-    assert all(item["field_label"] == {"de": "Ausdruck", "en": "Expression"} for item in saved)
+    assert all(item["field_label"] == {"de": "Formel", "en": "Formula"} for item in saved)
     stored = created.json()["document"]
     again = put(client, "strategies", created.json()["id"], stored)
     assert again.status_code == 200, again.text
@@ -149,7 +149,7 @@ def test_the_findings_of_the_expressions_endpoint_name_their_element_and_field(
     (finding,) = answer["findings"]
     assert finding["code"] == "expression.empty"
     assert finding["element_name"] == {"de": "Richtung", "en": "Richtung"}
-    assert finding["field_label"] == {"de": "Ausdruck", "en": "Expression"}
+    assert finding["field_label"] == {"de": "Formel", "en": "Formula"}
     assert finding["subject_name"] is None
 
 

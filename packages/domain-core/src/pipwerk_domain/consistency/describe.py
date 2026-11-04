@@ -21,7 +21,7 @@ from pipwerk_domain.typedesc import Label
 CONNECTED_VALUES = Label("Verbundene Werte", "Connected values")
 """The field of a finding about an input of an element (specification 5.4)."""
 
-RULE_EXPRESSION = Label("Ausdruck", "Expression")
+RULE_EXPRESSION = Label("Formel", "Formula")
 """The field of a finding about the expression of a rule."""
 
 RULESET_RESULT = Label("Gesamtergebnis", "Overall result")

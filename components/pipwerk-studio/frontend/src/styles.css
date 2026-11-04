@@ -220,6 +220,9 @@ code {
   gap: 2px;
   flex: 1;
   min-width: 0;
+  /* With the name of the strategy in the header the entries may not fit into one line. They then take a second line
+     instead of running under the counter of the findings (B1 of the function test of order 24). */
+  flex-wrap: wrap;
 }
 .menu-full {
   display: none;

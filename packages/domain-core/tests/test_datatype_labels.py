@@ -70,7 +70,8 @@ def test_the_name_of_an_object_type_of_the_user_is_in_both_languages() -> None:
 
 def test_the_instrument_is_preset_with_the_instrument_of_the_application() -> None:
     """The type descriptions give the preset and the way back to it: the fixed value
-    "Instrument der Anwendung" is the default and the one choice of the parameter."""
+    "Voreingestelltes Instrument aus Strategie" is the default and the one choice of the
+    parameter."""
     registry = default_registry()
     for type_id in ("trigger.candle_close", "trigger.tick", "EMA", "Kerze", "Instrument"):
         description = registry.get(type_id)
@@ -80,7 +81,7 @@ def test_the_instrument_is_preset_with_the_instrument_of_the_application() -> No
         assert parameter.default == APPLICATION_INSTRUMENT
         assert [item.id for item in parameter.choices] == [APPLICATION_INSTRUMENT]
         assert parameter.choices[0].label == Label(
-            "Instrument der Anwendung", "Instrument of the application"
+            "Voreingestelltes Instrument aus Strategie", "Default instrument from strategy"
         )
         assert set(parameter.bindings) == set(BindingKind)  # other bindings are allowed
         assert parameter.object_type == "Instrument"
@@ -94,8 +95,8 @@ def test_the_instrument_is_preset_with_the_instrument_of_the_application() -> No
 
 
 def test_the_way_back_to_the_instrument_of_the_application_is_a_valid_document() -> None:
-    """Another binding of the instrument and the fixed value "Instrument der Anwendung" again:
-    neither gives a finding."""
+    """Another binding of the instrument and the fixed value "Voreingestelltes Instrument aus
+    Strategie" again: neither gives a finding."""
     strategy = Strategy(
         id=uid(900),
         name="Test",
