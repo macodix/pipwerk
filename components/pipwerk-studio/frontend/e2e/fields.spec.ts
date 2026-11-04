@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 
-import { add, exprRoot, field, newStrategyFromScratch, props, select, setCondition, type C, type V } from './builder';
+import { add, bindFixed, exprRoot, field, newStrategyFromScratch, props, select, setCondition, type C, type V } from './builder';
 import { removeStored, storedStrategy } from './compare';
-import { choose, clickMenu, expect, expectChosen, node, offered, openApp, openStrategy, showArea, test } from './support';
+import { choose, clickMenu, expect, node, offered, openApp, openStrategy, showArea, test } from './support';
 
 // Order 17 (acceptance report 3, E3, E11, E12): the fields ask "Woher kommt der Wert?", the data type stands in the
 // explanation, the instrument is shown in words, the condition of a crossing is built from the blocks, and every finding
@@ -41,7 +41,23 @@ test('the fields ask "Woher kommt der Wert?" with the five answers and show the 
   await expect(page.locator('[data-testid="card"][data-node-name="EMA 20"] [data-testid="card-row"]').first()).toContainText('Zahl');
 });
 
-test('the instrument is shown as "das Instrument, auf dem die Strategie läuft"; another one is chosen, and the way back leads to the standard value', async ({ page }) => {
+/**
+ * The label the library delivers for the fixed value of the instrument ("Voreingestelltes Instrument aus Strategie" after
+ * order 23; before that the library delivers its earlier label): the interface shows what the type description says.
+ */
+async function presetLabel(page: Page): Promise<string> {
+  const answer = (await (await page.request.get('/api/v1/element-types')).json()) as {
+    types: { id: string; parameters: { id: string; choices: { id: string; label: { de: string } }[] }[] }[];
+  };
+  const parameter = answer.types.find((type) => type.id === 'trigger.candle_close')?.parameters.find((candidate) => candidate.id === 'instrument');
+  const label = parameter?.choices.find((choice) => choice.id === 'instrument_der_anwendung')?.label.de;
+  if (label === undefined) {
+    throw new Error('The type descriptions name no fixed value for the instrument');
+  }
+  return label;
+}
+
+test('the instrument is labelled "Instrument wählen (optional)" with one choice that shows the preset, an explanation, an input at "fest eingeben", and the way back over the first entry', async ({ page }) => {
   const name = 'Instrument in Worten';
   await openApp(page);
   try {
@@ -49,29 +65,80 @@ test('the instrument is shown as "das Instrument, auf dem die Strategie läuft";
     await add(page, 'Kerzenschluss');
     await add(page, 'EMA', 'EMA 20');
 
+    const preset = await presetLabel(page);
     const instrument = field(page, 'instrument');
-    await expect(instrument.getByTestId('preset-text-instrument')).toHaveText('das Instrument, auf dem die Strategie läuft');
-    await expect(instrument).toContainText('Dafür müssen Sie nichts wählen.');
-    await expect(instrument.getByTestId('preset-other-instrument')).toHaveText('anderes Instrument wählen');
-    await expect(instrument.getByTestId('kind-instrument')).toHaveCount(0);
+    const kind = instrument.getByTestId('kind-instrument');
+    await expect(instrument).toContainText('Instrument wählen (optional)');
+    await expect(instrument).not.toContainText('Woher kommt der Wert?');
+    await expect(kind).toHaveText(preset);
+    await expect(instrument.getByTestId('preset-explanation-instrument')).toHaveText(
+      'Ohne eigene Wahl gilt das voreingestellte Instrument aus der Strategie. Das ist das Instrument, auf dem die Strategie läuft; es wird erst beim Start der Strategie festgelegt. Wählen Sie hier nur ein Instrument, wenn dieses Element ein anderes verwenden soll.',
+    );
+    await expect(instrument.getByRole('button', { name: /wieder das Instrument|anderes Instrument/ })).toHaveCount(0);
+    expect((await offered(kind)).slice(0, 4)).toEqual([preset, 'fest eingeben', 'aus einem Strategieparameter', 'von einem anderen Element']);
 
-    // "anderes Instrument wählen" shows the question; choosing nothing keeps the standard value
-    await instrument.getByTestId('preset-other-instrument').click();
-    await expect(instrument).toContainText('Woher kommt der Wert?');
-    await choose(instrument.getByTestId('kind-instrument'), { value: 'fixed' });
-    await expectChosen(instrument.getByTestId('value-instrument'), 'instrument_der_anwendung');
-    await choose(instrument.getByTestId('value-instrument'), { label: 'Andere Bezeichnung …' });
-    await instrument.getByTestId('value-instrument-text').fill('EURUSD');
+    // "fest eingeben": an empty input with the grey example; left empty, the choice shows the preset again
+    await choose(kind, { label: 'fest eingeben' });
+    const input = instrument.getByTestId('value-instrument');
+    await expect(input).toHaveValue('');
+    await expect(input).toHaveAttribute('placeholder', 'zum Beispiel EURUSD');
+    await expect(kind).toHaveText('fest eingeben');
+    await input.press('Tab');
+    await expect(kind).toHaveText(preset);
+    await expect(instrument.getByTestId('value-instrument')).toHaveCount(0);
+    await clickMenu(page, 'save');
+    expect(instrumentOf(await storedStrategy(page, name), 'EMA 20')).toEqual({ kind: 'fixed', value: 'instrument_der_anwendung' });
+
+    // a typed instrument is kept
+    await choose(kind, { label: 'fest eingeben' });
+    await instrument.getByTestId('value-instrument').fill('EURUSD');
     await clickMenu(page, 'save');
     expect(instrumentOf(await storedStrategy(page, name), 'EMA 20')).toEqual({ kind: 'fixed', value: 'EURUSD' });
 
-    // the way back
-    await instrument.getByTestId('preset-back-instrument').click();
-    await expect(instrument.getByTestId('preset-text-instrument')).toHaveText('das Instrument, auf dem die Strategie läuft');
+    // the way back is the first entry of the choice
+    await choose(kind, { label: preset });
+    await expect(kind).toHaveText(preset);
+    await expect(instrument.getByTestId('value-instrument')).toHaveCount(0);
     await clickMenu(page, 'save');
     expect(instrumentOf(await storedStrategy(page, name), 'EMA 20')).toEqual({ kind: 'fixed', value: 'instrument_der_anwendung' });
   } finally {
     await removeStored(page, name);
+  }
+});
+
+test('the instrument of the order has the same field and says "diese Order"; in English the words follow the specification', async ({ page }) => {
+  await openApp(page);
+  await newStrategyFromScratch(page, 'Instrument der Order');
+  try {
+    await add(page, 'Kerzenschluss');
+    await add(page, 'Order aufgeben');
+    await bindFixed(page, 'ordertyp', 'MarketOrder');
+
+    const preset = await presetLabel(page);
+    const instrument = page.getByTestId('sec-order').getByTestId('field-instrument');
+    await expect(instrument).toContainText('Instrument wählen (optional)');
+    await expect(instrument.getByTestId('kind-instrument')).toHaveText(preset);
+    await expect(instrument.getByTestId('preset-explanation-instrument')).toContainText('wenn diese Order ein anderes verwenden soll.');
+
+    await clickMenu(page, 'settings');
+    await choose(page.getByRole('dialog').getByLabel('Sprache'), 'English');
+    await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+    try {
+      await showArea(page, 'props');
+      const english = page.getByTestId('sec-order').getByTestId('field-instrument');
+      await expect(english).toContainText('Choose instrument (optional)');
+      await expect(english.getByTestId('preset-explanation-instrument')).toHaveText(
+        'Without your own choice, the default instrument from the strategy applies. This is the instrument the strategy runs on; it is set only when the strategy starts. Choose an instrument here only if this order is to use a different one.',
+      );
+      await choose(english.getByTestId('kind-instrument'), { label: 'enter a value' });
+      await expect(english.getByTestId('value-instrument')).toHaveAttribute('placeholder', 'for example EURUSD');
+    } finally {
+      await clickMenu(page, 'settings');
+      await choose(page.getByRole('dialog').getByLabel('Language'), 'Deutsch');
+      await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
+    }
+  } finally {
+    await removeStored(page, 'Instrument der Order');
   }
 });
 

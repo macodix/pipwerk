@@ -12,7 +12,6 @@ import { indexFindings } from './findings/findingsModel';
 import { Header } from './Header';
 import { Library } from './library/Library';
 import type { DescribeContext } from './model/describe';
-import { ParamStrip } from './ParamStrip';
 import { PropertiesPanel } from './properties/PropertiesPanel';
 import { RevisionDisplay } from './RevisionDisplay';
 import type { RemovalPlan } from './state/removal';
@@ -303,7 +302,6 @@ export function App() {
     <StudioContext.Provider value={value}>
       <div className="app" data-panel={state.panel} data-testid="app">
         <Header onAbout={() => { setAboutOpen(true); }} aboutRef={aboutButtonRef} />
-        <ParamStrip />
         <Library />
         <Canvas />
         <PropertiesPanel />

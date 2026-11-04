@@ -136,18 +136,29 @@ test('inserts a trigger and a step: the second is connected behind the first', a
   await expect(page.getByTestId('field-zeiteinheit').getByLabel('Pflichtangabe')).toBeVisible();
 });
 
-test('lets the user assign a strategy parameter to a field, creating it on the spot', async ({ page }) => {
+test('lets the user assign a strategy parameter to a field: it is created in the strategy and chosen in the field (F6)', async ({ page }) => {
   await openApp(page);
   await newStrategy(page);
   await library(page, 'Kerzenschluss').click();
   await showArea(page, 'props');
 
   await choose(page.getByTestId('kind-zeiteinheit'), { label: 'aus einem Strategieparameter' });
-  await expect(page.getByTestId('param-hint')).toContainText('noch kein Strategieparameter');
-  await page.getByTestId('new-param-name').fill('Meine Zeiteinheit');
-  await page.getByTestId('new-param-create').click();
+  await expect(page.getByTestId('param-hint')).toContainText('Es gibt noch keinen Strategieparameter für „Zeiteinheit“');
+  // the field creates nothing: no input, no "Anlegen"
+  await expect(page.getByTestId('field-zeiteinheit').getByRole('textbox')).toHaveCount(0);
+  await page.getByTestId('param-go').click();
 
-  await expect(page.getByTestId('param-chip')).toContainText('Meine Zeiteinheit');
+  // the strategy parameters, with the time unit preselected for the new one
+  await expect(page.getByTestId('props-strategy')).toBeVisible();
+  await expect(page.getByTestId('param-new-type')).toContainText('Zeiteinheit');
+  await expect(page.getByTestId('param-back')).toContainText('Zurück zu „Kerzenschluss“');
+  await page.getByTestId('param-new-name').fill('Meine Zeiteinheit');
+  await page.getByTestId('param-new-create').click();
+  await expect(page.getByTestId('param-row')).toContainText('Meine Zeiteinheit');
+  await page.getByTestId('param-back').click();
+
+  await expect(page.getByTestId('props-element')).toBeVisible();
+  await choose(page.getByTestId('param-select'), { label: 'Meine Zeiteinheit' });
   await expectChosen(page.getByTestId('param-select'), 'meine_zeiteinheit');
   await expect(node(page, 'Kerzenschluss')).toContainText('Meine Zeiteinheit');
 });

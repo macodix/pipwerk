@@ -4,7 +4,7 @@ import { add, createParam, exprRoot, newStrategyFromScratch, select } from './bu
 import { choose, clickMenu, expect, node, openApp, openStrategy, showArea, SIZES, test } from './support';
 
 // Order 16 (acceptance report 3): the name of the order and position management (E1), no guided setup (E9), the list of
-// findings after a click on their number (E2, B1), the strip of the strategy parameters without sideways swiping (B2),
+// findings after a click on their number (E2, B1), the strategy parameters without sideways swiping (B2, F6),
 // no name of a program library on the drawing area (B3) and the stored directory after "Abbrechen" (B4). They run
 // against the real backend.
 
@@ -137,33 +137,36 @@ for (const size of SIZES) {
   });
 }
 
-test('the strip of the strategy parameters wraps in 390 x 844: "Neu" and every parameter are reachable without swiping sideways (B2)', async ({ page }) => {
-  const name = `Streifen ${test.info().project.name}`;
+test('the strategy parameters in the properties view wrap in 390 x 844: every one and "Neuer Strategieparameter" are reachable without swiping sideways (B2, F6)', async ({ page }) => {
+  const name = `Parameter ${test.info().project.name}`;
   await openApp(page, SIZES[0]);
   await newStrategyFromScratch(page, name);
+  // no strip below the header, in the one area that is shown there is the header, the properties view and the bar
+  await expect(page.getByTestId('param-strip')).toHaveCount(0);
   for (const parameter of ['Erster Parameter', 'Zweiter längerer Parameter', 'Dritter', 'Vierter Parameter mit langem Namen']) {
     await createParam(page, parameter, 'number', '3');
   }
-  await showArea(page, 'canvas');
+  await showArea(page, 'props');
 
-  const strip = page.getByTestId('param-strip');
-  const wide = await strip.evaluate((element) => element.scrollWidth > element.clientWidth);
-  expect(wide, 'the strip scrolls sideways').toBe(false);
-  for (const chip of await strip.locator('.chip').all()) {
-    const box = await chip.boundingBox();
+  const section = page.getByTestId('sec-parameters');
+  await section.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('param-row')).toHaveCount(4);
+  for (const row of await page.getByTestId('param-row').all()) {
+    const box = await row.boundingBox();
     expect(box).not.toBeNull();
     expect((box?.x ?? -1) >= 0).toBe(true);
     expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(SIZES[0].width + 1);
   }
-  await expect(page.getByTestId('param-chip')).toHaveCount(4);
+  await page.getByTestId('param-new').scrollIntoViewIfNeeded();
   await expect(page.getByTestId('param-new')).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
-  // the last parameter can be opened with a tap, and "Neu" still works
-  await page.getByTestId('param-chip').last().click();
-  await expect(page.getByTestId('param-popover')).toBeVisible();
+  // the last parameter can be opened with a tap, and "Neuer Strategieparameter" still works
+  await page.getByTestId('param-row').last().click();
+  await expect(page.getByTestId('param-edit')).toBeVisible();
   await page.getByTestId('param-done').click();
   await page.getByTestId('param-new').click();
-  await expect(page.getByTestId('param-popover')).toBeVisible();
+  await expect(page.getByTestId('param-new-form')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });
 
 test('the drawing area names no program library and stays operable (B3)', async ({ page }) => {

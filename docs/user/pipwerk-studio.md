@@ -39,24 +39,13 @@ Wo Sie was finden:
 
 ## 2. pipwerk Studio öffnen
 
-Eine Installation für Anwender gibt es noch nicht. pipwerk Studio wird derzeit mit einem Startskript auf einem Rechner gestartet und im Webbrowser geöffnet. Das Startskript legt die Startkonfiguration (eine Datei, die vor dem Start festlegt, wo die Datenbank liegt) selbst an. Ohne gültige Startkonfiguration bricht der Start mit einer Meldung ab; eine Ersatzdatenbank wird nicht angelegt.
+Eine Installation für Anwender gibt es noch nicht. pipwerk Studio öffnen Sie im Webbrowser unter der Adresse, die Ihnen für Ihre Ausgabe genannt wird. Wie pipwerk Studio gestartet und beendet wird, steht nicht hier, sondern in der technischen Dokumentation `docs/technical/pipwerk-studio.md` im Abschnitt „Testumgebung“ (4a).
 
-Das Startskript liegt im Ordner `components/pipwerk-studio/scripts/` der Programmdateien und heißt `testenv`. Sie rufen es in einem Eingabefenster (Terminal) auf, das im obersten Ordner der Programmdateien geöffnet ist, also in dem Ordner, in dem auch die Datei `LICENSE` liegt. Sie können statt des Pfads `components/pipwerk-studio/scripts/testenv` auch den vollständigen Pfad des Skripts angeben, der mit `/` beginnt, und den Befehl aus jedem beliebigen Ordner aufrufen.
-
-1. Starten: `components/pipwerk-studio/scripts/testenv start --frontend-port <Anschlussnummer der Oberfläche> --backend-port <Anschlussnummer des Servers>`. Beide Nummern wählen Sie selbst. Sie müssen frei sein und sich unterscheiden. Der Start dauert, weil die Oberfläche aufgebaut wird. Er endet erst, wenn pipwerk Studio antwortet.
-2. Öffnen: Rufen Sie im Webbrowser die Adresse auf, die das Skript am Ende des Starts nennt (Meldung „pipwerk Studio is running: …“). Ohne `--host` ist das `http://127.0.0.1:<Anschlussnummer der Oberfläche>/`. `127.0.0.1` ist die Netzwerkadresse Ihres eigenen Rechners.
-3. Abfragen: `components/pipwerk-studio/scripts/testenv status` nennt, ob pipwerk Studio läuft, und die Adressen von Oberfläche und Server.
-4. Beenden: `components/pipwerk-studio/scripts/testenv stop` beendet pipwerk Studio und entfernt die Dateien dieses Starts, auch seine Datenbank. Damit geht die gespeicherte Sprache verloren: Nach einem erneuten Start ist wieder Deutsch eingestellt. Entfernt werden auch die gespeicherten Strategien und Vorlagen, solange das Objektverzeichnis unter `components/pipwerk-studio/.testenv/` liegt. Das ist nach dem Start der Fall. Haben Sie das Objektverzeichnis auf einen anderen Ordner geändert (Abschnitt 5), bleiben die Dateien dort erhalten.
-
-Der Start bricht mit einer Meldung ab, wenn die Programmdateien nicht genau einem festgehaltenen Stand entsprechen, weil Sie eine Datei geändert oder eine neue Datei hinzugefügt haben, oder wenn das Skript nicht in einem versionierten Ordner der Programmdateien liegt. Die Meldung nennt die Ursache. In diesem Fall wurde nichts installiert, aufgebaut oder gestartet. Stellen Sie die Änderungen zurück oder halten Sie sie fest und starten Sie erneut. Der Start bricht ebenfalls ab, wenn pipwerk Studio schon läuft oder eine Anschlussnummer belegt ist.
-
-**Zugriff von anderen Rechnern: Achtung, lesen Sie zuerst diesen Hinweis.** Ohne `--host` ist pipwerk Studio nur von Ihrem eigenen Rechner aus erreichbar. Mit `--host` kann jeder, der Ihren Rechner im Netz erreicht, pipwerk Studio benutzen und dessen Einstellungen, zum Beispiel die Sprache, ändern. Er kann außerdem Strategien und Vorlagen anlegen, ändern und löschen und das Objektverzeichnis ändern, in dem pipwerk Studio sie speichert. Mit dem Ändern des Objektverzeichnisses lassen sich Dateien auf Ihrem Rechner in einen anderen Ordner verschieben. Es gibt keine Anmeldung. Verwenden Sie `--host` deshalb nur in einem Netz, dem Sie vertrauen. Der vollständige Befehl lautet zum Beispiel: `components/pipwerk-studio/scripts/testenv start --frontend-port <Anschlussnummer der Oberfläche> --backend-port <Anschlussnummer des Servers> --host 0.0.0.0`. `0.0.0.0` bedeutet: alle Netzwerkadressen des Rechners. Auf Ihrem eigenen Rechner gilt weiter die Adresse, die das Skript nennt, bei `0.0.0.0` also `http://127.0.0.1:<Anschlussnummer der Oberfläche>/`. Andere Rechner verwenden statt `127.0.0.1` die Netzwerkadresse Ihres Rechners, also `http://<Netzwerkadresse des Rechners>:<Anschlussnummer der Oberfläche>/`. Die Netzwerkadresse müssen Sie selbst eingeben; ein Rechnername wie `mein-rechner` statt der Netzwerkadresse funktioniert nicht, pipwerk Studio weist die Anfrage ab. Geben Sie statt `0.0.0.0` eine einzelne Netzwerkadresse des Rechners an, ist pipwerk Studio nur unter dieser Adresse erreichbar, und das Skript nennt diese Adresse.
-
-Wer pipwerk Studio weiterentwickelt, startet die beiden Teile von Hand und ändert Dateien bei laufendem Programm. Das beschreibt die technische Dokumentation `docs/technical/pipwerk-studio.md` im Abschnitt „Einrichtung und Start im Entwicklungsbetrieb“. Dort wirken Änderungen sofort. Deshalb entspricht der angezeigte Stand (Abschnitt 3.6 und 4) nicht notwendig dem laufenden Programm.
+pipwerk Studio hat keine Anmeldung. Wer die Adresse im Netz erreicht, kann Strategien und Vorlagen anlegen, ändern und löschen, die Einstellungen ändern und das Objektverzeichnis ändern. Die technische Dokumentation beschreibt, wie sich die Erreichbarkeit einschränken lässt.
 
 ## 3. Aufbau der Oberfläche
 
-Die Oberfläche besteht aus der Kopfzeile oben, dem Streifen der Strategieparameter, der Elementbibliothek, der Zeichenfläche, der Eigenschaftenansicht und der Fußzeile unten. Wie sie angeordnet sind, hängt von der Breite des Fensters ab:
+Die Oberfläche besteht aus der Kopfzeile oben, der Elementbibliothek, der Zeichenfläche, der Eigenschaftenansicht und der Fußzeile unten. Wie sie angeordnet sind, hängt von der Breite des Fensters ab:
 
 | Breite des Fensters | Anordnung |
 | --- | --- |
@@ -64,7 +53,7 @@ Die Oberfläche besteht aus der Kopfzeile oben, dem Streifen der Strategieparame
 | von 700 bis 1099 Pixel | Die Zeichenfläche steht neben einem Seitenbereich mit zwei Reitern, „Bibliothek“ und „Eigenschaften“. |
 | unter 700 Pixel | Es steht ein Bereich nach dem anderen im Fenster. Unten wechseln Sie mit der Leiste „Fläche“, „Bibliothek“, „Eigenschaften“. Die Fenster, die eine Antwort verlangen, füllen die Breite. |
 
-Bei geringer Höhe des Fensters werden Kopfzeile, Streifen der Strategieparameter und Fußzeile niedriger. Alles, was sich mit der Maus ziehen lässt, geht auch mit Klicks (Abschnitt 9). Deshalb lässt sich pipwerk Studio auch auf einem Telefon bedienen.
+Bei geringer Höhe des Fensters werden Kopfzeile und Fußzeile niedriger. Alles, was sich mit der Maus ziehen lässt, geht auch mit Klicks (Abschnitt 9). Deshalb lässt sich pipwerk Studio auch auf einem Telefon bedienen.
 
 Nach „Neue Strategie“ und beim Start ohne geöffnete Strategie zeigt die Oberfläche in den schmalen Anordnungen (unter 1100 Pixel Breite) die Eigenschaftenansicht.
 
@@ -72,16 +61,21 @@ Nach „Neue Strategie“ und beim Start ohne geöffnete Strategie zeigt die Obe
 
 Links steht der Name „pipwerk Studio“, daneben das Menü: „Neue Strategie“, „Öffnen“, „Speichern“, „Prüfen“, „Schließen“, „Löschen“ und „Einstellungen“. Ab 1280 Pixel Breite stehen die Einträge einzeln da; darunter öffnet der Knopf „Menü“ eine Liste. Zeigen Sie mit dem Mauszeiger auf einen Eintrag, sagt eine kurze Erklärung, was er tut. Ohne geöffnete Strategie sind „Speichern“, „Prüfen“, „Schließen“ und „Löschen“ nicht wählbar.
 
+Ist eine Strategie geöffnet, steht neben dem Namen „pipwerk Studio“ der Name der Strategie mit dem Zustand „ungespeichert“ oder „gespeichert“. Ein Klick darauf zeigt die Eigenschaftenansicht der Strategie. In schmalen Fenstern (unter 700 Pixel Breite) steht dort nur der Name der Strategie, und der Zustand zeigt sich im Punkt davor: grün für „gespeichert“, orange für „ungespeichert“.
+
 Rechts zeigt ein Feld die Zahl der Befunde der letzten Prüfung („3 Befunde“; „keine Befunde“ in Grün; rot, sobald ein Fehler dabei ist, orange, wenn es nur Hinweise sind). Zeigen Sie darauf, nennt die Erklärung die Zahl der Fehler und der Hinweise. Ein Klick darauf öffnet die Eigenschaftenansicht der Strategie, und die Liste der Befunde ist danach zu sehen. Daneben steht die Schaltfläche „Über pipwerk Studio“ (Abschnitt 4).
 
-### 3.2 Streifen der Strategieparameter
+### 3.2 Strategieparameter in der Eigenschaftenansicht der Strategie
 
-Unter der Kopfzeile steht links der Name der Strategie mit dem Zustand „ungespeichert“ oder „gespeichert“. Ein Klick darauf zeigt die Eigenschaftenansicht der Strategie. Rechts davon stehen die Strategieparameter, jeder mit Namen und Wert. Ein Strategieparameter ist ein Wert, den Sie an einer Stelle festlegen und überall in der Strategie verwenden (zum Beispiel die Zeiteinheit). Sind es mehr, als in eine Zeile passen, bricht der Streifen in weitere Zeilen um.
+Die Strategieparameter stehen in der Eigenschaftenansicht der Strategie, im Bereich „Strategieparameter“ gleich nach Name und Beschreibung. Einen eigenen Streifen unter der Kopfzeile gibt es nicht. Die Eigenschaftenansicht der Strategie zeigen Sie mit einem Klick auf den Namen der Strategie in der Kopfzeile oder auf eine freie Stelle der Zeichenfläche; in kleinen Fenstern wechseln Sie damit zur Eigenschaftenansicht.
 
-- „Neu“ legt einen Strategieparameter an. Sein Fenster öffnet sich gleich.
-- Ein Klick auf einen Strategieparameter öffnet sein Fenster: „Name des Strategieparameters“, „Art des Werts“, „Wert“, der Schalter „Wert erst beim Start der Strategie festlegen“ und das Entfernen. „Fertig“ schließt das Fenster.
+Ein Strategieparameter ist ein Wert, den Sie hier einmal festlegen und in mehreren Feldern verwenden, zum Beispiel eine Zeiteinheit. Der Bereich zeigt jeden mit seinem Namen, der Art des Werts (zum Beispiel „Zeiteinheit“ oder „Zahl“) und dem Wert. Gibt es noch keinen, steht dort der Satz zu dem, was ein Strategieparameter ist.
+
+- „Neuer Strategieparameter“ legt einen an. Sie tragen den Namen ein, wählen die Art des Werts, geben den Wert ein und wählen „Anlegen“; „Abbrechen“ legt nichts an.
+- Ein Klick auf einen Strategieparameter öffnet Name, Art des Werts und Wert zum Ändern, dazu den Schalter „Wert erst beim Start der Strategie festlegen“ und das Entfernen. „Fertig“ schließt das wieder.
 - Beim Umbenennen ändert sich überall sofort der Name; Formeln, die den Strategieparameter verwenden, zeigen den neuen Namen.
 - Das Entfernen fragt zuerst und nennt die Elemente, die den Strategieparameter verwenden (Abschnitt 6.8).
+- Strategieparameter legen Sie nur hier an, nicht in einem Feld eines Elements. Fehlt einem Feld ein passender Strategieparameter, führt „Zur Strategie“ im Feld hierher (Abschnitt 6.4).
 
 ### 3.3 Elementbibliothek
 
@@ -159,7 +153,7 @@ Die Eigenschaftenansicht zeigt, was Sie auf der Zeichenfläche gewählt haben. E
 
 Was die Eigenschaftenansicht für die einzelnen Auswahlen zeigt:
 
-- **Strategie:** Name, Beschreibung, „Regeln der Strategie“, „Objekte der Anwendung“ (Order, Position und Strategie, die nicht auf der Zeichenfläche liegen, jeweils mit ihren Werten, der Art des Werts, möglichen Werten und einer Beschreibung), die „Befunde der Prüfung“ mit „Prüfen“.
+- **Strategie:** Name, Beschreibung, „Strategieparameter“ (Abschnitt 3.2), „Regeln der Strategie“, „Handelsdaten: Order, Position, Strategie“ (Order, Position und Strategie, die kein Element auf der Zeichenfläche brauchen, jeweils mit ihren Werten, der Art des Werts, möglichen Werten und einer Beschreibung), die „Befunde der Prüfung“ mit „Prüfen“.
 - **Schritt:** Name, die Einstellungen des Schritts (Abschnitt 6.4), bei „Order aufgeben“ die „Eigenschaften der Order“, „Liefert“ (was der Schritt für andere bereitstellt, zum Beispiel das Ergebnis einer Berechnung), „Verwendete Werte“ (die Werte von Objekten, die der Schritt verwendet, Abschnitt 6.3), „Regeln dieses Elements“, „Abschnitt“, „Gehört zu“ (Hauptablauf oder Order- und Positionsverwaltung einer Order) und „Entfernen“.
 - **Objekt:** Name, Herkunft (zum Beispiel „EMA 20, aus Objekttyp EMA“), die Einstellungen des Objekts, „Liefert“ (jeder Wert und jede Methode mit Namen, Art des Werts, möglichen Werten und einer Beschreibung, die immer zu sehen ist, bei einer Methode mit ihren Argumenten), „Element der ersten Verwendung“ (Abschnitt 6.3) und „Entfernen“. Ein eigener Indikator, ein eigener Trend und ein Regelwerk haben dazu ihren „Inhalt“ (Abschnitt 6.7).
 - **Rahmen** einer Order- und Positionsverwaltung: was sie ist und was Sie damit tun können.
@@ -225,9 +219,9 @@ Die Uhrzeit steht im 24-Stunden-Format in der Ortszeit Ihres Browsers. Das Datum
 
 „unbekannt“ (Englisch: „unknown“) steht anstelle des Stands, wenn sich Zeichenfolge oder Datum beim Aufbau nicht ermitteln ließen, zum Beispiel weil pipwerk Studio aus einem Ordner aufgebaut wurde, der nicht versioniert ist. Eine Zeichenfolge ohne Datum zeigt der Dialog nicht. Auch bei der Adresse des Quelltexts steht „unbekannt“, wenn die Adresse im Programm ungültig ist; dann gibt es keinen Verweis. pipwerk Studio arbeitet in beiden Fällen normal.
 
-Wenn pipwerk Studio mit dem Startskript gestartet wurde (Abschnitt 2), ist der Stand im Dialog genau der Stand, aus dem es läuft. Dialog und Fußzeile nennen dann dieselbe Zeichenfolge: der Dialog vollständig und mit Datum, die Fußzeile in der Kurzform.
+Läuft pipwerk Studio aus einem festgehaltenen Stand, ist der Stand im Dialog genau der Stand, aus dem es läuft. Dialog und Fußzeile nennen dann dieselbe Zeichenfolge: der Dialog vollständig und mit Datum, die Fußzeile in der Kurzform.
 
-Beim Start von Hand (Abschnitt 2, letzter Absatz) kann der Stand vom laufenden Programm abweichen, weil dort auch Änderungen wirken, die nicht festgehalten sind. Dafür gilt:
+Wer pipwerk Studio weiterentwickelt, startet die beiden Teile von Hand und ändert Dateien bei laufendem Programm. Dann kann der Stand vom laufenden Programm abweichen, weil auch Änderungen wirken, die nicht festgehalten sind. Dafür gilt:
 
 1. Der Dialog nennt den Stand, der beim letzten Start der Oberfläche vorlag. Die Fußzeile nennt den Stand beim Start des Servers.
 2. Nach einem Wechsel des Stands oder bei nicht festgehaltenen Änderungen können beide Angaben von dem Programm abweichen, das tatsächlich läuft, und voneinander abweichen.
@@ -272,13 +266,13 @@ So ändern Sie das Objektverzeichnis:
 
 Nach einer gelungenen Änderung, mit und ohne Verschieben, zeigen die gespeicherten Vorlagen in der Elementbibliothek und die Liste von „Öffnen“ die Dateien des neuen Verzeichnisses. Eine geöffnete Strategie bleibt geöffnet. Sie wird beim nächsten „Speichern“ im neuen Verzeichnis abgelegt, auch wenn die Dateien nicht verschoben wurden.
 
-Wurde pipwerk Studio mit dem Startskript gestartet, gilt: `components/pipwerk-studio/scripts/testenv stop` entfernt die gespeicherten Strategien und Vorlagen nur, solange das Objektverzeichnis unter `components/pipwerk-studio/.testenv/` liegt. Nach einer Änderung auf einen anderen Ordner bleiben die Dateien dort erhalten; Sie entfernen sie selbst (Abschnitt 2).
+Nach einer Änderung auf einen anderen Ordner bleiben die Dateien dort erhalten, auch wenn pipwerk Studio beendet wird; Sie entfernen sie selbst.
 
 ### Sprache: Wirkung, Speicherung und Fehlermeldungen
 
 Alle Texte der Oberfläche erscheinen sofort in der gewählten Sprache. Der Name „pipwerk Studio“ bleibt unverändert. Selbst vergebene Namen, frei eingegebene Texte, Strategieinhalte und andere fachliche Einstellungen werden durch den Sprachwechsel nicht übersetzt oder verändert.
 
-Die Auswahl wird zentral im Server für pipwerk Studio gespeichert. Sie bleibt nach einem Neuladen der Browserseite erhalten und nach einem Neustart von pipwerk Studio, das von Hand gestartet wurde. Wurde pipwerk Studio mit dem Startskript gestartet, gilt das nur für ein Neuladen der Browserseite: Das Beenden mit `testenv stop` entfernt die Datenbank und damit die gespeicherte Sprache, und nach einem erneuten Start ist wieder Deutsch eingestellt (Abschnitt 2). Die Sprache gilt für pipwerk Studio insgesamt, nicht pro Benutzer; Benutzerkonten oder Anmeldungen gibt es in diesem Stand nicht. Die Auswahl wird nicht im Browser gespeichert.
+Die Auswahl wird zentral im Server für pipwerk Studio gespeichert. Sie bleibt nach einem Neuladen der Browserseite erhalten. Ob sie auch nach einem Neustart von pipwerk Studio erhalten bleibt, hängt davon ab, wie pipwerk Studio gestartet wurde; das beschreibt die technische Dokumentation. Geht die gespeicherte Sprache verloren, ist wieder Deutsch eingestellt. Die Sprache gilt für pipwerk Studio insgesamt, nicht pro Benutzer; Benutzerkonten oder Anmeldungen gibt es in diesem Stand nicht. Die Auswahl wird nicht im Browser gespeichert.
 
 Das Auswahlfeld ist gesperrt, solange die gespeicherte Sprache gelesen wird (beim Öffnen und bei einem erneuten Lesen im Hintergrund, solange noch keine Sprache bestätigt ist) und solange eine Änderung gespeichert wird. Beim Speichern zeigen Auswahlfeld und Texte bereits die neu gewählte Sprache. Antwortet der Server nicht innerhalb von 10 Sekunden, gilt das Lesen beziehungsweise Speichern als fehlgeschlagen, und es erscheint die entsprechende Fehlermeldung. Das gilt auch, wenn der Browser meldet, dass keine Internetverbindung besteht: Der Server läuft auf dem eigenen Rechner, und Anfragen an ihn werden trotzdem gesendet. Es gibt drei Fehlermeldungen:
 
@@ -298,7 +292,7 @@ Dieser Abschnitt beschreibt die Arbeitsabläufe der Reihe nach. Die Einstellunge
 
 1. Wählen Sie im Menü „Neue Strategie“. Hat die geöffnete Strategie ungespeicherte Änderungen, fragt pipwerk Studio vorher (Abschnitt 6.9).
 2. Die Zeichenfläche ist leer. Die Eigenschaftenansicht zeigt die Strategie mit dem Hinweis „Die Strategie ist leer“. Einen geführten Aufbau gibt es nicht; Sie bauen den Ablauf selbst auf.
-3. Tragen Sie in der Eigenschaftenansicht der Strategie den Namen und die Beschreibung ein. Das Feld „Name der Strategie“ ist bei einer neuen Strategie leer und zeigt in Grau den Hinweis „Name eingeben“; er verschwindet mit dem ersten Zeichen, wie beim Feld „Beschreibung“. Solange der Name fehlt, steht im Streifen der Strategieparameter „(noch ohne Name)“. Ohne Namen lässt sich die Strategie speichern; in der Liste „Strategie öffnen“ heißt sie dann „(ohne Name)“. Die Eigenschaftenansicht der Strategie öffnen Sie jederzeit mit einem Klick auf den Namen im Streifen der Strategieparameter oder auf eine freie Stelle der Zeichenfläche.
+3. Tragen Sie in der Eigenschaftenansicht der Strategie den Namen und die Beschreibung ein. Das Feld „Name der Strategie“ ist bei einer neuen Strategie leer und zeigt in Grau den Hinweis „Name eingeben“; er verschwindet mit dem ersten Zeichen, wie beim Feld „Beschreibung“. Solange der Name fehlt, steht in der Kopfzeile „(noch ohne Name)“. Ohne Namen lässt sich die Strategie speichern; in der Liste „Strategie öffnen“ heißt sie dann „(ohne Name)“. Die Eigenschaftenansicht der Strategie öffnen Sie jederzeit mit einem Klick auf den Namen in der Kopfzeile oder auf eine freie Stelle der Zeichenfläche.
 4. Beginnen Sie den Ablauf mit einem Auslöser. In der Elementbibliothek tragen „Kerzenschluss“, „Tick“ und „Manuell“ die Marke „Auslöser“ (Abschnitt 6.2). Ein Auslöser ist das Ereignis, das die Strategie startet. Fügen Sie zuerst etwas anderes ein, entsteht es, und eine Meldung sagt Ihnen, dass eine Strategie mit einem Auslöser beginnt.
 5. Gespeichert wird erst mit „Speichern“.
 
@@ -354,20 +348,20 @@ Die Einstellungen eines Elements stehen in seiner Eigenschaftenansicht. Jedes Fe
 | --- | --- |
 | nicht belegt | Das Feld hat noch keinen Wert. Bei einem Pflichtfeld sagt der Hinweis: „Pflichtangabe: Wählen Sie oben, woher der Wert kommt.“ Bei einem freiwilligen Feld: „Optional. Ohne Wert bleibt die Angabe leer.“ |
 | fest eingeben | Sie geben den Wert ein oder wählen ihn aus der Liste. |
-| aus einem Strategieparameter | Sie wählen einen Strategieparameter, dessen Art passt. Gibt es noch keinen passenden, sagt ein Hinweis es, und Sie legen ihn mit „+ Neuer Strategieparameter …“ gleich an: Sie tragen den Namen ein und wählen „Anlegen“. |
+| aus einem Strategieparameter | Sie wählen einen Strategieparameter, dessen Art passt. Angelegt wird er hier nicht. Gibt es noch keinen passenden, sagt ein Satz es, zum Beispiel „Es gibt noch keinen Strategieparameter für „Zeiteinheit“. Strategieparameter legen Sie in der Strategie an.“ Mit „Zur Strategie“ kommen Sie zum Bereich „Strategieparameter“ (Abschnitt 3.2); dort ist die Art des Felds für „Neuer Strategieparameter“ schon gewählt, und „Zurück zu „<Name des Elements>““ führt wieder zum Feld. Der neue Strategieparameter steht dort zur Wahl. Wählen Sie ein anderes Element oder schließen Sie die Strategie, gibt es den Weg zurück nicht mehr. |
 | von einem anderen Element | Sie wählen ein Objekt auf der Zeichenfläche und einen seiner Werte. Liegt noch kein Objekt auf der Zeichenfläche, sagt der Hinweis es. |
 | aus einer Formel | Sie stellen den Wert aus Bausteinen zusammen (Abschnitt 7). |
 | beim Start der Strategie festlegen | Der Wert wird erst festgelegt, wenn die Strategie gestartet wird. |
 
 Welche Antworten ein Feld anbietet, bestimmt das Feld. Zeigen Sie auf die Beschriftung oder auf das Symbol „i“, steht in der Erklärung, welche Art von Wert gefragt ist (zum Beispiel „ganze Zahl“ oder „ein Instrument“). Fehlt bei einem Pflichtfeld die Antwort, meldet die Prüfung es.
 
-**Instrument.** Bei einem Feld für das Instrument steht zuerst „das Instrument, auf dem die Strategie läuft“ mit dem Hinweis „Dafür müssen Sie nichts wählen.“ Sie müssen also kein Instrument wählen. Wollen Sie ein anderes, wählen Sie „anderes Instrument wählen“; erst dann erscheint die Frage „Woher kommt der Wert?“ mit den Antworten, und mit „fest eingeben“ tragen Sie die Bezeichnung eines Instruments ein. Solange eine andere Angabe gilt, bietet das Feld „wieder das Instrument, auf dem die Strategie läuft“ an und trägt die Vorbelegung wieder ein.
+**Instrument.** Ein Feld für das Instrument (bei einem Element und bei einer Order) trägt die Beschriftung „Instrument wählen (optional)“ statt der Frage „Woher kommt der Wert?“. Darunter steht eine einzige Auswahl, die „Voreingestelltes Instrument aus Strategie“ zeigt. Sie müssen also kein Instrument wählen. Die weiteren Einträge der Auswahl sind „fest eingeben“, „aus einem Strategieparameter“, „von einem anderen Element“ und die weiteren Möglichkeiten des Felds. Bei „fest eingeben“ erscheint ein leeres Eingabefeld mit dem grauen Hinweis „zum Beispiel EURUSD“; lassen Sie es leer, gilt weiter das voreingestellte Instrument, und die Auswahl zeigt wieder „Voreingestelltes Instrument aus Strategie“. Zurück zum voreingestellten Instrument kommen Sie immer mit dem ersten Eintrag der Auswahl. Unter der Auswahl steht die Erklärung: „Ohne eigene Wahl gilt das voreingestellte Instrument aus der Strategie. Das ist das Instrument, auf dem die Strategie läuft; es wird erst beim Start der Strategie festgelegt. Wählen Sie hier nur ein Instrument, wenn dieses Element ein anderes verwenden soll.“ Bei der Eigenschaft der Order steht „diese Order“ statt „dieses Element“.
 
 Bei „Order aufgeben“ wählen Sie den Ordertyp. Er bestimmt die „Eigenschaften der Order“, die Sie ausfüllen (zum Beispiel Richtung und Stop-Loss). Wechseln Sie den Ordertyp, bekommen die neu gebrauchten Eigenschaften ihre Standardwerte, die vorhandenen bleiben. Ein Pflichtwert wie das Volumen kann auch eine Regel bestimmen (Abschnitt 6.6).
 
 ### 6.5 Strategieparameter
 
-Strategieparameter legen Sie im Streifen unter der Kopfzeile an, ändern und entfernen sie dort (Abschnitt 3.2). Die Arten des Werts sind Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Zeiteinheit und die Objekte der Anwendung. In Formeln heißt ein Strategieparameter mit seinem Namen, in den Bausteinen steht er in der Gruppe „Strategieparameter“. Im Ablauf ändert er sich nicht. Ist der Schalter „Wert erst beim Start der Strategie festlegen“ eingeschaltet, hat der Strategieparameter noch keinen Wert; er wird gesetzt, wenn die Strategie gestartet wird.
+Strategieparameter legen Sie in der Eigenschaftenansicht der Strategie an, ändern und entfernen sie dort (Abschnitt 3.2); in einem Feld wählen Sie nur einen aus. Die Arten des Werts sind Zahl, Ganzzahl, Prozent, Wahrheitswert, Text, Zeiteinheit und Instrument. In Formeln heißt ein Strategieparameter mit seinem Namen, in den Bausteinen steht er in der Gruppe „Strategieparameter“. Im Ablauf ändert er sich nicht. Ist der Schalter „Wert erst beim Start der Strategie festlegen“ eingeschaltet, hat der Strategieparameter noch keinen Wert; er wird gesetzt, wenn die Strategie gestartet wird.
 
 ### 6.6 Regeln zuordnen
 
@@ -404,7 +398,7 @@ Ein **eigenes Regelwerk** enthält Regeln (Abschnitt 6.6) und kann die Formel f�
 
 ### 6.9 Speichern, Prüfen, Schließen, Öffnen, Löschen
 
-- **Speichern** legt die Strategie im Objektverzeichnis ab, beim ersten Mal neu, danach ersetzt es die gespeicherte. Speichern geht immer, auch bei Befunden. Danach prüft pipwerk Studio die Strategie. Der Zustand im Streifen der Strategieparameter wechselt auf „gespeichert“. Scheitert das Speichern, steht in einem Fenster „Die Strategie konnte nicht gespeichert werden.“ mit der Ursache.
+- **Speichern** legt die Strategie im Objektverzeichnis ab, beim ersten Mal neu, danach ersetzt es die gespeicherte. Speichern geht immer, auch bei Befunden. Danach prüft pipwerk Studio die Strategie. Der Zustand neben dem Namen der Strategie in der Kopfzeile wechselt auf „gespeichert“. Scheitert das Speichern, steht in einem Fenster „Die Strategie konnte nicht gespeichert werden.“ mit der Ursache.
 - **Prüfen** sucht Probleme (Abschnitt 8) und zeigt ihre Zahl in der Kopfzeile. Nach dem Öffnen läuft die Prüfung von selbst.
 - **Schließen**, **Neue Strategie** und **Öffnen** fragen bei ungespeicherten Änderungen („Ungespeicherte Änderungen“): „Speichern“, „Verwerfen“ oder „Abbrechen“. Die Escape-Taste ist „Abbrechen“. Scheitert das Speichern, geschieht nichts weiter.
 - **Öffnen** zeigt im Fenster „Strategie öffnen“ die gespeicherten Strategien mit Name, Beschreibung und letzter Änderung. Ein Klick auf den Namen öffnet die Strategie. Eine Strategie ohne Namen heißt „(ohne Name)“. Eine Datei, die sich nicht lesen lässt, ist als „nicht lesbar“ gekennzeichnet und nicht zu öffnen; sie bleibt unverändert. Ist noch keine Strategie gespeichert, ist die Liste leer, und das Fenster sagt: „Es sind keine Strategien gespeichert. Schließen Sie dieses Fenster und legen Sie mit „Neue Strategie“ eine an.“ Lässt sich die Liste nicht lesen, steht dort „Die Liste der Strategien konnte nicht gelesen werden.“ mit der Schaltfläche „Erneut versuchen“. „Abbrechen“ schließt das Fenster.
@@ -672,12 +666,11 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 
 - Vorlagen lassen sich in der Oberfläche noch nicht neu anlegen, öffnen, ändern, speichern oder löschen, und aus einem Objekt einer Strategie lässt sich noch keine Vorlage machen. Gespeicherte Vorlagen sind in der Elementbibliothek zu sehen und lassen sich einfügen (Abschnitt 6.10). Entwickler legen Vorlagen über die Programmschnittstelle an; das beschreibt die technische Dokumentation.
 - Einen geführten Aufbau für neue Strategien gibt es nicht. Der Hinweis der leeren Strategie nennt den ersten Schritt (Abschnitt 6.1).
-- Mit `--host` kann jeder im Netz Strategien, Vorlagen und das Objektverzeichnis ändern; es gibt keine Anmeldung (Abschnitt 2).
+- Es gibt keine Anmeldung: Wer pipwerk Studio im Netz erreicht, kann Strategien, Vorlagen und das Objektverzeichnis ändern (Abschnitt 2).
 - pipwerk Studio besitzt noch kein Installationspaket für Anwender.
 - Die Sprache gilt für pipwerk Studio insgesamt und nicht für einzelne Personen.
 - Weitere Sprachen als Deutsch und Englisch sind nicht verfügbar.
-- Wurde pipwerk Studio mit dem Startskript gestartet, geht die gespeicherte Sprache beim Beenden mit `components/pipwerk-studio/scripts/testenv stop` verloren; nach einem erneuten Start ist Deutsch eingestellt (Abschnitt 2).
-- Dabei entfernt `testenv stop` auch die gespeicherten Strategien und Vorlagen, solange das Objektverzeichnis unter `components/pipwerk-studio/.testenv/` liegt. Wurde es auf einen anderen Ordner geändert, bleiben die Dateien dort erhalten.
+- Je nach Start kann die gespeicherte Sprache beim Beenden verloren gehen; dann ist nach einem erneuten Start Deutsch eingestellt (Abschnitt 5).
 - Beim Start von Hand kann der Stand im Dialog und in der Fußzeile vom laufenden Programm abweichen (Abschnitt 4).
 - Strategien werden nicht ausgeführt. Die Prüfung prüft nur.
 - Eine Formel, die die Bausteine nicht zeigen können (ein Schreibfehler oder eine zu tiefe Verschachtelung), steht nur in der Formelansicht.
@@ -729,9 +722,5 @@ In schmalen Fenstern (unter 700 Pixel) wechseln Sie mit der Leiste unten zwische
 | leer | Der Wert einer Eigenschaft ohne Wert, zum Beispiel das vorletzte Hoch eines ZigZag ohne zweites Hoch. Rechnen und Vergleichen mit „leer“ ist ein Fehler der Auswertung. `ISBLANK` fragt danach (Abschnitt 7.5). Nicht zu verwechseln mit „nicht verfügbar“. |
 | Prüfung | Die Prüfung einer Strategie auf Widersprüche und Lücken, zum Beispiel eine Formel mit Schreibfehler oder einen unbekannten Namen. Sie liefert Befunde. |
 | Befund | Ein Ergebnis der Prüfung: ein Fehler oder ein Hinweis mit Text, dem betroffenen Element und Feld und dem Weg zur Behebung. Eine Strategie mit Befunden lässt sich trotzdem speichern. |
-| Startskript | Das Programm `components/pipwerk-studio/scripts/testenv`, das pipwerk Studio startet, abfragt und beendet (Abschnitt 2). |
-| Anschlussnummer | Eine Zahl von 1 bis 65535, unter der ein Programm auf dem Rechner Verbindungen annimmt. Zwei Programme können nicht dieselbe Anschlussnummer verwenden. |
-| Netzwerkadresse | Die Zahlenfolge, unter der ein Rechner im Netz erreichbar ist, zum Beispiel `192.168.0.12`. `127.0.0.1` ist die Netzwerkadresse des eigenen Rechners; sie ist nur von ihm selbst aus erreichbar. `0.0.0.0` ist keine einzelne Adresse. Beim Start mit `--host` bedeutet sie: alle Netzwerkadressen dieses Rechners. |
-| Programmdateien | Die Ordner und Dateien, aus denen pipwerk Studio besteht. Der oberste Ordner enthält unter anderem die Datei `LICENSE`. |
-| Eingabefenster (Terminal) | Ein Fenster, in dem Sie Befehle eintippen und ausführen. |
+| Programmdateien | Die Ordner und Dateien, aus denen pipwerk Studio besteht. |
 | Bildschirmleser | Ein Programm, das Menschen mit Sehbehinderung den Inhalt der Seite vorliest. |

@@ -30,6 +30,9 @@ test('the delivered rule template appears in English in the library and in the r
     await clickMenu(page, 'settings');
     await choose(page.getByRole('dialog').getByLabel('Language'), 'Deutsch');
     await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
-    await expect(page.getByTestId('param-strip')).toContainText('Strategieparameter');
+    await showArea(page, 'canvas');
+    await page.getByTestId('status-pill').click();
+    await showArea(page, 'props');
+    await expect(page.getByTestId('sec-parameters')).toContainText('Strategieparameter');
   }
 });

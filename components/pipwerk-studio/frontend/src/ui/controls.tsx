@@ -448,6 +448,7 @@ export function TextInput({
   className = '',
   autoFocus,
   onEnter,
+  onBlur,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -457,6 +458,7 @@ export function TextInput({
   className?: string;
   autoFocus?: boolean;
   onEnter?: () => void;
+  onBlur?: () => void;
 }) {
   return (
     <input
@@ -467,6 +469,7 @@ export function TextInput({
       onChange={(event) => {
         onChange(event.target.value);
       }}
+      onBlur={onBlur}
       onKeyDown={(event) => {
         if (event.key === 'Enter' && onEnter !== undefined) {
           event.preventDefault();

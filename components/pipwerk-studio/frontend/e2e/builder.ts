@@ -165,19 +165,25 @@ export async function newStrategyFromScratch(page: Page, name: string): Promise<
 }
 
 export async function createParam(page: Page, name: string, type: 'time_unit' | 'number', value: string): Promise<void> {
+  // the strategy parameters stand in the properties view of the strategy (in small windows the click switches to it)
   await showArea(page, 'canvas');
-  await page.getByTestId('param-new').click();
-  const popover = page.getByTestId('param-popover');
-  await expect(popover).toBeVisible();
-  await popover.getByTestId('param-name').fill(name);
-  await choose(popover.getByTestId('param-type'), type);
+  await page.getByTestId('status-pill').click();
+  await showArea(page, 'props');
+  const section = page.getByTestId('sec-parameters');
+  await section.getByTestId('param-new').click();
+  const form = section.getByTestId('param-new-form');
+  await expect(form).toBeVisible();
+  await form.getByTestId('param-new-name').fill(name);
+  await choose(form.getByTestId('param-new-type'), type);
   if (type === 'time_unit') {
-    await choose(popover.getByTestId('param-value'), value);
+    await choose(form.getByTestId('param-new-value'), value);
   } else {
-    await popover.getByTestId('param-value').fill(value);
+    await form.getByTestId('param-new-value').fill(value);
   }
-  await popover.getByTestId('param-done').click();
-  await expect(popover).toHaveCount(0);
+  await form.getByTestId('param-new-create').click();
+  await expect(form).toHaveCount(0);
+  await expect(section.getByTestId('param-row').filter({ hasText: name })).toHaveCount(1);
+  await showArea(page, 'canvas');
 }
 
 export async function bindParam(page: Page, fieldId: string, paramName: string): Promise<void> {

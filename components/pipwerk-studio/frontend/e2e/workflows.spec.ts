@@ -23,7 +23,9 @@ test('a new strategy opens the empty drawing area and says what to do next; savi
   await expect(page.getByTestId('empty-strategy-hint')).toContainText('Nächster Schritt');
   await expect(page.getByTestId('canvas')).not.toContainText('Nächster Schritt');
   await expect(page.getByTestId('lane-empty')).toHaveCount(0);
-  await expect(page.getByTestId('param-strip')).toContainText('Noch kein Strategieparameter');
+  // the strategy parameters stand in the properties view of the strategy; with none there, it says what they are
+  await expect(page.getByTestId('param-strip')).toHaveCount(0);
+  await expect(page.getByTestId('param-empty')).toContainText('Ein Strategieparameter ist ein Wert, den Sie hier einmal festlegen');
 
   // the name, then saving: "gespeichert", and the strategy stands in the list
   await showArea(page, 'props');
@@ -132,19 +134,17 @@ test('the language of the interface is changed in the settings and stays after r
   await choose(page.getByRole('dialog').getByLabel('Sprache'), 'English');
   await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText('Settings');
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');
   await expect(page.getByTestId('library')).toContainText('Element library');
   await expect(page.getByTestId('library')).toContainText('Flow control');
 
   await page.reload();
 
-  await expect(page.getByTestId('param-strip')).toContainText('Strategy parameters');
   await expect(library(page, 'Candle close')).toHaveCount(1);
   // back to German for the tests that follow
   await clickMenu(page, 'settings');
   await choose(page.getByRole('dialog').getByLabel('Language'), 'Deutsch');
   await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
-  await expect(page.getByTestId('param-strip')).toContainText('Strategieparameter');
+  await expect(page.getByTestId('library')).toContainText('Elementbibliothek');
 });
 
 test('the object directory is changed with the question "Dateien verschieben?", with and without moving', async ({ page }) => {

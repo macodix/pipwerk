@@ -514,7 +514,7 @@ describe('with the strategy of the client', () => {
 
   it('asks before a strategy parameter that expressions use is removed, and lists the steps that use it', async () => {
     const run = await ema();
-    await run.user.click(screen.getAllByTestId('param-chip').find((chip) => chip.textContent?.includes('Stop abstand')) as HTMLElement);
+    await run.user.click(screen.getAllByTestId('param-row').find((row) => row.textContent?.includes('Stop abstand')) as HTMLElement);
 
     await run.user.click(screen.getByTestId('param-delete'));
 
@@ -522,7 +522,7 @@ describe('with the strategy of the client', () => {
     expect(within(dialog).getByTestId('remove-users')).toHaveTextContent('StopLoss');
     await run.user.click(within(dialog).getByRole('button', { name: 'Entfernen' }));
     await waitFor(() => {
-      expect(screen.queryAllByTestId('param-chip').some((chip) => chip.textContent?.includes('Stop abstand'))).toBe(false);
+      expect(screen.queryAllByTestId('param-row').some((row) => row.textContent?.includes('Stop abstand'))).toBe(false);
     });
     const stored = await saved(run);
     expect(JSON.stringify(stored)).not.toContain('stop_abstand');

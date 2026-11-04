@@ -41,7 +41,7 @@ async function openEma(language: 'Deutsch' | 'English') {
 }
 
 describe.each(['Deutsch', 'English'] as const)('every field has a label (E10), %s', (language) => {
-  it('in the strategy, the library, the strip of the strategy parameters and every element', async () => {
+  it('in the strategy, the library, the strategy parameters and every element', async () => {
     const user = await openEma(language);
 
     expect(unlabelled(document.body)).toEqual([]);
@@ -60,9 +60,11 @@ describe.each(['Deutsch', 'English'] as const)('every field has a label (E10), %
       });
       expect(unlabelled(screen.getByTestId('props-element')), name).toEqual([]);
     }
-    // a strategy parameter in the strip
-    await user.click(screen.getAllByTestId('param-chip')[0] as HTMLElement);
-    expect(unlabelled(screen.getByTestId('param-popover'))).toEqual([]);
+    // the strategy parameters in the properties view of the strategy: the open one and the form of a new one
+    await user.click(screen.getByTestId('crumb-strategy'));
+    await user.click((await screen.findAllByTestId('param-row'))[0] as HTMLElement);
+    await user.click(screen.getByTestId('param-new'));
+    expect(unlabelled(screen.getByTestId('sec-parameters'))).toEqual([]);
   });
 
   it('in the dialogs "Öffnen" and "Einstellungen"', async () => {

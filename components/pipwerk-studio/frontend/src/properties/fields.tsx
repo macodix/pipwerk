@@ -13,6 +13,7 @@ import { ExpressionPanel } from '../expression/ExpressionPanel';
 import type { SupportedLanguage } from '../i18n';
 import { elementName, propertyRows } from '../model/elements';
 import { compatibleDataTypes, dataTypeWord, isFormulaField, labelText, objectTypeChoices, timeUnitChoices, type TypeIndex } from '../model/typeIndex';
+import { useStudio } from '../state/StudioContext';
 import { Btn, Info, NumberInput, Select, TextInput } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 
@@ -229,85 +230,56 @@ function compatibleParameter(spec: FieldSpec, parameter: StrategyDocument['param
   return compatibleDataTypes(spec.datatype, parameter.datatype);
 }
 
-/** Choice of a strategy parameter, with the way to create one on the spot (specification 5.4). */
+/**
+ * Choice of a strategy parameter of a fitting data type. Nothing is created here (specification 5.4, Mangel F6 der vierten
+ * Abnahme): if there is nothing to choose, a sentence says why and "Zur Strategie" leads to the strategy parameters.
+ */
 export function ParameterPicker({
   spec,
   value,
   parameters,
   onChange,
-  onCreate,
+  onGoToStrategy,
+  word,
   anyType,
 }: {
   spec: FieldSpec;
   value: string;
   parameters: StrategyDocument['parameters'];
   onChange: (key: string) => void;
-  onCreate: (name: string) => Promise<string | null>;
+  /** "Zur Strategie": the strategy parameters, with the data type of the field for a new one. */
+  onGoToStrategy: () => void;
+  /** The word for the data type of the field, in the language of the interface. */
+  word: string;
   /** Every strategy parameter fits (the entry names a strategy parameter and has no value of its own). */
   anyType?: boolean;
 }) {
   const { t } = useTranslation();
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
   const list = parameters.filter((parameter) => anyType === true || compatibleParameter(spec, parameter));
-  const none = list.length === 0;
-  const create = (): void => {
-    const trimmed = name.trim();
-    if (trimmed === '') {
-      return;
-    }
-    void onCreate(trimmed).then((key) => {
-      if (key !== null) {
-        setName('');
-        setAdding(false);
-        onChange(key);
-      }
-    });
-  };
   return (
     <div className="parampick" data-testid="param-picker">
-      {none ? (
-        <p className="hint" data-testid="param-hint">
-          <Icon name="info" size={15} />
-          <span>{t(parameters.length === 0 ? 'fields.noParameterYet' : 'fields.noParameterFits')}</span>
-        </p>
+      {list.length === 0 ? (
+        <>
+          <p className="hint" data-testid="param-hint">
+            <Icon name="info" size={15} />
+            <span>{anyType === true ? t('fields.noParameterAny') : t('fields.noParameterFor', { word })}</span>
+          </p>
+          <div>
+            <Btn small kind="ghost" icon="right" testid="param-go" onClick={onGoToStrategy}>
+              {t('fields.goToStrategy')}
+            </Btn>
+          </div>
+        </>
       ) : (
-        <Select
-          value={value}
-          onChange={(chosen) => {
-            if (chosen === '__new') {
-              setAdding(true);
-            } else {
-              onChange(chosen);
-            }
-          }}
-          testid="param-select"
-          ariaLabel={t('fields.chooseParameter')}
-        >
+        <Select value={value} onChange={onChange} testid="param-select" ariaLabel={t('fields.chooseParameter')}>
           <option value="">{t('fields.chooseParameterOption')}</option>
           {list.map((parameter) => (
             <option key={parameter.key} value={parameter.key}>
               {parameter.name}
             </option>
           ))}
-          <option value="__new">{t('fields.newParameterOption')}</option>
         </Select>
       )}
-      {none || adding ? (
-        <div className="inline-new" data-testid="new-param-inline">
-          <TextInput
-            value={name}
-            onChange={setName}
-            placeholder={t('fields.newParameterName')}
-            ariaLabel={t('fields.newParameterName')}
-            testid="new-param-name"
-            onEnter={create}
-          />
-          <Btn small kind="primary" icon="plus" testid="new-param-create" disabled={name.trim() === ''} onClick={create}>
-            {t('fields.create')}
-          </Btn>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -438,7 +410,6 @@ export type FieldRowProps = {
   element?: ElementDocument;
   answer: ExpressionAnswer | undefined;
   onChange: (binding: Binding | null) => void;
-  onCreateParameter: (name: string) => Promise<string | null>;
   /** The note under the label, for example which rule determines the value. */
   note?: string;
   /** Where the assignment lies in the element: needed to edit an expression there. */
@@ -451,34 +422,67 @@ export type FieldRowProps = {
 
 /** One parameter or property with its label, its explanation, the kind of assignment and the value. */
 export function FieldRow(props: FieldRowProps) {
-  const { spec, binding, readOnly, level, language, document, types, element, answer, onChange, onCreateParameter, note, scope, condition } = props;
+  const { spec, binding, readOnly, level, language, document, types, element, answer, onChange, note, scope, condition } = props;
   const place: ExpressionPlace | null =
     props.place ?? (element !== undefined && scope !== undefined ? { kind: 'binding', element: element.id, scope, key: spec.id } : null);
   const { t } = useTranslation();
-  const [chooseOther, setChooseOther] = useState(false);
+  const { studio } = useStudio();
+  // The user typed "fest eingeben" and has not typed a value yet: the field of an object with a preset shows the empty input.
+  const [typing, setTyping] = useState(false);
+  // "Zur Strategie" leads back to the element whose field this is.
+  const selected = studio.state.selection;
+  const cameFrom = element?.id ?? (selected.kind === 'element' ? selected.id : null);
+  const goToStrategy = (): void => {
+    studio.actions.visitParameters(cameFrom, spec.id, spec.datatype, spec.objectType);
+  };
+  const typeWord = dataTypeWord(types, spec.datatype, language, { specific: spec.datatypeLabel, objectType: spec.objectType });
   // The data type stands in the explanation shown when the field is pointed at, in the words of the library (E11).
-  const typeSentence =
-    spec.datatype === 'expression'
-      ? ''
-      : t('fields.expects', {
-          word: dataTypeWord(types, spec.datatype, language, { specific: spec.datatypeLabel, objectType: spec.objectType }),
-        });
+  const typeSentence = spec.datatype === 'expression' ? '' : t('fields.expects', { word: typeWord });
   const tip = [labelText(spec.explanation, language), typeSentence].filter((part) => part !== '').join(' ');
-  const preset = presetChoice(spec);
-  // The name of the object type stands in the sentences of the field that holds the one of the application ("das Instrument …").
-  const presetType = (() => {
-    const name = dataTypeWord(types, 'object', language, { objectType: spec.objectType });
-    return language === 'en' ? name.toLowerCase() : name;
-  })();
+  // A field with a preset (the instrument): one choice that starts with the preset (specification 5.4).
+  const preset = readOnly === true ? null : presetChoice(spec);
   const atPreset = preset !== null && (binding === undefined || (binding.kind === 'fixed' && binding.value === preset.id));
-  const showPreset = atPreset && !chooseOther && readOnly !== true;
   const kinds = kindsFor(spec, binding?.kind);
   const exprOnly = spec.bindings.length === 1 && spec.bindings[0] === 'expression';
   const current = binding?.kind ?? 'unset';
   const timeUnits = timeUnitChoices(types);
   const choices = spec.datatype === 'time_unit' && spec.choices.length === 0 ? timeUnits : spec.choices;
-  const shownLabel = fieldLabelText(spec, language, t('expression.formula'));
+  const shownLabel = preset === null ? fieldLabelText(spec, language, t('expression.formula')) : t('fields.preset.label');
   const objectChoices = spec.datatype === 'object' && spec.choices.length === 0 ? objectTypeChoices(types, spec.objectType) : spec.choices;
+  // The binding the field shows: without one, a field with a preset holds the preset (it has no state "nicht belegt").
+  const shown: Binding | undefined = binding ?? (preset === null ? undefined : { kind: 'fixed', value: preset.id });
+  // What the single choice of a field with a preset shows.
+  const presetValue =
+    preset === null
+      ? ''
+      : shown?.kind === 'fixed' && shown.value !== preset.id
+        ? 'fixed'
+        : atPreset
+          ? typing
+            ? 'fixed'
+            : 'preset'
+          : (shown?.kind ?? 'preset');
+
+  const setPresetKind = (kind: string): void => {
+    if (preset === null) {
+      return;
+    }
+    if (kind === 'preset') {
+      setTyping(false);
+      if (!atPreset) {
+        onChange({ kind: 'fixed', value: preset.id });
+      }
+    } else if (kind === 'fixed') {
+      // an empty input for the instrument; as long as it stays empty the preset applies
+      setTyping(true);
+      if (binding?.kind !== 'fixed') {
+        onChange({ kind: 'fixed', value: preset.id });
+      }
+    } else {
+      setTyping(false);
+      setKind(kind);
+    }
+  };
 
   const setKind = (kind: string): void => {
     switch (kind) {
@@ -517,11 +521,35 @@ export function FieldRow(props: FieldRowProps) {
           onChange={(key) => {
             onChange({ kind: 'fixed', value: key });
           }}
-          onCreate={onCreateParameter}
+          onGoToStrategy={goToStrategy}
+          word={typeWord}
         />
       );
     }
-    if (binding === undefined) {
+    if (preset !== null && presetValue === 'preset') {
+      return null;
+    }
+    if (preset !== null && presetValue === 'fixed') {
+      // a fixed instrument: the input stays empty until the user types; empty means the preset applies
+      return (
+        <TextInput
+          value={atPreset ? '' : String(shown?.kind === 'fixed' ? (shown.value ?? '') : '')}
+          onChange={(text) => {
+            onChange({ kind: 'fixed', value: text.trim() === '' ? preset.id : text });
+          }}
+          onBlur={() => {
+            if (atPreset) {
+              setTyping(false);
+            }
+          }}
+          placeholder={t('fields.preset.example')}
+          ariaLabel={shownLabel}
+          testid={`value-${spec.id}`}
+          autoFocus={typing}
+        />
+      );
+    }
+    if (shown === undefined) {
       return exprOnly && place !== null && readOnly !== true ? (
         <ExpressionEditor spec={spec} place={place} selfKey={element?.key ?? null} condition={condition === true} />
       ) : exprOnly ? (
@@ -530,14 +558,14 @@ export function FieldRow(props: FieldRowProps) {
         <p className="fixed-note muted">{t(spec.required ? 'fields.unsetRequired' : 'fields.unsetOptional')}</p>
       );
     }
-    switch (binding.kind) {
+    switch (shown.kind) {
       case 'fixed':
         return readOnly === true ? (
-          <p className="fixed-note">{String(binding.value ?? '')}</p>
+          <p className="fixed-note">{String(shown.value ?? '')}</p>
         ) : (
           <ValueInput
             datatype={spec.datatype}
-            value={binding.value}
+            value={shown.value}
             choices={spec.datatype === 'object' ? objectChoices : choices}
             language={language}
             other={spec.datatype === 'object'}
@@ -550,23 +578,24 @@ export function FieldRow(props: FieldRowProps) {
         );
       case 'parameter':
         return readOnly === true ? (
-          <p className="fixed-note">{document.parameters.find((candidate) => candidate.key === binding.value)?.name ?? '?'}</p>
+          <p className="fixed-note">{document.parameters.find((candidate) => candidate.key === shown.value)?.name ?? '?'}</p>
         ) : (
           <ParameterPicker
             spec={spec}
-            value={typeof binding.value === 'string' ? binding.value : ''}
+            value={typeof shown.value === 'string' ? shown.value : ''}
             parameters={document.parameters}
             onChange={(key) => {
               onChange({ kind: 'parameter', value: key });
             }}
-            onCreate={onCreateParameter}
+            onGoToStrategy={goToStrategy}
+            word={typeWord}
           />
         );
       case 'connection':
         return (
           <ConnectionPicker
             spec={spec}
-            value={binding.value}
+            value={shown.value}
             document={document}
             types={types}
             language={language}
@@ -581,7 +610,7 @@ export function FieldRow(props: FieldRowProps) {
           <ExpressionEditor spec={spec} place={place} selfKey={element?.key ?? null} condition={condition === true} />
         ) : (
           <ExpressionReadout
-            stored={typeof binding.value === 'string' ? binding.value : ''}
+            stored={typeof shown.value === 'string' ? shown.value : ''}
             answer={answer}
             testid={`expression-${spec.id}`}
           />
@@ -612,22 +641,20 @@ export function FieldRow(props: FieldRowProps) {
           <span>{note}</span>
         </div>
       ) : null}
-      {showPreset ? (
+      {preset !== null ? (
         <div className="preset" data-testid={`preset-${spec.id}`}>
-          <p className="fixed-note" data-testid={`preset-text-${spec.id}`}>
-            {t('fields.preset.value', { type: presetType })}
+          <Select value={presetValue} onChange={setPresetKind} testid={`kind-${spec.id}`} ariaLabel={shownLabel}>
+            <option value="preset">{labelText(preset.label, language)}</option>
+            {kinds.map((kind) => (
+              <option key={kind} value={kind}>
+                {t(`binding.${kind}`)}
+              </option>
+            ))}
+          </Select>
+          <p className="muted" data-testid={`preset-explanation-${spec.id}`}>
+            {t('fields.preset.explanation', { subject: t(scope === 'properties' ? 'fields.preset.thisOrder' : 'fields.preset.thisElement') })}
           </p>
-          <p className="muted">{t('fields.preset.nothingToChoose')}</p>
-          <Btn
-            small
-            kind="ghost"
-            testid={`preset-other-${spec.id}`}
-            onClick={() => {
-              setChooseOther(true);
-            }}
-          >
-            {t('fields.preset.other', { type: presetType })}
-          </Btn>
+          <div className="field-value">{valueEditor()}</div>
         </div>
       ) : (
         <>
@@ -650,21 +677,6 @@ export function FieldRow(props: FieldRowProps) {
             </label>
           )}
           <div className="field-value">{valueEditor()}</div>
-          {preset !== null && readOnly !== true ? (
-            <Btn
-              small
-              kind="ghost"
-              testid={`preset-back-${spec.id}`}
-              onClick={() => {
-                if (!atPreset) {
-                  onChange({ kind: 'fixed', value: preset.id });
-                }
-                setChooseOther(false);
-              }}
-            >
-              {t('fields.preset.back', { type: presetType })}
-            </Btn>
-          ) : null}
         </>
       )}
     </div>

@@ -79,14 +79,30 @@ export function Header({ onAbout, aboutRef }: { onAbout: () => void; aboutRef: R
     item.run();
   };
   const count = state.findings === null ? null : findings.all.length;
+  const strategy = state.document;
   return (
-    <header className="region header" data-region="header" data-testid="header">
+    <header className={`region header${strategy === null ? '' : ' has-status'}`} data-region="header" data-testid="header">
       <div className="brand">
         <span className="logo" aria-hidden="true">
           <Icon name="chart" size={20} />
         </span>
         <h1 className="brand-name">pipwerk Studio</h1>
       </div>
+      {strategy !== null ? (
+        <button
+          type="button"
+          className={`status-pill${studio.dirty ? ' dirty' : ''}`}
+          onClick={() => {
+            actions.select({ kind: 'strategy' }, 'props');
+          }}
+          data-testid="status-pill"
+          data-tip={t('params.statusTip')}
+        >
+          <span className="dot" />
+          <span className="status-name">{strategy.name === '' ? t('strategy.unnamed') : strategy.name}</span>
+          <span className="status-state">{t(studio.dirty ? 'params.unsaved' : 'params.saved')}</span>
+        </button>
+      ) : null}
       <nav className="menu menu-full" aria-label={t('menu.label')}>
         {items.map((item) => (
           <button

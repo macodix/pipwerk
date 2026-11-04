@@ -181,74 +181,96 @@ describe('the properties view of invented types (specification 5.4)', () => {
     expect(within(nodeByName('Messer')).getByTestId('card-more')).toHaveTextContent('alle 4 Eigenschaften');
   });
 
-  it('offers the values of an object type besides the one that the type names, and keeps a typed designation as it is', async () => {
+  it('shows a field with a preset as one choice that starts with the value the type names, and keeps a typed designation as it is', async () => {
     const { user, api, document } = await setup();
     await chooseNode(user, 'Messer');
     const field = screen.getByTestId('field-ziel');
 
-    // the standard value of the type is the one of the application: the field says so in words, the user has nothing to choose (E11)
-    expect(within(field).getByTestId('preset-text-ziel')).toHaveTextContent('das zz.target, auf dem die Strategie läuft');
-    expect(within(field).getByText('Dafür müssen Sie nichts wählen.')).toBeInTheDocument();
-    expect(within(field).queryByTestId('kind-ziel')).toBeNull();
-    // "anderes … wählen" shows the question and the answers; the value stays the standard value until something else is entered
-    await user.click(within(field).getByTestId('preset-other-ziel'));
-    expect(within(field).getByTestId('kind-ziel')).toHaveValue('unset');
-    // "fest eingeben" starts with the standard value of the type: the one of the application
+    // the standard value of the type: one choice, preset and visible with the words of the library; nothing else to answer (F5)
+    expect(within(field).getByText('Instrument wählen (optional)')).toBeInTheDocument();
+    expect(within(field).getByTestId('kind-ziel')).toHaveTextContent('das eigene Ziel');
+    expect(within(field).queryByText('Woher kommt der Wert?')).toBeNull();
+    expect(within(field).queryByTestId('value-ziel')).toBeNull();
+    // "fest eingeben" shows an empty input, the value stays the standard value until something is typed
     await choose(user, within(field).getByTestId('kind-ziel'), 'fest eingeben');
-    expect(within(field).getByTestId('value-ziel')).toHaveValue('zz.own_target');
-    await choose(user, within(field).getByTestId('value-ziel'), 'Andere Bezeichnung …');
-    await user.type(within(field).getByTestId('value-ziel-text'), 'eurusd');
+    expect(within(field).getByTestId('value-ziel')).toHaveValue('');
+    await user.type(within(field).getByTestId('value-ziel'), 'eurusd');
 
     const stored = await saved({ user, api, document });
     const meter = stored.elements.find((element) => element.instance !== undefined);
     expect(meter?.instance?.parameter_values?.ziel).toEqual({ kind: 'fixed', value: 'eurusd' });
   });
 
-  it('chooses "anderes … wählen" without entering anything: the standard value stays; and goes back to it from another source (E11)', async () => {
+  it('goes back to the preset from another way over the first entry (F5)', async () => {
     const { user, api, document } = await setup();
     await chooseNode(user, 'Messer');
     const field = screen.getByTestId('field-ziel');
 
-    await user.click(within(field).getByTestId('preset-other-ziel'));
-    // nothing entered: the field still holds the standard value, and the way back only closes the choice
-    await user.click(within(field).getByTestId('preset-back-ziel'));
-    expect(within(field).getByTestId('preset-text-ziel')).toBeInTheDocument();
-    let stored = await saved({ user, api, document });
-    expect(stored.elements.find((element) => element.instance !== undefined)?.instance?.parameter_values?.ziel).toBeUndefined();
-
-    // another source of the value, then back: the standard value is stored again
-    await user.click(within(field).getByTestId('preset-other-ziel'));
     await choose(user, within(field).getByTestId('kind-ziel'), 'beim Start der Strategie festlegen');
-    expect(within(field).getByTestId('preset-back-ziel')).toBeInTheDocument();
-    await user.click(within(field).getByTestId('preset-back-ziel'));
-    expect(within(field).getByTestId('preset-text-ziel')).toBeInTheDocument();
-    stored = await saved({ user, api, document });
+    expect(within(field).getByTestId('kind-ziel')).toHaveTextContent('beim Start der Strategie festlegen');
+    await choose(user, within(field).getByTestId('kind-ziel'), 'das eigene Ziel');
+    expect(within(field).getByTestId('kind-ziel')).toHaveTextContent('das eigene Ziel');
+    const stored = await saved({ user, api, document });
     expect(stored.elements.find((element) => element.instance !== undefined)?.instance?.parameter_values?.ziel).toEqual({
       kind: 'fixed',
       value: 'zz.own_target',
     });
   });
 
-  it('creates a strategy parameter on the spot when none exists, and assigns it', async () => {
+  it('creates no strategy parameter in a field: a sentence, "Zur Strategie", and the data type of the field for a new one (F6)', async () => {
     const { user, api, document } = await setup();
     await chooseNode(user, 'Messer');
     const field = screen.getByTestId('field-laenge');
 
     await choose(user, within(field).getByTestId('kind-laenge'), 'aus einem Strategieparameter');
-    expect(within(field).getByTestId('param-hint')).toHaveTextContent('noch kein Strategieparameter');
-    await user.type(within(field).getByTestId('new-param-name'), 'Meine Länge');
-    await user.click(within(field).getByTestId('new-param-create'));
+    expect(within(field).getByTestId('param-hint')).toHaveTextContent(
+      'Es gibt noch keinen Strategieparameter für „ganze Zahl“. Strategieparameter legen Sie in der Strategie an.',
+    );
+    // no input, no hint and no way to create one in the field
+    expect(within(field).queryByTestId('new-param-name')).toBeNull();
+    expect(within(field).queryByTestId('new-param-create')).toBeNull();
+    expect(within(field).queryByRole('textbox')).toBeNull();
+    expect(within(field).queryByRole('button', { name: /Anlegen/ })).toBeNull();
 
+    await user.click(within(field).getByTestId('param-go'));
+    // the strategy parameters, with the form for a new one and the data type of the field preselected
+    const section = await screen.findByTestId('sec-parameters');
+    expect(within(section).getByTestId('param-new-form')).toBeInTheDocument();
+    expect(within(section).getByTestId('param-new-type')).toHaveTextContent('ganze Zahl');
+    expect(within(section).getByTestId('param-back')).toHaveTextContent('Zurück zu „Messer“');
+    await user.type(within(section).getByTestId('param-new-name'), 'Meine Länge');
+    await user.click(within(section).getByTestId('param-new-create'));
     await waitFor(() => {
-      expect(screen.getByTestId('param-strip')).toHaveTextContent('Meine Länge');
+      expect(within(screen.getByTestId('sec-parameters')).getByTestId('param-row')).toHaveTextContent('Meine Länge');
     });
+
+    // back to the field of the element: the new strategy parameter is there to choose
+    await user.click(screen.getByTestId('param-back'));
     await waitFor(() => {
-      expect(within(screen.getByTestId('field-laenge')).getByTestId('param-select')).toHaveValue('meine_laenge');
+      expect(screen.getByTestId('element-name')).toHaveValue('Messer');
     });
+    const again = screen.getByTestId('field-laenge');
+    await choose(user, within(again).getByTestId('param-select'), 'Meine Länge');
     const stored = await saved({ user, api, document });
     expect(stored.parameters).toEqual([expect.objectContaining({ key: 'meine_laenge', name: 'Meine Länge', datatype: 'integer' })]);
     const meter = stored.elements.find((element) => element.instance !== undefined);
     expect(meter?.instance?.parameter_values?.laenge).toEqual({ kind: 'parameter', value: 'meine_laenge' });
+  });
+
+  it('lets the way back from the strategy parameters lapse when another element is chosen, and without an error', async () => {
+    const { user } = await setup();
+    await chooseNode(user, 'Messer');
+    const field = screen.getByTestId('field-laenge');
+    await choose(user, within(field).getByTestId('kind-laenge'), 'aus einem Strategieparameter');
+    await user.click(within(field).getByTestId('param-go'));
+    expect(await screen.findByTestId('param-back')).toBeInTheDocument();
+
+    await chooseNode(user, 'Tun');
+    clickNode(nodeByName('Messer'));
+    await user.click(screen.getByTestId('crumb-strategy'));
+    expect(await screen.findByTestId('sec-parameters')).toBeInTheDocument();
+    expect(screen.queryByTestId('param-back')).toBeNull();
+    expect(screen.queryByTestId('param-new-form')).toBeNull();
   });
 
   it('assigns the value of an object: the instance, then a property of a fitting data type', async () => {
@@ -326,32 +348,84 @@ describe('the properties view of invented types (specification 5.4)', () => {
   });
 });
 
-describe('the strategy parameters (specification 5.1)', () => {
-  it('creates one with "Neu", changes the name and the value, and removes it after a question', async () => {
+describe('the strategy parameters in the properties view of the strategy (specification 5.4, F6)', () => {
+  it('stand after name and description, say what a strategy parameter is while there is none, and no strip is below the header', async () => {
+    await setup();
+
+    expect(screen.queryByTestId('param-strip')).toBeNull();
+    const section = screen.getByTestId('sec-parameters');
+    const sections = Array.from(screen.getByTestId('props-strategy').querySelectorAll('.psec'));
+    expect(sections[0]).toContainElement(screen.getByTestId('strategy-name'));
+    expect(sections[1]).toContainElement(screen.getByTestId('strategy-description'));
+    expect(sections[2]).toBe(section);
+    expect(within(section).getByRole('heading', { name: 'Strategieparameter' })).toBeInTheDocument();
+    expect(within(section).getByTestId('param-empty')).toHaveTextContent(
+      'Ein Strategieparameter ist ein Wert, den Sie hier einmal festlegen und in mehreren Feldern verwenden, zum Beispiel eine Zeiteinheit.',
+    );
+    expect(within(section).getByTestId('param-new')).toHaveTextContent('Neuer Strategieparameter');
+  });
+
+  it('creates one with name, data type and value, changes the name and the value, and removes it after a question', async () => {
     const { user, api, document } = await setup();
 
     await user.click(screen.getByTestId('param-new'));
-    const popover = await screen.findByTestId('param-popover');
-    expect(screen.getAllByTestId('param-chip')).toHaveLength(1);
-    const name = within(popover).getByTestId('param-name');
+    await user.type(screen.getByTestId('param-new-name'), 'Mein Wert');
+    // the data types in the words of the library
+    expect(await offeredChoices(user, screen.getByTestId('param-new-type'))).toEqual([
+      'Zahl',
+      'ganze Zahl',
+      'Prozentwert',
+      'Wahrheitswert',
+      'Text',
+      'Zeiteinheit',
+      // the object type of the field has no description in the invented types: its identifier stands in the place of its name
+      'zz.target',
+    ]);
+    await user.clear(screen.getByTestId('param-new-value'));
+    await user.type(screen.getByTestId('param-new-value'), '7');
+    await user.click(screen.getByTestId('param-new-create'));
+
+    const row = await screen.findByTestId('param-row');
+    expect(row).toHaveTextContent('Mein Wert');
+    expect(within(row).getByTestId('param-datatype')).toHaveTextContent('Zahl');
+    expect(within(row).getByTestId('param-shown-value')).toHaveTextContent('7');
+    expect(screen.queryByTestId('param-new-form')).toBeNull();
+
+    // a click opens name and value
+    await user.click(row);
+    const name = screen.getByTestId('param-name');
     await user.clear(name);
-    await user.type(name, 'Mein Wert');
-    const value = within(popover).getByTestId('param-value');
+    await user.type(name, 'Mein anderer Wert');
+    const value = screen.getByTestId('param-value');
     await user.clear(value);
-    await user.type(value, '7');
-    expect(screen.getByTestId('param-chip')).toHaveTextContent('Mein Wert');
-    expect(screen.getByTestId('param-chip')).toHaveTextContent('7');
+    await user.type(value, '9');
+    expect(screen.getByTestId('param-row')).toHaveTextContent('Mein anderer Wert');
+    expect(screen.getByTestId('param-shown-value')).toHaveTextContent('9');
 
     const stored = await saved({ user, api, document });
-    expect(stored.parameters).toEqual([expect.objectContaining({ name: 'Mein Wert', datatype: 'number', key: 'neuer_strategieparameter' })]);
+    expect(stored.parameters).toEqual([expect.objectContaining({ name: 'Mein anderer Wert', datatype: 'number', value: 9, key: 'mein_wert' })]);
 
-    // saving closed the popover (a click outside of it does): open it again
-    await user.click(screen.getByTestId('param-chip'));
-    await user.click(within(await screen.findByTestId('param-popover')).getByTestId('param-delete'));
-    const dialog = await screen.findByRole('dialog', { name: 'Strategieparameter entfernen?' });
+    // "Entfernen" asks first; "Abbrechen" keeps it, "Entfernen" in the question removes it
+    await user.click(screen.getByTestId('param-delete'));
+    let dialog = await screen.findByRole('dialog', { name: 'Strategieparameter entfernen?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.getAllByTestId('param-row')).toHaveLength(1);
+    await user.click(screen.getByTestId('param-delete'));
+    dialog = await screen.findByRole('dialog', { name: 'Strategieparameter entfernen?' });
     await user.click(within(dialog).getByRole('button', { name: 'Entfernen' }));
     await waitFor(() => {
-      expect(screen.queryAllByTestId('param-chip')).toHaveLength(0);
+      expect(screen.queryAllByTestId('param-row')).toHaveLength(0);
     });
+    expect(screen.getByTestId('param-empty')).toBeInTheDocument();
+  });
+
+  it('creates no strategy parameter without a name, and a new one can be cancelled', async () => {
+    await setup();
+
+    await userEvent.setup().click(screen.getByTestId('param-new'));
+    expect(screen.getByTestId('param-new-create')).toBeDisabled();
+    await userEvent.setup().click(screen.getByTestId('param-new-cancel'));
+    expect(screen.queryByTestId('param-new-form')).toBeNull();
+    expect(screen.getByTestId('param-new')).toBeInTheDocument();
   });
 });

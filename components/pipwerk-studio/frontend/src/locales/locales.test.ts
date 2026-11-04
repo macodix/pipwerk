@@ -160,15 +160,35 @@ describe('translations (specification 5.1)', () => {
     expect(
       ['fixed', 'parameter', 'connection', 'expression', 'application'].map((kind) => english.get(`binding.${kind}`)),
     ).toEqual(['enter a value', 'from a strategy parameter', 'from another element', 'from a formula', 'set when the strategy starts']);
-    // the name of the object type (here "Instrument") stands in the place of {{type}}
+    // the field with a preset (F5): the label, the example and the explanation, for an element and for an order
     const de = createI18n('de');
     const en = createI18n('en');
-    expect(de.t('fields.preset.value', { type: 'Instrument' })).toBe('das Instrument, auf dem die Strategie läuft');
-    expect(de.t('fields.preset.other', { type: 'Instrument' })).toBe('anderes Instrument wählen');
-    expect(de.t('fields.preset.back', { type: 'Instrument' })).toBe('wieder das Instrument, auf dem die Strategie läuft');
-    expect(en.t('fields.preset.value', { type: 'instrument' })).toBe('the instrument the strategy runs on');
-    expect(en.t('fields.preset.other', { type: 'instrument' })).toBe('choose another instrument');
-    expect(en.t('fields.preset.back', { type: 'instrument' })).toBe('back to the instrument the strategy runs on');
+    expect(german.get('fields.preset.label')).toBe('Instrument wählen (optional)');
+    expect(english.get('fields.preset.label')).toBe('Choose instrument (optional)');
+    expect(german.get('fields.preset.example')).toBe('zum Beispiel EURUSD');
+    expect(english.get('fields.preset.example')).toBe('for example EURUSD');
+    expect(de.t('fields.preset.explanation', { subject: de.t('fields.preset.thisElement') })).toBe(
+      'Ohne eigene Wahl gilt das voreingestellte Instrument aus der Strategie. Das ist das Instrument, auf dem die Strategie läuft; es wird erst beim Start der Strategie festgelegt. Wählen Sie hier nur ein Instrument, wenn dieses Element ein anderes verwenden soll.',
+    );
+    expect(de.t('fields.preset.explanation', { subject: de.t('fields.preset.thisOrder') })).toContain('wenn diese Order ein anderes verwenden soll.');
+    expect(en.t('fields.preset.explanation', { subject: en.t('fields.preset.thisElement') })).toBe(
+      'Without your own choice, the default instrument from the strategy applies. This is the instrument the strategy runs on; it is set only when the strategy starts. Choose an instrument here only if this element is to use a different one.',
+    );
+    expect(en.t('fields.preset.explanation', { subject: en.t('fields.preset.thisOrder') })).toContain('only if this order is to use a different one.');
+    // the strategy parameters in the properties view of the strategy (F6)
+    expect(german.get('params.none')).toBe(
+      'Ein Strategieparameter ist ein Wert, den Sie hier einmal festlegen und in mehreren Feldern verwenden, zum Beispiel eine Zeiteinheit.',
+    );
+    expect(english.get('params.none')).toBe(
+      'A strategy parameter is a value you set here once and use in several fields, for example a timeframe.',
+    );
+    expect([german.get('params.new'), english.get('params.new')]).toEqual(['Neuer Strategieparameter', 'New strategy parameter']);
+    expect([german.get('fields.goToStrategy'), english.get('fields.goToStrategy')]).toEqual(['Zur Strategie', 'Go to strategy']);
+    expect(de.t('params.backTo', { name: 'EMA 20' })).toBe('Zurück zu „EMA 20“');
+    expect(en.t('params.backTo', { name: 'EMA 20' })).toBe('Back to “EMA 20”');
+    expect(de.t('fields.noParameterFor', { word: 'Zeiteinheit' })).toBe(
+      'Es gibt noch keinen Strategieparameter für „Zeiteinheit“. Strategieparameter legen Sie in der Strategie an.',
+    );
   });
 
   it('offer no crossing and no word list for the data types of the interface: the library delivers them (E11, E12)', () => {

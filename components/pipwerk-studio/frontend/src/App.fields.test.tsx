@@ -95,65 +95,108 @@ describe('the fields of an element (specification 5.4, E11)', () => {
       'from a formula',
       'set when the strategy starts',
     ]);
-    expect(within(screen.getByTestId('field-instrument')).getByTestId('preset-text-instrument')).toHaveTextContent('the instrument the strategy runs on');
-    expect(within(screen.getByTestId('field-instrument')).getByTestId('preset-other-instrument')).toHaveTextContent('choose another instrument');
+    const instrument = screen.getByTestId('field-instrument');
+    expect(within(instrument).getByText('Choose instrument (optional)')).toBeInTheDocument();
+    expect(within(instrument).getByTestId('kind-instrument')).toHaveTextContent('Default instrument from strategy');
+    expect(within(instrument).getByTestId('preset-explanation-instrument')).toHaveTextContent(
+      'Without your own choice, the default instrument from the strategy applies. This is the instrument the strategy runs on; it is set only when the strategy starts. Choose an instrument here only if this element is to use a different one.',
+    );
+    expect(await offeredChoices(user, within(instrument).getByTestId('kind-instrument'))).toEqual([
+      'Default instrument from strategy',
+      'enter a value',
+      'from a strategy parameter',
+      'from another element',
+      'from a formula',
+      'set when the strategy starts',
+    ]);
+    expect(within(instrument).queryByText('Where does the value come from?')).toBeNull();
   });
 
-  it('show the instrument as "das Instrument, auf dem die Strategie läuft" and say that the user has nothing to choose', async () => {
-    await openEma();
+  it('label the instrument "Instrument wählen (optional)" with one choice that shows "Voreingestelltes Instrument aus Strategie" and the explanation below it', async () => {
+    const { user } = await openEma();
     clickNode(nodeByName('EMA20'));
 
     const field = await screen.findByTestId('field-instrument');
-    expect(within(field).getByTestId('preset-text-instrument')).toHaveTextContent('das Instrument, auf dem die Strategie läuft');
-    expect(within(field).getByText('Dafür müssen Sie nichts wählen.')).toBeInTheDocument();
-    expect(within(field).getByTestId('preset-other-instrument')).toHaveTextContent('anderes Instrument wählen');
-    // the question and the answers appear only after "anderes Instrument wählen"
+    expect(within(field).getByText('Instrument wählen (optional)')).toBeInTheDocument();
+    // one choice, preset and visible; no question "Woher kommt der Wert?" and no button beside it
+    expect(within(field).getAllByTestId(/^kind-/)).toHaveLength(1);
+    expect(within(field).getByTestId('kind-instrument')).toHaveTextContent('Voreingestelltes Instrument aus Strategie');
     expect(within(field).queryByText('Woher kommt der Wert?')).toBeNull();
-    expect(within(field).queryByTestId('kind-instrument')).toBeNull();
+    expect(within(field).queryByRole('button', { name: /wieder das Instrument|anderes Instrument/ })).toBeNull();
+    expect(within(field).queryByText(/auf dem die Strategie läuft$/)).toBeNull();
+    // the explanation is visible, not only on pointing
+    expect(within(field).getByTestId('preset-explanation-instrument')).toHaveTextContent(
+      'Ohne eigene Wahl gilt das voreingestellte Instrument aus der Strategie. Das ist das Instrument, auf dem die Strategie läuft; es wird erst beim Start der Strategie festgelegt. Wählen Sie hier nur ein Instrument, wenn dieses Element ein anderes verwenden soll.',
+    );
+    // nothing to type while the preset applies
+    expect(within(field).queryByTestId('value-instrument')).toBeNull();
+    // the other entries are the allowed ways to assign, in the words of the trader
+    expect(await offeredChoices(user, within(field).getByTestId('kind-instrument'))).toEqual([
+      'Voreingestelltes Instrument aus Strategie',
+      'fest eingeben',
+      'aus einem Strategieparameter',
+      'von einem anderen Element',
+      'aus einer Formel',
+      'beim Start der Strategie festlegen',
+    ]);
   });
 
-  it('choose another instrument, enter its designation, and go back to the instrument the strategy runs on', async () => {
+  it('show an empty input with "zum Beispiel EURUSD" at "fest eingeben"; it stays the preset while it is empty and holds what is typed', async () => {
     const run = await openEma();
     const { user } = run;
     clickNode(nodeByName('EMA20'));
     const field = await screen.findByTestId('field-instrument');
 
-    await user.click(within(field).getByTestId('preset-other-instrument'));
-    expect(within(field).getByText('Woher kommt der Wert?')).toBeInTheDocument();
-    // nothing entered so far: the standard value stays (shown as the value "Instrument der Anwendung" once "fest eingeben" is chosen)
     await choose(user, within(field).getByTestId('kind-instrument'), 'fest eingeben');
-    expect(within(field).getByTestId('value-instrument')).toHaveValue('instrument_der_anwendung');
-    await choose(user, within(field).getByTestId('value-instrument'), 'Andere Bezeichnung …');
-    await user.type(within(field).getByTestId('value-instrument-text'), 'eurusd');
-    expect(valueOf(await saved(run), 'EMA20', 'instrument')).toEqual({ kind: 'fixed', value: 'eurusd' });
+    const input = within(field).getByTestId('value-instrument');
+    expect(input).toHaveValue('');
+    expect(input).toHaveAttribute('placeholder', 'zum Beispiel EURUSD');
+    expect(within(field).getByTestId('kind-instrument')).toHaveTextContent('fest eingeben');
+    // empty: the preset applies in the document, and the choice shows it again as soon as the input is left
+    expect(valueOf(await saved(run), 'EMA20', 'instrument')).toEqual({ kind: 'fixed', value: 'instrument_der_anwendung' });
+    await user.click(screen.getByTestId('props'));
+    await waitFor(() => {
+      expect(within(field).getByTestId('kind-instrument')).toHaveTextContent('Voreingestelltes Instrument aus Strategie');
+    });
+    expect(within(field).queryByTestId('value-instrument')).toBeNull();
 
-    // the way back
-    await user.click(within(field).getByTestId('preset-back-instrument'));
-    expect(within(field).getByTestId('preset-text-instrument')).toHaveTextContent('das Instrument, auf dem die Strategie läuft');
+    // a typed instrument is kept
+    await choose(user, within(field).getByTestId('kind-instrument'), 'fest eingeben');
+    await user.type(within(field).getByTestId('value-instrument'), 'EURUSD');
+    expect(within(field).getByTestId('kind-instrument')).toHaveTextContent('fest eingeben');
+    expect(valueOf(await saved(run), 'EMA20', 'instrument')).toEqual({ kind: 'fixed', value: 'EURUSD' });
+  });
+
+  it('go back to the preset over the first entry of the choice, from a typed instrument and from another way', async () => {
+    const run = await openEma();
+    const { user } = run;
+    clickNode(nodeByName('EMA20'));
+    const field = await screen.findByTestId('field-instrument');
+
+    await choose(user, within(field).getByTestId('kind-instrument'), 'fest eingeben');
+    await user.type(within(field).getByTestId('value-instrument'), 'EURUSD');
+    await choose(user, within(field).getByTestId('kind-instrument'), 'Voreingestelltes Instrument aus Strategie');
+    expect(within(field).getByTestId('kind-instrument')).toHaveTextContent('Voreingestelltes Instrument aus Strategie');
+    expect(within(field).queryByTestId('value-instrument')).toBeNull();
+    expect(valueOf(await saved(run), 'EMA20', 'instrument')).toEqual({ kind: 'fixed', value: 'instrument_der_anwendung' });
+
+    // from "aus einem Strategieparameter"
+    await choose(user, within(field).getByTestId('kind-instrument'), 'aus einem Strategieparameter');
+    expect(within(field).getByTestId('kind-instrument')).toHaveTextContent('aus einem Strategieparameter');
+    await choose(user, within(field).getByTestId('kind-instrument'), 'Voreingestelltes Instrument aus Strategie');
     expect(valueOf(await saved(run), 'EMA20', 'instrument')).toEqual({ kind: 'fixed', value: 'instrument_der_anwendung' });
   });
 
-  it('keep the standard value when "anderes Instrument wählen" is chosen and nothing is entered', async () => {
-    const run = await openEma();
-    const { user } = run;
-    clickNode(nodeByName('EMA20'));
-    const field = await screen.findByTestId('field-instrument');
-
-    await user.click(within(field).getByTestId('preset-other-instrument'));
-    await user.click(within(field).getByTestId('preset-back-instrument'));
-
-    expect(within(field).getByTestId('preset-text-instrument')).toBeInTheDocument();
-    const value = valueOf(await saved(run), 'EMA20', 'instrument');
-    expect(value === undefined || (value.kind === 'fixed' && value.value === 'instrument_der_anwendung')).toBe(true);
-  });
-
-  it('show the instrument in words also at the order, where it is a property of the order', async () => {
+  it('show the same field at the order, with "diese Order" in the explanation', async () => {
     await openEma();
     clickNode(nodeByName('Order aufgeben'));
 
     const order = await screen.findByTestId('sec-order');
     const instrument = within(order).getByTestId('field-instrument');
-    expect(within(instrument).getByTestId('preset-text-instrument')).toHaveTextContent('das Instrument, auf dem die Strategie läuft');
+    expect(within(instrument).getByText('Instrument wählen (optional)')).toBeInTheDocument();
+    expect(within(instrument).getByTestId('kind-instrument')).toHaveTextContent('Voreingestelltes Instrument aus Strategie');
+    expect(within(instrument).getByTestId('preset-explanation-instrument')).toHaveTextContent('wenn diese Order ein anderes verwenden soll.');
+    expect(within(instrument).getByTestId('preset-explanation-instrument')).not.toHaveTextContent('dieses Element');
     expect(screen.queryByText(/Belegung/)).toBeNull();
   });
 });
