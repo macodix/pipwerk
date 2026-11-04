@@ -191,7 +191,7 @@
     "groups": {
       "connected": "Verbundene Werte",
       "objects": "Objekte der Strategie",
-      "application": "Objekte der Anwendung",
+      "application": "Handelsdaten",
       "results": "Ergebnisse",
       "strategy": "Strategieparameter",
       "parameters": "Angaben der Vorlage",
@@ -411,9 +411,9 @@
     "description": "Beschreibung",
     "descriptionPlaceholder": "Worum geht es in dieser Strategie?",
     "rulesOfStrategy": "Regeln der Strategie",
-    "rulesOfStrategyHint": "Diese Regeln gelten für jede Order der Strategie.",
-    "applicationObjects": "Objekte der Anwendung",
-    "applicationObjectsHint": "Diese Objekte gibt es immer. Formeln können ihre Werte verwenden.",
+    "rulesOfStrategyHint": "Regeln sind freiwillig. Eine Regel der Strategie gilt für jede Order der Strategie.",
+    "applicationObjects": "Handelsdaten: Order, Position, Strategie",
+    "applicationObjectsHint": "Diese Werte brauchen kein Element auf der Zeichenfläche. Sie stehen in Formeln und Regeln zur Wahl, wo sie verwendbar sind.",
     "findings": "Befunde der Prüfung",
     "notChecked": "Noch nicht geprüft. „Prüfen“ sucht Probleme wie fehlende Verbindungen oder leere Pflichtangaben.",
     "noFindings": "Keine Befunde. Die Strategie ist in sich stimmig.",
@@ -436,7 +436,7 @@
     "noAssignments": "Keine Angaben.",
     "remove": "Entfernen",
     "settings": "Einstellungen",
-    "settingsOfObject": "Einstellungen des Objekts",
+    "settingsOfName": "Einstellungen von „{{name}}“",
     "orderProperties": "Eigenschaften der Order",
     "orderPropertiesHint": "Diese Werte bekommt die Order. Fehlt eine Pflichtangabe wie das Volumen, muss eine Regel sie bestimmen.",
     "delivers": "Liefert",
@@ -454,8 +454,9 @@
     "mainFlow": "Hauptablauf",
     "managementOf": "Order- und Positionsverwaltung von „{{name}}“",
     "belongsToHint": "Hier legen Sie fest, ob der Schritt zum Hauptablauf oder zur Order- und Positionsverwaltung einer Order gehört, ohne ihn zu ziehen.",
-    "originType": "{{name}}, aus Objekttyp {{type}}",
-    "originTemplate": "{{name}}, aus Vorlage {{template}}, Objekttyp {{type}}",
+    "mainFlowExplanation": "Der Hauptablauf ist der Ablauf der Strategie ab ihren Auslösern, ohne die Schritte in den Order- und Positionsverwaltungen.",
+    "originType": "{{name}} – {{type}}",
+    "originTemplate": "{{name}} – aus der Vorlage „{{template}}“",
     "connection": {
       "title": "Verbindung",
       "fromTo": "Von „{{from}}“ zu „{{to}}“",
@@ -839,7 +840,7 @@
       },
       "insert": {
         "template_invalid": "Diese Vorlage lässt sich nicht einfügen.",
-        "type_unknown": "Diesen Objekttyp kennt der Server nicht."
+        "type_unknown": "Diese Art von Baustein kennt der Server nicht."
       },
       "removal": {
         "strategy_required": "Entfernen mit Folgen für Formeln gibt es nur in einer Strategie, nicht in einer Vorlage.",
@@ -873,7 +874,6 @@
     "columnModified": "Letzte Änderung",
     "modifiedValue": "{{day}}.{{month}}.{{year}}, {{hours}}:{{minutes}} Uhr",
     "unreadable": "nicht lesbar",
-    "untitled": "(ohne Name)",
     "cancel": "Abbrechen"
   },
   "settings": {

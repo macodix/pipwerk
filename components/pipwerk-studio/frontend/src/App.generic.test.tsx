@@ -166,7 +166,7 @@ describe('the properties view of invented types (specification 5.4)', () => {
     const { user } = await setup();
     await chooseNode(user, 'Messer');
 
-    expect(screen.getByTestId('element-origin')).toHaveTextContent('Messer, aus Objekttyp Messer');
+    expect(screen.getByTestId('element-origin')).toHaveTextContent('Messer – Indikator Messer');
     const settings = screen.getByTestId('sec-settings');
     expect(within(settings).getByText('Takt')).toBeInTheDocument();
     expect(within(settings).getByText('Länge')).toBeInTheDocument();

@@ -157,6 +157,8 @@ export type TypeDescription = {
   /** The short text shown when the entry is pointed at (specification 3.1). */
   explanation: Label;
   category: ObjectCategory | null;
+  /** The word for the category in the origin of an instance, for example the word for an indicator (`category_label`); `null` without a category. */
+  categoryLabel: Label | null;
   /** The group of the element library; `null` for a type that does not stand there. */
   group: GroupId | null;
   parameters: ParameterDescription[];
@@ -397,6 +399,10 @@ function parseType(value: unknown, what: string): TypeDescription {
     description,
     explanation: explanation.de === '' && explanation.en === '' ? description : explanation,
     category: (category ?? null) as ObjectCategory | null,
+    categoryLabel:
+      record.category_label === undefined || record.category_label === null
+        ? null
+        : parseLabel(record.category_label, `${what}.category_label`),
     group: parseGroup(record.group, `${what}.group`),
     parameters: expectArray(record.parameters, `${what}.parameters`).map((item, index) =>
       parseParameter(item, `${what}.parameters[${index}]`),

@@ -68,6 +68,7 @@ describe('translations (specification 5.1)', () => {
         'expression.arithmetic.-',
         'findings.whereElement',
         'library.groups.trends',
+        'properties.originType',
       ].sort(),
     );
   });

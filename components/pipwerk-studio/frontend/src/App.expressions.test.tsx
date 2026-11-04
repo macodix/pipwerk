@@ -86,7 +86,7 @@ describe('the blocks (specification 5.4)', () => {
       expect(within(screen.getByTestId('sec-used')).getAllByTestId('used-row')).toHaveLength(2);
     });
     const groups = (await offeredGroups(user, left)).map((group) => group.label);
-    expect(groups.slice(0, 5)).toEqual(['Verbundene Werte', 'Objekte der Strategie', 'Objekte der Anwendung', 'Ergebnisse', 'Strategieparameter']);
+    expect(groups.slice(0, 5)).toEqual(['Verbundene Werte', 'Objekte der Strategie', 'Handelsdaten', 'Ergebnisse', 'Strategieparameter']);
     const document = await saved(user, api);
     expect(document.elements.find((element) => element.id === EMA_ELEMENT_IDS.stop)?.inputs).toEqual(
       expect.arrayContaining([

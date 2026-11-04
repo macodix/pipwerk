@@ -100,6 +100,28 @@ describe('the texts of the findings that came with the new interface of the libr
     expect(texts('en', f).message).toMatch(/^Main flow without a trigger: the strategy never starts/);
   });
 
+  it('explain the main flow as the second sentence of a finding that names it, once, in both languages (F4)', () => {
+    const de = 'Der Hauptablauf ist der Ablauf der Strategie ab ihren Auslösern, ohne die Schritte in den Order- und Positionsverwaltungen.';
+    const en = 'The main flow is the flow of the strategy from its triggers, without the steps inside the order and position managements.';
+    const hint = finding('flow.main_without_trigger', {}, { level: 'hint', element: null });
+    const place = finding('flow.management_only', { type: 'zz.exec' },{ element: step?.id ?? null });
+
+    for (const f of [hint, place, finding('trigger.manual_in_management', {}, { element: inside?.id ?? null })]) {
+      expect(texts('de', f).message.endsWith(` ${de}`)).toBe(true);
+      expect(texts('de', f).message.split(de)).toHaveLength(2);
+      expect(texts('en', f).message.endsWith(` ${en}`)).toBe(true);
+      expect(texts('en', f).message.split(en)).toHaveLength(2);
+    }
+    expect(texts('de', hint).message).toMatch(/^Hauptablauf ohne Auslöser: .*\. Der Hauptablauf ist der Ablauf/);
+  });
+
+  it('add no explanation of the main flow to a finding that does not name it', () => {
+    const f = finding('name.duplicate', { name: 'Messer', key: 'messer', namespace: 'strategy', what: 'name' }, { element: trigger?.id ?? null });
+
+    expect(texts('de', f).message).not.toContain('Hauptablauf');
+    expect(texts('en', f).message).not.toContain('main flow');
+  });
+
   it('say that a name is taken twice, with the name', () => {
     const f = finding('name.duplicate', { name: 'Messer', key: 'messer', namespace: 'strategy', what: 'name' }, { element: trigger?.id ?? null });
 
