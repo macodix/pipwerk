@@ -1,13 +1,13 @@
 # Entwicklungsverfahren
 
-Stand 2026-11-03. Dieses Dokument beschreibt, wie die Vorhaben von pipwerk abgewickelt werden. Es gilt für alle laufenden und neuen Vorhaben.
+Stand 2026-11-06. Dieses Dokument beschreibt, wie die Vorhaben von pipwerk abgewickelt werden. Es gilt für alle laufenden und neuen Vorhaben.
 
 ## Rollen und Kommunikationsweg
 
 ```text
 Auftraggeber ⇄ Projektleiter ⇄ Softwarearchitekt   (Phasen 1 bis 3)
                             ⇄ Entwicklungsleiter (Phasen 4 bis 6) ⇄ Entwickler, Tester
-Softwarearchitekt ⇄ Entwicklungsleiter (Lücken in Spezifikation oder Plan während Phase 4)
+Softwarearchitekt ⇄ Entwicklungsleiter (Beginn der Umsetzung, Lücken in Spezifikation oder Plan während Phase 4)
 ```
 
 Jede Rolle spricht nur mit ihren Nachbarn in dieser Kette. Entwickler und Tester haben keinen Kontakt zum Auftraggeber.
@@ -29,13 +29,15 @@ Der Auftraggeber entscheidet den Inhalt der Anforderungsdokumente, des Fachmodel
 | Phase | Rolle | Ergebnis |
 |---|---|---|
 | 1 Anforderung | Projektleiter | fortgeschriebene Dokumente des Auftraggebers, abgestimmte Präsentation |
-| 2 Konzeption | Softwarearchitekt | technische Spezifikation, bei neuer Oberfläche ein Prototyp, abgestimmte Präsentation |
-| 3 Planung | Softwarearchitekt | Arbeitspaketplan, abgestimmte Präsentation |
+| 2 Konzeption | Softwarearchitekt | technische Spezifikation, bei neuer Oberfläche ein Prototyp |
+| 3 Planung | Softwarearchitekt | Arbeitspaketplan |
 | 4 Umsetzung | Entwicklungsleiter | je Arbeitspaket: Aufträge, Code, Testberichte, laufende Testumgebung |
 | 5 Abnahme | Auftraggeber | Abnahmebericht |
 | 6 Integration | Entwicklungsleiter | Arbeitspaket in `main` |
 
 Rückwege: fehlende oder geänderte Anforderung zurück in Phase 1, Lücke in der Spezifikation zurück in Phase 2, Änderung am Plan durch Phase 3, Mangel aus der Abnahme zurück in Phase 4.
+
+Spezifikation und Plan werden dem Auftraggeber nicht vorgelegt. Nach der Spezifikation folgen Planung und Umsetzung ohne Unterbrechung. Der Auftraggeber sieht das Ergebnis in der Abnahme.
 
 ### Phase 1 – Anforderung
 
@@ -43,11 +45,11 @@ Der Auftraggeber beschreibt Arbeitsabläufe, Objekte und Regeln. Der Projektleit
 
 ### Phase 2 – Konzeption
 
-Der Softwarearchitekt erstellt die Spezifikation: Programme, Bausteine, Daten, Schnittstellen, gewählte Technik mit verworfenen Alternativen und Grund, Bedienabläufe von Installation und Einrichtung. Die Spezifikation legt nur fest, was die Arbeitspakete des Vorhabens brauchen. Für eine neue Oberfläche, von der es noch keine umgesetzte Fassung gibt, lässt er vorher einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens durchspielt. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp spezifiziert und direkt in der Software umgesetzt. Er meldet `present` an den Projektleiter. Der Projektleiter macht daraus eine Präsentation und stimmt sie mit dem Auftraggeber ab; Einwände gehen mit `revise` zurück.
+Der Softwarearchitekt erstellt die Spezifikation: Programme, Bausteine, Daten, Schnittstellen, gewählte Technik mit verworfenen Alternativen und Grund, Bedienabläufe von Installation und Einrichtung. Die Spezifikation legt nur fest, was die Arbeitspakete des Vorhabens brauchen. Für eine neue Oberfläche, von der es noch keine umgesetzte Fassung gibt, lässt er vorher einen klickbaren Prototyp bauen, in dem der Auftraggeber die Testfälle des Vorhabens durchspielt. Änderungen an einer umgesetzten Oberfläche werden ohne Prototyp spezifiziert und direkt in der Software umgesetzt. Mit der fertigen Spezifikation beginnt er in derselben Sitzung Phase 3.
 
 ### Phase 3 – Planung
 
-Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete mit Ziel, Umfang, Nicht-Umfang, umgesetzten Teilen der Spezifikation, Abhängigkeiten und Abnahmekriterien. Der Plan führt je Paket den Stand `open` oder `done`. Er meldet `present` an den Projektleiter, der den Plan präsentiert und abstimmt. Nach der Bestätigung meldet der Projektleiter je Paket ohne offene Abhängigkeit `implement` an den Entwicklungsleiter.
+Der Softwarearchitekt teilt die Spezifikation in Arbeitspakete mit Ziel, Umfang, Nicht-Umfang, umgesetzten Teilen der Spezifikation, Abhängigkeiten und Abnahmekriterien. Der Plan führt je Paket den Stand `open` oder `done`. Mit dem fertigen Plan meldet der Softwarearchitekt je Paket ohne offene Abhängigkeit `implement` an den Entwicklungsleiter.
 
 ### Phase 4 – Umsetzung eines Arbeitspakets
 
@@ -61,7 +63,7 @@ Der Tester Funktion prüft jeden Commit eines Entwicklers. Eine Nachprüfung pr�
 
 Die Sicherheitsprüfung nach den [Entwicklungs-, Test- und Sicherheitsregeln](development-test-security-rules.md) erfolgt nicht je Arbeitspaket, sondern einmal je Modul vor dessen erstem produktiven Einsatz. Der Auftraggeber löst sie aus. Ihre Befunde werden als Vorhaben bearbeitet.
 
-Findet der Entwicklungsleiter eine Lücke in Spezifikation oder Plan, beschreibt er sie in `<arbeitspaket>/amend-<nn>.md`, meldet `amend` an den Softwarearchitekten und erledigt die davon unabhängigen Teile. Der Softwarearchitekt ergänzt und meldet `amended`. Ändert die Ergänzung eine Anforderung, eine bestätigte Festlegung, ein Abnahmekriterium oder den Umfang eines Pakets, meldet er stattdessen `present`, und das Paket ruht bis zur Bestätigung.
+Findet der Entwicklungsleiter eine Lücke in Spezifikation oder Plan, beschreibt er sie in `<arbeitspaket>/amend-<nn>.md`, meldet `amend` an den Softwarearchitekten und erledigt die davon unabhängigen Teile. Der Softwarearchitekt ergänzt und meldet `amended`. Ändert die Ergänzung eine Anforderung oder eine bestätigte Festlegung des Auftraggebers, stellt er stattdessen eine Frage an den Auftraggeber, und das Paket ruht bis zur Antwort.
 
 Sind alle Aufträge zusammengeführt und läuft die Testumgebung, meldet der Entwicklungsleiter `acceptance` an den Projektleiter.
 
@@ -104,7 +106,7 @@ development/
     scope.md              geltende Dokumente des Auftraggebers (Projektleiter)
     specification.md      technische Spezifikation (Softwarearchitekt)
     plan.md               Arbeitspaketplan (Softwarearchitekt)
-    presentations/        Präsentationen mit Vermerk der Bestätigung (Projektleiter)
+    presentations/        Präsentationen der Phase 1 mit Vermerk der Bestätigung (Projektleiter)
     questions/            Fragen an den Auftraggeber mit Antwort
     <arbeitspaket>/
       orders/             Aufträge an die Entwickler (Entwicklungsleiter)
@@ -132,7 +134,6 @@ Eine Meldung ist eine Markdown-Datei `development/messages/<empfänger>/<JJJJMMT
 | Empfänger | `task` | Anlass | `document` |
 |---|---|---|---|
 | Softwarearchitekt | `specify` | Phase 2 beginnen | `scope.md` |
-| Softwarearchitekt | `revise` | Einwände des Auftraggebers einarbeiten | Präsentation mit den Einwänden |
 | Softwarearchitekt | `plan` | Phase 3 beginnen oder Plan ändern | `specification.md` |
 | Softwarearchitekt | `amend` | Lücke in Spezifikation oder Plan schließen | Dokument der Lücke |
 | Entwicklungsleiter | `implement` | Phase 4 beginnen oder fortsetzen | `plan.md` |
@@ -140,12 +141,11 @@ Eine Meldung ist eine Markdown-Datei `development/messages/<empfänger>/<JJJJMMT
 | Entwicklungsleiter | `fix` | Mängel aus der Abnahme beheben | Abnahmebericht |
 | Entwicklungsleiter | `integrate` | abgenommenes Paket übernehmen | Abnahmebericht |
 | fragende Rolle | `answer` | Frage beantwortet, Aufgabe fortsetzen | Frage mit Antwort |
-| Projektleiter | `present` | Spezifikation oder Plan zur Abstimmung | `specification.md` oder `plan.md` |
 | Projektleiter | `acceptance` | Testumgebung für die Abnahme bereit | Testberichte auf dem Arbeitszweig mit Commit und Port der Testumgebung |
 | Projektleiter | `question` | Frage an den Auftraggeber | Frage |
 | Projektleiter | `integrated` | Paket in `main` übernommen | `plan.md` |
 
-Jede Sitzung von Softwarearchitekt und Entwicklungsleiter endet mit genau einer Antwortmeldung. Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antwort. Meldungen und Dokumente gelten erst als übergeben, wenn sie auf `origin/main` liegen. Wer auf `main` schreibt, arbeitet auf dem aktuellen Stand von `origin/main` und überträgt mit `git push origin HEAD:main`; lehnt GitHub ab, holt er den neuen Stand, setzt seinen Commit darauf und überträgt erneut.
+Jede Sitzung von Softwarearchitekt und Entwicklungsleiter endet mit mindestens einer Antwortmeldung; nach `specify` sind es die Meldungen `implement` für alle Pakete ohne offene Abhängigkeit. Der Empfänger entfernt eine bearbeitete Meldung im selben Commit wie seine Antwort. Meldungen und Dokumente gelten erst als übergeben, wenn sie auf `origin/main` liegen. Wer auf `main` schreibt, arbeitet auf dem aktuellen Stand von `origin/main` und überträgt mit `git push origin HEAD:main`; lehnt GitHub ab, holt er den neuen Stand, setzt seinen Commit darauf und überträgt erneut.
 
 ## Vorgemerkte Anforderungen
 
