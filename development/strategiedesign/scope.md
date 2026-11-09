@@ -35,6 +35,7 @@ Als offen gekennzeichnet in den geltenden Dokumenten, nicht blockierend für Pha
 - Fachmodell: weitere Bezeichnungen fester Instrumente außer nach ISO (req-fach-053).
 - Fachmodell, die Ausführung betreffend: wann `Start von Hand` in einer Verwaltung und in einem Testlauf eintritt (req-fach-053).
 - Aus den Nachprüfungen, alle die Ausführung betreffend: Geltungsdauer eines mit `Parameter setzen` gesetzten Werts (req-fach-047), Regel zur freien Margin (req-fach-049), Anpassung bei verändertem Spread (`str-01`).
+- Strategiedesigner: Das Konzept einer Variablen fehlt noch. Offen ist auch, wie es sich zum Strategieparameter verhält (Auftraggeber im Chat am 2026-11-09).
 
 ## Stand
 
